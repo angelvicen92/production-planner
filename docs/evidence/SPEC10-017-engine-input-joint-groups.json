@@ -171,7 +171,6 @@
     "engine/planner-next/integration/engineInputAdapter.fixture.ts",
     "engine/planner-next/integration/engineInputAdapter.spec.ts",
     "engine/planner-next/integration/engineInputAdapter.ts",
-    "engine/planner-next/integration/engineInputPreflight.spec.ts",
     "engine/planner-next/integration/engineInputPreflight.ts",
     "engine/planner-next/jointTasks.spec.ts",
     "engine/planner-next/jointTasks.ts",
@@ -182,7 +181,7 @@
   ],
   "artifactHashes": {
     "hashScope": "canonical evidence payload excluding artifactHashes",
-    "evidencePayloadSha256": "c9336a9f5cb2b2383e795138876e7d3c86d99c81c4943f70b922c5e4f430833a",
+    "evidencePayloadSha256": "7ecffbea08a27d2e95d1ff8b53db2863de536e16e727877678a5b6661b84d495",
     "coverageSha256": "8c5be4fe8aa153d31aa1f86b56f019f5764f8806203208ee080b872cbb191b00"
   }
 }
