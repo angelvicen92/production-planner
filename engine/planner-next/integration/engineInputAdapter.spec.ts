@@ -453,29 +453,47 @@ test("SPEC10-017 plans dependent EngineInput joint groups end-to-end from adapte
   assert.deepEqual(spec10017LogicalProjection(inverted), spec10017LogicalProjection(run));
 });
 
-test("jointGroupId null, undefined and absence share EngineInput source semantics", () => {
-  const withAux = (mode: "absent" | "undefined" | "null" | "first" | "second") => {
+test("jointGroupId null, undefined and absence preserve historical individual-task source semantics", () => {
+  const historicalIndividualFingerprint = "d001c32ea3bbbe5a1701c7b8276bd87987464cd06dda116fd463249434e74408";
+  const withIndividual = (mode: "absent" | "undefined" | "null") => {
     const input = createSupportedEngineInputAdapterFixture();
-    const aux: any = { id: 106, planId: 701, templateId: 9106, status: "pending", durationOverrideMin: 5, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402 };
-    if (mode === "undefined") aux.jointGroupId = undefined;
-    if (mode === "null") aux.jointGroupId = null;
-    if (mode === "first") aux.jointGroupId = "source-group-a";
-    if (mode === "second") aux.jointGroupId = "source-group-b";
-    input.tasks.push(aux);
+    const target = input.tasks.find((task) => task.id === 101) as any;
+    if (mode === "undefined") target.jointGroupId = undefined;
+    if (mode === "null") target.jointGroupId = null;
     return input;
   };
-  const absent = preflightEngineInputForPlannerNext(withAux("absent"));
-  const undefinedValue = preflightEngineInputForPlannerNext(withAux("undefined"));
-  const nullValue = preflightEngineInputForPlannerNext(withAux("null"));
-  assert.equal(absent.sourceFingerprint, undefinedValue.sourceFingerprint);
-  assert.equal(absent.sourceFingerprint, nullValue.sourceFingerprint);
-  for (const input of [withAux("absent"), withAux("undefined"), withAux("null")]) {
+  const withAux = (value: unknown) => {
+    const input = createSupportedEngineInputAdapterFixture();
+    input.tasks.push({ id: 106, planId: 701, templateId: 9106, status: "pending", durationOverrideMin: 5, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402, jointGroupId: value } as any);
+    return input;
+  };
+
+  const absent = preflightEngineInputForPlannerNext(withIndividual("absent"));
+  const undefinedValue = preflightEngineInputForPlannerNext(withIndividual("undefined"));
+  const nullValue = preflightEngineInputForPlannerNext(withIndividual("null"));
+  assert.equal(absent.sourceFingerprint, historicalIndividualFingerprint);
+  assert.equal(undefinedValue.sourceFingerprint, historicalIndividualFingerprint);
+  assert.equal(nullValue.sourceFingerprint, historicalIndividualFingerprint);
+  for (const input of [withIndividual("absent"), withIndividual("undefined"), withIndividual("null")]) {
     const preflight = preflightEngineInputForPlannerNext(input);
     assert.equal(preflight.identityMap.some((entry) => entry.namespace === "joint-group"), false);
     assert.equal(supported(input).problem.tasks.some((task) => task.jointGroupId !== undefined), false);
   }
-  const first = preflightEngineInputForPlannerNext(withAux("first"));
-  const second = preflightEngineInputForPlannerNext(withAux("second"));
-  assert.notEqual(first.sourceFingerprint, absent.sourceFingerprint);
+
+  const first = preflightEngineInputForPlannerNext(withAux("source-group-a"));
+  const second = preflightEngineInputForPlannerNext(withAux("source-group-b"));
+  assert.notEqual(first.sourceFingerprint, historicalIndividualFingerprint);
   assert.notEqual(second.sourceFingerprint, first.sourceFingerprint);
+
+  for (const invalid of [7, " source-group-a"]) {
+    const input = withAux(invalid);
+    const preflight = preflightEngineInputForPlannerNext(input);
+    assert.equal(preflight.status, "UNSUPPORTED");
+    assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_JOINT_GROUP_MAPPING"));
+    const adapted = adaptEngineInputToPlannerNextProblem(input);
+    assert.equal(adapted.status, "UNSUPPORTED");
+    assert.ok(adapted.reasonCodes.includes("UNSUPPORTED_JOINT_GROUP_MAPPING"));
+    assert.equal(adapted.problem, null);
+    assert.equal(adapted.problemFingerprint, null);
+  }
 });

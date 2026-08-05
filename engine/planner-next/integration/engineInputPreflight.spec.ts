@@ -1201,7 +1201,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "88251b14fb830f016842b46e1c65f2af964bffad9f8b3caa748fa33d5a1b3a33",
+    "sourceFingerprint": "ee7f89bdabfaa57bec7720013da926abb5beeb9e2504353c48a3fca4d42f79a8",
     "identityMapFingerprint": "68a72d0ac8f1d2246d5a7a8132c0090b43d76bb9a2dcb59f9f4b1cdb7b5c3b89"
   },
   "real-resource-lock-pressure": {
@@ -1278,7 +1278,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "8fbc76560d90e2f9aba614bea28b659e9fd55b8ba34f9ffe70974d4339bb243d",
+    "sourceFingerprint": "208712de676bfdd5d6edac56d9f50cc30b5dd076f1db13c9b8435649888b4614",
     "identityMapFingerprint": "794472d65522cebf41bbc687d25dccb474e8579766fd01de4a45fda48941cc65"
   },
   "real-protected-break-recovery": {
@@ -1354,7 +1354,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "a42237003438c425629622cb4cb2fc83e156d2194527d7bfda5cc65221ac42ea",
+    "sourceFingerprint": "d157c50703c595ba04dd4a80972a6b42cca90618bbf78b77095172a0464e1bb9",
     "identityMapFingerprint": "fd6782b3ba5a6104c13e70baeff7303baf48b9f1561eea76e37e4a33f58eb01a"
   }
 };

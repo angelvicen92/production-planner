@@ -13,7 +13,7 @@ export function createSupportedEngineInputAdapterFixture(): EngineInput {
     meal: { start: "13:00", end: "14:00" },
     plannerNext: {
       searchPolicy: "EXACT_CONSTRUCTIVE",
-      searchBudget: { bestK: 3, maxBacktracks: 40, maxPatterns: 50, maxBranchExpansions: 10000 },
+      searchBudget: { bestK: 3, maxBacktracks: 40, maxPatterns: 50, maxBranchExpansions: 200 },
       timeGridMinutes: 5,
       participantTransitionMinutes: 10,
       resourceTransitionMinutes: 15,

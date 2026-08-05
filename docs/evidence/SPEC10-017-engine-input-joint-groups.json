@@ -11,7 +11,7 @@
     "joint-group:a2-c06-c10-alfombra-roja",
     "joint-group:a2-c06-c10-totales-post"
   ],
-  "sourceFingerprint": "36f87c345d92ee17be4a37fa6cc567756bafee7285a814078084a7153909d693",
+  "sourceFingerprint": "e9e72ebe1b073a92f9f9c066707155cd5f4b1732b3137f850b4843818b21d634",
   "identityMapFingerprint": "5c256db4b3f1a724a240c246e7a8fdb4b93ac8cca6b4161650f68bcb8f3a1abc",
   "problemFingerprint": "96eff0bd99a50abf84016529922918e99f143182fbf9981aa2d994cb4ea03456",
   "planFingerprint": "c8843bcde0a336763c8935249345dd75c163205f89b34b37ceea1824b8de3398",
@@ -182,7 +182,7 @@
   ],
   "artifactHashes": {
     "hashScope": "canonical evidence payload excluding artifactHashes",
-    "evidencePayloadSha256": "ed59708ecb71c4d9df3da2757b299855061e330aae7c5030a5a8ff05063b34df",
+    "evidencePayloadSha256": "c9336a9f5cb2b2383e795138876e7d3c86d99c81c4943f70b922c5e4f430833a",
     "coverageSha256": "8c5be4fe8aa153d31aa1f86b56f019f5764f8806203208ee080b872cbb191b00"
   }
 }
