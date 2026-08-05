@@ -63,7 +63,7 @@ export function createSpec10017JointGroupEngineInputFixture(): EngineInput {
   input.tasks = input.tasks.filter((task) => task.id !== 105);
   input.locks = input.locks.filter((lock) => lock.taskId !== 105);
   input.plannerNext!.mainFlow.preferredEnd = "12:30";
-  input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 300000 };
+  input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 10000 };
   input.planSpaceSettings.push({ spaceId: 304, zoneId: 403, availabilityStart: "12:30", availabilityEnd: "13:00", source: "spec10-017" });
   input.contestantAvailabilityById = { ...input.contestantAvailabilityById, 201: { start: "08:00", end: "13:00" }, 202: { start: "08:00", end: "13:00" } };
   input.tasks.push(
@@ -80,10 +80,8 @@ export function createSpec10017JointGroupEngineInputFixture(): EngineInput {
 
 export function createSpec10018SetupPolicyEngineInputFixture(familyOrder: string[] = ["sillon", "estrellas"]): EngineInput {
   const input = createSupportedEngineInputAdapterFixture();
-  input.tasks = [];
-  input.locks = [];
   input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 300000 };
-  input.planSpaceSettings.push({ spaceId: 304, zoneId: 403, availabilityStart: null, availabilityEnd: null, source: "spec10-018" });
+  input.planSpaceSettings.push({ spaceId: 304, zoneId: 403, availabilityStart: "12:30", availabilityEnd: "13:00", source: "spec10-018" });
   input.contestantAvailabilityById = {
     ...input.contestantAvailabilityById,
     211: { start: "08:00", end: "13:00" },

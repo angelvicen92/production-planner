@@ -425,7 +425,17 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
   const resourceMealTaskIds = new Set(input.tasks.filter(task=>task.breakKind==="resource_meal").map(task=>task.id));
   const resourceMeals = resolveAssignedResourceMealBreaks(input);
-  const setupPoliciesRuntime = Array.isArray((input as unknown as Record<string, unknown>).setupPolicies) ? (input as unknown as Record<string, unknown>).setupPolicies as Array<Record<string, unknown>> : [];
+  const setupPoliciesValue = (input as unknown as Record<string, unknown>).setupPolicies;
+  const setupPoliciesPresent = Object.prototype.hasOwnProperty.call(
+    input as unknown as Record<string, unknown>,
+    "setupPolicies",
+  );
+  const setupPoliciesRuntime = Array.isArray(setupPoliciesValue)
+    ? setupPoliciesValue.map((entry) =>
+      entry && typeof entry === "object" && !Array.isArray(entry)
+        ? entry as Record<string, unknown>
+        : {})
+    : [];
 
   const addIssue = (
     code: EngineInputPreflightReasonCode,
@@ -747,6 +757,17 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const setupPolicyBySpace = new Map<number, { families: Set<string>; policy: Record<string, unknown> }>();
   const seenSetupPolicySpaces = new Set<number>();
   const timeGrid = (input.plannerNext as { timeGridMinutes?: unknown } | undefined)?.timeGridMinutes;
+  if (setupPoliciesPresent && setupPoliciesValue !== undefined && !Array.isArray(setupPoliciesValue)) {
+    addIssue(
+      "UNSUPPORTED_SETUP_MAPPING",
+      "plan",
+      input.planId,
+      "setupPolicies",
+      "setupPolicies must be an array when present.",
+      { receivedType: setupPoliciesValue === null ? "null" : typeof setupPoliciesValue },
+    );
+  }
+
   setupPoliciesRuntime.forEach((policy, index) => {
     const path = `setupPolicies.${index}`;
     const spaceId = policy.spaceId;

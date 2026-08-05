@@ -1,11 +1,40 @@
 # SPEC10-018 — EngineInput setup policy
 
-EngineInput now carries `TaskInput.setupFamilyId` and `EngineInput.setupPolicies` as the explicit setup contract. Families are semantic IDs scoped by space and are canonicalized through the `setup-family` namespace before reaching Planner Next.
+## Contrato
 
-`orderConstraint: "EXPLICIT"` projects a fixed `familyOrder` losslessly. `orderConstraint: "UNSPECIFIED"` remains unsupported and is rejected with `UNSUPPORTED_FLEXIBLE_SETUP_ORDER`; it is not converted into an invented order.
+`TaskInput.setupFamilyId` identifica la familia semántica de una tarea auxiliar. `EngineInput.setupPolicies` declara, por espacio, las familias, la prohibición de reentrada, el bloque único por familia, el orden y los minutos de preparación.
 
-Preparation is modeled as space occupation between setup families. For a two-family explicit order with 10 minutes between families, only the later family receives a 10 minute setup-preparation entry.
+Las identidades se canonicalizan como `setup-family:<spaceId>:<familyId>`.
 
-The SPEC10-018 probe exercises EngineInput preflight, adapter projection, Planner Next preflight, setup planning and hard validation for both explicit orders, including determinism, array-set invariance and input immutability.
+## Orden explícito y orden flexible
 
-A2 remains blocked because its Sillón/Estrellas setup order is `UNSPECIFIED`; Planner Next does not yet evaluate both valid orders. The next blocker is `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`.
+Una política `EXPLICIT` se proyecta sin pérdida a `Space.setupPolicy.familyOrder`.
+
+Una política `UNSPECIFIED` continúa bloqueada con `UNSUPPORTED_FLEXIBLE_SETUP_ORDER`. SPEC10-018 no inventa un orden para Sillón y Estrellas ni convierte el planning humano en una restricción hard.
+
+## Preparación
+
+Los minutos entre familias se modelan como ocupación real del espacio. La primera familia no recibe una preparación artificial; la familia posterior recibe los 10 minutos exigidos entre bloques.
+
+## Evidence
+
+El probe ejecuta el recorrido completo:
+
+EngineInput → preflight → adaptador → Planner Next preflight → `planMainFlowAndFeeders` → validación hard.
+
+Demuestra para ambos órdenes explícitos:
+
+- plan completo y hard-valid;
+- un bloque por familia;
+- una única transición;
+- una preparación de 10 minutos;
+- ausencia de reentrada;
+- determinismo;
+- invariancia de arrays-set;
+- input inmutable.
+
+## Estado A2
+
+`ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED` queda resuelto únicamente cuando el probe conectado pasa.
+
+A2 continúa bloqueado por `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`, ya que la fuente permite ambos órdenes. El siguiente blocker es `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`.

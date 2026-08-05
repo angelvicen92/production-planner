@@ -2713,6 +2713,9 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - El probe `benchmark:planner-next:spec10-017` planifica sobre `adapter.problem` y demuestra sincronización de Alfombra Roja y Totales Post, secuencia Alfombra Roja → Totales Post, validación hard y Evidence determinista.
 - Evidence: `docs/evidence/SPEC10-017-engine-input-joint-groups.json`. Blockers restantes: `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED`, `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`, `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`, `PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED`. Siguiente blocker: `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED`.
 
-### SPEC10-018 — EngineInput setup policy
+## SPEC10-018 — EngineInput setup policy
 
-Adds the explicit EngineInput setup contract (`setupFamilyId` and `setupPolicies`), projects explicit setup-family orders to Planner Next with canonical `setup-family` IDs, and models preparation minutes as space occupation between families. Flexible `UNSPECIFIED` setup order remains blocked; the next blocker is `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`.
+- Añade el contrato explícito `setupFamilyId` y `setupPolicies`.
+- Proyecta órdenes de familias `EXPLICIT` mediante IDs canónicos `setup-family`.
+- Modela la preparación entre familias como ocupación del espacio.
+- El orden `UNSPECIFIED` continúa bloqueado; el siguiente blocker es `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`.

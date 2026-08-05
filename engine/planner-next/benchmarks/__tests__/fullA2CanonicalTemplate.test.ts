@@ -150,6 +150,35 @@ test("representability separates source configuration, implementation blockers a
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 30);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, false);
   assert.equal(analysis.nextImplementationBlocker?.code, "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS");
+
+  const failedSetupAnalysis = analyzeCanonicalFullA2Representability(
+    expansion,
+    {
+      jointGroupProbe: analysis.jointGroupProbe,
+      setupPolicyProbe: {
+        ...analysis.setupPolicyProbe,
+        complete: false,
+      },
+    },
+  );
+
+  assert.equal(
+    failedSetupAnalysis.setupPolicyCapabilityProven,
+    false,
+  );
+
+  assert.ok(
+    failedSetupAnalysis.implementationBlockers.some(
+      (blocker) =>
+        blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+    ),
+  );
+
+  assert.equal(
+    failedSetupAnalysis.nextImplementationBlocker?.code,
+    "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+  );
+
   assert.equal(gate.status, "REJECTED_BLOCKED");
   assert.equal(gate.executorCallCount, 0);
   assert.equal(callCount, 0);
