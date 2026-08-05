@@ -5,7 +5,7 @@ import type { EngineInput } from "../../types";
 import { preflight as preflightPlannerNextProblem } from "../validate";
 import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
-import { createSpec10017JointGroupEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { createSpec10017JointGroupEngineInputFixture, createSpec10018SetupPolicyEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
 import { runSpec10017Probe } from "../benchmarks/runSpec10017JointGroupsBenchmark";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { isFlexibleParticipantMealTask } from "./flexibleParticipantMealTasks";
@@ -496,4 +496,16 @@ test("jointGroupId null, undefined and absence preserve historical individual-ta
     assert.equal(adapted.problem, null);
     assert.equal(adapted.problemFingerprint, null);
   }
+});
+
+test("SPEC10-018 projects setup families and explicit preparation policy", () => {
+  const result = adaptEngineInputToPlannerNextProblem(createSpec10018SetupPolicyEngineInputFixture());
+  assert.equal(result.status, "SUPPORTED");
+  assert.ok(result.problem);
+  const setupSpace = result.problem.spaces.find((space) => space.id === "space:304");
+  assert.deepEqual(setupSpace?.setupPolicy?.familyOrder, ["setup-family:304:sillon", "setup-family:304:estrellas"]);
+  assert.deepEqual(setupSpace?.setupPolicy?.preparationMinutesByFamily, { "setup-family:304:estrellas": 10 });
+  assert.equal(setupSpace?.secondaryContinuity, "REQUIRED");
+  assert.equal(result.problem.tasks.filter((task) => task.setupFamilyId === "setup-family:304:sillon").length, 2);
+  assert.equal(result.problem.tasks.filter((task) => task.setupFamilyId === "setup-family:304:estrellas").length, 2);
 });

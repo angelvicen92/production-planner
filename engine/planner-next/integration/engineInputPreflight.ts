@@ -60,6 +60,7 @@ export type EngineInputPreflightReasonCode =
   | "UNSUPPORTED_COACH_RESOURCE_MAPPING"
   | "UNSUPPORTED_LOCK_TYPE"
   | "UNSUPPORTED_RESOURCE_REQUIREMENT"
+  | "UNSUPPORTED_FLEXIBLE_SETUP_ORDER"
   | "UNSUPPORTED_SETUP_MAPPING"
   | "UNSUPPORTED_SPACE_CAPACITY"
   | "UNSUPPORTED_SPACE_OCCUPANCY"
@@ -80,6 +81,7 @@ export type EngineInputIdentityNamespace =
   | "plan-resource"
   | "resource-item"
   | "resource-type"
+  | "setup-family"
   | "space"
   | "task"
   | "template"
@@ -172,6 +174,7 @@ const PREFIX: Record<EngineInputIdentityNamespace, string> = {
   "plan-resource": "plan-resource",
   "resource-item": "resource-item",
   "resource-type": "resource-type",
+  "setup-family": "setup-family",
   space: "space",
   task: "task",
   template: "template",
@@ -189,9 +192,9 @@ const SET_ARRAY_KEYS = new Set([
   "planResourceItems", "protectedBreaks", "resourceItemIds", "tasks", "locks", "dependsOnTaskIds",
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
-  "planZoneSettings", "planSpaceSettings",
+  "planZoneSettings", "planSpaceSettings", "setupPolicies", "families",
 ]);
-const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds"]);
+const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder"]);
 
 const compare = (left: string, right: string): number => left.localeCompare(right, "en");
 
@@ -264,6 +267,7 @@ function sourceProjection(input: EngineInput): unknown {
       camerasOverride: task.camerasOverride, resourceRequirements: task.resourceRequirements,
       itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds,
       ...(runtimeJointGroupId == null ? {} : { jointGroupId: runtimeJointGroupId }),
+      ...(((task as unknown as Record<string, unknown>).setupFamilyId) == null ? {} : { setupFamilyId: (task as unknown as Record<string, unknown>).setupFamilyId }),
       dependsOnTaskIds: task.dependsOnTaskIds, dependsOnTaskId: task.dependsOnTaskId,
       dependsOnTemplateIds: task.dependsOnTemplateIds, dependsOnTemplateId: task.dependsOnTemplateId,
       ...(task.status !== "cancelled" ? { assignedResourceIds: task.assignedResourceIds } : {}),
@@ -365,6 +369,7 @@ function sourceProjection(input: EngineInput): unknown {
       mainFlow: projectRecord(plannerNextRecord.mainFlow, ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"]),
     } : plannerNext,
     anchoredAccompaniments,
+    setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
   });
 }
 
@@ -420,6 +425,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
   const resourceMealTaskIds = new Set(input.tasks.filter(task=>task.breakKind==="resource_meal").map(task=>task.id));
   const resourceMeals = resolveAssignedResourceMealBreaks(input);
+  const setupPoliciesRuntime = Array.isArray((input as unknown as Record<string, unknown>).setupPolicies) ? (input as unknown as Record<string, unknown>).setupPolicies as Array<Record<string, unknown>> : [];
 
   const addIssue = (
     code: EngineInputPreflightReasonCode,
@@ -605,6 +611,21 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   mapArrayValues(input.spaceResourceAssignments).forEach((id) => addIdentity("plan-resource", id, "spaceResourceAssignments"));
   mapArrayValues(input.zoneResourceAssignments).forEach((id) => addIdentity("plan-resource", id, "zoneResourceAssignments"));
 
+  for (const [index, policy] of setupPoliciesRuntime.entries()) {
+    const spaceId = policy.spaceId;
+    addIdentity("space", spaceId, `setupPolicies.${index}.spaceId`);
+    if (isPositiveInteger(spaceId)) {
+      for (const family of [...(Array.isArray(policy.families) ? policy.families : []), ...(Array.isArray(policy.familyOrder) ? policy.familyOrder : [])]) {
+        if (typeof family === "string" && family !== "") addIdentity("setup-family", `${spaceId}:${family}`, `setupPolicies.${index}.families`);
+      }
+    }
+  }
+  for (const task of input.tasks) {
+    if (task.status !== "cancelled" && task.setupFamilyId != null && isPositiveInteger(task.spaceId) && typeof task.setupFamilyId === "string" && task.setupFamilyId !== "") {
+      addIdentity("setup-family", `${task.spaceId}:${task.setupFamilyId}`, `tasks.${task.id}.setupFamilyId`);
+    }
+  }
+
   const addBreakIdentities = (entry: ProtectedBreakInput | undefined, path: string): void => {
     if (!entry) return;
     addIdentity("break", entry.id, `${path}.id`, true);
@@ -723,6 +744,41 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   let unresolvedTaskRoleCount = 0;
   const validStatuses = new Set(["pending", "interrupted", "in_progress", "done", "cancelled"]);
   const plannerNextTaskKinds = ["main", "vocal", "auxiliary", "technical"] as const;
+  const setupPolicyBySpace = new Map<number, { families: Set<string>; policy: Record<string, unknown> }>();
+  const seenSetupPolicySpaces = new Set<number>();
+  const timeGrid = (input.plannerNext as { timeGridMinutes?: unknown } | undefined)?.timeGridMinutes;
+  setupPoliciesRuntime.forEach((policy, index) => {
+    const path = `setupPolicies.${index}`;
+    const spaceId = policy.spaceId;
+    if (!isPositiveInteger(spaceId) || !input.planSpaceSettings?.some((space) => space.spaceId === spaceId)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.spaceId`, "Setup policy space must be a positive integer existing in daily spaces.", { spaceId });
+    if (isPositiveInteger(spaceId)) {
+      if (seenSetupPolicySpaces.has(spaceId)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.spaceId`, "Duplicate setup policy for space.", { spaceId });
+      seenSetupPolicySpaces.add(spaceId);
+    }
+    const families = Array.isArray(policy.families) ? policy.families : [];
+    const invalidFamilies = families.filter((family) => typeof family !== "string" || family === "" || family.trim() !== family);
+    const duplicateFamilies = families.filter((family, i) => typeof family === "string" && families.indexOf(family) !== i);
+    if (families.length === 0 || invalidFamilies.length || duplicateFamilies.length) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.families`, "Setup policy families must be a non-empty set of trimmed strings.", { invalidFamilies, duplicateFamilies });
+    if (policy.oneBlockPerFamily !== true) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.oneBlockPerFamily`, "oneBlockPerFamily must be exactly true.");
+    if (policy.reentry !== "FORBIDDEN") addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.reentry`, "reentry must be exactly FORBIDDEN.");
+    const prep = policy.preparationMinutesBetweenFamilies;
+    if (!isPositiveInteger(prep) || (isPositiveInteger(timeGrid) && isPositiveInteger(prep) && prep % timeGrid !== 0)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.preparationMinutesBetweenFamilies`, "Preparation minutes must be a positive integer compatible with timeGridMinutes.", { preparationMinutesBetweenFamilies: prep, timeGridMinutes: timeGrid });
+    if (policy.orderConstraint === "UNSPECIFIED") {
+      if (Object.prototype.hasOwnProperty.call(policy, "familyOrder")) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.familyOrder`, "UNSPECIFIED setup policy must omit familyOrder.");
+      addIssue("UNSUPPORTED_FLEXIBLE_SETUP_ORDER", "setupPolicy", index, `${path}.orderConstraint`, "Flexible setup family order is not supported yet.");
+    } else if (policy.orderConstraint === "EXPLICIT") {
+      const order = policy.familyOrder;
+      const missingOrder = !Array.isArray(order);
+      const orderValues = Array.isArray(order) ? order : [];
+      const duplicateOrder = orderValues.filter((family, i) => typeof family === "string" && orderValues.indexOf(family) !== i);
+      const familySet = new Set(families);
+      const exact = !missingOrder && orderValues.length === families.length && duplicateOrder.length === 0 && orderValues.every((family) => familySet.has(family));
+      if (!exact) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.familyOrder`, "EXPLICIT setup policy requires familyOrder to be an exact ordered permutation of families.", { familyOrder: order, families });
+    } else {
+      addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.orderConstraint`, "Unsupported setup order constraint.", { orderConstraint: policy.orderConstraint });
+    }
+    if (isPositiveInteger(spaceId)) setupPolicyBySpace.set(spaceId, { families: new Set(families.filter((f): f is string => typeof f === "string")), policy });
+  });
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
@@ -736,6 +792,16 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       const validString = typeof runtimeJointGroupId === "string" && runtimeJointGroupId !== "" && runtimeJointGroupId.trim() === runtimeJointGroupId;
       if (typeof runtimeJointGroupId !== "string" || !validString || (active && (task.plannerNextKind === "technical" || task.contestantId == null || task.plannerNextKind !== "auxiliary" || isMeal || isResourceBreak))) {
         addIssue("UNSUPPORTED_JOINT_GROUP_MAPPING", "task", task.id, `${path}.jointGroupId`, "Task jointGroupId cannot be projected losslessly to Planner Next.", { jointGroupId: runtimeJointGroupId, status: task.status, plannerNextKind: task.plannerNextKind ?? null, contestantId: task.contestantId ?? null, flexibleParticipantMeal: isMeal, resourceMeal: isResourceBreak });
+      }
+    }
+    const runtimeSetupFamilyId = (task as unknown as Record<string, unknown>).setupFamilyId;
+    if (task.status !== "cancelled" && runtimeSetupFamilyId != null) {
+      const activeSetupPolicy = isPositiveInteger(task.spaceId) ? setupPolicyBySpace.get(task.spaceId) : undefined;
+      const isMeal = flexibleParticipantMealTaskIds.has(task.id);
+      const isResourceBreak = resourceMealTaskIds.has(task.id);
+      const validString = typeof runtimeSetupFamilyId === "string" && runtimeSetupFamilyId !== "" && runtimeSetupFamilyId.trim() === runtimeSetupFamilyId;
+      if (!validString || task.plannerNextKind !== "auxiliary" || task.contestantId == null || !isPositiveInteger(task.spaceId) || isMeal || isResourceBreak || !activeSetupPolicy || !activeSetupPolicy.families.has(runtimeSetupFamilyId)) {
+        addIssue("UNSUPPORTED_SETUP_MAPPING", "task", task.id, `${path}.setupFamilyId`, "Task setupFamilyId cannot be projected losslessly to Planner Next.", { setupFamilyId: runtimeSetupFamilyId, status: task.status, plannerNextKind: task.plannerNextKind ?? null, contestantId: task.contestantId ?? null, spaceId: task.spaceId ?? null, flexibleParticipantMeal: isMeal, resourceMeal: isResourceBreak, policyFound: Boolean(activeSetupPolicy) });
       }
     }
     if (task.planId !== input.planId) addIssue("PLAN_ID_MISMATCH", "task", task.id, `${path}.planId`, "Task belongs to another plan.");

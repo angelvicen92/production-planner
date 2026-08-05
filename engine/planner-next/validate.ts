@@ -172,7 +172,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
         if (!plain) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
         else {
           const entries = Object.entries(record as Record<string, unknown>);
-          if (entries.length !== order.length || entries.some(([family, value]) => !order.includes(family) || typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value) || value <= 0) || order.some(family => !Object.prototype.hasOwnProperty.call(record, family))) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+          const suffixFamilies = order.slice(1);
+          const validFull = entries.length === order.length && entries.every(([family, value]) => order.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && order.every(family => Object.prototype.hasOwnProperty.call(record, family));
+          const validSuffix = entries.length === suffixFamilies.length && entries.every(([family, value]) => suffixFamilies.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && suffixFamilies.every(family => Object.prototype.hasOwnProperty.call(record, family));
+          if (!validFull && !validSuffix) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
         }
       }
       if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
@@ -420,6 +423,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const occupied = spaceOccupations(scheduled, preparations, space.id);
     for (let index = 0; index < policy.familyOrder.length; index += 1) {
       const family = policy.familyOrder[index]!;
+      if (!Object.prototype.hasOwnProperty.call(record, family)) continue;
       const matches = ownPreparations.filter(item => item.setupFamilyId === family);
       const preparation = matches[0];
       const familyTasks = ownTasks.filter(task => task.setupFamilyId === family).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
@@ -433,7 +437,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     }
     const extras = ownPreparations.filter(item=>!policy.familyOrder.includes(item.setupFamilyId));
     setupPreparation += extras.length;
-    if (setupPreparationSequence(ownPreparations).some((family,index)=>family!==policy.familyOrder[index])) setupPreparation += setupPreparation === 0 ? 1 : 0;
+    const expectedPreparationSequence = policy.familyOrder.filter((family) => Object.prototype.hasOwnProperty.call(record, family));
+    if (setupPreparationSequence(ownPreparations).some((family,index)=>family!==expectedPreparationSequence[index])) setupPreparation += setupPreparation === 0 ? 1 : 0;
   }
   setupPreparation += preparations.filter(item => !problem.spaces.some(space=>space.id===item.spaceId && space.setupPolicy?.preparationMinutesByFamily !== undefined)).length;
 

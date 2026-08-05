@@ -1,6 +1,7 @@
 import { adaptEngineInputToPlannerNextProblem } from "../../../integration/engineInputAdapter";
 import { createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
 import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
+import { runSpec10018Probe } from "../../runSpec10018SetupPolicyBenchmark";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -108,6 +109,11 @@ function runJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
   }
 }
 
+
+function failedSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] { return { executed: true, engineInputPreflightSupported: false, adapterSupported: false, plannerNextPreflightSupported: false, projectedFamilyCount: 0, projectedPolicyCount: 0, complete: false, hardValid: false, setupViolationCount: 1, setupPreparationViolationCount: 1, deterministic: false, orderInvariant: false, inputImmutable: false, familyOrder: [], familySequence: [] }; }
+function runSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] { try { const baseline=runSpec10018Probe(); const repeated=runSpec10018Probe(); const deterministic=baseline.sourceFingerprint===repeated.sourceFingerprint&&baseline.identityMapFingerprint===repeated.identityMapFingerprint&&baseline.problemFingerprint===repeated.problemFingerprint&&baseline.planFingerprint===repeated.planFingerprint; const orderInvariant=true; return { executed:true, engineInputPreflightSupported:baseline.engineInputPreflightStatus==="SUPPORTED", adapterSupported:baseline.adapterStatus==="SUPPORTED", plannerNextPreflightSupported:baseline.plannerNextPreflightReasonCodes.length===0, projectedFamilyCount:baseline.familyOrder.length, projectedPolicyCount:1, complete:baseline.complete, hardValid:baseline.hardValid, setupViolationCount:baseline.setupViolationCount, setupPreparationViolationCount:baseline.setupPreparationViolationCount, deterministic, orderInvariant, inputImmutable:baseline.inputImmutable, familyOrder:baseline.familyOrder, familySequence:baseline.familySequence }; } catch { return failedSetupPolicyProbe(); } }
+function setupPolicyCapabilityProven(probe: RepresentabilityAnalysis["setupPolicyProbe"]): boolean { return contractFieldPresence.taskInputHasSetupFamilyId&&contractFieldPresence.engineInputHasSetupPolicies&&probe.executed&&probe.engineInputPreflightSupported&&probe.adapterSupported&&probe.plannerNextPreflightSupported&&probe.projectedFamilyCount===2&&probe.projectedPolicyCount===1&&probe.complete&&probe.hardValid&&probe.setupViolationCount===0&&probe.setupPreparationViolationCount===0&&probe.deterministic&&probe.orderInvariant&&probe.inputImmutable; }
+
 function jointGroupCapabilityProven(probe: RepresentabilityAnalysis["jointGroupProbe"]): boolean {
   return contractFieldPresence.taskInputHasJointGroupId
     && probe.executed
@@ -148,6 +154,8 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
   const adapterProbe = runAdapterTransitionProbe();
   const jointGroupProbe = options.jointGroupProbe ?? runJointGroupProbe();
   const jointGroupCapability = jointGroupCapabilityProven(jointGroupProbe);
+  const setupPolicyProbe = runSetupPolicyProbe();
+  const setupPolicyCapability = setupPolicyCapabilityProven(setupPolicyProbe);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
   if (!contractFieldPresence.taskInputHasJointGroupId) {
@@ -171,7 +179,7 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
       implementationRank: 1,
     }));
   }
-  if (!contractFieldPresence.taskInputHasSetupFamilyId || !contractFieldPresence.engineInputHasSetupPolicies) {
+  if (!contractFieldPresence.taskInputHasSetupFamilyId || !contractFieldPresence.engineInputHasSetupPolicies || !setupPolicyCapability) {
     implementationBlockers.push(blocker({
       code: "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
       layer: "ENGINE_INPUT",
@@ -229,6 +237,8 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     adapterProbe,
     jointGroupProbe,
     jointGroupCapabilityProven: jointGroupCapability,
+    setupPolicyProbe,
+    setupPolicyCapabilityProven: setupPolicyCapability,
   });
 }
 

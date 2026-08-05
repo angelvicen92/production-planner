@@ -51,6 +51,8 @@ export interface TaskInput {
     contestantName?: string | null;
     /** Semantic identity for synchronized auxiliary joint operations. */
     jointGroupId?: string | null;
+    /** Semantic setup family identity scoped by the task space. */
+    setupFamilyId?: string | null;
     itinerantTeamId?: number | null;
     allowedItinerantTeamIds?: number[];
     itinerantTeamRequirement?: 'none' | 'any' | 'specific' | string | null;
@@ -217,12 +219,24 @@ export interface EngineInputAnchoredAccompanimentInput {
   resourceContinuity: "REQUIRED";
 }
 
+export interface EngineInputSetupPolicyInput {
+  spaceId: number;
+  families: string[];
+  oneBlockPerFamily: true;
+  orderConstraint: "EXPLICIT" | "UNSPECIFIED";
+  familyOrder?: string[];
+  reentry: "FORBIDDEN";
+  preparationMinutesBetweenFamilies: number;
+}
+
 export interface EngineInput {
   planId: number;
   /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
   plannerNext?: PlannerNextIntegrationConfigurationInput;
   /** Explicit ordered Planner Next anchored-operation contract. */
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
+  /** Explicit setup-family grouping and preparation policies. */
+  setupPolicies?: EngineInputSetupPolicyInput[];
   workDay: TimeWindow;
   /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
   mealMode?: "global_hard_break" | "flexible_meal_window";
