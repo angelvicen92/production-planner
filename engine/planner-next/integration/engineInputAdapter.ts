@@ -156,7 +156,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       const coachId = canonical("plan-resource", coachResourceId!);
       return { ...base, kind: source.plannerNextKind, participantId: canonical("participant", source.contestantId!), coachId, ...(source.plannerNextKind === "main" ? { blockKey: coachId } : {}) };
     }
-    return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!) };
+    return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!), ...(source.jointGroupId != null ? { jointGroupId: canonical("joint-group", source.jointGroupId) } : {}) };
   });
 
   const participants = [...new Set([...activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!), ...flexibleParticipantMeals.obligations.map((meal) => Number(meal.participantId.split(":").at(-1)))])]

@@ -15,7 +15,11 @@ export function jointWorkItemKey(id: string): string { return `joint:${id}`; }
 export function structurallyCompatibleJointGroup(tasks: Task[]): boolean {
   if (tasks.length < 2) return false;
   const first=tasks[0]!; const resources=canonicalResourceIds(first).join("\0");
-  return tasks.every(t=>t.kind==="auxiliary" && t.jointGroupId===first.jointGroupId && t.duration===first.duration && t.spaceId===first.spaceId && t.setupFamilyId===first.setupFamilyId && canonicalResourceIds(t).join("\0")===resources && t.coachId===undefined && Array.isArray(t.dependencies) && t.dependencies.length===0)
+  const groupId = first.jointGroupId;
+  const taskIds = new Set(tasks.map(t => t.id));
+  return typeof groupId === "string" && groupId.trim() !== ""
+    && new Set(tasks.map(t => t.id)).size === tasks.length
+    && tasks.every(t=>t.kind==="auxiliary" && t.jointGroupId===groupId && t.duration===first.duration && t.spaceId===first.spaceId && t.setupFamilyId===first.setupFamilyId && canonicalResourceIds(t).join("\0")===resources && t.coachId===undefined && Array.isArray(t.dependencies) && !t.dependencies.some(id => taskIds.has(id)))
     && jointParticipants(tasks).length===tasks.length;
 }
 export function sameJointOperation(a: Task,b: Task): boolean { return typeof a.jointGroupId==="string" && a.jointGroupId.trim()!=="" && a.jointGroupId===b.jointGroupId; }
@@ -23,7 +27,7 @@ export function synchronizedJointTasks(a: ScheduledTask,b: ScheduledTask): boole
 export function scheduleJointGroup(tasks: Task[],start:number): ScheduledTask[] { return [...tasks].sort((a,b)=>a.id.localeCompare(b.id)).map(t=>({...t,start,end:start+t.duration})); }
 export function canPlaceJointGroup(problem: PlannerNextProblem,tasks: Task[],start:number,placed:ScheduledTask[]): boolean {
   if (!structurallyCompatibleJointGroup(tasks)) return false;
-  return tasks.every(task=>canPlaceTask(problem,task,start,placed));
+  return tasks.every(task=>task.dependencies.every(id=>{const dep=placed.find(other=>other.id===id);return dep!==undefined&&dep.end<=start;}) && canPlaceTask(problem,task,start,placed));
 }
 export function jointGroupStarts(problem:PlannerNextProblem,tasks:Task[],placed:ScheduledTask[],limit=Number.POSITIVE_INFINITY):number[]{
   const starts:number[]=[]; const duration=tasks[0]?.duration ?? 0;

@@ -27,8 +27,11 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
     }
     assessments.push({ key: `task:${task.id}`, kind: "task", alternativeCount: count, feasible: count > 0 });
   }
+  const pendingIds = new Set(pending.map(task => task.id));
   for(const id of jointGroupIds(pending)) {
-    const members=jointGroupMembers(pending,id); let count=0;
+    const members=jointGroupMembers(pending,id);
+    if (members.some(task => task.dependencies.some(dep => pendingIds.has(dep)))) continue;
+    let count=0;
     const duration=members[0]?.duration??0;
     for(let start=problem.day.start;start+duration<=problem.day.end;start+=5) {
       if(budget.remaining===0)return result(assessments,before,budget,true);

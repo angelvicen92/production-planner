@@ -1139,20 +1139,6 @@
   ],
   "implementationBlockers": [
     {
-      "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
-      "layer": "ENGINE_INPUT",
-      "affectedRule": "operaciones conjuntas C06/C10",
-      "canonicalIds": [
-        "C06.alfombra_roja_conjunta",
-        "C10.alfombra_roja_conjunta",
-        "C06.totales_post_conjunto",
-        "C10.totales_post_conjunto"
-      ],
-      "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
-      "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
-      "implementationRank": 1
-    },
-    {
       "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
       "layer": "ENGINE_INPUT",
       "affectedRule": "familias Sillón/Estrellas y preparación de set",
@@ -1285,22 +1271,51 @@
     }
   ],
   "nextImplementationBlocker": {
-    "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
+    "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
     "layer": "ENGINE_INPUT",
-    "affectedRule": "operaciones conjuntas C06/C10",
+    "affectedRule": "familias Sillón/Estrellas y preparación de set",
     "canonicalIds": [
-      "C06.alfombra_roja_conjunta",
-      "C10.alfombra_roja_conjunta",
-      "C06.totales_post_conjunto",
-      "C10.totales_post_conjunto"
+      "C02.estrellas",
+      "C02.sillon",
+      "C05.estrellas",
+      "C05.sillon",
+      "C06.estrellas",
+      "C07.estrellas",
+      "C07.sillon",
+      "C09.estrellas",
+      "C09.sillon",
+      "C10.estrellas",
+      "C10.sillon",
+      "C11.sillon",
+      "C13.estrellas",
+      "C13.sillon",
+      "C15.sillon",
+      "C17.estrellas",
+      "C18.sillon"
     ],
-    "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
-    "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
-    "implementationRank": 1
+    "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+    "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+    "implementationRank": 2
   },
   "adapterProbe": {
     "executed": true,
     "supported": true,
+    "engineInputPreflightSupported": true,
+    "adapterSupported": true,
+    "plannerNextPreflightSupported": true,
+    "sourceGroupCount": 2,
+    "projectedGroupCount": 2,
+    "projectedMemberCount": 4,
+    "dependenciesPreserved": true,
+    "firstGroupSynchronized": false,
+    "secondGroupSynchronized": false,
+    "sequencePreserved": false,
+    "complete": false,
+    "hardValid": false,
+    "jointGroupViolationCount": 2,
+    "deterministic": true,
+    "orderInvariant": true,
+    "inputImmutable": true,
     "projectedGlobalResourceTransitionMinutes": 30,
     "supportsSpecificCoachRouteTransition": false,
     "problemHasRouteSpecificCoachTransition": false,
@@ -1385,20 +1400,6 @@
         }
       ],
       "implementationBlockers": [
-        {
-          "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
-          "layer": "ENGINE_INPUT",
-          "affectedRule": "operaciones conjuntas C06/C10",
-          "canonicalIds": [
-            "C06.alfombra_roja_conjunta",
-            "C10.alfombra_roja_conjunta",
-            "C06.totales_post_conjunto",
-            "C10.totales_post_conjunto"
-          ],
-          "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
-          "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
-          "implementationRank": 1
-        },
         {
           "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
           "layer": "ENGINE_INPUT",
@@ -1605,20 +1606,6 @@
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
         },
         {
-          "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
-          "layer": "ENGINE_INPUT",
-          "affectedRule": "operaciones conjuntas C06/C10",
-          "canonicalIds": [
-            "C06.alfombra_roja_conjunta",
-            "C10.alfombra_roja_conjunta",
-            "C06.totales_post_conjunto",
-            "C10.totales_post_conjunto"
-          ],
-          "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
-          "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
-          "implementationRank": 1
-        },
-        {
           "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
           "layer": "ENGINE_INPUT",
           "affectedRule": "familias Sillón/Estrellas y preparación de set",
@@ -1751,22 +1738,51 @@
         }
       ],
       "nextImplementationBlocker": {
-        "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
+        "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
         "layer": "ENGINE_INPUT",
-        "affectedRule": "operaciones conjuntas C06/C10",
+        "affectedRule": "familias Sillón/Estrellas y preparación de set",
         "canonicalIds": [
-          "C06.alfombra_roja_conjunta",
-          "C10.alfombra_roja_conjunta",
-          "C06.totales_post_conjunto",
-          "C10.totales_post_conjunto"
+          "C02.estrellas",
+          "C02.sillon",
+          "C05.estrellas",
+          "C05.sillon",
+          "C06.estrellas",
+          "C07.estrellas",
+          "C07.sillon",
+          "C09.estrellas",
+          "C09.sillon",
+          "C10.estrellas",
+          "C10.sillon",
+          "C11.sillon",
+          "C13.estrellas",
+          "C13.sillon",
+          "C15.sillon",
+          "C17.estrellas",
+          "C18.sillon"
         ],
-        "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
-        "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
-        "implementationRank": 1
+        "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+        "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+        "implementationRank": 2
       },
       "adapterProbe": {
         "executed": true,
         "supported": true,
+        "engineInputPreflightSupported": true,
+        "adapterSupported": true,
+        "plannerNextPreflightSupported": true,
+        "sourceGroupCount": 2,
+        "projectedGroupCount": 2,
+        "projectedMemberCount": 4,
+        "dependenciesPreserved": true,
+        "firstGroupSynchronized": false,
+        "secondGroupSynchronized": false,
+        "sequencePreserved": false,
+        "complete": false,
+        "hardValid": false,
+        "jointGroupViolationCount": 2,
+        "deterministic": true,
+        "orderInvariant": true,
+        "inputImmutable": true,
         "projectedGlobalResourceTransitionMinutes": 30,
         "supportsSpecificCoachRouteTransition": false,
         "problemHasRouteSpecificCoachTransition": false,

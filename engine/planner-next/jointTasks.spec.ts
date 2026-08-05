@@ -37,3 +37,21 @@ test("preflight joint group reason codes are deterministic",()=>{
 });
 test("validation reports a synchronized group once",()=>{const p=jointAuxiliaryTasksScenario(),r=planMainFlowAndFeeders(p),changed=structuredClone(r.scheduledTasks);changed.find(t=>t.id==="a-joint-member-2")!.start+=5;const v=validatePlan(p,changed,r.scheduledSetupPreparations);assert.equal(v.jointGroupViolationCount,1);assert.ok(v.reasonCodes.includes("JOINT_GROUP_VIOLATION"));});
 test("validation rejects undeclared and changed joint membership deterministically",()=>{const p=jointAuxiliaryTasksScenario(),r=planMainFlowAndFeeders(p);const individual=structuredClone(r.scheduledTasks);individual.find(t=>t.jointGroupId===undefined)!.jointGroupId="unknown";assert.equal(validatePlan(p,individual).jointGroupViolationCount,1);const missing=structuredClone(r.scheduledTasks);delete missing.find(t=>t.id==="a-joint-member-2")!.jointGroupId;assert.equal(validatePlan(p,missing).jointGroupViolationCount,1);const moved=structuredClone(r.scheduledTasks);moved.find(t=>t.id==="a-joint-member-2")!.jointGroupId="unknown";assert.equal(validatePlan(p,moved).jointGroupViolationCount,2);assert.equal(validatePlan(p,[...moved].reverse()).jointGroupViolationCount,2);const extra=structuredClone(r.scheduledTasks);extra.find(t=>t.jointGroupId===undefined)!.jointGroupId="shared-operation-1";assert.equal(validatePlan(p,extra).jointGroupViolationCount,1);});
+
+test("SPEC10-017 allows dependent joint groups and rejects internal dependencies",()=>{
+ const p=jointAuxiliaryTasksScenario();
+ p.tasks.push(
+  {id:"pre-a",kind:"auxiliary",participantId:"participant-c",duration:10,spaceId:"flexible-room",dependencies:[]},
+  {id:"pre-z",kind:"auxiliary",participantId:"participant-z",duration:10,spaceId:"flexible-room",dependencies:[]},
+  {id:"post-a",kind:"auxiliary",participantId:"participant-c",duration:20,spaceId:"joint-room",requiredResourceIds:["joint-resource"],dependencies:["pre-a"],jointGroupId:"shared-operation-2"},
+  {id:"post-z",kind:"auxiliary",participantId:"participant-z",duration:20,spaceId:"joint-room",requiredResourceIds:["joint-resource"],dependencies:["pre-z"],jointGroupId:"shared-operation-2"},
+ );
+ const group=jointGroupMembers(p.tasks,"shared-operation-2"), snapshot=structuredClone(p);
+ assert.equal(preflight(p).length,0);
+ assert.equal(canPlaceJointGroup(p,group,570,[]),false);
+ assert.equal(canPlaceJointGroup(p,group,580,[{...p.tasks.find(t=>t.id==="pre-a")!,start:570,end:580}]),false);
+ assert.equal(canPlaceJointGroup(p,group,590,[{...p.tasks.find(t=>t.id==="pre-a")!,start:570,end:580},{...p.tasks.find(t=>t.id==="pre-z")!,start:570,end:580}]),true);
+ assert.deepEqual(p,snapshot);
+ const internal=structuredClone(p); internal.tasks.find(t=>t.id==="post-a")!.dependencies=["post-z"];
+ assert.ok(preflight(internal).includes("JOINT_GROUP_INTERNAL_DEPENDENCY_UNSUPPORTED"));
+});

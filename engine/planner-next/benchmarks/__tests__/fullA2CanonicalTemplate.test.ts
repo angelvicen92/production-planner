@@ -125,14 +125,14 @@ test("representability separates source configuration, implementation blockers a
   const gate = runRepresentabilityGate(analysis, () => { callCount += 1; throw new Error("executor must not be called"); });
   assert.equal(analysis.status, "BLOCKED");
   assert.ok(analysis.requiredCreationInputs.every((blocker) => blocker.layer === "SOURCE_CONFIGURATION"));
-  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED"));
+  assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 30);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, false);
-  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED");
   assert.equal(gate.status, "REJECTED_BLOCKED");
   assert.equal(gate.executorCallCount, 0);
   assert.equal(callCount, 0);

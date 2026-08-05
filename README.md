@@ -2698,7 +2698,14 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - La Evidence SPEC10-015 ocupa 2.837 bytes (`5e746184fe0db082835251fb51c13a7caa194c2d02d1dc9adffb84bdddd94bb6`). La auditoría ocupa 378.660 bytes (`225bd06bebb96289f6d00fc1ff3b3254519541da4abee159c3c4e45af4d5b16c`): 134, 135 y 136 derivan a `EVIDENCED_SUPPORTED`, `scoped-meals` deriva a `EVIDENCED_SUPPORTED` y la recomendación genérica es `AUDIT_MISSING_EVIDENCE` para la primera capacidad estable sin Evidence.
 - **Límites:** no cambia DB, schema, migraciones, RLS, UI, API, publicación, ORC, V3, V4, scoring, presupuestos ni Focal protegido.
 
-## SPEC10-016 — Plantilla canónica completa A2
+### SPEC10-017 — representación end-to-end de operaciones conjuntas A2
+
+- `TaskInput` declara `jointGroupId?: string | null` para identidad semántica de operaciones conjuntas auxiliares.
+- EngineInput preflight canonicaliza `joint-group:<sourceId>` y el adaptador proyecta el ID canónico a Planner Next sin usar nombres, plantillas, concursantes o dependencias como identidad implícita.
+- Planner Next acepta grupos conjuntos con dependencias externas válidas y sigue rechazando miembros incompatibles o dependencias internas.
+- El probe `benchmark:planner-next:spec10-017` demuestra sincronización de Alfombra Roja y Totales Post, secuencia Alfombra Roja → Totales Post, validación hard y Evidence determinista.
+- Evidence: `docs/evidence/SPEC10-017-engine-input-joint-groups.json`. Blockers restantes: `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED`, `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`, `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`, `PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED`. Siguiente blocker: `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED`.
+SPEC10-016 — Plantilla canónica completa A2
 
 - La unidad focal `engine/planner-next/benchmarks/focal-a2/full-day/` define manifest, expansión, validador y puerta de representabilidad para el día A2 completo sin nombres reales, horarios seed, locks ni IDs productivos.
 - La expansión validada contiene 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 registros totales con semántica explícita de transporte, comida individual, flujo principal, operaciones ancladas, conjuntas, setup y cadena técnica.

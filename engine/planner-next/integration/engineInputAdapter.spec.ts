@@ -5,7 +5,7 @@ import type { EngineInput } from "../../types";
 import { preflight as preflightPlannerNextProblem } from "../validate";
 import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
-import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { createSpec10017JointGroupEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { isFlexibleParticipantMealTask } from "./flexibleParticipantMealTasks";
 
@@ -346,3 +346,52 @@ test("flexible meal classification requires explicit mode and never accepts gene
 test("resource meal splits an explicit coach channel without generic duplication",()=>{const input=createSupportedEngineInputAdapterFixture(),coachId=input.vocalCoachPlanResourceItemIdByContestantId![201]!;input.tasks.push({id:999,planId:701,templateId:999,status:"pending",breakId:999,breakKind:"resource_meal",assignedResourceIds:[coachId],fixedWindowStart:"15:00",fixedWindowEnd:"15:30"});const adapted=adaptEngineInputToPlannerNextProblem(input);assert.equal(adapted.status,"SUPPORTED");if(adapted.status!=="SUPPORTED")return;const coach=adapted.problem.coaches.find(item=>item.id===`plan-resource:${coachId}`)!;assert.deepEqual(coach.availability,[{start:480,end:900},{start:930,end:1080}]);assert.equal(adapted.problem.resources.some(item=>item.id===coach.id),false);assert.ok(adapted.problem.tasks.some(task=>task.coachId===coach.id));});
 
 test("protected meal task deduplicates an explicitly linked assigned break and rejects an unlinked duplicate",()=>{const input=createSupportedEngineInputAdapterFixture();input.mealMode="flexible_meal_window";input.mealWindow={start:"14:00",end:"16:00"};input.mealTaskTemplateId=999;input.contestantMealDurationMinutes=30;input.contestantMealMaxSimultaneous=1;input.tasks.push({id:106,planId:701,templateId:999,status:"done",contestantId:201,operationalRole:"meal_break_placeholder",breakId:77,startReal:"14:30",endReal:"15:00"});input.protectedBreaks=[{id:77,kind:"meal",contestantId:201,start:"14:30",end:"15:00"}];const linked=adaptEngineInputToPlannerNextProblem(input);assert.equal(linked.status,"SUPPORTED");if(linked.status==="SUPPORTED"){assert.equal(linked.problem.participantMeals?.length,1);assert.deepEqual(linked.problem.participantMeals?.[0].fixedInterval,{start:870,end:900});assert.deepEqual(linked.problem.participants.find(x=>x.id==="participant:201")?.availability,[{start:480,end:1020}]);}const unlinked=structuredClone(input);unlinked.tasks.at(-1)!.breakId=undefined;const rejected=adaptEngineInputToPlannerNextProblem(unlinked);assert.equal(rejected.status,"UNSUPPORTED");assert.ok(rejected.reasonCodes.includes("PARTICIPANT_MEAL_IDENTITY_CONFLICT"));});
+
+
+test("SPEC10-017 projects EngineInput jointGroupId losslessly and deterministically", () => {
+  const input = createSpec10017JointGroupEngineInputFixture();
+  const snapshot = clone(input);
+  const pre = preflightEngineInputForPlannerNext(input);
+  assert.equal(pre.status, "SUPPORTED");
+  assert.deepEqual(pre.identityMap.filter(e => e.namespace === "joint-group").map(e => e.canonicalId), ["joint-group:a2-c06-c10-alfombra-roja", "joint-group:a2-c06-c10-totales-post"]);
+  const result = supported(input);
+  const tasks = result.problem.tasks;
+  assert.deepEqual(preflightPlannerNextProblem(result.problem), []);
+  assert.equal(tasks.find(t => t.id === "task:201")?.jointGroupId, "joint-group:a2-c06-c10-alfombra-roja");
+  assert.equal(tasks.find(t => t.id === "task:202")?.jointGroupId, "joint-group:a2-c06-c10-alfombra-roja");
+  assert.equal(tasks.find(t => t.id === "task:203")?.jointGroupId, "joint-group:a2-c06-c10-totales-post");
+  assert.equal(tasks.find(t => t.id === "task:204")?.jointGroupId, "joint-group:a2-c06-c10-totales-post");
+  assert.notEqual(tasks.find(t => t.id === "task:201")?.jointGroupId, tasks.find(t => t.id === "task:203")?.jointGroupId);
+  assert.deepEqual(tasks.find(t => t.id === "task:203")?.dependencies, ["task:201"]);
+  assert.deepEqual(tasks.find(t => t.id === "task:204")?.dependencies, ["task:202"]);
+  assert.equal(fingerprintPlannerNextProblem(result.problem), result.problemFingerprint);
+  const renamed = createSpec10017JointGroupEngineInputFixture(); renamed.tasks.find(t => t.id === 201)!.templateName = "visual only";
+  assert.equal(preflightEngineInputForPlannerNext(renamed).sourceFingerprint, pre.sourceFingerprint);
+  const changed = createSpec10017JointGroupEngineInputFixture(); changed.tasks.find(t => t.id === 201)!.jointGroupId = "changed";
+  assert.notEqual(preflightEngineInputForPlannerNext(changed).sourceFingerprint, pre.sourceFingerprint);
+  const reversed = createSpec10017JointGroupEngineInputFixture(); reversed.tasks.reverse();
+  assert.equal(preflightEngineInputForPlannerNext(reversed).sourceFingerprint, pre.sourceFingerprint);
+  assert.equal(preflightEngineInputForPlannerNext(reversed).identityMapFingerprint, pre.identityMapFingerprint);
+  assert.equal(supported(reversed).problemFingerprint, result.problemFingerprint);
+  assert.deepEqual(input, snapshot);
+  assert.equal(tasks.find(t => t.id === "task:205")?.jointGroupId, undefined);
+  assert.equal(tasks.find(t => t.id === "task:206")?.jointGroupId, undefined);
+});
+
+test("SPEC10-017 rejects invalid jointGroupId mappings without partial problems", () => {
+  for (const mutate of [
+    (i: EngineInput) => { (i.tasks.find(t => t.id === 201) as any).jointGroupId = " "; },
+    (i: EngineInput) => { (i.tasks.find(t => t.id === 201) as any).jointGroupId = " x"; },
+    (i: EngineInput) => { (i.tasks.find(t => t.id === 201) as any).jointGroupId = 7; },
+    (i: EngineInput) => { i.tasks.find(t => t.id === 206)!.jointGroupId = "bad"; },
+    (i: EngineInput) => { i.tasks.find(t => t.id === 201)!.plannerNextKind = "main"; },
+    (i: EngineInput) => { i.tasks.find(t => t.id === 201)!.contestantId = null; },
+  ]) {
+    const input = createSpec10017JointGroupEngineInputFixture(); mutate(input);
+    const pre = preflightEngineInputForPlannerNext(input), adapted = adaptEngineInputToPlannerNextProblem(input);
+    assert.equal(pre.status, "UNSUPPORTED"); assert.ok(pre.reasonCodes.includes("UNSUPPORTED_JOINT_GROUP_MAPPING"));
+    assert.equal(adapted.status, "UNSUPPORTED"); assert.equal(adapted.problem, null); assert.equal(adapted.problemFingerprint, null);
+  }
+  const cancelled = createSpec10017JointGroupEngineInputFixture(); cancelled.tasks.find(t => t.id === 201)!.status = "cancelled";
+  assert.equal(adaptEngineInputToPlannerNextProblem(cancelled).status, "UNSUPPORTED");
+});

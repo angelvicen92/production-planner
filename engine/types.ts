@@ -49,6 +49,8 @@ export interface TaskInput {
 
     contestantId?: number | null;
     contestantName?: string | null;
+    /** Semantic identity for synchronized auxiliary joint operations. */
+    jointGroupId?: string | null;
     itinerantTeamId?: number | null;
     allowedItinerantTeamIds?: number[];
     itinerantTeamRequirement?: 'none' | 'any' | 'specific' | string | null;

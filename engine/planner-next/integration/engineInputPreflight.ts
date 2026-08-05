@@ -44,6 +44,7 @@ export type EngineInputPreflightReasonCode =
   | "RESOURCE_MEAL_IDENTITY_CONFLICT"
   | "UNREPRESENTABLE_ITINERANT_UNIT_BREAK"
   | "ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED"
+  | "UNSUPPORTED_JOINT_GROUP_MAPPING"
   | "UNREPRESENTABLE_RESOURCE_BREAK"
   | "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
   | "PROTECTED_TASK_WITHOUT_FIXED_PLANNING"
@@ -72,6 +73,7 @@ export type EngineInputIdentityNamespace =
   | "anchored-operation"
   | "break"
   | "itinerant-team"
+  | "joint-group"
   | "lock"
   | "participant"
   | "plan"
@@ -163,6 +165,7 @@ const PREFIX: Record<EngineInputIdentityNamespace, string> = {
   "anchored-operation": "anchored-operation",
   break: "break",
   "itinerant-team": "itinerant-team",
+  "joint-group": "joint-group",
   lock: "lock",
   participant: "participant",
   plan: "plan",
@@ -258,7 +261,7 @@ function sourceProjection(input: EngineInput): unknown {
       id: task.id, planId: task.planId, templateId: task.templateId, contestantId: task.contestantId,
       zoneId: task.zoneId, spaceId: task.spaceId, status: task.status, durationOverrideMin: task.durationOverrideMin,
       camerasOverride: task.camerasOverride, resourceRequirements: task.resourceRequirements,
-      itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds,
+      itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds, ...(Object.prototype.hasOwnProperty.call(task as unknown as Record<string, unknown>, "jointGroupId") ? { jointGroupId: task.jointGroupId ?? null } : {}),
       dependsOnTaskIds: task.dependsOnTaskIds, dependsOnTaskId: task.dependsOnTaskId,
       dependsOnTemplateIds: task.dependsOnTemplateIds, dependsOnTemplateId: task.dependsOnTemplateId,
       ...(task.status !== "cancelled" ? { assignedResourceIds: task.assignedResourceIds } : {}),
@@ -478,6 +481,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("zone", task.zoneId, `${path}.zoneId`);
     addIdentity("break", task.breakId, `${path}.breakId`);
     addIdentity("itinerant-team", task.itinerantTeamId, `${path}.itinerantTeamId`);
+    if (task.status !== "cancelled" && typeof task.jointGroupId === "string" && task.jointGroupId.trim() === task.jointGroupId && task.jointGroupId !== "") addIdentity("joint-group", task.jointGroupId, `${path}.jointGroupId`);
     (task.dependsOnTaskIds ?? (task.dependsOnTaskId != null ? [task.dependsOnTaskId] : []))
       .forEach((id) => addIdentity("task", id, `${path}.dependencies`));
     (task.dependsOnTemplateIds ?? (task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : []))
@@ -720,6 +724,18 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
+
+    const runtimeJointGroupId = (task as unknown as Record<string, unknown>).jointGroupId;
+    const hasJointGroupId = Object.prototype.hasOwnProperty.call(task as unknown as Record<string, unknown>, "jointGroupId");
+    if (hasJointGroupId && runtimeJointGroupId !== null && runtimeJointGroupId !== undefined) {
+      const active = task.status !== "cancelled";
+      const isMeal = flexibleParticipantMealTaskIds.has(task.id);
+      const isResourceBreak = resourceMealTaskIds.has(task.id);
+      const validString = typeof runtimeJointGroupId === "string" && runtimeJointGroupId !== "" && runtimeJointGroupId.trim() === runtimeJointGroupId;
+      if (typeof runtimeJointGroupId !== "string" || !validString || (active && (task.plannerNextKind === "technical" || task.contestantId == null || task.plannerNextKind !== "auxiliary" || isMeal || isResourceBreak))) {
+        addIssue("UNSUPPORTED_JOINT_GROUP_MAPPING", "task", task.id, `${path}.jointGroupId`, "Task jointGroupId cannot be projected losslessly to Planner Next.", { jointGroupId: runtimeJointGroupId, status: task.status, plannerNextKind: task.plannerNextKind ?? null, contestantId: task.contestantId ?? null, flexibleParticipantMeal: isMeal, resourceMeal: isResourceBreak });
+      }
+    }
     if (task.planId !== input.planId) addIssue("PLAN_ID_MISMATCH", "task", task.id, `${path}.planId`, "Task belongs to another plan.");
     if (!validStatuses.has(task.status)) addIssue("UNSUPPORTED_TASK_STATUS", "task", task.id, `${path}.status`, "Unknown task status.");
     if (task.status !== "cancelled" && !flexibleParticipantMealTaskIds.has(task.id) && !resourceMealTaskIds.has(task.id)) {

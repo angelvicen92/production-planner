@@ -1,5 +1,8 @@
 import { adaptEngineInputToPlannerNextProblem } from "../../../integration/engineInputAdapter";
-import { createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
+import { createSpec10017JointGroupEngineInputFixture, createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
+import { planMainFlowAndFeeders } from "../../../planMainFlowAndFeeders";
+import { preflight as preflightPlannerNextProblem, validatePlan } from "../../../validate";
+import { preflightEngineInputForPlannerNext } from "../../../integration/engineInputPreflight";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -26,9 +29,37 @@ function runAdapterTransitionProbe(): RepresentabilityAnalysis["adapterProbe"] {
   const resources = Array.isArray(problem.resources) ? problem.resources as readonly Record<string, unknown>[] : [];
   const problemHasRouteSpecificCoachTransition = ["coachRouteTransitions", "resourceRouteTransitions", "routeTransitionRules"].some((key) => key in problem);
   const coachResourcesHaveOriginDestinationRule = resources.some((resource) => resource.type === "coach" && ("fromSpaceId" in resource || "toSpaceId" in resource || "transitionScope" in resource));
+  const jointInput = createSpec10017JointGroupEngineInputFixture();
+  const before = structuredClone(jointInput);
+  const jointPreflight = preflightEngineInputForPlannerNext(jointInput);
+  const jointAdapter = adaptEngineInputToPlannerNextProblem(jointInput);
+  const jointPlannerPreflight = jointAdapter.status === "SUPPORTED" ? preflightPlannerNextProblem(jointAdapter.problem) : ["ADAPTER_UNSUPPORTED"];
+  const plan = jointAdapter.status === "SUPPORTED" && jointPlannerPreflight.length === 0 ? planMainFlowAndFeeders(jointAdapter.problem) : null;
+  const hard = plan && jointAdapter.status === "SUPPORTED" ? validatePlan(jointAdapter.problem, plan.scheduledTasks, plan.scheduledSetupPreparations, plan.scheduledSpaceMeals, plan.scheduledParticipantMeals, plan.scheduledResourceMeals, plan.scheduledItinerantUnitMeals) : null;
+  const first = plan?.scheduledTasks.filter(t => t.jointGroupId === "joint-group:a2-c06-c10-alfombra-roja") ?? [];
+  const second = plan?.scheduledTasks.filter(t => t.jointGroupId === "joint-group:a2-c06-c10-totales-post") ?? [];
+  const reversed = createSpec10017JointGroupEngineInputFixture(); reversed.tasks.reverse();
+  const reversedAdapter = adaptEngineInputToPlannerNextProblem(reversed);
+  const again = jointAdapter.status === "SUPPORTED" ? adaptEngineInputToPlannerNextProblem(createSpec10017JointGroupEngineInputFixture()) : null;
   return {
     executed: true,
     supported: result.status === "SUPPORTED",
+    engineInputPreflightSupported: jointPreflight.status === "SUPPORTED",
+    adapterSupported: jointAdapter.status === "SUPPORTED",
+    plannerNextPreflightSupported: jointPlannerPreflight.length === 0,
+    sourceGroupCount: 2,
+    projectedGroupCount: jointAdapter.status === "SUPPORTED" ? new Set(jointAdapter.problem.tasks.flatMap(t => t.jointGroupId ? [t.jointGroupId] : [])).size : 0,
+    projectedMemberCount: jointAdapter.status === "SUPPORTED" ? jointAdapter.problem.tasks.filter(t => t.jointGroupId).length : 0,
+    dependenciesPreserved: jointAdapter.status === "SUPPORTED" && jointAdapter.problem.tasks.find(t=>t.id==="task:203")?.dependencies[0] === "task:201" && jointAdapter.problem.tasks.find(t=>t.id==="task:204")?.dependencies[0] === "task:202",
+    firstGroupSynchronized: first.length === 2 && new Set(first.map(t => `${t.start}:${t.end}`)).size === 1,
+    secondGroupSynchronized: second.length === 2 && new Set(second.map(t => `${t.start}:${t.end}`)).size === 1,
+    sequencePreserved: first.length === 2 && second.length === 2 && Math.min(...second.map(t=>t.start)) >= Math.max(...first.map(t=>t.end)),
+    complete: plan?.complete ?? false,
+    hardValid: hard?.hardValid ?? false,
+    jointGroupViolationCount: hard?.jointGroupViolationCount ?? null,
+    deterministic: jointAdapter.status === "SUPPORTED" && again?.status === "SUPPORTED" && jointAdapter.problemFingerprint === again.problemFingerprint,
+    orderInvariant: jointAdapter.status === "SUPPORTED" && reversedAdapter.status === "SUPPORTED" && jointAdapter.problemFingerprint === reversedAdapter.problemFingerprint,
+    inputImmutable: JSON.stringify(jointInput) === JSON.stringify(before),
     projectedGlobalResourceTransitionMinutes: result.status === "SUPPORTED" ? result.problem.resourceTransitionMinutes : null,
     supportsSpecificCoachRouteTransition: problemHasRouteSpecificCoachTransition && coachResourcesHaveOriginDestinationRule,
     problemHasRouteSpecificCoachTransition,
