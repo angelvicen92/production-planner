@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BRANCH="spec10-019-coach-route-transition"
-BOOTSTRAP_HEAD="53fb7b0609c0bfbc9031017f987ab418f01ca29c"
+BASE_SHA="a2a647cfb5393735189c42525caa27f3e631bf0b"
 
 if [ "$(git branch --show-current)" != "$BRANCH" ]; then
   echo "Rama incorrecta: $(git branch --show-current)"
@@ -10,9 +10,8 @@ if [ "$(git branch --show-current)" != "$BRANCH" ]; then
   exit 2
 fi
 
-if [ "$(git rev-parse HEAD)" != "$BOOTSTRAP_HEAD" ]; then
-  echo "HEAD inesperado: $(git rev-parse HEAD)"
-  echo "Esperado:        $BOOTSTRAP_HEAD"
+if ! git merge-base --is-ancestor "$BASE_SHA" HEAD; then
+  echo "La rama no parte del main esperado $BASE_SHA"
   exit 3
 fi
 
