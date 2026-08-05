@@ -125,14 +125,30 @@ test("representability separates source configuration, implementation blockers a
   const gate = runRepresentabilityGate(analysis, () => { callCount += 1; throw new Error("executor must not be called"); });
   assert.equal(analysis.status, "BLOCKED");
   assert.ok(analysis.requiredCreationInputs.every((blocker) => blocker.layer === "SOURCE_CONFIGURATION"));
-  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED"));
+  assert.equal(analysis.jointGroupProbe.executed, true);
+  assert.equal(analysis.jointGroupProbe.engineInputPreflightSupported, true);
+  assert.equal(analysis.jointGroupProbe.adapterSupported, true);
+  assert.equal(analysis.jointGroupProbe.plannerNextPreflightSupported, true);
+  assert.equal(analysis.jointGroupProbe.dependenciesPreserved, true);
+  assert.equal(analysis.jointGroupProbe.firstGroupSynchronized, true);
+  assert.equal(analysis.jointGroupProbe.secondGroupSynchronized, true);
+  assert.equal(analysis.jointGroupProbe.sequencePreserved, true);
+  assert.equal(analysis.jointGroupProbe.complete, true);
+  assert.equal(analysis.jointGroupProbe.hardValid, true);
+  assert.equal(analysis.jointGroupProbe.jointGroupViolationCount, 0);
+  assert.equal(analysis.jointGroupProbe.deterministic, true);
+  assert.equal(analysis.jointGroupProbe.orderInvariant, true);
+  assert.equal(analysis.jointGroupProbe.inputImmutable, true);
+  assert.equal(analysis.jointGroupCapabilityProven, true);
+  assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED"));
+  assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 30);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, false);
-  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED");
   assert.equal(gate.status, "REJECTED_BLOCKED");
   assert.equal(gate.executorCallCount, 0);
   assert.equal(callCount, 0);
@@ -140,6 +156,34 @@ test("representability separates source configuration, implementation blockers a
   assert.equal(gate.preflightCalled, false);
   assert.equal(gate.adapterCalled, false);
   assert.equal(gate.executePlannerNextCalled, false);
+});
+
+test("representability keeps dependent joint group blocker when the connected probe fails", () => {
+  const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
+  const failingProbe = {
+    executed: true as const,
+    engineInputPreflightSupported: true,
+    adapterSupported: true,
+    plannerNextPreflightSupported: true,
+    sourceGroupCount: 2,
+    projectedGroupCount: 2,
+    projectedMemberCount: 4,
+    dependenciesPreserved: true,
+    firstGroupSynchronized: true,
+    secondGroupSynchronized: true,
+    sequencePreserved: true,
+    complete: false,
+    hardValid: false,
+    jointGroupViolationCount: 1,
+    deterministic: true,
+    orderInvariant: true,
+    inputImmutable: true,
+    canonicalIds: ["joint-group:a2-c06-c10-alfombra-roja", "joint-group:a2-c06-c10-totales-post"],
+  };
+  const analysis = analyzeCanonicalFullA2Representability(expansion, { jointGroupProbe: failingProbe });
+  assert.equal(analysis.jointGroupCapabilityProven, false);
+  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED"));
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED");
 });
 
 test("generated artifacts are reproducible against current expansion", () => {

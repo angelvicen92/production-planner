@@ -26,7 +26,6 @@ Estos datos son inputs de creación del futuro día y no se seleccionan como sig
 
 Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
 
-- **ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED** (ENGINE_INPUT): Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo. Pérdida si se aproxima: Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.
 - **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED** (ENGINE_INPUT): Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada. Pérdida si se aproxima: Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.
 - **PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED** (PLANNER_NEXT): La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias. Pérdida si se aproxima: Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.
 - **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes. Pérdida si se aproxima: Las dependencias impondrían precedencia, no sincronización de arranque entre salas.
@@ -36,7 +35,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-El siguiente paso de menor riesgo es **ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED**: Planner Next ya soporta grupos conjuntos mediante jointGroupId, no requiere nuevas reglas de búsqueda, exige una ampliación contractual menor en EngineInput/adaptador y desbloquea semántica real de C06/C10 que hoy se perdería si se aproximara con dependencias.
+El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=true: EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard se ejecutan sobre adapter.problem con complete=true, hardValid=true, jointGroupViolationCount=0, ambos grupos sincronizados y secuencia Alfombra Roja → Totales Post preservada. Por eso el siguiente paso de menor riesgo es **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED**.
 
 ## No implementado
 

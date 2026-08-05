@@ -230,7 +230,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (!task.participantId || !participantIds.has(task.participantId) || !task.spaceId || !spaceIds.has(task.spaceId)
         || !Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_AUXILIARY_TASK");
       if (task.blockKey !== undefined) reasons.add("AUXILIARY_BLOCK_KEY_UNSUPPORTED");
-      if (!Array.isArray(task.dependencies) || task.dependencies.length > 0) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
+      if (!Array.isArray(task.dependencies) || (task.jointGroupId === undefined && task.dependencies.length > 0)) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
     }
   }
   if (technicalChainHasBranching(tasks)) reasons.add("TECHNICAL_CHAIN_BRANCHING_UNSUPPORTED");
@@ -245,6 +245,8 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if(first && members.some(t=>t.spaceId!==first.spaceId)) reasons.add("JOINT_GROUP_SPACE_MISMATCH");
     if(first && members.some(t=>canonicalResourceIds(t).join("\0")!==canonicalResourceIds(first).join("\0"))) reasons.add("JOINT_GROUP_RESOURCE_MISMATCH");
     if(first && members.some(t=>t.setupFamilyId!==first.setupFamilyId)) reasons.add("JOINT_GROUP_SETUP_MISMATCH");
+    const memberIds=new Set(members.map(t=>t.id));
+    if(members.some(t=>t.dependencies.some(dep=>memberIds.has(dep)))) reasons.add("JOINT_GROUP_INTERNAL_DEPENDENCY_UNSUPPORTED");
     const structured=members.some(t=>t.setupFamilyId!==undefined || spaces.find(s=>s.id===t.spaceId)?.secondaryContinuity==="REQUIRED" || spaces.find(s=>s.id===t.spaceId)?.setupPolicy!==undefined);
     if(structured) reasons.add("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED");
   }

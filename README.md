@@ -2703,4 +2703,12 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - La unidad focal `engine/planner-next/benchmarks/focal-a2/full-day/` define manifest, expansión, validador y puerta de representabilidad para el día A2 completo sin nombres reales, horarios seed, locks ni IDs productivos.
 - La expansión validada contiene 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 registros totales con semántica explícita de transporte, comida individual, flujo principal, operaciones ancladas, conjuntas, setup y cadena técnica.
 - La representabilidad permanece `BLOCKED`; la puerta ejecutada rechaza antes de crear EngineInput parcial y antes de llamar a preflight, adaptador o motor.
-- Evidence y cobertura se regeneran con `npm run benchmark:planner-next:a2-full-template`; el siguiente blocker técnico razonado es proyectar `jointGroupId` desde EngineInput/adaptador porque Planner Next ya lo soporta.
+- Evidence y cobertura se regeneran con `npm run benchmark:planner-next:a2-full-template`; el siguiente blocker técnico razonado es `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED` tras demostrar SPEC10-017 sobre `adapter.problem`.
+
+## SPEC10-017 — Representación end-to-end de operaciones conjuntas A2
+
+- `TaskInput` declara `jointGroupId?: string | null` para identidad semántica de operaciones conjuntas auxiliares.
+- EngineInput preflight canonicaliza `joint-group:<sourceId>` y el adaptador proyecta el ID canónico a Planner Next sin usar nombres, plantillas, concursantes o dependencias como identidad implícita.
+- Planner Next acepta grupos conjuntos con dependencias externas válidas y sigue rechazando miembros incompatibles o dependencias internas.
+- El probe `benchmark:planner-next:spec10-017` planifica sobre `adapter.problem` y demuestra sincronización de Alfombra Roja y Totales Post, secuencia Alfombra Roja → Totales Post, validación hard y Evidence determinista.
+- Evidence: `docs/evidence/SPEC10-017-engine-input-joint-groups.json`. Blockers restantes: `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED`, `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`, `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`, `PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED`. Siguiente blocker: `ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED`.

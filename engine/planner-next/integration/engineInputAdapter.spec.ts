@@ -5,7 +5,8 @@ import type { EngineInput } from "../../types";
 import { preflight as preflightPlannerNextProblem } from "../validate";
 import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
-import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { createSpec10017JointGroupEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { runSpec10017Probe } from "../benchmarks/runSpec10017JointGroupsBenchmark";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { isFlexibleParticipantMealTask } from "./flexibleParticipantMealTasks";
 
@@ -346,3 +347,153 @@ test("flexible meal classification requires explicit mode and never accepts gene
 test("resource meal splits an explicit coach channel without generic duplication",()=>{const input=createSupportedEngineInputAdapterFixture(),coachId=input.vocalCoachPlanResourceItemIdByContestantId![201]!;input.tasks.push({id:999,planId:701,templateId:999,status:"pending",breakId:999,breakKind:"resource_meal",assignedResourceIds:[coachId],fixedWindowStart:"15:00",fixedWindowEnd:"15:30"});const adapted=adaptEngineInputToPlannerNextProblem(input);assert.equal(adapted.status,"SUPPORTED");if(adapted.status!=="SUPPORTED")return;const coach=adapted.problem.coaches.find(item=>item.id===`plan-resource:${coachId}`)!;assert.deepEqual(coach.availability,[{start:480,end:900},{start:930,end:1080}]);assert.equal(adapted.problem.resources.some(item=>item.id===coach.id),false);assert.ok(adapted.problem.tasks.some(task=>task.coachId===coach.id));});
 
 test("protected meal task deduplicates an explicitly linked assigned break and rejects an unlinked duplicate",()=>{const input=createSupportedEngineInputAdapterFixture();input.mealMode="flexible_meal_window";input.mealWindow={start:"14:00",end:"16:00"};input.mealTaskTemplateId=999;input.contestantMealDurationMinutes=30;input.contestantMealMaxSimultaneous=1;input.tasks.push({id:106,planId:701,templateId:999,status:"done",contestantId:201,operationalRole:"meal_break_placeholder",breakId:77,startReal:"14:30",endReal:"15:00"});input.protectedBreaks=[{id:77,kind:"meal",contestantId:201,start:"14:30",end:"15:00"}];const linked=adaptEngineInputToPlannerNextProblem(input);assert.equal(linked.status,"SUPPORTED");if(linked.status==="SUPPORTED"){assert.equal(linked.problem.participantMeals?.length,1);assert.deepEqual(linked.problem.participantMeals?.[0].fixedInterval,{start:870,end:900});assert.deepEqual(linked.problem.participants.find(x=>x.id==="participant:201")?.availability,[{start:480,end:1020}]);}const unlinked=structuredClone(input);unlinked.tasks.at(-1)!.breakId=undefined;const rejected=adaptEngineInputToPlannerNextProblem(unlinked);assert.equal(rejected.status,"UNSUPPORTED");assert.ok(rejected.reasonCodes.includes("PARTICIPANT_MEAL_IDENTITY_CONFLICT"));});
+
+
+test("SPEC10-017 projects EngineInput jointGroupId losslessly and deterministically", () => {
+  const input = createSpec10017JointGroupEngineInputFixture();
+  const snapshot = clone(input);
+  const pre = preflightEngineInputForPlannerNext(input);
+  assert.equal(pre.status, "SUPPORTED");
+  assert.deepEqual(pre.identityMap.filter(e => e.namespace === "joint-group").map(e => e.canonicalId), ["joint-group:a2-c06-c10-alfombra-roja", "joint-group:a2-c06-c10-totales-post"]);
+  const result = supported(input);
+  const tasks = result.problem.tasks;
+  assert.deepEqual(preflightPlannerNextProblem(result.problem), []);
+  assert.equal(tasks.find(t => t.id === "task:201")?.jointGroupId, "joint-group:a2-c06-c10-alfombra-roja");
+  assert.equal(tasks.find(t => t.id === "task:202")?.jointGroupId, "joint-group:a2-c06-c10-alfombra-roja");
+  assert.equal(tasks.find(t => t.id === "task:203")?.jointGroupId, "joint-group:a2-c06-c10-totales-post");
+  assert.equal(tasks.find(t => t.id === "task:204")?.jointGroupId, "joint-group:a2-c06-c10-totales-post");
+  assert.notEqual(tasks.find(t => t.id === "task:201")?.jointGroupId, tasks.find(t => t.id === "task:203")?.jointGroupId);
+  assert.deepEqual(tasks.find(t => t.id === "task:203")?.dependencies, ["task:201"]);
+  assert.deepEqual(tasks.find(t => t.id === "task:204")?.dependencies, ["task:202"]);
+  assert.equal(fingerprintPlannerNextProblem(result.problem), result.problemFingerprint);
+  const renamed = createSpec10017JointGroupEngineInputFixture(); renamed.tasks.find(t => t.id === 201)!.templateName = "visual only";
+  assert.equal(preflightEngineInputForPlannerNext(renamed).sourceFingerprint, pre.sourceFingerprint);
+  const changed = createSpec10017JointGroupEngineInputFixture(); changed.tasks.find(t => t.id === 201)!.jointGroupId = "changed";
+  assert.notEqual(preflightEngineInputForPlannerNext(changed).sourceFingerprint, pre.sourceFingerprint);
+  const reversed = createSpec10017JointGroupEngineInputFixture(); reversed.tasks.reverse();
+  assert.equal(preflightEngineInputForPlannerNext(reversed).sourceFingerprint, pre.sourceFingerprint);
+  assert.equal(preflightEngineInputForPlannerNext(reversed).identityMapFingerprint, pre.identityMapFingerprint);
+  assert.equal(supported(reversed).problemFingerprint, result.problemFingerprint);
+  assert.deepEqual(input, snapshot);
+  assert.equal(tasks.find(t => t.id === "task:205")?.jointGroupId, undefined);
+  assert.equal(tasks.find(t => t.id === "task:206")?.jointGroupId, undefined);
+});
+
+test("SPEC10-017 rejects invalid jointGroupId mappings without partial problems", () => {
+  for (const mutate of [
+    (i: EngineInput) => { (i.tasks.find(t => t.id === 201) as any).jointGroupId = " "; },
+    (i: EngineInput) => { (i.tasks.find(t => t.id === 201) as any).jointGroupId = " x"; },
+    (i: EngineInput) => { (i.tasks.find(t => t.id === 201) as any).jointGroupId = 7; },
+    (i: EngineInput) => { i.tasks.find(t => t.id === 206)!.jointGroupId = "bad"; },
+    (i: EngineInput) => { i.tasks.find(t => t.id === 201)!.plannerNextKind = "main"; },
+    (i: EngineInput) => { i.tasks.find(t => t.id === 201)!.contestantId = null; },
+  ]) {
+    const input = createSpec10017JointGroupEngineInputFixture(); mutate(input);
+    const pre = preflightEngineInputForPlannerNext(input), adapted = adaptEngineInputToPlannerNextProblem(input);
+    assert.equal(pre.status, "UNSUPPORTED"); assert.ok(pre.reasonCodes.includes("UNSUPPORTED_JOINT_GROUP_MAPPING"));
+    assert.equal(adapted.status, "UNSUPPORTED"); assert.equal(adapted.problem, null); assert.equal(adapted.problemFingerprint, null);
+  }
+  const cancelled = createSpec10017JointGroupEngineInputFixture(); cancelled.tasks.find(t => t.id === 201)!.status = "cancelled";
+  assert.equal(adaptEngineInputToPlannerNextProblem(cancelled).status, "UNSUPPORTED");
+});
+
+
+function recursiveCanonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(recursiveCanonical);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, recursiveCanonical(item)]));
+  return value;
+}
+
+function spec10017LogicalProjection(run: ReturnType<typeof runSpec10017Probe>) {
+  return recursiveCanonical({
+    sourceFingerprint: run.sourceFingerprint,
+    identityMapFingerprint: run.identityMapFingerprint,
+    problemFingerprint: run.problemFingerprint,
+    planFingerprint: run.planFingerprint,
+    complete: run.complete,
+    hardValid: run.hardValid,
+    jointGroupViolationCount: run.jointGroupViolationCount,
+    adaptedTasksByGroup: run.adaptedTasksByGroup,
+    plannedTasksByGroup: run.plannedTasksByGroup,
+    dependenciesByMember: run.dependenciesByMember,
+    plannedTaskCount: run.plannedTaskCount,
+    unplannedTaskCount: run.unplannedTaskCount,
+  });
+}
+
+test("SPEC10-017 plans dependent EngineInput joint groups end-to-end from adapter.problem", () => {
+  const input = createSpec10017JointGroupEngineInputFixture();
+  const snapshot = clone(input);
+  const run = runSpec10017Probe(() => input);
+  assert.equal(run.engineInputPreflightStatus, "SUPPORTED");
+  assert.equal(run.adapterStatus, "SUPPORTED");
+  assert.deepEqual(run.plannerNextPreflightReasonCodes, []);
+  assert.equal(run.complete, true);
+  assert.equal(run.hardValid, true);
+  assert.equal(run.projectedMemberCount, 4);
+  assert.equal(run.projectedGroupCount, 2);
+  assert.equal(Object.values(run.plannedTasksByGroup).every((members) => members.length === 2), true);
+  assert.equal(run.synchronization.firstGroupSynchronized, true);
+  assert.equal(run.synchronization.secondGroupSynchronized, true);
+  assert.equal(run.dependenciesPreserved, true);
+  assert.deepEqual(run.dependenciesByMember, { "task:201": [], "task:202": [], "task:203": ["task:201"], "task:204": ["task:202"] });
+  assert.equal(run.precedence.sequencePreserved, true);
+  assert.equal(run.jointGroupViolationCount, 0);
+  assert.equal(run.inputImmutable, true);
+  assert.deepEqual(input, snapshot);
+  const adapted = supported(createSpec10017JointGroupEngineInputFixture());
+  assert.equal(adapted.problem.tasks.find((task) => task.id === "task:205")?.jointGroupId, undefined);
+  assert.equal(adapted.problem.tasks.filter((task) => task.kind === "technical").every((task) => task.jointGroupId === undefined), true);
+
+  const inverted = runSpec10017Probe(() => {
+    const fixture = createSpec10017JointGroupEngineInputFixture();
+    fixture.tasks.reverse(); fixture.planResourceItems.reverse(); fixture.planSpaceSettings.reverse(); fixture.planZoneSettings.reverse(); fixture.locks.reverse();
+    return fixture;
+  });
+  assert.deepEqual(spec10017LogicalProjection(inverted), spec10017LogicalProjection(run));
+});
+
+test("jointGroupId null, undefined and absence preserve historical individual-task source semantics", () => {
+  const historicalIndividualFingerprint = "d001c32ea3bbbe5a1701c7b8276bd87987464cd06dda116fd463249434e74408";
+  const withIndividual = (mode: "absent" | "undefined" | "null") => {
+    const input = createSupportedEngineInputAdapterFixture();
+    const target = input.tasks.find((task) => task.id === 101) as any;
+    if (mode === "undefined") target.jointGroupId = undefined;
+    if (mode === "null") target.jointGroupId = null;
+    return input;
+  };
+  const withAux = (value: unknown) => {
+    const input = createSupportedEngineInputAdapterFixture();
+    input.tasks.push({ id: 106, planId: 701, templateId: 9106, status: "pending", durationOverrideMin: 5, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402, jointGroupId: value } as any);
+    return input;
+  };
+
+  const absent = preflightEngineInputForPlannerNext(withIndividual("absent"));
+  const undefinedValue = preflightEngineInputForPlannerNext(withIndividual("undefined"));
+  const nullValue = preflightEngineInputForPlannerNext(withIndividual("null"));
+  assert.equal(absent.sourceFingerprint, historicalIndividualFingerprint);
+  assert.equal(undefinedValue.sourceFingerprint, historicalIndividualFingerprint);
+  assert.equal(nullValue.sourceFingerprint, historicalIndividualFingerprint);
+  for (const input of [withIndividual("absent"), withIndividual("undefined"), withIndividual("null")]) {
+    const preflight = preflightEngineInputForPlannerNext(input);
+    assert.equal(preflight.identityMap.some((entry) => entry.namespace === "joint-group"), false);
+    assert.equal(supported(input).problem.tasks.some((task) => task.jointGroupId !== undefined), false);
+  }
+
+  const first = preflightEngineInputForPlannerNext(withAux("source-group-a"));
+  const second = preflightEngineInputForPlannerNext(withAux("source-group-b"));
+  assert.notEqual(first.sourceFingerprint, historicalIndividualFingerprint);
+  assert.notEqual(second.sourceFingerprint, first.sourceFingerprint);
+
+  for (const invalid of [7, " source-group-a"]) {
+    const input = withAux(invalid);
+    const preflight = preflightEngineInputForPlannerNext(input);
+    assert.equal(preflight.status, "UNSUPPORTED");
+    assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_JOINT_GROUP_MAPPING"));
+    const adapted = adaptEngineInputToPlannerNextProblem(input);
+    assert.equal(adapted.status, "UNSUPPORTED");
+    assert.ok(adapted.reasonCodes.includes("UNSUPPORTED_JOINT_GROUP_MAPPING"));
+    assert.equal(adapted.problem, null);
+    assert.equal(adapted.problemFingerprint, null);
+  }
+});

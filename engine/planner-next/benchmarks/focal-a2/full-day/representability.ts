@@ -1,5 +1,6 @@
 import { adaptEngineInputToPlannerNextProblem } from "../../../integration/engineInputAdapter";
 import { createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
+import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -36,7 +37,105 @@ function runAdapterTransitionProbe(): RepresentabilityAnalysis["adapterProbe"] {
   };
 }
 
-export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanonicalFullA2Template): RepresentabilityAnalysis {
+function failedJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
+  return {
+    executed: true,
+    engineInputPreflightSupported: false,
+    adapterSupported: false,
+    plannerNextPreflightSupported: false,
+    sourceGroupCount: 0,
+    projectedGroupCount: 0,
+    projectedMemberCount: 0,
+    dependenciesPreserved: false,
+    firstGroupSynchronized: false,
+    secondGroupSynchronized: false,
+    sequencePreserved: false,
+    complete: false,
+    hardValid: false,
+    jointGroupViolationCount: 1,
+    deterministic: false,
+    orderInvariant: false,
+    inputImmutable: false,
+    canonicalIds: [],
+  };
+}
+
+function runJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
+  try {
+    const baseline = runSpec10017Probe();
+    const repeated = runSpec10017Probe();
+    const inverted = runSpec10017Probe(() => {
+      const input = baseline.inputSnapshot;
+      return {
+        ...structuredClone(input),
+        tasks: [...input.tasks].reverse(),
+        planResourceItems: [...input.planResourceItems].reverse(),
+        planSpaceSettings: [...input.planSpaceSettings].reverse(),
+        planZoneSettings: [...input.planZoneSettings].reverse(),
+        locks: [...input.locks].reverse(),
+      };
+    });
+    const deterministic = baseline.sourceFingerprint === repeated.sourceFingerprint
+      && baseline.identityMapFingerprint === repeated.identityMapFingerprint
+      && baseline.problemFingerprint === repeated.problemFingerprint
+      && baseline.planFingerprint === repeated.planFingerprint;
+    const orderInvariant = baseline.sourceFingerprint === inverted.sourceFingerprint
+      && baseline.identityMapFingerprint === inverted.identityMapFingerprint
+      && baseline.problemFingerprint === inverted.problemFingerprint
+      && baseline.planFingerprint === inverted.planFingerprint;
+    return {
+      executed: true,
+      engineInputPreflightSupported: baseline.engineInputPreflightStatus === "SUPPORTED",
+      adapterSupported: baseline.adapterStatus === "SUPPORTED",
+      plannerNextPreflightSupported: baseline.plannerNextPreflightReasonCodes.length === 0,
+      sourceGroupCount: baseline.sourceGroupCount,
+      projectedGroupCount: baseline.projectedGroupCount,
+      projectedMemberCount: baseline.projectedMemberCount,
+      dependenciesPreserved: baseline.dependenciesPreserved,
+      firstGroupSynchronized: baseline.synchronization.firstGroupSynchronized,
+      secondGroupSynchronized: baseline.synchronization.secondGroupSynchronized,
+      sequencePreserved: baseline.precedence.sequencePreserved,
+      complete: baseline.complete,
+      hardValid: baseline.hardValid,
+      jointGroupViolationCount: baseline.jointGroupViolationCount,
+      deterministic,
+      orderInvariant,
+      inputImmutable: baseline.inputImmutable,
+      canonicalIds: baseline.canonicalGroupIds,
+    };
+  } catch {
+    return failedJointGroupProbe();
+  }
+}
+
+function jointGroupCapabilityProven(probe: RepresentabilityAnalysis["jointGroupProbe"]): boolean {
+  return contractFieldPresence.taskInputHasJointGroupId
+    && probe.executed
+    && probe.engineInputPreflightSupported
+    && probe.adapterSupported
+    && probe.plannerNextPreflightSupported
+    && probe.sourceGroupCount === 2
+    && probe.projectedGroupCount === 2
+    && probe.projectedMemberCount === 4
+    && probe.dependenciesPreserved
+    && probe.firstGroupSynchronized
+    && probe.secondGroupSynchronized
+    && probe.sequencePreserved
+    && probe.complete
+    && probe.hardValid
+    && probe.jointGroupViolationCount === 0
+    && probe.deterministic
+    && probe.orderInvariant
+    && probe.inputImmutable;
+}
+
+function jointGroupFailureLayer(probe: RepresentabilityAnalysis["jointGroupProbe"]): "ENGINE_INPUT" | "ADAPTER" | "PLANNER_NEXT" {
+  if (!probe.engineInputPreflightSupported) return "ENGINE_INPUT";
+  if (!probe.adapterSupported) return "ADAPTER";
+  return "PLANNER_NEXT";
+}
+
+export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanonicalFullA2Template, options: { readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"] } = {}): RepresentabilityAnalysis {
   const requiredCreationInputs = expansion.requiredCreationInputs.map((input) => blocker({
     code: `SOURCE_CONFIGURATION_REQUIRED_${input.toUpperCase()}`,
     layer: "SOURCE_CONFIGURATION",
@@ -45,6 +144,10 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     operationalExplanation: "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
     semanticLoss: "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla.",
   }));
+
+  const adapterProbe = runAdapterTransitionProbe();
+  const jointGroupProbe = options.jointGroupProbe ?? runJointGroupProbe();
+  const jointGroupCapability = jointGroupCapabilityProven(jointGroupProbe);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
   if (!contractFieldPresence.taskInputHasJointGroupId) {
@@ -55,6 +158,16 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
       canonicalIds: expansion.jointOperations.flatMap((operation) => operation.taskIds),
       operationalExplanation: "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
       semanticLoss: "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+      implementationRank: 1,
+    }));
+  } else if (!jointGroupCapability) {
+    implementationBlockers.push(blocker({
+      code: "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+      layer: jointGroupFailureLayer(jointGroupProbe),
+      affectedRule: "operaciones conjuntas dependientes C06/C10",
+      canonicalIds: ["task:201", "task:202", "task:203", "task:204"],
+      operationalExplanation: "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+      semanticLoss: "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
       implementationRank: 1,
     }));
   }
@@ -94,7 +207,6 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     }));
   }
 
-  const adapterProbe = runAdapterTransitionProbe();
   if (adapterProbe.projectedGlobalResourceTransitionMinutes === 30 && !adapterProbe.supportsSpecificCoachRouteTransition) {
     implementationBlockers.push(blocker({
       code: "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
@@ -115,6 +227,8 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     blockers: [...requiredCreationInputs, ...implementationBlockers],
     nextImplementationBlocker,
     adapterProbe,
+    jointGroupProbe,
+    jointGroupCapabilityProven: jointGroupCapability,
   });
 }
 

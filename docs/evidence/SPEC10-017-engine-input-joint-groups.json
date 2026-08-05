@@ -1,0 +1,187 @@
+{
+  "iterationId": "SPEC10-017",
+  "commitBase": "8dd69dde5ef83fbf460640addd70b00b10d9a66e",
+  "contractAdded": "TaskInput.jointGroupId?: string | null",
+  "identityNamespace": "joint-group",
+  "sourceIds": [
+    "a2-c06-c10-alfombra-roja",
+    "a2-c06-c10-totales-post"
+  ],
+  "canonicalIds": [
+    "joint-group:a2-c06-c10-alfombra-roja",
+    "joint-group:a2-c06-c10-totales-post"
+  ],
+  "sourceFingerprint": "e9e72ebe1b073a92f9f9c066707155cd5f4b1732b3137f850b4843818b21d634",
+  "identityMapFingerprint": "5c256db4b3f1a724a240c246e7a8fdb4b93ac8cca6b4161650f68bcb8f3a1abc",
+  "problemFingerprint": "96eff0bd99a50abf84016529922918e99f143182fbf9981aa2d994cb4ea03456",
+  "planFingerprint": "c8843bcde0a336763c8935249345dd75c163205f89b34b37ceea1824b8de3398",
+  "adaptedTasksByGroup": {
+    "joint-group:a2-c06-c10-alfombra-roja": [
+      {
+        "taskId": "task:201",
+        "participantId": "participant:201",
+        "duration": 10,
+        "dependencies": []
+      },
+      {
+        "taskId": "task:202",
+        "participantId": "participant:202",
+        "duration": 10,
+        "dependencies": []
+      }
+    ],
+    "joint-group:a2-c06-c10-totales-post": [
+      {
+        "taskId": "task:203",
+        "participantId": "participant:201",
+        "duration": 5,
+        "dependencies": [
+          "task:201"
+        ]
+      },
+      {
+        "taskId": "task:204",
+        "participantId": "participant:202",
+        "duration": 5,
+        "dependencies": [
+          "task:202"
+        ]
+      }
+    ]
+  },
+  "plannedTasksByGroup": {
+    "joint-group:a2-c06-c10-alfombra-roja": [
+      {
+        "taskId": "task:201",
+        "participantId": "participant:201",
+        "duration": 10,
+        "start": 760,
+        "end": 770,
+        "dependencies": []
+      },
+      {
+        "taskId": "task:202",
+        "participantId": "participant:202",
+        "duration": 10,
+        "start": 760,
+        "end": 770,
+        "dependencies": []
+      }
+    ],
+    "joint-group:a2-c06-c10-totales-post": [
+      {
+        "taskId": "task:203",
+        "participantId": "participant:201",
+        "duration": 5,
+        "start": 770,
+        "end": 775,
+        "dependencies": [
+          "task:201"
+        ]
+      },
+      {
+        "taskId": "task:204",
+        "participantId": "participant:202",
+        "duration": 5,
+        "start": 770,
+        "end": 775,
+        "dependencies": [
+          "task:202"
+        ]
+      }
+    ]
+  },
+  "dependenciesByMember": {
+    "task:201": [],
+    "task:202": [],
+    "task:203": [
+      "task:201"
+    ],
+    "task:204": [
+      "task:202"
+    ]
+  },
+  "engineInputPreflight": {
+    "status": "SUPPORTED",
+    "reasonCodes": []
+  },
+  "adapter": {
+    "status": "SUPPORTED",
+    "reasonCodes": []
+  },
+  "plannerNextPreflight": {
+    "supported": true,
+    "reasonCodes": []
+  },
+  "complete": true,
+  "hardValid": true,
+  "jointGroupViolationCount": 0,
+  "firstGroupSynchronized": true,
+  "secondGroupSynchronized": true,
+  "sequencePreserved": true,
+  "plannedTaskCount": 10,
+  "unplannedTaskCount": 0,
+  "deterministic": true,
+  "orderInvariant": true,
+  "inputImmutable": true,
+  "repeatedProjectionMatches": true,
+  "invertedProjectionMatches": true,
+  "negativeTests": [
+    {
+      "caseId": "blank-string",
+      "passed": true,
+      "reasonCodes": [
+        "UNSUPPORTED_JOINT_GROUP_MAPPING"
+      ]
+    },
+    {
+      "caseId": "runtime-number",
+      "passed": true,
+      "reasonCodes": [
+        "UNSUPPORTED_JOINT_GROUP_MAPPING"
+      ]
+    },
+    {
+      "caseId": "technical-task",
+      "passed": true,
+      "reasonCodes": [
+        "UNSUPPORTED_JOINT_GROUP_MAPPING"
+      ]
+    },
+    {
+      "caseId": "internal-dependency",
+      "passed": true,
+      "reasonCodes": [
+        "ADAPTED_PROBLEM_NOT_REPRESENTABLE"
+      ]
+    }
+  ],
+  "modifiedFiles": [
+    "README.md",
+    "docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md",
+    "docs/coverage/SPEC10-017-ENGINE-INPUT-JOINT-GROUPS.md",
+    "docs/evidence/SPEC10-016-full-a2-canonical-template.json",
+    "docs/evidence/SPEC10-017-engine-input-joint-groups.json",
+    "engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts",
+    "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+    "engine/planner-next/benchmarks/focal-a2/full-day/types.ts",
+    "engine/planner-next/benchmarks/runFullA2CanonicalTemplateBenchmark.ts",
+    "engine/planner-next/benchmarks/runSpec10017JointGroupsBenchmark.ts",
+    "engine/planner-next/futureFeasibility.ts",
+    "engine/planner-next/integration/engineInputAdapter.fixture.ts",
+    "engine/planner-next/integration/engineInputAdapter.spec.ts",
+    "engine/planner-next/integration/engineInputAdapter.ts",
+    "engine/planner-next/integration/engineInputPreflight.ts",
+    "engine/planner-next/jointTasks.spec.ts",
+    "engine/planner-next/jointTasks.ts",
+    "engine/planner-next/placeAuxiliaryTasks.ts",
+    "engine/planner-next/validate.ts",
+    "engine/types.ts",
+    "package.json"
+  ],
+  "artifactHashes": {
+    "hashScope": "canonical evidence payload excluding artifactHashes",
+    "evidencePayloadSha256": "7ecffbea08a27d2e95d1ff8b53db2863de536e16e727877678a5b6661b84d495",
+    "coverageSha256": "8c5be4fe8aa153d31aa1f86b56f019f5764f8806203208ee080b872cbb191b00"
+  }
+}
