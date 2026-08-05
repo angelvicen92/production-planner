@@ -301,6 +301,10 @@ export interface RepresentabilityAnalysis {
     readonly canonicalIds: readonly string[];
   };
   readonly jointGroupCapabilityProven: boolean;
+  readonly setupPolicyProbe: {
+    readonly executed: true; readonly engineInputPreflightSupported: boolean; readonly adapterSupported: boolean; readonly plannerNextPreflightSupported: boolean; readonly projectedFamilyCount: number; readonly projectedPolicyCount: number; readonly complete: boolean; readonly hardValid: boolean; readonly setupViolationCount: number; readonly setupPreparationViolationCount: number; readonly deterministic: boolean; readonly orderInvariant: boolean; readonly inputImmutable: boolean; readonly familyOrder: readonly string[]; readonly familySequence: readonly string[];
+  };
+  readonly setupPolicyCapabilityProven: boolean;
 }
 
 export interface RepresentabilityGateResult {
@@ -329,9 +333,9 @@ export type EngineInputHasSetupPolicies = "setupPolicies" extends keyof EngineIn
 
 export const contractFieldPresence = {
   taskInputHasJointGroupId: true as TaskInputHasJointGroupId,
-  taskInputHasSetupFamilyId: false as TaskInputHasSetupFamilyId,
+  taskInputHasSetupFamilyId: true as TaskInputHasSetupFamilyId,
   plannerNextProblemHasRoundSynchronization: false as PlannerNextProblemHasRoundSynchronization,
-  engineInputHasSetupPolicies: false as EngineInputHasSetupPolicies,
+  engineInputHasSetupPolicies: true as EngineInputHasSetupPolicies,
 } satisfies {
   readonly taskInputHasJointGroupId: TaskInputHasJointGroupId;
   readonly taskInputHasSetupFamilyId: TaskInputHasSetupFamilyId;

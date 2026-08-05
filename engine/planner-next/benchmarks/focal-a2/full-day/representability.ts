@@ -1,6 +1,7 @@
 import { adaptEngineInputToPlannerNextProblem } from "../../../integration/engineInputAdapter";
 import { createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
 import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
+import { runSpec10018Probe } from "../../runSpec10018SetupPolicyBenchmark";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -108,6 +109,139 @@ function runJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
   }
 }
 
+
+function failedSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] {
+  return {
+    executed: true,
+    engineInputPreflightSupported: false,
+    adapterSupported: false,
+    plannerNextPreflightSupported: false,
+    projectedFamilyCount: 0,
+    projectedPolicyCount: 0,
+    complete: false,
+    hardValid: false,
+    setupViolationCount: 1,
+    setupPreparationViolationCount: 1,
+    deterministic: false,
+    orderInvariant: false,
+    inputImmutable: false,
+    familyOrder: [],
+    familySequence: [],
+  };
+}
+
+function setupProbeProjection(
+  run: ReturnType<typeof runSpec10018Probe>,
+): unknown {
+  return {
+    sourceFingerprint: run.sourceFingerprint,
+    identityMapFingerprint: run.identityMapFingerprint,
+    problemFingerprint: run.problemFingerprint,
+    planFingerprint: run.planFingerprint,
+    projectedFamilyCount: run.projectedFamilyCount,
+    projectedPolicyCount: run.projectedPolicyCount,
+    familyOrder: run.familyOrder,
+    familySequence: run.familySequence,
+    blockCounts: run.blockCounts,
+    switchCount: run.switchCount,
+    preparations: run.preparations,
+    complete: run.complete,
+    hardValid: run.hardValid,
+    setupViolationCount: run.setupViolationCount,
+    setupPreparationViolationCount:
+      run.setupPreparationViolationCount,
+    plannedTaskCount: run.plannedTaskCount,
+    unplannedTaskCount: run.unplannedTaskCount,
+    logicalMetrics: run.logicalMetrics,
+  };
+}
+
+function runSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] {
+  try {
+    const baseline = runSpec10018Probe();
+    const repeated = runSpec10018Probe();
+
+    const inverted = runSpec10018Probe(
+      ["sillon", "estrellas"],
+      () => {
+        const input = structuredClone(baseline.inputSnapshot);
+
+        return {
+          ...input,
+          tasks: [...input.tasks].reverse(),
+          locks: [...input.locks].reverse(),
+          planResourceItems: [...input.planResourceItems].reverse(),
+          planSpaceSettings: [
+            ...(input.planSpaceSettings ?? []),
+          ].reverse(),
+          planZoneSettings: [
+            ...(input.planZoneSettings ?? []),
+          ].reverse(),
+          setupPolicies: input.setupPolicies
+            ?.map((policy) => ({
+              ...policy,
+              families: [...policy.families].reverse(),
+            }))
+            .reverse(),
+        };
+      },
+    );
+
+    const deterministic =
+      JSON.stringify(setupProbeProjection(baseline))
+      === JSON.stringify(setupProbeProjection(repeated));
+
+    const orderInvariant =
+      JSON.stringify(setupProbeProjection(baseline))
+      === JSON.stringify(setupProbeProjection(inverted));
+
+    return {
+      executed: true,
+      engineInputPreflightSupported:
+        baseline.engineInputPreflightStatus === "SUPPORTED",
+      adapterSupported: baseline.adapterStatus === "SUPPORTED",
+      plannerNextPreflightSupported:
+        baseline.plannerNextPreflightReasonCodes.length === 0,
+      projectedFamilyCount: baseline.projectedFamilyCount,
+      projectedPolicyCount: baseline.projectedPolicyCount,
+      complete: baseline.complete,
+      hardValid: baseline.hardValid,
+      setupViolationCount: baseline.setupViolationCount,
+      setupPreparationViolationCount:
+        baseline.setupPreparationViolationCount,
+      deterministic,
+      orderInvariant,
+      inputImmutable: baseline.inputImmutable,
+      familyOrder: baseline.familyOrder,
+      familySequence: baseline.familySequence,
+    };
+  } catch {
+    return failedSetupPolicyProbe();
+  }
+}
+
+function setupPolicyCapabilityProven(
+  probe: RepresentabilityAnalysis["setupPolicyProbe"],
+): boolean {
+  return contractFieldPresence.taskInputHasSetupFamilyId
+    && contractFieldPresence.engineInputHasSetupPolicies
+    && probe.executed
+    && probe.engineInputPreflightSupported
+    && probe.adapterSupported
+    && probe.plannerNextPreflightSupported
+    && probe.projectedFamilyCount === 2
+    && probe.projectedPolicyCount === 1
+    && probe.complete
+    && probe.hardValid
+    && probe.setupViolationCount === 0
+    && probe.setupPreparationViolationCount === 0
+    && probe.deterministic
+    && probe.orderInvariant
+    && probe.inputImmutable
+    && JSON.stringify(probe.familyOrder)
+      === JSON.stringify(probe.familySequence);
+}
+
 function jointGroupCapabilityProven(probe: RepresentabilityAnalysis["jointGroupProbe"]): boolean {
   return contractFieldPresence.taskInputHasJointGroupId
     && probe.executed
@@ -135,7 +269,13 @@ function jointGroupFailureLayer(probe: RepresentabilityAnalysis["jointGroupProbe
   return "PLANNER_NEXT";
 }
 
-export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanonicalFullA2Template, options: { readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"] } = {}): RepresentabilityAnalysis {
+export function analyzeCanonicalFullA2Representability(
+  expansion: ExpandedCanonicalFullA2Template,
+  options: {
+    readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"];
+    readonly setupPolicyProbe?: RepresentabilityAnalysis["setupPolicyProbe"];
+  } = {},
+): RepresentabilityAnalysis {
   const requiredCreationInputs = expansion.requiredCreationInputs.map((input) => blocker({
     code: `SOURCE_CONFIGURATION_REQUIRED_${input.toUpperCase()}`,
     layer: "SOURCE_CONFIGURATION",
@@ -148,6 +288,8 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
   const adapterProbe = runAdapterTransitionProbe();
   const jointGroupProbe = options.jointGroupProbe ?? runJointGroupProbe();
   const jointGroupCapability = jointGroupCapabilityProven(jointGroupProbe);
+  const setupPolicyProbe = options.setupPolicyProbe ?? runSetupPolicyProbe();
+  const setupPolicyCapability = setupPolicyCapabilityProven(setupPolicyProbe);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
   if (!contractFieldPresence.taskInputHasJointGroupId) {
@@ -171,7 +313,7 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
       implementationRank: 1,
     }));
   }
-  if (!contractFieldPresence.taskInputHasSetupFamilyId || !contractFieldPresence.engineInputHasSetupPolicies) {
+  if (!contractFieldPresence.taskInputHasSetupFamilyId || !contractFieldPresence.engineInputHasSetupPolicies || !setupPolicyCapability) {
     implementationBlockers.push(blocker({
       code: "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
       layer: "ENGINE_INPUT",
@@ -229,6 +371,8 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     adapterProbe,
     jointGroupProbe,
     jointGroupCapabilityProven: jointGroupCapability,
+    setupPolicyProbe,
+    setupPolicyCapabilityProven: setupPolicyCapability,
   });
 }
 

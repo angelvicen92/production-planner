@@ -95,6 +95,8 @@ const evidence = {
   adapterProbe: representability.adapterProbe,
   jointGroupProbe: representability.jointGroupProbe,
   jointGroupCapabilityProven: representability.jointGroupCapabilityProven,
+  setupPolicyProbe: representability.setupPolicyProbe,
+  setupPolicyCapabilityProven: representability.setupPolicyCapabilityProven,
   representabilityGate: gate,
   noEngineInputPartial: gate.engineInputBuilt === false,
   noSeedSchedule: expansion.tasks.every((task) => !("start" in task) && !("end" in task) && !("startPlanned" in task) && !("referenceOrder" in task)),
@@ -174,7 +176,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-${next ? `El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}: EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard se ejecutan sobre adapter.problem con complete=${representability.jointGroupProbe.complete}, hardValid=${representability.jointGroupProbe.hardValid}, jointGroupViolationCount=${representability.jointGroupProbe.jointGroupViolationCount}, ambos grupos sincronizados y secuencia Alfombra Roja → Totales Post preservada. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
+${next ? `El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=${representability.jointGroupCapabilityProven} y setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven}: los probes focales demuestran EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard para grupos conjuntos y setup explícito. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
 
 ## No implementado
 

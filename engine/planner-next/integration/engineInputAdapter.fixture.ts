@@ -76,3 +76,37 @@ export function createSpec10017JointGroupEngineInputFixture(): EngineInput {
   );
   return input;
 }
+
+
+export function createSpec10018SetupPolicyEngineInputFixture(familyOrder: string[] = ["sillon", "estrellas"]): EngineInput {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 300000 };
+  input.planSpaceSettings.push({ spaceId: 304, zoneId: 403, availabilityStart: "12:30", availabilityEnd: "13:00", source: "spec10-018" });
+  input.contestantAvailabilityById = {
+    ...input.contestantAvailabilityById,
+    211: { start: "08:00", end: "13:00" },
+    212: { start: "08:00", end: "13:00" },
+    213: { start: "08:00", end: "13:00" },
+    214: { start: "08:00", end: "13:00" },
+  };
+  input.setupPolicies = [{
+    spaceId: 304,
+    families: ["sillon", "estrellas"],
+    oneBlockPerFamily: true,
+    orderConstraint: "EXPLICIT",
+    familyOrder,
+    reentry: "FORBIDDEN",
+    preparationMinutesBetweenFamilies: 10,
+  }];
+  input.tasks.push(
+    task(301, { templateId: 9301, plannerNextKind: "auxiliary", contestantId: 211, spaceId: 304, zoneId: 403, durationOverrideMin: 5, setupFamilyId: "sillon" }),
+    task(302, { templateId: 9301, plannerNextKind: "auxiliary", contestantId: 212, spaceId: 304, zoneId: 403, durationOverrideMin: 5, setupFamilyId: "sillon" }),
+    task(303, { templateId: 9302, plannerNextKind: "auxiliary", contestantId: 213, spaceId: 304, zoneId: 403, durationOverrideMin: 5, setupFamilyId: "estrellas" }),
+    task(304, { templateId: 9302, plannerNextKind: "auxiliary", contestantId: 214, spaceId: 304, zoneId: 403, durationOverrideMin: 5, setupFamilyId: "estrellas" }),
+  );
+  return input;
+}
+
+export function createSpec10018SetupPolicyEngineInputFixtureReverseOrder(): EngineInput {
+  return createSpec10018SetupPolicyEngineInputFixture(["estrellas", "sillon"]);
+}

@@ -4,7 +4,7 @@ import type { EngineInput, TaskInput } from "../../types";
 import { realProductionScenarios } from "../../orc/benchmarks/fixtures/real-scenarios/realProductionScenarios";
 import { preflightEngineInputForPlannerNext, type EngineInputPreflightIssue } from "./engineInputPreflight";
 import { projectPlanResourceItemsForEngineInput } from "../../buildInput";
-import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { createSpec10018SetupPolicyEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const deepFreeze = <T>(value: T): T => {
@@ -1740,4 +1740,17 @@ test("SPEC10-007: recurso requerido inexistente conserva identidad sin issue tem
   assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:999"));
   assert.equal(result.diagnostics.requiredPlanResourceCount, 1); assert.equal(result.diagnostics.unusableRequiredPlanResourceCount, 1);
   assert.ok(!result.issues.some((entry) => entry.code === "MISSING_RESOURCE_AVAILABILITY" && entry.entityId === "999"));
+});
+
+test("SPEC10-018 accepts explicit setup policy and rejects flexible order deterministically", () => {
+  const input = createSpec10018SetupPolicyEngineInputFixture();
+  const explicit = preflightEngineInputForPlannerNext(input);
+  assert.equal(explicit.status, "SUPPORTED");
+  assert.ok(explicit.identityMap.some((entry) => entry.namespace === "setup-family" && entry.sourceId === "304:sillon" && entry.canonicalId === "setup-family:304:sillon"));
+
+  input.setupPolicies![0].orderConstraint = "UNSPECIFIED";
+  delete input.setupPolicies![0].familyOrder;
+  const flexible = preflightEngineInputForPlannerNext(input);
+  assert.equal(flexible.status, "UNSUPPORTED");
+  assert.ok(flexible.reasonCodes.includes("UNSUPPORTED_FLEXIBLE_SETUP_ORDER"));
 });

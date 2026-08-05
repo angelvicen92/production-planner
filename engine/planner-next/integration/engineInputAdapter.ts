@@ -69,7 +69,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
   const sorted = <T>(values: readonly T[], key: (value: T) => string): T[] => [...values].sort((a, b) => compare(key(a), key(b)));
   return {
     ...problem,
-    spaces: sorted(problem.spaces, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
+    spaces: sorted(problem.spaces, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`), ...(entry.setupPolicy ? { setupPolicy: { ...entry.setupPolicy, familyOrder: [...entry.setupPolicy.familyOrder], ...(entry.setupPolicy.preparationMinutesByFamily ? { preparationMinutesByFamily: Object.fromEntries(Object.entries(entry.setupPolicy.preparationMinutesByFamily).sort(([left], [right]) => compare(left, right))) } : {}) } } : {}) })),
     resources: sorted(problem.resources, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
     participants: sorted(problem.participants, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
     coaches: sorted(problem.coaches, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
@@ -78,6 +78,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
       dependencies: [...entry.dependencies].sort(compare),
       ...(entry.requiredResourceIds ? { requiredResourceIds: [...entry.requiredResourceIds].sort(compare) } : {}),
       ...(entry.availability ? { availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) } : {}),
+      ...(entry.setupFamilyId ? { setupFamilyId: entry.setupFamilyId } : {}),
     })),
     ...(problem.participantMeals ? { participantMeals: sorted(problem.participantMeals, (entry) => `${entry.participantId}\0${entry.sourceTaskId}`) } : {}),
     ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
@@ -156,7 +157,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       const coachId = canonical("plan-resource", coachResourceId!);
       return { ...base, kind: source.plannerNextKind, participantId: canonical("participant", source.contestantId!), coachId, ...(source.plannerNextKind === "main" ? { blockKey: coachId } : {}) };
     }
-    return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!), ...(source.jointGroupId != null ? { jointGroupId: canonical("joint-group", source.jointGroupId) } : {}) };
+    return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!), ...(source.jointGroupId != null ? { jointGroupId: canonical("joint-group", source.jointGroupId) } : {}), ...(source.setupFamilyId != null ? { setupFamilyId: canonical("setup-family", `${source.spaceId}:${source.setupFamilyId}`) } : {}) };
   });
 
   const participants = [...new Set([...activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!), ...flexibleParticipantMeals.obligations.map((meal) => Number(meal.participantId.split(":").at(-1)))])]
@@ -173,10 +174,16 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable coach ${id}`);
     return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])] };
   });
+  const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {
     const availability = spatial.spacesById.get(id)?.effectiveWindow;
     if (!availability) throw new Error(`Preflight accepted unavailable space ${id}`);
-    return { id: canonical("space", id), availability: [window(availability)] };
+    const setupPolicy = setupPoliciesBySpaceId.get(id);
+    const canonicalSpace = canonical("space", id);
+    if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)] };
+    const familyOrder = setupPolicy.familyOrder!.map((family) => canonical("setup-family", `${id}:${family}`));
+    const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies]).sort(([left], [right]) => compare(left, right)));
+    return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
   });
   const anchoredAccompaniments: AnchoredAccompaniment[] | undefined = input.anchoredAccompaniments?.map((entry) => ({
     id: canonical("anchored-operation", String(entry.id)),
