@@ -10,6 +10,10 @@ import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
 import { resolveAssignedResourceMealBreaks } from "./assignedResourceMealBreaks";
 import { resolveAssignedItinerantUnitMealBreaks } from "./assignedItinerantUnitMealBreaks";
+import {
+  projectEngineInputCoachRouteTransitions,
+  resolveEngineInputCoachRouteTransitions,
+} from "./engineInputCoachRouteTransitions";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -57,6 +61,7 @@ export type EngineInputPreflightReasonCode =
   | "UNREPRESENTABLE_SPACE_LOCK"
   | "UNREPRESENTABLE_TIME_LOCK"
   | "UNSUPPORTED_BREAK_SCOPE"
+  | "UNSUPPORTED_COACH_ROUTE_TRANSITION"
   | "UNSUPPORTED_COACH_RESOURCE_MAPPING"
   | "UNSUPPORTED_LOCK_TYPE"
   | "UNSUPPORTED_RESOURCE_REQUIREMENT"
@@ -192,7 +197,7 @@ const SET_ARRAY_KEYS = new Set([
   "planResourceItems", "protectedBreaks", "resourceItemIds", "tasks", "locks", "dependsOnTaskIds",
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
-  "planZoneSettings", "planSpaceSettings", "setupPolicies", "families",
+  "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
 ]);
 const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder"]);
 
@@ -370,6 +375,7 @@ function sourceProjection(input: EngineInput): unknown {
     } : plannerNext,
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
+    coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
   });
 }
 
@@ -636,6 +642,18 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     }
   }
 
+  const rawCoachRouteTransitions =
+    (input as unknown as Record<string, unknown>).coachRouteTransitions;
+  if (Array.isArray(rawCoachRouteTransitions)) {
+    rawCoachRouteTransitions.forEach((raw, index) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+      const route = raw as Record<string, unknown>;
+      addIdentity("plan-resource", route.coachPlanResourceItemId, `coachRouteTransitions.${index}.coachPlanResourceItemId`);
+      addIdentity("space", route.fromSpaceId, `coachRouteTransitions.${index}.fromSpaceId`);
+      addIdentity("space", route.toSpaceId, `coachRouteTransitions.${index}.toSpaceId`);
+    });
+  }
+
   const addBreakIdentities = (entry: ProtectedBreakInput | undefined, path: string): void => {
     if (!entry) return;
     addIdentity("break", entry.id, `${path}.id`, true);
@@ -757,6 +775,31 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const setupPolicyBySpace = new Map<number, { families: Set<string>; policy: Record<string, unknown> }>();
   const seenSetupPolicySpaces = new Set<number>();
   const timeGrid = (input.plannerNext as { timeGridMinutes?: unknown } | undefined)?.timeGridMinutes;
+  const coachRouteTransitionResolution = resolveEngineInputCoachRouteTransitions(
+    input,
+    timeGrid,
+    new Set<number>([
+      ...validExplicitRelationCoachIds,
+      ...(input.coachResourceIds ?? []),
+    ]),
+  );
+  if (coachRouteTransitionResolution.invalidContainer) {
+    addIssue(
+      "UNSUPPORTED_COACH_ROUTE_TRANSITION",
+      "plan",
+      input.planId,
+      "coachRouteTransitions",
+      "coachRouteTransitions must be an array when present.",
+    );
+  }
+  coachRouteTransitionResolution.defects.forEach((defect) => addIssue(
+    "UNSUPPORTED_COACH_ROUTE_TRANSITION",
+    "coachRouteTransition",
+    defect.index,
+    `coachRouteTransitions.${defect.index}`,
+    "Coach route transition cannot be projected losslessly.",
+    { ...defect.details },
+  ));
   if (setupPoliciesPresent && setupPoliciesValue !== undefined && !Array.isArray(setupPoliciesValue)) {
     addIssue(
       "UNSUPPORTED_SETUP_MAPPING",
@@ -1109,6 +1152,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   requireBreakSpace(input.actualMeal);
   input.protectedBreaks?.forEach(requireBreakSpace);
   [input.transportSpaceId, input.transportSettings?.transportSpaceId, mainFlow?.spaceId].forEach((id) => { if (isPositiveInteger(id)) requireSpace(id); });
+  coachRouteTransitionResolution.routes.forEach((route) => {
+    requireSpace(route.fromSpaceId);
+    requireSpace(route.toSpaceId);
+  });
 
   let usableRequiredSpaceCount = 0;
   let unusableRequiredSpaceCount = 0;
@@ -1252,6 +1299,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   };
   effectiveTaskResourceAssignments.assignments.forEach((assignment) => assignment.effectiveResourceIds
     .forEach((id) => requireResource(id, assignment.taskId)));
+  coachRouteTransitionResolution.routes.forEach((route) => {
+    requireResource(route.coachPlanResourceItemId);
+  });
   input.locks.forEach((lock) => {
     const task = taskById.get(String(lock.taskId));
     if ((lock.lockType === "resource" || lock.lockType === "full") && isPositiveInteger(lock.lockedResourceId)

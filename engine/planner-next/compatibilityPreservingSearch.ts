@@ -30,6 +30,7 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { anchoredAccompanimentIndex, firstParticipantObligation, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import { generateMainFlowPatterns } from "./mainFlowPatterns";
+import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -102,9 +103,12 @@ export function diagnoseGreedyFeederClosure(problem: PlannerNextProblem, mains: 
     const feeder = feederByParticipant.get(main.participantId);
     if (!feeder) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
     attemptedFeederIds.push(feeder.id);attemptedStartCountByFeederId[feeder.id]=0;
-    const deadline = firstParticipantObligation(main,placed,anchoredAccompanimentIndex(problem)) - Math.max(
-      problem.participantTransitionMinutes,
-      problem.resourceTransitionMinutes,
+    const deadline = latestFeederEndBeforeMain(
+      problem,
+      feeder,
+      main.spaceId,
+      main.start,
+      firstParticipantObligation(main, placed, anchoredAccompanimentIndex(problem)),
     );
     let selectedStart: number | undefined;
     for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {

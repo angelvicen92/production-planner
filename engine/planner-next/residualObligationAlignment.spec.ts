@@ -70,9 +70,40 @@ test("technical tasks and tasks for other participants are ignored", () => {
 });
 test("the ideal latest feeder lower bound is included", () => {
   const key = evaluateResidualObligationCandidate(problem(), [], descriptor(80));
-  assert.equal(key.currentPresenceSpan, 30); // feeder 50-70, transition 10, main 80-90
+  assert.equal(key.currentPresenceSpan, 25); // feeder 65-75, transición del participante 5, main 80-90
   assert.equal(createResidualObligationMainOrderer(problem(), []).evidence.usesIdealLatestFeederLowerBound, true);
 });
+test("a route-specific coach transition is included in the ideal feeder lower bound", () => {
+  const input = problem();
+
+  input.coachRouteTransitions = [{
+    coachId: "coach",
+    fromSpaceId: "vocal",
+    toSpaceId: "main",
+    minutes: 30,
+  }];
+
+  const base = descriptor(80);
+  const candidate = {
+    ...base,
+    feeder: {
+      ...base.feeder,
+      coachId: "coach",
+    },
+  };
+
+  const key = evaluateResidualObligationCandidate(
+    input,
+    [],
+    candidate,
+  );
+
+  assert.equal(
+    key.currentPresenceSpan,
+    50,
+  ); // feeder 40-50, desplazamiento coach 30, main 80-90
+});
+
 test("evaluation does not mutate its inputs", () => {
   const input = problem(), tasks = [residual()], candidate = descriptor(80), before = structuredClone({ input, tasks, candidate });
   evaluateResidualObligationCandidate(input, tasks, candidate); assert.deepEqual({ input, tasks, candidate }, before);
@@ -105,7 +136,7 @@ test("descriptor-state cache never reuses a key across backtracked branch states
   assert.deepEqual(ab, [ba[1], ba[0]]);
   assert.deepEqual(ab, [
     { currentPresenceSpan: 90, projectedPresenceLowerBound: 160 },
-    { currentPresenceSpan: 80, projectedPresenceLowerBound: 100 },
+    { currentPresenceSpan: 75, projectedPresenceLowerBound: 95 },
   ]);
 });
 

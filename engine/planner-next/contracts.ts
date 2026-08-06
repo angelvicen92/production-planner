@@ -20,6 +20,13 @@ export interface Space {
 export interface SpaceMealPolicy { window: Window; duration: Minute }
 export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; preparationMinutesByFamily?: Record<string, number> }
 
+export interface CoachRouteTransition {
+  coachId: string;
+  fromSpaceId: string;
+  toSpaceId: string;
+  minutes: Minute;
+}
+
 export type SecondaryContinuity = "OFF" | "REQUIRED";
 
 export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
@@ -99,6 +106,7 @@ export interface PlannerNextProblem {
   };
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
+  coachRouteTransitions?: CoachRouteTransition[];
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
   anchoredAccompaniments?: AnchoredAccompaniment[];

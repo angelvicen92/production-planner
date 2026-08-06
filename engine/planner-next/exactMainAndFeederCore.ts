@@ -5,6 +5,7 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns } from "./mainFlowPatterns";
 import { canPlaceTask } from "./placement";
+import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { preflight, validatePlan } from "./validate";
 
@@ -246,7 +247,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       Object.freeze(choices.map((choice) => descriptorById.get(choice.task.id)!)));
     for (const choice of choices) {
       options.onMainChoiceEntered?.(descriptorById.get(choice.task.id)!);
-      const deadline = choice.firstObligation - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
+      const deadline = latestFeederEndBeforeMain(
+        problem,
+        choice.feeder,
+        choice.task.spaceId,
+        slot,
+        choice.firstObligation,
+      );
       let validStartFound = false;
       for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
         const startCheck = checkFeederStart(choice.feeder, start, choice.operation, placed, meals);

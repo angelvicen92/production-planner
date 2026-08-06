@@ -2,6 +2,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { taskFitsAvailability } from "./taskAvailability";
+import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
 /** Resolves the resource-specific margin without mutation or throwing for an unknown id. */
 export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, resourceId: string): number {
@@ -26,15 +27,35 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
   if(scheduledSpaceMeals.some(meal=>meal.spaceId===task.spaceId&&overlaps(meal,{start,end})))return false;
   return !placed.some((other) => {
-    const sharedParticipant = other.participantId !== undefined && task.participantId !== undefined && other.participantId === task.participantId;
-    const sharedCoach = task.coachId !== undefined && other.coachId === task.coachId;
-    const sharedResources = (task.requiredResourceIds ?? []).filter((id) => (other.requiredResourceIds ?? []).includes(id));
+    const sharedParticipant = other.participantId !== undefined
+      && task.participantId !== undefined
+      && other.participantId === task.participantId;
+    const sharedCoach = task.coachId !== undefined
+      && other.coachId === task.coachId;
+    const sharedResources = (task.requiredResourceIds ?? [])
+      .filter((id) => (other.requiredResourceIds ?? []).includes(id));
     const sharedResource = sharedResources.length > 0;
-    if (overlaps(other, { start, end }) && (sharedParticipant || sharedCoach || sharedResource || other.spaceId === task.spaceId)) return true;
+
+    if (overlaps(other, { start, end })
+      && (sharedParticipant || sharedCoach || sharedResource || other.spaceId === task.spaceId)) return true;
     if (other.spaceId === task.spaceId) return false;
-    const margin = Math.max(sharedParticipant ? problem.participantTransitionMinutes : 0,
-      sharedCoach ? problem.resourceTransitionMinutes : 0,
-      ...sharedResources.map((id) => effectiveResourceTransitionMinutes(problem, id)));
-    return margin > 0 && ((other.end <= start && start - other.end < margin) || (end <= other.start && other.start - end < margin));
+
+    const afterOther = other.end <= start;
+    const beforeOther = end <= other.start;
+    if (!afterOther && !beforeOther) return false;
+
+    const coachMargin = !sharedCoach || task.coachId === undefined
+      ? 0
+      : afterOther
+        ? effectiveCoachTransitionMinutes(problem, task.coachId, other.spaceId, task.spaceId)
+        : effectiveCoachTransitionMinutes(problem, task.coachId, task.spaceId, other.spaceId);
+
+    const margin = Math.max(
+      sharedParticipant ? problem.participantTransitionMinutes : 0,
+      coachMargin,
+      ...sharedResources.map((id) => effectiveResourceTransitionMinutes(problem, id)),
+    );
+    const gap = afterOther ? start - other.end : other.start - end;
+    return margin > 0 && gap < margin;
   });
 }

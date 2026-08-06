@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { PlannerNextProblem, Task, Window } from "../../contracts";
 import { FOCAL_A2_BAND_RESOURCE_ID, projectFocalA2BandProblem } from "./focalA2BandReference";
 import { buildRequiredCompositeBlocks } from "../../requiredCompositeBlock";
+import { effectiveCoachTransitionMinutes } from "../../coachRouteTransitions";
 
 export const FOCAL_REQUIRED_INFEASIBLE =
   "FOCAL_A2_REQUIRED_SINGLE_BLOCK_INFEASIBLE_UNDER_FEEDER_AND_COACH_CONSTRAINTS";
@@ -75,7 +76,9 @@ export function auditFocalA2RequiredFeasibility(options: FocalRequiredAuditOptio
       const vocalStart = feeder ? intersects([participant.availability, coach.availability, space.availability], feeder.duration) : null;
       const transitionMargin = !feeder ? 0 : Math.max(
         feeder.participantId === main.participantId ? problem.participantTransitionMinutes : 0,
-        feeder.coachId === main.coachId && feeder.spaceId !== main.spaceId ? problem.resourceTransitionMinutes : 0,
+        feeder.coachId === main.coachId
+          ? effectiveCoachTransitionMinutes(problem, feeder.coachId!, feeder.spaceId, main.spaceId)
+          : 0,
       );
       const earliestMainStart = vocalStart == null || !feeder ? null : Math.max(vocalStart + feeder.duration + transitionMargin, participant.availability[0]!.start);
       return { taskId: main.id, feederId: feeder?.id, earliestVocalStart: vocalStart, transitionMargin, earliestMainStart };

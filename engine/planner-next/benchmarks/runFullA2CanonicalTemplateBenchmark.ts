@@ -176,7 +176,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-${next ? `El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=${representability.jointGroupCapabilityProven} y setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven}: los probes focales demuestran EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard para grupos conjuntos y setup explícito. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
+${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}, setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven} y supportsSpecificCoachRouteTransition=${representability.adapterProbe.supportsSpecificCoachRouteTransition}. La transición Caracola→Estudio 7 se conserva por coach, origen y destino sin convertir 30 minutos en un margen global. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
 
 ## No implementado
 

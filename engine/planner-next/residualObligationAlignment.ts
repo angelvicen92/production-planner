@@ -1,6 +1,7 @@
 import type { PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import type { ExactItinerantPlanSearchOptions } from "./exactItinerantPlan";
 import type { ExactMainChoiceDescriptor } from "./exactMainAndFeederCore";
+import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
 
 export interface ResidualObligationAlignmentKey {
   residualTaskCount: number;
@@ -120,8 +121,13 @@ export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNex
   const residual = participantId === undefined ? [] : standaloneTasks.filter((task) => task.kind === "auxiliary"
     && task.participantId === participantId && !candidate.placedTasks.some(({ id }) => id === task.id));
   const current = intervalsForParticipant([...candidate.placedTasks, ...candidate.operationTasks], participantId ?? "");
-  const transition = Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
-  const idealFeederEnd = candidate.firstObligation - transition;
+  const idealFeederEnd = latestFeederEndBeforeMain(
+    problem,
+    candidate.feeder,
+    candidate.mainTask.spaceId,
+    candidate.slot,
+    candidate.firstObligation,
+  );
   current.push({ start: idealFeederEnd - candidate.feeder.duration, end: idealFeederEnd });
   const currentMetrics = measureResidualObligationIntervals(current);
   let projectedPresence = currentMetrics.span, projectedGap = currentMetrics.maximumGap;

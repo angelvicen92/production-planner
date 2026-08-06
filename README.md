@@ -2719,3 +2719,11 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - Proyecta órdenes de familias `EXPLICIT` mediante IDs canónicos `setup-family`.
 - Modela la preparación entre familias como ocupación del espacio.
 - El orden `UNSPECIFIED` continúa bloqueado; el siguiente blocker es `ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS`.
+
+## SPEC10-019 — Transición direccional de coach
+
+- EngineInput y Planner Next pueden expresar tiempo de desplazamiento por coach, origen y destino.
+- La regla A2 Caracola → Estudio 7 exige 30 minutos sin convertirlos en un margen global.
+- Placement, cierre de feeders, búsqueda exacta, validación y auditoría focal comparten la misma semántica.
+- El probe rechaza 29 minutos y acepta 30.
+- El siguiente blocker A2 es `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`.
