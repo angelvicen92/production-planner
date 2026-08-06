@@ -30,7 +30,7 @@ actual_main="$(git rev-parse HEAD)"
 if git show-ref --verify --quiet "refs/heads/$implementation_branch"; then
   fail "local branch $implementation_branch already exists"
 fi
-if git ls-remote --exit-code --heads origin "$implementation_branch" >/dev/null 2>&1; then
+if git ls-remote --exit-code origin "refs/heads/$implementation_branch" >/dev/null 2>&1; then
   fail "remote branch $implementation_branch already exists"
 fi
 
