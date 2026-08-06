@@ -33,7 +33,10 @@ function supportedProblem(): PlannerNextProblem {
   return result.problem;
 }
 
-function scheduled(problem: PlannerNextProblem): ScheduledTask[] {
+function scheduled(
+  problem: PlannerNextProblem,
+  additionalStarts: Record<string, number> = {},
+): ScheduledTask[] {
   const starts: Record<string, number> = {
     "task:102": 570,
     "task:104": 600,
@@ -43,6 +46,7 @@ function scheduled(problem: PlannerNextProblem): ScheduledTask[] {
     "task:403": 840,
     "task:402": 875,
     "task:404": 875,
+    ...additionalStarts,
   };
   return problem.tasks.map((task) => {
     const start = starts[task.id];
@@ -113,6 +117,62 @@ test("canonical validation accepts synchronized ordinal rounds and explicit prep
   assert.equal(result.hardValid, true, result.reasonCodes.join(","));
   assert.equal(result.roundSynchronizationViolationCount, 0);
   assert.equal(result.roundPreparationViolationCount, 0);
+});
+
+test("canonical validation permits residual rounds after the shorter lane is exhausted", () => {
+  const problem = structuredClone(supportedProblem());
+  const policy = problem.roundSynchronizations?.[0];
+  assert.ok(policy);
+  const longerLane = policy.lanes[0];
+  assert.ok(longerLane);
+  const template = problem.tasks.find(({ id }) => id === "task:402");
+  assert.ok(template);
+
+  const residualTask = { ...template, id: "task:405" };
+  problem.tasks.push(residualTask);
+  longerLane.taskIds.push(residualTask.id);
+  assert.deepEqual(preflight(problem), []);
+
+  const preparations = [
+    ...roundPreparations(problem),
+    {
+      id: roundPreparationId(policy.id, longerLane.spaceId, 3),
+      kind: "round-preparation" as const,
+      synchronizationId: policy.id,
+      spaceId: longerLane.spaceId,
+      roundIndex: 3,
+      duration: longerLane.preparationMinutesBetweenRounds,
+      start: 905,
+      end: 910,
+    },
+  ];
+  const valid = validatePlan(
+    problem,
+    scheduled(problem, { "task:405": 910 }),
+    [],
+    [],
+    [],
+    [],
+    [],
+    preparations,
+  );
+  assert.equal(valid.hardValid, true, valid.reasonCodes.join(","));
+  assert.equal(valid.roundSynchronizationViolationCount, 0);
+  assert.equal(valid.roundPreparationViolationCount, 0);
+
+  const missingResidualPreparation = validatePlan(
+    problem,
+    scheduled(problem, { "task:405": 910 }),
+    [],
+    [],
+    [],
+    [],
+    [],
+    preparations.filter(({ roundIndex }) => roundIndex !== 3),
+  );
+  assert.equal(missingResidualPreparation.hardValid, false);
+  assert.ok((missingResidualPreparation.roundPreparationViolationCount ?? 0) > 0);
+  assert.ok(missingResidualPreparation.reasonCodes.includes("ROUND_PREPARATION_VIOLATION"));
 });
 
 test("canonical validation rejects desynchronization and missing preparation", () => {
