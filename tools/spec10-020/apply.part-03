@@ -1,0 +1,45 @@
+REPARATION_POLICY");
+        const minutes = policy.preparationMinutesBetweenFamilies;
+        if (typeof minutes !== "number" || !Number.isFinite(minutes) || !Number.isInteger(minutes) || minutes <= 0 || minutes % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+      } else {
+        if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesBetweenFamilies")) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) {
+          const record = policy.preparationMinutesByFamily;
+          const plain = record !== null && typeof record === "object" && !Array.isArray(record) && Object.getPrototypeOf(record) === Object.prototype;
+          if (!plain) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+          else {
+            const entries = Object.entries(record as Record<string, unknown>);
+            const suffixFamilies = order.slice(1);
+            const validFull = entries.length === order.length && entries.every(([family, value]) => order.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && order.every(family => Object.prototype.hasOwnProperty.call(record, family));
+            const validSuffix = entries.length === suffixFamilies.length && entries.every(([family, value]) => suffixFamilies.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && suffixFamilies.every(family => Object.prototype.hasOwnProperty.call(record, family));
+            if (!validFull && !validSuffix) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+          }
+        }
+      }
+      if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
+      if (space.secondaryContinuity !== "REQUIRED") reasons.add("SETUP_REQUIRES_REQUIRED_CONTINUITY");
+      const own = tasks.filter((task) => task?.spaceId === space.id);
+      if (own.some((task) => task.kind !== "auxiliary")) reasons.add("SETUP_WITH_NON_AUXILIARY_TASK");
+      if (own.some((task) => typeof task.setupFamilyId !== "string" || task.setupFamilyId.length === 0)) reasons.add("MISSING_SETUP_FAMILY");
+      if (own.some((task) => typeof task.setupFamilyId === "string" && !order.includes(task.setupFamilyId))) reasons.add("UNKNOWN_SETUP_FAMILY");
+      if (order.some((family) => !own.some((task) => task.setupFamilyId === family))) reasons.add("EMPTY_SETUP_FAMILY");
+    }
+    if (space.secondaryContinuity !== undefined`,
+);
+
+replaceRegex(
+  "engine/planner-next/validate.ts",
+  /  for \(const space of setupSpaces\(problem\)\) \{[\s\S]*?\n  setupPreparation \+= preparations\.filter\(item => !problem\.spaces\.some\(space=>space\.id===item\.spaceId && space\.setupPolicy\?\.preparationMinutesByFamily !== undefined\)\)\.length;\n/,
+  `  for (const space of setupSpaces(problem)) {
+    const expected = setupTasks(problem.tasks, space.id), actual = setupTasks(scheduled, space.id);
+    const policy = space.setupPolicy!;
+    const invalid = actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id))
+      || actual.some((task) => !task.setupFamilyId || task.spaceId !== space.id)
+      || !followsSetupPolicy(actual, policy) || hasSetupReentry(actual)
+      || policy.familyOrder.some((family) => setupBlockCounts(actual)[family] !== 1);
+    if (invalid) setup += 1;
+  }
+  for (const space of setupSpaces(problem).filter((candidate) => candidate.setupPolicy?.preparationMinutesByFamily !== undefined || candidate.setupPolicy?.preparationMinutesBetweenFamilies !== undefined)) {
+    const policy = space.setupPolicy!;
+    const ownTasks = setupTasks(scheduled, space.id);
+    const ownPreparations = preparations.f
