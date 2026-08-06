@@ -1,0 +1,716 @@
+{
+  "$schema": "./configurability-registry.schema.json",
+  "registryVersion": 1,
+  "auditedMainSha": "873803296db243026e267eb6f371f31ed2f9d388",
+  "auditedAt": "2026-08-06",
+  "sourceDocuments": [
+    "SPEC-07 — Método Operativo de Planificación Constructiva por Bloques v1.2",
+    "SPEC-10 — Integración de Planner Next con EngineInput, ORC y publicación de producto",
+    "SPEC-11 — Configuración Operativa Efectiva, Ocupaciones Derivadas y Coordinación entre Espacios",
+    "SPEC11-001 — Auditoría de superficie configurable",
+    "ADDENDA OFICIALES CONSOLIDADOS DE DOMINIO Y OPERACIÓN v1.0"
+  ],
+  "capabilities": [
+    {
+      "capabilityId": "PLAN_WORKDAY_WINDOW",
+      "title": "Ventana temporal efectiva de jornada",
+      "owner": "PLAN",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": true,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "Un plan válido debe conservar workStart y workEnd; no existe OFF productivo.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "COMPLETE",
+        "instanceOverride": "COMPLETE",
+        "api": "COMPLETE",
+        "ui": "COMPLETE",
+        "buildInput": "COMPLETE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "Falta Evidence productiva común desde snapshot hasta publicación."
+      ],
+      "sourceRefs": [
+        "SPEC10-008",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "SPACE_AVAILABILITY_WINDOW",
+      "title": "Disponibilidad temporal efectiva de espacios",
+      "owner": "SPACE",
+      "severity": "REQUIRED",
+      "status": "COMPLETE",
+      "productive": true,
+      "hardcodeRisk": "NONE",
+      "absenceSemantics": "null/null hereda la ventana efectiva del nivel superior sin materializar una hora universal.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "COMPLETE",
+        "instanceOverride": "COMPLETE",
+        "api": "COMPLETE",
+        "ui": "COMPLETE",
+        "buildInput": "COMPLETE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "COMPLETE",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [],
+      "sourceRefs": [
+        "SPEC10-008",
+        "SPEC10-009",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "RESOURCE_AVAILABILITY_WINDOW",
+      "title": "Disponibilidad temporal efectiva de recursos",
+      "owner": "RESOURCE",
+      "severity": "REQUIRED",
+      "status": "COMPLETE",
+      "productive": true,
+      "hardcodeRisk": "NONE",
+      "absenceSemantics": "null/null representa jornada completa dinámica; isAvailable es un interruptor independiente.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "COMPLETE",
+        "instanceOverride": "COMPLETE",
+        "api": "COMPLETE",
+        "ui": "COMPLETE",
+        "buildInput": "COMPLETE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "COMPLETE",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [],
+      "sourceRefs": [
+        "SPEC10-006",
+        "SPEC10-007",
+        "SPEC10-014",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "PARTICIPANT_AVAILABILITY_WINDOW",
+      "title": "Disponibilidad temporal efectiva de participantes",
+      "owner": "PARTICIPANT",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": true,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "La disponibilidad pertenece al participante del plan; no existe un catálogo general equivalente completo.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "N_A",
+        "dailySnapshot": "COMPLETE",
+        "instanceOverride": "PARTIAL",
+        "api": "COMPLETE",
+        "ui": "COMPLETE",
+        "buildInput": "COMPLETE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "Origen y versión no están homogeneizados con el resto de snapshots."
+      ],
+      "sourceRefs": [
+        "SPEC11-001",
+        "ADDENDA OFICIALES CONSOLIDADOS v1.0"
+      ]
+    },
+    {
+      "capabilityId": "TASK_DURATION_EFFECTIVE",
+      "title": "Duración productiva efectiva de tarea",
+      "owner": "DAILY_TASK",
+      "severity": "REQUIRED",
+      "status": "UNSAFE",
+      "productive": true,
+      "hardcodeRisk": "HIGH",
+      "absenceSemantics": "Debe resolver override de instancia sobre snapshot diario; actualmente puede releer el default global de plantilla.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "COMPLETE",
+        "api": "COMPLETE",
+        "ui": "COMPLETE",
+        "buildInput": "UNSAFE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "No existe snapshot tipado de plantilla por plan.",
+        "buildEngineInput puede reinterpretar días existentes desde task_templates.",
+        "Existen fallbacks de duración no trazados de forma uniforme."
+      ],
+      "sourceRefs": [
+        "SPEC11-001 CFS-001",
+        "SPEC11-002 diseño"
+      ]
+    },
+    {
+      "capabilityId": "TASK_DEPENDENCY_EFFECTIVE",
+      "title": "Dependencias efectivas de tareas",
+      "owner": "DAILY_TASK",
+      "severity": "REQUIRED",
+      "status": "UNSAFE",
+      "productive": true,
+      "hardcodeRisk": "HIGH",
+      "absenceSemantics": "Una tarea sin dependencias efectivas no tiene prerrequisitos; la ausencia no puede reconstruirse desde un catálogo global mutable.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "PARTIAL",
+        "api": "PARTIAL",
+        "ui": "PARTIAL",
+        "buildInput": "UNSAFE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "Dependencias de plantilla no están congeladas por día.",
+        "Los formatos legacy único y múltiple necesitan normalización común."
+      ],
+      "sourceRefs": [
+        "SPEC-06",
+        "SPEC11-001 CFS-001",
+        "SPEC11-002 diseño"
+      ]
+    },
+    {
+      "capabilityId": "TASK_RESOURCE_REQUIREMENTS_EFFECTIVE",
+      "title": "Requisitos efectivos de recursos de tarea",
+      "owner": "DAILY_TASK",
+      "severity": "REQUIRED",
+      "status": "UNSAFE",
+      "productive": true,
+      "hardcodeRisk": "HIGH",
+      "absenceSemantics": "La ausencia significa que no existe requisito heredado adicional; no puede obtenerse mediante fallo de carga ni JSON inválido neutralizado.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "PARTIAL",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "COMPLETE",
+        "api": "PARTIAL",
+        "ui": "PARTIAL",
+        "buildInput": "UNSAFE",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "PARTIAL",
+        "searchOrScoring": "PARTIAL",
+        "validation": "PARTIAL",
+        "publication": "PARTIAL",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "resourceRequirements continúa siendo demasiado amplio y no versionado.",
+        "Falta snapshot diario de requisitos de plantilla.",
+        "Algunas fuentes pueden degradarse a colecciones vacías."
+      ],
+      "sourceRefs": [
+        "ADDENDA OFICIALES CONSOLIDADOS v1.0",
+        "SPEC11-001 CFS-004",
+        "SPEC11-001 CFS-007"
+      ]
+    },
+    {
+      "capabilityId": "PLAN_TASK_TEMPLATE_SNAPSHOT",
+      "title": "Snapshot efectivo de plantillas por plan",
+      "owner": "PLAN",
+      "severity": "N_A",
+      "status": "DOCUMENTED_ONLY",
+      "productive": false,
+      "hardcodeRisk": "CRITICAL",
+      "absenceSemantics": "Los planes legacy deben usar backfill marcado; la planificación no puede crear snapshots ni releer silenciosamente el catálogo global.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "DOCUMENTED_ONLY",
+        "instanceOverride": "DOCUMENTED_ONLY",
+        "api": "DOCUMENTED_ONLY",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "ABSENT",
+        "preflight": "ABSENT",
+        "plannerNext": "N_A",
+        "searchOrScoring": "N_A",
+        "validation": "DOCUMENTED_ONLY",
+        "publication": "ABSENT",
+        "fingerprint": "DOCUMENTED_ONLY",
+        "evidence": "ABSENT"
+      },
+      "blockers": [
+        "Implementación DB Safe Merge pausada.",
+        "Faltan migración, RLS, storage, buildInput y tests completos."
+      ],
+      "sourceRefs": [
+        "SPEC11-001",
+        "SPEC11-002 diseño",
+        "PR #630 pausado"
+      ]
+    },
+    {
+      "capabilityId": "OPTIMIZER_DAILY_SNAPSHOT",
+      "title": "Snapshot diario de configuración del optimizador",
+      "owner": "PLANNER",
+      "severity": "MIXED",
+      "status": "UNSAFE",
+      "productive": true,
+      "hardcodeRisk": "CRITICAL",
+      "absenceSemantics": "No está definida; actualmente la ejecución puede releer optimizer_settings global.",
+      "layers": {
+        "domain": "PARTIAL",
+        "generalConfig": "COMPLETE",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "COMPLETE",
+        "ui": "COMPLETE",
+        "buildInput": "UNSAFE",
+        "engineInput": "PARTIAL",
+        "preflight": "ABSENT",
+        "plannerNext": "PARTIAL",
+        "searchOrScoring": "PARTIAL",
+        "validation": "PARTIAL",
+        "publication": "PARTIAL",
+        "fingerprint": "ABSENT",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "Cambios globales pueden alterar planes existentes.",
+        "No existe contrato diario versionado común.",
+        "Persisten campos legacy y nombres de plantillas operativas."
+      ],
+      "sourceRefs": [
+        "SPEC11-001 CFS-002",
+        "SPEC11-001 CFS-005"
+      ]
+    },
+    {
+      "capabilityId": "PLANNER_NEXT_PRODUCTIVE_CONFIGURATION",
+      "title": "Configuración productiva de Planner Next",
+      "owner": "INTEGRATION",
+      "severity": "MIXED",
+      "status": "ABSENT",
+      "productive": false,
+      "hardcodeRisk": "HIGH",
+      "absenceSemantics": "La ruta productiva actual no debe afirmar que Planner Next está configurado; el campo ausente mantiene el motor desconectado.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "ABSENT",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "PARTIAL",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "buildEngineInput no materializa plannerNext ni contratos exactos recientes.",
+        "Falta snapshot diario del optimizador.",
+        "Falta publicación productiva read-only completa."
+      ],
+      "sourceRefs": [
+        "SPEC-10",
+        "SPEC11-001 CFS-003"
+      ]
+    },
+    {
+      "capabilityId": "TASK_JOINT_OPERATION_REQUIRED",
+      "title": "Operaciones conjuntas REQUIRED",
+      "owner": "DAILY_TASK",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": false,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "Sin jointGroupId efectivo no existe operación conjunta.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "ABSENT",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [
+        "Faltan persistencia, snapshot, API y UI productivas."
+      ],
+      "sourceRefs": [
+        "SPEC-07",
+        "SPEC10 coverage",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "SPACE_SETUP_EXPLICIT_ORDER_REQUIRED",
+      "title": "Orden explícito REQUIRED de familias setup",
+      "owner": "SPACE",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": false,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "Sin setupPolicy efectiva no existe obligación de familias ni preparación derivada.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "PARTIAL",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "PARTIAL",
+        "buildInput": "ABSENT",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [
+        "No existe cadena productiva completa desde DB diaria a EngineInput."
+      ],
+      "sourceRefs": [
+        "SPEC-07",
+        "SPEC10 setup coverage",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "SPACE_SETUP_FLEXIBLE_ORDER_REQUIRED",
+      "title": "Orden flexible REQUIRED de familias setup",
+      "owner": "SPACE",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": false,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "Sin política flexible efectiva no se exploran órdenes alternativos.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "ABSENT",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [
+        "Capacidad demostrada sólo en contratos y Evidence focal.",
+        "Faltan persistencia y UI productivas."
+      ],
+      "sourceRefs": [
+        "SPEC10-020",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "TASK_ANCHORED_OPERATION_REQUIRED",
+      "title": "Operación anclada REQUIRED",
+      "owner": "DAILY_TASK",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": false,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "Sin contrato anclado efectivo, las tareas conservan sus identidades y dependencias ordinarias.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "ABSENT",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [
+        "Faltan persistencia, snapshot y editor productivo."
+      ],
+      "sourceRefs": [
+        "SPEC-08",
+        "SPEC10 anchored coverage",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "COACH_DIRECTIONAL_TRANSITION_REQUIRED",
+      "title": "Transición direccional REQUIRED de coach",
+      "owner": "RESOURCE",
+      "severity": "REQUIRED",
+      "status": "PARTIAL",
+      "productive": false,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "Sin relación origen-destino configurada no se inventa transición.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "ABSENT",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "COMPLETE",
+        "preflight": "COMPLETE",
+        "plannerNext": "COMPLETE",
+        "searchOrScoring": "COMPLETE",
+        "validation": "COMPLETE",
+        "publication": "PARTIAL",
+        "fingerprint": "COMPLETE",
+        "evidence": "COMPLETE"
+      },
+      "blockers": [
+        "No existe configuración productiva general ni diaria."
+      ],
+      "sourceRefs": [
+        "SPEC10-019",
+        "SPEC11-001"
+      ]
+    },
+    {
+      "capabilityId": "ROUND_SYNCHRONIZATION_REQUIRED",
+      "title": "Rondas sincronizadas REQUIRED",
+      "owner": "SPACE",
+      "severity": "REQUIRED",
+      "status": "WIP",
+      "productive": false,
+      "hardcodeRisk": "MEDIUM",
+      "absenceSemantics": "Sin política efectiva los espacios son independientes y no existe preparación entre rondas derivada.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "ABSENT",
+        "dailySnapshot": "ABSENT",
+        "instanceOverride": "ABSENT",
+        "api": "ABSENT",
+        "ui": "ABSENT",
+        "buildInput": "ABSENT",
+        "engineInput": "WIP",
+        "preflight": "WIP",
+        "plannerNext": "WIP",
+        "searchOrScoring": "ABSENT",
+        "validation": "WIP",
+        "publication": "ABSENT",
+        "fingerprint": "PARTIAL",
+        "evidence": "PARTIAL"
+      },
+      "blockers": [
+        "La ruta EXACT_CONSTRUCTIVE sigue rechazando la capacidad.",
+        "Falta integración incremental bajo ExactSearchLedger.",
+        "Faltan DB, snapshot, UI y publicación productiva."
+      ],
+      "sourceRefs": [
+        "SPEC-09",
+        "SPEC10-021 WIP",
+        "Rama spec10-021-totales-round-sync"
+      ]
+    },
+    {
+      "capabilityId": "TASK_TEMPORAL_HOLD_AFTER",
+      "title": "Ocupación temporal posterior a tarea",
+      "owner": "DAILY_TASK",
+      "severity": "MIXED",
+      "status": "DOCUMENTED_ONLY",
+      "productive": false,
+      "hardcodeRisk": "MEDIUM",
+      "absenceSemantics": "Ausencia equivale a OFF; la duración productiva no se extiende.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "DOCUMENTED_ONLY",
+        "dailySnapshot": "DOCUMENTED_ONLY",
+        "instanceOverride": "DOCUMENTED_ONLY",
+        "api": "DOCUMENTED_ONLY",
+        "ui": "DOCUMENTED_ONLY",
+        "buildInput": "ABSENT",
+        "engineInput": "DOCUMENTED_ONLY",
+        "preflight": "DOCUMENTED_ONLY",
+        "plannerNext": "DOCUMENTED_ONLY",
+        "searchOrScoring": "ABSENT",
+        "validation": "DOCUMENTED_ONLY",
+        "publication": "DOCUMENTED_ONLY",
+        "fingerprint": "DOCUMENTED_ONLY",
+        "evidence": "DOCUMENTED_ONLY"
+      },
+      "blockers": [
+        "Depende primero del snapshot efectivo de plantillas.",
+        "No existe persistencia ni implementación de motor."
+      ],
+      "sourceRefs": [
+        "SPEC-11",
+        "SPEC11-004"
+      ]
+    },
+    {
+      "capabilityId": "SPACE_START_ALIGNMENT_PREFERENCE",
+      "title": "Preferencia de alinear comienzos entre espacios",
+      "owner": "SPACE",
+      "severity": "PREFERRED",
+      "status": "DOCUMENTED_ONLY",
+      "productive": false,
+      "hardcodeRisk": "MEDIUM",
+      "absenceSemantics": "Ausencia equivale a OFF; los espacios permanecen independientes.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "DOCUMENTED_ONLY",
+        "dailySnapshot": "DOCUMENTED_ONLY",
+        "instanceOverride": "DOCUMENTED_ONLY",
+        "api": "DOCUMENTED_ONLY",
+        "ui": "DOCUMENTED_ONLY",
+        "buildInput": "ABSENT",
+        "engineInput": "DOCUMENTED_ONLY",
+        "preflight": "DOCUMENTED_ONLY",
+        "plannerNext": "DOCUMENTED_ONLY",
+        "searchOrScoring": "DOCUMENTED_ONLY",
+        "validation": "DOCUMENTED_ONLY",
+        "publication": "DOCUMENTED_ONLY",
+        "fingerprint": "DOCUMENTED_ONLY",
+        "evidence": "DOCUMENTED_ONLY"
+      },
+      "blockers": [
+        "Contrato en PR documental pendiente de merge.",
+        "Depende de snapshot efectivo y scoring productivo explícito."
+      ],
+      "sourceRefs": [
+        "SPEC-11",
+        "SPEC11-005 PR #633"
+      ]
+    },
+    {
+      "capabilityId": "EFFECTIVE_CONFIGURATION_ORIGIN_UI",
+      "title": "Visualización de valor efectivo, origen y override",
+      "owner": "GOVERNANCE",
+      "severity": "N_A",
+      "status": "DOCUMENTED_ONLY",
+      "productive": false,
+      "hardcodeRisk": "LOW",
+      "absenceSemantics": "La UI histórica continúa mostrando valores sin origen común; no se debe inferir que son heredados.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "N_A",
+        "dailySnapshot": "N_A",
+        "instanceOverride": "N_A",
+        "api": "DOCUMENTED_ONLY",
+        "ui": "DOCUMENTED_ONLY",
+        "buildInput": "N_A",
+        "engineInput": "N_A",
+        "preflight": "N_A",
+        "plannerNext": "N_A",
+        "searchOrScoring": "N_A",
+        "validation": "DOCUMENTED_ONLY",
+        "publication": "DOCUMENTED_ONLY",
+        "fingerprint": "N_A",
+        "evidence": "N_A"
+      },
+      "blockers": [
+        "Faltan componentes React, contratos API y auditoría comunes."
+      ],
+      "sourceRefs": [
+        "SPEC-11",
+        "SPEC11-003 PR #631"
+      ]
+    },
+    {
+      "capabilityId": "CONFIGURABILITY_GOVERNANCE_GATE",
+      "title": "Gate permanente de configurabilidad",
+      "owner": "GOVERNANCE",
+      "severity": "N_A",
+      "status": "WIP",
+      "productive": false,
+      "hardcodeRisk": "NONE",
+      "absenceSemantics": "Sin gate los PR deben revisarse manualmente y la deuda puede no declararse.",
+      "layers": {
+        "domain": "COMPLETE",
+        "generalConfig": "N_A",
+        "dailySnapshot": "N_A",
+        "instanceOverride": "N_A",
+        "api": "N_A",
+        "ui": "N_A",
+        "buildInput": "N_A",
+        "engineInput": "N_A",
+        "preflight": "N_A",
+        "plannerNext": "N_A",
+        "searchOrScoring": "N_A",
+        "validation": "WIP",
+        "publication": "N_A",
+        "fingerprint": "N_A",
+        "evidence": "WIP"
+      },
+      "blockers": [
+        "PR #634 pendiente de CI y merge.",
+        "Checker estático futuro todavía no implementado."
+      ],
+      "sourceRefs": [
+        "SPEC11-006 PR #634"
+      ]
+    }
+  ]
+}
