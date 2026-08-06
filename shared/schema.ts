@@ -393,6 +393,49 @@ export const taskTemplates = pgTable("task_templates", {
   spaceId: integer("space_id").references((): any => spaces.id),
 });
 
+// 6.1 plan_task_template_snapshots (per-plan operational snapshot)
+export const planTaskTemplateSnapshots = pgTable("plan_task_template_snapshots", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  sourceTemplateId: integer("source_template_id").notNull(),
+  contractVersion: integer("contract_version").notNull().default(1),
+  source: text("source").notNull(),
+  templateName: text("template_name").notNull(),
+  defaultDuration: integer("default_duration").notNull(),
+  defaultCameras: integer("default_cameras").notNull().default(0),
+  defaultZoneId: integer("default_zone_id"),
+  defaultSpaceId: integer("default_space_id"),
+  autoCreateOnContestantCreate: boolean("auto_create_on_contestant_create").notNull().default(false),
+  requiresAuxiliar: boolean("requires_auxiliar").notNull().default(false),
+  requiresCoach: boolean("requires_coach").notNull().default(false),
+  requiresPresenter: boolean("requires_presenter").notNull().default(false),
+  exclusiveAuxiliar: boolean("exclusive_auxiliar").notNull().default(false),
+  hasDependency: boolean("has_dependency").notNull().default(false),
+  dependencyTemplateIds: jsonb("dependency_template_ids").$type<number[]>().notNull().default([]),
+  resourceRequirements: jsonb("resource_requirements").$type<any>(),
+  itinerantTeamRequirement: text("itinerant_team_requirement").notNull().default("none"),
+  itinerantTeamId: integer("itinerant_team_id"),
+  allowedItinerantTeamIds: jsonb("allowed_itinerant_team_ids").$type<number[]>().notNull().default([]),
+  setupId: integer("setup_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planIdx: index("plan_task_template_snapshots_plan_id_idx").on(table.planId),
+  planTemplateUnique: uniqueIndex("plan_task_template_snapshots_plan_template_key").on(table.planId, table.sourceTemplateId),
+  versionCheck: check("plan_task_template_snapshots_contract_version_check", sql`${table.contractVersion} = 1`),
+  sourceCheck: check("plan_task_template_snapshots_source_check", sql`${table.source} in ('inherited', 'legacy_backfill', 'ad_hoc_from_default')`),
+  templateNameCheck: check("plan_task_template_snapshots_template_name_check", sql`length(btrim(${table.templateName})) > 0`),
+  durationCheck: check("plan_task_template_snapshots_duration_check", sql`${table.defaultDuration} > 0`),
+  camerasCheck: check("plan_task_template_snapshots_cameras_check", sql`${table.defaultCameras} >= 0`),
+  dependencyArrayCheck: check("plan_task_template_snapshots_dependency_array_check", sql`jsonb_typeof(${table.dependencyTemplateIds}) = 'array'`),
+  allowedTeamArrayCheck: check("plan_task_template_snapshots_allowed_team_array_check", sql`jsonb_typeof(${table.allowedItinerantTeamIds}) = 'array'`),
+  itinerantRequirementCheck: check("plan_task_template_snapshots_itinerant_requirement_check", sql`${table.itinerantTeamRequirement} in ('none', 'any', 'specific')`),
+  specificTeamCheck: check(
+    "plan_task_template_snapshots_specific_team_check",
+    sql`((${table.itinerantTeamRequirement} = 'specific' and ${table.itinerantTeamId} is not null and ${table.itinerantTeamId} > 0) or (${table.itinerantTeamRequirement} <> 'specific' and ${table.itinerantTeamId} is null))`,
+  ),
+}));
+
 // 6.5 contestants (global catalog for now)
 export const contestants = pgTable("contestants", {
   id: serial("id").primaryKey(),
@@ -530,6 +573,7 @@ export const insertResourceBundleComponentSchema = createInsertSchema(resourceBu
 export const insertResourceBundleSpaceAffinitySchema = createInsertSchema(resourceBundleSpaceAffinities).omit({ id: true });
 export const insertAvailabilitySchema = createInsertSchema(resourceAvailability).omit({ id: true });
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({ id: true });
+export const insertPlanTaskTemplateSnapshotSchema = createInsertSchema(planTaskTemplateSnapshots).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertResourcePoolSchema = createInsertSchema(resourcePools).omit({ id: true });
 export const insertPlanResourcePoolSchema = createInsertSchema(planResourcePools).omit({ id: true });
 export const insertDailyTaskSchema = createInsertSchema(dailyTasks).omit({ id: true });
@@ -558,6 +602,8 @@ export type Lock = typeof locks.$inferSelect;
 export type InsertLock = z.infer<typeof insertLockSchema>;
 
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
+export type PlanTaskTemplateSnapshot = typeof planTaskTemplateSnapshots.$inferSelect;
+export type InsertPlanTaskTemplateSnapshot = typeof planTaskTemplateSnapshots.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
 export type ResourceType = typeof resourceTypes.$inferSelect;
 export type ResourceItem = typeof resourceItems.$inferSelect;
