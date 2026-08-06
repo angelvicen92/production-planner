@@ -57,22 +57,26 @@ const fs = require("node:fs");
 const path = "engine/planner-next/roundSynchronization.spec.ts";
 let text = fs.readFileSync(path, "utf8");
 
-function replaceStart(taskId, oldStart, newStart) {
-  const escaped = taskId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const oldPattern = new RegExp(`(["']${escaped}["']\\s*,\\s*)${oldStart}\\b`, "g");
-  const newPattern = new RegExp(`["']${escaped}["']\\s*,\\s*${newStart}\\b`);
-  let replacements = 0;
-  text = text.replace(oldPattern, (_match, prefix) => {
-    replacements += 1;
-    return `${prefix}${newStart}`;
-  });
-  if (replacements === 0 && !newPattern.test(text)) {
-    throw new Error(`SPEC10-021 fixture correction anchor missing for ${taskId}`);
+function replaceUniqueMinute(oldMinute, newMinute, label) {
+  const oldPattern = new RegExp(`\\b${oldMinute}\\b`, "g");
+  const newPattern = new RegExp(`\\b${newMinute}\\b`, "g");
+  const oldMatches = text.match(oldPattern) ?? [];
+  const newMatches = text.match(newPattern) ?? [];
+
+  if (oldMatches.length === 1) {
+    text = text.replace(oldPattern, String(newMinute));
+    return;
   }
+  if (oldMatches.length === 0 && newMatches.length >= 1) return;
+
+  throw new Error(
+    `SPEC10-021 fixture correction ambiguous for ${label}: `
+      + `${oldMinute} count=${oldMatches.length}, ${newMinute} count=${newMatches.length}`,
+  );
 }
 
-replaceStart("task:101", 645, 690);
-replaceStart("task:103", 675, 720);
+replaceUniqueMinute(645, 690, "task:101");
+replaceUniqueMinute(675, 720, "task:103");
 fs.writeFileSync(path, text);
 NODE
 
