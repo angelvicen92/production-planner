@@ -1,0 +1,264 @@
+{
+  "$schema": "./engine-input-source-criticality.schema.json",
+  "registryVersion": 1,
+  "auditedMainSha": "873803296db243026e267eb6f371f31ed2f9d388",
+  "auditedAt": "2026-08-06",
+  "sources": [
+    {
+      "sourceId": "EIS-001",
+      "loader": "storage.getPlanFullDetails(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Contiene identidad del plan, tareas, locks, pausas y estado base. Sin esta realidad no existe EngineInput representable.",
+      "capabilityIds": ["PLAN_WORKDAY_WINDOW", "PLANNER_NEXT_PRODUCTIVE_CONFIGURATION"],
+      "requiredReasonCode": "ENGINE_INPUT_PLAN_DETAILS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-002",
+      "loader": "storage.getContestantsByPlan(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Define participantes, disponibilidad y asignación de coach del día. Una lista vacía sólo es válida si la DB devuelve válidamente cero filas.",
+      "capabilityIds": ["PARTICIPANT_AVAILABILITY_WINDOW"],
+      "requiredReasonCode": "ENGINE_INPUT_PARTICIPANTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-003",
+      "loader": "storage.getCamerasAvailableForPlan(planId)",
+      "criticality": "LEGACY_COMPATIBILITY",
+      "currentBehavior": "LEGACY_FALLBACK",
+      "targetFailurePolicy": "CONTINUE_WITH_MARKED_LEGACY",
+      "reason": "La ausencia de filas de snapshot puede representar un plan legacy; un error de lectura no es equivalente a ausencia de snapshot.",
+      "capabilityIds": ["RESOURCE_AVAILABILITY_WINDOW"],
+      "requiredReasonCode": "ENGINE_INPUT_CAMERA_SNAPSHOT_LOAD_FAILED",
+      "notes": "La compatibilidad con plan.camerasAvailable debe activarse sólo tras distinguir ausencia válida de error."
+    },
+    {
+      "sourceId": "EIS-004",
+      "loader": "storage.getResourceBundles()",
+      "criticality": "OPTIONAL_SIGNAL",
+      "currentBehavior": "WARNING_FALLBACK",
+      "targetFailurePolicy": "CONTINUE_WITH_WARNING",
+      "reason": "Actualmente los bundles sólo aportan scoring/afinidad y no representan una obligación hard.",
+      "capabilityIds": ["CONFIGURABILITY_GOVERNANCE_GATE"],
+      "requiredReasonCode": "RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-005",
+      "loader": "storage.getResourceBundleComponents()",
+      "criticality": "OPTIONAL_SIGNAL",
+      "currentBehavior": "WARNING_FALLBACK",
+      "targetFailurePolicy": "CONTINUE_WITH_WARNING",
+      "reason": "Los componentes de bundle pertenecen a la misma señal soft mientras los bundles no sean REQUIRED.",
+      "capabilityIds": ["CONFIGURABILITY_GOVERNANCE_GATE"],
+      "requiredReasonCode": "RESOURCE_BUNDLE_COMPONENT_SIGNAL_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-006",
+      "loader": "storage.getResourceBundleSpaceAffinities()",
+      "criticality": "OPTIONAL_SIGNAL",
+      "currentBehavior": "WARNING_FALLBACK",
+      "targetFailurePolicy": "CONTINUE_WITH_WARNING",
+      "reason": "La afinidad no cambia hard validity y puede neutralizarse con warning explícito.",
+      "capabilityIds": ["CONFIGURABILITY_GOVERNANCE_GATE"],
+      "requiredReasonCode": "RESOURCE_BUNDLE_AFFINITY_SIGNAL_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-007",
+      "loader": "storage.getZoneResourceAssignmentsForPlan(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "NEUTRAL_FALLBACK",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Una asignación persistida puede representar disponibilidad o anclaje hard de recursos por zona.",
+      "capabilityIds": ["TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_ZONE_RESOURCE_ASSIGNMENTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-008",
+      "loader": "storage.getSpaceResourceAssignmentsForPlan(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "NEUTRAL_FALLBACK",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Los recursos asociados a un espacio forman parte de la realidad física del plan.",
+      "capabilityIds": ["TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_SPACE_RESOURCE_ASSIGNMENTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-009",
+      "loader": "storage.getOptimizerSettings()",
+      "criticality": "FORBIDDEN_GLOBAL_READ",
+      "currentBehavior": "GLOBAL_READ",
+      "targetFailurePolicy": "NOT_ALLOWED",
+      "reason": "La ejecución de un día existente no debe depender del estado actual de la configuración global del optimizador.",
+      "capabilityIds": ["OPTIMIZER_DAILY_SNAPSHOT", "PLANNER_NEXT_PRODUCTIVE_CONFIGURATION"],
+      "requiredReasonCode": "ENGINE_INPUT_OPTIMIZER_SNAPSHOT_REQUIRED"
+    },
+    {
+      "sourceId": "EIS-010",
+      "loader": "storage.getSpaces()",
+      "criticality": "LEGACY_COMPATIBILITY",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Actualmente aporta jerarquía, capacidad, nombres y prioridades globales. Las propiedades operativas deben migrar a snapshot; mientras tanto un fallo de lectura continúa siendo hard.",
+      "capabilityIds": ["SPACE_AVAILABILITY_WINDOW", "OPTIMIZER_DAILY_SNAPSHOT"],
+      "requiredReasonCode": "ENGINE_INPUT_SPACE_CATALOG_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-011",
+      "loader": "storage.getZones()",
+      "criticality": "LEGACY_COMPATIBILITY",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Actualmente aporta preferencias, agrupación y aliases nominales; las relaciones temporales diarias ya tienen snapshot, pero otras propiedades operativas no.",
+      "capabilityIds": ["SPACE_AVAILABILITY_WINDOW", "OPTIMIZER_DAILY_SNAPSHOT"],
+      "requiredReasonCode": "ENGINE_INPUT_ZONE_CATALOG_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-012",
+      "loader": "storage.getZoneResourceTypeRequirementsForPlan(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "NEUTRAL_FALLBACK",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Las cantidades de tipos de recurso exigidas por zona son obligaciones hard cuando existen.",
+      "capabilityIds": ["TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_ZONE_RESOURCE_REQUIREMENTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-013",
+      "loader": "storage.getSpaceResourceTypeRequirementsForPlan(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "NEUTRAL_FALLBACK",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Las cantidades de tipos de recurso exigidas por espacio son obligaciones hard cuando existen.",
+      "capabilityIds": ["TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_SPACE_RESOURCE_REQUIREMENTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-014",
+      "loader": "storage.getPlanResourceItemsForPlan(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "NEUTRAL_FALLBACK",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Es el inventario real y la disponibilidad de recursos del día. Una lista vacía sólo es válida como resultado correcto, no como catch.",
+      "capabilityIds": ["RESOURCE_AVAILABILITY_WINDOW", "PLANNER_NEXT_PRODUCTIVE_CONFIGURATION"],
+      "requiredReasonCode": "ENGINE_INPUT_PLAN_RESOURCES_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-015",
+      "loader": "storage.getPlanZoneSettings(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Contiene la disponibilidad espacial diaria autoritativa de zonas.",
+      "capabilityIds": ["SPACE_AVAILABILITY_WINDOW"],
+      "requiredReasonCode": "ENGINE_INPUT_PLAN_ZONE_SETTINGS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-016",
+      "loader": "storage.getPlanSpaceSettings(planId)",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Contiene la disponibilidad y zoneId diarios autoritativos de espacios.",
+      "capabilityIds": ["SPACE_AVAILABILITY_WINDOW"],
+      "requiredReasonCode": "ENGINE_INPUT_PLAN_SPACE_SETTINGS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-017",
+      "loader": "storage.getResourceItemComponentsMap(resourceItemIds)",
+      "criticality": "CONDITIONAL_REQUIRED_INPUT",
+      "currentBehavior": "NEUTRAL_FALLBACK",
+      "targetFailurePolicy": "ABORT_IF_REFERENCED",
+      "reason": "La fuente sólo es hard cuando un recurso compuesto requerido o asignado necesita expandirse; para recursos simples un mapa vacío puede ser válido.",
+      "capabilityIds": ["TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_RESOURCE_COMPONENTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-018",
+      "loader": "storage.getTaskTemplates()",
+      "criticality": "FORBIDDEN_GLOBAL_READ",
+      "currentBehavior": "GLOBAL_READ",
+      "targetFailurePolicy": "NOT_ALLOWED",
+      "reason": "La interpretación de tareas de un plan no puede depender de plantillas globales mutables.",
+      "capabilityIds": [
+        "PLAN_TASK_TEMPLATE_SNAPSHOT",
+        "TASK_DURATION_EFFECTIVE",
+        "TASK_DEPENDENCY_EFFECTIVE",
+        "TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"
+      ],
+      "requiredReasonCode": "ENGINE_INPUT_TASK_TEMPLATE_SNAPSHOT_REQUIRED"
+    },
+    {
+      "sourceId": "EIS-019",
+      "loader": "storage.getPlanTaskTemplateSnapshots(planId)",
+      "criticality": "FUTURE_REQUIRED_INPUT",
+      "currentBehavior": "NOT_IMPLEMENTED",
+      "targetFailurePolicy": "N_A_UNTIL_IMPLEMENTED",
+      "reason": "Será la autoridad diaria de duración, dependencias, ubicación, requisitos y reglas tipadas heredadas.",
+      "capabilityIds": ["PLAN_TASK_TEMPLATE_SNAPSHOT"],
+      "requiredReasonCode": "ENGINE_INPUT_TASK_TEMPLATE_SNAPSHOTS_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-020",
+      "loader": "storage.getPlanOptimizerSnapshot(planId)",
+      "criticality": "FUTURE_REQUIRED_INPUT",
+      "currentBehavior": "NOT_IMPLEMENTED",
+      "targetFailurePolicy": "N_A_UNTIL_IMPLEMENTED",
+      "reason": "Será la autoridad diaria de política de búsqueda, pesos, transporte, flujo principal y demás preferencias del optimizador.",
+      "capabilityIds": ["OPTIMIZER_DAILY_SNAPSHOT"],
+      "requiredReasonCode": "ENGINE_INPUT_OPTIMIZER_SNAPSHOT_UNAVAILABLE"
+    },
+    {
+      "sourceId": "EIS-021",
+      "loader": "details.plan",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Aporta jornada, configuración diaria del plan y referencias de pausas; debe validarse como contrato completo.",
+      "capabilityIds": ["PLAN_WORKDAY_WINDOW"],
+      "requiredReasonCode": "ENGINE_INPUT_PLAN_CONTRACT_INVALID"
+    },
+    {
+      "sourceId": "EIS-022",
+      "loader": "details.tasks",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Es el conjunto de trabajo y estados del día. Un resultado vacío puede ser válido, pero un fallo o forma inválida no.",
+      "capabilityIds": ["TASK_DURATION_EFFECTIVE", "TASK_DEPENDENCY_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_TASKS_INVALID"
+    },
+    {
+      "sourceId": "EIS-023",
+      "loader": "details.locks",
+      "criticality": "REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_BUILD",
+      "reason": "Los locks son decisiones humanas obligatorias y no pueden omitirse ni degradarse.",
+      "capabilityIds": ["PLANNER_NEXT_PRODUCTIVE_CONFIGURATION"],
+      "requiredReasonCode": "ENGINE_INPUT_LOCKS_INVALID"
+    },
+    {
+      "sourceId": "EIS-024",
+      "loader": "details.breaks",
+      "criticality": "CONDITIONAL_REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_IF_REFERENCED",
+      "reason": "Las pausas configuradas son obligaciones; una lista vacía es válida sólo si no existen pausas del plan.",
+      "capabilityIds": ["PLAN_WORKDAY_WINDOW"],
+      "requiredReasonCode": "ENGINE_INPUT_BREAKS_INVALID"
+    },
+    {
+      "sourceId": "EIS-025",
+      "loader": "contestant vocal coach projection",
+      "criticality": "CONDITIONAL_REQUIRED_INPUT",
+      "currentBehavior": "DIRECT_HARD",
+      "targetFailurePolicy": "ABORT_IF_REFERENCED",
+      "reason": "La asignación de coach es obligatoria para tareas que lo requieren; un participante sin obligación puede no tenerla.",
+      "capabilityIds": ["TASK_RESOURCE_REQUIREMENTS_EFFECTIVE"],
+      "requiredReasonCode": "ENGINE_INPUT_REQUIRED_COACH_ASSIGNMENT_MISSING"
+    }
+  ]
+}
