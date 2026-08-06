@@ -1,0 +1,100 @@
+
+    createSpec10018SetupPolicyEngineInputFixture(
+      familyOrder,
+    ),
+  flexibleOrder = false,
+): Spec10018ProbeRun {`,
+);
+replaceExact(
+  "engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
+  `  assert.deepEqual(
+    result.familyOrder,
+    canonicalFamilyOrder,
+  );
+
+  assert.deepEqual(
+    result.familySequence,
+    canonicalFamilyOrder,
+  );`,
+  `  if (flexibleOrder) {
+    assert.deepEqual([...result.familyOrder].sort(compare), [...canonicalFamilyOrder].sort(compare));
+    assert.deepEqual([...result.familySequence].sort(compare), [...canonicalFamilyOrder].sort(compare));
+  } else {
+    assert.deepEqual(result.familyOrder, canonicalFamilyOrder);
+    assert.deepEqual(result.familySequence, canonicalFamilyOrder);
+  }`,
+);
+replaceExact(
+  "engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
+  `  assert.equal(
+    result.preparations[0]
+      ?.setupFamilyId,
+    canonicalFamilyOrder[1],
+  );`,
+  `  assert.equal(
+    result.preparations[0]
+      ?.setupFamilyId,
+    flexibleOrder ? result.familySequence[1] : canonicalFamilyOrder[1],
+  );`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.spec.ts",
+  `test("SPEC10-018 accepts explicit setup policy and rejects flexible order deterministically", () => {
+  const input = createSpec10018SetupPolicyEngineInputFixture();
+  const explicit = preflightEngineInputForPlannerNext(input);
+  assert.equal(explicit.status, "SUPPORTED");
+  assert.ok(explicit.identityMap.some((entry) => entry.namespace === "setup-family" && entry.sourceId === "304:sillon" && entry.canonicalId === "setup-family:304:sillon"));
+
+  input.setupPolicies![0].orderConstraint = "UNSPECIFIED";
+  delete input.setupPolicies![0].familyOrder;
+  const flexible = preflightEngineInputForPlannerNext(input);
+  assert.equal(flexible.status, "UNSUPPORTED");
+  assert.ok(flexible.reasonCodes.includes("UNSUPPORTED_FLEXIBLE_SETUP_ORDER"));
+});`,
+  `test("SPEC10-020 accepts valid flexible setup order deterministically", () => {
+  const input = createSpec10018SetupPolicyEngineInputFixture();
+  const explicit = preflightEngineInputForPlannerNext(input);
+  assert.equal(explicit.status, "SUPPORTED");
+  assert.ok(explicit.identityMap.some((entry) => entry.namespace === "setup-family" && entry.sourceId === "304:sillon" && entry.canonicalId === "setup-family:304:sillon"));
+
+  input.setupPolicies![0].orderConstraint = "UNSPECIFIED";
+  delete input.setupPolicies![0].familyOrder;
+  const flexible = preflightEngineInputForPlannerNext(input);
+  assert.equal(flexible.status, "SUPPORTED");
+  assert.equal(flexible.reasonCodes.includes("UNSUPPORTED_FLEXIBLE_SETUP_ORDER"), false);
+});`,
+);
+
+replaceExact(
+  "engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
+  `    unsupported(
+      (input) => {
+        input.setupPolicies![0]!
+          .orderConstraint =
+          "UNSPECIFIED";
+
+        delete input.setupPolicies![0]!
+          .familyOrder;
+      },
+      "UNSUPPORTED_FLEXIBLE_SETUP_ORDER",
+    ),`,
+  `    unsupported(
+      (input) => {
+        input.setupPolicies![0]!
+          .orderConstraint =
+          "UNSPECIFIED";
+      },
+      "UNSUPPORTED_SETUP_MAPPING",
+    ),`,
+);
+
+replaceExact(
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  'import { runSpec10019Probe } from "../../runSpec10019CoachRouteTransitionBenchmark";',
+  'import { runSpec10019Probe } from "../../runSpec10019CoachRouteTransitionBenchmark";\nimport { createSpec10020FlexibleSetupOrderEngineInputFixture } from "../../../integration/engineInputAdapter.fixture";',
+);
+replaceExact(
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  '    const baseline = runSpec10018Probe();\n    const repeated = runSpec10018Probe();',
+  '    const baseline = runSpec1001
