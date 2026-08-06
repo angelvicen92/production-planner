@@ -97,6 +97,9 @@ const evidence = {
   jointGroupCapabilityProven: representability.jointGroupCapabilityProven,
   setupPolicyProbe: representability.setupPolicyProbe,
   setupPolicyCapabilityProven: representability.setupPolicyCapabilityProven,
+  flexibleSetupOrderProbe: representability.flexibleSetupOrderProbe,
+  flexibleSetupOrderCapabilityProven:
+    representability.flexibleSetupOrderCapabilityProven,
   representabilityGate: gate,
   noEngineInputPartial: gate.engineInputBuilt === false,
   noSeedSchedule: expansion.tasks.every((task) => !("start" in task) && !("end" in task) && !("startPlanned" in task) && !("referenceOrder" in task)),
@@ -176,7 +179,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}, setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven} y supportsSpecificCoachRouteTransition=${representability.adapterProbe.supportsSpecificCoachRouteTransition}. La transición Caracola→Estudio 7 se conserva por coach, origen y destino sin convertir 30 minutos en un margen global. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
+${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}, setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven}, flexibleSetupOrderCapabilityProven=${representability.flexibleSetupOrderCapabilityProven} y supportsSpecificCoachRouteTransition=${representability.adapterProbe.supportsSpecificCoachRouteTransition}. SPEC10-020 demuestra que EXACT_CONSTRUCTIVE explora ambos órdenes Sillón/Estrellas, publica la preparación y valida el resultado completo sin imponer un orden fijo. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
 
 ## No implementado
 

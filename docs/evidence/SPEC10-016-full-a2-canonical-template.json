@@ -1139,33 +1139,6 @@
   ],
   "implementationBlockers": [
     {
-      "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
-      "layer": "PLANNER_NEXT",
-      "affectedRule": "orden flexible entre familias Sillón/Estrellas",
-      "canonicalIds": [
-        "C02.estrellas",
-        "C02.sillon",
-        "C05.estrellas",
-        "C05.sillon",
-        "C06.estrellas",
-        "C07.estrellas",
-        "C07.sillon",
-        "C09.estrellas",
-        "C09.sillon",
-        "C10.estrellas",
-        "C10.sillon",
-        "C11.sillon",
-        "C13.estrellas",
-        "C13.sillon",
-        "C15.sillon",
-        "C17.estrellas",
-        "C18.sillon"
-      ],
-      "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
-      "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
-      "implementationRank": 4
-    },
-    {
       "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
       "layer": "PLANNER_NEXT",
       "affectedRule": "sincronización de rondas Totales 1/Coreo",
@@ -1196,31 +1169,33 @@
     }
   ],
   "nextImplementationBlocker": {
-    "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+    "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
     "layer": "PLANNER_NEXT",
-    "affectedRule": "orden flexible entre familias Sillón/Estrellas",
+    "affectedRule": "sincronización de rondas Totales 1/Coreo",
     "canonicalIds": [
-      "C02.estrellas",
-      "C02.sillon",
-      "C05.estrellas",
-      "C05.sillon",
-      "C06.estrellas",
-      "C07.estrellas",
-      "C07.sillon",
-      "C09.estrellas",
-      "C09.sillon",
-      "C10.estrellas",
-      "C10.sillon",
-      "C11.sillon",
-      "C13.estrellas",
-      "C13.sillon",
-      "C15.sillon",
-      "C17.estrellas",
-      "C18.sillon"
+      "C01.totales_1",
+      "C02.totales_coreo",
+      "C03.totales_1",
+      "C04.totales_coreo",
+      "C05.totales_1",
+      "C06.totales_coreo",
+      "C07.totales_1",
+      "C08.totales_coreo",
+      "C09.totales_1",
+      "C10.totales_coreo",
+      "C11.totales_1",
+      "C12.totales_1",
+      "C13.totales_1",
+      "C14.totales_coreo",
+      "C15.totales_1",
+      "C16.totales_coreo",
+      "C17.totales_1",
+      "C18.totales_coreo",
+      "C19.totales_coreo"
     ],
-    "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
-    "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
-    "implementationRank": 4
+    "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
+    "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+    "implementationRank": 5
   },
   "adapterProbe": {
     "executed": true,
@@ -1269,8 +1244,8 @@
     "orderInvariant": true,
     "inputImmutable": true,
     "familyOrder": [
-      "setup-family:304:sillon",
-      "setup-family:304:estrellas"
+      "setup-family:304:estrellas",
+      "setup-family:304:sillon"
     ],
     "familySequence": [
       "setup-family:304:sillon",
@@ -1278,6 +1253,36 @@
     ]
   },
   "setupPolicyCapabilityProven": true,
+  "flexibleSetupOrderProbe": {
+    "executed": true,
+    "engineInputPreflightSupported": true,
+    "adapterSupported": true,
+    "plannerNextPreflightSupported": true,
+    "exactPolicySelected": true,
+    "complete": true,
+    "hardValid": true,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "observedFamilyOrders": [
+      "setup-family:304:estrellas>setup-family:304:sillon",
+      "setup-family:304:sillon>setup-family:304:estrellas"
+    ],
+    "observedBothOrders": true,
+    "selectedFamilySequence": [
+      "setup-family:304:sillon",
+      "setup-family:304:estrellas"
+    ],
+    "selectedPreparationCount": 1,
+    "selectedPreparationMinutes": 10,
+    "preparationTargetsSecondFamily": true,
+    "deterministic": true,
+    "orderInvariant": true,
+    "inputImmutable": true,
+    "sharedBudgetAccounting": true,
+    "atomicOnBudgetExhaustion": true,
+    "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
+  },
+  "flexibleSetupOrderCapabilityProven": true,
   "representabilityGate": {
     "status": "REJECTED_BLOCKED",
     "analysis": {
@@ -1357,33 +1362,6 @@
         }
       ],
       "implementationBlockers": [
-        {
-          "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
-          "layer": "PLANNER_NEXT",
-          "affectedRule": "orden flexible entre familias Sillón/Estrellas",
-          "canonicalIds": [
-            "C02.estrellas",
-            "C02.sillon",
-            "C05.estrellas",
-            "C05.sillon",
-            "C06.estrellas",
-            "C07.estrellas",
-            "C07.sillon",
-            "C09.estrellas",
-            "C09.sillon",
-            "C10.estrellas",
-            "C10.sillon",
-            "C11.sillon",
-            "C13.estrellas",
-            "C13.sillon",
-            "C15.sillon",
-            "C17.estrellas",
-            "C18.sillon"
-          ],
-          "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
-          "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
-          "implementationRank": 4
-        },
         {
           "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
           "layer": "PLANNER_NEXT",
@@ -1488,33 +1466,6 @@
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
         },
         {
-          "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
-          "layer": "PLANNER_NEXT",
-          "affectedRule": "orden flexible entre familias Sillón/Estrellas",
-          "canonicalIds": [
-            "C02.estrellas",
-            "C02.sillon",
-            "C05.estrellas",
-            "C05.sillon",
-            "C06.estrellas",
-            "C07.estrellas",
-            "C07.sillon",
-            "C09.estrellas",
-            "C09.sillon",
-            "C10.estrellas",
-            "C10.sillon",
-            "C11.sillon",
-            "C13.estrellas",
-            "C13.sillon",
-            "C15.sillon",
-            "C17.estrellas",
-            "C18.sillon"
-          ],
-          "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
-          "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
-          "implementationRank": 4
-        },
-        {
           "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
           "layer": "PLANNER_NEXT",
           "affectedRule": "sincronización de rondas Totales 1/Coreo",
@@ -1545,31 +1496,33 @@
         }
       ],
       "nextImplementationBlocker": {
-        "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+        "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
         "layer": "PLANNER_NEXT",
-        "affectedRule": "orden flexible entre familias Sillón/Estrellas",
+        "affectedRule": "sincronización de rondas Totales 1/Coreo",
         "canonicalIds": [
-          "C02.estrellas",
-          "C02.sillon",
-          "C05.estrellas",
-          "C05.sillon",
-          "C06.estrellas",
-          "C07.estrellas",
-          "C07.sillon",
-          "C09.estrellas",
-          "C09.sillon",
-          "C10.estrellas",
-          "C10.sillon",
-          "C11.sillon",
-          "C13.estrellas",
-          "C13.sillon",
-          "C15.sillon",
-          "C17.estrellas",
-          "C18.sillon"
+          "C01.totales_1",
+          "C02.totales_coreo",
+          "C03.totales_1",
+          "C04.totales_coreo",
+          "C05.totales_1",
+          "C06.totales_coreo",
+          "C07.totales_1",
+          "C08.totales_coreo",
+          "C09.totales_1",
+          "C10.totales_coreo",
+          "C11.totales_1",
+          "C12.totales_1",
+          "C13.totales_1",
+          "C14.totales_coreo",
+          "C15.totales_1",
+          "C16.totales_coreo",
+          "C17.totales_1",
+          "C18.totales_coreo",
+          "C19.totales_coreo"
         ],
-        "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
-        "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
-        "implementationRank": 4
+        "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
+        "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+        "implementationRank": 5
       },
       "adapterProbe": {
         "executed": true,
@@ -1618,15 +1571,45 @@
         "orderInvariant": true,
         "inputImmutable": true,
         "familyOrder": [
-          "setup-family:304:sillon",
-          "setup-family:304:estrellas"
+          "setup-family:304:estrellas",
+          "setup-family:304:sillon"
         ],
         "familySequence": [
           "setup-family:304:sillon",
           "setup-family:304:estrellas"
         ]
       },
-      "setupPolicyCapabilityProven": true
+      "setupPolicyCapabilityProven": true,
+      "flexibleSetupOrderProbe": {
+        "executed": true,
+        "engineInputPreflightSupported": true,
+        "adapterSupported": true,
+        "plannerNextPreflightSupported": true,
+        "exactPolicySelected": true,
+        "complete": true,
+        "hardValid": true,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "observedFamilyOrders": [
+          "setup-family:304:estrellas>setup-family:304:sillon",
+          "setup-family:304:sillon>setup-family:304:estrellas"
+        ],
+        "observedBothOrders": true,
+        "selectedFamilySequence": [
+          "setup-family:304:sillon",
+          "setup-family:304:estrellas"
+        ],
+        "selectedPreparationCount": 1,
+        "selectedPreparationMinutes": 10,
+        "preparationTargetsSecondFamily": true,
+        "deterministic": true,
+        "orderInvariant": true,
+        "inputImmutable": true,
+        "sharedBudgetAccounting": true,
+        "atomicOnBudgetExhaustion": true,
+        "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
+      },
+      "flexibleSetupOrderCapabilityProven": true
     },
     "executorCallCount": 0,
     "engineInputBuilt": false,

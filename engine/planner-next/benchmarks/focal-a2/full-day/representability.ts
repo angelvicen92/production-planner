@@ -1,6 +1,7 @@
 import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
 import { runSpec10018Probe } from "../../runSpec10018SetupPolicyBenchmark";
 import { runSpec10019Probe } from "../../runSpec10019CoachRouteTransitionBenchmark";
+import { runSpec10020AtomicBudgetProbe, runSpec10020Probe, spec10020LogicalProjection } from "../../spec10020FlexibleSetupOrderProbe";
 import { createSpec10020FlexibleSetupOrderEngineInputFixture } from "../../../integration/engineInputAdapter.fixture";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
@@ -255,6 +256,126 @@ function runSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] {
   }
 }
 
+function failedFlexibleSetupOrderProbe():
+  RepresentabilityAnalysis["flexibleSetupOrderProbe"] {
+  return {
+    executed: true,
+    engineInputPreflightSupported: false,
+    adapterSupported: false,
+    plannerNextPreflightSupported: false,
+    exactPolicySelected: false,
+    complete: false,
+    hardValid: false,
+    setupViolationCount: 1,
+    setupPreparationViolationCount: 1,
+    observedFamilyOrders: [],
+    observedBothOrders: false,
+    selectedFamilySequence: [],
+    selectedPreparationCount: 0,
+    selectedPreparationMinutes: 0,
+    preparationTargetsSecondFamily: false,
+    deterministic: false,
+    orderInvariant: false,
+    inputImmutable: false,
+    sharedBudgetAccounting: false,
+    atomicOnBudgetExhaustion: false,
+    fullFingerprint: null,
+  };
+}
+
+function runFlexibleSetupOrderProbe():
+  RepresentabilityAnalysis["flexibleSetupOrderProbe"] {
+  try {
+    const baseline = runSpec10020Probe();
+    const repeated = runSpec10020Probe();
+    const inverted = runSpec10020Probe(() => {
+      const input = structuredClone(baseline.inputSnapshot);
+      input.tasks.reverse();
+      input.locks.reverse();
+      input.planResourceItems.reverse();
+      input.planSpaceSettings?.reverse();
+      input.planZoneSettings?.reverse();
+      input.setupPolicies?.forEach((policy) =>
+        policy.families.reverse());
+      input.setupPolicies?.reverse();
+      return input;
+    });
+    const deterministic =
+      JSON.stringify(spec10020LogicalProjection(baseline))
+      === JSON.stringify(spec10020LogicalProjection(repeated));
+    const orderInvariant =
+      JSON.stringify(spec10020LogicalProjection(baseline))
+      === JSON.stringify(spec10020LogicalProjection(inverted));
+    const atomic = runSpec10020AtomicBudgetProbe();
+    const observedBothOrders =
+      baseline.observedFamilyOrders.length === 2
+      && baseline.observedFamilyOrders.every(
+        (key) =>
+          (baseline.observedFamilyOrderCandidateCounts[key] ?? 0) > 0,
+      );
+    return {
+      executed: true,
+      engineInputPreflightSupported:
+        baseline.engineInputPreflightStatus === "SUPPORTED",
+      adapterSupported: baseline.adapterStatus === "SUPPORTED",
+      plannerNextPreflightSupported:
+        baseline.plannerNextPreflightReasonCodes.length === 0,
+      exactPolicySelected:
+        baseline.executionKind === "EXACT_CONSTRUCTIVE",
+      complete: baseline.complete,
+      hardValid: baseline.hardValid,
+      setupViolationCount: baseline.setupViolationCount,
+      setupPreparationViolationCount:
+        baseline.setupPreparationViolationCount,
+      observedFamilyOrders: baseline.observedFamilyOrders,
+      observedBothOrders,
+      selectedFamilySequence: baseline.selectedFamilySequence,
+      selectedPreparationCount:
+        baseline.selectedPreparationCount,
+      selectedPreparationMinutes:
+        baseline.selectedPreparationMinutes,
+      preparationTargetsSecondFamily:
+        baseline.preparationTargetsSecondFamily
+        && baseline.preparationBridgesFamilyBlocks,
+      deterministic,
+      orderInvariant,
+      inputImmutable: baseline.inputImmutable,
+      sharedBudgetAccounting:
+        baseline.sharedBudgetAccounting,
+      atomicOnBudgetExhaustion: atomic.atomic,
+      fullFingerprint: baseline.fullFingerprint,
+    };
+  } catch {
+    return failedFlexibleSetupOrderProbe();
+  }
+}
+
+function flexibleSetupOrderCapabilityProven(
+  probe: RepresentabilityAnalysis["flexibleSetupOrderProbe"],
+): boolean {
+  return probe.executed
+    && probe.engineInputPreflightSupported
+    && probe.adapterSupported
+    && probe.plannerNextPreflightSupported
+    && probe.exactPolicySelected
+    && probe.complete
+    && probe.hardValid
+    && probe.setupViolationCount === 0
+    && probe.setupPreparationViolationCount === 0
+    && probe.observedBothOrders
+    && probe.observedFamilyOrders.length === 2
+    && probe.selectedFamilySequence.length === 2
+    && probe.selectedPreparationCount === 1
+    && probe.selectedPreparationMinutes === 10
+    && probe.preparationTargetsSecondFamily
+    && probe.deterministic
+    && probe.orderInvariant
+    && probe.inputImmutable
+    && probe.sharedBudgetAccounting
+    && probe.atomicOnBudgetExhaustion
+    && probe.fullFingerprint !== null;
+}
+
 function setupPolicyCapabilityProven(
   probe: RepresentabilityAnalysis["setupPolicyProbe"],
 ): boolean {
@@ -310,6 +431,7 @@ export function analyzeCanonicalFullA2Representability(
     readonly adapterProbe?: RepresentabilityAnalysis["adapterProbe"];
     readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"];
     readonly setupPolicyProbe?: RepresentabilityAnalysis["setupPolicyProbe"];
+    readonly flexibleSetupOrderProbe?: RepresentabilityAnalysis["flexibleSetupOrderProbe"];
   } = {},
 ): RepresentabilityAnalysis {
   const requiredCreationInputs = expansion.requiredCreationInputs.map((input) => blocker({
@@ -326,6 +448,8 @@ export function analyzeCanonicalFullA2Representability(
   const jointGroupCapability = jointGroupCapabilityProven(jointGroupProbe);
   const setupPolicyProbe = options.setupPolicyProbe ?? runSetupPolicyProbe();
   const setupPolicyCapability = setupPolicyCapabilityProven(setupPolicyProbe);
+  const flexibleSetupOrderProbe = options.flexibleSetupOrderProbe ?? runFlexibleSetupOrderProbe();
+  const flexibleSetupOrderCapability = flexibleSetupOrderCapabilityProven(flexibleSetupOrderProbe);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
   if (!contractFieldPresence.taskInputHasJointGroupId) {
@@ -358,6 +482,18 @@ export function analyzeCanonicalFullA2Representability(
       operationalExplanation: "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
       semanticLoss: "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
       implementationRank: 2,
+    }));
+  }
+
+  if (setupPolicyCapability && !flexibleSetupOrderCapability) {
+    implementationBlockers.push(blocker({
+      code: "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+      layer: "PLANNER_NEXT",
+      affectedRule: "orden flexible entre familias Sillón/Estrellas",
+      canonicalIds: expansion.tasks.filter((task) => task.setupFamilyId).map((task) => task.id),
+      operationalExplanation: "El probe conectado no demuestra que EXACT_CONSTRUCTIVE explore ambos órdenes, publique la preparación y produzca un plan completo hard-valid.",
+      semanticLoss: "Elegir un orden fijo o aceptar una ruta no exacta convertiría una decisión del motor en restricción hard y podría descartar el mejor plan global.",
+      implementationRank: 4,
     }));
   }
 
@@ -397,6 +533,9 @@ export function analyzeCanonicalFullA2Representability(
     jointGroupCapabilityProven: jointGroupCapability,
     setupPolicyProbe,
     setupPolicyCapabilityProven: setupPolicyCapability,
+    flexibleSetupOrderProbe,
+    flexibleSetupOrderCapabilityProven:
+      flexibleSetupOrderCapability,
   });
 }
 

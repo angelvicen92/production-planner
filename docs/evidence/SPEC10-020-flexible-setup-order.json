@@ -1,0 +1,130 @@
+{
+  "iterationId": "SPEC10-020",
+  "classification": "DB Safe Merge",
+  "operationalRule": "Las familias de setup pueden ejecutarse en cualquiera de los dos órdenes; cada familia forma un único bloque, no hay reentrada y la segunda familia exige 10 minutos de preparación.",
+  "authoritativeRoute": "EXACT_CONSTRUCTIVE",
+  "baseline": {
+    "engineInputPreflightStatus": "SUPPORTED",
+    "engineInputPreflightReasonCodes": [],
+    "adapterStatus": "SUPPORTED",
+    "adapterReasonCodes": [],
+    "plannerNextPreflightReasonCodes": [],
+    "executionKind": "EXACT_CONSTRUCTIVE",
+    "exactStatus": "COMPLETE",
+    "sourceFingerprint": "9b67dc74ba6d9ad1f3adac73cdec26642f24326d047ed6612adcd1b89b5089f1",
+    "identityMapFingerprint": "88529bebd2fb9e8544c4d78ad9f67ebf9d750b1aa30de7906d51a8b71129b4fb",
+    "problemFingerprint": "12846898f62822bb8cfa20ebbfb59e644c88bd44af00b01167ceeb3948d1f3ad",
+    "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1",
+    "complete": true,
+    "hardValid": true,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "allowedFamilyIds": [
+      "setup-family:304:estrellas",
+      "setup-family:304:sillon"
+    ],
+    "selectedFamilySequence": [
+      "setup-family:304:sillon",
+      "setup-family:304:estrellas"
+    ],
+    "observedFamilyOrders": [
+      "setup-family:304:estrellas>setup-family:304:sillon",
+      "setup-family:304:sillon>setup-family:304:estrellas"
+    ],
+    "observedFamilyOrderCandidateCounts": {
+      "setup-family:304:estrellas>setup-family:304:sillon": 4,
+      "setup-family:304:sillon>setup-family:304:estrellas": 4
+    },
+    "selectedPreparationIds": [
+      "setup-preparation:space:304:setup-family:304:estrellas:1"
+    ],
+    "selectedPreparationCount": 1,
+    "selectedPreparationMinutes": 10,
+    "preparationTargetsSecondFamily": true,
+    "preparationBridgesFamilyBlocks": true,
+    "oneBlockPerFamily": true,
+    "reentryForbidden": true,
+    "branchesExplored": 595,
+    "coreBranches": 27,
+    "standaloneBranches": 568,
+    "setupBlockBranchesExplored": 560,
+    "setupBlockSearchInvocations": 1,
+    "setupBlockCompleteCandidateCount": 8,
+    "setupBlockBudgetExhaustions": 0,
+    "sharedBudgetAccounting": true,
+    "inputImmutable": true
+  },
+  "deterministic": true,
+  "orderInvariant": true,
+  "inputImmutable": true,
+  "explicitCompatibility": {
+    "complete": true,
+    "hardValid": true,
+    "selectedFamilySequence": [
+      "setup-family:304:estrellas",
+      "setup-family:304:sillon"
+    ],
+    "observedFamilyOrders": [
+      "setup-family:304:estrellas>setup-family:304:sillon"
+    ],
+    "selectedPreparationCount": 1,
+    "selectedPreparationMinutes": 10,
+    "preparationTargetsSecondFamily": true,
+    "fullFingerprint": "bec1a7cfc8d611846bd4edec8fd922baa2f4ad9c35a17d3ee607c97644b72d8f"
+  },
+  "atomicBudget": {
+    "outcome": "BUDGET_EXHAUSTED",
+    "ledgerBranchesExplored": 1,
+    "generatedBranchesExplored": 1,
+    "completeCandidateCount": 0,
+    "publishedCandidateCount": 0,
+    "atomic": true
+  },
+  "representability": {
+    "status": "BLOCKED",
+    "flexibleSetupOrderProbe": {
+      "executed": true,
+      "engineInputPreflightSupported": true,
+      "adapterSupported": true,
+      "plannerNextPreflightSupported": true,
+      "exactPolicySelected": true,
+      "complete": true,
+      "hardValid": true,
+      "setupViolationCount": 0,
+      "setupPreparationViolationCount": 0,
+      "observedFamilyOrders": [
+        "setup-family:304:estrellas>setup-family:304:sillon",
+        "setup-family:304:sillon>setup-family:304:estrellas"
+      ],
+      "observedBothOrders": true,
+      "selectedFamilySequence": [
+        "setup-family:304:sillon",
+        "setup-family:304:estrellas"
+      ],
+      "selectedPreparationCount": 1,
+      "selectedPreparationMinutes": 10,
+      "preparationTargetsSecondFamily": true,
+      "deterministic": true,
+      "orderInvariant": true,
+      "inputImmutable": true,
+      "sharedBudgetAccounting": true,
+      "atomicOnBudgetExhaustion": true,
+      "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
+    },
+    "flexibleSetupOrderCapabilityProven": true,
+    "implementationBlockerCodes": [
+      "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"
+    ],
+    "nextImplementationBlocker": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"
+  },
+  "limitations": [
+    "La búsqueda exacta está acotada por maxBranchExpansions y no afirma optimalidad global cuando termina por presupuesto.",
+    "La jornada A2 completa sigue bloqueada por la sincronización de rondas Totales y por inputs de creación no fijados en la fuente.",
+    "No se añade DB, UI, publicación productiva ni fallback entre motores."
+  ],
+  "artifactHashes": {
+    "hashScope": "canonical evidence payload excluding artifactHashes",
+    "evidencePayloadSha256": "a470d8522b3d053516354af31cbf531112289893ef00a41fbcd718012d870a9f",
+    "coverageSha256": "ab4dca7bdcc4b7f86d22111c2fe5cb9ad098a1383d35071769d376c50e12bc3e"
+  }
+}

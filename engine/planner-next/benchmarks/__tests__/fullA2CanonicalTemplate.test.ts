@@ -143,6 +143,14 @@ test("representability separates source configuration, implementation blockers a
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED"));
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED"));
   assert.equal(analysis.setupPolicyCapabilityProven, true);
+  assert.equal(analysis.flexibleSetupOrderProbe.executed, true);
+  assert.equal(analysis.flexibleSetupOrderProbe.exactPolicySelected, true);
+  assert.equal(analysis.flexibleSetupOrderProbe.observedBothOrders, true);
+  assert.equal(analysis.flexibleSetupOrderProbe.selectedPreparationCount, 1);
+  assert.equal(analysis.flexibleSetupOrderProbe.selectedPreparationMinutes, 10);
+  assert.equal(analysis.flexibleSetupOrderProbe.preparationTargetsSecondFamily, true);
+  assert.equal(analysis.flexibleSetupOrderProbe.atomicOnBudgetExhaustion, true);
+  assert.equal(analysis.flexibleSetupOrderCapabilityProven, true);
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"));
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
@@ -190,6 +198,35 @@ test("representability separates source configuration, implementation blockers a
   assert.equal(
     failedSetupAnalysis.nextImplementationBlocker?.code,
     "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+  );
+
+  const failedFlexibleAnalysis =
+    analyzeCanonicalFullA2Representability(
+      expansion,
+      {
+        adapterProbe: analysis.adapterProbe,
+        jointGroupProbe: analysis.jointGroupProbe,
+        setupPolicyProbe: analysis.setupPolicyProbe,
+        flexibleSetupOrderProbe: {
+          ...analysis.flexibleSetupOrderProbe,
+          complete: false,
+        },
+      },
+    );
+  assert.equal(
+    failedFlexibleAnalysis.flexibleSetupOrderCapabilityProven,
+    false,
+  );
+  assert.ok(
+    failedFlexibleAnalysis.implementationBlockers.some(
+      (blocker) =>
+        blocker.code
+        === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+    ),
+  );
+  assert.equal(
+    failedFlexibleAnalysis.nextImplementationBlocker?.code,
+    "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
   );
 
   assert.equal(gate.status, "REJECTED_BLOCKED");

@@ -26,14 +26,13 @@ Estos datos son inputs de creación del futuro día y no se seleccionan como sig
 
 Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
 
-- **PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED** (PLANNER_NEXT): La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias. Pérdida si se aproxima: Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.
 - **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes. Pérdida si se aproxima: Las dependencias impondrían precedencia, no sincronización de arranque entre salas.
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true y supportsSpecificCoachRouteTransition=true. La transición Caracola→Estudio 7 se conserva por coach, origen y destino sin convertir 30 minutos en un margen global. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED**.
+Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true y supportsSpecificCoachRouteTransition=true. SPEC10-020 demuestra que EXACT_CONSTRUCTIVE explora ambos órdenes Sillón/Estrellas, publica la preparación y valida el resultado completo sin imponer un orden fijo. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED**.
 
 ## No implementado
 

@@ -2727,3 +2727,12 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - Placement, cierre de feeders, búsqueda exacta, validación y auditoría focal comparten la misma semántica.
 - El probe rechaza 29 minutos y acepta 30.
 - El siguiente blocker A2 es `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`.
+
+## SPEC10-020 — Orden flexible de familias setup
+
+- EngineInput conserva `orderConstraint=UNSPECIFIED` como conjunto de familias permitidas; el adaptador no impone Sillón→Estrellas ni Estrellas→Sillón.
+- `EXACT_CONSTRUCTIVE` enumera exhaustivamente ambos órdenes dentro del ledger compartido, sin beam, `bestK`, fallback ni truncado aproximado.
+- Cada familia forma un único bloque, no existe reentrada y la segunda familia recibe una preparación explícita de 10 minutos.
+- Resultado, validación, fingerprint y Evidence publican `scheduledSetupPreparations`.
+- El probe conectado demuestra hard validity, determinismo, invariancia, compatibilidad `EXPLICIT` y agotamiento atómico.
+- Desaparece `PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED`; el siguiente blocker A2 es `PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED`.
