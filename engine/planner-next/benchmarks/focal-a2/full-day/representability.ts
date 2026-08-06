@@ -1,6 +1,7 @@
 import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
 import { runSpec10018Probe } from "../../runSpec10018SetupPolicyBenchmark";
 import { runSpec10019Probe } from "../../runSpec10019CoachRouteTransitionBenchmark";
+import { createSpec10020FlexibleSetupOrderEngineInputFixture } from "../../../integration/engineInputAdapter.fixture";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -191,8 +192,8 @@ function setupProbeProjection(
 
 function runSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] {
   try {
-    const baseline = runSpec10018Probe();
-    const repeated = runSpec10018Probe();
+    const baseline = runSpec10018Probe(["sillon", "estrellas"], createSpec10020FlexibleSetupOrderEngineInputFixture, true);
+    const repeated = runSpec10018Probe(["sillon", "estrellas"], createSpec10020FlexibleSetupOrderEngineInputFixture, true);
 
     const inverted = runSpec10018Probe(
       ["sillon", "estrellas"],
@@ -218,6 +219,7 @@ function runSetupPolicyProbe(): RepresentabilityAnalysis["setupPolicyProbe"] {
             .reverse(),
         };
       },
+      true,
     );
 
     const deterministic =
@@ -271,8 +273,8 @@ function setupPolicyCapabilityProven(
     && probe.deterministic
     && probe.orderInvariant
     && probe.inputImmutable
-    && JSON.stringify(probe.familyOrder)
-      === JSON.stringify(probe.familySequence);
+    && probe.familyOrder.length === probe.familySequence.length
+    && [...probe.familyOrder].sort().every((family, index) => [...probe.familySequence].sort()[index] === family);
 }
 
 function jointGroupCapabilityProven(probe: RepresentabilityAnalysis["jointGroupProbe"]): boolean {
@@ -365,8 +367,8 @@ export function analyzeCanonicalFullA2Representability(
       layer: "PLANNER_NEXT",
       affectedRule: "orden flexible entre familias Sillón/Estrellas",
       canonicalIds: expansion.tasks.filter((task) => task.setupFamilyId).map((task) => task.id),
-      operationalExplanation: "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
-      semanticLoss: "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
+      operationalExplanation: "EngineInput y la búsqueda compartida ya pueden conservar ambos órdenes, pero EXACT_CONSTRUCTIVE todavía rechaza tareas setup estructuradas y no publica sus preparaciones.",
+      semanticLoss: "Retirar la puerta ahora declararía representable una jornada que la política autoritativa exacta aún no puede completar ni validar end-to-end.",
       implementationRank: 4,
     }));
   }

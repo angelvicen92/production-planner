@@ -1742,7 +1742,7 @@ test("SPEC10-007: recurso requerido inexistente conserva identidad sin issue tem
   assert.ok(!result.issues.some((entry) => entry.code === "MISSING_RESOURCE_AVAILABILITY" && entry.entityId === "999"));
 });
 
-test("SPEC10-018 accepts explicit setup policy and rejects flexible order deterministically", () => {
+test("SPEC10-020 accepts valid flexible setup order deterministically", () => {
   const input = createSpec10018SetupPolicyEngineInputFixture();
   const explicit = preflightEngineInputForPlannerNext(input);
   assert.equal(explicit.status, "SUPPORTED");
@@ -1751,6 +1751,6 @@ test("SPEC10-018 accepts explicit setup policy and rejects flexible order determ
   input.setupPolicies![0].orderConstraint = "UNSPECIFIED";
   delete input.setupPolicies![0].familyOrder;
   const flexible = preflightEngineInputForPlannerNext(input);
-  assert.equal(flexible.status, "UNSUPPORTED");
-  assert.ok(flexible.reasonCodes.includes("UNSUPPORTED_FLEXIBLE_SETUP_ORDER"));
+  assert.equal(flexible.status, "SUPPORTED");
+  assert.equal(flexible.reasonCodes.includes("UNSUPPORTED_FLEXIBLE_SETUP_ORDER"), false);
 });

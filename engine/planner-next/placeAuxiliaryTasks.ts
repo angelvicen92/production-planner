@@ -5,7 +5,7 @@ import { participantPresenceIncrement } from "./participantPresence";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
 import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { assessFutureFeasibility, type FutureBudget } from "./futureFeasibility";
-import { eligibleSetupTasks } from "./setupGrouping";
+import { eligibleSetupTasksForPolicy } from "./setupGrouping";
 import { createSetupPreparation, preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationDuration, spaceOccupations } from "./setupPreparation";
 import { jointGroupIds, jointGroupMembers, jointGroupStarts, jointResources, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { canPlaceSpaceMeal, createScheduledSpaceMeal, isRequiredBlockMealSpace, pendingSpaceMealIds, spaceMealCandidateStarts, spaceMealPolicy } from "./spaceMeals";
@@ -137,14 +137,14 @@ export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task
       const next: Partial[] = [];
       for (const state of states) for (const task of (() => {
         const policy = problem.spaces.find((space) => space.id === taskSpace(tasks))?.setupPolicy;
-        return policy ? eligibleSetupTasks(state.remaining, policy.familyOrder) : state.remaining;
+        return policy ? eligibleSetupTasksForPolicy(state.remaining, state.tasks, policy) : state.remaining;
       })()) {
         if (consumed >= allowance) return finish(true);
         consumed += 1;
         if (mode === "SEARCH") secondaryBranches += 1;
         const policy = problem.spaces.find((space) => space.id === task.spaceId)?.setupPolicy;
         const firstOfFamily = !state.tasks.some((placedTask) => placedTask.setupFamilyId === task.setupFamilyId);
-        const duration = task.setupFamilyId && firstOfFamily ? setupPreparationDuration(policy, task.setupFamilyId) : undefined;
+        const duration = task.setupFamilyId && firstOfFamily ? setupPreparationDuration(policy, task.setupFamilyId, state.tasks.some((placedTask) => placedTask.setupFamilyId !== undefined)) : undefined;
         const preparation = duration === undefined ? undefined : createSetupPreparation(task.spaceId, task.setupFamilyId!, 1, duration, state.tasks.at(-1)?.end ?? state.start);
         const start = preparation?.end ?? state.tasks.at(-1)?.end ?? state.start;
         const space = problem.spaces.find((candidate) => candidate.id === task.spaceId);

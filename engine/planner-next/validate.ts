@@ -17,7 +17,7 @@ import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { effectiveResourceTransitionMinutes } from "./placement";
 import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
-import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setupTasks } from "./setupGrouping";
+import { followsSetupPolicy, hasSetupReentry, setupBlockCounts, setupFamilySequence, setupSpaces, setupTasks } from "./setupGrouping";
 import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
 import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "./technicalOperations";
 import { canPlaceTask } from "./placement";
@@ -166,21 +166,29 @@ export function preflight(problem: PlannerNextProblem): string[] {
   for (const space of spaces) {
     if(Object.prototype.hasOwnProperty.call(space,"mealPolicy")){const p=(space as {mealPolicy?:unknown}).mealPolicy;const validObject=p!==null&&typeof p==="object"&&!Array.isArray(p);const policy=validObject?p as {window?:unknown;duration?:unknown}:undefined;const w=policy?.window as {start?:unknown;end?:unknown}|undefined;const duration=policy?.duration;const validWindow=w!==null&&typeof w==="object"&&Number.isFinite(w.start)&&Number.isInteger(w.start)&&Number.isFinite(w.end)&&Number.isInteger(w.end)&&(w.start as number)<(w.end as number)&&(w.start as number)>=day.start&&(w.end as number)<=day.end;const validDuration=typeof duration==="number"&&Number.isFinite(duration)&&Number.isInteger(duration)&&duration>0&&validWindow&&duration<=(w!.end as number)-(w!.start as number);const fits=validDuration&&Math.ceil((w!.start as number)/5)*5+duration<=(w!.end as number);const available=validWindow&&space.availability.some(a=>a.start<=(w!.start as number)&&(w!.end as number)<=a.end);if(!validObject||!validWindow||!validDuration||!fits||!available)reasons.add("INVALID_SPACE_MEAL_POLICY");if(space.id===mainSpaceId){if(!mainFlowMealAligned(problem))reasons.add("MAIN_FLOW_MEAL_ALIGNMENT_INVALID");if(space.setupPolicy!==undefined||space.secondaryContinuity!==undefined&&space.secondaryContinuity!=="OFF")reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="main"||!t.participantId||!t.coachId||!t.blockKey))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}else{if(space.setupPolicy!==undefined)reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="auxiliary"||t.jointGroupId!==undefined||t.setupFamilyId!==undefined||!Array.isArray(t.dependencies)||t.dependencies.length>0||t.coachId!==undefined)||(space.secondaryContinuity==="REQUIRED"&&own.length<2))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}}
     if (space.setupPolicy !== undefined) {
-      const policy = space.setupPolicy as { familyOrder?: unknown; reentry?: unknown };
+      const policy = space.setupPolicy as { familyOrder?: unknown; flexibleFamilyOrder?: unknown; reentry?: unknown; preparationMinutesByFamily?: unknown; preparationMinutesBetweenFamilies?: unknown };
       if (!policy || typeof policy !== "object" || !Array.isArray(policy.familyOrder) || policy.familyOrder.length === 0 || policy.familyOrder.some((x) => typeof x !== "string" || x.length === 0)) reasons.add("INVALID_SETUP_POLICY");
       const order = Array.isArray(policy?.familyOrder) ? policy.familyOrder.filter((x): x is string => typeof x === "string") : [];
       if (new Set(order).size !== order.length) reasons.add("DUPLICATE_SETUP_FAMILY");
+      if (policy?.flexibleFamilyOrder !== undefined && typeof policy.flexibleFamilyOrder !== "boolean") reasons.add("INVALID_SETUP_POLICY");
       if (policy?.reentry !== "FORBIDDEN") reasons.add("UNSUPPORTED_SETUP_REENTRY");
-      if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) {
-        const record = (policy as { preparationMinutesByFamily?: unknown }).preparationMinutesByFamily;
-        const plain = record !== null && typeof record === "object" && !Array.isArray(record) && Object.getPrototypeOf(record) === Object.prototype;
-        if (!plain) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
-        else {
-          const entries = Object.entries(record as Record<string, unknown>);
-          const suffixFamilies = order.slice(1);
-          const validFull = entries.length === order.length && entries.every(([family, value]) => order.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && order.every(family => Object.prototype.hasOwnProperty.call(record, family));
-          const validSuffix = entries.length === suffixFamilies.length && entries.every(([family, value]) => suffixFamilies.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && suffixFamilies.every(family => Object.prototype.hasOwnProperty.call(record, family));
-          if (!validFull && !validSuffix) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+      if (policy.flexibleFamilyOrder === true) {
+        if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        const minutes = policy.preparationMinutesBetweenFamilies;
+        if (typeof minutes !== "number" || !Number.isFinite(minutes) || !Number.isInteger(minutes) || minutes <= 0 || minutes % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+      } else {
+        if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesBetweenFamilies")) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) {
+          const record = policy.preparationMinutesByFamily;
+          const plain = record !== null && typeof record === "object" && !Array.isArray(record) && Object.getPrototypeOf(record) === Object.prototype;
+          if (!plain) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+          else {
+            const entries = Object.entries(record as Record<string, unknown>);
+            const suffixFamilies = order.slice(1);
+            const validFull = entries.length === order.length && entries.every(([family, value]) => order.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && order.every(family => Object.prototype.hasOwnProperty.call(record, family));
+            const validSuffix = entries.length === suffixFamilies.length && entries.every(([family, value]) => suffixFamilies.includes(family) && typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0) && suffixFamilies.every(family => Object.prototype.hasOwnProperty.call(record, family));
+            if (!validFull && !validSuffix) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+          }
         }
       }
       if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
@@ -423,36 +431,41 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const policy = space.setupPolicy!;
     const invalid = actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id))
       || actual.some((task) => !task.setupFamilyId || task.spaceId !== space.id)
-      || !followsSetupOrder(actual, policy.familyOrder) || hasSetupReentry(actual)
+      || !followsSetupPolicy(actual, policy) || hasSetupReentry(actual)
       || policy.familyOrder.some((family) => setupBlockCounts(actual)[family] !== 1);
     if (invalid) setup += 1;
   }
-  for (const space of setupSpaces(problem).filter(candidate => candidate.setupPolicy?.preparationMinutesByFamily !== undefined)) {
+  for (const space of setupSpaces(problem).filter((candidate) => candidate.setupPolicy?.preparationMinutesByFamily !== undefined || candidate.setupPolicy?.preparationMinutesBetweenFamilies !== undefined)) {
     const policy = space.setupPolicy!;
-    const record = policy.preparationMinutesByFamily!;
     const ownTasks = setupTasks(scheduled, space.id);
-    const ownPreparations = preparations.filter(item => item.spaceId === space.id);
+    const ownPreparations = preparations.filter((item) => item.spaceId === space.id);
     const occupied = spaceOccupations(scheduled, preparations, space.id);
-    for (let index = 0; index < policy.familyOrder.length; index += 1) {
-      const family = policy.familyOrder[index]!;
-      if (!Object.prototype.hasOwnProperty.call(record, family)) continue;
-      const matches = ownPreparations.filter(item => item.setupFamilyId === family);
+    const sequence = setupFamilySequence(ownTasks);
+    const durationByFamily: Record<string, number> = policy.flexibleFamilyOrder === true
+      ? Object.fromEntries(sequence.slice(1).map((family) => [family, policy.preparationMinutesBetweenFamilies!]))
+      : { ...(policy.preparationMinutesByFamily ?? {}) };
+    const expectedPreparationSequence = sequence.filter((family) => Object.prototype.hasOwnProperty.call(durationByFamily, family));
+    for (const family of expectedPreparationSequence) {
+      const familyIndex = sequence.indexOf(family);
+      const previousFamily = familyIndex > 0 ? sequence[familyIndex - 1] : undefined;
+      const matches = ownPreparations.filter((item) => item.setupFamilyId === family);
       const preparation = matches[0];
-      const familyTasks = ownTasks.filter(task => task.setupFamilyId === family).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-      const previousTasks = index === 0 ? [] : ownTasks.filter(task=>task.setupFamilyId===policy.familyOrder[index-1]).sort((a,b)=>a.end-b.end||a.id.localeCompare(b.id));
+      const familyTasks = ownTasks.filter((task) => task.setupFamilyId === family).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      const previousTasks = previousFamily === undefined ? [] : ownTasks.filter((task) => task.setupFamilyId === previousFamily).sort((a,b)=>a.end-b.end||a.id.localeCompare(b.id));
+      const expectedStart = previousFamily === undefined ? occupied[0]?.start : previousTasks.at(-1)?.end;
       const invalid = matches.length !== 1 || !preparation || preparation.entryIndex !== 1 || preparation.id !== setupPreparationId(space.id,family,1)
-        || preparation.kind !== "setup-preparation" || preparation.duration !== record[family] || preparation.end-preparation.start !== preparation.duration
+        || preparation.kind !== "setup-preparation" || preparation.duration !== durationByFamily[family] || preparation.end-preparation.start !== preparation.duration
         || !preparationWithinDay(problem,preparation) || !preparationWithinAvailability(space.availability,preparation) || !occupationAvoidsProtectedMeal(problem,preparation.spaceId,preparation.start,preparation.end)
         || !preparationAvoidsOccupations(preparation,occupied) || !familyTasks[0] || preparation.end !== familyTasks[0].start
-        || (index === 0 ? preparation.start !== occupied[0]?.start : preparation.start !== previousTasks.at(-1)?.end);
+        || preparation.start !== expectedStart;
       if (invalid) setupPreparation += 1;
     }
-    const extras = ownPreparations.filter(item=>!policy.familyOrder.includes(item.setupFamilyId));
+    const extras = ownPreparations.filter((item) => !expectedPreparationSequence.includes(item.setupFamilyId));
     setupPreparation += extras.length;
-    const expectedPreparationSequence = policy.familyOrder.filter((family) => Object.prototype.hasOwnProperty.call(record, family));
-    if (setupPreparationSequence(ownPreparations).some((family,index)=>family!==expectedPreparationSequence[index])) setupPreparation += setupPreparation === 0 ? 1 : 0;
+    const actualPreparationSequence = setupPreparationSequence(ownPreparations);
+    if (actualPreparationSequence.length !== expectedPreparationSequence.length || actualPreparationSequence.some((family,index)=>family!==expectedPreparationSequence[index])) setupPreparation += 1;
   }
-  setupPreparation += preparations.filter(item => !problem.spaces.some(space=>space.id===item.spaceId && space.setupPolicy?.preparationMinutesByFamily !== undefined)).length;
+  setupPreparation += preparations.filter((item) => !problem.spaces.some((space) => space.id === item.spaceId && (space.setupPolicy?.preparationMinutesByFamily !== undefined || space.setupPolicy?.preparationMinutesBetweenFamilies !== undefined))).length;
 
   const originalById=new Map(problem.tasks.map(task=>[task.id,task]));
   const expectedJointGroupIdByTaskId=new Map(problem.tasks.map(task=>[task.id,task.jointGroupId]));

@@ -18,7 +18,17 @@ export interface Space {
   mealPolicy?: SpaceMealPolicy;
 }
 export interface SpaceMealPolicy { window: Window; duration: Minute }
-export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; preparationMinutesByFamily?: Record<string, number> }
+export interface SetupPolicy {
+  /** Canonical allowed families. For explicit policies this is also the required order. */
+  familyOrder: string[];
+  /** When true, familyOrder is an allowed-family set and search chooses the block order. */
+  flexibleFamilyOrder?: boolean;
+  reentry: "FORBIDDEN";
+  /** Historical/explicit preparation contract keyed by the family that starts. */
+  preparationMinutesByFamily?: Record<string, number>;
+  /** Flexible-order preparation inserted before every family after the first selected family. */
+  preparationMinutesBetweenFamilies?: number;
+}
 
 export interface CoachRouteTransition {
   coachId: string;

@@ -110,3 +110,13 @@ export function createSpec10018SetupPolicyEngineInputFixture(familyOrder: string
 export function createSpec10018SetupPolicyEngineInputFixtureReverseOrder(): EngineInput {
   return createSpec10018SetupPolicyEngineInputFixture(["estrellas", "sillon"]);
 }
+
+export function createSpec10020FlexibleSetupOrderEngineInputFixture(): EngineInput {
+  const input = createSpec10018SetupPolicyEngineInputFixture();
+  input.setupPolicies = input.setupPolicies?.map((policy) => {
+    const flexible = { ...policy, orderConstraint: "UNSPECIFIED" as const };
+    delete flexible.familyOrder;
+    return flexible;
+  });
+  return input;
+}

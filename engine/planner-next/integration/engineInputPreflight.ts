@@ -829,7 +829,6 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (!isPositiveInteger(prep) || (isPositiveInteger(timeGrid) && isPositiveInteger(prep) && prep % timeGrid !== 0)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.preparationMinutesBetweenFamilies`, "Preparation minutes must be a positive integer compatible with timeGridMinutes.", { preparationMinutesBetweenFamilies: prep, timeGridMinutes: timeGrid });
     if (policy.orderConstraint === "UNSPECIFIED") {
       if (Object.prototype.hasOwnProperty.call(policy, "familyOrder")) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.familyOrder`, "UNSPECIFIED setup policy must omit familyOrder.");
-      addIssue("UNSUPPORTED_FLEXIBLE_SETUP_ORDER", "setupPolicy", index, `${path}.orderConstraint`, "Flexible setup family order is not supported yet.");
     } else if (policy.orderConstraint === "EXPLICIT") {
       const order = policy.familyOrder;
       const missingOrder = !Array.isArray(order);

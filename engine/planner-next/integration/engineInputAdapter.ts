@@ -184,9 +184,19 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const setupPolicy = setupPoliciesBySpaceId.get(id);
     const canonicalSpace = canonical("space", id);
     if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)] };
-    const familyOrder = setupPolicy.familyOrder!.map((family) => canonical("setup-family", `${id}:${family}`));
-    const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies]).sort(([left], [right]) => compare(left, right)));
-    return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
+    const canonicalFamily = (family: string) => canonical("setup-family", `${id}:${family}`);
+    if (setupPolicy.orderConstraint === "EXPLICIT") {
+      const familyOrder = setupPolicy.familyOrder!.map(canonicalFamily);
+      const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies]).sort(([left], [right]) => compare(left, right)));
+      return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
+    }
+    const familyOrder = [...setupPolicy.families].sort(compare).map(canonicalFamily);
+    return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: {
+      familyOrder,
+      flexibleFamilyOrder: true,
+      reentry: "FORBIDDEN" as const,
+      preparationMinutesBetweenFamilies: setupPolicy.preparationMinutesBetweenFamilies,
+    } };
   });
   const coachRouteTransitions = sourceCoachRouteTransitions.map((route) => ({
     coachId: canonical("plan-resource", route.coachPlanResourceItemId),
