@@ -111,6 +111,49 @@ export function createSpec10018SetupPolicyEngineInputFixtureReverseOrder(): Engi
   return createSpec10018SetupPolicyEngineInputFixture(["estrellas", "sillon"]);
 }
 
+export function createSpec10021RoundSynchronizationEngineInputFixture(): EngineInput {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.tasks = input.tasks.filter(({ id }) => id !== 105);
+  input.locks = input.locks.filter(({ taskId }) => taskId !== 105);
+  input.plannerNext!.searchBudget = {
+    bestK: 5,
+    maxBacktracks: 200,
+    maxPatterns: 200,
+    maxBranchExpansions: 300000,
+  };
+  input.planZoneSettings?.push(
+    { zoneId: 404, availabilityStart: null, availabilityEnd: null, source: "spec10-021" },
+    { zoneId: 405, availabilityStart: null, availabilityEnd: null, source: "spec10-021" },
+  );
+  input.planSpaceSettings?.push(
+    { spaceId: 304, zoneId: 404, availabilityStart: null, availabilityEnd: null, source: "spec10-021" },
+    { spaceId: 305, zoneId: 405, availabilityStart: null, availabilityEnd: null, source: "spec10-021" },
+  );
+  input.contestantAvailabilityById = {
+    ...input.contestantAvailabilityById,
+    211: { start: "08:00", end: "17:00" },
+    212: { start: "08:00", end: "17:00" },
+    213: { start: "08:00", end: "17:00" },
+    214: { start: "08:00", end: "17:00" },
+  };
+  input.tasks.push(
+    task(401, { templateId: 9401, plannerNextKind: "auxiliary", contestantId: 211, spaceId: 304, zoneId: 404, durationOverrideMin: 30 }),
+    task(402, { templateId: 9401, plannerNextKind: "auxiliary", contestantId: 212, spaceId: 304, zoneId: 404, durationOverrideMin: 30 }),
+    task(403, { templateId: 9402, plannerNextKind: "auxiliary", contestantId: 213, spaceId: 305, zoneId: 405, durationOverrideMin: 30 }),
+    task(404, { templateId: 9402, plannerNextKind: "auxiliary", contestantId: 214, spaceId: 305, zoneId: 405, durationOverrideMin: 30 }),
+  );
+  input.roundSynchronizations = [{
+    id: "dual-room-rounds",
+    synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE",
+    lanes: [
+      { spaceId: 304, taskIds: [401, 402], preparationMinutesBetweenRounds: 5 },
+      { spaceId: 305, taskIds: [403, 404], preparationMinutesBetweenRounds: 5 },
+    ],
+  }];
+  return input;
+}
+
+
 export function createSpec10020FlexibleSetupOrderEngineInputFixture(): EngineInput {
   const input = createSpec10018SetupPolicyEngineInputFixture();
   input.tasks = input.tasks.filter(({ id }) => id !== 105);

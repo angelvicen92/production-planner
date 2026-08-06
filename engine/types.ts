@@ -229,6 +229,18 @@ export interface EngineInputSetupPolicyInput {
   preparationMinutesBetweenFamilies: number;
 }
 
+export interface EngineInputRoundSynchronizationLaneInput {
+  spaceId: number;
+  taskIds: number[];
+  preparationMinutesBetweenRounds: number;
+}
+
+export interface EngineInputRoundSynchronizationInput {
+  id: string;
+  lanes: EngineInputRoundSynchronizationLaneInput[];
+  synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
+}
+
 export interface EngineInputCoachRouteTransitionInput {
   coachPlanResourceItemId: number;
   fromSpaceId: number;
@@ -244,6 +256,8 @@ export interface EngineInput {
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
   /** Explicit setup-family grouping and preparation policies. */
   setupPolicies?: EngineInputSetupPolicyInput[];
+  /** Explicit dynamic round synchronization across independent spaces. */
+  roundSynchronizations?: EngineInputRoundSynchronizationInput[];
   /** Directional hard travel time for one concrete coach between two spaces. */
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
   workDay: TimeWindow;

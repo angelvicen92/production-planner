@@ -30,6 +30,18 @@ export interface SetupPolicy {
   preparationMinutesBetweenFamilies?: number;
 }
 
+export interface RoundSynchronizationLane {
+  spaceId: string;
+  taskIds: string[];
+  preparationMinutesBetweenRounds: Minute;
+}
+
+export interface RoundSynchronizationPolicy {
+  id: string;
+  lanes: RoundSynchronizationLane[];
+  synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
+}
+
 export interface CoachRouteTransition {
   coachId: string;
   fromSpaceId: string;
@@ -117,6 +129,7 @@ export interface PlannerNextProblem {
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
   coachRouteTransitions?: CoachRouteTransition[];
+  roundSynchronizations?: RoundSynchronizationPolicy[];
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
   anchoredAccompaniments?: AnchoredAccompaniment[];
@@ -157,6 +170,7 @@ export type ScheduledTask = Task & {
   end: Minute;
 };
 export interface ScheduledSetupPreparation { id:string; kind:"setup-preparation"; spaceId:string; setupFamilyId:string; entryIndex:number; duration:number; start:Minute; end:Minute }
+export interface ScheduledRoundPreparation { id:string; kind:"round-preparation"; synchronizationId:string; spaceId:string; roundIndex:number; duration:Minute; start:Minute; end:Minute }
 export interface ScheduledSpaceMeal { id:string; kind:"space-meal"; spaceId:string; entryIndex:number; duration:Minute; start:Minute; end:Minute }
 
 export interface ValidationSummary {
@@ -173,6 +187,8 @@ export interface ValidationSummary {
   secondaryContinuityViolationCount: number;
   setupViolationCount: number;
   setupPreparationViolationCount: number;
+  roundSynchronizationViolationCount?: number;
+  roundPreparationViolationCount?: number;
   jointGroupViolationCount: number;
   technicalOperationViolationCount: number;
   technicalChainViolationCount: number;
