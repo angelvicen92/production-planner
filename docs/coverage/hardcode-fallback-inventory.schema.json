@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://optiplan.local/schemas/hardcode-fallback-inventory.schema.json",
+  "title": "OptiPlan Hardcode and Fallback Inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["inventoryVersion", "auditedMainSha", "auditedAt", "entries"],
+  "properties": {
+    "inventoryVersion": { "type": "integer", "const": 1 },
+    "auditedMainSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "auditedAt": { "type": "string", "format": "date" },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "priority",
+        "risk",
+        "category",
+        "status",
+        "path",
+        "symbolOrAnchor",
+        "observedBehavior",
+        "operationalImpact",
+        "requiredResolution",
+        "capabilityIds"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^HCF-[0-9]{3}$" },
+        "priority": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+        "risk": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"] },
+        "category": {
+          "type": "string",
+          "enum": [
+            "GLOBAL_READ_DURING_DAY",
+            "HARD_INPUT_NEUTRAL_FALLBACK",
+            "NOMINAL_INFERENCE",
+            "UNTRACED_DEFAULT",
+            "OPAQUE_JSON",
+            "LEGACY_ALIAS",
+            "ALGORITHMIC_PARAMETER",
+            "ACCEPTED_SOFT_FALLBACK",
+            "ACCEPTED_TECHNICAL_CONSTANT"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["OPEN", "ACCEPTED_WITH_EVIDENCE", "BLOCKED_BY_FOUNDATION", "RESOLVED"]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "symbolOrAnchor": { "type": "string", "minLength": 1 },
+        "observedBehavior": { "type": "string", "minLength": 1 },
+        "operationalImpact": { "type": "string", "minLength": 1 },
+        "requiredResolution": { "type": "string", "minLength": 1 },
+        "capabilityIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
