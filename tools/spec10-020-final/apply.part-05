@@ -1,0 +1,105 @@
+
+run("npm", ["exec", "tsx", "--", "--test",
+  "engine/planner-next/exactFlexibleSetupOrder.spec.ts",
+  "engine/planner-next/flexibleSetupOrder.spec.ts",
+  "engine/planner-next/exactItinerantPlan.spec.ts",
+  "engine/planner-next/executePlannerNext.spec.ts",
+  "engine/planner-next/setupGrouping.spec.ts",
+  "engine/planner-next/setupPreparation.spec.ts",
+  "engine/planner-next/integration/engineInputPreflight.spec.ts",
+  "engine/planner-next/integration/engineInputAdapter.spec.ts",
+  "engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts",
+]);
+
+const tempDir = fs.mkdtempSync(".spec10-020-final-");
+try {
+  const evidence020 =
+    "docs/evidence/SPEC10-020-flexible-setup-order.json";
+  run("npm", ["run", "benchmark:planner-next:spec10-020"]);
+  fs.copyFileSync(evidence020, `${tempDir}/spec10-020-first.json`);
+  run("npm", ["run", "benchmark:planner-next:spec10-020"]);
+  if (!fs.readFileSync(evidence020).equals(
+    fs.readFileSync(`${tempDir}/spec10-020-first.json`),
+  )) throw new Error("SPEC10-020 evidence is not byte-identical");
+
+  const evidence016 =
+    "docs/evidence/SPEC10-016-full-a2-canonical-template.json";
+  const coverage016 =
+    "docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md";
+  run("npm", ["run", "benchmark:planner-next:a2-full-template"]);
+  fs.copyFileSync(evidence016, `${tempDir}/spec10-016-first.json`);
+  fs.copyFileSync(coverage016, `${tempDir}/spec10-016-first.md`);
+  run("npm", ["run", "benchmark:planner-next:a2-full-template"]);
+  if (!fs.readFileSync(evidence016).equals(
+    fs.readFileSync(`${tempDir}/spec10-016-first.json`),
+  )) throw new Error("SPEC10-016 evidence is not byte-identical");
+  if (!fs.readFileSync(coverage016).equals(
+    fs.readFileSync(`${tempDir}/spec10-016-first.md`),
+  )) throw new Error("SPEC10-016 coverage is not byte-identical");
+} finally {
+  fs.rmSync(tempDir, { recursive: true, force: true });
+}
+
+run("npm", ["run", "check"]);
+run("npm", ["run", "build"]);
+run("npm", ["run", "check:migrations"]);
+run("npm", ["test"]);
+
+const focalPath =
+  "planner-next-focal-a2-itinerant-spec08-foundation-v4.json";
+const focalOriginal = read(focalPath);
+try {
+  run("bash", ["./validate-focal-a2-010.sh", "current"]);
+} finally {
+  write(focalPath, focalOriginal);
+}
+
+run("git", ["diff", "--check"]);
+
+const expected = [
+  "README.md",
+  "docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md",
+  "docs/coverage/SPEC10-020-FLEXIBLE-SETUP-ORDER.md",
+  "docs/evidence/SPEC10-016-full-a2-canonical-template.json",
+  "docs/evidence/SPEC10-020-flexible-setup-order.json",
+  "engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts",
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  "engine/planner-next/benchmarks/focal-a2/full-day/types.ts",
+  "engine/planner-next/benchmarks/runFullA2CanonicalTemplateBenchmark.ts",
+  "engine/planner-next/benchmarks/runSpec10020FlexibleSetupOrderBenchmark.ts",
+  "engine/planner-next/benchmarks/spec10020FlexibleSetupOrderProbe.ts",
+  "package.json",
+].sort();
+
+const lines = (value) => value
+  ? value.split("\n").map((item) => item.trim()).filter(Boolean)
+  : [];
+const changed = [...new Set([
+  ...lines(output("git", ["diff", "--name-only"])),
+  ...lines(output("git", [
+    "ls-files", "--others", "--exclude-standard",
+  ])),
+])].sort();
+if (JSON.stringify(changed) !== JSON.stringify(expected)) {
+  throw new Error(
+    `Unexpected final file set\nexpected=${JSON.stringify(expected)}\nactual=${JSON.stringify(changed)}`,
+  );
+}
+
+run("git", ["add", ...expected]);
+const staged = lines(output("git", [
+  "diff", "--cached", "--name-only",
+])).sort();
+if (JSON.stringify(staged) !== JSON.stringify(expected)) {
+  throw new Error("Unexpected staged file set");
+}
+if (output("git", ["diff", "--name-only"]) !== "") {
+  throw new Error("Unstaged changes remain after staging");
+}
+
+run("git", ["commit", "-m",
+  "SPEC10-020: support flexible setup order in exact route"]);
+run("git", ["push", "origin", TARGET_BRANCH]);
+console.log(
+  "SPEC10-020 final candidate pushed; review Evidence and CI before PR merge",
+);
