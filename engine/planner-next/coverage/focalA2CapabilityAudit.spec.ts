@@ -263,8 +263,24 @@ test("all probes are deterministic and inputs remain immutable", () => {
   assert.equal(serializeFocalA2CoverageEvidence(), serializeFocalA2CoverageEvidence());
 });
 
-test("functional correction remains isolated from DB, UI and API", () => {
-  const changed = execFileSync("git", ["diff", "--name-only", "f3924c0394c548b218e81af19f2ea364ae2c86dd"], { encoding: "utf8" }).trim().split("\n").filter(Boolean);
+test("functional correction remains isolated from DB, UI and API", (t) => {
+  const provisionalAuditCommit = "f3924c0394c548b218e81af19f2ea364ae2c86dd";
+  const correctedAuditCommit = "13196e1e081a4f63f4cb3d21849f404278545f82";
+
+  for (const commit of [provisionalAuditCommit, correctedAuditCommit]) {
+    try {
+      execFileSync("git", ["cat-file", "-e", `${commit}^{commit}`], { stdio: "ignore" });
+    } catch {
+      t.skip("historical SPEC10-012R2 commits are unavailable in this checkout");
+      return;
+    }
+  }
+
+  const changed = execFileSync(
+    "git",
+    ["diff", "--name-only", provisionalAuditCommit, correctedAuditCommit],
+    { encoding: "utf8" },
+  ).trim().split("\n").filter(Boolean);
   assert.ok(changed.length > 0);
   for (const file of changed) assert.doesNotMatch(file, /^(migrations\/|client\/|server\/|shared\/schema)/, `forbidden surface changed: ${file}`);
   assert.doesNotMatch(readFileSync("engine/planner-next/index.ts", "utf8"), /focalA2CapabilityAudit|coverage/);

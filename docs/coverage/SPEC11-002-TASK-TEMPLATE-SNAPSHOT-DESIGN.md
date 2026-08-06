@@ -1,9 +1,9 @@
 # SPEC11-002 — Snapshot efectivo de configuración operativa de plantilla
 
-**Estado:** diseño ejecutable aprobado para implementación  
-**Clasificación:** DB Safe Merge  
-**Baseline de diseño:** `main@3ac6b3c3ca0cb0b4ae12a9f87a4cb952e3e4cfaf`  
-**Depende de:** SPEC-11 y auditoría SPEC11-001  
+**Estado:** diseño ejecutable aprobado para implementación
+**Clasificación:** DB Safe Merge
+**Baseline de diseño:** `main@3ac6b3c3ca0cb0b4ae12a9f87a4cb952e3e4cfaf`
+**Depende de:** SPEC-11 y auditoría SPEC11-001
 **No depende de:** rama WIP SPEC10-021
 
 ---
