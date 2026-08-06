@@ -1,0 +1,87 @@
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+
+const EXPECTED_MAIN = "a382d3df57a8676f80f0cc475e2234c61b32c4df";
+const TARGET_BRANCH = "spec10-020-flexible-setup-order";
+
+function run(command, args) {
+  execFileSync(command, args, { encoding: "utf8", stdio: "inherit" });
+}
+
+function capture(command, args) {
+  return execFileSync(command, args, { encoding: "utf8" }).trim();
+}
+
+function read(path) {
+  if (!existsSync(path)) throw new Error(`Missing file: ${path}`);
+  return readFileSync(path, "utf8");
+}
+
+function write(path, content) {
+  writeFileSync(path, content.endsWith("\n") ? content : `${content}\n`);
+}
+
+function replaceExact(path, before, after) {
+  const source = read(path);
+  const count = source.split(before).length - 1;
+  if (count !== 1) throw new Error(`Expected one exact match in ${path}, found ${count}`);
+  write(path, source.replace(before, after));
+}
+
+function replaceRegex(path, pattern, after) {
+  const source = read(path);
+  const matches = source.match(pattern);
+  if (!matches || matches.length !== 1) throw new Error(`Expected one regex match in ${path}`);
+  write(path, source.replace(pattern, after));
+}
+
+const branch = capture("git", ["branch", "--show-current"]);
+const status = capture("git", ["status", "--short"]);
+const head = capture("git", ["rev-parse", "HEAD"]);
+const originMain = capture("git", ["rev-parse", "origin/main"]);
+if (branch !== "main") throw new Error(`Run from main, current branch is ${branch}`);
+if (status !== "") throw new Error("Working tree is not clean; no files were changed.");
+if (head !== EXPECTED_MAIN || originMain !== EXPECTED_MAIN) {
+  throw new Error(`Expected main ${EXPECTED_MAIN}; local=${head}; origin/main=${originMain}`);
+}
+if (capture("git", ["branch", "--list", TARGET_BRANCH]) !== "") {
+  throw new Error(`Local branch ${TARGET_BRANCH} already exists; inspect it before retrying.`);
+}
+run("git", ["switch", "-c", TARGET_BRANCH]);
+
+replaceExact(
+  "engine/planner-next/contracts.ts",
+  'export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; preparationMinutesByFamily?: Record<string, number> }',
+  `export interface SetupPolicy {
+  /** Canonical allowed families. For explicit policies this is also the required order. */
+  familyOrder: string[];
+  /** When true, familyOrder is an allowed-family set and search chooses the block order. */
+  flexibleFamilyOrder?: boolean;
+  reentry: "FORBIDDEN";
+  /** Historical/explicit preparation contract keyed by the family that starts. */
+  preparationMinutesByFamily?: Record<string, number>;
+  /** Flexible-order preparation inserted before every family after the first selected family. */
+  preparationMinutesBetweenFamilies?: number;
+}`,
+);
+
+write("engine/planner-next/setupGrouping.ts", `import type { PlannerNextProblem, ScheduledTask, SetupPolicy, Space, Task } from "./contracts";
+
+export function setupSpaces(problem: Pick<PlannerNextProblem, "spaces">): Space[] {
+  return [...problem.spaces].filter((space) => space.setupPolicy !== undefined).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function setupTasks<T extends Task>(tasks: T[], spaceId: string): T[] {
+  return [...tasks].filter((task) => task.spaceId === spaceId).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function activeSetupFamily(pending: Task[], familyOrder: string[]): string | undefined {
+  return familyOrder.find((family) => pending.some((task) => task.setupFamilyId === family));
+}
+
+export function eligibleSetupTasks<T extends Task>(pending: T[], familyOrder: string[]): T[] {
+  const active = activeSetupFamily(pending, familyOrder);
+  return active === undefined ? [] : [...pending].filter((task) => task.setupFamilyId === active).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
