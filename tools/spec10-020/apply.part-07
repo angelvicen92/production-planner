@@ -1,0 +1,72 @@
+.scheduledTasks, plan.scheduledSetupPreparations, plan.scheduledSpaceMeals, plan.scheduledParticipantMeals, plan.scheduledResourceMeals, plan.scheduledItinerantUnitMeals);
+  assert.equal(plan.complete, true);
+  assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
+  assert.deepEqual(input, source);
+  return {
+    sourceFingerprint: adapter.sourceFingerprint,
+    identityMapFingerprint: adapter.identityMapFingerprint,
+    problemFingerprint: adapter.problemFingerprint,
+    planFingerprint: plan.metrics.planFingerprint,
+    selectedOrder: plan.metrics.setupFamilySequenceBySpaceId[setupSpace.id],
+    preparations: plan.scheduledSetupPreparations,
+  };
+};
+
+test("UNSPECIFIED setup order remains flexible and explores both family orders", () => {
+  const baseline = createSpec10020FlexibleSetupOrderEngineInputFixture();
+  const repeated = projection(structuredClone(baseline));
+  const inverted = structuredClone(baseline);
+  inverted.tasks.reverse();
+  inverted.locks.reverse();
+  inverted.planResourceItems.reverse();
+  inverted.planSpaceSettings?.reverse();
+  inverted.planZoneSettings?.reverse();
+  inverted.setupPolicies?.forEach((policy) => policy.families.reverse());
+  inverted.setupPolicies?.reverse();
+  assert.deepEqual(projection(structuredClone(baseline)), repeated);
+  assert.deepEqual(projection(inverted), repeated);
+});
+
+test("invalid flexible setup contracts are rejected before adaptation", () => {
+  const withOrder = createSpec10020FlexibleSetupOrderEngineInputFixture();
+  withOrder.setupPolicies![0]!.familyOrder = ["sillon", "estrellas"];
+  assert.equal(preflightEngineInputForPlannerNext(withOrder).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
+  const offGrid = createSpec10020FlexibleSetupOrderEngineInputFixture();
+  offGrid.setupPolicies![0]!.preparationMinutesBetweenFamilies = 7;
+  assert.equal(preflightEngineInputForPlannerNext(offGrid).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
+});
+
+test("full A2 removes flexible-order blocker and stops at Totales synchronization", () => {
+  const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));
+  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
+});
+`);
+
+run("npm", ["exec", "tsx", "--", "--test",
+  "engine/planner-next/flexibleSetupOrder.spec.ts",
+  "engine/planner-next/setupGrouping.spec.ts",
+  "engine/planner-next/setupPreparation.spec.ts",
+  "engine/planner-next/integration/engineInputPreflight.spec.ts",
+  "engine/planner-next/integration/engineInputAdapter.spec.ts",
+  "engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts",
+]);
+run("npm", ["run", "check"]);
+run("git", ["diff", "--check"]);
+run("git", ["add",
+  "engine/planner-next/contracts.ts",
+  "engine/planner-next/setupGrouping.ts",
+  "engine/planner-next/setupPreparation.ts",
+  "engine/planner-next/placeAuxiliaryTasks.ts",
+  "engine/planner-next/validate.ts",
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  "engine/planner-next/integration/engineInputPreflight.spec.ts",
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  "engine/planner-next/integration/engineInputAdapter.fixture.ts",
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  "engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
+  "engine/planner-next/flexibleSetupOrder.spec.ts",
+]);
+run("git", ["commit", "-m", "SPEC10-020: support flexible setup family order"]);
+run("git", ["push", "-u", "origin", TARGET_BRANCH]);
+console.log(`SPEC10-020 focused implementation pushed to ${TARGET_BRANCH}`);
