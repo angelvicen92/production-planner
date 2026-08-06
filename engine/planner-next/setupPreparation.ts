@@ -2,7 +2,7 @@ import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal,
 import { contains, overlaps } from "./time";
 
 export type TemporalOccupation = { id:string; start:number; end:number };
-export const setupPreparationDuration = (policy:SetupPolicy|undefined, family:string):number|undefined => policy?.preparationMinutesByFamily?.[family];
+export const setupPreparationDuration = (policy:SetupPolicy|undefined, family:string, hasPriorFamily=false):number|undefined => policy?.flexibleFamilyOrder === true ? (hasPriorFamily ? policy.preparationMinutesBetweenFamilies : undefined) : policy?.preparationMinutesByFamily?.[family];
 export const requiresSetupPreparation = (policy:SetupPolicy|undefined, family:string):boolean => setupPreparationDuration(policy,family) !== undefined;
 export const setupPreparationId = (spaceId:string,family:string,entryIndex=1):string => `setup-preparation:${spaceId}:${family}:${entryIndex}`;
 export function createSetupPreparation(spaceId:string,setupFamilyId:string,entryIndex:number,duration:number,start:number):ScheduledSetupPreparation { return {id:setupPreparationId(spaceId,setupFamilyId,entryIndex),kind:"setup-preparation",spaceId,setupFamilyId,entryIndex,duration,start,end:start+duration}; }

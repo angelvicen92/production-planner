@@ -305,6 +305,30 @@ export interface RepresentabilityAnalysis {
     readonly executed: true; readonly engineInputPreflightSupported: boolean; readonly adapterSupported: boolean; readonly plannerNextPreflightSupported: boolean; readonly projectedFamilyCount: number; readonly projectedPolicyCount: number; readonly complete: boolean; readonly hardValid: boolean; readonly setupViolationCount: number; readonly setupPreparationViolationCount: number; readonly deterministic: boolean; readonly orderInvariant: boolean; readonly inputImmutable: boolean; readonly familyOrder: readonly string[]; readonly familySequence: readonly string[];
   };
   readonly setupPolicyCapabilityProven: boolean;
+  readonly flexibleSetupOrderProbe: {
+    readonly executed: true;
+    readonly engineInputPreflightSupported: boolean;
+    readonly adapterSupported: boolean;
+    readonly plannerNextPreflightSupported: boolean;
+    readonly exactPolicySelected: boolean;
+    readonly complete: boolean;
+    readonly hardValid: boolean;
+    readonly setupViolationCount: number;
+    readonly setupPreparationViolationCount: number;
+    readonly observedFamilyOrders: readonly string[];
+    readonly observedBothOrders: boolean;
+    readonly selectedFamilySequence: readonly string[];
+    readonly selectedPreparationCount: number;
+    readonly selectedPreparationMinutes: number;
+    readonly preparationTargetsSecondFamily: boolean;
+    readonly deterministic: boolean;
+    readonly orderInvariant: boolean;
+    readonly inputImmutable: boolean;
+    readonly sharedBudgetAccounting: boolean;
+    readonly atomicOnBudgetExhaustion: boolean;
+    readonly fullFingerprint: string | null;
+  };
+  readonly flexibleSetupOrderCapabilityProven: boolean;
 }
 
 export interface RepresentabilityGateResult {

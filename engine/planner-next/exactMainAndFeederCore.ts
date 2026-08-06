@@ -194,8 +194,21 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
-      const reduced: PlannerNextProblem = { ...problem, tasks: problem.tasks.filter(({ id }) => coreIds.has(id)),
-        anchoredAccompaniments: applicableContracts, participantMeals: undefined, participantMealCapacity: undefined };
+      const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id));
+      const deferredSetupSpaceIds = new Set(problem.spaces
+        .filter((space) => space.setupPolicy !== undefined
+          && !reducedTasks.some((task) => task.spaceId === space.id))
+        .map(({ id }) => id));
+      const reduced: PlannerNextProblem = {
+        ...problem,
+        tasks: reducedTasks,
+        spaces: problem.spaces.map((space) => deferredSetupSpaceIds.has(space.id)
+          ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined }
+          : space),
+        anchoredAccompaniments: applicableContracts,
+        participantMeals: undefined,
+        participantMealCapacity: undefined,
+      };
       const expected = [...coreIds].sort();
       const actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);

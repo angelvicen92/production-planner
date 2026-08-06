@@ -343,6 +343,7 @@ export function runSpec10018Probe(
     createSpec10018SetupPolicyEngineInputFixture(
       familyOrder,
     ),
+  flexibleOrder = false,
 ): Spec10018ProbeRun {
   const input = factory();
   const inputSnapshot = structuredClone(input);
@@ -550,15 +551,13 @@ export function runSpec10018Probe(
     inputImmutable,
   };
 
-  assert.deepEqual(
-    result.familyOrder,
-    canonicalFamilyOrder,
-  );
-
-  assert.deepEqual(
-    result.familySequence,
-    canonicalFamilyOrder,
-  );
+  if (flexibleOrder) {
+    assert.deepEqual([...result.familyOrder].sort(compare), [...canonicalFamilyOrder].sort(compare));
+    assert.deepEqual([...result.familySequence].sort(compare), [...canonicalFamilyOrder].sort(compare));
+  } else {
+    assert.deepEqual(result.familyOrder, canonicalFamilyOrder);
+    assert.deepEqual(result.familySequence, canonicalFamilyOrder);
+  }
 
   assert.equal(
     result.projectedFamilyCount,
@@ -639,7 +638,7 @@ export function runSpec10018Probe(
   assert.equal(
     result.preparations[0]
       ?.setupFamilyId,
-    canonicalFamilyOrder[1],
+    flexibleOrder ? result.familySequence[1] : canonicalFamilyOrder[1],
   );
 
   assert.equal(
@@ -897,11 +896,8 @@ function buildEvidence() {
         input.setupPolicies![0]!
           .orderConstraint =
           "UNSPECIFIED";
-
-        delete input.setupPolicies![0]!
-          .familyOrder;
       },
-      "UNSUPPORTED_FLEXIBLE_SETUP_ORDER",
+      "UNSUPPORTED_SETUP_MAPPING",
     ),
 
     unsupported(

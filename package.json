@@ -58,7 +58,8 @@
     "benchmark:planner-next:a2-full-template": "tsx engine/planner-next/benchmarks/runFullA2CanonicalTemplateBenchmark.ts",
     "benchmark:planner-next:spec10-017": "tsx engine/planner-next/benchmarks/runSpec10017JointGroupsBenchmark.ts",
     "benchmark:planner-next:spec10-018": "tsx engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
-    "benchmark:planner-next:spec10-019": "tsx engine/planner-next/benchmarks/runSpec10019CoachRouteTransitionBenchmark.ts"
+    "benchmark:planner-next:spec10-019": "tsx engine/planner-next/benchmarks/runSpec10019CoachRouteTransitionBenchmark.ts",
+    "benchmark:planner-next:spec10-020": "tsx engine/planner-next/benchmarks/runSpec10020FlexibleSetupOrderBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
