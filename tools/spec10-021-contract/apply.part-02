@@ -1,0 +1,232 @@
+    const duplicateId = idValid && policyIds.has(id);
+    if (idValid) policyIds.add(id);
+    const lanesValidContainer = Array.isArray(lanesRaw) && lanesRaw.length === 2;
+    const localSpaceIds = new Set<number>();
+    const localTaskIds = new Set<number>();
+    const durations = new Set<number>();
+    const lanes: SupportedEngineInputRoundSynchronization["lanes"][number][] = [];
+    const laneDefects: Array<Record<string, unknown>> = [];
+
+    for (const [laneIndex, rawLane] of (Array.isArray(lanesRaw) ? lanesRaw : []).entries()) {
+      const lane = rawLane && typeof rawLane === "object" && !Array.isArray(rawLane)
+        ? rawLane as Record<string, unknown>
+        : {};
+      const spaceId = lane.spaceId;
+      const taskIds = lane.taskIds;
+      const preparationMinutesBetweenRounds = lane.preparationMinutesBetweenRounds;
+      const spaceValid = positiveInteger(spaceId) && spaceIds.has(spaceId);
+      const duplicateSpace = positiveInteger(spaceId)
+        && (localSpaceIds.has(spaceId) || globallyUsedSpaceIds.has(spaceId));
+      if (positiveInteger(spaceId)) localSpaceIds.add(spaceId);
+      const taskIdsContainerValid = Array.isArray(taskIds) && taskIds.length > 0;
+      const canonicalTaskIds: number[] = [];
+      const taskDefects: Array<Record<string, unknown>> = [];
+
+      for (const taskId of Array.isArray(taskIds) ? taskIds : []) {
+        const task = positiveInteger(taskId) ? taskById.get(taskId) : undefined;
+        const duplicateTask = positiveInteger(taskId)
+          && (localTaskIds.has(taskId) || globallyUsedTaskIds.has(taskId));
+        if (positiveInteger(taskId)) localTaskIds.add(taskId);
+        const duration = task?.durationOverrideMin;
+        const taskValid = Boolean(
+          task
+          && (task.status === "pending" || task.status === "interrupted")
+          && task.plannerNextKind === "auxiliary"
+          && positiveInteger(task.contestantId)
+          && task.spaceId === spaceId
+          && task.jointGroupId == null
+          && task.setupFamilyId == null
+          && positiveInteger(duration)
+          && (!positiveInteger(timeGridMinutes) || duration % timeGridMinutes === 0),
+        );
+        if (taskValid) durations.add(duration as number);
+        if (!positiveInteger(taskId) || duplicateTask || !taskValid) {
+          taskDefects.push({
+            taskId,
+            duplicateTask,
+            taskFound: Boolean(task),
+            status: task?.status ?? null,
+            plannerNextKind: task?.plannerNextKind ?? null,
+            contestantId: task?.contestantId ?? null,
+            taskSpaceId: task?.spaceId ?? null,
+            laneSpaceId: spaceId,
+            duration: duration ?? null,
+          });
+        } else {
+          canonicalTaskIds.push(taskId);
+        }
+      }
+
+      const preparationValid = nonNegativeInteger(preparationMinutesBetweenRounds)
+        && (!positiveInteger(timeGridMinutes)
+          || preparationMinutesBetweenRounds % timeGridMinutes === 0);
+      if (!spaceValid || duplicateSpace || !taskIdsContainerValid
+        || taskDefects.length > 0 || !preparationValid) {
+        laneDefects.push({
+          laneIndex,
+          spaceId,
+          spaceValid,
+          duplicateSpace,
+          taskIdsContainerValid,
+          taskDefects,
+          preparationMinutesBetweenRounds,
+          preparationValid,
+        });
+      } else {
+        lanes.push({
+          spaceId: spaceId as number,
+          taskIds: Object.freeze([...canonicalTaskIds].sort((left, right) => left - right)),
+          preparationMinutesBetweenRounds: preparationMinutesBetweenRounds as number,
+        });
+      }
+    }
+
+    const durationMixValid = durations.size === 1;
+    const synchronizationValid =
+      synchronization === "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
+    const valid = idValid && !duplicateId && lanesValidContainer
+      && lanes.length === 2 && laneDefects.length === 0
+      && durationMixValid && synchronizationValid;
+
+    if (!valid) {
+      defects.push({
+        index,
+        details: {
+          id,
+          idValid,
+          duplicateId,
+          lanesValidContainer,
+          laneDefects,
+          durationMixValid,
+          durations: [...durations].sort((left, right) => left - right),
+          synchronization,
+          synchronizationValid,
+        },
+      });
+      return;
+    }
+
+    for (const lane of lanes) {
+      globallyUsedSpaceIds.add(lane.spaceId);
+      lane.taskIds.forEach((taskId) => globallyUsedTaskIds.add(taskId));
+    }
+    synchronizations.push({
+      id: id as string,
+      lanes: Object.freeze([...lanes].sort((left, right) => left.spaceId - right.spaceId)),
+      synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE",
+    });
+  });
+
+  return {
+    present,
+    invalidContainer,
+    synchronizations: Object.freeze(
+      [...synchronizations].sort((left, right) => left.id.localeCompare(right.id, "en")),
+    ),
+    defects: Object.freeze(defects),
+  };
+}
+
+export type { EngineInputRoundSynchronizationInput };
+`);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `import {
+  projectEngineInputCoachRouteTransitions,
+  resolveEngineInputCoachRouteTransitions,
+} from "./engineInputCoachRouteTransitions";
+`,
+  `import {
+  projectEngineInputCoachRouteTransitions,
+  resolveEngineInputCoachRouteTransitions,
+} from "./engineInputCoachRouteTransitions";
+import {
+  projectEngineInputRoundSynchronizations,
+  resolveEngineInputRoundSynchronizations,
+} from "./engineInputRoundSynchronizations";
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `  | "UNSUPPORTED_RESOURCE_REQUIREMENT"
+  | "UNSUPPORTED_FLEXIBLE_SETUP_ORDER"
+`,
+  `  | "UNSUPPORTED_RESOURCE_REQUIREMENT"
+  | "UNSUPPORTED_ROUND_SYNCHRONIZATION"
+  | "UNSUPPORTED_FLEXIBLE_SETUP_ORDER"
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `  | "resource-type"
+  | "setup-family"
+`,
+  `  | "resource-type"
+  | "round-synchronization"
+  | "setup-family"
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `  "resource-type": "resource-type",
+  "setup-family": "setup-family",
+`,
+  `  "resource-type": "resource-type",
+  "round-synchronization": "round-synchronization",
+  "setup-family": "setup-family",
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `  "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
+]);
+`,
+  `  "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
+  "roundSynchronizations",
+]);
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `    setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
+    coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
+`,
+  `    setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
+    roundSynchronizations: projectEngineInputRoundSynchronizations(input),
+    coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
+`,
+);
+
+insertBefore(
+  "engine/planner-next/integration/engineInputPreflight.ts",
+  `  const rawCoachRouteTransitions =
+`,
+  `  const rawRoundSynchronizations =
+    (input as unknown as Record<string, unknown>).roundSynchronizations;
+  if (Array.isArray(rawRoundSynchronizations)) {
+    rawRoundSynchronizations.forEach((raw, index) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+      const policy = raw as Record<string, unknown>;
+      addIdentity("round-synchronization", policy.id, `roundSynchronizations.${index}.id`, true);
+      if (!Array.isArray(policy.lanes)) return;
+      policy.lanes.forEach((rawLane, laneIndex) => {
+        if (!rawLane || typeof rawLane !== "object" || Array.isArray(rawLane)) return;
+        const lane = rawLane as Record<string, unknown>;
+        addIdentity("space", lane.spaceId, `roundSynchronizations.${index}.lanes.${laneIndex}.spaceId`);
+        if (Array.isArray(lane.taskIds)) lane.taskIds.forEach((taskId) =>
+          addIdentity("task", taskId, `roundSynchronizations.${index}.lanes.${laneIndex}.taskIds`));
+      });
+    });
+  }
+
+`,
+);
+
+insertBefore(
+  "engine/planner-next/integration/engineInputPreflight.ts",
