@@ -1,0 +1,21 @@
+  "engine/planner-next/exactItinerantPlan.spec.ts",
+  "engine/planner-next/executePlannerNext.spec.ts",
+  "engine/planner-next/setupGrouping.spec.ts",
+  "engine/planner-next/setupPreparation.spec.ts",
+  "engine/planner-next/integration/engineInputPreflight.spec.ts",
+  "engine/planner-next/integration/engineInputAdapter.spec.ts",
+  "engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts",
+]);
+run("npm", ["run", "check"]);
+run("git", ["diff", "--check"]);
+run("git", ["add",
+  "engine/planner-next/exactSetupBlocks.ts",
+  "engine/planner-next/exactFlexibleSetupOrder.spec.ts",
+  "engine/planner-next/exactItinerantPlan.ts",
+  "engine/planner-next/integration/engineInputAdapter.fixture.ts",
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  "engine/planner-next/flexibleSetupOrder.spec.ts",
+]);
+run("git", ["commit", "-m", "SPEC10-020-WIP: integrate flexible setup into exact route"]);
+run("git", ["push", "origin", TARGET_BRANCH]);
+console.log("SPEC10-020 exact-route checkpoint pushed; do not merge before final evidence and merge gate");
