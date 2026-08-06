@@ -1,0 +1,223 @@
+        }
+        if (task.kind !== "auxiliary"
+          || task.spaceId !== lane.spaceId
+          || task.jointGroupId !== undefined
+          || task.setupFamilyId !== undefined) {
+          reasons.add("UNSUPPORTED_ROUND_SYNCHRONIZATION_TASK");
+        }
+        if (!Number.isInteger(task.duration) || task.duration <= 0
+          || task.duration % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) {
+          reasons.add("INVALID_ROUND_SYNCHRONIZATION_DURATION");
+        } else {
+          durations.add(task.duration);
+        }
+      }
+    }
+    if (durations.size > 1) reasons.add("UNSUPPORTED_ROUND_SYNCHRONIZATION_DURATION_MIX");
+  }
+
+  return [...reasons].sort(compare);
+}
+
+function gapIsAuthorized(
+  problem: PlannerNextProblem,
+  spaceId: string,
+  previousEnd: number,
+  nextOccupationStart: number,
+  meals: ScheduledSpaceMeal[],
+): boolean {
+  if (previousEnd === nextOccupationStart) return true;
+  if (previousEnd === problem.protectedMeal.start
+    && nextOccupationStart === problem.protectedMeal.end) return true;
+  return meals.some((meal) =>
+    meal.spaceId === spaceId
+    && meal.start === previousEnd
+    && meal.end === nextOccupationStart);
+}
+
+function preparationWithinSpaceAvailability(
+  problem: PlannerNextProblem,
+  preparation: ScheduledRoundPreparation,
+): boolean {
+  const space = problem.spaces.find(({ id }) => id === preparation.spaceId);
+  return Boolean(space?.availability.some(({ start, end }) =>
+    start <= preparation.start && preparation.end <= end));
+}
+
+export interface RoundSynchronizationValidation {
+  synchronizationViolationCount: number;
+  preparationViolationCount: number;
+}
+
+export function validateRoundSynchronizations(
+  problem: PlannerNextProblem,
+  scheduled: ScheduledTask[],
+  preparations: ScheduledRoundPreparation[],
+  meals: ScheduledSpaceMeal[] = [],
+): RoundSynchronizationValidation {
+  let synchronizationViolationCount = 0;
+  let preparationViolationCount = 0;
+  const scheduledById = new Map<string, ScheduledTask[]>();
+  for (const task of scheduled) {
+    scheduledById.set(task.id, [...(scheduledById.get(task.id) ?? []), task]);
+  }
+  const expectedPreparationIds = new Set<string>();
+
+  for (const policy of [...(problem.roundSynchronizations ?? [])]
+    .sort((left, right) => compare(left.id, right.id))) {
+    const laneSchedules = policy.lanes.map((lane) => {
+      const tasks: ScheduledTask[] = [];
+      for (const taskId of lane.taskIds) {
+        const matches = scheduledById.get(taskId) ?? [];
+        if (matches.length !== 1) {
+          synchronizationViolationCount += 1;
+          continue;
+        }
+        tasks.push(matches[0]!);
+      }
+      return {
+        lane,
+        tasks: tasks.sort((left, right) =>
+          left.start - right.start || compare(left.id, right.id)),
+      };
+    });
+
+    const synchronizedRoundCount = Math.min(
+      ...laneSchedules.map(({ tasks }) => tasks.length),
+    );
+    for (let index = 0; index < synchronizedRoundCount; index += 1) {
+      const reference = laneSchedules[0]!.tasks[index]!;
+      for (const { tasks } of laneSchedules.slice(1)) {
+        const candidate = tasks[index]!;
+        if (candidate.start !== reference.start || candidate.end !== reference.end) {
+          synchronizationViolationCount += 1;
+        }
+      }
+    }
+
+    for (const { lane, tasks } of laneSchedules) {
+      for (let index = 1; index < tasks.length; index += 1) {
+        const previous = tasks[index - 1]!;
+        const current = tasks[index]!;
+        const roundIndex = index + 1;
+        const expectedId = roundPreparationId(policy.id, lane.spaceId, roundIndex);
+        const prepMinutes = lane.preparationMinutesBetweenRounds;
+        if (prepMinutes === 0) {
+          if (!gapIsAuthorized(problem, lane.spaceId, previous.end, current.start, meals)) {
+            preparationViolationCount += 1;
+          }
+          continue;
+        }
+
+        expectedPreparationIds.add(expectedId);
+        const matches = preparations.filter(({ id }) => id === expectedId);
+        const preparation = matches[0];
+        const sameSpaceTasks = scheduled.filter(({ spaceId }) => spaceId === lane.spaceId);
+        const overlapsTask = preparation
+          ? sameSpaceTasks.some((task) =>
+            task.id !== previous.id
+            && task.id !== current.id
+            && overlaps(preparation.start, preparation.end, task.start, task.end))
+          : true;
+        const overlapsMeal = preparation
+          ? meals.some((meal) =>
+            meal.spaceId === lane.spaceId
+            && overlaps(preparation.start, preparation.end, meal.start, meal.end))
+          : true;
+        const overlapsProtectedMeal = preparation
+          ? overlaps(
+            preparation.start,
+            preparation.end,
+            problem.protectedMeal.start,
+            problem.protectedMeal.end,
+          )
+          : true;
+        const invalid = matches.length !== 1
+          || !preparation
+          || preparation.kind !== "round-preparation"
+          || preparation.synchronizationId !== policy.id
+          || preparation.spaceId !== lane.spaceId
+          || preparation.roundIndex !== roundIndex
+          || preparation.duration !== prepMinutes
+          || preparation.end - preparation.start !== prepMinutes
+          || preparation.end !== current.start
+          || !gapIsAuthorized(problem, lane.spaceId, previous.end, preparation.start, meals)
+          || preparation.start < problem.day.start
+          || preparation.end > problem.day.end
+          || !preparationWithinSpaceAvailability(problem, preparation)
+          || overlapsTask
+          || overlapsMeal
+          || overlapsProtectedMeal;
+        if (invalid) preparationViolationCount += 1;
+      }
+    }
+  }
+
+  for (const preparation of preparations) {
+    if (!expectedPreparationIds.has(preparation.id)) preparationViolationCount += 1;
+  }
+
+  return { synchronizationViolationCount, preparationViolationCount };
+}
+`);
+
+write("engine/planner-next/integration/engineInputRoundSynchronizations.ts", `import type {
+  EngineInput,
+  EngineInputRoundSynchronizationInput,
+} from "../../types";
+
+export interface SupportedEngineInputRoundSynchronization {
+  id: string;
+  lanes: readonly {
+    spaceId: number;
+    taskIds: readonly number[];
+    preparationMinutesBetweenRounds: number;
+  }[];
+  synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
+}
+
+export interface EngineInputRoundSynchronizationDefect {
+  index: number;
+  details: Readonly<Record<string, unknown>>;
+}
+
+const positiveInteger = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value > 0;
+const nonNegativeInteger = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0;
+
+export function projectEngineInputRoundSynchronizations(input: EngineInput): unknown {
+  const value = (input as unknown as Record<string, unknown>).roundSynchronizations;
+  return Array.isArray(value) && value.length === 0 ? undefined : value;
+}
+
+export function resolveEngineInputRoundSynchronizations(
+  input: EngineInput,
+  timeGridMinutes: unknown,
+): {
+  present: boolean;
+  invalidContainer: boolean;
+  synchronizations: readonly SupportedEngineInputRoundSynchronization[];
+  defects: readonly EngineInputRoundSynchronizationDefect[];
+} {
+  const runtime = input as unknown as Record<string, unknown>;
+  const present = Object.prototype.hasOwnProperty.call(runtime, "roundSynchronizations");
+  const value = runtime.roundSynchronizations;
+  const invalidContainer = present && value !== undefined && !Array.isArray(value);
+  const entries = Array.isArray(value) ? value : [];
+  const taskById = new Map(input.tasks.map((task) => [task.id, task]));
+  const spaceIds = new Set((input.planSpaceSettings ?? []).map(({ spaceId }) => spaceId));
+  const policyIds = new Set<string>();
+  const globallyUsedTaskIds = new Set<number>();
+  const globallyUsedSpaceIds = new Set<number>();
+  const synchronizations: SupportedEngineInputRoundSynchronization[] = [];
+  const defects: EngineInputRoundSynchronizationDefect[] = [];
+
+  entries.forEach((raw, index) => {
+    const policy = raw && typeof raw === "object" && !Array.isArray(raw)
+      ? raw as Record<string, unknown>
+      : {};
+    const id = policy.id;
+    const lanesRaw = policy.lanes;
+    const synchronization = policy.synchronization;
+    const idValid = typeof id === "string" && id !== "" && id.trim() === id;
