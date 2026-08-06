@@ -36,10 +36,10 @@ test("invalid flexible setup contracts are rejected before adaptation", () => {
   assert.equal(preflightEngineInputForPlannerNext(offGrid).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
 });
 
-test("full A2 removes flexible-order blocker and stops at Totales synchronization", () => {
+test("full A2 remains blocked until EXACT_CONSTRUCTIVE publishes flexible setup", () => {
   const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));
-  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
+  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), true);
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED");
 });
 `);
 
@@ -67,6 +67,6 @@ run("git", ["add",
   "engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
   "engine/planner-next/flexibleSetupOrder.spec.ts",
 ]);
-run("git", ["commit", "-m", "SPEC10-020: support flexible setup family order"]);
+run("git", ["commit", "-m", "SPEC10-020-WIP: project flexible setup order to shared search"]);
 run("git", ["push", "-u", "origin", TARGET_BRANCH]);
-console.log(`SPEC10-020 focused implementation pushed to ${TARGET_BRANCH}`);
+console.log(`SPEC10-020 stage 1 pushed to ${TARGET_BRANCH}; do not merge before exact-route integration`);
