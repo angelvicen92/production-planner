@@ -1,0 +1,59 @@
+ilter((item) => item.spaceId === space.id);
+    const occupied = spaceOccupations(scheduled, preparations, space.id);
+    const sequence = setupFamilySequence(ownTasks);
+    const durationByFamily: Record<string, number> = policy.flexibleFamilyOrder === true
+      ? Object.fromEntries(sequence.slice(1).map((family) => [family, policy.preparationMinutesBetweenFamilies!]))
+      : { ...(policy.preparationMinutesByFamily ?? {}) };
+    const expectedPreparationSequence = sequence.filter((family) => Object.prototype.hasOwnProperty.call(durationByFamily, family));
+    for (const family of expectedPreparationSequence) {
+      const familyIndex = sequence.indexOf(family);
+      const previousFamily = familyIndex > 0 ? sequence[familyIndex - 1] : undefined;
+      const matches = ownPreparations.filter((item) => item.setupFamilyId === family);
+      const preparation = matches[0];
+      const familyTasks = ownTasks.filter((task) => task.setupFamilyId === family).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      const previousTasks = previousFamily === undefined ? [] : ownTasks.filter((task) => task.setupFamilyId === previousFamily).sort((a,b)=>a.end-b.end||a.id.localeCompare(b.id));
+      const expectedStart = previousFamily === undefined ? occupied[0]?.start : previousTasks.at(-1)?.end;
+      const invalid = matches.length !== 1 || !preparation || preparation.entryIndex !== 1 || preparation.id !== setupPreparationId(space.id,family,1)
+        || preparation.kind !== "setup-preparation" || preparation.duration !== durationByFamily[family] || preparation.end-preparation.start !== preparation.duration
+        || !preparationWithinDay(problem,preparation) || !preparationWithinAvailability(space.availability,preparation) || !occupationAvoidsProtectedMeal(problem,preparation.spaceId,preparation.start,preparation.end)
+        || !preparationAvoidsOccupations(preparation,occupied) || !familyTasks[0] || preparation.end !== familyTasks[0].start
+        || preparation.start !== expectedStart;
+      if (invalid) setupPreparation += 1;
+    }
+    const extras = ownPreparations.filter((item) => !expectedPreparationSequence.includes(item.setupFamilyId));
+    setupPreparation += extras.length;
+    const actualPreparationSequence = setupPreparationSequence(ownPreparations);
+    if (actualPreparationSequence.length !== expectedPreparationSequence.length || actualPreparationSequence.some((family,index)=>family!==expectedPreparationSequence[index])) setupPreparation += 1;
+  }
+  setupPreparation += preparations.filter((item) => !problem.spaces.some((space) => space.id === item.spaceId && (space.setupPolicy?.preparationMinutesByFamily !== undefined || space.setupPolicy?.preparationMinutesBetweenFamilies !== undefined))).length;
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputAdapter.fixture.ts",
+  `export function createSpec10018SetupPolicyEngineInputFixtureReverseOrder(): EngineInput {
+  return createSpec10018SetupPolicyEngineInputFixture(["estrellas", "sillon"]);
+}`,
+  `export function createSpec10018SetupPolicyEngineInputFixtureReverseOrder(): EngineInput {
+  return createSpec10018SetupPolicyEngineInputFixture(["estrellas", "sillon"]);
+}
+
+export function createSpec10020FlexibleSetupOrderEngineInputFixture(): EngineInput {
+  const input = createSpec10018SetupPolicyEngineInputFixture();
+  input.setupPolicies = input.setupPolicies?.map((policy) => {
+    const flexible = { ...policy, orderConstraint: "UNSPECIFIED" as const };
+    delete flexible.familyOrder;
+    return flexible;
+  });
+  return input;
+}`,
+);
+
+replaceExact(
+  "engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
+  `  factory = () =>
+    createSpec10018SetupPolicyEngineInputFixture(
+      familyOrder,
+    ),
+): Spec10018ProbeRun {`,
+  `  factory = () =>
