@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://optiplan.local/schemas/configurability-registry.schema.json",
+  "title": "OptiPlan Configurability Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registryVersion",
+    "auditedMainSha",
+    "auditedAt",
+    "sourceDocuments",
+    "capabilities"
+  ],
+  "properties": {
+    "registryVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "auditedMainSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "auditedAt": {
+      "type": "string",
+      "format": "date"
+    },
+    "sourceDocuments": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability" }
+    }
+  },
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "WIP",
+        "DOCUMENTED_ONLY",
+        "ABSENT",
+        "UNSAFE",
+        "N_A"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["REQUIRED", "PREFERRED", "OFF", "MIXED", "N_A"]
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    },
+    "layerMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "generalConfig",
+        "dailySnapshot",
+        "instanceOverride",
+        "api",
+        "ui",
+        "buildInput",
+        "engineInput",
+        "preflight",
+        "plannerNext",
+        "searchOrScoring",
+        "validation",
+        "publication",
+        "fingerprint",
+        "evidence"
+      ],
+      "properties": {
+        "domain": { "$ref": "#/$defs/status" },
+        "generalConfig": { "$ref": "#/$defs/status" },
+        "dailySnapshot": { "$ref": "#/$defs/status" },
+        "instanceOverride": { "$ref": "#/$defs/status" },
+        "api": { "$ref": "#/$defs/status" },
+        "ui": { "$ref": "#/$defs/status" },
+        "buildInput": { "$ref": "#/$defs/status" },
+        "engineInput": { "$ref": "#/$defs/status" },
+        "preflight": { "$ref": "#/$defs/status" },
+        "plannerNext": { "$ref": "#/$defs/status" },
+        "searchOrScoring": { "$ref": "#/$defs/status" },
+        "validation": { "$ref": "#/$defs/status" },
+        "publication": { "$ref": "#/$defs/status" },
+        "fingerprint": { "$ref": "#/$defs/status" },
+        "evidence": { "$ref": "#/$defs/status" }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capabilityId",
+        "title",
+        "owner",
+        "severity",
+        "status",
+        "productive",
+        "hardcodeRisk",
+        "absenceSemantics",
+        "layers",
+        "blockers",
+        "sourceRefs"
+      ],
+      "properties": {
+        "capabilityId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]+$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "owner": {
+          "type": "string",
+          "enum": [
+            "PROGRAM",
+            "PLAN",
+            "ZONE",
+            "SPACE",
+            "TASK_TEMPLATE",
+            "DAILY_TASK",
+            "PARTICIPANT",
+            "RESOURCE",
+            "ITINERANT_UNIT",
+            "PLANNER",
+            "INTEGRATION",
+            "GOVERNANCE"
+          ]
+        },
+        "severity": { "$ref": "#/$defs/severity" },
+        "status": { "$ref": "#/$defs/status" },
+        "productive": { "type": "boolean" },
+        "hardcodeRisk": { "$ref": "#/$defs/risk" },
+        "absenceSemantics": { "type": "string", "minLength": 1 },
+        "layers": { "$ref": "#/$defs/layerMap" },
+        "blockers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
