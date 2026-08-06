@@ -129,7 +129,7 @@ fi
 
 assert_expected_changed_files
 
-python - <<'PY'
+python3 - <<'PY'
 from pathlib import Path
 import re
 
