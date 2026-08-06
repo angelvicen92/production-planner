@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://optiplan.local/schemas/engine-input-source-criticality.schema.json",
+  "title": "OptiPlan EngineInput Source Criticality Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["registryVersion", "auditedMainSha", "auditedAt", "sources"],
+  "properties": {
+    "registryVersion": { "type": "integer", "const": 1 },
+    "auditedMainSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "auditedAt": { "type": "string", "format": "date" },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "loader",
+        "criticality",
+        "currentBehavior",
+        "targetFailurePolicy",
+        "reason",
+        "capabilityIds"
+      ],
+      "properties": {
+        "sourceId": { "type": "string", "pattern": "^EIS-[0-9]{3}$" },
+        "loader": { "type": "string", "minLength": 1 },
+        "criticality": {
+          "type": "string",
+          "enum": [
+            "REQUIRED_INPUT",
+            "CONDITIONAL_REQUIRED_INPUT",
+            "OPTIONAL_SIGNAL",
+            "LEGACY_COMPATIBILITY",
+            "DIAGNOSTIC_ONLY",
+            "FORBIDDEN_GLOBAL_READ",
+            "FUTURE_REQUIRED_INPUT"
+          ]
+        },
+        "currentBehavior": {
+          "type": "string",
+          "enum": [
+            "DIRECT_HARD",
+            "NEUTRAL_FALLBACK",
+            "WARNING_FALLBACK",
+            "LEGACY_FALLBACK",
+            "GLOBAL_READ",
+            "NOT_IMPLEMENTED"
+          ]
+        },
+        "targetFailurePolicy": {
+          "type": "string",
+          "enum": [
+            "ABORT_BUILD",
+            "ABORT_IF_REFERENCED",
+            "CONTINUE_WITH_WARNING",
+            "CONTINUE_WITH_MARKED_LEGACY",
+            "NOT_ALLOWED",
+            "N_A_UNTIL_IMPLEMENTED"
+          ]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "capabilityIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+        },
+        "requiredReasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
