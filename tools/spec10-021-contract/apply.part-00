@@ -1,0 +1,232 @@
+
+const fs = require("node:fs");
+
+function read(path) {
+  return fs.readFileSync(path, "utf8");
+}
+function write(path, content) {
+  fs.mkdirSync(require("node:path").dirname(path), { recursive: true });
+  fs.writeFileSync(path, content.endsWith("\n") ? content : `${content}\n`);
+}
+function replaceExact(path, before, after) {
+  const content = read(path);
+  const count = content.split(before).length - 1;
+  if (count !== 1) throw new Error(`${path}: expected one exact match, found ${count}`);
+  write(path, content.replace(before, after));
+}
+function insertBefore(path, marker, insertion) {
+  const content = read(path);
+  const count = content.split(marker).length - 1;
+  if (count !== 1) throw new Error(`${path}: expected one insertion marker, found ${count}`);
+  write(path, content.replace(marker, `${insertion}${marker}`));
+}
+function insertAfter(path, marker, insertion) {
+  const content = read(path);
+  const count = content.split(marker).length - 1;
+  if (count !== 1) throw new Error(`${path}: expected one insertion marker, found ${count}`);
+  write(path, content.replace(marker, `${marker}${insertion}`));
+}
+
+replaceExact(
+  "engine/types.ts",
+  `export interface EngineInputCoachRouteTransitionInput {
+  coachPlanResourceItemId: number;
+  fromSpaceId: number;
+  toSpaceId: number;
+  minutes: number;
+}
+`,
+  `export interface EngineInputRoundSynchronizationLaneInput {
+  spaceId: number;
+  taskIds: number[];
+  preparationMinutesBetweenRounds: number;
+}
+
+export interface EngineInputRoundSynchronizationInput {
+  id: string;
+  lanes: EngineInputRoundSynchronizationLaneInput[];
+  synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
+}
+
+export interface EngineInputCoachRouteTransitionInput {
+  coachPlanResourceItemId: number;
+  fromSpaceId: number;
+  toSpaceId: number;
+  minutes: number;
+}
+`,
+);
+
+replaceExact(
+  "engine/types.ts",
+  `  /** Explicit setup-family grouping and preparation policies. */
+  setupPolicies?: EngineInputSetupPolicyInput[];
+  /** Directional hard travel time for one concrete coach between two spaces. */
+`,
+  `  /** Explicit setup-family grouping and preparation policies. */
+  setupPolicies?: EngineInputSetupPolicyInput[];
+  /** Explicit dynamic round synchronization across independent spaces. */
+  roundSynchronizations?: EngineInputRoundSynchronizationInput[];
+  /** Directional hard travel time for one concrete coach between two spaces. */
+`,
+);
+
+replaceExact(
+  "engine/planner-next/contracts.ts",
+  `export interface CoachRouteTransition {
+`,
+  `export interface RoundSynchronizationLane {
+  spaceId: string;
+  taskIds: string[];
+  preparationMinutesBetweenRounds: Minute;
+}
+
+export interface RoundSynchronizationPolicy {
+  id: string;
+  lanes: RoundSynchronizationLane[];
+  synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
+}
+
+export interface CoachRouteTransition {
+`,
+);
+
+replaceExact(
+  "engine/planner-next/contracts.ts",
+  `  coachRouteTransitions?: CoachRouteTransition[];
+  budget: SearchBudget;
+`,
+  `  coachRouteTransitions?: CoachRouteTransition[];
+  roundSynchronizations?: RoundSynchronizationPolicy[];
+  budget: SearchBudget;
+`,
+);
+
+replaceExact(
+  "engine/planner-next/contracts.ts",
+  `export interface ScheduledSetupPreparation { id:string; kind:"setup-preparation"; spaceId:string; setupFamilyId:string; entryIndex:number; duration:number; start:Minute; end:Minute }
+export interface ScheduledSpaceMeal`,
+  `export interface ScheduledSetupPreparation { id:string; kind:"setup-preparation"; spaceId:string; setupFamilyId:string; entryIndex:number; duration:number; start:Minute; end:Minute }
+export interface ScheduledRoundPreparation { id:string; kind:"round-preparation"; synchronizationId:string; spaceId:string; roundIndex:number; duration:Minute; start:Minute; end:Minute }
+export interface ScheduledSpaceMeal`,
+);
+
+replaceExact(
+  "engine/planner-next/contracts.ts",
+  `  setupPreparationViolationCount: number;
+  jointGroupViolationCount: number;
+`,
+  `  setupPreparationViolationCount: number;
+  roundSynchronizationViolationCount?: number;
+  roundPreparationViolationCount?: number;
+  jointGroupViolationCount: number;
+`,
+);
+
+write("engine/planner-next/roundSynchronization.ts", `import type {
+  PlannerNextProblem,
+  RoundSynchronizationPolicy,
+  ScheduledRoundPreparation,
+  ScheduledSpaceMeal,
+  ScheduledTask,
+} from "./contracts";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
+
+const compare = (left: string, right: string): number => left.localeCompare(right, "en");
+const overlaps = (aStart: number, aEnd: number, bStart: number, bEnd: number): boolean =>
+  aStart < bEnd && bStart < aEnd;
+
+export const roundPreparationId = (
+  synchronizationId: string,
+  spaceId: string,
+  roundIndex: number,
+): string => `round-preparation:${synchronizationId}:${spaceId}:${roundIndex}`;
+
+export function roundSynchronizationTaskIds(
+  problem: PlannerNextProblem,
+): ReadonlySet<string> {
+  return new Set(
+    (problem.roundSynchronizations ?? [])
+      .flatMap((policy) => policy.lanes)
+      .flatMap((lane) => lane.taskIds),
+  );
+}
+
+export function roundSynchronizationPreflightReasons(
+  problem: PlannerNextProblem,
+): string[] {
+  const reasons = new Set<string>();
+  const raw = (problem as unknown as Record<string, unknown>).roundSynchronizations;
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) return ["INVALID_ROUND_SYNCHRONIZATION_POLICY"];
+
+  const policies = raw as RoundSynchronizationPolicy[];
+  if (policies.length > 0 && problem.searchPolicy !== "EXACT_CONSTRUCTIVE") {
+    reasons.add("ROUND_SYNCHRONIZATION_REQUIRES_EXACT_POLICY");
+  }
+  const policyIds = new Set<string>();
+  const globallyUsedTaskIds = new Set<string>();
+  const globallyUsedSpaceIds = new Set<string>();
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const knownSpaceIds = new Set(problem.spaces.map((space) => space.id));
+
+  for (const policy of policies) {
+    if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
+      reasons.add("INVALID_ROUND_SYNCHRONIZATION_POLICY");
+      continue;
+    }
+    if (typeof policy.id !== "string" || policy.id.trim() !== policy.id || policy.id === "") {
+      reasons.add("INVALID_ROUND_SYNCHRONIZATION_POLICY");
+    } else if (policyIds.has(policy.id)) {
+      reasons.add("DUPLICATE_ROUND_SYNCHRONIZATION_ID");
+    } else {
+      policyIds.add(policy.id);
+    }
+    if (policy.synchronization !== "START_TOGETHER_WHILE_ALL_LANES_ACTIVE") {
+      reasons.add("INVALID_ROUND_SYNCHRONIZATION_POLICY");
+    }
+    if (!Array.isArray(policy.lanes) || policy.lanes.length !== 2) {
+      reasons.add("UNSUPPORTED_ROUND_SYNCHRONIZATION_LANE_COUNT");
+      continue;
+    }
+
+    const localSpaces = new Set<string>();
+    const localTasks = new Set<string>();
+    const durations = new Set<number>();
+    for (const lane of policy.lanes) {
+      if (!lane || typeof lane !== "object" || Array.isArray(lane)) {
+        reasons.add("INVALID_ROUND_SYNCHRONIZATION_POLICY");
+        continue;
+      }
+      if (typeof lane.spaceId !== "string" || !knownSpaceIds.has(lane.spaceId)) {
+        reasons.add("MISSING_ROUND_SYNCHRONIZATION_SPACE");
+      } else {
+        if (localSpaces.has(lane.spaceId) || globallyUsedSpaceIds.has(lane.spaceId)) {
+          reasons.add("DUPLICATE_ROUND_SYNCHRONIZATION_SPACE");
+        }
+        localSpaces.add(lane.spaceId);
+        globallyUsedSpaceIds.add(lane.spaceId);
+      }
+      const prep = lane.preparationMinutesBetweenRounds;
+      if (!Number.isInteger(prep) || prep < 0
+        || prep % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) {
+        reasons.add("INVALID_ROUND_PREPARATION_DURATION");
+      }
+      if (!Array.isArray(lane.taskIds) || lane.taskIds.length === 0) {
+        reasons.add("INVALID_ROUND_SYNCHRONIZATION_POLICY");
+        continue;
+      }
+      for (const taskId of lane.taskIds) {
+        if (typeof taskId !== "string" || taskId === "") {
+          reasons.add("MISSING_ROUND_SYNCHRONIZATION_TASK");
+          continue;
+        }
+        if (localTasks.has(taskId) || globallyUsedTaskIds.has(taskId)) {
+          reasons.add("DUPLICATE_ROUND_SYNCHRONIZATION_TASK");
+        }
+        localTasks.add(taskId);
+        globallyUsedTaskIds.add(taskId);
+        const task = taskById.get(taskId);
+        if (!task) {
+          reasons.add("MISSING_ROUND_SYNCHRONIZATION_TASK");
+          continue;
