@@ -1,0 +1,97 @@
+{
+  "iterationId": "SPEC10-019",
+  "operationalRule": "El mismo coach necesita 30 minutos desde Caracola hasta Estudio 7.",
+  "baseline": {
+    "engineInputPreflightStatus": "SUPPORTED",
+    "adapterStatus": "SUPPORTED",
+    "plannerNextPreflightReasonCodes": [],
+    "sourceFingerprint": "c87529bcfc12b5216b8631e080d6f1e69ea70055145f494406a40314615a8f4d",
+    "identityMapFingerprint": "9b67f39942d281ac8984a8ed5cb502352fca77c2a45a147f0f63d1ae981bf0bc",
+    "problemFingerprint": "102198c4e02c048791a0c2a80f7e517f64893c5689f95245e6381902c940ced3",
+    "planFingerprint": "c6b4b01c57a5237e19d95767a8714a7ab3c3535f8135439952d90feb0bcaf7e5",
+    "globalResourceTransitionMinutes": 5,
+    "projectedRouteCount": 1,
+    "routeMinutes": 30,
+    "complete": true,
+    "hardValid": true,
+    "plannedTaskCount": 2,
+    "unplannedTaskCount": 0,
+    "scheduledGapMinutes": 30,
+    "rejectsTwentyNineMinutes": true,
+    "acceptsThirtyMinutes": true,
+    "validationAtTwentyNine": {
+      "transitionViolationCount": 1,
+      "hardValid": false
+    },
+    "validationAtThirty": {
+      "transitionViolationCount": 0,
+      "hardValid": true
+    },
+    "reverseDirectionMinutes": 5,
+    "unrelatedCoachMinutes": 5,
+    "inputImmutable": true
+  },
+  "deterministic": true,
+  "orderInvariant": true,
+  "inputImmutable": true,
+  "historicalCompatibility": {
+    "absentUndefinedAndEmptyEquivalent": true,
+    "sourceFingerprint": "d001c32ea3bbbe5a1701c7b8276bd87987464cd06dda116fd463249434e74408",
+    "problemFingerprint": "2f17406862dfd02fbdacaa8bfd6d11772f9d51a6efd87af6c383ab318ae77974"
+  },
+  "negativeTests": [
+    {
+      "caseId": "non-array",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "primitive-entry",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "duplicate",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "missing-coach",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "missing-space",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "same-space",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "zero-minutes",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    },
+    {
+      "caseId": "off-grid-minutes",
+      "passed": true,
+      "preflightStatus": "UNSUPPORTED",
+      "adapterStatus": "UNSUPPORTED"
+    }
+  ],
+  "artifactHashes": {
+    "hashScope": "canonical evidence payload excluding artifactHashes",
+    "evidencePayloadSha256": "e4acdd3ad4be1024c5345f6d7e59196cd265fd447ae6e976ccbc2574c3106bdb",
+    "coverageSha256": "27395a270715f9c1dfd1348724f4897fcc3fe0421687cbf411a171fc7ed56dc9"
+  }
+}

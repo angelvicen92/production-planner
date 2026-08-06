@@ -28,13 +28,12 @@ Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTE
 
 - **PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED** (PLANNER_NEXT): La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias. Pérdida si se aproxima: Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.
 - **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes. Pérdida si se aproxima: Las dependencias impondrían precedencia, no sincronización de arranque entre salas.
-- **ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS** (ADAPTER): El probe del adaptador demuestra que sólo se proyecta resourceTransitionMinutes global; no hay canal para una transición específica por origen/destino y por coach. Pérdida si se aproxima: Un margen global sobrerrestringe recursos no afectados o no distingue la ruta Caracola→Estudio 7.
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=true y setupPolicyCapabilityProven=true: los probes focales demuestran EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard para grupos conjuntos y setup explícito. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS**.
+Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true y supportsSpecificCoachRouteTransition=true. La transición Caracola→Estudio 7 se conserva por coach, origen y destino sin convertir 30 minutos en un margen global. A2 conserva PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED porque su orden Sillón/Estrellas es flexible. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED**.
 
 ## No implementado
 
