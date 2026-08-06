@@ -57,7 +57,8 @@
     "benchmark:planner-next:participant-meals": "tsx engine/planner-next/benchmarks/runPlannerNextParticipantMealsBenchmark.ts",
     "benchmark:planner-next:a2-full-template": "tsx engine/planner-next/benchmarks/runFullA2CanonicalTemplateBenchmark.ts",
     "benchmark:planner-next:spec10-017": "tsx engine/planner-next/benchmarks/runSpec10017JointGroupsBenchmark.ts",
-    "benchmark:planner-next:spec10-018": "tsx engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts"
+    "benchmark:planner-next:spec10-018": "tsx engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
+    "benchmark:planner-next:spec10-019": "tsx engine/planner-next/benchmarks/runSpec10019CoachRouteTransitionBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -1,7 +1,6 @@
-import { adaptEngineInputToPlannerNextProblem } from "../../../integration/engineInputAdapter";
-import { createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
 import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
 import { runSpec10018Probe } from "../../runSpec10018SetupPolicyBenchmark";
+import { runSpec10019Probe } from "../../runSpec10019CoachRouteTransitionBenchmark";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -18,26 +17,60 @@ function blocker(values: RepresentabilityBlocker): RepresentabilityBlocker {
 }
 
 function runAdapterTransitionProbe(): RepresentabilityAnalysis["adapterProbe"] {
-  const fixture = createSupportedEngineInputAdapterFixture();
-  fixture.plannerNext = {
-    ...fixture.plannerNext!,
-    resourceTransitionMinutes: 30,
-  };
-  const result = adaptEngineInputToPlannerNextProblem(fixture);
-  const problem = result.status === "SUPPORTED" ? result.problem as unknown as Record<string, unknown> : {};
-  const resources = Array.isArray(problem.resources) ? problem.resources as readonly Record<string, unknown>[] : [];
-  const problemHasRouteSpecificCoachTransition = ["coachRouteTransitions", "resourceRouteTransitions", "routeTransitionRules"].some((key) => key in problem);
-  const coachResourcesHaveOriginDestinationRule = resources.some((resource) => resource.type === "coach" && ("fromSpaceId" in resource || "toSpaceId" in resource || "transitionScope" in resource));
-  return {
-    executed: true,
-    supported: result.status === "SUPPORTED",
-    projectedGlobalResourceTransitionMinutes: result.status === "SUPPORTED" ? result.problem.resourceTransitionMinutes : null,
-    supportsSpecificCoachRouteTransition: problemHasRouteSpecificCoachTransition && coachResourcesHaveOriginDestinationRule,
-    problemHasRouteSpecificCoachTransition,
-    coachResourcesHaveOriginDestinationRule,
-  };
+  try {
+    const baseline = runSpec10019Probe();
+    const repeated = runSpec10019Probe();
+    const inverted = runSpec10019Probe(() => {
+      const input = structuredClone(baseline.inputSnapshot);
+      input.tasks.reverse();
+      input.planResourceItems.reverse();
+      input.planSpaceSettings?.reverse();
+      input.planZoneSettings?.reverse();
+      input.coachRouteTransitions?.reverse();
+      return input;
+    });
+    const deterministic = baseline.sourceFingerprint === repeated.sourceFingerprint
+      && baseline.identityMapFingerprint === repeated.identityMapFingerprint
+      && baseline.problemFingerprint === repeated.problemFingerprint
+      && baseline.planFingerprint === repeated.planFingerprint;
+    const orderInvariant = baseline.sourceFingerprint === inverted.sourceFingerprint
+      && baseline.identityMapFingerprint === inverted.identityMapFingerprint
+      && baseline.problemFingerprint === inverted.problemFingerprint
+      && baseline.planFingerprint === inverted.planFingerprint;
+    const supportsSpecificCoachRouteTransition =
+      baseline.engineInputPreflightStatus === "SUPPORTED"
+      && baseline.adapterStatus === "SUPPORTED"
+      && baseline.plannerNextPreflightReasonCodes.length === 0
+      && baseline.projectedRouteCount === 1
+      && baseline.routeMinutes === 30
+      && baseline.rejectsTwentyNineMinutes
+      && baseline.acceptsThirtyMinutes
+      && baseline.validationAtTwentyNine.transitionViolationCount === 1
+      && baseline.validationAtThirty.transitionViolationCount === 0
+      && baseline.complete
+      && baseline.hardValid
+      && deterministic
+      && orderInvariant
+      && baseline.inputImmutable;
+    return {
+      executed: true,
+      supported: baseline.adapterStatus === "SUPPORTED",
+      projectedGlobalResourceTransitionMinutes: baseline.globalResourceTransitionMinutes,
+      supportsSpecificCoachRouteTransition,
+      problemHasRouteSpecificCoachTransition: baseline.projectedRouteCount > 0,
+      coachResourcesHaveOriginDestinationRule: baseline.projectedRouteCount > 0,
+    };
+  } catch {
+    return {
+      executed: true,
+      supported: false,
+      projectedGlobalResourceTransitionMinutes: null,
+      supportsSpecificCoachRouteTransition: false,
+      problemHasRouteSpecificCoachTransition: false,
+      coachResourcesHaveOriginDestinationRule: false,
+    };
+  }
 }
-
 function failedJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
   return {
     executed: true,
@@ -272,6 +305,7 @@ function jointGroupFailureLayer(probe: RepresentabilityAnalysis["jointGroupProbe
 export function analyzeCanonicalFullA2Representability(
   expansion: ExpandedCanonicalFullA2Template,
   options: {
+    readonly adapterProbe?: RepresentabilityAnalysis["adapterProbe"];
     readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"];
     readonly setupPolicyProbe?: RepresentabilityAnalysis["setupPolicyProbe"];
   } = {},
@@ -285,7 +319,7 @@ export function analyzeCanonicalFullA2Representability(
     semanticLoss: "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla.",
   }));
 
-  const adapterProbe = runAdapterTransitionProbe();
+  const adapterProbe = options.adapterProbe ?? runAdapterTransitionProbe();
   const jointGroupProbe = options.jointGroupProbe ?? runJointGroupProbe();
   const jointGroupCapability = jointGroupCapabilityProven(jointGroupProbe);
   const setupPolicyProbe = options.setupPolicyProbe ?? runSetupPolicyProbe();
@@ -349,7 +383,7 @@ export function analyzeCanonicalFullA2Representability(
     }));
   }
 
-  if (adapterProbe.projectedGlobalResourceTransitionMinutes === 30 && !adapterProbe.supportsSpecificCoachRouteTransition) {
+  if (!adapterProbe.supportsSpecificCoachRouteTransition) {
     implementationBlockers.push(blocker({
       code: "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
       layer: "ADAPTER",

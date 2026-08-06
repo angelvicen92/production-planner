@@ -229,6 +229,13 @@ export interface EngineInputSetupPolicyInput {
   preparationMinutesBetweenFamilies: number;
 }
 
+export interface EngineInputCoachRouteTransitionInput {
+  coachPlanResourceItemId: number;
+  fromSpaceId: number;
+  toSpaceId: number;
+  minutes: number;
+}
+
 export interface EngineInput {
   planId: number;
   /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
@@ -237,6 +244,8 @@ export interface EngineInput {
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
   /** Explicit setup-family grouping and preparation policies. */
   setupPolicies?: EngineInputSetupPolicyInput[];
+  /** Directional hard travel time for one concrete coach between two spaces. */
+  coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
   workDay: TimeWindow;
   /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
   mealMode?: "global_hard_break" | "flexible_meal_window";

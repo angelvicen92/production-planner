@@ -83,6 +83,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     ...(problem.participantMeals ? { participantMeals: sorted(problem.participantMeals, (entry) => `${entry.participantId}\0${entry.sourceTaskId}`) } : {}),
     ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
     ...(problem.itinerantUnitMeals ? { itinerantUnitMeals: sorted(problem.itinerantUnitMeals, entry=>entry.id) } : {}),
+    ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
   };
 }
@@ -111,6 +112,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return identity.canonicalId;
   };
   const config = input.plannerNext!;
+  const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
   const linkedBreakIds=new Set(input.tasks.filter(task=>isFlexibleParticipantMealTask(input,task)&&task.breakId!=null).map(task=>String(task.breakId)));
   const participantMeals = resolveParticipantScopedMeals({ ...input, actualMeal: input.actualMeal&&linkedBreakIds.has(String(input.actualMeal.id))?undefined:input.actualMeal, protectedBreaks: input.protectedBreaks?.filter(entry=>!linkedBreakIds.has(String(entry.id))) });
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
@@ -129,9 +131,10 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return [task.id, projection] as const;
   }));
   const configuredCoachIds=new Set(Object.values(input.vocalCoachPlanResourceItemIdByContestantId??{}));
+  const routeCoachIds = sourceCoachRouteTransitions.map((route) => route.coachPlanResourceItemId);
   const mealResourceIds=new Set(resourceMealResolution.meals.flatMap(meal=>[...meal.resourceIds]));
-  const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id))));
-  const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId));
+  const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id)), routeCoachIds));
+  const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId, sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId])));
   const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
 
   const tasks: Task[] = activeTasks.map((source) => {
@@ -185,6 +188,15 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies]).sort(([left], [right]) => compare(left, right)));
     return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
   });
+  const coachRouteTransitions = sourceCoachRouteTransitions.map((route) => ({
+    coachId: canonical("plan-resource", route.coachPlanResourceItemId),
+    fromSpaceId: canonical("space", route.fromSpaceId),
+    toSpaceId: canonical("space", route.toSpaceId),
+    minutes: route.minutes,
+  })).sort((left, right) => compare(
+    `${left.coachId}\0${left.fromSpaceId}\0${left.toSpaceId}`,
+    `${right.coachId}\0${right.fromSpaceId}\0${right.toSpaceId}`,
+  ));
   const anchoredAccompaniments: AnchoredAccompaniment[] | undefined = input.anchoredAccompaniments?.map((entry) => ({
     id: canonical("anchored-operation", String(entry.id)),
     anchorTaskId: canonical("task", entry.anchorTaskId),
@@ -211,6 +223,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     },
     participantTransitionMinutes: config.participantTransitionMinutes,
     resourceTransitionMinutes: config.resourceTransitionMinutes,
+    ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
     budget: { ...config.searchBudget },
     searchPolicy: config.searchPolicy,
     ...(flexibleParticipantMeals.obligations.length ? { participantMeals: flexibleParticipantMeals.obligations, participantMealCapacity: { maxSimultaneous: input.contestantMealMaxSimultaneous! } } : {}),

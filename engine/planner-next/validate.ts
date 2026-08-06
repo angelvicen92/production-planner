@@ -28,6 +28,10 @@ import { evaluateResourcePresence } from "./resourcePresence";
 import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
 import { taskFitsAvailability, validateTaskAvailability } from "./taskAvailability";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
+import {
+  coachRouteTransitionPreflightReasons,
+  effectiveCoachTransitionMinutes,
+} from "./coachRouteTransitions";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -127,6 +131,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const participantIds = new Set(participants.map(({ id }) => id));
   const coachIds = new Set(coaches.map(({ id }) => id));
   const spaceIds = new Set(spaces.map(({ id }) => id));
+  coachRouteTransitionPreflightReasons(problem).forEach((reason) => reasons.add(reason));
   if (resources.some((resource) => resource.assignedSpaceId !== undefined
     && (typeof resource.assignedSpaceId !== "string" || !spaceIds.has(resource.assignedSpaceId)))) {
     reasons.add("MISSING_RESOURCE_ASSIGNED_SPACE_REFERENCE");
@@ -346,15 +351,22 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     }
   }
   for (const field of ["participantId", "coachId"] as const) {
-    const margin = field === "participantId" ? problem.participantTransitionMinutes : problem.resourceTransitionMinutes;
     const groups = new Map<string, ScheduledTask[]>();
-    for (const task of scheduled) { const value = task[field]; if (value !== undefined) groups.set(value, [...(groups.get(value) ?? []), task]); }
-    for (const list of groups.values()) {
+    for (const task of scheduled) {
+      const value = task[field];
+      if (value !== undefined) groups.set(value, [...(groups.get(value) ?? []), task]);
+    }
+    for (const [identity, list] of groups) {
       list.sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
       for (let index = 1; index < list.length; index += 1) {
         const previous = list[index - 1];
         const current = list[index];
-        if (previous && current && previous.spaceId !== current.spaceId && current.start - previous.end < margin && !isInternalAnchoredPair(problem,previous,current)) transition += 1;
+        if (!previous || !current || previous.spaceId === current.spaceId) continue;
+        const margin = field === "participantId"
+          ? problem.participantTransitionMinutes
+          : effectiveCoachTransitionMinutes(problem, identity, previous.spaceId, current.spaceId);
+        if (current.start - previous.end < margin
+          && !isInternalAnchoredPair(problem, previous, current)) transition += 1;
       }
     }
   }
