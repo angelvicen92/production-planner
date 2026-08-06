@@ -21,7 +21,16 @@ if [ -n "$(git status --short)" ]; then
   exit 4
 fi
 
-python3 script/apply-spec10-019-bootstrap.py
+if command -v python3 >/dev/null 2>&1; then
+  python3 script/apply-spec10-019-bootstrap.py
+elif command -v nix-shell >/dev/null 2>&1; then
+  nix-shell -p python3 --run "python3 script/apply-spec10-019-bootstrap.py"
+elif command -v nix >/dev/null 2>&1; then
+  nix shell nixpkgs#python3 -c python3 script/apply-spec10-019-bootstrap.py
+else
+  echo "No se encontró Python 3 ni un lanzador Nix disponible."
+  exit 5
+fi
 
 npm run check
 node script/run-test-suite.mjs engine/planner-next
