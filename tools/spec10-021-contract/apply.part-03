@@ -1,0 +1,221 @@
+  `  if (setupPoliciesPresent && setupPoliciesValue !== undefined && !Array.isArray(setupPoliciesValue)) {
+`,
+  `  const roundSynchronizationResolution =
+    resolveEngineInputRoundSynchronizations(input, timeGrid);
+  if (roundSynchronizationResolution.invalidContainer) {
+    addIssue(
+      "UNSUPPORTED_ROUND_SYNCHRONIZATION",
+      "plan",
+      input.planId,
+      "roundSynchronizations",
+      "roundSynchronizations must be an array when present.",
+    );
+  }
+  roundSynchronizationResolution.defects.forEach((defect) => addIssue(
+    "UNSUPPORTED_ROUND_SYNCHRONIZATION",
+    "roundSynchronization",
+    defect.index,
+    `roundSynchronizations.${defect.index}`,
+    "Round synchronization cannot be projected losslessly.",
+    { ...defect.details },
+  ));
+
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  `import type { AnchoredAccompaniment, PlannerNextProblem, Task, Window } from "../contracts";
+`,
+  `import type { AnchoredAccompaniment, PlannerNextProblem, RoundSynchronizationPolicy, Task, Window } from "../contracts";
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  `    ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
+    ...(problem.anchoredAccompaniments ?`,
+  `    ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
+    ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
+    ...(problem.anchoredAccompaniments ?`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  `  const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
+`,
+  `  const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
+  const sourceRoundSynchronizations = input.roundSynchronizations ?? [];
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  `  const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId, sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId])));
+`,
+  `  const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(
+    config.mainFlow.spaceId,
+    sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId]),
+    sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
+  ));
+`,
+);
+
+insertBefore(
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  `  const anchoredAccompaniments: AnchoredAccompaniment[] | undefined`,
+  `  const roundSynchronizations: RoundSynchronizationPolicy[] =
+    sourceRoundSynchronizations.map((policy) => ({
+      id: canonical("round-synchronization", policy.id),
+      synchronization: policy.synchronization,
+      lanes: [...policy.lanes]
+        .sort((left, right) => left.spaceId - right.spaceId)
+        .map((lane) => ({
+          spaceId: canonical("space", lane.spaceId),
+          taskIds: [...lane.taskIds]
+            .sort((left, right) => left - right)
+            .map((taskId) => canonical("task", taskId)),
+          preparationMinutesBetweenRounds: lane.preparationMinutesBetweenRounds,
+        })),
+    })).sort((left, right) => compare(left.id, right.id));
+
+`,
+);
+
+replaceExact(
+  "engine/planner-next/integration/engineInputAdapter.ts",
+  `    ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
+    budget: { ...config.searchBudget },
+`,
+  `    ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
+    ...(roundSynchronizations.length ? { roundSynchronizations } : {}),
+    budget: { ...config.searchBudget },
+`,
+);
+
+replaceExact(
+  "engine/planner-next/validate.ts",
+  `  ScheduledSetupPreparation,
+  ScheduledSpaceMeal,
+`,
+  `  ScheduledSetupPreparation,
+  ScheduledRoundPreparation,
+  ScheduledSpaceMeal,
+`,
+);
+
+insertAfter(
+  "engine/planner-next/validate.ts",
+  `import {
+  coachRouteTransitionPreflightReasons,
+  effectiveCoachTransitionMinutes,
+} from "./coachRouteTransitions";
+`,
+  `import {
+  roundSynchronizationPreflightReasons,
+  validateRoundSynchronizations,
+} from "./roundSynchronization";
+`,
+);
+
+replaceExact(
+  "engine/planner-next/validate.ts",
+  `  const reasons = new Set<string>(anchoredAccompanimentPreflight(problem));
+`,
+  `  const reasons = new Set<string>([
+    ...anchoredAccompanimentPreflight(problem),
+    ...roundSynchronizationPreflightReasons(problem),
+  ]);
+`,
+);
+
+replaceExact(
+  "engine/planner-next/validate.ts",
+  `export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = [], itinerantUnitMeals: import("./contracts").ScheduledItinerantUnitMeal[] = []): ValidationSummary {
+`,
+  `export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = [], itinerantUnitMeals: import("./contracts").ScheduledItinerantUnitMeal[] = [], roundPreparations: ScheduledRoundPreparation[] = []): ValidationSummary {
+`,
+);
+
+replaceExact(
+  "engine/planner-next/validate.ts",
+  `  let setup = 0;
+  let setupPreparation = 0;
+  let jointGroup = 0;
+`,
+  `  let setup = 0;
+  let setupPreparation = 0;
+  const roundValidation = validateRoundSynchronizations(
+    problem,
+    scheduled,
+    roundPreparations,
+    meals,
+  );
+  const roundSynchronization = roundValidation.synchronizationViolationCount;
+  const roundPreparation = roundValidation.preparationViolationCount;
+  let jointGroup = 0;
+`,
+);
+
+replaceExact(
+  "engine/planner-next/validate.ts",
+  `  if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
+  if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
+`,
+  `  if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
+  if (roundSynchronization) reasonCodes.push("ROUND_SYNCHRONIZATION_VIOLATION");
+  if (roundPreparation) reasonCodes.push("ROUND_PREPARATION_VIOLATION");
+  if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
+`,
+);
+
+replaceExact(
+  "engine/planner-next/validate.ts",
+  `    setupViolationCount: setup,
+    setupPreparationViolationCount: setupPreparation,
+    jointGroupViolationCount: jointGroup,
+`,
+  `    setupViolationCount: setup,
+    setupPreparationViolationCount: setupPreparation,
+    ...(problem.roundSynchronizations?.length ? {
+      roundSynchronizationViolationCount: roundSynchronization,
+      roundPreparationViolationCount: roundPreparation,
+    } : {}),
+    jointGroupViolationCount: jointGroup,
+`,
+);
+
+replaceExact(
+  "engine/planner-next/exactItinerantPlan.ts",
+  `import { setupFamilySequence } from "./setupGrouping";
+`,
+  `import { setupFamilySequence } from "./setupGrouping";
+import { roundSynchronizationTaskIds } from "./roundSynchronization";
+`,
+);
+
+replaceExact(
+  "engine/planner-next/exactItinerantPlan.ts",
+  `  const setupTaskIds = new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ id }) => id));
+  for (const task of [...pending].sort(byId)) {
+`,
+  `  const setupTaskIds = new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ id }) => id));
+  const synchronizedRoundTaskIds = roundSynchronizationTaskIds(problem);
+  for (const task of [...pending].sort(byId)) {
+`,
+);
+
+replaceExact(
+  "engine/planner-next/exactItinerantPlan.ts",
+  `    if (task.jointGroupId !== undefined) reasons.push(`UNSUPPORTED_STANDALONE_JOINT_GROUP:${task.id}`);
+`,
+  `    if (task.jointGroupId !== undefined) reasons.push(`UNSUPPORTED_STANDALONE_JOINT_GROUP:${task.id}`);
+    if (synchronizedRoundTaskIds.has(task.id))
+      reasons.push(`UNSUPPORTED_STANDALONE_ROUND_SYNCHRONIZATION:${task.id}`);
+`,
+);
+
+insertBefore(
+  "engine/planner-next/integration/engineInputAdapter.fixture.ts",
+  `
+export function createSpec10020FlexibleSetupOrderEngineInputFixture(): EngineInput {`,
