@@ -361,18 +361,6 @@ export function analyzeCanonicalFullA2Representability(
     }));
   }
 
-  if (expansion.rules.setup.orderConstraint === "UNSPECIFIED") {
-    implementationBlockers.push(blocker({
-      code: "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
-      layer: "PLANNER_NEXT",
-      affectedRule: "orden flexible entre familias Sillón/Estrellas",
-      canonicalIds: expansion.tasks.filter((task) => task.setupFamilyId).map((task) => task.id),
-      operationalExplanation: "EngineInput y la búsqueda compartida ya pueden conservar ambos órdenes, pero EXACT_CONSTRUCTIVE todavía rechaza tareas setup estructuradas y no publica sus preparaciones.",
-      semanticLoss: "Retirar la puerta ahora declararía representable una jornada que la política autoritativa exacta aún no puede completar ni validar end-to-end.",
-      implementationRank: 4,
-    }));
-  }
-
   if (!contractFieldPresence.plannerNextProblemHasRoundSynchronization) {
     implementationBlockers.push(blocker({
       code: "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",

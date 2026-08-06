@@ -146,10 +146,10 @@ test("representability separates source configuration, implementation blockers a
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"));
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
-  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
+  assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 5);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, true);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
 
   const failedRouteAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: {

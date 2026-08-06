@@ -72,8 +72,8 @@ test("invalid flexible setup contracts are rejected before adaptation", () => {
   assert.equal(preflightEngineInputForPlannerNext(offGrid).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
 });
 
-test("full A2 remains blocked until EXACT_CONSTRUCTIVE publishes flexible setup", () => {
+test("full A2 advances to Totales after exact flexible setup support", () => {
   const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));
-  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), true);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED");
+  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
 });

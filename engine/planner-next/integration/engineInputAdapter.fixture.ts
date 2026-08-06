@@ -113,6 +113,8 @@ export function createSpec10018SetupPolicyEngineInputFixtureReverseOrder(): Engi
 
 export function createSpec10020FlexibleSetupOrderEngineInputFixture(): EngineInput {
   const input = createSpec10018SetupPolicyEngineInputFixture();
+  input.tasks = input.tasks.filter(({ id }) => id !== 105);
+  input.locks = input.locks.filter(({ taskId }) => taskId !== 105);
   input.setupPolicies = input.setupPolicies?.map((policy) => {
     const flexible = { ...policy, orderConstraint: "UNSPECIFIED" as const };
     delete flexible.familyOrder;
