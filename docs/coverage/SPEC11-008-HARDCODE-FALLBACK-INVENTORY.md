@@ -54,10 +54,10 @@ Esto puede producir un plan que compile, termine y parezca hard-valid bajo un in
 
 La auditoría identifica:
 
-- 10 entradas P0;
+- 12 entradas P0;
 - 10 entradas P1;
-- 7 entradas P2;
-- 3 entradas P3 o aceptadas;
+- 6 entradas P2;
+- 2 entradas P3 o aceptadas;
 - 30 entradas totales.
 
 Dos entradas se registran como aceptadas para impedir una política indiscriminada contra cualquier fallback o constante.
@@ -115,8 +115,7 @@ No necesariamente invalidan un plan, pero pueden cambiar qué solución gana.
 Incluye:
 
 - fallback neutral de bundles con warning mientras sea señal soft;
-- invariantes técnicos universales;
-- metadata visual cuya política debe decidirse, no asumirse operativa.
+- invariantes técnicos universales.
 
 ---
 
