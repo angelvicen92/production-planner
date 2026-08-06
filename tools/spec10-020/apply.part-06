@@ -1,0 +1,59 @@
+8Probe(["sillon", "estrellas"], createSpec10020FlexibleSetupOrderEngineInputFixture, true);\n    const repeated = runSpec10018Probe(["sillon", "estrellas"], createSpec10020FlexibleSetupOrderEngineInputFixture, true);',
+);
+replaceRegex(
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  new RegExp('(    const inverted = runSpec10018Probe\\(\\n      \\["sillon", "estrellas"\\],\\n      \\(\\) => \\{[\\s\\S]*?\\n      \\},\\n    )\\);'),
+  "$1true,\n    );",
+);
+replaceExact(
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  `    && probe.inputImmutable
+    && JSON.stringify(probe.familyOrder)
+      === JSON.stringify(probe.familySequence);`,
+  `    && probe.inputImmutable
+    && probe.familyOrder.length === probe.familySequence.length
+    && [...probe.familyOrder].sort().every((family, index) => [...probe.familySequence].sort()[index] === family);`,
+);
+replaceRegex(
+  "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+  /\n  if \(expansion\.rules\.setup\.orderConstraint === "UNSPECIFIED"\) \{[\s\S]*?\n  \}\n\n  if \(!contractFieldPresence\.plannerNextProblemHasRoundSynchronization\)/,
+  '\n  if (!contractFieldPresence.plannerNextProblemHasRoundSynchronization)',
+);
+
+write("engine/planner-next/flexibleSetupOrder.spec.ts", `import assert from "node:assert/strict";
+import test from "node:test";
+import { createSpec10020FlexibleSetupOrderEngineInputFixture } from "./integration/engineInputAdapter.fixture";
+import { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
+import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
+import { generateBlockCandidates } from "./placeAuxiliaryTasks";
+import { setupFamilySequence } from "./setupGrouping";
+import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
+import { preflight, validatePlan } from "./validate";
+import { analyzeCanonicalFullA2Representability, createCanonicalFullA2Template, expandCanonicalFullA2Template } from "./benchmarks/focal-a2/full-day/canonicalFullA2Template";
+
+const projection = (input: ReturnType<typeof createSpec10020FlexibleSetupOrderEngineInputFixture>) => {
+  const source = structuredClone(input);
+  const enginePreflight = preflightEngineInputForPlannerNext(input);
+  assert.equal(enginePreflight.status, "SUPPORTED", enginePreflight.reasonCodes.join(","));
+  const adapter = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(adapter.status, "SUPPORTED", adapter.status === "UNSUPPORTED" ? adapter.reasonCodes.join(",") : "");
+  assert.ok(adapter.problem);
+  assert.deepEqual(preflight(adapter.problem), []);
+  const setupSpace = adapter.problem.spaces.find((space) => space.setupPolicy?.flexibleFamilyOrder === true);
+  assert.ok(setupSpace?.setupPolicy);
+  const setupTasks = adapter.problem.tasks.filter((task) => task.spaceId === setupSpace.id);
+  const generated = generateBlockCandidates(adapter.problem, setupTasks, [], adapter.problem.budget.maxBranchExpansions);
+  assert.equal(generated.exhausted, false);
+  const orders = [...new Set(generated.candidates.map((candidate) => setupFamilySequence(candidate.tasks).join(">")))].sort();
+  const expectedFamilies = [...setupSpace.setupPolicy.familyOrder].sort();
+  assert.deepEqual(orders, [
+    [expectedFamilies[0], expectedFamilies[1]].join(">"),
+    [expectedFamilies[1], expectedFamilies[0]].join(">"),
+  ].sort());
+  for (const candidate of generated.candidates) {
+    assert.equal(candidate.preparations.length, 1);
+    assert.equal(candidate.preparations[0]?.duration, 10);
+    assert.equal(candidate.preparations[0]?.setupFamilyId, setupFamilySequence(candidate.tasks)[1]);
+  }
+  const plan = planMainFlowAndFeeders(adapter.problem);
+  const validation = validatePlan(adapter.problem, plan
