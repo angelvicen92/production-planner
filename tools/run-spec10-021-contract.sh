@@ -27,8 +27,12 @@ actual_main="$(git rev-parse HEAD)"
 [[ "$actual_main" == "$expected_main" ]] || fail "main SHA is $actual_main; expected $expected_main"
 [[ "$(git rev-parse origin/main)" == "$expected_main" ]] || fail "origin/main is not the verified SPEC10-020 merge"
 
+resume_local_branch=false
 if git show-ref --verify --quiet "refs/heads/$implementation_branch"; then
-  fail "local branch $implementation_branch already exists"
+  local_implementation_sha="$(git rev-parse "$implementation_branch")"
+  [[ "$local_implementation_sha" == "$expected_main" ]] \
+    || fail "local branch $implementation_branch points to $local_implementation_sha; expected $expected_main"
+  resume_local_branch=true
 fi
 if git ls-remote --exit-code origin "refs/heads/$implementation_branch" >/dev/null 2>&1; then
   fail "remote branch $implementation_branch already exists"
@@ -53,9 +57,9 @@ for index in "${!chunks[@]}"; do
     || fail "chunk ${chunks[$index]} has unexpected blob $actual_blob_sha"
 done
 
-b64_file="$tmp_dir/applicator.js.gz.b64"
-gz_file="$tmp_dir/applicator.js.gz"
-js_file="$tmp_dir/applicator.js"
+b64_file="$tmp_dir/applicator.cjs.gz.b64"
+gz_file="$tmp_dir/applicator.cjs.gz"
+js_file="$tmp_dir/applicator.cjs"
 for chunk in "${chunks[@]}"; do
   git show "$tooling_ref:$chunk"
 done > "$b64_file"
@@ -71,7 +75,11 @@ actual_applicator_sha="$(sha256sum "$js_file" | cut -d' ' -f1)"
   || fail "decoded applicator SHA mismatch: $actual_applicator_sha"
 node --check "$js_file"
 
-git checkout -b "$implementation_branch"
+if [[ "$resume_local_branch" == true ]]; then
+  git checkout "$implementation_branch"
+else
+  git checkout -b "$implementation_branch"
+fi
 node "$js_file"
 
 mapfile -t actual_files < <(
