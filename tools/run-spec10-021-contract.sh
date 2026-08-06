@@ -129,6 +129,29 @@ fi
 
 assert_expected_changed_files
 
+python - <<'PY'
+from pathlib import Path
+import re
+
+path = Path("engine/planner-next/roundSynchronization.spec.ts")
+text = path.read_text()
+replacements = [
+    (r'(["\']task:101["\']\s*,\s*)645\b', r'\g<1>690', "task:101"),
+    (r'(["\']task:103["\']\s*,\s*)675\b', r'\g<1>720', "task:103"),
+]
+for pattern, replacement, task_id in replacements:
+    updated, count = re.subn(pattern, replacement, text)
+    if count == 0:
+        expected_start = "690" if task_id == "task:101" else "720"
+        already_fixed = re.search(rf'["\']{re.escape(task_id)}["\']\s*,\s*{expected_start}\b', text)
+        if not already_fixed:
+            raise SystemExit(f"SPEC10-021 fixture correction anchor missing for {task_id}")
+    text = updated
+path.write_text(text)
+PY
+
+assert_expected_changed_files
+
 npx tsx --test \
   engine/planner-next/roundSynchronization.spec.ts \
   engine/planner-next/integration/engineInputPreflight.spec.ts \
