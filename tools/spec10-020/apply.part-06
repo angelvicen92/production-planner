@@ -1,9 +1,58 @@
 8Probe(["sillon", "estrellas"], createSpec10020FlexibleSetupOrderEngineInputFixture, true);\n    const repeated = runSpec10018Probe(["sillon", "estrellas"], createSpec10020FlexibleSetupOrderEngineInputFixture, true);',
 );
-replaceRegex(
+replaceExact(
   "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
-  new RegExp('(    const inverted = runSpec10018Probe\\(\\n      \\["sillon", "estrellas"\\],\\n      \\(\\) => \\{[\\s\\S]*?\\n      \\},\\n    )\\);'),
-  "$1true,\n    );",
+  `    const inverted = runSpec10018Probe(
+      ["sillon", "estrellas"],
+      () => {
+        const input = structuredClone(baseline.inputSnapshot);
+
+        return {
+          ...input,
+          tasks: [...input.tasks].reverse(),
+          locks: [...input.locks].reverse(),
+          planResourceItems: [...input.planResourceItems].reverse(),
+          planSpaceSettings: [
+            ...(input.planSpaceSettings ?? []),
+          ].reverse(),
+          planZoneSettings: [
+            ...(input.planZoneSettings ?? []),
+          ].reverse(),
+          setupPolicies: input.setupPolicies
+            ?.map((policy) => ({
+              ...policy,
+              families: [...policy.families].reverse(),
+            }))
+            .reverse(),
+        };
+      },
+    );`,
+  `    const inverted = runSpec10018Probe(
+      ["sillon", "estrellas"],
+      () => {
+        const input = structuredClone(baseline.inputSnapshot);
+
+        return {
+          ...input,
+          tasks: [...input.tasks].reverse(),
+          locks: [...input.locks].reverse(),
+          planResourceItems: [...input.planResourceItems].reverse(),
+          planSpaceSettings: [
+            ...(input.planSpaceSettings ?? []),
+          ].reverse(),
+          planZoneSettings: [
+            ...(input.planZoneSettings ?? []),
+          ].reverse(),
+          setupPolicies: input.setupPolicies
+            ?.map((policy) => ({
+              ...policy,
+              families: [...policy.families].reverse(),
+            }))
+            .reverse(),
+        };
+      },
+      true,
+    );`,
 );
 replaceExact(
   "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
