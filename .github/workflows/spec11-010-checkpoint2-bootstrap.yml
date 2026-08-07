@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - spec11-010-checkpoint2-optimizer-snapshot-db
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened]
 
 permissions:
   contents: write
