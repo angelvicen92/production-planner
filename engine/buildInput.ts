@@ -17,6 +17,55 @@ type ContestantVocalCoachRow = Readonly<{
 
 type PlanResourceItemRow = Readonly<Record<string, unknown>>;
 
+type EngineInputHardSourceId =
+  | "EIS-003"
+  | "EIS-007"
+  | "EIS-008"
+  | "EIS-012"
+  | "EIS-013"
+  | "EIS-014"
+  | "EIS-017";
+
+const ENGINE_INPUT_SOURCE_REASON_CODE: Readonly<Record<EngineInputHardSourceId, string>> = Object.freeze({
+  "EIS-003": "ENGINE_INPUT_CAMERA_SNAPSHOT_LOAD_FAILED",
+  "EIS-007": "ENGINE_INPUT_ZONE_RESOURCE_ASSIGNMENTS_UNAVAILABLE",
+  "EIS-008": "ENGINE_INPUT_SPACE_RESOURCE_ASSIGNMENTS_UNAVAILABLE",
+  "EIS-012": "ENGINE_INPUT_ZONE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
+  "EIS-013": "ENGINE_INPUT_SPACE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
+  "EIS-014": "ENGINE_INPUT_PLAN_RESOURCES_UNAVAILABLE",
+  "EIS-017": "ENGINE_INPUT_RESOURCE_COMPONENTS_UNAVAILABLE",
+});
+
+export class EngineInputSourceLoadError extends Error {
+  readonly sourceId: EngineInputHardSourceId;
+  readonly reasonCode: string;
+  readonly planId: number;
+  readonly phase = "LOAD" as const;
+  readonly cause: unknown;
+
+  constructor(planId: number, sourceId: EngineInputHardSourceId, cause: unknown) {
+    const reasonCode = ENGINE_INPUT_SOURCE_REASON_CODE[sourceId];
+    super(`${reasonCode}: source ${sourceId} failed for plan ${planId}`);
+    this.name = "EngineInputSourceLoadError";
+    this.planId = planId;
+    this.sourceId = sourceId;
+    this.reasonCode = reasonCode;
+    this.cause = cause;
+  }
+}
+
+async function loadEngineInputSourceOrThrow<T>(
+  planId: number,
+  sourceId: EngineInputHardSourceId,
+  loader: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await loader();
+  } catch (cause) {
+    throw new EngineInputSourceLoadError(planId, sourceId, cause);
+  }
+}
+
 function cloneResourceRequirementsForEngineInput(
   requirements: Readonly<ResourceRequirementsInput> | null,
 ): ResourceRequirementsInput | null {
@@ -127,14 +176,6 @@ export async function buildEngineInput(
 
   const p: any = details.plan;
 
-  const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
-    try {
-      return await fn();
-    } catch (_e) {
-      return fallback;
-    }
-  };
-
   const contestants = await storage.getContestantsByPlan(planId);
   const contestantNameById = new Map<number, string>();
   const contestantAvailabilityById: Record<number, { start: string; end: string }> = {};
@@ -159,7 +200,11 @@ export async function buildEngineInput(
 
   // Cameras now come from per-plan resource items (type code "cameras")
   // Fallback to legacy plan.camerasAvailable if the plan has no snapshot.
-  const camerasFromResources = await safe(() => storage.getCamerasAvailableForPlan(planId), null);
+  const camerasFromResources = await loadEngineInputSourceOrThrow(
+    planId,
+    "EIS-003",
+    () => storage.getCamerasAvailableForPlan(planId),
+  );
   const camerasAvailable =
     camerasFromResources !== null
       ? camerasFromResources
@@ -221,10 +266,18 @@ export async function buildEngineInput(
 
   // Recursos anclados a ZONAS (snapshot/override por plan)
   const zoneResourceAssignments =
-    (await safe(() => storage.getZoneResourceAssignmentsForPlan(planId), {})) ?? {};
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-007",
+      () => storage.getZoneResourceAssignmentsForPlan(planId),
+    )) ?? {};
 
   const spaceResourceAssignments =
-    (await safe(() => storage.getSpaceResourceAssignmentsForPlan(planId), {})) ?? {};
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-008",
+      () => storage.getSpaceResourceAssignmentsForPlan(planId),
+    )) ?? {};
 
   // ✅ Optimización global (Settings)
   const optimizer = await storage.getOptimizerSettings();
@@ -430,13 +483,25 @@ export async function buildEngineInput(
 
 
   const zoneResourceTypeRequirements =
-    (await safe(() => storage.getZoneResourceTypeRequirementsForPlan(planId), {})) ?? {};
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-012",
+      () => storage.getZoneResourceTypeRequirementsForPlan(planId),
+    )) ?? {};
 
   const spaceResourceTypeRequirements =
-    (await safe(() => storage.getSpaceResourceTypeRequirementsForPlan(planId), {})) ?? {};
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-013",
+      () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
+    )) ?? {};
 
   const planResourceItems = projectPlanResourceItemsForEngineInput(
-    (await safe(() => storage.getPlanResourceItemsForPlan(planId), [])) as unknown as readonly PlanResourceItemRow[],
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-014",
+      () => storage.getPlanResourceItemsForPlan(planId),
+    )) as unknown as readonly PlanResourceItemRow[],
   );
   const [planZoneSettings, planSpaceSettings] = await Promise.all([
     storage.getPlanZoneSettings(planId),
@@ -456,7 +521,11 @@ export async function buildEngineInput(
   );
 
   const resourceItemComponents =
-    (await safe(() => storage.getResourceItemComponentsMap(resourceItemIds), {})) ?? {};
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-017",
+      () => storage.getResourceItemComponentsMap(resourceItemIds),
+    )) ?? {};
 
   // Operational template semantics come exclusively from the per-plan snapshot.
   const templates = [...taskTemplateSnapshots];
