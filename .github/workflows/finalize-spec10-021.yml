@@ -23,11 +23,21 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Bind audited historical checkpoint
+      - name: Bind audited historical checkpoint and current regression
         shell: bash
         run: |
           set -euo pipefail
           sed -i 's#git fetch origin spec10-021-round-sync-exact tooling/spec10-021-totales-round-sync#git fetch origin automation/spec10-021-audited-base tooling/spec10-021-totales-round-sync#' scripts/finalize-spec10-021-candidate.sh
           sed -i '/^cd "$TMP"$/a if [[ ! -e node_modules ]]; then ln -s "$ROOT/node_modules" node_modules; fi' scripts/finalize-spec10-021-candidate.sh
           git cat-file -e 7ab93f1ed79d8e753379f962281b1e5192b90fb9^{commit}
+          node --input-type=commonjs <<'NODE'
+          const fs = require("node:fs");
+          const path = "engine/planner-next/exactFlexibleSetupOrder.spec.ts";
+          let text = fs.readFileSync(path, "utf8");
+          const oldBlock = `test("full A2 advances to Totales only after exact flexible setup support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.equal(\n    analysis.nextImplementationBlocker?.code,\n    "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",\n  );\n});`;
+          const newBlock = `test("full A2 has no implementation blocker after flexible setup and exact round synchronization support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.deepEqual(analysis.implementationBlockers, []);\n  assert.equal(analysis.nextImplementationBlocker, null);\n});`;
+          if (!text.includes(oldBlock)) throw new Error("SPEC10-021: stale flexible-setup Full A2 regression not found exactly");
+          text = text.replace(oldBlock, newBlock);
+          fs.writeFileSync(path, text);
+          NODE
       - run: bash scripts/finalize-spec10-021-candidate.sh
