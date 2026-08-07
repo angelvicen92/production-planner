@@ -1,0 +1,139 @@
+name: A2-FULL-005 SPEC08 itinerant availability gate
+
+on:
+  pull_request:
+    branches:
+      - automation/a2-full-005-spec08-gate
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-and-validate:
+    if: startsWith(github.head_ref, 'automation/a2-full-005-spec08-trigger')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: a2-full-005-spec08-itinerant-window
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Materialize only the SPEC-08 canonical itinerant windows
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_MAIN="b825437b875a248775c7c23699bf77458419dc0e"
+          TARGET_BRANCH="a2-full-005-spec08-itinerant-window"
+          BASE_HEAD="$(git rev-parse HEAD)"
+          git fetch origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$BASE_HEAD" = "$EXPECTED_MAIN"
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text()
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f"{path}: expected {count} exact matches, found {actual}: {old!r}")
+              p.write_text(text.replace(old, new, count))
+
+          cfg = "engine/planner-next/benchmarks/focal-a2/full-day/benchmarkConfiguration.ts"
+          replace_exact(cfg,
+              'version: "A2-FULL-004.source-configuration.v1" as const,',
+              'version: "A2-FULL-005.source-configuration.v1" as const,')
+          replace_exact(cfg,
+              '  productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,\n  unresolvedCreationInputs: Object.freeze([',
+              '''  productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,\n  itinerantUnitAvailability: Object.freeze({\n    "reality-unit-a": Object.freeze({ start: "11:00" as const, end: "14:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),\n    "reality-unit-b": Object.freeze({ start: "11:15" as const, end: "13:30" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),\n    "reality-unit-combined": Object.freeze({ start: "16:00" as const, end: "18:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),\n  }),\n  unresolvedCreationInputs: Object.freeze([''')
+          replace_exact(cfg,
+              '    "daily_itinerant_unit_availability",\n',
+              '')
+
+          types = "engine/planner-next/benchmarks/focal-a2/full-day/types.ts"
+          replace_exact(types,
+              '  readonly availability: "creation_input_required";',
+              '  readonly availability: { readonly start: string; readonly end: string; readonly source: "SPEC08_FOCAL_A2_SECTION_24"; };')
+
+          manifest = "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts"
+          replace_exact(manifest,
+              '  { id: "reality-unit-a", label: "Unidad Reality A", memberResourceIds: ["cam-3", "son-1"], availability: "creation_input_required" },',
+              '  { id: "reality-unit-a", label: "Unidad Reality A", memberResourceIds: ["cam-3", "son-1"], availability: A2_BENCHMARK_SOURCE_CONFIGURATION.itinerantUnitAvailability["reality-unit-a"] },')
+          replace_exact(manifest,
+              '  { id: "reality-unit-b", label: "Unidad Reality B", memberResourceIds: ["cam-4", "son-2"], availability: "creation_input_required" },',
+              '  { id: "reality-unit-b", label: "Unidad Reality B", memberResourceIds: ["cam-4", "son-2"], availability: A2_BENCHMARK_SOURCE_CONFIGURATION.itinerantUnitAvailability["reality-unit-b"] },')
+          replace_exact(manifest,
+              '  { id: "reality-unit-combined", label: "Unidad Reality combinada", memberResourceIds: ["cam-3", "cam-4", "son-1"], availability: "creation_input_required" },',
+              '  { id: "reality-unit-combined", label: "Unidad Reality combinada", memberResourceIds: ["cam-3", "cam-4", "son-1"], availability: A2_BENCHMARK_SOURCE_CONFIGURATION.itinerantUnitAvailability["reality-unit-combined"] },')
+
+          spec = "engine/planner-next/benchmarks/focal-a2/full-day/benchmarkConfiguration.spec.ts"
+          replace_exact(spec,
+              'test("A2 source configuration resolves only source/default/derived values and leaves four real decisions fail-closed", () => {',
+              'test("A2 source configuration resolves SPEC-08 itinerant windows and leaves three real decisions fail-closed", () => {')
+          replace_exact(spec,
+              '  assert.equal(config.productiveIds, "DERIVE_FROM_CANONICAL_IDENTITIES");\n  assert.deepEqual(config.unresolvedCreationInputs, [\n    "daily_participant_availability",\n    "daily_itinerant_unit_availability",\n    "scoped_meal_policies",\n    "out_transport_policy",\n  ]);',
+              '''  assert.equal(config.productiveIds, "DERIVE_FROM_CANONICAL_IDENTITIES");\n  assert.deepEqual(config.itinerantUnitAvailability, {\n    "reality-unit-a": { start: "11:00", end: "14:00", source: "SPEC08_FOCAL_A2_SECTION_24" },\n    "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },\n    "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },\n  });\n  assert.deepEqual(config.unresolvedCreationInputs, [\n    "daily_participant_availability",\n    "scoped_meal_policies",\n    "out_transport_policy",\n  ]);''')
+          replace_exact(spec,
+              '    "referenceOrder", "startPlanned", "endPlanned", "11:15", "17:15", "18:35",',
+              '    "referenceOrder", "startPlanned", "endPlanned", "17:15", "18:35",')
+
+          coverage = Path("docs/coverage/A2-FULL-005-SPEC08-ITINERANT-AVAILABILITY.md")
+          coverage.write_text('''# A2-FULL-005 — Corrección de disponibilidad de unidades itinerantes\n\nEstado: Evidence documental + materialización de configuración del benchmark.\nClasificación: DB Safe Merge por afectar al contrato de entrada del Full A2; no modifica algoritmo, DB, UI ni presupuesto de búsqueda.\n\n## Hallazgo\n\nA2-FULL-003 dejó `daily_itinerant_unit_availability` como decisión pendiente aplicando correctamente la regla genérica de SPEC-08 §6: una composición no puede asumir jornada completa si necesita ventana propia. Sin embargo, para el caso Focal A2, SPEC-08 §24 sí canoniza tres ventanas de composición y §25 exige mantener y respetar las ventanas de las tres unidades en el benchmark.\n\nEstas ventanas son restricciones de disponibilidad de la composición, no horarios de tareas ni seed del planning humano:\n\n- `reality-unit-a`: 11:00–14:00;\n- `reality-unit-b`: 11:15–13:30;\n- `reality-unit-combined`: 16:00–18:00.\n\n## Decisión\n\nMaterializar exclusivamente esas tres ventanas en el Full A2 con procedencia `SPEC08_FOCAL_A2_SECTION_24`. No copiar el orden ni los horarios de ninguna operación Reality.\n\nEl gate de creación baja de cuatro a tres inputs genuinamente no resueltos:\n\n1. `daily_participant_availability`;\n2. `scoped_meal_policies`;\n3. `out_transport_policy`.\n\n## Seguridad\n\n- No se infiere disponibilidad de participantes desde IN/OUT.\n- No se usa una ventana común 08:00–19:00 ni jornada completa para Reality.\n- No se resuelve comida ni OUT sin fuente/decisión expresa.\n- No cambia el presupuesto de búsqueda ni el algoritmo.\n- Mientras queden inputs fuente sin resolver, Full A2 continúa fail-closed y no ejecuta Planner Next.\n''')
+
+          evidence = Path("docs/evidence/A2-FULL-005-spec08-itinerant-availability.json")
+          evidence.write_text('''{\n  "iterationId": "A2-FULL-005",\n  "mode": "SOURCE_CONFIGURATION_CORRECTION",\n  "authority": ["SPEC-08.section-24", "SPEC-08.section-25"],\n  "humanTaskScheduleUsedAsPlannerInput": false,\n  "resolvedCreationInput": "daily_itinerant_unit_availability",\n  "itinerantUnitAvailability": {\n    "reality-unit-a": { "start": "11:00", "end": "14:00" },\n    "reality-unit-b": { "start": "11:15", "end": "13:30" },\n    "reality-unit-combined": { "start": "16:00", "end": "18:00" }\n  },\n  "remainingCreationInputs": [\n    "daily_participant_availability",\n    "scoped_meal_policies",\n    "out_transport_policy"\n  ],\n  "searchBudgetChanged": false,\n  "plannerAlgorithmChanged": false\n}\n''')
+
+          readme = Path("README.md")
+          text = readme.read_text()
+          marker = "## A2-FULL-005 — SPEC-08 itinerant availability"
+          if marker not in text:
+              readme.write_text(text.rstrip() + "\n\n" + marker + "\n\nFull A2 materializa las tres ventanas de composición Reality canonizadas por SPEC-08 para el benchmark A2 y reduce el gate fuente a participante, comidas scoped y política OUT. No usa horarios de tareas humanas como seed ni cambia el algoritmo.\n")
+          PY
+
+          git diff --check
+          npm run check:migrations
+          npx tsx --test engine/planner-next/benchmarks/focal-a2/full-day/benchmarkConfiguration.spec.ts
+          npm run benchmark:planner-next:a2-full-template
+
+          node --input-type=commonjs <<'NODE'
+          const fs = require('node:fs');
+          const ev = JSON.parse(fs.readFileSync('docs/evidence/SPEC10-016-full-a2-canonical-template.json', 'utf8'));
+          const expected = ['daily_participant_availability','out_transport_policy','scoped_meal_policies'].sort();
+          const actual = [...(ev.requiredCreationInputs ?? [])].sort();
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`unexpected remaining inputs: ${JSON.stringify(actual)}`);
+          if (!Array.isArray(ev.implementationBlockers) || ev.implementationBlockers.length !== 0) throw new Error('implementation blockers regressed');
+          if (ev.nextImplementationBlocker !== null) throw new Error('next implementation blocker regressed');
+          if (ev.roundSynchronizationCapabilityProven !== true) throw new Error('round synchronization capability regressed');
+          if (ev.representabilityGate?.analysis?.status !== 'BLOCKED') throw new Error('gate must remain fail-closed');
+          if ((ev.representabilityGate?.executorCallCount ?? -1) !== 0) throw new Error('executor ran before all source inputs were resolved');
+          console.log('A2-FULL-005 Evidence gate: OK');
+          NODE
+
+          git add -A
+          git diff --cached --check
+          git config user.name "OptiPlan Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "A2-FULL-005: materializar ventanas Reality de SPEC-08"
+
+          npm run check
+          npm test
+          npm run build
+          npm run benchmark:planner-next:a2-full-template
+          git diff --exit-code
+          git diff --check origin/main...HEAD
+
+          if git diff --name-only origin/main...HEAD | grep -E '(^server/|^client/|^supabase/|^migrations/|exactRoundSynchronization|exactItinerantPlan|compatibilityPreservingSearch)' ; then
+            echo "forbidden product surface changed" >&2
+            exit 42
+          fi
+
+          CANDIDATE_SHA="$(git rev-parse HEAD)"
+          git push --force-with-lease="refs/heads/${TARGET_BRANCH}:${BASE_HEAD}" origin HEAD:"refs/heads/${TARGET_BRANCH}"
+          echo "A2_FULL_005_CANDIDATE_SHA=${CANDIDATE_SHA}"
+          echo "A2_FULL_005_STATUS=VALIDATED_AND_PUSHED"
