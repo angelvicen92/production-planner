@@ -1,17 +1,19 @@
 name: Apply SPEC11 hard resource input patch
 
 on:
-  push:
+  pull_request:
     branches:
-      - spec11-engine-input-hard-resource-loads
-    paths:
-      - .github/workflows/apply-spec11-hard-resource-loads.yml
+      - main
+    types:
+      - opened
+      - reopened
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event.pull_request.head.ref == 'spec11-engine-input-hard-resource-loads'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
