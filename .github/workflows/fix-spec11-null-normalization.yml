@@ -22,88 +22,57 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('engine/buildInput.ts')
           text = path.read_text()
-          replacements = {
-          '''  const zoneResourceAssignments = await loadEngineInputSourceOrThrow(
-            planId,
-            "EIS-007",
-            () => storage.getZoneResourceAssignmentsForPlan(planId),
-          );''': '''  const zoneResourceAssignments =
-            (await loadEngineInputSourceOrThrow(
-              planId,
-              "EIS-007",
-              () => storage.getZoneResourceAssignmentsForPlan(planId),
-            )) ?? {};''',
-          '''  const spaceResourceAssignments = await loadEngineInputSourceOrThrow(
-            planId,
-            "EIS-008",
-            () => storage.getSpaceResourceAssignmentsForPlan(planId),
-          );''': '''  const spaceResourceAssignments =
-            (await loadEngineInputSourceOrThrow(
-              planId,
-              "EIS-008",
-              () => storage.getSpaceResourceAssignmentsForPlan(planId),
-            )) ?? {};''',
-          '''  const zoneResourceTypeRequirements = await loadEngineInputSourceOrThrow(
-            planId,
-            "EIS-012",
-            () => storage.getZoneResourceTypeRequirementsForPlan(planId),
-          );''': '''  const zoneResourceTypeRequirements =
-            (await loadEngineInputSourceOrThrow(
-              planId,
-              "EIS-012",
-              () => storage.getZoneResourceTypeRequirementsForPlan(planId),
-            )) ?? {};''',
-          '''  const spaceResourceTypeRequirements = await loadEngineInputSourceOrThrow(
-            planId,
-            "EIS-013",
-            () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
-          );''': '''  const spaceResourceTypeRequirements =
-            (await loadEngineInputSourceOrThrow(
-              planId,
-              "EIS-013",
-              () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
-            )) ?? {};''',
-          '''  const resourceItemComponents = await loadEngineInputSourceOrThrow(
-            planId,
-            "EIS-017",
-            () => storage.getResourceItemComponentsMap(resourceItemIds),
-          );''': '''  const resourceItemComponents =
-            (await loadEngineInputSourceOrThrow(
-              planId,
-              "EIS-017",
-              () => storage.getResourceItemComponentsMap(resourceItemIds),
-            )) ?? {};''',
-          }
-          for old, new in replacements.items():
-              if text.count(old) != 1:
-                  raise SystemExit(f'expected exactly one match for:\n{old}')
-              text = text.replace(old, new)
+          sources = [
+              ('zoneResourceAssignments', 'EIS-007', 'storage.getZoneResourceAssignmentsForPlan(planId)'),
+              ('spaceResourceAssignments', 'EIS-008', 'storage.getSpaceResourceAssignmentsForPlan(planId)'),
+              ('zoneResourceTypeRequirements', 'EIS-012', 'storage.getZoneResourceTypeRequirementsForPlan(planId)'),
+              ('spaceResourceTypeRequirements', 'EIS-013', 'storage.getSpaceResourceTypeRequirementsForPlan(planId)'),
+              ('resourceItemComponents', 'EIS-017', 'storage.getResourceItemComponentsMap(resourceItemIds)'),
+          ]
+          for name, source, loader in sources:
+              pattern = (
+                  rf'  const {name} = await loadEngineInputSourceOrThrow\(\n'
+                  rf'\s+planId,\n'
+                  rf'\s+"{source}",\n'
+                  rf'\s+\(\) => {re.escape(loader)},\n'
+                  rf'\s+\);'
+              )
+              replacement = (
+                  f'  const {name} =\n'
+                  '    (await loadEngineInputSourceOrThrow(\n'
+                  '      planId,\n'
+                  f'      "{source}",\n'
+                  f'      () => {loader},\n'
+                  '    )) ?? {};'
+              )
+              text, count = re.subn(pattern, replacement, text, count=1)
+              if count != 1:
+                  raise SystemExit(f'failed to normalize {source}')
           path.write_text(text)
 
           spec = Path('engine/buildInput.sourceCriticality.spec.ts')
           s = spec.read_text()
-          old = '''  failSource?: HardSourceId;\n  cameraResult?: number | null;\n  failBundleSignal?: boolean;'''
-          new = '''  failSource?: HardSourceId;\n  nullSource?: Exclude<HardSourceId, "EIS-003" | "EIS-014">;\n  cameraResult?: number | null;\n  failBundleSignal?: boolean;'''
-          if s.count(old) != 1:
-              raise SystemExit('options shape not found exactly once')
-          s = s.replace(old, new)
+          s, count = re.subn(
+              r'(  failSource\?: HardSourceId;\n)',
+              r'\1  nullSource?: Exclude<HardSourceId, "EIS-003" | "EIS-014">;\n',
+              s,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('failed to extend fixture options')
 
-          null_replacements = {
-          '''      failure("EIS-007");\n      return {};''': '''      failure("EIS-007");\n      return options.nullSource === "EIS-007" ? null : {};''',
-          '''      failure("EIS-008");\n      return {};''': '''      failure("EIS-008");\n      return options.nullSource === "EIS-008" ? null : {};''',
-          '''      failure("EIS-012");\n      return {};''': '''      failure("EIS-012");\n      return options.nullSource === "EIS-012" ? null : {};''',
-          '''      failure("EIS-013");\n      return {};''': '''      failure("EIS-013");\n      return options.nullSource === "EIS-013" ? null : {};''',
-          '''      failure("EIS-017");\n      return {};''': '''      failure("EIS-017");\n      return options.nullSource === "EIS-017" ? null : {};''',
-          }
-          for old, new in null_replacements.items():
-              if s.count(old) != 1:
-                  raise SystemExit(f'null-normalization fixture match failed: {old}')
-              s = s.replace(old, new)
+          for source in ('EIS-007', 'EIS-008', 'EIS-012', 'EIS-013', 'EIS-017'):
+              pattern = rf'(failure\("{source}"\);\n\s+)return \{{\}};'
+              replacement = rf'\1return options.nullSource === "{source}" ? null : {{}};'
+              s, count = re.subn(pattern, replacement, s, count=1)
+              if count != 1:
+                  raise SystemExit(f'failed to extend fixture for {source}')
 
-          marker = '''test("successful empty legacy camera snapshot still uses the explicit legacy plan fallback", async () => {\n'''
+          marker = 'test("successful empty legacy camera snapshot still uses the explicit legacy plan fallback", async () => {\n'
           test_block = '''test("successful null map responses remain neutral empty maps", async () => {\n  for (const sourceId of ["EIS-007", "EIS-008", "EIS-012", "EIS-013", "EIS-017"] as const) {\n    const input = await buildEngineInput(1, fakeStorage({ nullSource: sourceId }));\n    if (sourceId === "EIS-007") assert.deepEqual(input.zoneResourceAssignments, {});\n    if (sourceId === "EIS-008") assert.deepEqual(input.spaceResourceAssignments, {});\n    if (sourceId === "EIS-012") assert.deepEqual(input.zoneResourceTypeRequirements, {});\n    if (sourceId === "EIS-013") assert.deepEqual(input.spaceResourceTypeRequirements, {});\n    if (sourceId === "EIS-017") assert.deepEqual(input.resourceItemComponents, {});\n  }\n});\n\n'''
           if s.count(marker) != 1:
               raise SystemExit('test insertion marker not found exactly once')
