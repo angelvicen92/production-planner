@@ -10,17 +10,24 @@ It is a benchmark/evidence contract only. It does not change Planner Next search
 
 1. OptiPlan hard-gate failure classifies the candidate as `INVALID` immediately.
 2. Quality comparison is only allowed when the human reference hard-gate assessment is resolved and passing.
-3. Every primary KPI `P01` through `P10` must be represented.
-4. Every comparison signal must have an explicit non-negative tolerance in a named/versioned tolerance policy.
-5. Only then are signal deltas classified.
+3. A named/versioned policy must declare the exact comparison-signal surface for every primary KPI `P01` through `P10`.
+4. The supplied human/OptiPlan signals must match that surface exactly: no missing, extra or cross-KPI signals.
+5. Every required signal must have an explicit non-negative tolerance in the same versioned policy.
+6. Only then are signal deltas classified.
 
 This preserves the official rule that viability precedes quality and prevents a partial benchmark from declaring victory.
 
-## Tolerances
+## Versioned comparison surface and tolerances
 
-The Objective Master requires tolerances to be explicit, versioned, identical for human and OptiPlan, and immutable for the purpose of favoring an iteration. It does not currently publish numeric A2 tolerance values.
+The Objective Master requires every KPI to have stable identity, formula/direction and tolerance, with tolerances explicit, versioned, identical for human and OptiPlan, and immutable for the purpose of favoring an iteration. It does not currently publish numeric A2 tolerance values.
 
-Therefore `planningComparison.ts` contains **no numeric A2 tolerance defaults**. Tolerances are mandatory input through `ComparisonTolerancePolicy` and are evidenced per comparison signal.
+Therefore `planningComparison.ts` contains **no numeric A2 tolerance defaults and no caller-selected KPI subset**. `ComparisonTolerancePolicy` must declare:
+
+- a policy version;
+- a non-empty exact list of required signal IDs for each P01–P10;
+- a tolerance for every required signal.
+
+The comparator blocks if a required signal is absent, if an unversioned extra signal is supplied, or if a signal is assigned to a different KPI than the policy declares. This is important for structured KPIs such as P03: a future policy cannot silently compare only the mean while omitting P90, maximum or individual effects unless that reduced surface is explicitly versioned and reviewed as a benchmark-policy change.
 
 A delta exactly on the tolerance boundary is `EQUIVALENT`. Only a delta strictly beyond the band is materially `BETTER` or `WORSE`.
 
@@ -53,19 +60,22 @@ The result is `BLOCKED_BY_CONFIGURATION` with `classification=null` when compari
 
 - human-reference hard gates unresolved;
 - OptiPlan hard gates unassessed;
-- any missing primary KPI P01–P10;
-- missing tolerance policy;
+- any P01–P10 comparison surface missing or empty;
+- missing required signal;
+- supplied signal outside the versioned surface;
+- signal assigned to the wrong KPI;
+- missing tolerance policy or version;
 - missing, negative or non-finite signal tolerance;
-- duplicate signal identity;
+- duplicate/cross-KPI signal identity;
 - non-finite human or OptiPlan values.
 
 This outer blocked state is deliberately not a sixth quality classification. The five official comparison classes remain unchanged.
 
 ## Current Full A2 consequence
 
-A2-FULL-001 currently exposes measurable human baselines for P01, P02, P03, P07 and P09. P04, P05, P06, P08 and P10 remain blocked by missing effective configuration/semantics, and no official numeric tolerance policy has yet been supplied.
+A2-FULL-001 currently exposes measurable human baselines for P01, P02, P03, P07 and P09. P04, P05, P06, P08 and P10 remain blocked by missing effective configuration/semantics, and no official numeric tolerance/signal-surface policy has yet been supplied.
 
-Accordingly the real Full A2 comparison must remain blocked. The contract exists now so that future work cannot claim `PARITY` or `PARETO_BETTER` by silently comparing only the KPIs that happen to be available.
+Accordingly the real Full A2 comparison must remain blocked. The contract exists now so that future work cannot claim `PARITY` or `PARETO_BETTER` by silently comparing only the KPI fields that happen to be available.
 
 ## Acceptance evidence
 
@@ -73,7 +83,10 @@ Focal tests cover:
 
 - hard-invalid precedence;
 - unresolved-reference blocking;
-- mandatory P01–P10 coverage;
+- mandatory non-empty P01–P10 signal surface;
+- missing required signal;
+- extra/unversioned signal rejection;
+- cross-KPI signal mismatch rejection;
 - mandatory versioned tolerances;
 - tolerance boundary equivalence;
 - lower-is-better and higher-is-better directions;
