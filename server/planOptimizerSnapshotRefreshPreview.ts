@@ -94,6 +94,13 @@ function normalizeKnownFailure(
         details: error.details,
       });
     }
+    if (error.code === "INVALID_PLAN_OPTIMIZER_SNAPSHOT_PERSISTENCE") {
+      return deepFreeze({
+        code: "INVALID_GLOBAL_OPTIMIZER_SETTINGS" as const,
+        message: error.message,
+        details: error.details,
+      });
+    }
   }
   if (error instanceof PlanOptimizerSnapshotError) {
     return deepFreeze({
