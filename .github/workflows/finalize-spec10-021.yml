@@ -23,7 +23,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Bind audited historical checkpoint and current regressions
+      - name: Bind audited checkpoint and current A2 regressions
         shell: bash
         run: |
           set -euo pipefail
@@ -33,14 +33,37 @@ jobs:
           node --input-type=commonjs <<'NODE'
           const fs = require("node:fs");
 
-          const specPath = "engine/planner-next/exactFlexibleSetupOrder.spec.ts";
-          let spec = fs.readFileSync(specPath, "utf8");
-          const oldBlock = `test("full A2 advances to Totales only after exact flexible setup support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.equal(\n    analysis.nextImplementationBlocker?.code,\n    "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",\n  );\n});`;
-          const newBlock = `test("full A2 has no implementation blocker after flexible setup and exact round synchronization support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.deepEqual(analysis.implementationBlockers, []);\n  assert.equal(analysis.nextImplementationBlocker, null);\n});`;
-          if (!spec.includes(oldBlock)) throw new Error("SPEC10-021: stale flexible-setup Full A2 regression not found exactly");
-          spec = spec.replace(oldBlock, newBlock);
-          fs.writeFileSync(specPath, spec);
+          // The exact-flexible-setup regression must advance past Totales once
+          // SPEC10-021 has been applied in the reconstructed candidate.
+          const exactSpecPath = "engine/planner-next/exactFlexibleSetupOrder.spec.ts";
+          let exactSpec = fs.readFileSync(exactSpecPath, "utf8");
+          const oldExactBlock = `test("full A2 advances to Totales only after exact flexible setup support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.equal(\n    analysis.nextImplementationBlocker?.code,\n    "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",\n  );\n});`;
+          const newExactBlock = `test("full A2 has no implementation blocker after flexible setup and exact round synchronization support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.deepEqual(analysis.implementationBlockers, []);\n  assert.equal(analysis.nextImplementationBlocker, null);\n});`;
+          if (!exactSpec.includes(oldExactBlock)) throw new Error("SPEC10-021: stale exact flexible-setup Full A2 regression not found exactly");
+          exactSpec = exactSpec.replace(oldExactBlock, newExactBlock);
+          fs.writeFileSync(exactSpecPath, exactSpec);
 
+          // The older flexible-setup regression is also intentionally stale only
+          // after SPEC10-021 is connected. Keep it strict but advance its expected state.
+          const flexibleSpecPath = "engine/planner-next/flexibleSetupOrder.spec.ts";
+          let flexibleSpec = fs.readFileSync(flexibleSpecPath, "utf8");
+          const oldFlexibleBlock = `test("full A2 advances to Totales after exact flexible setup support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));\n  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);\n  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");\n});`;
+          const newFlexibleBlock = `test("full A2 has no implementation blocker after exact flexible setup and round synchronization support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));\n  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);\n  assert.deepEqual(analysis.implementationBlockers, []);\n  assert.equal(analysis.nextImplementationBlocker, null);\n});`;
+          if (!flexibleSpec.includes(oldFlexibleBlock)) throw new Error("SPEC10-021: stale flexible-setup Full A2 regression not found exactly");
+          flexibleSpec = flexibleSpec.replace(oldFlexibleBlock, newFlexibleBlock);
+          fs.writeFileSync(flexibleSpecPath, flexibleSpec);
+
+          // Main currently contains a test-helper bug: passing undefined selects the
+          // helper's default policy. Fix only the test invocation; product semantics stay unchanged.
+          const comparisonSpecPath = "engine/planner-next/benchmarks/focal-a2/full-day/planningComparison.spec.ts";
+          let comparisonSpec = fs.readFileSync(comparisonSpecPath, "utf8");
+          const oldComparison = `test("comparison blocks without an explicit versioned tolerance policy", () => {\n  const result = compare(signals(), undefined);\n  assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");\n  if (result.status !== "BLOCKED_BY_CONFIGURATION") return;\n  assert.ok(result.missing.includes("tolerance_policy"));\n});`;
+          const newComparison = `test("comparison blocks without an explicit versioned tolerance policy", () => {\n  const values = signals();\n  const result = comparePlanningQuality({ referenceHardGates: "PASS", optiPlanHardGates: "PASS", signals: values });\n  assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");\n  if (result.status !== "BLOCKED_BY_CONFIGURATION") return;\n  assert.ok(result.missing.includes("tolerance_policy"));\n});`;
+          if (!comparisonSpec.includes(oldComparison)) throw new Error("SPEC10-021: stale tolerance-policy regression not found exactly");
+          comparisonSpec = comparisonSpec.replace(oldComparison, newComparison);
+          fs.writeFileSync(comparisonSpecPath, comparisonSpec);
+
+          // Gate authoritative Evidence JSON rather than a Markdown string.
           const gatePath = "scripts/finalize-spec10-021-candidate.sh";
           let gate = fs.readFileSync(gatePath, "utf8");
           const oldGate = `if ! grep -q 'roundSynchronizationCapabilityProven=true' docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md; then\n  echo "SPEC10-021: connected round synchronization proof missing" >&2\n  exit 32\nfi`;
