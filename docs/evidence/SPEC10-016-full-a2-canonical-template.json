@@ -1,5 +1,5 @@
 {
-  "contractVersion": "SPEC10-016.full-a2-template.v2",
+  "contractVersion": "SPEC10-016.full-a2-template.v3",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -10,8 +10,8 @@
       "sha256": "c192c4b463c6078695bc274b17169bcb2d3395fb808988f1f406071231dd88f5"
     }
   ],
-  "manifestFingerprint": "78be2d84814efd013f0d1df731ad3d2d1f330591963abe335ba08c59ded07af4",
-  "expansionFingerprint": "1a7ddf8f4da921cbb559c4e92e758431200a6cf6a34048160578067339293ecf",
+  "manifestFingerprint": "a4c0ba4fec18c3eab5e00d81268baf4901aa35b331009420ac205d9e53baaea7",
+  "expansionFingerprint": "8ccc880299b454202dc5501aa20709f9876cb4f1e5e0024e8c367210ff476cd3",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -57,49 +57,49 @@
       "id": "cam-2",
       "label": "CAM 2",
       "kind": "camera",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "cam-3",
       "label": "CAM 3",
       "kind": "camera",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "cam-4",
       "label": "CAM 4",
       "kind": "camera",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "coach-jose-maria",
       "label": "Coach José María",
       "kind": "coach",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "coach-lucia",
       "label": "Coach Lucía",
       "kind": "coach",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "eva",
       "label": "EVA",
       "kind": "presenter",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "son-1",
       "label": "SON 1",
       "kind": "sound",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "son-2",
       "label": "SON 2",
       "kind": "sound",
-      "availability": "creation_input_required"
+      "availability": "inherits_day_unless_overridden"
     }
   ],
   "itinerantUnits": [
@@ -1054,13 +1054,8 @@
   "requiredCreationInputs": [
     "daily_itinerant_unit_availability",
     "daily_participant_availability",
-    "daily_resource_availability",
-    "daily_space_availability",
-    "effective_day_window",
-    "execution_date",
-    "future_productive_ids",
-    "general_meal_window",
-    "out_transport_policy"
+    "out_transport_policy",
+    "scoped_meal_policies"
   ],
   "representabilityStatus": "BLOCKED",
   "requiredCreationInputBlockers": [
@@ -1081,57 +1076,17 @@
       "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "daily_resource_availability",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
-    {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "daily_space_availability",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
-    {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "effective_day_window",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
-    {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "execution_date",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
-    {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "future_productive_ids",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
-    {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "general_meal_window",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
-    {
       "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "out_transport_policy",
+      "canonicalIds": [],
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+    },
+    {
+      "code": "SOURCE_CONFIGURATION_REQUIRED_SCOPED_MEAL_POLICIES",
+      "layer": "SOURCE_CONFIGURATION",
+      "affectedRule": "scoped_meal_policies",
       "canonicalIds": [],
       "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
       "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
@@ -1305,57 +1260,17 @@
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
         },
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_resource_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_space_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "effective_day_window",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "execution_date",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "future_productive_ids",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "general_meal_window",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
           "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
           "layer": "SOURCE_CONFIGURATION",
           "affectedRule": "out_transport_policy",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_SCOPED_MEAL_POLICIES",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "scoped_meal_policies",
           "canonicalIds": [],
           "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
@@ -1410,57 +1325,17 @@
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
         },
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_resource_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_space_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "effective_day_window",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "execution_date",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "future_productive_ids",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "general_meal_window",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
           "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
           "layer": "SOURCE_CONFIGURATION",
           "affectedRule": "out_transport_policy",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_SCOPED_MEAL_POLICIES",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "scoped_meal_policies",
           "canonicalIds": [],
           "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
@@ -1624,7 +1499,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "1a7ddf8f4da921cbb559c4e92e758431200a6cf6a34048160578067339293ecf",
+    "shuffledExpansionFingerprint": "8ccc880299b454202dc5501aa20709f9876cb4f1e5e0024e8c367210ff476cd3",
     "matches": true
   },
   "inputImmutable": {
