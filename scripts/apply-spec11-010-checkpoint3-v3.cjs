@@ -15,14 +15,14 @@ if (applicator.indexOf(startMarker, start + startMarker.length) >= 0) {
 }
 
 const robustPatch = [
-  "  const nominalTransportPattern = /            const templateName = String\\([\\s\\S]*?            const isArrivalOrDeparture = Boolean\\(\\n              templateName && \\(templateName === arrivalTemplateName \\|\\| templateName === departureTemplateName\\),\\n            \\);/g;",
-  "  const structuredTransportCheck = \\\"            const isArrivalOrDeparture =\\\\n              templateId === arrivalTransportTemplateId || templateId === departureTransportTemplateId;\\\";",
-  "  const nominalTransportMatches = source.match(nominalTransportPattern) ?? [];",
-  "  if (nominalTransportMatches.length !== 2) {",
-  "    throw new Error(\\\"Expected exactly 2 nominal task transport blocks, found \\\" + nominalTransportMatches.length);",
-  "  }",
-  "  source = source.replace(nominalTransportPattern, structuredTransportCheck);",
-  "",
+  '  const nominalTransportPattern = /            const templateName = String\\([\\s\\S]*?            const isArrivalOrDeparture = Boolean\\(\\n              templateName && \\(templateName === arrivalTemplateName \\|\\| templateName === departureTemplateName\\),\\n            \\);/g;',
+  '  const structuredTransportCheck = "            const isArrivalOrDeparture =\\n              templateId === arrivalTransportTemplateId || templateId === departureTransportTemplateId;";',
+  '  const nominalTransportMatches = source.match(nominalTransportPattern) ?? [];',
+  '  if (nominalTransportMatches.length !== 2) {',
+  '    throw new Error("Expected exactly 2 nominal task transport blocks, found " + nominalTransportMatches.length);',
+  '  }',
+  '  source = source.replace(nominalTransportPattern, structuredTransportCheck);',
+  '',
 ].join("\n");
 
 applicator = applicator.slice(0, start) + robustPatch + applicator.slice(end);
