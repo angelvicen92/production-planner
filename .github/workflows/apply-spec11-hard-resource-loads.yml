@@ -1,0 +1,29 @@
+name: Apply SPEC11 hard resource input patch
+
+on:
+  push:
+    branches:
+      - spec11-engine-input-hard-resource-loads
+    paths:
+      - .github/workflows/apply-spec11-hard-resource-loads.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: spec11-engine-input-hard-resource-loads
+          fetch-depth: 0
+      - name: Apply verified patch
+        run: |
+          git apply --check .github/patches/spec11-engine-input-hard-resource-loads.patch
+          git apply .github/patches/spec11-engine-input-hard-resource-loads.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md engine/buildInput.ts engine/buildInput.sourceCriticality.spec.ts
+          git commit -m "SPEC11: fail closed on hard resource input loads"
+          git push origin HEAD:spec11-engine-input-hard-resource-loads
