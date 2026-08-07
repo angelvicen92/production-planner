@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - automation/recover-spec10-021-exact
+  pull_request:
+    branches:
+      - tooling/spec10-021-totales-round-sync
 
 permissions:
   contents: read
