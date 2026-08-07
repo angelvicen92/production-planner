@@ -2806,3 +2806,10 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Global inválido:** errores conocidos de normalización/persistencia de defaults se convierten en `INVALID_GLOBAL_OPTIMIZER_SETTINGS` en lugar de 500 o fallback silencioso.
 - **Sin efectos:** el helper no lee DB, no escribe, no replantea y no muta el snapshot actual. La futura ruta sólo podrá orquestar lecturas sobre este contrato.
 - **Fuera de alcance:** endpoint HTTP, conteo de tareas protegidas, concurrencia, confirmación, persistencia del override, UI React, DB/migraciones, Planner Next, ORC y SPEC10-021.
+
+## A2-FULL-004 — Contrato de configuración fuente
+
+- Full A2 deja de exigir como decisiones humanas la fecha, la ventana base del día, las ventanas explícitas de cada espacio/recurso y los IDs productivos cuando esos valores están definidos, heredados o son derivables por contrato oficial.
+- La configuración fuente versionada conserva cuatro decisiones fail-closed: disponibilidad de concursantes, disponibilidad de unidades itinerantes, comidas scoped adicionales y política OUT.
+- Los recursos canónicos sin override heredan la jornada; las unidades itinerantes mantienen disponibilidad explícita obligatoria conforme a SPEC-08.
+- No se usan horas del planning humano como seed, disponibilidad, lock ni hint de búsqueda.
