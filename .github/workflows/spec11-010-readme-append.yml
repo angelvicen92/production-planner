@@ -1,0 +1,39 @@
+name: SPEC11-010 README Append
+
+on:
+  push:
+    branches:
+      - spec11-010-optimizer-snapshot-contract-helper
+
+permissions:
+  contents: write
+
+jobs:
+  append-readme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: spec11-010-optimizer-snapshot-contract-helper
+      - name: Append checkpoint summary once
+        shell: bash
+        run: |
+          if ! grep -q '^## SPEC11-010 — Checkpoint 1: contrato puro del snapshot del optimizador$' README.md; then
+            cat >> README.md <<'EOF'
+
+          ## SPEC11-010 — Checkpoint 1: contrato puro del snapshot del optimizador
+
+          - **Objetivo (`DB Safe Merge`):** fija el contrato V1 puro del snapshot diario del optimizador antes de añadir persistencia o conectar `buildEngineInput`.
+          - **Normalización:** `server/planOptimizerSnapshot.ts` canoniza BASIC/ADVANCED, las nueve heurísticas V1, zonas de agrupación, transporte y `nearHardBreaksMax`; produce salida profundamente inmutable y un fingerprint SHA-256 determinista de configuración.
+          - **Compatibilidad de transporte:** `weightArrivalDepartureGrouping` conserva su semántica productiva actual como peso directo 0..10 independiente del modo BASIC/ADVANCED; el nivel básico es sólo una representación derivada y no una segunda autoridad.
+          - **Validación:** TypeScript, build, test focal del contrato y suite completa `npm test` pasan sobre el código candidato. El único fallo observado en `git diff --check` pertenecía al workflow temporal de validación y no a los archivos funcionales.
+          - **Fuera de alcance:** no añade migración 075, tablas, RLS, storage, creación/backfill de planes, `buildEngineInput`, UI, Planner Next, ORC ni cambios en SPEC10-021.
+          EOF
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "docs: record SPEC11-010 checkpoint 1"
+            git push origin HEAD:spec11-010-optimizer-snapshot-contract-helper
+          fi
