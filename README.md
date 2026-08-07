@@ -2786,3 +2786,13 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Evidence de entrada:** `EngineInput` expone versión, source, modo, fingerprint del snapshot, versión del adapter y warnings de compatibilidad para demostrar qué política diaria consumió el motor.
 - **Sin cambio de scoring encubierto:** `CONTESTANT_TOTAL_SPAN` continúa proyectándose a `0` porque ése era el comportamiento productivo previo de `buildInput`. Si el snapshot lo trae activo se declara en `optimizerIgnoredActiveHeuristics` y warning; activarlo requiere una unidad funcional separada con Evidence/benchmark.
 - **Fuera de alcance:** no modifica V3/V4, Planner Next, ORC, UI, actualización manual del snapshot, SPEC10-021 ni migraciones DB nuevas. La migración 075 sigue teniendo la limitación explícita de validación contra Supabase real.
+
+## SPEC11-010 — Checkpoint 4A: contrato canónico de diff del optimizador
+
+- **Objetivo (`DB Safe Merge`):** fijar una comparación pura y determinista entre el snapshot diario actual y un candidato ya normalizado, antes de añadir endpoint, escritura o UI.
+- **Diff estructurado:** `server/planOptimizerSnapshotDiff.ts` compara modo, zona principal, las nueve heurísticas, zonas de agrupación, identidades y parámetros de transporte y near-hard en un orden canónico único.
+- **Fingerprint como guard de coherencia:** un diff estructurado vacío debe coincidir con fingerprints semánticos iguales y viceversa; una discrepancia aborta en vez de ocultar un campo olvidado.
+- **Proveniencia separada:** cambiar únicamente `INHERITED / LEGACY_BACKFILL / DAY_OVERRIDE` no se presenta como cambio semántico si el fingerprint efectivo es igual; el origen se expone por separado.
+- **Replanificación explícita:** un cambio semántico marca `replanningRequiredForEffect=true`, pero este checkpoint no ejecuta planificación ni modifica el día.
+- **Compatibilidad visible:** `CONTESTANT_TOTAL_SPAN` aparece en el diff aunque el adapter legacy siga neutralizándolo; la UI futura no podrá ignorar silenciosamente una preferencia activa.
+- **Fuera de alcance:** no añade endpoint, escritura, control de concurrencia, componentes React, mutación del snapshot, DB, Planner Next, ORC ni SPEC10-021.
