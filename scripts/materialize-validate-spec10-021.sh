@@ -44,43 +44,44 @@ base64 --decode tools/spec10-021-exact-port.patch.gz.b64 | gzip --decompress > /
 # from the historical WIP. The archived exact delta was generated one step earlier
 # and therefore contains that same correction as a redundant hunk. Remove only that
 # exact hunk when (and only when) the checkpoint proves the correction is present.
-python3 - <<'PY'
-from pathlib import Path
+node --input-type=commonjs <<'NODE'
+const fs = require("node:fs");
 
-spec_path = Path("engine/planner-next/roundSynchronization.spec.ts")
-patch_path = Path("/tmp/spec10_021_exact.patch")
-spec = spec_path.read_text(encoding="utf-8")
-patch = patch_path.read_text(encoding="utf-8")
+const specPath = "engine/planner-next/roundSynchronization.spec.ts";
+const patchPath = "/tmp/spec10_021_exact.patch";
+const spec = fs.readFileSync(specPath, "utf8");
+let patch = fs.readFileSync(patchPath, "utf8");
 
-already_corrected = (
-    '"task:101": 690' in spec
-    and '"task:103": 720' in spec
-    and '"task:101": 645' not in spec
-    and '"task:103": 675' not in spec
-)
+const alreadyCorrected =
+  spec.includes('"task:101": 690')
+  && spec.includes('"task:103": 720')
+  && !spec.includes('"task:101": 645')
+  && !spec.includes('"task:103": 675');
 
-if already_corrected:
-    file_marker = "diff -ruN '--exclude=.git' spec10021wip/engine/planner-next/roundSynchronization.spec.ts"
-    hunk_marker = "@@ -37,8 +37,8 @@"
-    next_hunk_marker = "@@ -161,12 +161,95 @@"
-    file_pos = patch.find(file_marker)
-    if file_pos < 0:
-        raise SystemExit("SPEC10-021: expected roundSynchronization.spec.ts patch section not found")
-    hunk_pos = patch.find(hunk_marker, file_pos)
-    next_hunk_pos = patch.find(next_hunk_marker, hunk_pos + len(hunk_marker))
-    if hunk_pos < 0 or next_hunk_pos < 0:
-        raise SystemExit("SPEC10-021: redundant fixture hunk could not be identified safely")
-    redundant = patch[hunk_pos:next_hunk_pos]
-    expected_old = '-    "task:101": 645,\n-    "task:103": 675,'
-    expected_new = '+    "task:101": 690,\n+    "task:103": 720,'
-    if expected_old not in redundant or expected_new not in redundant:
-        raise SystemExit("SPEC10-021: fixture hunk contents differ from audited expectation")
-    patch = patch[:hunk_pos] + patch[next_hunk_pos:]
-    patch_path.write_text(patch, encoding="utf-8")
-    print("[SPEC10-021] Redundant 690/720 fixture hunk removed safely.")
-else:
-    print("[SPEC10-021] Fixture correction not pre-applied; keeping archived hunk.")
-PY
+if (alreadyCorrected) {
+  const fileMarker = "diff -ruN '--exclude=.git' spec10021wip/engine/planner-next/roundSynchronization.spec.ts";
+  const hunkMarker = "@@ -37,8 +37,8 @@";
+  const nextHunkMarker = "@@ -161,12 +161,95 @@";
+  const filePos = patch.indexOf(fileMarker);
+  if (filePos < 0) throw new Error("SPEC10-021: expected roundSynchronization.spec.ts patch section not found");
+  const hunkPos = patch.indexOf(hunkMarker, filePos);
+  const nextHunkPos = patch.indexOf(nextHunkMarker, hunkPos + hunkMarker.length);
+  if (hunkPos < 0 || nextHunkPos < 0) {
+    throw new Error("SPEC10-021: redundant fixture hunk could not be identified safely");
+  }
+  const redundant = patch.slice(hunkPos, nextHunkPos);
+  const expectedOld = '-    "task:101": 645,\n-    "task:103": 675,';
+  const expectedNew = '+    "task:101": 690,\n+    "task:103": 720,';
+  if (!redundant.includes(expectedOld) || !redundant.includes(expectedNew)) {
+    throw new Error("SPEC10-021: fixture hunk contents differ from audited expectation");
+  }
+  patch = patch.slice(0, hunkPos) + patch.slice(nextHunkPos);
+  fs.writeFileSync(patchPath, patch, "utf8");
+  console.log("[SPEC10-021] Redundant 690/720 fixture hunk removed safely.");
+} else {
+  console.log("[SPEC10-021] Fixture correction not pre-applied; keeping archived hunk.");
+}
+NODE
 
 git apply --check /tmp/spec10_021_exact.patch
 git apply /tmp/spec10_021_exact.patch
