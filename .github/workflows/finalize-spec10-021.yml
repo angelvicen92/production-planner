@@ -1,0 +1,26 @@
+name: Finalize SPEC10-021 candidate
+
+on:
+  pull_request:
+    branches:
+      - spec10-021-round-sync-final
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: startsWith(github.head_ref, 'automation/spec10-021-finalize-trigger')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: spec10-021-round-sync-final
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/finalize-spec10-021-candidate.sh
