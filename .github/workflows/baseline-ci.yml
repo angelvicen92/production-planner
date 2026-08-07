@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: baseline-ci-${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,3 +45,11 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Materialize and publish validated SPEC10-021 candidate
+        if: github.ref == 'refs/heads/automation/spec10-021-ci-publisher'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin automation/spec10-021-replit-gate spec10-021-round-sync-candidate tooling/spec10-021-totales-round-sync
+          git show origin/automation/spec10-021-replit-gate:scripts/materialize-validate-spec10-021-v3.sh | bash
