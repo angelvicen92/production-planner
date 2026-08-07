@@ -17,6 +17,7 @@ import { createResidualObligationMainOrderer } from "./residualObligationAlignme
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
 import { setupFamilySequence } from "./setupGrouping";
+import { roundSynchronizationTaskIds } from "./roundSynchronization";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -132,6 +133,7 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
 function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
   const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
   const setupTaskIds = new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ id }) => id));
+  const synchronizedRoundTaskIds = roundSynchronizationTaskIds(problem);
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined;
@@ -139,6 +141,8 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
     if (task.jointGroupId !== undefined) reasons.push(`UNSUPPORTED_STANDALONE_JOINT_GROUP:${task.id}`);
+    if (synchronizedRoundTaskIds.has(task.id))
+      reasons.push(`UNSUPPORTED_STANDALONE_ROUND_SYNCHRONIZATION:${task.id}`);
     if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
       reasons.push(`UNSUPPORTED_STANDALONE_REQUIRED_BLOCK:${task.id}`);
     if (space?.mealPolicy !== undefined)
