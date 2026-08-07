@@ -23,4 +23,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Bind audited historical checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i 's#git fetch origin spec10-021-round-sync-exact tooling/spec10-021-totales-round-sync#git fetch origin automation/spec10-021-audited-base tooling/spec10-021-totales-round-sync#' scripts/finalize-spec10-021-candidate.sh
+          git cat-file -e 7ab93f1ed79d8e753379f962281b1e5192b90fb9^{commit}
       - run: bash scripts/finalize-spec10-021-candidate.sh
