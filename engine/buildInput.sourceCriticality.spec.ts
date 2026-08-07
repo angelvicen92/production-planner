@@ -5,6 +5,7 @@ import {
   EngineInputSourceLoadError,
 } from "./buildInput";
 import { normalizeTaskTemplateCatalogEntry } from "../server/taskTemplateSnapshot";
+import { normalizePlanOptimizerSnapshotV1 } from "../server/planOptimizerSnapshot";
 
 type HardSourceId =
   | "EIS-003"
@@ -40,6 +41,7 @@ function fakeStorage(options: {
     spaceId: 10,
     resourceRequirements: { byItem: { 70: 1 } },
   }, "inherited");
+  const snapshots = [snapshot];
   const plan = {
     id: 1,
     work_start: "09:00",
@@ -90,7 +92,8 @@ function fakeStorage(options: {
 
   return {
     getPlanEngineInputDetails: async () => ({ plan, tasks: [task], locks: [], availability: [], breaks: [] }),
-    getPlanTaskTemplateSnapshots: async () => [snapshot],
+    getPlanTaskTemplateSnapshots: async () => snapshots,
+    getPlanOptimizerSnapshot: async () => normalizePlanOptimizerSnapshotV1(optimizer),
     getContestantsByPlan: async () => [],
     getCamerasAvailableForPlan: async () => {
       failure("EIS-003");

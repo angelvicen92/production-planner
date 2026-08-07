@@ -60,7 +60,9 @@ test("typed optimizer snapshot storage reads only per-plan snapshot tables", () 
   assert.doesNotMatch(source, /getOptimizerSettings\(/);
 });
 
-test("checkpoint 2 deliberately leaves buildEngineInput on the legacy global adapter", () => {
-  assert.match(buildInputSource, /storage\.getOptimizerSettings\(\)/);
-  assert.doesNotMatch(buildInputSource, /storage\.getPlanOptimizerSnapshot\(/);
+test("checkpoint 3 makes the daily optimizer snapshot the only buildEngineInput optimizer authority", () => {
+  assert.match(buildInputSource, /storage\.getPlanOptimizerSnapshot\(planId\)/);
+  assert.match(buildInputSource, /adaptPlanOptimizerSnapshotToLegacyEngineV1/);
+  assert.match(buildInputSource, /EIS-020/);
+  assert.doesNotMatch(buildInputSource, /storage\.getOptimizerSettings\(\)/);
 });

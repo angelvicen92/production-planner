@@ -33,6 +33,11 @@ export interface TaskTemplateOperationalSnapshotV1 {
   readonly setupId: number | null;
 }
 
+export interface PersistedTaskTemplateOperationalSnapshotV1 extends TaskTemplateOperationalSnapshotV1 {
+  /** Physical per-plan row identity. Excluded from operational fingerprints. */
+  readonly planTemplateSnapshotId: number;
+}
+
 export interface TaskTemplateSnapshotPersistenceRow {
   readonly plan_id: number;
   readonly source_template_id: number;
@@ -434,8 +439,20 @@ export function normalizeTaskTemplateCatalogEntry(
   return normalizeSnapshot(value, { source, strict: false });
 }
 
-export function projectTaskTemplateSnapshotRow(value: unknown): TaskTemplateOperationalSnapshotV1 {
-  return normalizeSnapshot(value, { strict: true });
+export function projectTaskTemplateSnapshotRow(value: unknown): PersistedTaskTemplateOperationalSnapshotV1 {
+  const record = asRecord(value);
+  if (!record) {
+    throw new TaskTemplateSnapshotError(
+      "INVALID_TASK_TEMPLATE_SNAPSHOT",
+      "Persisted task-template snapshot row must be an object.",
+    );
+  }
+  const snapshot = normalizeSnapshot(record, { strict: true });
+  const planTemplateSnapshotId = positiveInteger(
+    readPresent(record, "planTemplateSnapshotId", "plan_template_snapshot_id", "id"),
+    "planTemplateSnapshotId",
+  );
+  return deepFreeze({ ...snapshot, planTemplateSnapshotId });
 }
 
 export function taskTemplateSnapshotToPersistenceRow(

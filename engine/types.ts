@@ -354,8 +354,17 @@ export interface EngineInput {
   // Key: contestantId -> ventana HH:mm
   contestantAvailabilityById?: Record<number, TimeWindow>;
 
-  // ✅ Optimización (global, viene de Settings)
-  // mainZone = “Plató principal”
+  // ✅ Optimización diaria autoritativa (SPEC11-010).
+  // Los campos legacy inferiores se derivan exclusivamente del snapshot del plan.
+  optimizerSnapshotContractVersion?: 1;
+  optimizerSnapshotSource?: "INHERITED" | "LEGACY_BACKFILL" | "DAY_OVERRIDE";
+  optimizerSnapshotEditingMode?: "BASIC" | "ADVANCED";
+  optimizerSnapshotFingerprint?: string;
+  optimizerLegacyAdapterVersion?: 1;
+  optimizerCompatibilityWarnings?: string[];
+  optimizerIgnoredActiveHeuristics?: string[];
+
+  // Compatibilidad V3/V4: mainZone = “Plató principal”
   optimizerMainZoneId?: number | null;
   optimizerPrioritizeMainZone?: boolean;
   optimizerGroupBySpaceAndTemplate?: boolean;

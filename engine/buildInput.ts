@@ -1,6 +1,6 @@
 import type { IStorage } from "../server/storage";
 import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
-import { resolveWeight } from "@shared/optimizer";
+import { adaptPlanOptimizerSnapshotToLegacyEngineV1 } from "./planOptimizerSnapshotLegacyAdapter";
 import { immutableMapView } from "@shared/immutableMapView";
 import {
   TaskTemplateSnapshotError,
@@ -24,7 +24,8 @@ type EngineInputHardSourceId =
   | "EIS-012"
   | "EIS-013"
   | "EIS-014"
-  | "EIS-017";
+  | "EIS-017"
+  | "EIS-020";
 
 const ENGINE_INPUT_SOURCE_REASON_CODE: Readonly<Record<EngineInputHardSourceId, string>> = Object.freeze({
   "EIS-003": "ENGINE_INPUT_CAMERA_SNAPSHOT_LOAD_FAILED",
@@ -34,6 +35,7 @@ const ENGINE_INPUT_SOURCE_REASON_CODE: Readonly<Record<EngineInputHardSourceId, 
   "EIS-013": "ENGINE_INPUT_SPACE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
   "EIS-014": "ENGINE_INPUT_PLAN_RESOURCES_UNAVAILABLE",
   "EIS-017": "ENGINE_INPUT_RESOURCE_COMPONENTS_UNAVAILABLE",
+  "EIS-020": "ENGINE_INPUT_OPTIMIZER_SNAPSHOT_UNAVAILABLE",
 });
 
 export class EngineInputSourceLoadError extends Error {
@@ -160,9 +162,14 @@ export async function buildEngineInput(
   planId: number,
   storage: IStorage,
 ): Promise<EngineInput> {
-  const [details, taskTemplateSnapshots] = await Promise.all([
+  const [details, taskTemplateSnapshots, optimizerSnapshot] = await Promise.all([
     storage.getPlanEngineInputDetails(planId),
     storage.getPlanTaskTemplateSnapshots(planId),
+    loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-020",
+      () => storage.getPlanOptimizerSnapshot(planId),
+    ),
   ]);
   if (!details) {
     throw new Error(`Plan ${planId} not found`);
@@ -279,43 +286,27 @@ export async function buildEngineInput(
       () => storage.getSpaceResourceAssignmentsForPlan(planId),
     )) ?? {};
 
-  // ✅ Optimización global (Settings)
-  const optimizer = await storage.getOptimizerSettings();
-  const optimizationMode = optimizer?.optimizationMode === "advanced" ? "advanced" : "basic";
-  const clampWeight = (value: unknown) => {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.min(10, Math.round(n)));
-  };
-
-  const mainZoneKeepBusyWeight = clampWeight(optimizer?.heuristics?.mainZoneKeepBusy?.advancedValue);
-  const mainZoneFinishEarlyWeight = clampWeight(optimizer?.heuristics?.mainZoneFinishEarly?.advancedValue);
-  const groupingWeight = clampWeight(
-    Math.max(
-      Number(optimizer?.heuristics?.groupBySpaceTemplateMatch?.advancedValue ?? 0),
-      Number(optimizer?.heuristics?.groupBySpaceActive?.advancedValue ?? 0),
-    ),
+  // ✅ SPEC11-010: autoridad diaria del optimizador. EIS-009 queda prohibido aquí.
+  const referencedOptimizerTemplateSnapshotIds = new Set<number>(
+    [
+      optimizerSnapshot.transport.arrivalPlanTemplateSnapshotId,
+      optimizerSnapshot.transport.departurePlanTemplateSnapshotId,
+    ].filter((value): value is number => value !== null),
   );
-
-  const optimizerMainZoneOptKeepBusy =
-    optimizationMode === "advanced"
-      ? mainZoneKeepBusyWeight > 0
-      : optimizer?.mainZoneOptKeepBusy !== false;
-
-  const optimizerMainZoneOptFinishEarly =
-    optimizationMode === "advanced"
-      ? mainZoneFinishEarlyWeight > 0
-      : optimizer?.mainZoneOptFinishEarly !== false;
-
-  const optimizerGroupBySpaceAndTemplate =
-    optimizationMode === "advanced"
-      ? groupingWeight > 0
-      : optimizer?.groupBySpaceAndTemplate !== false;
-
-  const transportWeightRaw = Number((optimizer as any)?.weightArrivalDepartureGrouping ?? 0);
-  const transportWeight = Number.isFinite(transportWeightRaw)
-    ? Math.max(0, Math.min(10, Math.floor(transportWeightRaw)))
-    : 0;
+  const optimizerProjection = adaptPlanOptimizerSnapshotToLegacyEngineV1(
+    optimizerSnapshot,
+    taskTemplateSnapshots
+      .filter((snapshot) => referencedOptimizerTemplateSnapshotIds.has(snapshot.planTemplateSnapshotId))
+      .map((snapshot) => ({
+        planTemplateSnapshotId: snapshot.planTemplateSnapshotId,
+        sourceTemplateId: snapshot.sourceTemplateId,
+        templateName: snapshot.templateName,
+      })),
+  );
+  const optimizerGroupBySpaceAndTemplate = optimizerProjection.groupBySpaceAndTemplate;
+  const optimizerMainZoneOptKeepBusy = optimizerProjection.mainZoneOptKeepBusy;
+  const optimizerMainZoneOptFinishEarly = optimizerProjection.mainZoneOptFinishEarly;
+  const transportWeight = optimizerProjection.transport.groupingWeight;
 
   // ✅ Jerarquía de espacios (para herencia de pools)
       const allSpaces = await storage.getSpaces();
@@ -366,18 +357,7 @@ export async function buildEngineInput(
   const zoneGroupingMap = new Map<number, { level: number; minChain: number }>();
   const maxTemplateChangesByZoneId: Record<number, number> = {};
   const spaceMealBreakMinutesByZoneId: Record<number, number> = {};
-  const groupingZoneIds: number[] = Array.from(
-    new Set<number>(
-      (Array.isArray((optimizer as any)?.groupingZoneIds)
-        ? (optimizer as any).groupingZoneIds
-        : Array.isArray((optimizer as any)?.grouping_zone_ids)
-          ? (optimizer as any).grouping_zone_ids
-          : []
-      )
-        .map((v: any) => Number(v))
-        .filter((n: number) => Number.isFinite(n) && n > 0),
-    ),
-  );
+  const groupingZoneIds: number[] = [...optimizerProjection.groupingZoneIds];
 
   const spaceMeta = new Map<number, { zoneId: number | null; parentSpaceId: number | null; groupingLevel: number; groupingMinChain: number; groupingApplyToDescendants: boolean }>();
 
@@ -530,19 +510,15 @@ export async function buildEngineInput(
   // Operational template semantics come exclusively from the per-plan snapshot.
   const templates = [...taskTemplateSnapshots];
 
-  const normalizeTransportTemplateName = (value: unknown) => String(value ?? "").trim().toLowerCase();
-  const configuredTransportTemplateNames = new Set(
+  const configuredTransportTemplateIds = new Set<number>(
     [
-      normalizeTransportTemplateName((optimizer as any)?.arrivalTaskTemplateName),
-      normalizeTransportTemplateName((optimizer as any)?.departureTaskTemplateName),
-    ].filter(Boolean),
+      optimizerProjection.transport.arrivalSourceTemplateId,
+      optimizerProjection.transport.departureSourceTemplateId,
+    ].filter((value): value is number => value !== null),
   );
-  const configuredTransportTemplateIds = new Set<number>();
   const templateTransportSpaceIds = new Set<number>();
   for (const snapshot of templates) {
-    const templateName = normalizeTransportTemplateName(snapshot.templateName);
-    if (!configuredTransportTemplateNames.has(templateName)) continue;
-    configuredTransportTemplateIds.add(snapshot.sourceTemplateId);
+    if (!configuredTransportTemplateIds.has(snapshot.sourceTemplateId)) continue;
     const spaceId = snapshot.defaultSpaceId;
     if (spaceId !== null && existingSpaceIds.has(spaceId)) templateTransportSpaceIds.add(spaceId);
   }
@@ -560,19 +536,11 @@ export async function buildEngineInput(
     singleSpaceId(templateTransportSpaceIds)
     ?? singleSpaceId(taskTransportSpaceIds)
     ?? namedTransportSpaceId;
-  const transportVanCapacity = Math.max(0, Math.floor(Number((optimizer as any)?.vanCapacity ?? 0) || 0));
-  const transportTemplateIdByName = (name: unknown): number | null => {
-    const normalized = normalizeTransportTemplateName(name);
-    if (!normalized) return null;
-    const matches = templates
-      .filter((snapshot) => normalizeTransportTemplateName(snapshot.templateName) === normalized)
-      .map((snapshot) => snapshot.sourceTemplateId);
-    return matches.length === 1 ? matches[0] : null;
-  };
-  const arrivalTransportTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "");
-  const departureTransportTemplateName = String((optimizer as any)?.departureTaskTemplateName ?? "");
-  const arrivalTransportTemplateId = transportTemplateIdByName(arrivalTransportTemplateName);
-  const departureTransportTemplateId = transportTemplateIdByName(departureTransportTemplateName);
+  const transportVanCapacity = optimizerProjection.transport.vanCapacity;
+  const arrivalTransportTemplateName = optimizerProjection.transport.arrivalTemplateName;
+  const departureTransportTemplateName = optimizerProjection.transport.departureTemplateName;
+  const arrivalTransportTemplateId = optimizerProjection.transport.arrivalSourceTemplateId;
+  const departureTransportTemplateId = optimizerProjection.transport.departureSourceTemplateId;
 
   const taskTemplateNameById: Record<number, string> = Object.fromEntries(
     templates.map((snapshot) => [snapshot.sourceTemplateId, snapshot.templateName]),
@@ -714,39 +682,47 @@ export async function buildEngineInput(
 
         contestantAvailabilityById,
 
-    optimizerMainZoneId: optimizer?.mainZoneId ?? null,
-    optimizerPrioritizeMainZone: optimizer?.prioritizeMainZone === true,
+    optimizerSnapshotContractVersion: optimizerProjection.snapshot.contractVersion,
+    optimizerSnapshotSource: optimizerProjection.snapshot.source,
+    optimizerSnapshotEditingMode: optimizerProjection.snapshot.editingMode,
+    optimizerSnapshotFingerprint: optimizerProjection.snapshot.configurationFingerprint,
+    optimizerLegacyAdapterVersion: optimizerProjection.adapterVersion,
+    optimizerCompatibilityWarnings: [...optimizerProjection.snapshot.compatibilityWarnings],
+    optimizerIgnoredActiveHeuristics: [...optimizerProjection.snapshot.ignoredActiveHeuristics],
+
+    optimizerMainZoneId: optimizerProjection.mainZoneId,
+    optimizerPrioritizeMainZone: optimizerProjection.prioritizeMainZone,
     optimizerGroupBySpaceAndTemplate,
 
     groupingZoneIds,
     maxTemplateChangesByZoneId,
     spaceMealBreakMinutesByZoneId,
 
-    optimizerMainZonePriorityLevel: optimizer?.mainZonePriorityLevel ?? (optimizer?.prioritizeMainZone ? 2 : 0),
-    optimizerGroupingLevel: optimizer?.groupingLevel ?? (optimizerGroupBySpaceAndTemplate ? 2 : 0),
+    optimizerMainZonePriorityLevel: optimizerProjection.mainZonePriorityLevel,
+    optimizerGroupingLevel: optimizerProjection.groupingLevel,
     optimizerMainZoneOptFinishEarly,
     optimizerMainZoneOptKeepBusy,
-    optimizerContestantCompactLevel: optimizer?.contestantCompactLevel ?? 0,
-    optimizerContestantStayInZoneLevel: optimizer?.contestantStayInZoneLevel ?? 0,
-    optimizerNearHardBreaksMax: Math.max(0, Math.min(10, Number((optimizer as any)?.nearHardBreaksMax ?? 0) || 0)),
-    arrivalTaskTemplateName: String((optimizer as any)?.arrivalTaskTemplateName ?? ""),
-    departureTaskTemplateName: String((optimizer as any)?.departureTaskTemplateName ?? ""),
-    arrivalGroupingTarget: Number((optimizer as any)?.arrivalGroupingTarget ?? 0),
-    departureGroupingTarget: Number((optimizer as any)?.departureGroupingTarget ?? 0),
-    arrivalMinGapMinutes: Number((optimizer as any)?.arrivalMinGapMinutes ?? 0),
-    departureMinGapMinutes: Number((optimizer as any)?.departureMinGapMinutes ?? 0),
+    optimizerContestantCompactLevel: optimizerProjection.contestantCompactLevel,
+    optimizerContestantStayInZoneLevel: optimizerProjection.contestantStayInZoneLevel,
+    optimizerNearHardBreaksMax: optimizerProjection.nearHardBreaksMax,
+    arrivalTaskTemplateName: arrivalTransportTemplateName,
+    departureTaskTemplateName: departureTransportTemplateName,
+    arrivalGroupingTarget: optimizerProjection.transport.arrivalGroupingTarget,
+    departureGroupingTarget: optimizerProjection.transport.departureGroupingTarget,
+    arrivalMinGapMinutes: optimizerProjection.transport.arrivalMinGapMinutes,
+    departureMinGapMinutes: optimizerProjection.transport.departureMinGapMinutes,
     vanCapacity: transportVanCapacity,
     transportVanCapacity,
     transportSpaceId,
-    transportSettings: (arrivalTransportTemplateName.trim() || departureTransportTemplateName.trim()) ? {
+    transportSettings: (arrivalTransportTemplateId !== null || departureTransportTemplateId !== null) ? {
       arrivalTemplateId: arrivalTransportTemplateId,
       departureTemplateId: departureTransportTemplateId,
       arrivalTemplateName: arrivalTransportTemplateName,
       departureTemplateName: departureTransportTemplateName,
-      arrivalTargetGroupSize: Number((optimizer as any)?.arrivalGroupingTarget ?? 0),
-      departureTargetGroupSize: Number((optimizer as any)?.departureGroupingTarget ?? 0),
-      arrivalMinGapMinutes: Number((optimizer as any)?.arrivalMinGapMinutes ?? 0),
-      departureMinGapMinutes: Number((optimizer as any)?.departureMinGapMinutes ?? 0),
+      arrivalTargetGroupSize: optimizerProjection.transport.arrivalGroupingTarget,
+      departureTargetGroupSize: optimizerProjection.transport.departureGroupingTarget,
+      arrivalMinGapMinutes: optimizerProjection.transport.arrivalMinGapMinutes,
+      departureMinGapMinutes: optimizerProjection.transport.departureMinGapMinutes,
       vehicleCapacity: transportVanCapacity,
       vanCapacity: transportVanCapacity,
       transportSpaceId,
@@ -754,41 +730,7 @@ export async function buildEngineInput(
       source: "engine-buildInput-optimizer-transport" as const,
     } : undefined,
 
-    optimizerWeights: {
-      mainZoneFinishEarly: resolveWeight(
-        optimizationMode,
-        optimizer?.heuristics?.mainZoneFinishEarly,
-        optimizer?.mainZonePriorityLevel,
-      ),
-      mainZoneKeepBusy: resolveWeight(
-        optimizationMode,
-        optimizer?.heuristics?.mainZoneKeepBusy,
-        optimizer?.mainZonePriorityLevel,
-      ),
-      contestantCompact: resolveWeight(
-        optimizationMode,
-        optimizer?.heuristics?.contestantCompact,
-        optimizer?.contestantCompactLevel,
-      ),
-      groupBySpaceTemplateMatch: resolveWeight(
-        optimizationMode,
-        optimizer?.heuristics?.groupBySpaceTemplateMatch,
-        optimizer?.groupingLevel,
-      ),
-      groupBySpaceActive: resolveWeight(
-        optimizationMode,
-        optimizer?.heuristics?.groupBySpaceActive,
-        optimizer?.groupingLevel,
-      ),
-      contestantStayInZone: resolveWeight(
-        optimizationMode,
-        optimizer?.heuristics?.contestantStayInZone,
-        optimizer?.contestantStayInZoneLevel,
-      ),
-      // Transporte usa peso directo 0-10; no depende del modo básico/avanzado ni de heuristics para evitar desactivar batching por error.
-      arrivalDepartureGrouping: transportWeight,
-      contestantTotalSpan: 0,
-    },
+    optimizerWeights: { ...optimizerProjection.weights },
 
           tasks: [
             ...details.tasks.map((t: any) => {
@@ -893,24 +835,8 @@ export async function buildEngineInput(
             const resolvedSpaceId = hasInvalidSpace ? null : normalizedSpaceId;
             const zoneFromSpace = resolvedSpaceId !== null ? dailyZoneIdBySpaceId.get(resolvedSpaceId) ?? null : null;
 
-            const templateName = String(
-              (isManualBlock
-                ? (t.manual_title ?? t.manualTitle ?? tpl.templateName ?? "")
-                : tpl.templateName) ?? "",
-            )
-              .trim()
-              .toLowerCase();
-
-            const arrivalTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "")
-              .trim()
-              .toLowerCase();
-            const departureTemplateName = String((optimizer as any)?.departureTaskTemplateName ?? "")
-              .trim()
-              .toLowerCase();
-
-            const isArrivalOrDeparture = Boolean(
-              templateName && (templateName === arrivalTemplateName || templateName === departureTemplateName),
-            );
+            const isArrivalOrDeparture =
+              templateId === arrivalTransportTemplateId || templateId === departureTransportTemplateId;
 
             if (explicitZoneId) return explicitZoneId;
             if (zoneFromSpace) return zoneFromSpace;
@@ -921,22 +847,8 @@ export async function buildEngineInput(
             const resolvedSpaceId = hasInvalidSpace ? null : normalizedSpaceId;
             if (resolvedSpaceId !== null) return resolvedSpaceId;
 
-            const templateName = String(
-              (isManualBlock
-                ? (t.manual_title ?? t.manualTitle ?? tpl.templateName ?? "")
-                : tpl.templateName) ?? "",
-            )
-              .trim()
-              .toLowerCase();
-            const arrivalTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "")
-              .trim()
-              .toLowerCase();
-            const departureTemplateName = String((optimizer as any)?.departureTaskTemplateName ?? "")
-              .trim()
-              .toLowerCase();
-            const isArrivalOrDeparture = Boolean(
-              templateName && (templateName === arrivalTemplateName || templateName === departureTemplateName),
-            );
+            const isArrivalOrDeparture =
+              templateId === arrivalTransportTemplateId || templateId === departureTransportTemplateId;
 
             if (isArrivalOrDeparture && transportSpaceId) return transportSpaceId;
             return null;
