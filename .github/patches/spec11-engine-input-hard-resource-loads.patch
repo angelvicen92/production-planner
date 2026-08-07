@@ -1,0 +1,356 @@
+diff --git a/README.md b/README.md
+index bdc264e..21fd988 100644
+--- a/README.md
++++ b/README.md
+@@ -2744,6 +2744,14 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
+ - **Contrato y fingerprint:** `server/taskTemplateSnapshot.ts` es la autoridad única para camel/snake, dependencias legacy y múltiples, requisitos de recursos, equipos itinerantes y arrays canónicos. El fingerprint SHA-256 se deriva de todos los campos normalizados; no se persiste un hash redundante ni se usan algoritmos distintos entre SQL y TypeScript.
+ - **Creación y atomicidad:** `createPlan` valida el catálogo completo antes de insertar y persiste el lote de snapshots antes del resto de inicializaciones; cualquier fallo posterior elimina el plan y comprueba la compensación. `createDailyTask` hereda ubicación desde el snapshot diario y sólo consulta `task_templates` para colores visuales, fuera del contrato operativo. Los bloqueos manuales, que usan una inserción directa, extienden primero el catálogo diario mediante una inicialización ad hoc explícita. La autocreación de concursantes usa exclusivamente el catálogo diario y compensa concursante y tareas si esa inicialización falla.
+ - **EngineInput:** la ruta productiva carga las filas de `daily_tasks` sin `JOIN task_templates`, trata el catálogo diario como entrada hard, rechaza versiones, duplicados o snapshots ausentes y aplica después los overrides de instancia. Publica versión, número de filas, fuentes y fingerprint del catálogo; no llama `getTaskTemplates()` durante la planificación.
+-- **Validación local ejecutada:** 291/291 tests focales y de regresión pasaron: helper/migración/integración SPEC11-002, proyección real de `buildEngineInput`, proyecciones históricas de disponibilidad/espacios/coaches, 204 tests de preflight y 38 tests del adapter Planner Next. `check:migrations` confirma 074 como siguiente migración y `git diff --check` pasa.
+-- **Limitaciones de validación:** no se aplicó la migración contra una Supabase real. La instalación npm del sandbox quedó incompleta por un artefacto ausente en el mirror, por lo que `npm run check`, `npm test` y `npm run build` completos deberán ejecutarse en un entorno con las dependencias del lock disponibles antes del merge.
++- **Validación ejecutada:** `npm ci`, `npm run check:migrations`, `npm run check`, `npm test` (2081/2081), `npm run build`, el benchmark del adapter, el benchmark SPEC10-020 y `validate-focal-a2-010.sh current` pasaron. La validación específica cubre 291/291 tests focales y de regresión; Focal A2 fue aceptado con SHA-256 `a57b2e05158561b95eb69654bc83701c36eec3bddee50ab70bc83d5aaa4e72e7` y `git diff --check origin/main...HEAD` quedó limpio.
++- **Limitación de validación:** la migración 074 no se aplicó contra una instancia Supabase real. SQL, RLS, backfill, secuencia y esquema Drizzle se validaron mediante tests estáticos y `check:migrations`.
+ - **Fuera de alcance:** no añade actualización manual del snapshot, UI final de comparación/origen, `TaskTemporalHoldPolicy`, coordinación entre espacios, snapshot del optimizador, activación productiva de Planner Next ni cambios en SPEC10-021.
++
++## SPEC11-009 — Carga fail-closed de fuentes hard de recursos en EngineInput
++
++- **Objetivo (`DB Safe Merge`):** `buildEngineInput` deja de convertir errores de carga de fuentes hard de recursos en `{}`, `[]` o `null`. Una consulta correcta que devuelve una colección vacía sigue siendo válida; una excepción aborta la construcción antes de ejecutar el motor.
++- **Contrato de fallo:** `EngineInputSourceLoadError` conserva `sourceId`, `reasonCode`, `planId`, fase `LOAD` y causa técnica para EIS-003, EIS-007, EIS-008, EIS-012, EIS-013, EIS-014 y EIS-017, usando los reason codes definidos por la Evidence SPEC11-009.
++- **Compatibilidad y señales soft:** cámaras sólo usan `plan.camerasAvailable` cuando la lectura diaria termina correctamente y devuelve ausencia legacy explícita. Los bundles continúan siendo `OPTIONAL_SIGNAL`: pueden neutralizarse con warning estructurado sin debilitar restricciones hard.
++- **Validación del cambio:** existe regresión focal para cada fuente hard, para el fallback legacy de cámaras y para el warning neutral de bundles; el PR debe superar TypeScript, Baseline CI y la suite de tests antes del merge.
++- **Fuera de alcance:** no implementa el snapshot diario del optimizador, no elimina todavía identidades nominales legacy, no cambia búsqueda, scoring, Planner Next, ORC, Totales ni SPEC10-021.
+diff --git a/engine/buildInput.sourceCriticality.spec.ts b/engine/buildInput.sourceCriticality.spec.ts
+new file mode 100644
+index 0000000..d9bb566
+--- /dev/null
++++ b/engine/buildInput.sourceCriticality.spec.ts
+@@ -0,0 +1,175 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import {
++  buildEngineInput,
++  EngineInputSourceLoadError,
++} from "./buildInput";
++import { normalizeTaskTemplateCatalogEntry } from "../server/taskTemplateSnapshot";
++
++type HardSourceId =
++  | "EIS-003"
++  | "EIS-007"
++  | "EIS-008"
++  | "EIS-012"
++  | "EIS-013"
++  | "EIS-014"
++  | "EIS-017";
++
++const expectedReasonCodes: Readonly<Record<HardSourceId, string>> = {
++  "EIS-003": "ENGINE_INPUT_CAMERA_SNAPSHOT_LOAD_FAILED",
++  "EIS-007": "ENGINE_INPUT_ZONE_RESOURCE_ASSIGNMENTS_UNAVAILABLE",
++  "EIS-008": "ENGINE_INPUT_SPACE_RESOURCE_ASSIGNMENTS_UNAVAILABLE",
++  "EIS-012": "ENGINE_INPUT_ZONE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
++  "EIS-013": "ENGINE_INPUT_SPACE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
++  "EIS-014": "ENGINE_INPUT_PLAN_RESOURCES_UNAVAILABLE",
++  "EIS-017": "ENGINE_INPUT_RESOURCE_COMPONENTS_UNAVAILABLE",
++};
++
++function fakeStorage(options: {
++  failSource?: HardSourceId;
++  cameraResult?: number | null;
++  failBundleSignal?: boolean;
++} = {}) {
++  const snapshot = normalizeTaskTemplateCatalogEntry({
++    id: 4,
++    name: "Task",
++    defaultDuration: 20,
++    defaultCameras: 0,
++    zoneId: 2,
++    spaceId: 10,
++    resourceRequirements: { byItem: { 70: 1 } },
++  }, "inherited");
++  const plan = {
++    id: 1,
++    work_start: "09:00",
++    work_end: "18:00",
++    meal_start: "14:00",
++    meal_end: "15:00",
++    meal_mode: "flexible_meal_window",
++    cameras_available: 6,
++    contestant_meal_duration_minutes: 60,
++    contestant_meal_max_simultaneous: 3,
++  };
++  const task = {
++    id: 40,
++    plan_id: 1,
++    template_id: 4,
++    contestant_id: null,
++    status: "pending",
++    assigned_resource_ids: null,
++  };
++  const optimizer = {
++    mainZoneId: null,
++    optimizationMode: "basic",
++    heuristics: {},
++    prioritizeMainZone: false,
++    groupBySpaceAndTemplate: false,
++    mainZonePriorityLevel: 0,
++    groupingLevel: 0,
++    contestantCompactLevel: 0,
++    contestantStayInZoneLevel: 0,
++    groupingZoneIds: [],
++    mainZoneOptFinishEarly: false,
++    mainZoneOptKeepBusy: false,
++    arrivalTaskTemplateName: "",
++    departureTaskTemplateName: "",
++    arrivalGroupingTarget: 0,
++    departureGroupingTarget: 0,
++    arrivalMinGapMinutes: 0,
++    departureMinGapMinutes: 0,
++    vanCapacity: 0,
++    weightArrivalDepartureGrouping: 0,
++    nearHardBreaksMax: 0,
++  };
++  const failure = (sourceId: HardSourceId) => {
++    if (options.failSource === sourceId) {
++      throw new Error(`forced ${sourceId} failure`);
++    }
++  };
++
++  return {
++    getPlanEngineInputDetails: async () => ({ plan, tasks: [task], locks: [], availability: [], breaks: [] }),
++    getPlanTaskTemplateSnapshots: async () => [snapshot],
++    getContestantsByPlan: async () => [],
++    getCamerasAvailableForPlan: async () => {
++      failure("EIS-003");
++      return options.cameraResult === undefined ? 2 : options.cameraResult;
++    },
++    getResourceBundles: async () => {
++      if (options.failBundleSignal) throw new Error("optional bundle signal unavailable");
++      return [];
++    },
++    getResourceBundleComponents: async () => [],
++    getResourceBundleSpaceAffinities: async () => [],
++    getZoneResourceAssignmentsForPlan: async () => {
++      failure("EIS-007");
++      return {};
++    },
++    getSpaceResourceAssignmentsForPlan: async () => {
++      failure("EIS-008");
++      return {};
++    },
++    getOptimizerSettings: async () => optimizer,
++    getSpaces: async () => [{ id: 10, name: "Space", zoneId: 2, capacity: 1, priorityLevel: 1 }],
++    getZones: async () => [{ id: 2, name: "Zone" }],
++    getZoneResourceTypeRequirementsForPlan: async () => {
++      failure("EIS-012");
++      return {};
++    },
++    getSpaceResourceTypeRequirementsForPlan: async () => {
++      failure("EIS-013");
++      return {};
++    },
++    getPlanResourceItemsForPlan: async () => {
++      failure("EIS-014");
++      return [{
++        id: 7,
++        resourceItemId: 70,
++        typeId: 1,
++        typeCode: "crew",
++        typeName: "Crew",
++        name: "Resource",
++        isAvailable: true,
++        availabilityStart: null,
++        availabilityEnd: null,
++      }];
++    },
++    getPlanZoneSettings: async () => [{ id: 1, zoneId: 2, availabilityStart: null, availabilityEnd: null, source: "inherited" }],
++    getPlanSpaceSettings: async () => [{ id: 1, spaceId: 10, zoneId: 2, availabilityStart: null, availabilityEnd: null, source: "inherited" }],
++    getResourceItemComponentsMap: async () => {
++      failure("EIS-017");
++      return {};
++    },
++  } as any;
++}
++
++for (const sourceId of Object.keys(expectedReasonCodes) as HardSourceId[]) {
++  test(`${sourceId} load failure aborts EngineInput instead of becoming neutral`, async () => {
++    await assert.rejects(
++      () => buildEngineInput(1, fakeStorage({ failSource: sourceId })),
++      (error: unknown) => {
++        assert.ok(error instanceof EngineInputSourceLoadError);
++        assert.equal(error.sourceId, sourceId);
++        assert.equal(error.reasonCode, expectedReasonCodes[sourceId]);
++        assert.equal(error.planId, 1);
++        assert.equal(error.phase, "LOAD");
++        assert.match(String((error.cause as Error)?.message), new RegExp(sourceId));
++        return true;
++      },
++    );
++  });
++}
++
++test("successful empty legacy camera snapshot still uses the explicit legacy plan fallback", async () => {
++  const input = await buildEngineInput(1, fakeStorage({ cameraResult: null }));
++  assert.equal(input.camerasAvailable, 6);
++});
++
++test("optional bundle load failure remains a warning and does not weaken hard resource inputs", async () => {
++  const input = await buildEngineInput(1, fakeStorage({ failBundleSignal: true }));
++  assert.deepEqual(input.resourceBundles, []);
++  assert.equal(input.resourceBundleLoadWarnings?.length, 1);
++  assert.equal(input.resourceBundleLoadWarnings?.[0]?.source, "resource_bundles");
++  assert.deepEqual(input.zoneResourceAssignments, {});
++  assert.equal(input.planResourceItems.length, 1);
++});
+diff --git a/engine/buildInput.ts b/engine/buildInput.ts
+index a896c7a..01e22e9 100644
+--- a/engine/buildInput.ts
++++ b/engine/buildInput.ts
+@@ -17,6 +17,55 @@ type ContestantVocalCoachRow = Readonly<{
+ 
+ type PlanResourceItemRow = Readonly<Record<string, unknown>>;
+ 
++type EngineInputHardSourceId =
++  | "EIS-003"
++  | "EIS-007"
++  | "EIS-008"
++  | "EIS-012"
++  | "EIS-013"
++  | "EIS-014"
++  | "EIS-017";
++
++const ENGINE_INPUT_SOURCE_REASON_CODE: Readonly<Record<EngineInputHardSourceId, string>> = Object.freeze({
++  "EIS-003": "ENGINE_INPUT_CAMERA_SNAPSHOT_LOAD_FAILED",
++  "EIS-007": "ENGINE_INPUT_ZONE_RESOURCE_ASSIGNMENTS_UNAVAILABLE",
++  "EIS-008": "ENGINE_INPUT_SPACE_RESOURCE_ASSIGNMENTS_UNAVAILABLE",
++  "EIS-012": "ENGINE_INPUT_ZONE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
++  "EIS-013": "ENGINE_INPUT_SPACE_RESOURCE_REQUIREMENTS_UNAVAILABLE",
++  "EIS-014": "ENGINE_INPUT_PLAN_RESOURCES_UNAVAILABLE",
++  "EIS-017": "ENGINE_INPUT_RESOURCE_COMPONENTS_UNAVAILABLE",
++});
++
++export class EngineInputSourceLoadError extends Error {
++  readonly sourceId: EngineInputHardSourceId;
++  readonly reasonCode: string;
++  readonly planId: number;
++  readonly phase = "LOAD" as const;
++  readonly cause: unknown;
++
++  constructor(planId: number, sourceId: EngineInputHardSourceId, cause: unknown) {
++    const reasonCode = ENGINE_INPUT_SOURCE_REASON_CODE[sourceId];
++    super(`${reasonCode}: source ${sourceId} failed for plan ${planId}`);
++    this.name = "EngineInputSourceLoadError";
++    this.planId = planId;
++    this.sourceId = sourceId;
++    this.reasonCode = reasonCode;
++    this.cause = cause;
++  }
++}
++
++async function loadEngineInputSourceOrThrow<T>(
++  planId: number,
++  sourceId: EngineInputHardSourceId,
++  loader: () => Promise<T>,
++): Promise<T> {
++  try {
++    return await loader();
++  } catch (cause) {
++    throw new EngineInputSourceLoadError(planId, sourceId, cause);
++  }
++}
++
+ function cloneResourceRequirementsForEngineInput(
+   requirements: Readonly<ResourceRequirementsInput> | null,
+ ): ResourceRequirementsInput | null {
+@@ -127,14 +176,6 @@ export async function buildEngineInput(
+ 
+   const p: any = details.plan;
+ 
+-  const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+-    try {
+-      return await fn();
+-    } catch (_e) {
+-      return fallback;
+-    }
+-  };
+-
+   const contestants = await storage.getContestantsByPlan(planId);
+   const contestantNameById = new Map<number, string>();
+   const contestantAvailabilityById: Record<number, { start: string; end: string }> = {};
+@@ -159,7 +200,11 @@ export async function buildEngineInput(
+ 
+   // Cameras now come from per-plan resource items (type code "cameras")
+   // Fallback to legacy plan.camerasAvailable if the plan has no snapshot.
+-  const camerasFromResources = await safe(() => storage.getCamerasAvailableForPlan(planId), null);
++  const camerasFromResources = await loadEngineInputSourceOrThrow(
++    planId,
++    "EIS-003",
++    () => storage.getCamerasAvailableForPlan(planId),
++  );
+   const camerasAvailable =
+     camerasFromResources !== null
+       ? camerasFromResources
+@@ -220,11 +265,17 @@ export async function buildEngineInput(
+     .filter((affinity) => activeBundleIds.has(affinity.bundleId));
+ 
+   // Recursos anclados a ZONAS (snapshot/override por plan)
+-  const zoneResourceAssignments =
+-    (await safe(() => storage.getZoneResourceAssignmentsForPlan(planId), {})) ?? {};
++  const zoneResourceAssignments = await loadEngineInputSourceOrThrow(
++    planId,
++    "EIS-007",
++    () => storage.getZoneResourceAssignmentsForPlan(planId),
++  );
+ 
+-  const spaceResourceAssignments =
+-    (await safe(() => storage.getSpaceResourceAssignmentsForPlan(planId), {})) ?? {};
++  const spaceResourceAssignments = await loadEngineInputSourceOrThrow(
++    planId,
++    "EIS-008",
++    () => storage.getSpaceResourceAssignmentsForPlan(planId),
++  );
+ 
+   // ✅ Optimización global (Settings)
+   const optimizer = await storage.getOptimizerSettings();
+@@ -429,14 +480,24 @@ export async function buildEngineInput(
+   }
+ 
+ 
+-  const zoneResourceTypeRequirements =
+-    (await safe(() => storage.getZoneResourceTypeRequirementsForPlan(planId), {})) ?? {};
++  const zoneResourceTypeRequirements = await loadEngineInputSourceOrThrow(
++    planId,
++    "EIS-012",
++    () => storage.getZoneResourceTypeRequirementsForPlan(planId),
++  );
+ 
+-  const spaceResourceTypeRequirements =
+-    (await safe(() => storage.getSpaceResourceTypeRequirementsForPlan(planId), {})) ?? {};
++  const spaceResourceTypeRequirements = await loadEngineInputSourceOrThrow(
++    planId,
++    "EIS-013",
++    () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
++  );
+ 
+   const planResourceItems = projectPlanResourceItemsForEngineInput(
+-    (await safe(() => storage.getPlanResourceItemsForPlan(planId), [])) as unknown as readonly PlanResourceItemRow[],
++    (await loadEngineInputSourceOrThrow(
++      planId,
++      "EIS-014",
++      () => storage.getPlanResourceItemsForPlan(planId),
++    )) as unknown as readonly PlanResourceItemRow[],
+   );
+   const [planZoneSettings, planSpaceSettings] = await Promise.all([
+     storage.getPlanZoneSettings(planId),
+@@ -455,8 +516,11 @@ export async function buildEngineInput(
+     ),
+   );
+ 
+-  const resourceItemComponents =
+-    (await safe(() => storage.getResourceItemComponentsMap(resourceItemIds), {})) ?? {};
++  const resourceItemComponents = await loadEngineInputSourceOrThrow(
++    planId,
++    "EIS-017",
++    () => storage.getResourceItemComponentsMap(resourceItemIds),
++  );
+ 
+   // Operational template semantics come exclusively from the per-plan snapshot.
+   const templates = [...taskTemplateSnapshots];
