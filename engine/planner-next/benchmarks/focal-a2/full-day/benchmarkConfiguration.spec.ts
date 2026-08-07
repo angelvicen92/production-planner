@@ -3,7 +3,7 @@ import test from "node:test";
 import { A2_BENCHMARK_SOURCE_CONFIGURATION } from "./benchmarkConfiguration";
 import { createCanonicalFullA2Template } from "./manifest";
 
-test("A2 source configuration resolves only source/default/derived values and leaves four real decisions fail-closed", () => {
+test("A2 source configuration resolves all creation decisions explicitly", () => {
   const config = A2_BENCHMARK_SOURCE_CONFIGURATION;
   assert.equal(config.executionDate, "2025-06-15");
   assert.deepEqual(config.effectiveDayWindow, {
@@ -14,13 +14,16 @@ test("A2 source configuration resolves only source/default/derived values and le
   assert.equal(config.spaceAvailability, "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN");
   assert.equal(config.resourceAvailability, "INHERIT_DAY_UNLESS_OVERRIDDEN");
   assert.equal(config.productiveIds, "DERIVE_FROM_CANONICAL_IDENTITIES");
-  assert.deepEqual(config.unresolvedCreationInputs, [
-    "daily_participant_availability",
-    "daily_itinerant_unit_availability",
-    "scoped_meal_policies",
-    "out_transport_policy",
-  ]);
-  assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
+  assert.deepEqual(config.participantAvailability, {
+    start: "08:00", end: "19:00", appliesTo: "ALL_19_PARTICIPANTS", source: "PRODUCTION_DECISION_2026-08-08",
+  });
+  assert.deepEqual(config.itinerantUnitAvailability, {
+    start: "08:00", end: "19:00", appliesTo: "ALL_ITINERANT_UNITS", source: "PRODUCTION_DECISION_2026-08-08",
+  });
+  assert.equal(config.scopedMealPolicies.mode, "SOURCE_SPACE_BREAKS_FLEXIBLE_WITHIN_GENERAL_MEAL_WINDOW");
+  assert.equal(config.outTransportPolicy.minimumParticipantsPerGroup, 1);
+  assert.deepEqual(config.unresolvedCreationInputs, []);
+  assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, []);
 });
 
 test("A2 resolved source configuration contains no human schedule ordering or task timing", () => {
