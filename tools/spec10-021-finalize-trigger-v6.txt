@@ -1,0 +1,1 @@
+Trigger SPEC10-021 finalizer v6 after correcting stale Full A2 regressions.
