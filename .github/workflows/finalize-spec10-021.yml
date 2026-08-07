@@ -23,7 +23,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Bind audited historical checkpoint and current regression
+      - name: Bind audited historical checkpoint and current regressions
         shell: bash
         run: |
           set -euo pipefail
@@ -32,12 +32,21 @@ jobs:
           git cat-file -e 7ab93f1ed79d8e753379f962281b1e5192b90fb9^{commit}
           node --input-type=commonjs <<'NODE'
           const fs = require("node:fs");
-          const path = "engine/planner-next/exactFlexibleSetupOrder.spec.ts";
-          let text = fs.readFileSync(path, "utf8");
+
+          const specPath = "engine/planner-next/exactFlexibleSetupOrder.spec.ts";
+          let spec = fs.readFileSync(specPath, "utf8");
           const oldBlock = `test("full A2 advances to Totales only after exact flexible setup support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.equal(\n    analysis.nextImplementationBlocker?.code,\n    "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",\n  );\n});`;
           const newBlock = `test("full A2 has no implementation blocker after flexible setup and exact round synchronization support", () => {\n  const analysis = analyzeCanonicalFullA2Representability(\n    expandCanonicalFullA2Template(createCanonicalFullA2Template()),\n  );\n  assert.equal(\n    analysis.implementationBlockers.some(\n      (item) =>\n        item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",\n    ),\n    false,\n  );\n  assert.deepEqual(analysis.implementationBlockers, []);\n  assert.equal(analysis.nextImplementationBlocker, null);\n});`;
-          if (!text.includes(oldBlock)) throw new Error("SPEC10-021: stale flexible-setup Full A2 regression not found exactly");
-          text = text.replace(oldBlock, newBlock);
-          fs.writeFileSync(path, text);
+          if (!spec.includes(oldBlock)) throw new Error("SPEC10-021: stale flexible-setup Full A2 regression not found exactly");
+          spec = spec.replace(oldBlock, newBlock);
+          fs.writeFileSync(specPath, spec);
+
+          const gatePath = "scripts/finalize-spec10-021-candidate.sh";
+          let gate = fs.readFileSync(gatePath, "utf8");
+          const oldGate = `if ! grep -q 'roundSynchronizationCapabilityProven=true' docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md; then\n  echo "SPEC10-021: connected round synchronization proof missing" >&2\n  exit 32\nfi`;
+          const newGate = `node --input-type=commonjs <<'EVIDENCE_NODE'\nconst fs = require("node:fs");\nconst evidence = JSON.parse(fs.readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json", "utf8"));\nif (!Array.isArray(evidence.implementationBlockers) || evidence.implementationBlockers.length !== 0) {\n  throw new Error("SPEC10-021: Evidence still contains implementation blockers");\n}\nif (!Array.isArray(evidence.requiredCreationInputBlockers) || evidence.requiredCreationInputBlockers.length !== 4) {\n  throw new Error("SPEC10-021: Evidence must contain exactly four source-configuration blockers");\n}\nif (evidence.nextImplementationBlocker !== null) {\n  throw new Error("SPEC10-021: Evidence still reports a next implementation blocker");\n}\nEVIDENCE_NODE\nnpx tsx --eval 'import { analyzeCanonicalFullA2Representability, createCanonicalFullA2Template, expandCanonicalFullA2Template } from "./engine/planner-next/benchmarks/focal-a2/full-day/canonicalFullA2Template"; const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template())); if (analysis.roundSynchronizationCapabilityProven !== true) throw new Error("SPEC10-021: connected round synchronization capability is not proven"); console.log("SPEC10-021: roundSynchronizationCapabilityProven=true");'`;
+          if (!gate.includes(oldGate)) throw new Error("SPEC10-021: obsolete Markdown proof gate not found exactly");
+          gate = gate.replace(oldGate, newGate);
+          fs.writeFileSync(gatePath, gate);
           NODE
       - run: bash scripts/finalize-spec10-021-candidate.sh
