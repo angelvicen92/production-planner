@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizePlanOptimizerSnapshotV1 } from "./planOptimizerSnapshot";
+import {
+  normalizePlanOptimizerSnapshotV1,
+  type PlanOptimizerTransportSnapshotReferencesV1,
+} from "./planOptimizerSnapshot";
 import { diffPlanOptimizerSnapshotsV1 } from "./planOptimizerSnapshotDiff";
 
 function settings(overrides: Record<string, unknown> = {}) {
@@ -33,15 +36,15 @@ function settings(overrides: Record<string, unknown> = {}) {
   };
 }
 
-const references = {
+const references: PlanOptimizerTransportSnapshotReferencesV1 = {
   arrivalPlanTemplateSnapshotId: 101,
   departurePlanTemplateSnapshotId: 102,
-} as const;
+};
 
 function snapshot(
   overrides: Record<string, unknown> = {},
   source: "INHERITED" | "LEGACY_BACKFILL" | "DAY_OVERRIDE" = "INHERITED",
-  refs = references,
+  refs: PlanOptimizerTransportSnapshotReferencesV1 = references,
 ) {
   return normalizePlanOptimizerSnapshotV1(settings(overrides), refs, source);
 }
