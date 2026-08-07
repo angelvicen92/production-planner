@@ -47,7 +47,7 @@ jobs:
         run: npm run build
 
       - name: Materialize and publish validated SPEC10-021 candidate
-        if: github.ref == 'refs/heads/automation/spec10-021-ci-publisher'
+        if: github.ref == 'refs/heads/automation/spec10-021-ci-publisher' || github.head_ref == 'automation/spec10-021-ci-publisher'
         shell: bash
         run: |
           set -euo pipefail
