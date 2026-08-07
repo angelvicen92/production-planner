@@ -1,0 +1,46 @@
+name: SPEC11-010 checkpoint 2 bootstrap
+
+on:
+  push:
+    branches:
+      - spec11-010-checkpoint2-optimizer-snapshot-db
+
+permissions:
+  contents: write
+
+jobs:
+  apply-checkpoint-2:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: spec11-010-checkpoint2-optimizer-snapshot-db
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure automation identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply and validate SPEC11-010 checkpoint 2
+        run: |
+          git fetch origin main spec11-010-checkpoint2-optimizer-snapshot-db automation/spec11-010-checkpoint2-bootstrap
+          git show origin/automation/spec11-010-checkpoint2-bootstrap:scripts/resume-spec11-010-checkpoint2.sh | bash
+
+      - name: Remove temporary bootstrap workflow
+        run: |
+          git rm .github/workflows/spec11-010-checkpoint2-bootstrap.yml
+          git commit -m "chore: remove SPEC11-010 bootstrap workflow"
+          git push origin HEAD:spec11-010-checkpoint2-optimizer-snapshot-db
