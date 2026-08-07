@@ -44,7 +44,57 @@ if [[ -n "$untracked" ]]; then
 fi
 
 git fetch origin main "$TARGET" "$BOOTSTRAP"
-git show "origin/$BOOTSTRAP:scripts/apply-spec11-010-checkpoint2.cjs" | node
+
+# Execute the versioned applicator, but remove the two destructive child->parent
+# cascade clauses from the generated Drizzle schema. A task-template snapshot is
+# part of the same immutable day; deleting it must not silently delete the
+# optimizer snapshot. Plan deletion still cascades from plans as intended.
+tmp_applicator="$(mktemp)"
+git show "origin/$BOOTSTRAP:scripts/apply-spec11-010-checkpoint2.cjs" > "$tmp_applicator"
+python3 - "$tmp_applicator" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+text = path.read_text()
+needle = '.references(() => planTaskTemplateSnapshots.id, { onDelete: "cascade" })'
+count = text.count(needle)
+if count != 2:
+    raise SystemExit(f"Expected exactly 2 optimizer template cascade clauses, found {count}")
+path.write_text(text.replace(needle, '.references(() => planTaskTemplateSnapshots.id)'))
+PY
+node "$tmp_applicator"
+rm -f "$tmp_applicator"
+
+# Apply the same non-destructive relationship to migration 075 and validate the
+# post-correction candidate. This is committed separately so the remote history
+# records the safety correction explicitly; the final PR will be squash-merged.
+python3 - <<'PY'
+from pathlib import Path
+path = Path('supabase/migrations/075_plan_optimizer_snapshots.sql')
+text = path.read_text()
+replacements = {
+    'arrival_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id) ON DELETE CASCADE,':
+        'arrival_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id),',
+    'departure_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id) ON DELETE CASCADE,':
+        'departure_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id),',
+}
+for old, new in replacements.items():
+    if text.count(old) != 1:
+        raise SystemExit(f'Missing or ambiguous migration relationship: {old}')
+    text = text.replace(old, new)
+path.write_text(text)
+PY
+
+npx tsx --test server/planOptimizerSnapshot.spec.ts server/planOptimizerSnapshotPersistence.spec.ts server/planOptimizerSnapshotMigration.spec.ts server/planOptimizerSnapshotIntegration.spec.ts
+npm run check:migrations
+npm run check
+git diff --check
+
+if ! git diff --quiet -- supabase/migrations/075_plan_optimizer_snapshots.sql; then
+  git add supabase/migrations/075_plan_optimizer_snapshots.sql
+  git commit -m "SPEC11-010: keep daily snapshot references non-destructive"
+  git push origin "HEAD:$TARGET"
+fi
 
 restore_untracked
 trap - EXIT
