@@ -89,7 +89,8 @@ test("comparison blocks signals outside the policy or mapped to the wrong KPI", 
 });
 
 test("comparison blocks without an explicit versioned tolerance policy", () => {
-  const result = compare(signals(), undefined);
+  const values = signals();
+  const result = comparePlanningQuality({ referenceHardGates: "PASS", optiPlanHardGates: "PASS", signals: values });
   assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");
   if (result.status !== "BLOCKED_BY_CONFIGURATION") return;
   assert.ok(result.missing.includes("tolerance_policy"));

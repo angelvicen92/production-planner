@@ -2,6 +2,7 @@ import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
 import { runSpec10018Probe } from "../../runSpec10018SetupPolicyBenchmark";
 import { runSpec10019Probe } from "../../runSpec10019CoachRouteTransitionBenchmark";
 import { runSpec10020AtomicBudgetProbe, runSpec10020Probe, spec10020LogicalProjection } from "../../spec10020FlexibleSetupOrderProbe";
+import { runSpec10021AtomicBudgetProbe, runSpec10021Probe, runSpec10021ResidualProbe, spec10021ProjectionsEqual } from "../../spec10021RoundSynchronizationProbe";
 import { createSpec10020FlexibleSetupOrderEngineInputFixture } from "../../../integration/engineInputAdapter.fixture";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
@@ -376,6 +377,107 @@ function flexibleSetupOrderCapabilityProven(
     && probe.fullFingerprint !== null;
 }
 
+
+function failedRoundSynchronizationProbe(): RepresentabilityAnalysis["roundSynchronizationProbe"] {
+  return {
+    executed: true,
+    engineInputPreflightSupported: false,
+    adapterSupported: false,
+    plannerNextPreflightSupported: false,
+    exactPolicySelected: false,
+    projectedSynchronizationCount: 0,
+    projectedLaneTaskCounts: [],
+    complete: false,
+    hardValid: false,
+    roundSynchronizationViolationCount: 1,
+    roundPreparationViolationCount: 1,
+    scheduledRoundPreparationCount: 0,
+    synchronizedRoundCount: 0,
+    residualRoundSupported: false,
+    deterministic: false,
+    orderInvariant: false,
+    inputImmutable: false,
+    sharedBudgetAccounting: false,
+    atomicOnBudgetExhaustion: false,
+    fullFingerprint: null,
+  };
+}
+
+function runRoundSynchronizationProbe(): RepresentabilityAnalysis["roundSynchronizationProbe"] {
+  try {
+    const baseline = runSpec10021Probe();
+    const repeated = runSpec10021Probe();
+    const inverted = runSpec10021Probe(() => {
+      const input = structuredClone(baseline.inputSnapshot);
+      input.tasks.reverse();
+      input.locks.reverse();
+      input.planResourceItems.reverse();
+      input.planSpaceSettings?.reverse();
+      input.planZoneSettings?.reverse();
+      input.roundSynchronizations?.forEach((policy) => {
+        policy.lanes.reverse();
+        policy.lanes.forEach((lane) => lane.taskIds.reverse());
+      });
+      input.roundSynchronizations?.reverse();
+      return input;
+    });
+    const residual = runSpec10021ResidualProbe();
+    const atomic = runSpec10021AtomicBudgetProbe();
+    return {
+      executed: true,
+      engineInputPreflightSupported: baseline.engineInputPreflightStatus === "SUPPORTED",
+      adapterSupported: baseline.adapterStatus === "SUPPORTED",
+      plannerNextPreflightSupported: baseline.plannerNextPreflightReasonCodes.length === 0,
+      exactPolicySelected: true,
+      projectedSynchronizationCount: baseline.projectedSynchronizationCount,
+      projectedLaneTaskCounts: baseline.projectedLaneTaskCounts,
+      complete: baseline.complete,
+      hardValid: baseline.hardValid,
+      roundSynchronizationViolationCount: baseline.roundSynchronizationViolationCount,
+      roundPreparationViolationCount: baseline.roundPreparationViolationCount,
+      scheduledRoundPreparationCount: baseline.scheduledRoundPreparationCount,
+      synchronizedRoundCount: baseline.synchronizedRoundCount,
+      residualRoundSupported: residual.complete && residual.hardValid && residual.residualRoundCount === 1,
+      deterministic: spec10021ProjectionsEqual(baseline, repeated),
+      orderInvariant: spec10021ProjectionsEqual(baseline, inverted),
+      inputImmutable: baseline.inputImmutable,
+      sharedBudgetAccounting: baseline.branchesExplored >= baseline.roundSynchronizationAssignmentBranches,
+      atomicOnBudgetExhaustion: atomic.atomic,
+      fullFingerprint: baseline.fullFingerprint,
+    };
+  } catch {
+    return failedRoundSynchronizationProbe();
+  }
+}
+
+function roundSynchronizationCapabilityProven(
+  probe: RepresentabilityAnalysis["roundSynchronizationProbe"],
+): boolean {
+  return contractFieldPresence.plannerNextProblemHasRoundSynchronizations
+    && contractFieldPresence.engineInputHasRoundSynchronizations
+    && probe.executed
+    && probe.engineInputPreflightSupported
+    && probe.adapterSupported
+    && probe.plannerNextPreflightSupported
+    && probe.exactPolicySelected
+    && probe.projectedSynchronizationCount === 1
+    && probe.projectedLaneTaskCounts.length === 2
+    && probe.projectedLaneTaskCounts.every((count) => count === 2)
+    && probe.complete
+    && probe.hardValid
+    && probe.roundSynchronizationViolationCount === 0
+    && probe.roundPreparationViolationCount === 0
+    && probe.scheduledRoundPreparationCount === 2
+    && probe.synchronizedRoundCount === 2
+    && probe.residualRoundSupported
+    && probe.deterministic
+    && probe.orderInvariant
+    && probe.inputImmutable
+    && probe.sharedBudgetAccounting
+    && probe.atomicOnBudgetExhaustion
+    && probe.fullFingerprint !== null;
+}
+
 function setupPolicyCapabilityProven(
   probe: RepresentabilityAnalysis["setupPolicyProbe"],
 ): boolean {
@@ -432,6 +534,7 @@ export function analyzeCanonicalFullA2Representability(
     readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"];
     readonly setupPolicyProbe?: RepresentabilityAnalysis["setupPolicyProbe"];
     readonly flexibleSetupOrderProbe?: RepresentabilityAnalysis["flexibleSetupOrderProbe"];
+    readonly roundSynchronizationProbe?: RepresentabilityAnalysis["roundSynchronizationProbe"];
   } = {},
 ): RepresentabilityAnalysis {
   const requiredCreationInputs = expansion.requiredCreationInputs.map((input) => blocker({
@@ -450,6 +553,8 @@ export function analyzeCanonicalFullA2Representability(
   const setupPolicyCapability = setupPolicyCapabilityProven(setupPolicyProbe);
   const flexibleSetupOrderProbe = options.flexibleSetupOrderProbe ?? runFlexibleSetupOrderProbe();
   const flexibleSetupOrderCapability = flexibleSetupOrderCapabilityProven(flexibleSetupOrderProbe);
+  const roundSynchronizationProbe = options.roundSynchronizationProbe ?? runRoundSynchronizationProbe();
+  const roundSynchronizationCapability = roundSynchronizationCapabilityProven(roundSynchronizationProbe);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
   if (!contractFieldPresence.taskInputHasJointGroupId) {
@@ -497,14 +602,14 @@ export function analyzeCanonicalFullA2Representability(
     }));
   }
 
-  if (!contractFieldPresence.plannerNextProblemHasRoundSynchronization) {
+  if (!roundSynchronizationCapability) {
     implementationBlockers.push(blocker({
       code: "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-      layer: "PLANNER_NEXT",
+      layer: !contractFieldPresence.engineInputHasRoundSynchronizations ? "ENGINE_INPUT" : "PLANNER_NEXT",
       affectedRule: "sincronización de rondas Totales 1/Coreo",
       canonicalIds: expansion.tasks.filter((task) => task.type === "TOTALES_1" || task.type === "TOTALES_COREO").map((task) => task.id),
-      operationalExplanation: "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-      semanticLoss: "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+      operationalExplanation: "El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid.",
+      semanticLoss: "Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.",
       implementationRank: 5,
     }));
   }
@@ -536,6 +641,8 @@ export function analyzeCanonicalFullA2Representability(
     flexibleSetupOrderProbe,
     flexibleSetupOrderCapabilityProven:
       flexibleSetupOrderCapability,
+    roundSynchronizationProbe,
+    roundSynchronizationCapabilityProven: roundSynchronizationCapability,
   });
 }
 

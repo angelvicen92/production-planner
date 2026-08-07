@@ -221,12 +221,95 @@ test("invalid EngineInput round contracts are rejected before adaptation", () =>
   assert.equal(adapted.problem, null);
 });
 
-test("the exact route rejects the new shape explicitly until search integration", () => {
+test("the exact route schedules synchronized rounds and explicit preparations", () => {
   const problem = supportedProblem();
+  const snapshot = structuredClone(problem);
   const result = constructExactItinerantPlan(problem);
-  assert.equal(result.status, "UNSUPPORTED_STANDALONE_SHAPE");
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.complete, true);
+  assert.equal(result.scheduledRoundPreparations.length, 2);
+  const validation = validatePlan(
+    problem,
+    result.scheduledTasks,
+    result.scheduledSetupPreparations,
+    result.scheduledSpaceMeals,
+    result.scheduledParticipantMeals,
+    result.scheduledResourceMeals,
+    result.scheduledItinerantUnitMeals,
+    result.scheduledRoundPreparations,
+  );
+  assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
+  assert.equal(validation.roundSynchronizationViolationCount, 0);
+  assert.equal(validation.roundPreparationViolationCount, 0);
+  assert.ok(result.evidence.roundSynchronizationAssignmentBranches > 0);
+  assert.deepEqual(problem, snapshot);
+});
+
+test("exact synchronization supports a residual round after the shorter lane finishes", () => {
+  const problem = structuredClone(supportedProblem());
+  const policy = problem.roundSynchronizations![0]!;
+  const lane = policy.lanes[0]!;
+  problem.participants.push({ id: "participant:residual-round", availability: [{ ...problem.day }] });
+  problem.tasks.push({
+    id: "task:residual-round",
+    kind: "auxiliary",
+    participantId: "participant:residual-round",
+    duration: 30,
+    spaceId: lane.spaceId,
+    dependencies: [],
+  });
+  lane.taskIds.push("task:residual-round");
+  const result = constructExactItinerantPlan(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  const laneSchedules = policy.lanes.map((entry) => result.scheduledTasks
+    .filter((task) => entry.taskIds.includes(task.id))
+    .sort((left, right) => left.start - right.start || left.id.localeCompare(right.id)));
+  assert.equal(laneSchedules[0]!.length, 3);
+  assert.equal(laneSchedules[1]!.length, 2);
+  for (let index = 0; index < 2; index += 1) {
+    assert.equal(laneSchedules[0]![index]!.start, laneSchedules[1]![index]!.start);
+    assert.equal(laneSchedules[0]![index]!.end, laneSchedules[1]![index]!.end);
+  }
+  assert.ok(laneSchedules[0]![2]!.start > laneSchedules[1]![1]!.start);
+  assert.equal(result.scheduledRoundPreparations.length, 3);
+  const validation = validatePlan(
+    problem,
+    result.scheduledTasks,
+    result.scheduledSetupPreparations,
+    result.scheduledSpaceMeals,
+    result.scheduledParticipantMeals,
+    result.scheduledResourceMeals,
+    result.scheduledItinerantUnitMeals,
+    result.scheduledRoundPreparations,
+  );
+  assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
+});
+
+test("round synchronization is deterministic under task and eligible-set order changes", () => {
+  const baselineProblem = supportedProblem();
+  const baseline = constructExactItinerantPlan(baselineProblem);
+  assert.equal(baseline.status, "COMPLETE");
+
+  const reordered = structuredClone(baselineProblem);
+  reordered.tasks.reverse();
+  reordered.participants.reverse();
+  reordered.roundSynchronizations?.forEach((policy) =>
+    policy.lanes.forEach((lane) => lane.taskIds.reverse()));
+  const again = constructExactItinerantPlan(reordered);
+  assert.equal(again.status, "COMPLETE");
+  assert.equal(again.evidence.fullFingerprint, baseline.evidence.fullFingerprint);
+  assert.deepEqual(again.scheduledRoundPreparations, baseline.scheduledRoundPreparations);
+});
+
+test("round synchronization exhausts the shared budget atomically", () => {
+  const problem = structuredClone(supportedProblem());
+  problem.budget.maxBranchExpansions = 30;
+  const result = constructExactItinerantPlan(problem);
+  assert.equal(result.status, "BRANCH_BUDGET_EXHAUSTED");
   assert.equal(result.complete, false);
   assert.deepEqual(result.scheduledTasks, []);
-  assert.ok(result.evidence.reasonCodes.some((reason) =>
-    reason.startsWith("UNSUPPORTED_STANDALONE_ROUND_SYNCHRONIZATION:")));
+  assert.deepEqual(result.scheduledSetupPreparations, []);
+  assert.deepEqual(result.scheduledRoundPreparations, []);
+  assert.deepEqual(result.scheduledSpaceMeals, []);
+  assert.ok(result.evidence.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED"));
 });

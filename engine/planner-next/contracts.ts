@@ -323,6 +323,7 @@ export interface PlanResult {
   complete: boolean;
   scheduledTasks: ScheduledTask[];
   scheduledSetupPreparations: ScheduledSetupPreparation[];
+  scheduledRoundPreparations: ScheduledRoundPreparation[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
   scheduledParticipantMeals: ScheduledParticipantMeal[];
   scheduledResourceMeals: ScheduledResourceMeal[];
