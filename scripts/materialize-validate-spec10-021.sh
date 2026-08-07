@@ -39,6 +39,49 @@ fi
 
 echo "[SPEC10-021] Applying exact-search delta..."
 base64 --decode tools/spec10-021-exact-port.patch.gz.b64 | gzip --decompress > /tmp/spec10_021_exact.patch
+
+# The audited contract checkpoint already contains the corrected 690/720 fixture
+# from the historical WIP. The archived exact delta was generated one step earlier
+# and therefore contains that same correction as a redundant hunk. Remove only that
+# exact hunk when (and only when) the checkpoint proves the correction is present.
+python3 - <<'PY'
+from pathlib import Path
+
+spec_path = Path("engine/planner-next/roundSynchronization.spec.ts")
+patch_path = Path("/tmp/spec10_021_exact.patch")
+spec = spec_path.read_text(encoding="utf-8")
+patch = patch_path.read_text(encoding="utf-8")
+
+already_corrected = (
+    '"task:101": 690' in spec
+    and '"task:103": 720' in spec
+    and '"task:101": 645' not in spec
+    and '"task:103": 675' not in spec
+)
+
+if already_corrected:
+    file_marker = "diff -ruN '--exclude=.git' spec10021wip/engine/planner-next/roundSynchronization.spec.ts"
+    hunk_marker = "@@ -37,8 +37,8 @@"
+    next_hunk_marker = "@@ -161,12 +161,95 @@"
+    file_pos = patch.find(file_marker)
+    if file_pos < 0:
+        raise SystemExit("SPEC10-021: expected roundSynchronization.spec.ts patch section not found")
+    hunk_pos = patch.find(hunk_marker, file_pos)
+    next_hunk_pos = patch.find(next_hunk_marker, hunk_pos + len(hunk_marker))
+    if hunk_pos < 0 or next_hunk_pos < 0:
+        raise SystemExit("SPEC10-021: redundant fixture hunk could not be identified safely")
+    redundant = patch[hunk_pos:next_hunk_pos]
+    expected_old = '    "task:101": 645,\n    "task:103": 675,'
+    expected_new = '    "task:101": 690,\n    "task:103": 720,'
+    if expected_old not in redundant or expected_new not in redundant:
+        raise SystemExit("SPEC10-021: fixture hunk contents differ from audited expectation")
+    patch = patch[:hunk_pos] + patch[next_hunk_pos:]
+    patch_path.write_text(patch, encoding="utf-8")
+    print("[SPEC10-021] Redundant 690/720 fixture hunk removed safely.")
+else:
+    print("[SPEC10-021] Fixture correction not pre-applied; keeping archived hunk.")
+PY
+
 git apply --check /tmp/spec10_021_exact.patch
 git apply /tmp/spec10_021_exact.patch
 
