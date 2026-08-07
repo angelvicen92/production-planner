@@ -11,7 +11,9 @@ permissions:
 
 jobs:
   validate-and-publish:
-    if: github.event.pull_request.head.ref == 'spec11-010-checkpoint3-buildinput-snapshot'
+    if: >-
+      github.event.pull_request.head.ref == 'spec11-010-checkpoint3-buildinput-snapshot' &&
+      github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -75,7 +77,7 @@ jobs:
       - name: Diff hygiene
         run: git diff --check
 
-      - name: Publish clean candidate and remove bootstrap artifacts
+      - name: Publish validated product delta
         run: |
           git add \
             README.md \
@@ -86,12 +88,17 @@ jobs:
             server/taskTemplateSnapshot.ts \
             server/storage.ts \
             server/planOptimizerSnapshotIntegration.spec.ts
-          git rm --ignore-unmatch \
-            .github/workflows/spec11-010-checkpoint3-merge-gate.yml \
-            scripts/apply-spec11-010-checkpoint3.cjs \
-            scripts/apply-spec11-010-checkpoint3-v2.cjs \
-            scripts/apply-spec11-010-checkpoint3-v3.cjs
           git diff --cached --check
-          test -z "$(git status --porcelain | grep '^??' || true)"
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            README.md \
+            engine/buildInput.sourceCriticality.spec.ts \
+            engine/buildInput.taskTemplateSnapshot.spec.ts \
+            engine/buildInput.ts \
+            engine/types.ts \
+            server/planOptimizerSnapshotIntegration.spec.ts \
+            server/storage.ts \
+            server/taskTemplateSnapshot.ts | sort)"
+          test "$actual" = "$expected"
           git commit -m "SPEC11-010: consume daily optimizer snapshot in buildInput"
           git push origin HEAD:spec11-010-checkpoint3-buildinput-snapshot
