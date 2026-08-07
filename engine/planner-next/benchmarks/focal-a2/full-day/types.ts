@@ -1,7 +1,7 @@
 import type { EngineInput, TaskInput } from "../../../../types";
 import type { PlannerNextProblem } from "../../../contracts";
 
-export const CONTRACT_VERSION = "SPEC10-016.full-a2-template.v2";
+export const CONTRACT_VERSION = "SPEC10-016.full-a2-template.v3";
 
 export const PARTICIPANT_IDS = Array.from({ length: 19 }, (_, index) => `C${String(index + 1).padStart(2, "0")}`) as readonly string[];
 
@@ -107,7 +107,7 @@ export interface CanonicalResource {
   readonly id: string;
   readonly label: string;
   readonly kind: "camera" | "sound" | "coach" | "presenter";
-  readonly availability: "creation_input_required";
+  readonly availability: "inherits_day_unless_overridden";
 }
 
 export interface AnchoredOperationContract {

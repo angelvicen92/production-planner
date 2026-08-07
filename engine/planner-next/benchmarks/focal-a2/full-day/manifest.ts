@@ -1,5 +1,6 @@
 import type { CanonicalFullA2Template, CanonicalItinerantOperation, CanonicalItinerantUnit, CanonicalParticipantAssignment, CanonicalResource, CanonicalSpace, CanonicalTaskTypeDefinition, TaskType } from "./types";
 import { CONTRACT_VERSION, PARTICIPANT_IDS } from "./types";
+import { A2_BENCHMARK_SOURCE_CONFIGURATION } from "./benchmarkConfiguration";
 
 export const EXPECTED_COUNTS_BY_TYPE: Readonly<Record<TaskType, number>> = Object.freeze({
   CROMA: 19,
@@ -147,14 +148,14 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
 ]);
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
-  { id: "cam-2", label: "CAM 2", kind: "camera", availability: "creation_input_required" },
-  { id: "cam-3", label: "CAM 3", kind: "camera", availability: "creation_input_required" },
-  { id: "cam-4", label: "CAM 4", kind: "camera", availability: "creation_input_required" },
-  { id: "son-1", label: "SON 1", kind: "sound", availability: "creation_input_required" },
-  { id: "son-2", label: "SON 2", kind: "sound", availability: "creation_input_required" },
-  { id: "eva", label: "EVA", kind: "presenter", availability: "creation_input_required" },
-  { id: "coach-lucia", label: "Coach Lucía", kind: "coach", availability: "creation_input_required" },
-  { id: "coach-jose-maria", label: "Coach José María", kind: "coach", availability: "creation_input_required" },
+  { id: "cam-2", label: "CAM 2", kind: "camera", availability: "inherits_day_unless_overridden" },
+  { id: "cam-3", label: "CAM 3", kind: "camera", availability: "inherits_day_unless_overridden" },
+  { id: "cam-4", label: "CAM 4", kind: "camera", availability: "inherits_day_unless_overridden" },
+  { id: "son-1", label: "SON 1", kind: "sound", availability: "inherits_day_unless_overridden" },
+  { id: "son-2", label: "SON 2", kind: "sound", availability: "inherits_day_unless_overridden" },
+  { id: "eva", label: "EVA", kind: "presenter", availability: "inherits_day_unless_overridden" },
+  { id: "coach-lucia", label: "Coach Lucía", kind: "coach", availability: "inherits_day_unless_overridden" },
+  { id: "coach-jose-maria", label: "Coach José María", kind: "coach", availability: "inherits_day_unless_overridden" },
 ]);
 
 
@@ -209,17 +210,7 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
     itinerantUnits: CANONICAL_ITINERANT_UNITS,
     itinerantOperations: CANONICAL_ITINERANT_OPERATIONS,
     assignments: PARTICIPANT_IDS.map(assignment),
-    requiredCreationInputs: [
-      "daily_participant_availability",
-      "daily_resource_availability",
-      "daily_space_availability",
-      "daily_itinerant_unit_availability",
-      "effective_day_window",
-      "execution_date",
-      "future_productive_ids",
-      "general_meal_window",
-      "out_transport_policy",
-    ],
+    requiredCreationInputs: A2_BENCHMARK_SOURCE_CONFIGURATION.unresolvedCreationInputs,
     rules: {
       noSeedSchedule: true,
       noLocks: true,

@@ -12,13 +12,8 @@ Se conservan tres composiciones explícitas, sin registrarlas como recursos hard
 
 - **daily_itinerant_unit_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 - **daily_participant_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **daily_resource_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **daily_space_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **effective_day_window**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **execution_date**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **future_productive_ids**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **general_meal_window**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 - **out_transport_policy**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **scoped_meal_policies**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 
 Estos datos son inputs de creación del futuro día y no se seleccionan como siguiente capacidad técnica.
 

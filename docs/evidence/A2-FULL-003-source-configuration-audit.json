@@ -1,0 +1,49 @@
+{
+  "iterationId": "A2-FULL-003",
+  "mode": "READ_ONLY_SOURCE_CONFIGURATION_AUDIT",
+  "humanScheduleUsedAsPlannerInput": false,
+  "currentRequiredCreationInputCount": 9,
+  "resolvedOrReclassified": [
+    {
+      "input": "execution_date",
+      "status": "RESOLVED_BY_A2_SOURCE",
+      "value": "2025-06-15"
+    },
+    {
+      "input": "effective_day_window",
+      "status": "RESOLVED_BY_PRODUCT_DEFAULT_UNLESS_OVERRIDDEN",
+      "value": { "start": "09:00", "end": "21:00" }
+    },
+    {
+      "input": "daily_space_availability",
+      "status": "INHERIT_CONTAINER_OR_DAY_WHEN_NO_EXPLICIT_WINDOW"
+    },
+    {
+      "input": "daily_resource_availability",
+      "status": "INHERIT_DAY_WHEN_NO_EXPLICIT_WINDOW_AND_AVAILABLE"
+    },
+    {
+      "input": "future_productive_ids",
+      "status": "DERIVE_FROM_CANONICAL_IDENTITIES"
+    },
+    {
+      "input": "general_meal_window",
+      "status": "REPLACE_WITH_SCOPED_MEAL_POLICIES",
+      "reason": "Current domain has no implicit global meal."
+    }
+  ],
+  "truePendingCreationDecisions": [
+    "daily_participant_availability",
+    "daily_itinerant_unit_availability",
+    "scoped_meal_policies",
+    "out_transport_policy"
+  ],
+  "targetPendingCreationDecisionCount": 4,
+  "safety": {
+    "participantAvailabilityFromHumanInOut": false,
+    "itinerantAvailabilityFromHumanRealityTiming": false,
+    "globalMealInferredFromHumanSchedule": false,
+    "knownA2NamesOrHistoricalIdsUsedForEngineLogic": false
+  },
+  "nextStep": "Align the canonical Full A2 creation/representability contract with this source audit, then request only the remaining four genuine production decisions before first full execution."
+}
