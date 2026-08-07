@@ -1,4 +1,4 @@
-name: Fix SPEC11 hard-input null normalization
+name: Validate SPEC11 hard resource inputs final
 
 on:
   pull_request:
@@ -8,80 +8,25 @@ on:
       - reopened
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  fix:
+  validate:
     if: github.event.pull_request.head.ref == 'spec11-engine-input-hard-resource-loads'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          ref: spec11-engine-input-hard-resource-loads
-      - name: Preserve successful null normalization
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('engine/buildInput.ts')
-          text = path.read_text()
-          sources = [
-              ('zoneResourceAssignments', 'EIS-007', 'storage.getZoneResourceAssignmentsForPlan(planId)'),
-              ('spaceResourceAssignments', 'EIS-008', 'storage.getSpaceResourceAssignmentsForPlan(planId)'),
-              ('zoneResourceTypeRequirements', 'EIS-012', 'storage.getZoneResourceTypeRequirementsForPlan(planId)'),
-              ('spaceResourceTypeRequirements', 'EIS-013', 'storage.getSpaceResourceTypeRequirementsForPlan(planId)'),
-              ('resourceItemComponents', 'EIS-017', 'storage.getResourceItemComponentsMap(resourceItemIds)'),
-          ]
-          for name, source, loader in sources:
-              pattern = (
-                  rf'  const {name} = await loadEngineInputSourceOrThrow\(\n'
-                  rf'\s+planId,\n'
-                  rf'\s+"{source}",\n'
-                  rf'\s+\(\) => {re.escape(loader)},\n'
-                  rf'\s+\);'
-              )
-              replacement = (
-                  f'  const {name} =\n'
-                  '    (await loadEngineInputSourceOrThrow(\n'
-                  '      planId,\n'
-                  f'      "{source}",\n'
-                  f'      () => {loader},\n'
-                  '    )) ?? {};'
-              )
-              text, count = re.subn(pattern, replacement, text, count=1)
-              if count != 1:
-                  raise SystemExit(f'failed to normalize {source}')
-          path.write_text(text)
-
-          spec = Path('engine/buildInput.sourceCriticality.spec.ts')
-          s = spec.read_text()
-          s, count = re.subn(
-              r'(  failSource\?: HardSourceId;\n)',
-              r'\1  nullSource?: Exclude<HardSourceId, "EIS-003" | "EIS-014">;\n',
-              s,
-              count=1,
-          )
-          if count != 1:
-              raise SystemExit('failed to extend fixture options')
-
-          for source in ('EIS-007', 'EIS-008', 'EIS-012', 'EIS-013', 'EIS-017'):
-              pattern = rf'(failure\("{source}"\);\n\s+)return \{{\}};'
-              replacement = rf'\1return options.nullSource === "{source}" ? null : {{}};'
-              s, count = re.subn(pattern, replacement, s, count=1)
-              if count != 1:
-                  raise SystemExit(f'failed to extend fixture for {source}')
-
-          marker = 'test("successful empty legacy camera snapshot still uses the explicit legacy plan fallback", async () => {\n'
-          test_block = '''test("successful null map responses remain neutral empty maps", async () => {\n  for (const sourceId of ["EIS-007", "EIS-008", "EIS-012", "EIS-013", "EIS-017"] as const) {\n    const input = await buildEngineInput(1, fakeStorage({ nullSource: sourceId }));\n    if (sourceId === "EIS-007") assert.deepEqual(input.zoneResourceAssignments, {});\n    if (sourceId === "EIS-008") assert.deepEqual(input.spaceResourceAssignments, {});\n    if (sourceId === "EIS-012") assert.deepEqual(input.zoneResourceTypeRequirements, {});\n    if (sourceId === "EIS-013") assert.deepEqual(input.spaceResourceTypeRequirements, {});\n    if (sourceId === "EIS-017") assert.deepEqual(input.resourceItemComponents, {});\n  }\n});\n\n'''
-          if s.count(marker) != 1:
-              raise SystemExit('test insertion marker not found exactly once')
-          s = s.replace(marker, test_block + marker)
-          spec.write_text(s)
-          PY
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add engine/buildInput.ts engine/buildInput.sourceCriticality.spec.ts
-          git commit -m "SPEC11: preserve valid null resource snapshots"
-          git push origin HEAD:spec11-engine-input-hard-resource-loads
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Targeted source-criticality regression
+        run: npx tsx --test engine/buildInput.sourceCriticality.spec.ts
+      - name: Full test suite
+        run: npm test
+      - name: EngineInput adapter benchmark
+        run: npm run benchmark:planner-next:engine-input-adapter
+      - name: Diff hygiene
+        run: git diff --check origin/main...HEAD
