@@ -1,0 +1,33 @@
+name: Recover SPEC10-021 exact WIP
+
+on:
+  push:
+    branches:
+      - automation/recover-spec10-021-exact
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Reconstruct archived exact WIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tools/spec10-021-exact/chunk-* | base64 --decode | gzip --decompress > /tmp/spec10_021_apply.js
+          echo "Recovered bytes: $(wc -c < /tmp/spec10_021_apply.js)"
+          echo "SHA256: $(sha256sum /tmp/spec10_021_apply.js | cut -d' ' -f1)"
+          sed -n '1,80p' /tmp/spec10_021_apply.js
+          cp /tmp/spec10_021_apply.js spec10_021_apply.js
+      - name: Upload recovered source
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec10-021-exact-recovered
+          path: spec10_021_apply.js
+          if-no-files-found: error
+          retention-days: 1
