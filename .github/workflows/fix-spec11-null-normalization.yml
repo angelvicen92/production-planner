@@ -1,0 +1,118 @@
+name: Fix SPEC11 hard-input null normalization
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.pull_request.head.ref == 'spec11-engine-input-hard-resource-loads'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: spec11-engine-input-hard-resource-loads
+      - name: Preserve successful null normalization
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('engine/buildInput.ts')
+          text = path.read_text()
+          replacements = {
+          '''  const zoneResourceAssignments = await loadEngineInputSourceOrThrow(
+            planId,
+            "EIS-007",
+            () => storage.getZoneResourceAssignmentsForPlan(planId),
+          );''': '''  const zoneResourceAssignments =
+            (await loadEngineInputSourceOrThrow(
+              planId,
+              "EIS-007",
+              () => storage.getZoneResourceAssignmentsForPlan(planId),
+            )) ?? {};''',
+          '''  const spaceResourceAssignments = await loadEngineInputSourceOrThrow(
+            planId,
+            "EIS-008",
+            () => storage.getSpaceResourceAssignmentsForPlan(planId),
+          );''': '''  const spaceResourceAssignments =
+            (await loadEngineInputSourceOrThrow(
+              planId,
+              "EIS-008",
+              () => storage.getSpaceResourceAssignmentsForPlan(planId),
+            )) ?? {};''',
+          '''  const zoneResourceTypeRequirements = await loadEngineInputSourceOrThrow(
+            planId,
+            "EIS-012",
+            () => storage.getZoneResourceTypeRequirementsForPlan(planId),
+          );''': '''  const zoneResourceTypeRequirements =
+            (await loadEngineInputSourceOrThrow(
+              planId,
+              "EIS-012",
+              () => storage.getZoneResourceTypeRequirementsForPlan(planId),
+            )) ?? {};''',
+          '''  const spaceResourceTypeRequirements = await loadEngineInputSourceOrThrow(
+            planId,
+            "EIS-013",
+            () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
+          );''': '''  const spaceResourceTypeRequirements =
+            (await loadEngineInputSourceOrThrow(
+              planId,
+              "EIS-013",
+              () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
+            )) ?? {};''',
+          '''  const resourceItemComponents = await loadEngineInputSourceOrThrow(
+            planId,
+            "EIS-017",
+            () => storage.getResourceItemComponentsMap(resourceItemIds),
+          );''': '''  const resourceItemComponents =
+            (await loadEngineInputSourceOrThrow(
+              planId,
+              "EIS-017",
+              () => storage.getResourceItemComponentsMap(resourceItemIds),
+            )) ?? {};''',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected exactly one match for:\n{old}')
+              text = text.replace(old, new)
+          path.write_text(text)
+
+          spec = Path('engine/buildInput.sourceCriticality.spec.ts')
+          s = spec.read_text()
+          old = '''  failSource?: HardSourceId;\n  cameraResult?: number | null;\n  failBundleSignal?: boolean;'''
+          new = '''  failSource?: HardSourceId;\n  nullSource?: Exclude<HardSourceId, "EIS-003" | "EIS-014">;\n  cameraResult?: number | null;\n  failBundleSignal?: boolean;'''
+          if s.count(old) != 1:
+              raise SystemExit('options shape not found exactly once')
+          s = s.replace(old, new)
+
+          null_replacements = {
+          '''      failure("EIS-007");\n      return {};''': '''      failure("EIS-007");\n      return options.nullSource === "EIS-007" ? null : {};''',
+          '''      failure("EIS-008");\n      return {};''': '''      failure("EIS-008");\n      return options.nullSource === "EIS-008" ? null : {};''',
+          '''      failure("EIS-012");\n      return {};''': '''      failure("EIS-012");\n      return options.nullSource === "EIS-012" ? null : {};''',
+          '''      failure("EIS-013");\n      return {};''': '''      failure("EIS-013");\n      return options.nullSource === "EIS-013" ? null : {};''',
+          '''      failure("EIS-017");\n      return {};''': '''      failure("EIS-017");\n      return options.nullSource === "EIS-017" ? null : {};''',
+          }
+          for old, new in null_replacements.items():
+              if s.count(old) != 1:
+                  raise SystemExit(f'null-normalization fixture match failed: {old}')
+              s = s.replace(old, new)
+
+          marker = '''test("successful empty legacy camera snapshot still uses the explicit legacy plan fallback", async () => {\n'''
+          test_block = '''test("successful null map responses remain neutral empty maps", async () => {\n  for (const sourceId of ["EIS-007", "EIS-008", "EIS-012", "EIS-013", "EIS-017"] as const) {\n    const input = await buildEngineInput(1, fakeStorage({ nullSource: sourceId }));\n    if (sourceId === "EIS-007") assert.deepEqual(input.zoneResourceAssignments, {});\n    if (sourceId === "EIS-008") assert.deepEqual(input.spaceResourceAssignments, {});\n    if (sourceId === "EIS-012") assert.deepEqual(input.zoneResourceTypeRequirements, {});\n    if (sourceId === "EIS-013") assert.deepEqual(input.spaceResourceTypeRequirements, {});\n    if (sourceId === "EIS-017") assert.deepEqual(input.resourceItemComponents, {});\n  }\n});\n\n'''
+          if s.count(marker) != 1:
+              raise SystemExit('test insertion marker not found exactly once')
+          s = s.replace(marker, test_block + marker)
+          spec.write_text(s)
+          PY
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add engine/buildInput.ts engine/buildInput.sourceCriticality.spec.ts
+          git commit -m "SPEC11: preserve valid null resource snapshots"
+          git push origin HEAD:spec11-engine-input-hard-resource-loads
