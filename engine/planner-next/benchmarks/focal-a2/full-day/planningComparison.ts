@@ -51,7 +51,6 @@ export interface PlanningComparisonInput {
   readonly optiPlanHardGates: HardGateAssessment;
   readonly signals: readonly PrimaryComparisonSignal[];
   readonly tolerancePolicy?: ComparisonTolerancePolicy;
-  readonly requiredKpiIds?: readonly PrimaryKpiId[];
 }
 
 export interface ClassifiedPlanningComparison {
@@ -112,7 +111,6 @@ function classifySignal(signal: PrimaryComparisonSignal, tolerance: number): Sig
 
 function validateConfiguration(input: PlanningComparisonInput): readonly string[] {
   const missing: string[] = [];
-  const requiredKpiIds = input.requiredKpiIds ?? PRIMARY_KPI_IDS;
   const signalIds = new Set<string>();
   const kpiIds = new Set<PrimaryKpiId>();
 
@@ -128,7 +126,7 @@ function validateConfiguration(input: PlanningComparisonInput): readonly string[
     if (!Number.isFinite(signal.optiPlanValue)) missing.push(`signal_value:optiplan:${signal.id}`);
   }
 
-  for (const kpiId of requiredKpiIds) {
+  for (const kpiId of PRIMARY_KPI_IDS) {
     if (!kpiIds.has(kpiId)) missing.push(`primary_kpi:${kpiId}`);
   }
 
@@ -149,8 +147,8 @@ function validateConfiguration(input: PlanningComparisonInput): readonly string[
 /**
  * Applies the Objective Master comparison contract without aggregate scoring.
  * Hard-gate failure is non-compensable. Quality is classified only when the
- * complete primary KPI surface and an explicit versioned tolerance policy are
- * available. No A2-specific tolerance is embedded here.
+ * complete P01-P10 primary KPI surface and an explicit versioned tolerance policy
+ * are available. No A2-specific tolerance is embedded here.
  */
 export function comparePlanningQuality(input: PlanningComparisonInput): PlanningComparisonResult {
   if (input.optiPlanHardGates === "FAIL") {
@@ -172,7 +170,7 @@ export function comparePlanningQuality(input: PlanningComparisonInput): Planning
   if (configurationIssues.length > 0) {
     return blocked(
       configurationIssues,
-      "Comparison is blocked until hard-gate assessment, every required primary KPI signal and every explicit versioned tolerance are available.",
+      "Comparison is blocked until reference/candidate hard gates pass, P01-P10 are represented and every signal has an explicit versioned tolerance.",
     );
   }
 
