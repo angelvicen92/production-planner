@@ -1,26 +1,22 @@
 name: Materialize SPEC10-021 exact round synchronization
 
 on:
-  push:
-    branches:
-      - spec10-021-round-sync-exact
   pull_request:
     branches:
-      - main
+      - spec10-021-round-sync-candidate
 
 permissions:
   contents: write
 
 jobs:
   materialize:
-    if: github.event_name == 'pull_request' || startsWith(github.event.head_commit.message, 'Tooling:')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: spec10-021-round-sync-exact
+          ref: spec10-021-round-sync-candidate
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -88,4 +84,4 @@ EOF
           npm run build
           git diff --check origin/main...HEAD
       - name: Push validated candidate
-        run: git push origin HEAD:spec10-021-round-sync-exact
+        run: git push origin HEAD:spec10-021-round-sync-candidate
