@@ -165,7 +165,7 @@ test("exact setup enumeration is atomic on shared-ledger exhaustion", () => {
   assert.equal(generated.evidence.branchesExplored, 1);
 });
 
-test("full A2 advances to Totales only after exact flexible setup support", () => {
+test("full A2 has no implementation blocker after flexible setup and exact round synchronization support", () => {
   const analysis = analyzeCanonicalFullA2Representability(
     expandCanonicalFullA2Template(createCanonicalFullA2Template()),
   );
@@ -176,8 +176,6 @@ test("full A2 advances to Totales only after exact flexible setup support", () =
     ),
     false,
   );
-  assert.equal(
-    analysis.nextImplementationBlocker?.code,
-    "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-  );
+  assert.deepEqual(analysis.implementationBlockers, []);
+  assert.equal(analysis.nextImplementationBlocker, null);
 });

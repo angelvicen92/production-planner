@@ -2813,3 +2813,12 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - La configuración fuente versionada conserva cuatro decisiones fail-closed: disponibilidad de concursantes, disponibilidad de unidades itinerantes, comidas scoped adicionales y política OUT.
 - Los recursos canónicos sin override heredan la jornada; las unidades itinerantes mantienen disponibilidad explícita obligatoria conforme a SPEC-08.
 - No se usan horas del planning humano como seed, disponibilidad, lock ni hint de búsqueda.
+
+## SPEC10-021 — Sincronización exacta de rondas entre espacios
+
+- **Objetivo (`DB Safe Merge`):** representar y construir dos carriles independientes con inicio sincronizado mientras ambos conservan trabajo elegible, sin convertirlos en un único espacio ni fijar parejas por orden de input.
+- **Semántica:** `roundSynchronizations` usa elegibilidad explícita por IDs, emparejamiento ordinal dinámico y preparación entre rondas publicada como `ScheduledRoundPreparation`; el carril largo puede continuar con rondas residuales.
+- **Búsqueda exacta:** la capacidad consume el mismo `ExactSearchLedger`, retrocede hacia asignaciones de ronda cuando falla trabajo posterior y mantiene publicación atómica al agotar presupuesto.
+- **Validación:** el validador canónico comprueba sincronización, preparación, disponibilidad, comidas y ocupaciones; el fingerprint incluye las preparaciones de ronda.
+- **Full A2:** el probe conectado EngineInput → adapter → EXACT_CONSTRUCTIVE → validación demuestra ronda residual, determinismo, invariancia al orden y agotamiento atómico. Tras A2-FULL-004 no quedan blockers técnicos de representabilidad; permanecen cuatro decisiones de configuración fuente.
+- **Fuera de alcance:** no inventa disponibilidades, comidas scoped ni política OUT, no usa horarios humanos como seed y no aumenta presupuesto para ocultar inviabilidad.

@@ -1092,66 +1092,8 @@
       "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     }
   ],
-  "implementationBlockers": [
-    {
-      "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-      "layer": "PLANNER_NEXT",
-      "affectedRule": "sincronización de rondas Totales 1/Coreo",
-      "canonicalIds": [
-        "C01.totales_1",
-        "C02.totales_coreo",
-        "C03.totales_1",
-        "C04.totales_coreo",
-        "C05.totales_1",
-        "C06.totales_coreo",
-        "C07.totales_1",
-        "C08.totales_coreo",
-        "C09.totales_1",
-        "C10.totales_coreo",
-        "C11.totales_1",
-        "C12.totales_1",
-        "C13.totales_1",
-        "C14.totales_coreo",
-        "C15.totales_1",
-        "C16.totales_coreo",
-        "C17.totales_1",
-        "C18.totales_coreo",
-        "C19.totales_coreo"
-      ],
-      "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-      "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-      "implementationRank": 5
-    }
-  ],
-  "nextImplementationBlocker": {
-    "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-    "layer": "PLANNER_NEXT",
-    "affectedRule": "sincronización de rondas Totales 1/Coreo",
-    "canonicalIds": [
-      "C01.totales_1",
-      "C02.totales_coreo",
-      "C03.totales_1",
-      "C04.totales_coreo",
-      "C05.totales_1",
-      "C06.totales_coreo",
-      "C07.totales_1",
-      "C08.totales_coreo",
-      "C09.totales_1",
-      "C10.totales_coreo",
-      "C11.totales_1",
-      "C12.totales_1",
-      "C13.totales_1",
-      "C14.totales_coreo",
-      "C15.totales_1",
-      "C16.totales_coreo",
-      "C17.totales_1",
-      "C18.totales_coreo",
-      "C19.totales_coreo"
-    ],
-    "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-    "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-    "implementationRank": 5
-  },
+  "implementationBlockers": [],
+  "nextImplementationBlocker": null,
   "adapterProbe": {
     "executed": true,
     "supported": true,
@@ -1238,6 +1180,32 @@
     "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
   },
   "flexibleSetupOrderCapabilityProven": true,
+  "roundSynchronizationProbe": {
+    "executed": true,
+    "engineInputPreflightSupported": true,
+    "adapterSupported": true,
+    "plannerNextPreflightSupported": true,
+    "exactPolicySelected": true,
+    "projectedSynchronizationCount": 1,
+    "projectedLaneTaskCounts": [
+      2,
+      2
+    ],
+    "complete": true,
+    "hardValid": true,
+    "roundSynchronizationViolationCount": 0,
+    "roundPreparationViolationCount": 0,
+    "scheduledRoundPreparationCount": 2,
+    "synchronizedRoundCount": 2,
+    "residualRoundSupported": true,
+    "deterministic": true,
+    "orderInvariant": true,
+    "inputImmutable": true,
+    "sharedBudgetAccounting": true,
+    "atomicOnBudgetExhaustion": true,
+    "fullFingerprint": "b0c761e817ca956dc52132a1a3cd9f2aa27c2c23e290eab310ffd4fe37e0d7ad"
+  },
+  "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
     "status": "REJECTED_BLOCKED",
     "analysis": {
@@ -1276,37 +1244,7 @@
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
         }
       ],
-      "implementationBlockers": [
-        {
-          "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-          "layer": "PLANNER_NEXT",
-          "affectedRule": "sincronización de rondas Totales 1/Coreo",
-          "canonicalIds": [
-            "C01.totales_1",
-            "C02.totales_coreo",
-            "C03.totales_1",
-            "C04.totales_coreo",
-            "C05.totales_1",
-            "C06.totales_coreo",
-            "C07.totales_1",
-            "C08.totales_coreo",
-            "C09.totales_1",
-            "C10.totales_coreo",
-            "C11.totales_1",
-            "C12.totales_1",
-            "C13.totales_1",
-            "C14.totales_coreo",
-            "C15.totales_1",
-            "C16.totales_coreo",
-            "C17.totales_1",
-            "C18.totales_coreo",
-            "C19.totales_coreo"
-          ],
-          "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-          "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-          "implementationRank": 5
-        }
-      ],
+      "implementationBlockers": [],
       "blockers": [
         {
           "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
@@ -1339,66 +1277,9 @@
           "canonicalIds": [],
           "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
           "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
-          "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-          "layer": "PLANNER_NEXT",
-          "affectedRule": "sincronización de rondas Totales 1/Coreo",
-          "canonicalIds": [
-            "C01.totales_1",
-            "C02.totales_coreo",
-            "C03.totales_1",
-            "C04.totales_coreo",
-            "C05.totales_1",
-            "C06.totales_coreo",
-            "C07.totales_1",
-            "C08.totales_coreo",
-            "C09.totales_1",
-            "C10.totales_coreo",
-            "C11.totales_1",
-            "C12.totales_1",
-            "C13.totales_1",
-            "C14.totales_coreo",
-            "C15.totales_1",
-            "C16.totales_coreo",
-            "C17.totales_1",
-            "C18.totales_coreo",
-            "C19.totales_coreo"
-          ],
-          "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-          "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-          "implementationRank": 5
         }
       ],
-      "nextImplementationBlocker": {
-        "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
-        "layer": "PLANNER_NEXT",
-        "affectedRule": "sincronización de rondas Totales 1/Coreo",
-        "canonicalIds": [
-          "C01.totales_1",
-          "C02.totales_coreo",
-          "C03.totales_1",
-          "C04.totales_coreo",
-          "C05.totales_1",
-          "C06.totales_coreo",
-          "C07.totales_1",
-          "C08.totales_coreo",
-          "C09.totales_1",
-          "C10.totales_coreo",
-          "C11.totales_1",
-          "C12.totales_1",
-          "C13.totales_1",
-          "C14.totales_coreo",
-          "C15.totales_1",
-          "C16.totales_coreo",
-          "C17.totales_1",
-          "C18.totales_coreo",
-          "C19.totales_coreo"
-        ],
-        "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-        "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-        "implementationRank": 5
-      },
+      "nextImplementationBlocker": null,
       "adapterProbe": {
         "executed": true,
         "supported": true,
@@ -1484,7 +1365,33 @@
         "atomicOnBudgetExhaustion": true,
         "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
       },
-      "flexibleSetupOrderCapabilityProven": true
+      "flexibleSetupOrderCapabilityProven": true,
+      "roundSynchronizationProbe": {
+        "executed": true,
+        "engineInputPreflightSupported": true,
+        "adapterSupported": true,
+        "plannerNextPreflightSupported": true,
+        "exactPolicySelected": true,
+        "projectedSynchronizationCount": 1,
+        "projectedLaneTaskCounts": [
+          2,
+          2
+        ],
+        "complete": true,
+        "hardValid": true,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "scheduledRoundPreparationCount": 2,
+        "synchronizedRoundCount": 2,
+        "residualRoundSupported": true,
+        "deterministic": true,
+        "orderInvariant": true,
+        "inputImmutable": true,
+        "sharedBudgetAccounting": true,
+        "atomicOnBudgetExhaustion": true,
+        "fullFingerprint": "b0c761e817ca956dc52132a1a3cd9f2aa27c2c23e290eab310ffd4fe37e0d7ad"
+      },
+      "roundSynchronizationCapabilityProven": true
     },
     "executorCallCount": 0,
     "engineInputBuilt": false,

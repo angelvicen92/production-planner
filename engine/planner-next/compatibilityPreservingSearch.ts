@@ -222,7 +222,7 @@ function failure(
   return {
     complete: false,
     scheduledTasks: [],
-    scheduledSetupPreparations: [],
+    scheduledSetupPreparations: [], scheduledRoundPreparations: [],
     scheduledSpaceMeals: [],
     scheduledParticipantMeals: [],
     scheduledResourceMeals: [],
@@ -241,7 +241,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
     return {
       complete: false,
       scheduledTasks: [],
-      scheduledSetupPreparations: [],
+      scheduledSetupPreparations: [], scheduledRoundPreparations: [],
       scheduledSpaceMeals: [],
       scheduledParticipantMeals: [],
       scheduledResourceMeals: [],
@@ -536,7 +536,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       participantMealCount:problem.participantMeals?.length??0,participantMealPlannedCount:participantMealWitness.scheduled.length,participantMealProtectedCount:(problem.participantMeals??[]).filter(x=>x.fixedInterval).length,participantMealCandidateCount:Object.values(participantMealWitness.candidateCountByTaskId).reduce((a,b)=>a+b,0),participantMealBranchesExplored:participantMealWitness.branchesExplored,participantMealFutureFeasibilityChecks:1,participantMealFutureInfeasibleBranches:0,participantMealMaximumSimultaneous:participantMealWitness.maximumSimultaneous,participantMealCapacityLimit:problem.participantMealCapacity?.maxSimultaneous??0,participantMealStartByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.start])),participantMealEndByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.end])),participantMealRejectedReasonCountByCode:{},participantMealBlockingTaskIds:Object.keys(counters.blockers).filter(x=>x.startsWith("participant-meals:")).map(x=>x.slice("participant-meals:".length)).sort(),participantMealAcceptedWitnessFingerprint:participantMealWitnessFingerprint(participantMealWitness.scheduled),
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
-    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled],scheduledResourceMeals:fixedResourceMeals,scheduledItinerantUnitMeals:fixedItinerantMeals,metrics };
+    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledRoundPreparations: [], scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled],scheduledResourceMeals:fixedResourceMeals,scheduledItinerantUnitMeals:fixedItinerantMeals,metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }
