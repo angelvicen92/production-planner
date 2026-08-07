@@ -71,8 +71,8 @@ if already_corrected:
     if hunk_pos < 0 or next_hunk_pos < 0:
         raise SystemExit("SPEC10-021: redundant fixture hunk could not be identified safely")
     redundant = patch[hunk_pos:next_hunk_pos]
-    expected_old = '    "task:101": 645,\n    "task:103": 675,'
-    expected_new = '    "task:101": 690,\n    "task:103": 720,'
+    expected_old = '-    "task:101": 645,\n-    "task:103": 675,'
+    expected_new = '+    "task:101": 690,\n+    "task:103": 720,'
     if expected_old not in redundant or expected_new not in redundant:
         raise SystemExit("SPEC10-021: fixture hunk contents differ from audited expectation")
     patch = patch[:hunk_pos] + patch[next_hunk_pos:]
