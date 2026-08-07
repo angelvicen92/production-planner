@@ -11,14 +11,16 @@ The same `evaluatePlanningQuality` function accepts any complete normalized A2 i
 - 19 anonymous participants (`C01`–`C19`).
 - 266 participant-linked obligations.
 - 3 technical obligations without participant.
-- 269 canonical intervals total.
+- 269 canonical productive intervals total.
+- 18 explicit non-productive preparation occupations: 1 setup preparation and 17 round preparations.
+- 95 preparation minutes total: 10 setup + 85 round preparation.
 - Exact task-identity equality with the canonical Full A2 corpus.
 - Canonical durations and 5-minute grid preserved.
 - Explicit Master corrections preserved (C09 Sodexo, C12 40-minute Sodexo, C13 styling-out correction, C06/C10 joint sequence, C16 Alfombra-only correction, technical Reality/EVA chain).
 
-Reference fingerprint:
+Reference fingerprint (productive intervals + explicit preparations):
 
-`fcac15d561bea3f85c8f363c28cd5c7f3e338f109af5c556336b15caf1a5d149`
+`48ba729611debb6cbcacae0c24c1dda0a614e5d63f191f20d0fcd58f8cc7c595`
 
 ## Human baseline currently measurable without inventing configuration
 
@@ -47,6 +49,21 @@ Reference fingerprint:
 - P90: 515 minutes;
 - maximum: 545 minutes.
 
+### P07 — Blocks, setup and explicit preparation
+
+- main-flow blocks: 4 total;
+- Lucía: 2 main-flow blocks;
+- José María: 2 main-flow blocks;
+- maximum-block violations: 0 under the canonical A2 rule;
+- Sillón/Estrellas family blocks: 2 total, exactly one per family;
+- setup switches: 1;
+- setup reentries: 0;
+- explicit setup preparations: 1 × 10 minutes;
+- explicit Totales round preparations: 17 × 5 minutes;
+- explicit preparation total: 95 minutes.
+
+These preparation occupations are source-backed: Sillón/Estrellas requires a 10-minute set preparation between family blocks, and each Totales lane requires a 5-minute microphone change between consecutive rounds. They are not inferred from idle gaps and do not inflate productive task duration.
+
 ### P09 — Special operations
 
 - 3/3 anchored Reality Plató operations preserve required adjacency;
@@ -62,11 +79,10 @@ The evaluator returns `BLOCKED_BY_CONFIGURATION`, never an approximation, for:
 - P04 avoidable participant wait: requires explicit decomposition of mandatory vs avoidable waiting;
 - P05 critical-resource presence: requires effective resource assignments, relevance/presence policy and avoidable resource-wait classification;
 - P06 space continuity/utilization: requires effective capacities, continuity policies and authorized occupations;
-- P07 blocks/setups: requires explicit scheduled setup/preparation occupations and effective block policies;
 - P08 moves/zones: requires effective spatial hierarchy and transition contracts;
 - P10 robustness/slack: requires the configured robustness threshold and effective transition slack.
 
-P01 is also blocked if authorized main-flow breaks are not supplied to the evaluator.
+P01 is also blocked if authorized main-flow breaks are not supplied to the evaluator. P07 is blocked if explicit scheduled preparation occupations are absent; it never guesses setup work from empty time.
 
 ## Source/configuration ambiguities that must not be silently repaired
 
