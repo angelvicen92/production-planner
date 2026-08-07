@@ -265,17 +265,19 @@ export async function buildEngineInput(
     .filter((affinity) => activeBundleIds.has(affinity.bundleId));
 
   // Recursos anclados a ZONAS (snapshot/override por plan)
-  const zoneResourceAssignments = await loadEngineInputSourceOrThrow(
-    planId,
-    "EIS-007",
-    () => storage.getZoneResourceAssignmentsForPlan(planId),
-  );
+  const zoneResourceAssignments =
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-007",
+      () => storage.getZoneResourceAssignmentsForPlan(planId),
+    )) ?? {};
 
-  const spaceResourceAssignments = await loadEngineInputSourceOrThrow(
-    planId,
-    "EIS-008",
-    () => storage.getSpaceResourceAssignmentsForPlan(planId),
-  );
+  const spaceResourceAssignments =
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-008",
+      () => storage.getSpaceResourceAssignmentsForPlan(planId),
+    )) ?? {};
 
   // ✅ Optimización global (Settings)
   const optimizer = await storage.getOptimizerSettings();
@@ -480,17 +482,19 @@ export async function buildEngineInput(
   }
 
 
-  const zoneResourceTypeRequirements = await loadEngineInputSourceOrThrow(
-    planId,
-    "EIS-012",
-    () => storage.getZoneResourceTypeRequirementsForPlan(planId),
-  );
+  const zoneResourceTypeRequirements =
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-012",
+      () => storage.getZoneResourceTypeRequirementsForPlan(planId),
+    )) ?? {};
 
-  const spaceResourceTypeRequirements = await loadEngineInputSourceOrThrow(
-    planId,
-    "EIS-013",
-    () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
-  );
+  const spaceResourceTypeRequirements =
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-013",
+      () => storage.getSpaceResourceTypeRequirementsForPlan(planId),
+    )) ?? {};
 
   const planResourceItems = projectPlanResourceItemsForEngineInput(
     (await loadEngineInputSourceOrThrow(
@@ -516,11 +520,12 @@ export async function buildEngineInput(
     ),
   );
 
-  const resourceItemComponents = await loadEngineInputSourceOrThrow(
-    planId,
-    "EIS-017",
-    () => storage.getResourceItemComponentsMap(resourceItemIds),
-  );
+  const resourceItemComponents =
+    (await loadEngineInputSourceOrThrow(
+      planId,
+      "EIS-017",
+      () => storage.getResourceItemComponentsMap(resourceItemIds),
+    )) ?? {};
 
   // Operational template semantics come exclusively from the per-plan snapshot.
   const templates = [...taskTemplateSnapshots];

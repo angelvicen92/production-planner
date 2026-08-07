@@ -27,6 +27,7 @@ const expectedReasonCodes: Readonly<Record<HardSourceId, string>> = {
 
 function fakeStorage(options: {
   failSource?: HardSourceId;
+  nullSource?: Exclude<HardSourceId, "EIS-003" | "EIS-014">;
   cameraResult?: number | null;
   failBundleSignal?: boolean;
 } = {}) {
@@ -103,22 +104,22 @@ function fakeStorage(options: {
     getResourceBundleSpaceAffinities: async () => [],
     getZoneResourceAssignmentsForPlan: async () => {
       failure("EIS-007");
-      return {};
+      return options.nullSource === "EIS-007" ? null : {};
     },
     getSpaceResourceAssignmentsForPlan: async () => {
       failure("EIS-008");
-      return {};
+      return options.nullSource === "EIS-008" ? null : {};
     },
     getOptimizerSettings: async () => optimizer,
     getSpaces: async () => [{ id: 10, name: "Space", zoneId: 2, capacity: 1, priorityLevel: 1 }],
     getZones: async () => [{ id: 2, name: "Zone" }],
     getZoneResourceTypeRequirementsForPlan: async () => {
       failure("EIS-012");
-      return {};
+      return options.nullSource === "EIS-012" ? null : {};
     },
     getSpaceResourceTypeRequirementsForPlan: async () => {
       failure("EIS-013");
-      return {};
+      return options.nullSource === "EIS-013" ? null : {};
     },
     getPlanResourceItemsForPlan: async () => {
       failure("EIS-014");
@@ -138,7 +139,7 @@ function fakeStorage(options: {
     getPlanSpaceSettings: async () => [{ id: 1, spaceId: 10, zoneId: 2, availabilityStart: null, availabilityEnd: null, source: "inherited" }],
     getResourceItemComponentsMap: async () => {
       failure("EIS-017");
-      return {};
+      return options.nullSource === "EIS-017" ? null : {};
     },
   } as any;
 }
@@ -159,6 +160,17 @@ for (const sourceId of Object.keys(expectedReasonCodes) as HardSourceId[]) {
     );
   });
 }
+
+test("successful null map responses remain neutral empty maps", async () => {
+  for (const sourceId of ["EIS-007", "EIS-008", "EIS-012", "EIS-013", "EIS-017"] as const) {
+    const input = await buildEngineInput(1, fakeStorage({ nullSource: sourceId }));
+    if (sourceId === "EIS-007") assert.deepEqual(input.zoneResourceAssignments, {});
+    if (sourceId === "EIS-008") assert.deepEqual(input.spaceResourceAssignments, {});
+    if (sourceId === "EIS-012") assert.deepEqual(input.zoneResourceTypeRequirements, {});
+    if (sourceId === "EIS-013") assert.deepEqual(input.spaceResourceTypeRequirements, {});
+    if (sourceId === "EIS-017") assert.deepEqual(input.resourceItemComponents, {});
+  }
+});
 
 test("successful empty legacy camera snapshot still uses the explicit legacy plan fallback", async () => {
   const input = await buildEngineInput(1, fakeStorage({ cameraResult: null }));
