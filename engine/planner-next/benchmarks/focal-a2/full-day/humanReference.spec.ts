@@ -20,13 +20,13 @@ test("human A2 reference is complete, canonical, immutable and reference-only", 
   assert.equal(reference.sourceAudit.knownAmbiguities.length, 2);
   assert.equal(reference.intervals.length, 269);
   assert.equal(new Set(reference.intervals.map(({ taskId }) => taskId)).size, 269);
-  assert.deepEqual(
-    [...reference.intervals.map(({ taskId }) => taskId)].sort(),
-    [...expanded.taskIds].sort(),
-  );
+  assert.deepEqual([...reference.intervals.map(({ taskId }) => taskId)].sort(), [...expanded.taskIds].sort());
   assert.ok(Object.isFrozen(reference));
   assert.ok(Object.isFrozen(reference.intervals));
-  assert.equal(reference.fingerprint, "fcac15d561bea3f85c8f363c28cd5c7f3e338f109af5c556336b15caf1a5d149");
+  assert.equal(reference.fingerprint, "48ba729611debb6cbcacae0c24c1dda0a614e5d63f191f20d0fcd58f8cc7c595");
+  assert.equal(reference.preparations.length, 18);
+  assert.equal(reference.preparations.reduce((sum, preparation) => sum + preparation.duration, 0), 95);
+  assert.ok(Object.isFrozen(reference.preparations));
 });
 
 test("every human interval uses the canonical productive duration and 5-minute grid", () => {
@@ -44,9 +44,7 @@ test("every human interval uses the canonical productive duration and 5-minute g
 test("human reference preserves participant feasibility and all canonical dependencies", () => {
   for (const participantId of expanded.participants) {
     const intervals = intervalsForParticipant(participantId);
-    for (let index = 1; index < intervals.length; index += 1) {
-      assert.ok(intervals[index]!.start >= intervals[index - 1]!.end, participantId);
-    }
+    for (let index = 1; index < intervals.length; index += 1) assert.ok(intervals[index]!.start >= intervals[index - 1]!.end, participantId);
   }
   for (const task of expanded.tasks) {
     const interval = byId.get(task.id)!;
@@ -59,10 +57,7 @@ test("human reference preserves participant feasibility and all canonical depend
 });
 
 test("human main flow is 285 productive minutes with only the authorized 14:00-15:15 pause", () => {
-  const main = expanded.tasks
-    .filter(({ type }) => type === "ENSAYO_ESTUDIO_7")
-    .map(({ id }) => byId.get(id)!)
-    .sort((a, b) => a.start - b.start || a.taskId.localeCompare(b.taskId, "en"));
+  const main = expanded.tasks.filter(({ type }) => type === "ENSAYO_ESTUDIO_7").map(({ id }) => byId.get(id)!).sort((a, b) => a.start - b.start || a.taskId.localeCompare(b.taskId, "en"));
   assert.equal(main.length, 19);
   assert.equal(main.reduce((sum, interval) => sum + interval.duration, 0), 285);
   assert.deepEqual(main.slice(0, 11).map(({ start }) => start), Array.from({ length: 11 }, (_, index) => 675 + index * 15));
@@ -74,10 +69,7 @@ test("human main flow is 285 productive minutes with only the authorized 14:00-1
 });
 
 test("human Totales reference has nine synchronized paired rounds and one residual Totales 1 round", () => {
-  const starts = (type: "TOTALES_1" | "TOTALES_COREO") => expanded.tasks
-    .filter((task) => task.type === type)
-    .map(({ id }) => byId.get(id)!.start)
-    .sort((a, b) => a - b);
+  const starts = (type: "TOTALES_1" | "TOTALES_COREO") => expanded.tasks.filter((task) => task.type === type).map(({ id }) => byId.get(id)!.start).sort((a, b) => a - b);
   const totales1 = starts("TOTALES_1");
   const coreo = starts("TOTALES_COREO");
   assert.equal(totales1.length, 10);
@@ -118,20 +110,26 @@ test("official PDF corrections are visible in the normalized reference", () => {
 
 test("source audit preserves unresolved capacity conflicts instead of repairing the human reference", () => {
   const taskById = new Map(expanded.tasks.map((task) => [task.id, task] as const));
-  const styling = reference.intervals
-    .filter(({ taskId }) => taskById.get(taskId)?.spaceId === "styling")
-    .sort((a, b) => a.start - b.start || a.taskId.localeCompare(b.taskId, "en"));
+  const styling = reference.intervals.filter(({ taskId }) => taskById.get(taskId)?.spaceId === "styling").sort((a, b) => a.start - b.start || a.taskId.localeCompare(b.taskId, "en"));
   const stylingOverlap = styling.some((left, index) => styling.slice(index + 1).some((right) => left.start < right.end && right.start < left.end));
   assert.equal(stylingOverlap, true);
-
   const c01Redes = byId.get("C01.redes")!;
   const c11Corner = byId.get("C11.corner_influencer")!;
   assert.deepEqual([c01Redes.start, c01Redes.end], [715, 720]);
   assert.deepEqual([c11Corner.start, c11Corner.end], [710, 720]);
   assert.ok(c01Redes.start < c11Corner.end && c11Corner.start < c01Redes.end);
+  assert.deepEqual(reference.sourceAudit.knownAmbiguities.map(({ code }) => code), ["STYLING_CAPACITY_UNSPECIFIED_BY_MASTER", "C01_REDES_OVERLAPS_C11_CORNER_IN_P14_RECURSOS_REFERENCE"]);
+});
 
-  assert.deepEqual(reference.sourceAudit.knownAmbiguities.map(({ code }) => code), [
-    "STYLING_CAPACITY_UNSPECIFIED_BY_MASTER",
-    "C01_REDES_OVERLAPS_C11_CORNER_IN_P14_RECURSOS_REFERENCE",
-  ]);
+test("human reference materializes documented setup and round preparations without inflating productive task duration", () => {
+  const setup = reference.preparations.filter(({ kind }) => kind === "setup_preparation");
+  const rounds = reference.preparations.filter(({ kind }) => kind === "round_preparation");
+  assert.deepEqual(setup, [{ id: "human-preparation:p15-estrellas-sillon:estrellas-entry", kind: "setup_preparation", spaceId: "p15-estrellas-sillon", start: 855, end: 865, duration: 10 }]);
+  assert.equal(rounds.length, 17);
+  assert.equal(rounds.reduce((sum, preparation) => sum + preparation.duration, 0), 85);
+  for (const preparation of rounds) {
+    const roundNumber = Number(preparation.id.split("-").at(-1));
+    assert.ok(roundNumber >= 2);
+    assert.equal(preparation.duration, 5);
+  }
 });
