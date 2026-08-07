@@ -206,6 +206,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined }
           : space),
         anchoredAccompaniments: applicableContracts,
+        roundSynchronizations: undefined,
         participantMeals: undefined,
         participantMealCapacity: undefined,
       };

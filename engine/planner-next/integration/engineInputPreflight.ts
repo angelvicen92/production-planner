@@ -14,6 +14,10 @@ import {
   projectEngineInputCoachRouteTransitions,
   resolveEngineInputCoachRouteTransitions,
 } from "./engineInputCoachRouteTransitions";
+import {
+  projectEngineInputRoundSynchronizations,
+  resolveEngineInputRoundSynchronizations,
+} from "./engineInputRoundSynchronizations";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -65,6 +69,7 @@ export type EngineInputPreflightReasonCode =
   | "UNSUPPORTED_COACH_RESOURCE_MAPPING"
   | "UNSUPPORTED_LOCK_TYPE"
   | "UNSUPPORTED_RESOURCE_REQUIREMENT"
+  | "UNSUPPORTED_ROUND_SYNCHRONIZATION"
   | "UNSUPPORTED_FLEXIBLE_SETUP_ORDER"
   | "UNSUPPORTED_SETUP_MAPPING"
   | "UNSUPPORTED_SPACE_CAPACITY"
@@ -86,6 +91,7 @@ export type EngineInputIdentityNamespace =
   | "plan-resource"
   | "resource-item"
   | "resource-type"
+  | "round-synchronization"
   | "setup-family"
   | "space"
   | "task"
@@ -179,6 +185,7 @@ const PREFIX: Record<EngineInputIdentityNamespace, string> = {
   "plan-resource": "plan-resource",
   "resource-item": "resource-item",
   "resource-type": "resource-type",
+  "round-synchronization": "round-synchronization",
   "setup-family": "setup-family",
   space: "space",
   task: "task",
@@ -198,6 +205,7 @@ const SET_ARRAY_KEYS = new Set([
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
   "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
+  "roundSynchronizations",
 ]);
 const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder"]);
 
@@ -375,6 +383,7 @@ function sourceProjection(input: EngineInput): unknown {
     } : plannerNext,
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
+    roundSynchronizations: projectEngineInputRoundSynchronizations(input),
     coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
   });
 }
@@ -642,6 +651,24 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     }
   }
 
+  const rawRoundSynchronizations =
+    (input as unknown as Record<string, unknown>).roundSynchronizations;
+  if (Array.isArray(rawRoundSynchronizations)) {
+    rawRoundSynchronizations.forEach((raw, index) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+      const policy = raw as Record<string, unknown>;
+      addIdentity("round-synchronization", policy.id, `roundSynchronizations.${index}.id`, true);
+      if (!Array.isArray(policy.lanes)) return;
+      policy.lanes.forEach((rawLane, laneIndex) => {
+        if (!rawLane || typeof rawLane !== "object" || Array.isArray(rawLane)) return;
+        const lane = rawLane as Record<string, unknown>;
+        addIdentity("space", lane.spaceId, `roundSynchronizations.${index}.lanes.${laneIndex}.spaceId`);
+        if (Array.isArray(lane.taskIds)) lane.taskIds.forEach((taskId) =>
+          addIdentity("task", taskId, `roundSynchronizations.${index}.lanes.${laneIndex}.taskIds`));
+      });
+    });
+  }
+
   const rawCoachRouteTransitions =
     (input as unknown as Record<string, unknown>).coachRouteTransitions;
   if (Array.isArray(rawCoachRouteTransitions)) {
@@ -800,6 +827,26 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     "Coach route transition cannot be projected losslessly.",
     { ...defect.details },
   ));
+  const roundSynchronizationResolution =
+    resolveEngineInputRoundSynchronizations(input, timeGrid);
+  if (roundSynchronizationResolution.invalidContainer) {
+    addIssue(
+      "UNSUPPORTED_ROUND_SYNCHRONIZATION",
+      "plan",
+      input.planId,
+      "roundSynchronizations",
+      "roundSynchronizations must be an array when present.",
+    );
+  }
+  roundSynchronizationResolution.defects.forEach((defect) => addIssue(
+    "UNSUPPORTED_ROUND_SYNCHRONIZATION",
+    "roundSynchronization",
+    defect.index,
+    `roundSynchronizations.${defect.index}`,
+    "Round synchronization cannot be projected losslessly.",
+    { ...defect.details },
+  ));
+
   if (setupPoliciesPresent && setupPoliciesValue !== undefined && !Array.isArray(setupPoliciesValue)) {
     addIssue(
       "UNSUPPORTED_SETUP_MAPPING",

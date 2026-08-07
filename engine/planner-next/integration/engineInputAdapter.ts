@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { EngineInput, TimeWindow } from "../../types";
-import type { AnchoredAccompaniment, PlannerNextProblem, Task, Window } from "../contracts";
+import type { AnchoredAccompaniment, PlannerNextProblem, RoundSynchronizationPolicy, Task, Window } from "../contracts";
 import { preflight as preflightPlannerNextProblem } from "../validate";
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
@@ -84,6 +84,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
     ...(problem.itinerantUnitMeals ? { itinerantUnitMeals: sorted(problem.itinerantUnitMeals, entry=>entry.id) } : {}),
     ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
+    ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
   };
 }
@@ -113,6 +114,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   };
   const config = input.plannerNext!;
   const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
+  const sourceRoundSynchronizations = input.roundSynchronizations ?? [];
   const linkedBreakIds=new Set(input.tasks.filter(task=>isFlexibleParticipantMealTask(input,task)&&task.breakId!=null).map(task=>String(task.breakId)));
   const participantMeals = resolveParticipantScopedMeals({ ...input, actualMeal: input.actualMeal&&linkedBreakIds.has(String(input.actualMeal.id))?undefined:input.actualMeal, protectedBreaks: input.protectedBreaks?.filter(entry=>!linkedBreakIds.has(String(entry.id))) });
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
@@ -134,7 +136,11 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const routeCoachIds = sourceCoachRouteTransitions.map((route) => route.coachPlanResourceItemId);
   const mealResourceIds=new Set(resourceMealResolution.meals.flatMap(meal=>[...meal.resourceIds]));
   const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id)), routeCoachIds));
-  const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId, sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId])));
+  const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(
+    config.mainFlow.spaceId,
+    sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId]),
+    sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
+  ));
   const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
 
   const tasks: Task[] = activeTasks.map((source) => {
@@ -207,6 +213,21 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     `${left.coachId}\0${left.fromSpaceId}\0${left.toSpaceId}`,
     `${right.coachId}\0${right.fromSpaceId}\0${right.toSpaceId}`,
   ));
+  const roundSynchronizations: RoundSynchronizationPolicy[] =
+    sourceRoundSynchronizations.map((policy) => ({
+      id: canonical("round-synchronization", policy.id),
+      synchronization: policy.synchronization,
+      lanes: [...policy.lanes]
+        .sort((left, right) => left.spaceId - right.spaceId)
+        .map((lane) => ({
+          spaceId: canonical("space", lane.spaceId),
+          taskIds: [...lane.taskIds]
+            .sort((left, right) => left - right)
+            .map((taskId) => canonical("task", taskId)),
+          preparationMinutesBetweenRounds: lane.preparationMinutesBetweenRounds,
+        })),
+    })).sort((left, right) => compare(left.id, right.id));
+
   const anchoredAccompaniments: AnchoredAccompaniment[] | undefined = input.anchoredAccompaniments?.map((entry) => ({
     id: canonical("anchored-operation", String(entry.id)),
     anchorTaskId: canonical("task", entry.anchorTaskId),
@@ -234,6 +255,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     participantTransitionMinutes: config.participantTransitionMinutes,
     resourceTransitionMinutes: config.resourceTransitionMinutes,
     ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
+    ...(roundSynchronizations.length ? { roundSynchronizations } : {}),
     budget: { ...config.searchBudget },
     searchPolicy: config.searchPolicy,
     ...(flexibleParticipantMeals.obligations.length ? { participantMeals: flexibleParticipantMeals.obligations, participantMealCapacity: { maxSimultaneous: input.contestantMealMaxSimultaneous! } } : {}),
