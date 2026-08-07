@@ -1,0 +1,19 @@
+{
+  "iterationId": "A2-FULL-005",
+  "mode": "SOURCE_CONFIGURATION_CORRECTION",
+  "authority": ["SPEC-08.section-24", "SPEC-08.section-25"],
+  "humanTaskScheduleUsedAsPlannerInput": false,
+  "resolvedCreationInput": "daily_itinerant_unit_availability",
+  "itinerantUnitAvailability": {
+    "reality-unit-a": { "start": "11:00", "end": "14:00" },
+    "reality-unit-b": { "start": "11:15", "end": "13:30" },
+    "reality-unit-combined": { "start": "16:00", "end": "18:00" }
+  },
+  "remainingCreationInputs": [
+    "daily_participant_availability",
+    "scoped_meal_policies",
+    "out_transport_policy"
+  ],
+  "searchBudgetChanged": false,
+  "plannerAlgorithmChanged": false
+}

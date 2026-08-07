@@ -10,7 +10,6 @@ Se conservan tres composiciones explícitas, sin registrarlas como recursos hard
 
 ## Required creation inputs
 
-- **daily_itinerant_unit_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 - **daily_participant_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 - **out_transport_policy**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 - **scoped_meal_policies**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
