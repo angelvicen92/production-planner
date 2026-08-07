@@ -2796,3 +2796,13 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Replanificación explícita:** un cambio semántico marca `replanningRequiredForEffect=true`, pero este checkpoint no ejecuta planificación ni modifica el día.
 - **Compatibilidad visible:** `CONTESTANT_TOTAL_SPAN` aparece en el diff aunque el adapter legacy siga neutralizándolo; la UI futura no podrá ignorar silenciosamente una preferencia activa.
 - **Fuera de alcance:** no añade endpoint, escritura, control de concurrencia, componentes React, mutación del snapshot, DB, Planner Next, ORC ni SPEC10-021.
+
+## SPEC11-010 — Checkpoint 4B: preview pura de actualización desde global
+
+- **Objetivo (`DB Safe Merge`):** construir de forma read-only el candidato que una futura acción explícita de «actualizar día desde global» intentaría aplicar, sin endpoint ni escritura.
+- **Resultado `READY | BLOCKED`:** un candidato válido devuelve snapshot `DAY_OVERRIDE` + diff canónico 4A; una incompatibilidad conocida devuelve `BLOCKED` con código/detalle estructurado y sin candidato parcial.
+- **Identidades diarias:** transporte se resuelve únicamente contra `plan_task_template_snapshots` del día; una coincidencia activa ausente o ambigua bloquea la preview y nunca elige la primera.
+- **Scope espacial:** zona principal y zonas de agrupación candidatas deben existir en el snapshot espacial diario; referencias globales fuera del día bloquean la preview.
+- **Global inválido:** errores conocidos de normalización/persistencia de defaults se convierten en `INVALID_GLOBAL_OPTIMIZER_SETTINGS` en lugar de 500 o fallback silencioso.
+- **Sin efectos:** el helper no lee DB, no escribe, no replantea y no muta el snapshot actual. La futura ruta sólo podrá orquestar lecturas sobre este contrato.
+- **Fuera de alcance:** endpoint HTTP, conteo de tareas protegidas, concurrencia, confirmación, persistencia del override, UI React, DB/migraciones, Planner Next, ORC y SPEC10-021.
