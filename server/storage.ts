@@ -30,6 +30,7 @@ import {
   projectTaskTemplateSnapshotRow,
   taskTemplateSnapshotToPersistenceRow,
   type TaskTemplateOperationalSnapshotV1,
+  type PersistedTaskTemplateOperationalSnapshotV1,
 } from "./taskTemplateSnapshot";
 import {
   normalizePlanOptimizerSnapshotV1,
@@ -213,7 +214,7 @@ export interface IStorage {
   getPlanFullDetails(planId: number): Promise<PlanFullDetails | undefined>;
   getPlanEngineInputDetails(planId: number): Promise<PlanFullDetails | undefined>;
   getPlanOptimizerSnapshot(planId: number): Promise<PlanOptimizerSnapshotV1>;
-  getPlanTaskTemplateSnapshots(planId: number): Promise<readonly TaskTemplateOperationalSnapshotV1[]>;
+  getPlanTaskTemplateSnapshots(planId: number): Promise<readonly PersistedTaskTemplateOperationalSnapshotV1[]>;
   ensurePlanTaskTemplateSnapshot(planId: number, templateId: number): Promise<TaskTemplateOperationalSnapshotV1>;
 
   syncPlanMealBreaks(planId: number): Promise<void>;
@@ -2804,7 +2805,7 @@ export class SupabaseStorage implements IStorage {
     );
   }
 
-  async getPlanTaskTemplateSnapshots(planId: number): Promise<readonly TaskTemplateOperationalSnapshotV1[]> {
+  async getPlanTaskTemplateSnapshots(planId: number): Promise<readonly PersistedTaskTemplateOperationalSnapshotV1[]> {
     const { data, error } = await supabaseAdmin
       .from("plan_task_template_snapshots")
       .select("*")

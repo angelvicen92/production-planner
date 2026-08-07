@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildEngineInput } from "./buildInput";
 import { normalizeTaskTemplateCatalogEntry } from "../server/taskTemplateSnapshot";
+import { normalizePlanOptimizerSnapshotV1 } from "../server/planOptimizerSnapshot";
 
 function fakeStorage(options: {
   snapshots?: readonly ReturnType<typeof normalizeTaskTemplateCatalogEntry>[];
@@ -72,6 +73,7 @@ function fakeStorage(options: {
   const storage = {
     getPlanEngineInputDetails: async () => ({ plan, tasks: [task], locks: [], availability: [], breaks: [] }),
     getPlanTaskTemplateSnapshots: async () => snapshots,
+    getPlanOptimizerSnapshot: async () => normalizePlanOptimizerSnapshotV1(optimizer),
     getContestantsByPlan: async () => [],
     getCamerasAvailableForPlan: async () => 4,
     getResourceBundles: async () => [],
