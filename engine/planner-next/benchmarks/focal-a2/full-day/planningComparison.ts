@@ -31,6 +31,8 @@ export interface PrimaryComparisonSignal {
 
 export interface ComparisonTolerancePolicy {
   readonly version: string;
+  /** Exact versioned signal surface; every P01-P10 entry must be non-empty. */
+  readonly requiredSignalIdsByKpi: Readonly<Record<PrimaryKpiId, readonly string[]>>;
   readonly toleranceBySignalId: Readonly<Record<string, number>>;
 }
 
@@ -111,23 +113,17 @@ function classifySignal(signal: PrimaryComparisonSignal, tolerance: number): Sig
 
 function validateConfiguration(input: PlanningComparisonInput): readonly string[] {
   const missing: string[] = [];
-  const signalIds = new Set<string>();
-  const kpiIds = new Set<PrimaryKpiId>();
+  const suppliedById = new Map<string, PrimaryComparisonSignal>();
 
   if (input.referenceHardGates !== "PASS") missing.push(`reference_hard_gates:${input.referenceHardGates.toLowerCase()}`);
   if (input.optiPlanHardGates === "UNASSESSED") missing.push("optiplan_hard_gates:unassessed");
 
   for (const signal of input.signals) {
     if (!signal.id.trim()) missing.push("signal_id:empty");
-    if (signalIds.has(signal.id)) missing.push(`signal_id:duplicate:${signal.id}`);
-    signalIds.add(signal.id);
-    kpiIds.add(signal.kpiId);
+    if (suppliedById.has(signal.id)) missing.push(`signal_id:duplicate:${signal.id}`);
+    else suppliedById.set(signal.id, signal);
     if (!Number.isFinite(signal.humanValue)) missing.push(`signal_value:human:${signal.id}`);
     if (!Number.isFinite(signal.optiPlanValue)) missing.push(`signal_value:optiplan:${signal.id}`);
-  }
-
-  for (const kpiId of PRIMARY_KPI_IDS) {
-    if (!kpiIds.has(kpiId)) missing.push(`primary_kpi:${kpiId}`);
   }
 
   const policy = input.tolerancePolicy;
@@ -136,19 +132,50 @@ function validateConfiguration(input: PlanningComparisonInput): readonly string[
     return missing;
   }
   if (!policy.version.trim()) missing.push("tolerance_policy:version");
-  for (const signal of input.signals) {
-    const tolerance = policy.toleranceBySignalId[signal.id];
-    if (tolerance === undefined) missing.push(`tolerance:${signal.id}`);
-    else if (!Number.isFinite(tolerance) || tolerance < 0) missing.push(`tolerance_invalid:${signal.id}`);
+
+  const requiredOwnerBySignalId = new Map<string, PrimaryKpiId>();
+  for (const kpiId of PRIMARY_KPI_IDS) {
+    const ids = policy.requiredSignalIdsByKpi?.[kpiId];
+    if (!Array.isArray(ids) || ids.length === 0) {
+      missing.push(`comparison_surface:${kpiId}`);
+      continue;
+    }
+    const localIds = new Set<string>();
+    for (const signalId of ids) {
+      if (typeof signalId !== "string" || !signalId.trim()) {
+        missing.push(`comparison_surface_invalid:${kpiId}`);
+        continue;
+      }
+      if (localIds.has(signalId)) missing.push(`comparison_surface_duplicate:${kpiId}:${signalId}`);
+      localIds.add(signalId);
+      const previousOwner = requiredOwnerBySignalId.get(signalId);
+      if (previousOwner && previousOwner !== kpiId) missing.push(`comparison_surface_cross_kpi:${signalId}`);
+      else requiredOwnerBySignalId.set(signalId, kpiId);
+    }
   }
+
+  for (const [signalId, kpiId] of requiredOwnerBySignalId) {
+    const supplied = suppliedById.get(signalId);
+    if (!supplied) missing.push(`signal_required:${signalId}`);
+    else if (supplied.kpiId !== kpiId) missing.push(`signal_kpi_mismatch:${signalId}`);
+    const tolerance = policy.toleranceBySignalId[signalId];
+    if (tolerance === undefined) missing.push(`tolerance:${signalId}`);
+    else if (!Number.isFinite(tolerance) || tolerance < 0) missing.push(`tolerance_invalid:${signalId}`);
+  }
+
+  for (const signal of input.signals) {
+    if (!requiredOwnerBySignalId.has(signal.id)) missing.push(`signal_not_in_policy:${signal.id}`);
+  }
+
   return missing;
 }
 
 /**
  * Applies the Objective Master comparison contract without aggregate scoring.
- * Hard-gate failure is non-compensable. Quality is classified only when the
- * complete P01-P10 primary KPI surface and an explicit versioned tolerance policy
- * are available. No A2-specific tolerance is embedded here.
+ * Hard-gate failure is non-compensable. Quality is classified only when a
+ * versioned policy declares a non-empty exact signal surface for every P01-P10
+ * and an explicit tolerance for every required signal. No A2-specific tolerance
+ * or caller-selected KPI subset is embedded here.
  */
 export function comparePlanningQuality(input: PlanningComparisonInput): PlanningComparisonResult {
   if (input.optiPlanHardGates === "FAIL") {
@@ -170,7 +197,7 @@ export function comparePlanningQuality(input: PlanningComparisonInput): Planning
   if (configurationIssues.length > 0) {
     return blocked(
       configurationIssues,
-      "Comparison is blocked until reference/candidate hard gates pass, P01-P10 are represented and every signal has an explicit versioned tolerance.",
+      "Comparison is blocked until reference/candidate hard gates pass and the exact versioned P01-P10 signal/tolerance surface is supplied without omissions or extras.",
     );
   }
 
