@@ -2755,3 +2755,11 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Compatibilidad y señales soft:** cámaras sólo usan `plan.camerasAvailable` cuando la lectura diaria termina correctamente y devuelve ausencia legacy explícita. Los bundles continúan siendo `OPTIONAL_SIGNAL`: pueden neutralizarse con warning estructurado sin debilitar restricciones hard.
 - **Validación del cambio:** existe regresión focal para cada fuente hard, para el fallback legacy de cámaras y para el warning neutral de bundles; el PR debe superar TypeScript, Baseline CI y la suite de tests antes del merge.
 - **Fuera de alcance:** no implementa el snapshot diario del optimizador, no elimina todavía identidades nominales legacy, no cambia búsqueda, scoring, Planner Next, ORC, Totales ni SPEC10-021.
+
+## SPEC11-010 — Checkpoint 1: contrato puro del snapshot del optimizador
+
+- **Objetivo (`DB Safe Merge`):** fija el contrato V1 puro del snapshot diario del optimizador antes de añadir persistencia o conectar `buildEngineInput`.
+- **Normalización:** `server/planOptimizerSnapshot.ts` canoniza BASIC/ADVANCED, las nueve heurísticas V1, zonas de agrupación, transporte y `nearHardBreaksMax`; produce salida profundamente inmutable y un fingerprint SHA-256 determinista de configuración.
+- **Compatibilidad de transporte:** `weightArrivalDepartureGrouping` conserva su semántica productiva actual como peso directo 0..10 independiente del modo BASIC/ADVANCED; el nivel básico es sólo una representación derivada y no una segunda autoridad.
+- **Validación:** TypeScript, build, test focal del contrato y suite completa `npm test` pasan sobre el código candidato. El único fallo observado en `git diff --check` pertenecía al workflow temporal de validación y no a los archivos funcionales.
+- **Fuera de alcance:** no añade migración 075, tablas, RLS, storage, creación/backfill de planes, `buildEngineInput`, UI, Planner Next, ORC ni cambios en SPEC10-021.
