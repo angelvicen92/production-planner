@@ -5,8 +5,6 @@ BOOTSTRAP="automation/spec11-010-checkpoint2-bootstrap"
 TARGET="spec11-010-checkpoint2-optimizer-snapshot-db"
 STASH_MARKER="optiplan-temp-spec11-010-checkpoint2"
 
-# Never hide or overwrite tracked work. Only local untracked artifacts may be
-# parked temporarily so the versioned applicator can switch branches safely.
 tracked_dirty="$(git status --porcelain --untracked-files=no)"
 if [[ -n "$tracked_dirty" ]]; then
   echo "Tracked working-tree changes detected. Refusing to modify or stash them." >&2
@@ -45,55 +43,57 @@ fi
 
 git fetch origin main "$TARGET" "$BOOTSTRAP"
 
-# Execute the versioned applicator, but remove the two destructive child->parent
-# cascade clauses from the generated Drizzle schema. A task-template snapshot is
-# part of the same immutable day; deleting it must not silently delete the
-# optimizer snapshot. Plan deletion still cascades from plans as intended.
+# The versioned applicator was authored before the relationship-safety review.
+# Filter exactly the two Drizzle task-template references while streaming it to
+# Node. No Python dependency and no mutation of the bootstrap source are needed.
+original_applicator="$(mktemp)"
 tmp_applicator="$(mktemp)"
-git show "origin/$BOOTSTRAP:scripts/apply-spec11-010-checkpoint2.cjs" > "$tmp_applicator"
-python3 - "$tmp_applicator" <<'PY'
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-text = path.read_text()
-needle = '.references(() => planTaskTemplateSnapshots.id, { onDelete: "cascade" })'
-count = text.count(needle)
-if count != 2:
-    raise SystemExit(f"Expected exactly 2 optimizer template cascade clauses, found {count}")
-path.write_text(text.replace(needle, '.references(() => planTaskTemplateSnapshots.id)'))
-PY
+git show "origin/$BOOTSTRAP:scripts/apply-spec11-010-checkpoint2.cjs" > "$original_applicator"
+needle='.references(() => planTaskTemplateSnapshots.id, { onDelete: "cascade" })'
+needle_count="$(grep -F -o "$needle" "$original_applicator" | wc -l | tr -d ' ')"
+if [[ "$needle_count" != "2" ]]; then
+  echo "Expected exactly 2 optimizer template cascade clauses in applicator, found $needle_count. Refusing stale transformation." >&2
+  rm -f "$original_applicator" "$tmp_applicator"
+  exit 4
+fi
+sed 's/\.references(() => planTaskTemplateSnapshots\.id, { onDelete: "cascade" })/.references(() => planTaskTemplateSnapshots.id)/g' "$original_applicator" > "$tmp_applicator"
+rm -f "$original_applicator"
 node "$tmp_applicator"
 rm -f "$tmp_applicator"
 
-# Apply the same non-destructive relationship to migration 075 and validate the
-# post-correction candidate. This is committed separately so the remote history
-# records the safety correction explicitly; the final PR will be squash-merged.
-python3 - <<'PY'
-from pathlib import Path
-path = Path('supabase/migrations/075_plan_optimizer_snapshots.sql')
-text = path.read_text()
-replacements = {
-    'arrival_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id) ON DELETE CASCADE,':
-        'arrival_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id),',
-    'departure_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id) ON DELETE CASCADE,':
-        'departure_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id),',
-}
-for old, new in replacements.items():
-    if text.count(old) != 1:
-        raise SystemExit(f'Missing or ambiguous migration relationship: {old}')
-    text = text.replace(old, new)
-path.write_text(text)
-PY
+# Apply the same non-destructive relationship to migration 075. Plan deletion
+# still cascades from plans; deleting a task-template snapshot must not silently
+# delete the optimizer snapshot.
+migration='supabase/migrations/075_plan_optimizer_snapshots.sql'
+arrival_old='arrival_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id) ON DELETE CASCADE,'
+departure_old='departure_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id) ON DELETE CASCADE,'
+arrival_count="$(grep -F -c "$arrival_old" "$migration" || true)"
+departure_count="$(grep -F -c "$departure_old" "$migration" || true)"
+if [[ "$arrival_count" != "1" || "$departure_count" != "1" ]]; then
+  echo "Migration 075 relationship anchors are missing or ambiguous; refusing stale transformation." >&2
+  exit 5
+fi
+sed -i \
+  -e 's/arrival_plan_template_snapshot_id BIGINT REFERENCES public\.plan_task_template_snapshots(id) ON DELETE CASCADE,/arrival_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id),/' \
+  -e 's/departure_plan_template_snapshot_id BIGINT REFERENCES public\.plan_task_template_snapshots(id) ON DELETE CASCADE,/departure_plan_template_snapshot_id BIGINT REFERENCES public.plan_task_template_snapshots(id),/' \
+  "$migration"
 
 npx tsx --test server/planOptimizerSnapshot.spec.ts server/planOptimizerSnapshotPersistence.spec.ts server/planOptimizerSnapshotMigration.spec.ts server/planOptimizerSnapshotIntegration.spec.ts
 npm run check:migrations
 npm run check
 git diff --check
 
-if ! git diff --quiet -- supabase/migrations/075_plan_optimizer_snapshots.sql; then
-  git add supabase/migrations/075_plan_optimizer_snapshots.sql
+if ! git diff --quiet -- "$migration"; then
+  git add "$migration"
   git commit -m "SPEC11-010: keep daily snapshot references non-destructive"
   git push origin "HEAD:$TARGET"
+fi
+
+tracked_after="$(git status --porcelain --untracked-files=no)"
+if [[ -n "$tracked_after" ]]; then
+  echo "Unexpected tracked changes remain after checkpoint applicator:" >&2
+  printf '%s\n' "$tracked_after" >&2
+  exit 6
 fi
 
 restore_untracked
