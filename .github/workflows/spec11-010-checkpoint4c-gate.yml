@@ -1,0 +1,48 @@
+name: SPEC11-010 checkpoint 4C gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-publish:
+    if: github.event.pull_request.head.ref == 'spec11-010-checkpoint4c-preview-get' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, ref: spec11-010-checkpoint4c-preview-get }
+      - name: Verify head
+        env: { EXPECTED_HEAD: "${{ github.event.pull_request.head.sha }}" }
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD" && git diff --quiet && git diff --cached --quiet
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Apply route patch and README
+        run: |
+          node scripts/apply-spec11-010-checkpoint4c.cjs
+          node <<'NODE'
+          const fs=require('node:fs'); const p='README.md'; let s=fs.readFileSync(p,'utf8'); const h='## SPEC11-010 — Checkpoint 4C: endpoint GET de preview del optimizador';
+          if(!s.includes(h)) s += `\n\n${h}\n\n- **Objetivo (DB Safe Merge):** exponer la preview 4B mediante un único GET autenticado por plan; ninguna mutación forma parte de la ruta.\n- **Contrato compartido:** Zod valida snapshot, diff, READY/BLOCKED e incompatibilidades; el servidor parsea su propia respuesta antes de enviarla.\n- **Fuentes:** snapshot diario, defaults globales actuales, snapshots diarios de plantilla y zonas diarias; toda la semántica permanece delegada al servicio/contratos 4A-4B.\n- **Acceso:** exige usuario autenticado y plan accesible. Snapshot diario ausente devuelve conflicto explícito; no existe fallback a global.\n- **Fuera de alcance:** PATCH/PUT/POST, concurrencia, tareas protegidas, persistencia, UI, DB/migraciones, Planner Next, ORC y SPEC10-021.\n`;
+          fs.writeFileSync(p,s,'utf8');
+          NODE
+      - name: Focal
+        run: npx tsx --test server/planOptimizerSnapshotDiff.spec.ts server/planOptimizerSnapshotRefreshPreview.spec.ts server/planOptimizerSnapshotRefreshPreviewService.spec.ts server/planOptimizerSnapshotRefreshPreviewRoute.spec.ts
+      - run: npm run check:migrations
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: git diff --check
+      - name: Publish product delta
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md shared/routes.ts server/routes.ts
+          git diff --cached --check
+          actual="$(git diff --cached --name-only | sort)"; expected="$(printf '%s\n' README.md server/routes.ts shared/routes.ts | sort)"; test "$actual" = "$expected"
+          git commit -m "SPEC11-010: expose read-only optimizer refresh preview"
+          git push origin HEAD:spec11-010-checkpoint4c-preview-get
