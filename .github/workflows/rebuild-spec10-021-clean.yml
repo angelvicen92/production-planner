@@ -1,0 +1,111 @@
+name: Rebuild clean SPEC10-021 candidate
+
+on:
+  pull_request:
+    branches:
+      - integration/spec10-021-clean
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: startsWith(github.head_ref, 'automation/spec10-021-clean-trigger')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: integration/spec10-021-clean
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Rebuild product tree from current main and validated SPEC10-021
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_MAIN="621256003df9baede50b0a4a8ef880f9cc14fed4"
+          BASE_HEAD="$(git rev-parse HEAD)"
+          git fetch origin main spec10-021-round-sync-final
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          git reset --hard "$EXPECTED_MAIN"
+          git checkout origin/spec10-021-round-sync-final -- \
+            README.md \
+            docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md \
+            docs/evidence/SPEC10-016-full-a2-canonical-template.json \
+            engine/planner-next/benchmarks/focal-a2/full-day/representability.ts \
+            engine/planner-next/benchmarks/focal-a2/full-day/types.ts \
+            engine/planner-next/benchmarks/runFullA2CanonicalTemplateBenchmark.ts \
+            engine/planner-next/benchmarks/spec10021RoundSynchronizationProbe.ts \
+            engine/planner-next/compatibilityPreservingSearch.ts \
+            engine/planner-next/contracts.ts \
+            engine/planner-next/exactFlexibleSetupOrder.spec.ts \
+            engine/planner-next/exactItinerantPlan.ts \
+            engine/planner-next/exactMainAndFeederCore.ts \
+            engine/planner-next/exactRoundSynchronization.ts \
+            engine/planner-next/executePlannerNext.ts \
+            engine/planner-next/fingerprint.ts \
+            engine/planner-next/flexibleSetupOrder.spec.ts \
+            engine/planner-next/integration/engineInputAdapter.fixture.ts \
+            engine/planner-next/integration/engineInputAdapter.ts \
+            engine/planner-next/integration/engineInputPreflight.ts \
+            engine/planner-next/integration/engineInputRoundSynchronizations.ts \
+            engine/planner-next/roundSynchronization.spec.ts \
+            engine/planner-next/roundSynchronization.ts \
+            engine/planner-next/validate.ts \
+            engine/types.ts
+          git diff --check
+          if git diff --name-only | grep -E '(^|/)(finalize-spec10-021|spec10-021-.*patch|rebuild-spec10-021-clean)' ; then
+            echo "temporary SPEC10-021 tooling leaked into product delta" >&2
+            exit 41
+          fi
+          npm run check:migrations
+          npx tsx --test \
+            engine/planner-next/roundSynchronization.spec.ts \
+            engine/planner-next/exactFlexibleSetupOrder.spec.ts \
+            engine/planner-next/integration/engineInputAdapter.spec.ts \
+            engine/planner-next/integration/engineInputPreflight.spec.ts \
+            engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts
+          npm run benchmark:planner-next:a2-full-template
+          node --input-type=commonjs <<'NODE'
+          const fs = require('node:fs');
+          const evidence = JSON.parse(fs.readFileSync('docs/evidence/SPEC10-016-full-a2-canonical-template.json', 'utf8'));
+          const expected = [
+            'daily_itinerant_unit_availability',
+            'daily_participant_availability',
+            'out_transport_policy',
+            'scoped_meal_policies',
+          ].sort();
+          if (evidence.roundSynchronizationCapabilityProven !== true) throw new Error('round synchronization capability not proven');
+          if (!Array.isArray(evidence.implementationBlockers) || evidence.implementationBlockers.length !== 0) throw new Error('implementation blockers remain');
+          if (evidence.nextImplementationBlocker !== null) throw new Error('next implementation blocker remains');
+          const actual = [...(evidence.requiredCreationInputs ?? [])].sort();
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`unexpected creation inputs: ${JSON.stringify(actual)}`);
+          if (evidence.representabilityGate?.analysis?.status !== 'BLOCKED') throw new Error('Full A2 must remain fail-closed until source configuration is supplied');
+          if ((evidence.representabilityGate?.executorCallCount ?? -1) !== 0) throw new Error('executor must not run while source configuration is unresolved');
+          if (JSON.stringify(evidence).toLowerCase().includes('human_seed')) throw new Error('human schedule seed leaked into Evidence');
+          console.log('SPEC10-021 Evidence gate: OK');
+          NODE
+          git diff --check
+          git add -A
+          git diff --cached --check
+          git config user.name "OptiPlan Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "SPEC10-021: sincronización exacta de rondas Totales"
+          npm run check
+          npm test
+          npm run build
+          npm run benchmark:planner-next:a2-full-template
+          git diff --exit-code
+          git diff --check origin/main...HEAD
+          if git ls-files | grep -E '(^scripts/finalize-spec10-021|^tools/spec10-021-|^\.github/workflows/(apply|finalize|rebuild)-spec10-021)' ; then
+            echo "temporary SPEC10-021 tooling present in candidate tree" >&2
+            exit 42
+          fi
+          CANDIDATE_SHA="$(git rev-parse HEAD)"
+          git push --force-with-lease="refs/heads/integration/spec10-021-clean:${BASE_HEAD}" origin HEAD:refs/heads/integration/spec10-021-clean
+          echo "SPEC10_021_CLEAN_SHA=${CANDIDATE_SHA}"
+          echo "SPEC10_021_CLEAN_STATUS=VALIDATED_AND_PUSHED"
