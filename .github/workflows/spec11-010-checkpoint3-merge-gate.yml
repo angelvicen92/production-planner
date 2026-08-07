@@ -86,7 +86,7 @@ jobs:
             server/taskTemplateSnapshot.ts \
             server/storage.ts \
             server/planOptimizerSnapshotIntegration.spec.ts
-          git rm \
+          git rm --ignore-unmatch \
             .github/workflows/spec11-010-checkpoint3-merge-gate.yml \
             scripts/apply-spec11-010-checkpoint3.cjs \
             scripts/apply-spec11-010-checkpoint3-v2.cjs \
