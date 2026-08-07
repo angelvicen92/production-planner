@@ -2747,3 +2747,11 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Validación ejecutada:** `npm ci`, `npm run check:migrations`, `npm run check`, `npm test` (2081/2081), `npm run build`, el benchmark del adapter, el benchmark SPEC10-020 y `validate-focal-a2-010.sh current` pasaron. La validación específica cubre 291/291 tests focales y de regresión; Focal A2 fue aceptado con SHA-256 `a57b2e05158561b95eb69654bc83701c36eec3bddee50ab70bc83d5aaa4e72e7` y `git diff --check origin/main...HEAD` quedó limpio.
 - **Limitación de validación:** la migración 074 no se aplicó contra una instancia Supabase real. SQL, RLS, backfill, secuencia y esquema Drizzle se validaron mediante tests estáticos y `check:migrations`.
 - **Fuera de alcance:** no añade actualización manual del snapshot, UI final de comparación/origen, `TaskTemporalHoldPolicy`, coordinación entre espacios, snapshot del optimizador, activación productiva de Planner Next ni cambios en SPEC10-021.
+
+## SPEC11-009 — Carga fail-closed de fuentes hard de recursos en EngineInput
+
+- **Objetivo (`DB Safe Merge`):** `buildEngineInput` deja de convertir errores de carga de fuentes hard de recursos en `{}`, `[]` o `null`. Una consulta correcta que devuelve una colección vacía sigue siendo válida; una excepción aborta la construcción antes de ejecutar el motor.
+- **Contrato de fallo:** `EngineInputSourceLoadError` conserva `sourceId`, `reasonCode`, `planId`, fase `LOAD` y causa técnica para EIS-003, EIS-007, EIS-008, EIS-012, EIS-013, EIS-014 y EIS-017, usando los reason codes definidos por la Evidence SPEC11-009.
+- **Compatibilidad y señales soft:** cámaras sólo usan `plan.camerasAvailable` cuando la lectura diaria termina correctamente y devuelve ausencia legacy explícita. Los bundles continúan siendo `OPTIONAL_SIGNAL`: pueden neutralizarse con warning estructurado sin debilitar restricciones hard.
+- **Validación del cambio:** existe regresión focal para cada fuente hard, para el fallback legacy de cámaras y para el warning neutral de bundles; el PR debe superar TypeScript, Baseline CI y la suite de tests antes del merge.
+- **Fuera de alcance:** no implementa el snapshot diario del optimizador, no elimina todavía identidades nominales legacy, no cambia búsqueda, scoring, Planner Next, ORC, Totales ni SPEC10-021.
