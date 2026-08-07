@@ -436,6 +436,69 @@ export const planTaskTemplateSnapshots = pgTable("plan_task_template_snapshots",
   ),
 }));
 
+// 6.2 plan_optimizer_snapshots (per-plan optimizer policy snapshot)
+export const planOptimizerSnapshots = pgTable("plan_optimizer_snapshots", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  contractVersion: integer("contract_version").notNull().default(1),
+  source: text("source").notNull(),
+  editingMode: text("editing_mode").notNull(),
+  mainZoneId: integer("main_zone_id"),
+  arrivalPlanTemplateSnapshotId: bigint("arrival_plan_template_snapshot_id", { mode: "number" }).references(() => planTaskTemplateSnapshots.id),
+  departurePlanTemplateSnapshotId: bigint("departure_plan_template_snapshot_id", { mode: "number" }).references(() => planTaskTemplateSnapshots.id),
+  arrivalGroupingTarget: integer("arrival_grouping_target").notNull().default(0),
+  departureGroupingTarget: integer("departure_grouping_target").notNull().default(0),
+  arrivalMinGapMinutes: integer("arrival_min_gap_minutes").notNull().default(0),
+  departureMinGapMinutes: integer("departure_min_gap_minutes").notNull().default(0),
+  vanCapacity: integer("van_capacity").notNull().default(0),
+  groupingWeight: integer("grouping_weight").notNull().default(0),
+  nearHardBreaksMax: integer("near_hard_breaks_max").notNull().default(0),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planIdx: index("plan_optimizer_snapshots_plan_id_idx").on(table.planId),
+  planUnique: uniqueIndex("plan_optimizer_snapshots_plan_key").on(table.planId),
+  versionCheck: check("plan_optimizer_snapshots_contract_version_check", sql.raw("contract_version = 1")),
+  sourceCheck: check("plan_optimizer_snapshots_source_check", sql.raw("source in ('INHERITED', 'LEGACY_BACKFILL', 'DAY_OVERRIDE')")),
+  editingModeCheck: check("plan_optimizer_snapshots_editing_mode_check", sql.raw("editing_mode in ('BASIC', 'ADVANCED')")),
+  arrivalTargetCheck: check("plan_optimizer_snapshots_arrival_target_check", sql.raw("arrival_grouping_target >= 0")),
+  departureTargetCheck: check("plan_optimizer_snapshots_departure_target_check", sql.raw("departure_grouping_target >= 0")),
+  arrivalGapCheck: check("plan_optimizer_snapshots_arrival_gap_check", sql.raw("arrival_min_gap_minutes >= 0")),
+  departureGapCheck: check("plan_optimizer_snapshots_departure_gap_check", sql.raw("departure_min_gap_minutes >= 0")),
+  vanCapacityCheck: check("plan_optimizer_snapshots_van_capacity_check", sql.raw("van_capacity >= 0")),
+  groupingWeightCheck: check("plan_optimizer_snapshots_grouping_weight_check", sql.raw("grouping_weight between 0 and 10")),
+  nearHardCheck: check("plan_optimizer_snapshots_near_hard_check", sql.raw("near_hard_breaks_max between 0 and 10")),
+  arrivalActiveReferenceCheck: check("plan_optimizer_snapshots_arrival_active_reference_check", sql.raw("grouping_weight = 0 or arrival_grouping_target = 0 or arrival_plan_template_snapshot_id is not null")),
+  departureActiveReferenceCheck: check("plan_optimizer_snapshots_departure_active_reference_check", sql.raw("grouping_weight = 0 or departure_grouping_target = 0 or departure_plan_template_snapshot_id is not null")),
+}));
+
+export const planOptimizerSnapshotHeuristics = pgTable("plan_optimizer_snapshot_heuristics", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  snapshotId: bigint("snapshot_id", { mode: "number" }).notNull().references(() => planOptimizerSnapshots.id, { onDelete: "cascade" }),
+  heuristicKey: text("heuristic_key").notNull(),
+  basicLevel: integer("basic_level").notNull(),
+  advancedValue: integer("advanced_value").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  snapshotIdx: index("plan_optimizer_snapshot_heuristics_snapshot_id_idx").on(table.snapshotId),
+  keyUnique: uniqueIndex("plan_optimizer_snapshot_heuristics_key").on(table.snapshotId, table.heuristicKey),
+  basicLevelCheck: check("plan_optimizer_snapshot_heuristics_basic_level_check", sql.raw("basic_level between 0 and 3")),
+  advancedValueCheck: check("plan_optimizer_snapshot_heuristics_advanced_value_check", sql.raw("advanced_value between 0 and 10")),
+  heuristicKeyCheck: check("plan_optimizer_snapshot_heuristics_key_check", sql.raw("heuristic_key in ('MAIN_ZONE_PRIORITY', 'MAIN_ZONE_FINISH_EARLY', 'MAIN_ZONE_KEEP_BUSY', 'CONTESTANT_COMPACT', 'GROUP_BY_SPACE_TEMPLATE_MATCH', 'GROUP_BY_SPACE_ACTIVE', 'CONTESTANT_STAY_IN_ZONE', 'CONTESTANT_TOTAL_SPAN', 'ARRIVAL_DEPARTURE_GROUPING')")),
+}));
+
+export const planOptimizerSnapshotGroupingZones = pgTable("plan_optimizer_snapshot_grouping_zones", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  snapshotId: bigint("snapshot_id", { mode: "number" }).notNull().references(() => planOptimizerSnapshots.id, { onDelete: "cascade" }),
+  zoneId: integer("zone_id").notNull(),
+}, (table) => ({
+  snapshotIdx: index("plan_optimizer_snapshot_grouping_zones_snapshot_id_idx").on(table.snapshotId),
+  zoneUnique: uniqueIndex("plan_optimizer_snapshot_grouping_zones_key").on(table.snapshotId, table.zoneId),
+  zoneCheck: check("plan_optimizer_snapshot_grouping_zones_zone_check", sql.raw("zone_id > 0")),
+}));
+
 // 6.5 contestants (global catalog for now)
 export const contestants = pgTable("contestants", {
   id: serial("id").primaryKey(),
@@ -574,6 +637,9 @@ export const insertResourceBundleSpaceAffinitySchema = createInsertSchema(resour
 export const insertAvailabilitySchema = createInsertSchema(resourceAvailability).omit({ id: true });
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({ id: true });
 export const insertPlanTaskTemplateSnapshotSchema = createInsertSchema(planTaskTemplateSnapshots).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPlanOptimizerSnapshotSchema = createInsertSchema(planOptimizerSnapshots).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPlanOptimizerSnapshotHeuristicSchema = createInsertSchema(planOptimizerSnapshotHeuristics).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPlanOptimizerSnapshotGroupingZoneSchema = createInsertSchema(planOptimizerSnapshotGroupingZones).omit({ id: true });
 export const insertResourcePoolSchema = createInsertSchema(resourcePools).omit({ id: true });
 export const insertPlanResourcePoolSchema = createInsertSchema(planResourcePools).omit({ id: true });
 export const insertDailyTaskSchema = createInsertSchema(dailyTasks).omit({ id: true });
@@ -604,6 +670,12 @@ export type InsertLock = z.infer<typeof insertLockSchema>;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type PlanTaskTemplateSnapshot = typeof planTaskTemplateSnapshots.$inferSelect;
 export type InsertPlanTaskTemplateSnapshot = typeof planTaskTemplateSnapshots.$inferInsert;
+export type PlanOptimizerSnapshotRow = typeof planOptimizerSnapshots.$inferSelect;
+export type InsertPlanOptimizerSnapshot = typeof planOptimizerSnapshots.$inferInsert;
+export type PlanOptimizerSnapshotHeuristicRow = typeof planOptimizerSnapshotHeuristics.$inferSelect;
+export type InsertPlanOptimizerSnapshotHeuristic = typeof planOptimizerSnapshotHeuristics.$inferInsert;
+export type PlanOptimizerSnapshotGroupingZoneRow = typeof planOptimizerSnapshotGroupingZones.$inferSelect;
+export type InsertPlanOptimizerSnapshotGroupingZone = typeof planOptimizerSnapshotGroupingZones.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
 export type ResourceType = typeof resourceTypes.$inferSelect;
 export type ResourceItem = typeof resourceItems.$inferSelect;

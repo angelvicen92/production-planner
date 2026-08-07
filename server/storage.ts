@@ -31,6 +31,17 @@ import {
   taskTemplateSnapshotToPersistenceRow,
   type TaskTemplateOperationalSnapshotV1,
 } from "./taskTemplateSnapshot";
+import {
+  normalizePlanOptimizerSnapshotV1,
+  type PlanOptimizerSnapshotV1,
+} from "./planOptimizerSnapshot";
+import {
+  PlanOptimizerSnapshotPersistenceError,
+  buildPlanOptimizerSnapshotPersistenceBundleV1,
+  hydratePlanOptimizerSnapshotV1,
+  resolvePlanOptimizerTransportReferencesV1,
+  validatePlanOptimizerSnapshotZoneReferencesV1,
+} from "./planOptimizerSnapshotPersistence";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -201,6 +212,7 @@ export interface IStorage {
   // Engine Data
   getPlanFullDetails(planId: number): Promise<PlanFullDetails | undefined>;
   getPlanEngineInputDetails(planId: number): Promise<PlanFullDetails | undefined>;
+  getPlanOptimizerSnapshot(planId: number): Promise<PlanOptimizerSnapshotV1>;
   getPlanTaskTemplateSnapshots(planId: number): Promise<readonly TaskTemplateOperationalSnapshotV1[]>;
   ensurePlanTaskTemplateSnapshot(planId: number, templateId: number): Promise<TaskTemplateOperationalSnapshotV1>;
 
@@ -1206,21 +1218,43 @@ export class SupabaseStorage implements IStorage {
       { data: zoneCatalog, error: zonesError },
       { data: spaceCatalog, error: spacesError },
       taskTemplateCatalog,
+      { data: optimizerSettings, error: optimizerSettingsError },
     ] = await Promise.all([
       supabaseAdmin.from("program_settings").select("default_work_start, default_work_end").eq("id", 1).single(),
       supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
       this.getTaskTemplates(),
+      supabaseAdmin.from("optimizer_settings").select("*").eq("id", 1).single(),
     ]);
     if (settingsError) throw settingsError;
     if (zonesError) throw zonesError;
     if (spacesError) throw spacesError;
+    if (optimizerSettingsError) throw optimizerSettingsError;
 
     // Validate the complete catalog before creating the plan, so no partial day can be persisted.
     const validatedTaskTemplateSnapshots = taskTemplateCatalog
       .map((template: TaskTemplate) => normalizeTaskTemplateCatalogEntry(template, "inherited"))
       .sort((left: TaskTemplateOperationalSnapshotV1, right: TaskTemplateOperationalSnapshotV1) => left.sourceTemplateId - right.sourceTemplateId);
     indexTaskTemplateSnapshots(validatedTaskTemplateSnapshots);
+
+    // SPEC11-010: validate the optimizer candidate before creating any persistent day.
+    const optimizerPreviewReferences = resolvePlanOptimizerTransportReferencesV1(
+      optimizerSettings,
+      validatedTaskTemplateSnapshots.map((snapshot) => ({
+        sourceTemplateId: snapshot.sourceTemplateId,
+        templateName: snapshot.templateName,
+        planTemplateSnapshotId: snapshot.sourceTemplateId,
+      })),
+    );
+    const validatedOptimizerSnapshotPreview = normalizePlanOptimizerSnapshotV1(
+      optimizerSettings,
+      optimizerPreviewReferences,
+      "INHERITED",
+    );
+    validatePlanOptimizerSnapshotZoneReferencesV1(
+      validatedOptimizerSnapshotPreview,
+      (zoneCatalog ?? []).map((row: any) => Number(row.id)),
+    );
     const snapshotInput = {
       requestedWorkDay: { start: plan.workStart, end: plan.workEnd },
       defaultWorkDay: { start: settings.default_work_start, end: settings.default_work_end },
@@ -1251,15 +1285,29 @@ export class SupabaseStorage implements IStorage {
       .single();
     if (error) throw error;
 
+    let persistedTaskTemplateSnapshotRows: Array<{ id: number; source_template_id: number; template_name: string }> = [];
     try {
       const taskTemplateSnapshotRows = validatedTaskTemplateSnapshots.map((snapshot: TaskTemplateOperationalSnapshotV1) =>
         taskTemplateSnapshotToPersistenceRow(Number(data.id), snapshot),
       );
       if (taskTemplateSnapshotRows.length > 0) {
-        const { error: taskTemplateSnapshotError } = await supabaseAdmin
+        const { data: persistedRows, error: taskTemplateSnapshotError } = await supabaseAdmin
           .from("plan_task_template_snapshots")
-          .insert(taskTemplateSnapshotRows);
+          .insert(taskTemplateSnapshotRows)
+          .select("id, source_template_id, template_name");
         if (taskTemplateSnapshotError) throw taskTemplateSnapshotError;
+        persistedTaskTemplateSnapshotRows = ((persistedRows as any[]) ?? []).map((row: any) => ({
+          id: Number(row.id),
+          source_template_id: Number(row.source_template_id),
+          template_name: String(row.template_name),
+        }));
+        if (persistedTaskTemplateSnapshotRows.length !== taskTemplateSnapshotRows.length) {
+          throw new PlanOptimizerSnapshotPersistenceError(
+            "INVALID_PLAN_OPTIMIZER_SNAPSHOT_PERSISTENCE",
+            "Task-template snapshot persistence did not return the complete daily identity map.",
+            { expected: taskTemplateSnapshotRows.length, actual: persistedTaskTemplateSnapshotRows.length },
+          );
+        }
       }
     } catch (taskTemplateSnapshotError: any) {
       return throwAfterPlanCreationFailure(
@@ -1281,6 +1329,59 @@ export class SupabaseStorage implements IStorage {
       }
     } catch (spatialError: any) {
       return throwAfterPlanCreationFailure(Number(data.id), spatialError, "Failed to snapshot spatial availability for plan");
+    }
+
+    // SPEC11-010: once daily template/spatial identities exist, persist the optimizer snapshot against them.
+    try {
+      const transportReferences = resolvePlanOptimizerTransportReferencesV1(
+        optimizerSettings,
+        persistedTaskTemplateSnapshotRows.map((row) => ({
+          sourceTemplateId: row.source_template_id,
+          templateName: row.template_name,
+          planTemplateSnapshotId: row.id,
+        })),
+      );
+      const optimizerSnapshot = normalizePlanOptimizerSnapshotV1(
+        optimizerSettings,
+        transportReferences,
+        "INHERITED",
+      );
+      validatePlanOptimizerSnapshotZoneReferencesV1(
+        optimizerSnapshot,
+        (zoneCatalog ?? []).map((row: any) => Number(row.id)),
+      );
+      const optimizerBundle = buildPlanOptimizerSnapshotPersistenceBundleV1(Number(data.id), optimizerSnapshot);
+      const { data: optimizerRow, error: optimizerSnapshotError } = await supabaseAdmin
+        .from("plan_optimizer_snapshots")
+        .insert(optimizerBundle.snapshot)
+        .select("id")
+        .single();
+      if (optimizerSnapshotError) throw optimizerSnapshotError;
+      const optimizerSnapshotId = Number((optimizerRow as any)?.id);
+      if (!Number.isFinite(optimizerSnapshotId) || optimizerSnapshotId <= 0) {
+        throw new PlanOptimizerSnapshotPersistenceError(
+          "INVALID_PLAN_OPTIMIZER_SNAPSHOT_PERSISTENCE",
+          "Optimizer snapshot persistence did not return a valid daily snapshot id.",
+        );
+      }
+
+      const { error: heuristicError } = await supabaseAdmin
+        .from("plan_optimizer_snapshot_heuristics")
+        .insert(optimizerBundle.heuristics.map((row) => ({ snapshot_id: optimizerSnapshotId, ...row })));
+      if (heuristicError) throw heuristicError;
+
+      if (optimizerBundle.groupingZones.length > 0) {
+        const { error: groupingZoneError } = await supabaseAdmin
+          .from("plan_optimizer_snapshot_grouping_zones")
+          .insert(optimizerBundle.groupingZones.map((row) => ({ snapshot_id: optimizerSnapshotId, ...row })));
+        if (groupingZoneError) throw groupingZoneError;
+      }
+    } catch (optimizerSnapshotError: any) {
+      return throwAfterPlanCreationFailure(
+        Number(data.id),
+        optimizerSnapshotError,
+        "Failed to snapshot optimizer configuration for plan",
+      );
     }
 
     // Snapshot de recursos por defecto -> unidades del plan (plan_resource_items)
@@ -2663,6 +2764,44 @@ export class SupabaseStorage implements IStorage {
 
     await this.syncPlanMealBreaks(planId);
     return data as any;
+  }
+
+  async getPlanOptimizerSnapshot(planId: number): Promise<PlanOptimizerSnapshotV1> {
+    const { data: snapshot, error: snapshotError } = await supabaseAdmin
+      .from("plan_optimizer_snapshots")
+      .select("*")
+      .eq("plan_id", planId)
+      .maybeSingle();
+    if (snapshotError) throw snapshotError;
+    if (!snapshot) {
+      throw new PlanOptimizerSnapshotPersistenceError(
+        "MISSING_PLAN_OPTIMIZER_SNAPSHOT",
+        "The plan has no persisted optimizer snapshot.",
+        { planId },
+      );
+    }
+
+    const snapshotId = Number((snapshot as any).id);
+    const [heuristicsResult, groupingZonesResult] = await Promise.all([
+      supabaseAdmin
+        .from("plan_optimizer_snapshot_heuristics")
+        .select("heuristic_key, basic_level, advanced_value")
+        .eq("snapshot_id", snapshotId)
+        .order("heuristic_key", { ascending: true }),
+      supabaseAdmin
+        .from("plan_optimizer_snapshot_grouping_zones")
+        .select("zone_id")
+        .eq("snapshot_id", snapshotId)
+        .order("zone_id", { ascending: true }),
+    ]);
+    if (heuristicsResult.error) throw heuristicsResult.error;
+    if (groupingZonesResult.error) throw groupingZonesResult.error;
+
+    return hydratePlanOptimizerSnapshotV1(
+      snapshot,
+      (heuristicsResult.data as any[]) ?? [],
+      (groupingZonesResult.data as any[]) ?? [],
+    );
   }
 
   async getPlanTaskTemplateSnapshots(planId: number): Promise<readonly TaskTemplateOperationalSnapshotV1[]> {
