@@ -100,6 +100,9 @@ const evidence = {
   flexibleSetupOrderProbe: representability.flexibleSetupOrderProbe,
   flexibleSetupOrderCapabilityProven:
     representability.flexibleSetupOrderCapabilityProven,
+  roundSynchronizationProbe: representability.roundSynchronizationProbe,
+  roundSynchronizationCapabilityProven:
+    representability.roundSynchronizationCapabilityProven,
   representabilityGate: gate,
   noEngineInputPartial: gate.engineInputBuilt === false,
   noSeedSchedule: expansion.tasks.every((task) => !("start" in task) && !("end" in task) && !("startPlanned" in task) && !("referenceOrder" in task)),
@@ -179,7 +182,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}, setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven}, flexibleSetupOrderCapabilityProven=${representability.flexibleSetupOrderCapabilityProven} y supportsSpecificCoachRouteTransition=${representability.adapterProbe.supportsSpecificCoachRouteTransition}. SPEC10-020 demuestra que EXACT_CONSTRUCTIVE explora ambos órdenes Sillón/Estrellas, publica la preparación y valida el resultado completo sin imponer un orden fijo. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
+${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}, setupPolicyCapabilityProven=${representability.setupPolicyCapabilityProven}, flexibleSetupOrderCapabilityProven=${representability.flexibleSetupOrderCapabilityProven}, roundSynchronizationCapabilityProven=${representability.roundSynchronizationCapabilityProven} y supportsSpecificCoachRouteTransition=${representability.adapterProbe.supportsSpecificCoachRouteTransition}. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : `No hay blocker técnico pendiente. El probe conectado demuestra roundSynchronizationCapabilityProven=${representability.roundSynchronizationCapabilityProven}, incluyendo emparejamiento ordinal dinámico, preparación explícita, ronda residual, determinismo, contabilidad de presupuesto y publicación atómica.`}
 
 ## No implementado
 

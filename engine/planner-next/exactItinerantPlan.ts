@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import {
   createExactSearchLedger,
@@ -18,6 +18,7 @@ import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
+import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -97,6 +98,14 @@ export interface ExactItinerantPlanEvidence {
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
+  roundSynchronizationSearchInvocations: number;
+  roundSynchronizationStartCandidates: number;
+  roundSynchronizationAssignmentBranches: number;
+  roundSynchronizationAssignmentChecks: number;
+  roundSynchronizationCompleteAssignments: number;
+  roundSynchronizationBacktracks: number;
+  roundSynchronizationZeroAlternativePrunes: number;
+  selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
 }
 
@@ -105,6 +114,7 @@ export interface ExactItinerantPlanResult {
   complete: boolean;
   scheduledTasks: ScheduledTask[];
   scheduledSetupPreparations: ScheduledSetupPreparation[];
+  scheduledRoundPreparations: ScheduledRoundPreparation[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
   scheduledParticipantMeals: ScheduledParticipantMeal[];
   scheduledResourceMeals: ScheduledResourceMeal[];
@@ -115,7 +125,7 @@ export interface ExactItinerantPlanResult {
 
 type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
-interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null }
+interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; roundPreparations: ScheduledRoundPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null }
 
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
 const orderScheduled = (tasks: ScheduledTask[]): ScheduledTask[] =>
@@ -133,7 +143,6 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
 function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
   const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
   const setupTaskIds = new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ id }) => id));
-  const synchronizedRoundTaskIds = roundSynchronizationTaskIds(problem);
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined;
@@ -141,8 +150,6 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
     if (task.jointGroupId !== undefined) reasons.push(`UNSUPPORTED_STANDALONE_JOINT_GROUP:${task.id}`);
-    if (synchronizedRoundTaskIds.has(task.id))
-      reasons.push(`UNSUPPORTED_STANDALONE_ROUND_SYNCHRONIZATION:${task.id}`);
     if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
       reasons.push(`UNSUPPORTED_STANDALONE_REQUIRED_BLOCK:${task.id}`);
     if (space?.mealPolicy !== undefined)
@@ -174,12 +181,13 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
+  let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const consumeLeafBranch = (): boolean => {
     if (!ledger.consume("STANDALONE")) return false;
     evidence.standaloneLeafSearchBranches += 1;
     return true;
   };
-  const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
+  const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
       if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
@@ -192,19 +200,19 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
       const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
-      if (exact && mealWitness?.complete && validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals).hardValid) {
+      if (exact && mealWitness?.complete && validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations).hardValid) {
         const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
         const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
           maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
           totalGapCount: quality.totalGapCount, totalSpaceChangeCount: quality.totalSpaceChangeCount };
-        const candidateFingerprint = fingerprint(candidate,preparations,coreMeals,fixedItinerantMeals);
+        const candidateFingerprint = fingerprint(candidate,preparations,coreMeals,fixedItinerantMeals,roundPreparations);
         evidence.completePlansObserved += 1;
         if (!found) {
-          found = candidate; foundPreparations = [...preparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.firstCompleteFingerprint = candidateFingerprint;
+          found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.firstCompleteFingerprint = candidateFingerprint;
           evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact;
           evidence.selectedCompleteQuality = compact;
         } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
-          found = candidate; foundPreparations = [...preparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.completeIncumbentReplacements += 1;
+          found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.completeIncumbentReplacements += 1;
           evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;
         }
         return selection === "FIRST_HARD_VALID" ? "FOUND" : "DEAD_END";
@@ -237,7 +245,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         || a.scheduled.id.localeCompare(b.scheduled.id));
     for (const { scheduled } of orderedStarts) {
       if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);if(mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";evidence.standaloneBacktracks+=1;continue;}}
-      const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, depth + 1,
+      const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
       if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
@@ -257,6 +265,7 @@ const mergeSetupOrderCounts = (spaceId: string, counts: Record<string, number>):
     merged[key] = (merged[key] ?? 0) + count;
   evidence.setupFamilyOrderCandidateCountsBySpaceId[spaceId] = merged;
 };
+let activeRoundPreparations: ScheduledRoundPreparation[] = [];
 const searchSetup = (
   index: number,
   placed: ScheduledTask[],
@@ -264,7 +273,7 @@ const searchSetup = (
   depth: number,
   selectionOrder: string[],
 ): StandaloneOutcome => {
-  if (index >= setupGroups.length) return search(ordinaryPending, placed, preparations, depth, selectionOrder);
+  if (index >= setupGroups.length) return search(ordinaryPending, placed, preparations, activeRoundPreparations, depth, selectionOrder);
   const group = setupGroups[index]!;
   evidence.setupBlockSearchInvocations += 1;
   const generated = generateExactSetupBlockCandidates(
@@ -302,9 +311,61 @@ const searchSetup = (
   }
   return "DEAD_END";
 };
-const searchOutcome = searchSetup(0, [], [], 0, []);
+const synchronizedTaskIds = roundSynchronizationTaskIds(problem);
+const roundPolicies = [...(problem.roundSynchronizations ?? [])].sort((left, right) => left.id.localeCompare(right.id));
+const roundTaskIds = new Set(roundPolicies.flatMap((policy) => policy.lanes.flatMap((lane) => lane.taskIds)));
+const roundPendingIds = new Set(pending.filter((task) => roundTaskIds.has(task.id)).map((task) => task.id));
+if (roundPendingIds.size !== roundTaskIds.size || [...synchronizedTaskIds].some((id) => !roundTaskIds.has(id))) {
+  return { outcome: "DEAD_END", tasks: null, preparations: [], roundPreparations: [], selectionOrder: [], participantMeals: null };
+}
+
+const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
+  evidence.roundSynchronizationStartCandidates += delta.startCandidates;
+  evidence.roundSynchronizationAssignmentBranches += delta.assignmentBranches;
+  evidence.roundSynchronizationAssignmentChecks += delta.assignmentChecks;
+  evidence.roundSynchronizationCompleteAssignments += delta.completeAssignments;
+  evidence.roundSynchronizationBacktracks += delta.backtracks;
+  evidence.roundSynchronizationZeroAlternativePrunes += delta.zeroAlternativePrunes;
+};
+
+const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id));
+const originalOrdinary = ordinaryPending.splice(0, ordinaryPending.length, ...pendingWithoutRounds.filter(({ id }) => !setupTaskIds.has(id)).sort(byId));
+void originalOrdinary;
+
+const searchRounds = (
+  index: number,
+  placed: ScheduledTask[],
+  roundPreparations: ScheduledRoundPreparation[],
+  selectionOrder: string[],
+): StandaloneOutcome => {
+  if (index >= roundPolicies.length) {
+    activeRoundPreparations = [...roundPreparations];
+    return searchSetup(0, placed, [], placed.length, selectionOrder);
+  }
+  const policy = roundPolicies[index]!;
+  evidence.roundSynchronizationSearchInvocations += 1;
+  const explored = exploreExactRoundSynchronizationPolicy(
+    problem,
+    policy,
+    [...coreTasks, ...placed],
+    [],
+    roundPreparations,
+    coreMeals,
+    ledger,
+    (candidate) => searchRounds(
+      index + 1,
+      [...placed, ...candidate.tasks],
+      [...roundPreparations, ...candidate.preparations],
+      [...selectionOrder, ...candidate.selectionOrder],
+    ),
+  );
+  mergeRoundEvidence(explored.evidence);
+  return explored.outcome;
+};
+
+const searchOutcome = searchRounds(0, [], [], []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
-return { outcome, tasks: found, preparations: foundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals };
+return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals };
 }
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
@@ -339,16 +400,20 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],
+    roundSynchronizationSearchInvocations: 0, roundSynchronizationStartCandidates: 0,
+    roundSynchronizationAssignmentBranches: 0, roundSynchronizationAssignmentChecks: 0,
+    roundSynchronizationCompleteAssignments: 0, roundSynchronizationBacktracks: 0,
+    roundSynchronizationZeroAlternativePrunes: 0, selectedRoundPreparationIds: [],
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],
   };
-  let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedCoreIds = new Set<string>();
+  let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) staticCoreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !staticCoreIds.has(id)).sort(byId);
   const unsupported = unsupportedShapeReasons(problem, standaloneTasks, staticCoreIds);
   if (unsupported.length) {
     evidence.remainingTaskIds = standaloneTasks.map(({ id }) => id); evidence.reasonCodes = unsupported;
-    return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSetupPreparations: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledItinerantUnitMeals:[],
+    return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSetupPreparations: [], scheduledRoundPreparations: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledItinerantUnitMeals:[],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   }
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, onPartialCoreCandidate(candidate) {
@@ -384,7 +449,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode);
     if (standalone.tasks) {
-      selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedCoreIds = coreIds;
+      selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
       evidence.selectedCoreFingerprint = candidate.fingerprint; evidence.coreFingerprint = candidate.fingerprint;
       evidence.selectedStandaloneSelectionOrder = standalone.selectionOrder;
@@ -406,7 +471,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
   const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();
-    return { status, complete: false, scheduledTasks: [], scheduledSetupPreparations: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledItinerantUnitMeals:[],
+    return { status, complete: false, scheduledTasks: [], scheduledSetupPreparations: [], scheduledRoundPreparations: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledItinerantUnitMeals:[],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   };
   if (core.status === "BRANCH_BUDGET_EXHAUSTED" && selectedTasks === null) return fail("BRANCH_BUDGET_EXHAUSTED",
@@ -426,9 +491,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     .sort(byId)
     .map((space) => [space.id, setupFamilySequence(scheduledTasks.filter((task) => task.spaceId === space.id))]));
   evidence.selectedSetupPreparationIds = scheduledSetupPreparations.map(({ id }) => id).sort();
-  const scheduledItinerantUnitMeals=materializeScheduledItinerantUnitMeals(problem);evidence.fullFingerprint=fingerprint(scheduledTasks,scheduledSetupPreparations,selectedMeals,scheduledItinerantUnitMeals); evidence.remainingTaskIds = []; evidence.reasonCodes = [];
+  const scheduledRoundPreparations = [...selectedRoundPreparations];
+  evidence.selectedRoundPreparationIds = scheduledRoundPreparations.map(({ id }) => id).sort();
+  const scheduledItinerantUnitMeals=materializeScheduledItinerantUnitMeals(problem);evidence.fullFingerprint=fingerprint(scheduledTasks,scheduledSetupPreparations,selectedMeals,scheduledItinerantUnitMeals,scheduledRoundPreparations); evidence.remainingTaskIds = []; evidence.reasonCodes = [];
   const scheduledResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-  return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSetupPreparations, scheduledSpaceMeals: [...selectedMeals], scheduledParticipantMeals:[...(selectedParticipantMeals?.scheduled??[])],scheduledResourceMeals,scheduledItinerantUnitMeals,remainingTaskIds: [], evidence };
+  return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSetupPreparations, scheduledRoundPreparations, scheduledSpaceMeals: [...selectedMeals], scheduledParticipantMeals:[...(selectedParticipantMeals?.scheduled??[])],scheduledResourceMeals,scheduledItinerantUnitMeals,remainingTaskIds: [], evidence };
 }
 
 /** Frozen historical control and explicit rollback path. */

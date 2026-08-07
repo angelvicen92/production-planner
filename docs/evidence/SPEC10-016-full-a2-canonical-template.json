@@ -1163,8 +1163,8 @@
         "C18.totales_coreo",
         "C19.totales_coreo"
       ],
-      "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-      "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+      "operationalExplanation": "El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid.",
+      "semanticLoss": "Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.",
       "implementationRank": 5
     }
   ],
@@ -1193,8 +1193,8 @@
       "C18.totales_coreo",
       "C19.totales_coreo"
     ],
-    "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-    "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+    "operationalExplanation": "El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid.",
+    "semanticLoss": "Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.",
     "implementationRank": 5
   },
   "adapterProbe": {
@@ -1283,6 +1283,29 @@
     "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
   },
   "flexibleSetupOrderCapabilityProven": true,
+  "roundSynchronizationProbe": {
+    "executed": true,
+    "engineInputPreflightSupported": false,
+    "adapterSupported": false,
+    "plannerNextPreflightSupported": false,
+    "exactPolicySelected": false,
+    "projectedSynchronizationCount": 0,
+    "projectedLaneTaskCounts": [],
+    "complete": false,
+    "hardValid": false,
+    "roundSynchronizationViolationCount": 1,
+    "roundPreparationViolationCount": 1,
+    "scheduledRoundPreparationCount": 0,
+    "synchronizedRoundCount": 0,
+    "residualRoundSupported": false,
+    "deterministic": false,
+    "orderInvariant": false,
+    "inputImmutable": false,
+    "sharedBudgetAccounting": false,
+    "atomicOnBudgetExhaustion": false,
+    "fullFingerprint": null
+  },
+  "roundSynchronizationCapabilityProven": false,
   "representabilityGate": {
     "status": "REJECTED_BLOCKED",
     "analysis": {
@@ -1387,8 +1410,8 @@
             "C18.totales_coreo",
             "C19.totales_coreo"
           ],
-          "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-          "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+          "operationalExplanation": "El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid.",
+          "semanticLoss": "Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.",
           "implementationRank": 5
         }
       ],
@@ -1490,8 +1513,8 @@
             "C18.totales_coreo",
             "C19.totales_coreo"
           ],
-          "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-          "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+          "operationalExplanation": "El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid.",
+          "semanticLoss": "Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.",
           "implementationRank": 5
         }
       ],
@@ -1520,8 +1543,8 @@
           "C18.totales_coreo",
           "C19.totales_coreo"
         ],
-        "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
-        "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+        "operationalExplanation": "El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid.",
+        "semanticLoss": "Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.",
         "implementationRank": 5
       },
       "adapterProbe": {
@@ -1609,7 +1632,30 @@
         "atomicOnBudgetExhaustion": true,
         "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
       },
-      "flexibleSetupOrderCapabilityProven": true
+      "flexibleSetupOrderCapabilityProven": true,
+      "roundSynchronizationProbe": {
+        "executed": true,
+        "engineInputPreflightSupported": false,
+        "adapterSupported": false,
+        "plannerNextPreflightSupported": false,
+        "exactPolicySelected": false,
+        "projectedSynchronizationCount": 0,
+        "projectedLaneTaskCounts": [],
+        "complete": false,
+        "hardValid": false,
+        "roundSynchronizationViolationCount": 1,
+        "roundPreparationViolationCount": 1,
+        "scheduledRoundPreparationCount": 0,
+        "synchronizedRoundCount": 0,
+        "residualRoundSupported": false,
+        "deterministic": false,
+        "orderInvariant": false,
+        "inputImmutable": false,
+        "sharedBudgetAccounting": false,
+        "atomicOnBudgetExhaustion": false,
+        "fullFingerprint": null
+      },
+      "roundSynchronizationCapabilityProven": false
     },
     "executorCallCount": 0,
     "engineInputBuilt": false,

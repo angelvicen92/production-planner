@@ -26,13 +26,13 @@ Estos datos son inputs de creación del futuro día y no se seleccionan como sig
 
 Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
 
-- **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes. Pérdida si se aproxima: Las dependencias impondrían precedencia, no sincronización de arranque entre salas.
+- **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid. Pérdida si se aproxima: Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true y supportsSpecificCoachRouteTransition=true. SPEC10-020 demuestra que EXACT_CONSTRUCTIVE explora ambos órdenes Sillón/Estrellas, publica la preparación y valida el resultado completo sin imponer un orden fijo. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED**.
+Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=false y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED**.
 
 ## No implementado
 

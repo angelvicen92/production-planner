@@ -2806,3 +2806,12 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Global inválido:** errores conocidos de normalización/persistencia de defaults se convierten en `INVALID_GLOBAL_OPTIMIZER_SETTINGS` en lugar de 500 o fallback silencioso.
 - **Sin efectos:** el helper no lee DB, no escribe, no replantea y no muta el snapshot actual. La futura ruta sólo podrá orquestar lecturas sobre este contrato.
 - **Fuera de alcance:** endpoint HTTP, conteo de tareas protegidas, concurrencia, confirmación, persistencia del override, UI React, DB/migraciones, Planner Next, ORC y SPEC10-021.
+
+## SPEC10-021 — Sincronización exacta de rondas entre espacios
+
+- **Objetivo (`DB Safe Merge`):** representar y construir dos carriles independientes con inicio sincronizado mientras ambos conservan trabajo elegible, sin convertirlos en un único espacio ni fijar parejas por orden de input.
+- **Semántica:** `roundSynchronizations` usa elegibilidad explícita por IDs, emparejamiento ordinal dinámico y preparación entre rondas publicada como `ScheduledRoundPreparation`; el carril largo puede continuar con rondas residuales.
+- **Búsqueda exacta:** la capacidad consume el mismo `ExactSearchLedger`, retrocede hacia asignaciones de ronda cuando falla trabajo posterior y mantiene publicación atómica al agotar presupuesto.
+- **Validación:** el validador canónico comprueba sincronización, preparación, disponibilidad, comidas y ocupaciones; el fingerprint incluye las preparaciones de ronda.
+- **Full A2:** la Evidence de representabilidad exige un probe conectado EngineInput → adapter → EXACT_CONSTRUCTIVE → validación, incluyendo ronda residual, determinismo, invariancia al orden y agotamiento atómico.
+- **Fuera de alcance:** no fija los inputs de creación que la fuente A2 deja abiertos, no usa horarios humanos como seed, no añade DB/UI y no implementa todavía el comparador humano de KPIs.

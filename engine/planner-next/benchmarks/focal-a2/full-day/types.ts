@@ -329,6 +329,29 @@ export interface RepresentabilityAnalysis {
     readonly fullFingerprint: string | null;
   };
   readonly flexibleSetupOrderCapabilityProven: boolean;
+  readonly roundSynchronizationProbe: {
+    readonly executed: true;
+    readonly engineInputPreflightSupported: boolean;
+    readonly adapterSupported: boolean;
+    readonly plannerNextPreflightSupported: boolean;
+    readonly exactPolicySelected: boolean;
+    readonly projectedSynchronizationCount: number;
+    readonly projectedLaneTaskCounts: readonly number[];
+    readonly complete: boolean;
+    readonly hardValid: boolean;
+    readonly roundSynchronizationViolationCount: number;
+    readonly roundPreparationViolationCount: number;
+    readonly scheduledRoundPreparationCount: number;
+    readonly synchronizedRoundCount: number;
+    readonly residualRoundSupported: boolean;
+    readonly deterministic: boolean;
+    readonly orderInvariant: boolean;
+    readonly inputImmutable: boolean;
+    readonly sharedBudgetAccounting: boolean;
+    readonly atomicOnBudgetExhaustion: boolean;
+    readonly fullFingerprint: string | null;
+  };
+  readonly roundSynchronizationCapabilityProven: boolean;
 }
 
 export interface RepresentabilityGateResult {
@@ -352,17 +375,20 @@ export type RepresentabilityExecutor = (analysis: RepresentabilityAnalysis) => R
 
 export type TaskInputHasJointGroupId = "jointGroupId" extends keyof TaskInput ? true : false;
 export type TaskInputHasSetupFamilyId = "setupFamilyId" extends keyof TaskInput ? true : false;
-export type PlannerNextProblemHasRoundSynchronization = "roundSynchronization" extends keyof PlannerNextProblem ? true : false;
+export type PlannerNextProblemHasRoundSynchronizations = "roundSynchronizations" extends keyof PlannerNextProblem ? true : false;
+export type EngineInputHasRoundSynchronizations = "roundSynchronizations" extends keyof EngineInput ? true : false;
 export type EngineInputHasSetupPolicies = "setupPolicies" extends keyof EngineInput ? true : false;
 
 export const contractFieldPresence = {
   taskInputHasJointGroupId: true as TaskInputHasJointGroupId,
   taskInputHasSetupFamilyId: true as TaskInputHasSetupFamilyId,
-  plannerNextProblemHasRoundSynchronization: false as PlannerNextProblemHasRoundSynchronization,
+  plannerNextProblemHasRoundSynchronizations: true as PlannerNextProblemHasRoundSynchronizations,
+  engineInputHasRoundSynchronizations: true as EngineInputHasRoundSynchronizations,
   engineInputHasSetupPolicies: true as EngineInputHasSetupPolicies,
 } satisfies {
   readonly taskInputHasJointGroupId: TaskInputHasJointGroupId;
   readonly taskInputHasSetupFamilyId: TaskInputHasSetupFamilyId;
-  readonly plannerNextProblemHasRoundSynchronization: PlannerNextProblemHasRoundSynchronization;
+  readonly plannerNextProblemHasRoundSynchronizations: PlannerNextProblemHasRoundSynchronizations;
+  readonly engineInputHasRoundSynchronizations: EngineInputHasRoundSynchronizations;
   readonly engineInputHasSetupPolicies: EngineInputHasSetupPolicies;
 };

@@ -6,6 +6,7 @@ import type {
   ScheduledTask,
 } from "./contracts";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
+import { protectedMealBlocksSpace } from "./spaceMeals";
 
 const compare = (left: string, right: string): number => left.localeCompare(right, "en");
 const overlaps = (aStart: number, aEnd: number, bStart: number, bEnd: number): boolean =>
@@ -134,7 +135,8 @@ function gapIsAuthorized(
   meals: ScheduledSpaceMeal[],
 ): boolean {
   if (previousEnd === nextOccupationStart) return true;
-  if (previousEnd === problem.protectedMeal.start
+  if (protectedMealBlocksSpace(problem, spaceId)
+    && previousEnd === problem.protectedMeal.start
     && nextOccupationStart === problem.protectedMeal.end) return true;
   return meals.some((meal) =>
     meal.spaceId === spaceId
@@ -232,7 +234,7 @@ export function validateRoundSynchronizations(
             && overlaps(preparation.start, preparation.end, meal.start, meal.end))
           : true;
         const overlapsProtectedMeal = preparation
-          ? overlaps(
+          ? protectedMealBlocksSpace(problem, lane.spaceId) && overlaps(
             preparation.start,
             preparation.end,
             problem.protectedMeal.start,
