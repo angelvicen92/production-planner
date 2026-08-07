@@ -88,7 +88,6 @@ test("diff order is canonical across mode, zone, heuristics, grouping, transport
     "heuristics.CONTESTANT_COMPACT",
     "heuristics.GROUP_BY_SPACE_TEMPLATE_MATCH",
     "heuristics.GROUP_BY_SPACE_ACTIVE",
-    "heuristics.CONTESTANT_STAY_IN_ZONE",
     "heuristics.ARRIVAL_DEPARTURE_GROUPING",
     "groupingZoneIds",
     "transport.arrivalPlanTemplateSnapshotId",
