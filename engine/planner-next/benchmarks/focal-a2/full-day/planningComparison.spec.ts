@@ -5,44 +5,35 @@ import {
   comparePlanningQuality,
   type ComparisonTolerancePolicy,
   type PrimaryComparisonSignal,
+  type PrimaryKpiId,
 } from "./planningComparison";
 
 function signals(overrides: Readonly<Record<string, number>> = {}): PrimaryComparisonSignal[] {
-  return PRIMARY_KPI_IDS.map((kpiId, index) => {
+  return PRIMARY_KPI_IDS.map((kpiId) => {
     const id = `${kpiId}.primary`;
     const direction = kpiId === "P10" ? "HIGHER_IS_BETTER" as const : "LOWER_IS_BETTER" as const;
-    return {
-      id,
-      kpiId,
-      direction,
-      humanValue: 100,
-      optiPlanValue: overrides[id] ?? 100,
-    };
+    return { id, kpiId, direction, humanValue: 100, optiPlanValue: overrides[id] ?? 100 };
   });
 }
 
 function policy(values: readonly PrimaryComparisonSignal[] = signals(), tolerance = 5): ComparisonTolerancePolicy {
+  const requiredSignalIdsByKpi = Object.fromEntries(PRIMARY_KPI_IDS.map((kpiId) => [
+    kpiId,
+    values.filter((signal) => signal.kpiId === kpiId).map(({ id }) => id),
+  ])) as Record<PrimaryKpiId, string[]>;
   return {
     version: "A2.tolerance.synthetic.v1",
+    requiredSignalIdsByKpi,
     toleranceBySignalId: Object.fromEntries(values.map(({ id }) => [id, tolerance])),
   };
 }
 
 function compare(values = signals(), tolerancePolicy: ComparisonTolerancePolicy | undefined = policy(values)) {
-  return comparePlanningQuality({
-    referenceHardGates: "PASS",
-    optiPlanHardGates: "PASS",
-    signals: values,
-    tolerancePolicy,
-  });
+  return comparePlanningQuality({ referenceHardGates: "PASS", optiPlanHardGates: "PASS", signals: values, tolerancePolicy });
 }
 
 test("non-compensable OptiPlan hard-gate failure is INVALID before quality comparison", () => {
-  const result = comparePlanningQuality({
-    referenceHardGates: "UNASSESSED",
-    optiPlanHardGates: "FAIL",
-    signals: [],
-  });
+  const result = comparePlanningQuality({ referenceHardGates: "UNASSESSED", optiPlanHardGates: "FAIL", signals: [] });
   assert.equal(result.status, "CLASSIFIED");
   if (result.status !== "CLASSIFIED") return;
   assert.equal(result.classification, "INVALID");
@@ -52,24 +43,49 @@ test("non-compensable OptiPlan hard-gate failure is INVALID before quality compa
 
 test("comparison blocks when the human reference hard gates are not resolved", () => {
   const values = signals();
-  const result = comparePlanningQuality({
-    referenceHardGates: "UNASSESSED",
-    optiPlanHardGates: "PASS",
-    signals: values,
-    tolerancePolicy: policy(values),
-  });
+  const result = comparePlanningQuality({ referenceHardGates: "UNASSESSED", optiPlanHardGates: "PASS", signals: values, tolerancePolicy: policy(values) });
   assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");
   if (result.status !== "BLOCKED_BY_CONFIGURATION") return;
   assert.ok(result.missing.includes("reference_hard_gates:unassessed"));
   assert.equal(result.classification, null);
 });
 
-test("comparison blocks until every P01-P10 primary KPI is represented", () => {
-  const values = signals().filter(({ kpiId }) => kpiId !== "P10");
-  const result = compare(values, policy(values));
+test("comparison policy must declare a non-empty exact signal surface for every P01-P10 KPI", () => {
+  const values = signals();
+  const tolerancePolicy = policy(values);
+  const brokenSurface = {
+    ...tolerancePolicy,
+    requiredSignalIdsByKpi: { ...tolerancePolicy.requiredSignalIdsByKpi, P10: [] },
+  };
+  const result = compare(values, brokenSurface);
   assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");
   if (result.status !== "BLOCKED_BY_CONFIGURATION") return;
-  assert.ok(result.missing.includes("primary_kpi:P10"));
+  assert.ok(result.missing.includes("comparison_surface:P10"));
+  assert.ok(result.missing.includes("signal_not_in_policy:P10.primary"));
+});
+
+test("comparison blocks when a signal required by the versioned surface is absent", () => {
+  const complete = signals();
+  const tolerancePolicy = policy(complete);
+  const supplied = complete.filter(({ kpiId }) => kpiId !== "P10");
+  const result = compare(supplied, tolerancePolicy);
+  assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");
+  if (result.status !== "BLOCKED_BY_CONFIGURATION") return;
+  assert.ok(result.missing.includes("signal_required:P10.primary"));
+});
+
+test("comparison blocks signals outside the policy or mapped to the wrong KPI", () => {
+  const values = signals();
+  const tolerancePolicy = policy(values);
+  const extra = [...values, { id: "P03.unversioned", kpiId: "P03" as const, direction: "LOWER_IS_BETTER" as const, humanValue: 100, optiPlanValue: 90 }];
+  const extraResult = compare(extra, tolerancePolicy);
+  assert.equal(extraResult.status, "BLOCKED_BY_CONFIGURATION");
+  if (extraResult.status === "BLOCKED_BY_CONFIGURATION") assert.ok(extraResult.missing.includes("signal_not_in_policy:P03.unversioned"));
+
+  const mismatched = values.map((signal) => signal.id === "P03.primary" ? { ...signal, kpiId: "P02" as const } : signal);
+  const mismatchResult = compare(mismatched, tolerancePolicy);
+  assert.equal(mismatchResult.status, "BLOCKED_BY_CONFIGURATION");
+  if (mismatchResult.status === "BLOCKED_BY_CONFIGURATION") assert.ok(mismatchResult.missing.includes("signal_kpi_mismatch:P03.primary"));
 });
 
 test("comparison blocks without an explicit versioned tolerance policy", () => {
@@ -79,7 +95,7 @@ test("comparison blocks without an explicit versioned tolerance policy", () => {
   assert.ok(result.missing.includes("tolerance_policy"));
 });
 
-test("comparison blocks when any signal lacks a tolerance or has an invalid tolerance", () => {
+test("comparison blocks when any required signal lacks a tolerance or has an invalid tolerance", () => {
   const values = signals();
   const tolerances = policy(values);
   const missingTolerance = { ...tolerances, toleranceBySignalId: { ...tolerances.toleranceBySignalId } };
@@ -150,17 +166,18 @@ test("zero tolerance remains explicit and uses strict beyond-tolerance compariso
 });
 
 test("duplicate signal identity fails closed instead of double-counting a KPI", () => {
-  const values = signals();
-  values.push({ ...values[0]! });
-  const result = compare(values, policy(values));
+  const canonical = signals();
+  const values = [...canonical, { ...canonical[0]! }];
+  const result = compare(values, policy(canonical));
   assert.equal(result.status, "BLOCKED_BY_CONFIGURATION");
   if (result.status !== "BLOCKED_BY_CONFIGURATION") return;
-  assert.ok(result.missing.includes(`signal_id:duplicate:${values[0]!.id}`));
+  assert.ok(result.missing.includes(`signal_id:duplicate:${canonical[0]!.id}`));
 });
 
 test("comparison evidence is deterministic, ordered and deeply frozen", () => {
-  const values = signals().reverse();
-  const result = compare(values, policy(values));
+  const canonical = signals();
+  const values = [...canonical].reverse();
+  const result = compare(values, policy(canonical));
   assert.equal(result.status, "CLASSIFIED");
   if (result.status !== "CLASSIFIED") return;
   assert.deepEqual(result.signalEvidence.map(({ kpiId }) => kpiId), PRIMARY_KPI_IDS);
