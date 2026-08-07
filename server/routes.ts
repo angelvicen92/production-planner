@@ -4269,6 +4269,9 @@ function normalizeHexColor(value: unknown): string | null {
         return res.status(400).json({ message: "No task template available for manual block" });
       }
 
+      // Manual blocks bypass createDailyTask, so extend the plan catalog explicitly first.
+      await storage.ensurePlanTaskTemplateSnapshot(planId, manualTemplateId);
+
       const insertTask: any = {
         plan_id: planId,
         template_id: manualTemplateId,

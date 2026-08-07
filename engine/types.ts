@@ -65,7 +65,7 @@ export interface TaskInput {
     fixedWindowEnd?: string | null;
 
   durationOverrideMin?: number | null;
-  camerasOverride?: 0 | 1 | 2 | null;
+  camerasOverride?: number | null;
 
     // ✅ Dependencias (N prerequisitos)
     // - Los arrays son el “nuevo contrato”.
@@ -238,6 +238,14 @@ export interface EngineInputCoachRouteTransitionInput {
 
 export interface EngineInput {
   planId: number;
+  /** Derived from the authoritative per-plan task-template snapshot catalog. */
+  taskTemplateSnapshotContractVersion?: 1;
+  taskTemplateSnapshotCount?: number;
+  taskTemplateSnapshotSources?: Readonly<Record<
+    "inherited" | "legacy_backfill" | "ad_hoc_from_default",
+    number
+  >>;
+  taskTemplateSnapshotFingerprint?: string;
   /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
   plannerNext?: PlannerNextIntegrationConfigurationInput;
   /** Explicit ordered Planner Next anchored-operation contract. */

@@ -23,6 +23,14 @@ import { buildDefaultPlanResourceItemSnapshotRows } from "./resourceAvailability
 import { buildPlanSpatialAvailabilityInitializationBatch, buildPlanSpatialAvailabilitySnapshot, resolveEffectiveSpaceAvailabilityHierarchy, validateSpatialAvailabilityCatalog } from "./spaceAvailabilityHierarchy";
 import { runSpatialAvailabilityValidation, SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 import { buildProgramSettingsAtomicPatch, type ProgramSettingsUpdateInput } from "./programSettingsUpdate";
+import {
+  TaskTemplateSnapshotError,
+  indexTaskTemplateSnapshots,
+  normalizeTaskTemplateCatalogEntry,
+  projectTaskTemplateSnapshotRow,
+  taskTemplateSnapshotToPersistenceRow,
+  type TaskTemplateOperationalSnapshotV1,
+} from "./taskTemplateSnapshot";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -69,11 +77,49 @@ async function throwAfterPlanCreationFailure(planId: number, cause: unknown, fal
   throw new Error(originalMessage || fallbackMessage);
 }
 
+async function throwAfterContestantCreationFailure(
+  planId: number,
+  contestantId: number,
+  cause: unknown,
+  fallbackMessage: string,
+): Promise<never> {
+  const originalMessage = cause instanceof Error ? cause.message : fallbackMessage;
+  const cleanupFailures: string[] = [];
+  const { error: taskCleanupError } = await supabaseAdmin
+    .from("daily_tasks")
+    .delete()
+    .eq("plan_id", planId)
+    .eq("contestant_id", contestantId);
+  if (taskCleanupError) cleanupFailures.push(`daily_tasks: ${taskCleanupError.message}`);
+
+  const { error: contestantCleanupError } = await supabaseAdmin
+    .from("contestants")
+    .delete()
+    .eq("id", contestantId)
+    .eq("plan_id", planId);
+  if (contestantCleanupError) cleanupFailures.push(`contestant: ${contestantCleanupError.message}`);
+
+  if (cleanupFailures.length > 0) {
+    throw new Error(
+      `${fallbackMessage}: ${originalMessage}; COMPENSATION_FAILED: ${cleanupFailures.join("; ")}; potentially partial contestant ${contestantId}`,
+    );
+  }
+  throw new Error(originalMessage || fallbackMessage);
+}
+
 export type PlanningRunDiagnosticsRecord = Omit<EngineRunDiagnostics, "status"> & {
   id: number;
   planId: number;
   createdAt: string;
   status: "running" | "success" | "infeasible" | "error";
+};
+
+export type PlanFullDetails = {
+  plan: Plan;
+  tasks: any[];
+  locks: Lock[];
+  availability: any[];
+  breaks: any[];
 };
 
 export interface IStorage {
@@ -153,16 +199,10 @@ export interface IStorage {
   createLock(lock: InsertLock): Promise<Lock>;
 
   // Engine Data
-  getPlanFullDetails(planId: number): Promise<
-    | {
-        plan: Plan;
-        tasks: DailyTask[];
-        locks: Lock[];
-        availability: any[];
-        breaks: any[];
-      }
-    | undefined
-  >;
+  getPlanFullDetails(planId: number): Promise<PlanFullDetails | undefined>;
+  getPlanEngineInputDetails(planId: number): Promise<PlanFullDetails | undefined>;
+  getPlanTaskTemplateSnapshots(planId: number): Promise<readonly TaskTemplateOperationalSnapshotV1[]>;
+  ensurePlanTaskTemplateSnapshot(planId: number, templateId: number): Promise<TaskTemplateOperationalSnapshotV1>;
 
   syncPlanMealBreaks(planId: number): Promise<void>;
   savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void>;
@@ -835,39 +875,29 @@ export class SupabaseStorage implements IStorage {
       createdAt: data.created_at ?? null,
     };
 
-    // ✅ Auto-crear tareas por templates marcadas para creación automática al crear concursante
+    // Auto-create is governed by the immutable per-plan template snapshot.
     try {
-      const { data: autoTemplates, error: autoTemplatesErr } = await supabaseAdmin
-        .from("task_templates")
-        .select("id")
-        .eq("auto_create_on_contestant_create", true);
-
-      if (autoTemplatesErr) throw autoTemplatesErr;
-
-      const templateIds = ((autoTemplates as any[]) ?? [])
-        .map((row: any) => Number(row?.id))
-        .filter((id: number) => Number.isFinite(id) && id > 0);
+      const snapshots = await this.getPlanTaskTemplateSnapshots(planId);
+      const templateIds = snapshots
+        .filter((snapshot) => snapshot.autoCreateOnContestantCreate)
+        .map((snapshot) => snapshot.sourceTemplateId);
 
       if (templateIds.length > 0) {
-        const uniqueTemplateIds = Array.from(new Set(templateIds));
         const { data: existing, error: existingErr } = await supabaseAdmin
           .from("daily_tasks")
           .select("template_id")
           .eq("plan_id", planId)
           .eq("contestant_id", createdContestant.id)
-          .in("template_id", uniqueTemplateIds);
-
+          .in("template_id", templateIds);
         if (existingErr) throw existingErr;
 
-        const existingSet = new Set<number>();
-        for (const row of (existing as any[]) ?? []) {
-          const tid = Number((row as any)?.template_id);
-          if (Number.isFinite(tid) && tid > 0) existingSet.add(tid);
-        }
-
-        for (const templateId of uniqueTemplateIds) {
+        const existingSet = new Set<number>(
+          ((existing as any[]) ?? [])
+            .map((row: any) => Number(row?.template_id))
+            .filter((id: number) => Number.isFinite(id) && id > 0),
+        );
+        for (const templateId of templateIds) {
           if (existingSet.has(templateId)) continue;
-
           await this.createDailyTask({
             planId,
             templateId,
@@ -878,9 +908,13 @@ export class SupabaseStorage implements IStorage {
           } as any);
         }
       }
-    } catch (e) {
-      console.error("[AUTO CREATE CONTESTANT TEMPLATES] error", e);
-      // No bloqueamos la creación del concursante si falla el auto-create
+    } catch (autoCreateError) {
+      return throwAfterContestantCreationFailure(
+        planId,
+        Number(createdContestant.id),
+        autoCreateError,
+        "Failed to initialize contestant tasks from the plan snapshot",
+      );
     }
 
     // ✅ Auto-crear tareas por Vocal Coach (si ya viene asignado al crear concursante)
@@ -1167,14 +1201,26 @@ export class SupabaseStorage implements IStorage {
   }
 
   async createPlan(plan: InsertPlan | (Omit<InsertPlan, "workStart" | "workEnd"> & { workStart?: string; workEnd?: string })): Promise<Plan> {
-    const [{ data: settings, error: settingsError }, { data: zoneCatalog, error: zonesError }, { data: spaceCatalog, error: spacesError }] = await Promise.all([
+    const [
+      { data: settings, error: settingsError },
+      { data: zoneCatalog, error: zonesError },
+      { data: spaceCatalog, error: spacesError },
+      taskTemplateCatalog,
+    ] = await Promise.all([
       supabaseAdmin.from("program_settings").select("default_work_start, default_work_end").eq("id", 1).single(),
       supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
+      this.getTaskTemplates(),
     ]);
     if (settingsError) throw settingsError;
     if (zonesError) throw zonesError;
     if (spacesError) throw spacesError;
+
+    // Validate the complete catalog before creating the plan, so no partial day can be persisted.
+    const validatedTaskTemplateSnapshots = taskTemplateCatalog
+      .map((template: TaskTemplate) => normalizeTaskTemplateCatalogEntry(template, "inherited"))
+      .sort((left: TaskTemplateOperationalSnapshotV1, right: TaskTemplateOperationalSnapshotV1) => left.sourceTemplateId - right.sourceTemplateId);
+    indexTaskTemplateSnapshots(validatedTaskTemplateSnapshots);
     const snapshotInput = {
       requestedWorkDay: { start: plan.workStart, end: plan.workEnd },
       defaultWorkDay: { start: settings.default_work_start, end: settings.default_work_end },
@@ -1204,6 +1250,24 @@ export class SupabaseStorage implements IStorage {
       .select()
       .single();
     if (error) throw error;
+
+    try {
+      const taskTemplateSnapshotRows = validatedTaskTemplateSnapshots.map((snapshot: TaskTemplateOperationalSnapshotV1) =>
+        taskTemplateSnapshotToPersistenceRow(Number(data.id), snapshot),
+      );
+      if (taskTemplateSnapshotRows.length > 0) {
+        const { error: taskTemplateSnapshotError } = await supabaseAdmin
+          .from("plan_task_template_snapshots")
+          .insert(taskTemplateSnapshotRows);
+        if (taskTemplateSnapshotError) throw taskTemplateSnapshotError;
+      }
+    } catch (taskTemplateSnapshotError: any) {
+      return throwAfterPlanCreationFailure(
+        Number(data.id),
+        taskTemplateSnapshotError,
+        "Failed to snapshot task templates for plan",
+      );
+    }
 
     try {
       const spatialSnapshots = runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot({ planId: Number(data.id), ...snapshotInput }));
@@ -1828,6 +1892,16 @@ export class SupabaseStorage implements IStorage {
     };
   }
 
+  private async getTasksForPlanForEngineInput(planId: number): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from("daily_tasks")
+      .select("*")
+      .eq("plan_id", planId)
+      .order("id", { ascending: true });
+    if (error) throw error;
+    return (data as any[]) ?? [];
+  }
+
   async getTasksForPlan(planId: number): Promise<any[]> {
     const { data, error } = await supabaseAdmin
       .from("daily_tasks")
@@ -1900,63 +1974,67 @@ export class SupabaseStorage implements IStorage {
   }
 
   async createDailyTask(task: InsertDailyTask): Promise<DailyTask> {
-    // 1) Determinar ubicación final:
-    //    - si viene override en el create (zoneId/spaceId), se respeta
-    //    - si no viene, hereda del template
-    //    - si viene spaceId sin zoneId, inferimos zoneId desde spaces (defensivo)
+    const planId = Number((task as any).planId ?? (task as any).plan_id);
+    const templateId = Number((task as any).templateId ?? (task as any).template_id);
+    if (!Number.isFinite(planId) || planId <= 0) throw new Error("INVALID_PLAN_ID");
+    if (!Number.isFinite(templateId) || templateId <= 0) throw new Error("INVALID_TEMPLATE_ID");
+
+    const snapshot = await this.ensurePlanTaskTemplateSnapshot(planId, templateId);
+
     let finalZoneId: number | null | undefined =
       (task as any).zoneId ?? (task as any).zone_id ?? undefined;
     let finalSpaceId: number | null | undefined =
       (task as any).spaceId ?? (task as any).space_id ?? undefined;
 
-    const { data: tpl, error: tplErr } = await supabaseAdmin
-      .from("task_templates")
-      .select("zone_id, space_id, default_comment1_color, default_comment2_color")
-      .eq("id", task.templateId)
-      .single();
-    if (tplErr) throw tplErr;
-
     if (finalZoneId === undefined && finalSpaceId === undefined) {
-      finalZoneId = (tpl as any)?.zone_id ?? null;
-      finalSpaceId = (tpl as any)?.space_id ?? null;
+      finalZoneId = snapshot.defaultZoneId;
+      finalSpaceId = snapshot.defaultSpaceId;
     }
 
-    // Si hay spaceId pero no zoneId, inferimos plató desde el espacio (robustez)
-    if (
-      (finalZoneId === undefined || finalZoneId === null) &&
-      finalSpaceId !== undefined &&
-      finalSpaceId !== null
-    ) {
-      const { data: sp, error: spErr } = await supabaseAdmin
-        .from("spaces") // Engine Data
+    if ((finalZoneId === undefined || finalZoneId === null) && finalSpaceId != null) {
+      const { data: dailySpace, error: dailySpaceError } = await supabaseAdmin
+        .from("plan_space_settings")
         .select("zone_id")
-        .eq("id", finalSpaceId)
-        .single();
+        .eq("plan_id", planId)
+        .eq("space_id", finalSpaceId)
+        .maybeSingle();
+      if (dailySpaceError) throw dailySpaceError;
+      if (!dailySpace) {
+        throw new Error(`MISSING_PLAN_SPACE_SNAPSHOT: plan ${planId}, space ${String(finalSpaceId)}`);
+      }
+      finalZoneId = Number((dailySpace as any).zone_id);
+    }
 
-      if (spErr) throw spErr;
-      finalZoneId = (sp as any)?.zone_id ?? null;
+    // Comment colors are visual metadata and intentionally remain outside the operational snapshot.
+    let defaultComment1Color: string | null = null;
+    let defaultComment2Color: string | null = null;
+    if ((task as any).comment1Color === undefined || (task as any).comment2Color === undefined) {
+      const { data: visualDefaults, error: visualDefaultsError } = await supabaseAdmin
+        .from("task_templates")
+        .select("default_comment1_color, default_comment2_color")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (visualDefaultsError) throw visualDefaultsError;
+      defaultComment1Color = (visualDefaults as any)?.default_comment1_color ?? null;
+      defaultComment2Color = (visualDefaults as any)?.default_comment2_color ?? null;
     }
 
     const { data, error } = await supabaseAdmin
       .from("daily_tasks")
       .insert({
-        plan_id: task.planId,
-        template_id: task.templateId,
+        plan_id: planId,
+        template_id: templateId,
         contestant_id: task.contestantId,
         duration_override: task.durationOverride,
         cameras_override: task.camerasOverride,
         status: task.status,
-
-        // Ubicación heredada / override
         zone_id: finalZoneId ?? null,
         space_id: finalSpaceId ?? null,
-
-        // Si es creación normal, no ponemos etiqueta (solo se usa cuando se borra ubicación)
         location_label: null,
         comment1_text: (task as any).comment1Text ?? null,
-        comment1_color: (task as any).comment1Color ?? ((tpl as any)?.default_comment1_color ?? null),
+        comment1_color: (task as any).comment1Color ?? defaultComment1Color,
         comment2_text: (task as any).comment2Text ?? null,
-        comment2_color: (task as any).comment2Color ?? ((tpl as any)?.default_comment2_color ?? null),
+        comment2_color: (task as any).comment2Color ?? defaultComment2Color,
       })
       .select()
       .single();
@@ -2585,6 +2663,103 @@ export class SupabaseStorage implements IStorage {
 
     await this.syncPlanMealBreaks(planId);
     return data as any;
+  }
+
+  async getPlanTaskTemplateSnapshots(planId: number): Promise<readonly TaskTemplateOperationalSnapshotV1[]> {
+    const { data, error } = await supabaseAdmin
+      .from("plan_task_template_snapshots")
+      .select("*")
+      .eq("plan_id", planId)
+      .order("source_template_id", { ascending: true });
+    if (error) throw error;
+    return Object.freeze(((data as any[]) ?? []).map(projectTaskTemplateSnapshotRow));
+  }
+
+  async ensurePlanTaskTemplateSnapshot(
+    planId: number,
+    templateId: number,
+  ): Promise<TaskTemplateOperationalSnapshotV1> {
+    const readExisting = async (): Promise<TaskTemplateOperationalSnapshotV1 | null> => {
+      const { data, error } = await supabaseAdmin
+        .from("plan_task_template_snapshots")
+        .select("*")
+        .eq("plan_id", planId)
+        .eq("source_template_id", templateId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? projectTaskTemplateSnapshotRow(data) : null;
+    };
+
+    const existing = await readExisting();
+    if (existing) return existing;
+
+    const { count: existingTaskCount, error: existingTaskCountError } = await supabaseAdmin
+      .from("daily_tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("plan_id", planId)
+      .eq("template_id", templateId);
+    if (existingTaskCountError) throw existingTaskCountError;
+    if ((existingTaskCount ?? 0) > 0) {
+      throw new TaskTemplateSnapshotError(
+        "MISSING_PLAN_TASK_TEMPLATE_SNAPSHOT",
+        `Plan ${planId}, template ${templateId} already has persisted tasks.`,
+        { planId, templateId, existingTaskCount },
+      );
+    }
+
+    const { count: snapshotCount, error: snapshotCountError } = await supabaseAdmin
+      .from("plan_task_template_snapshots")
+      .select("source_template_id", { count: "exact", head: true })
+      .eq("plan_id", planId);
+    if (snapshotCountError) throw snapshotCountError;
+    if ((snapshotCount ?? 0) === 0) {
+      const { count: planTaskCount, error: planTaskCountError } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("plan_id", planId);
+      if (planTaskCountError) throw planTaskCountError;
+      if ((planTaskCount ?? 0) > 0) {
+        throw new TaskTemplateSnapshotError(
+          "MISSING_PLAN_TASK_TEMPLATE_SNAPSHOT_CATALOG",
+          `Plan ${planId} has tasks but no template snapshot catalog.`,
+          { planId, planTaskCount },
+        );
+      }
+    }
+
+    const { data: template, error: templateError } = await supabaseAdmin
+      .from("task_templates")
+      .select("*")
+      .eq("id", templateId)
+      .maybeSingle();
+    if (templateError) throw templateError;
+    if (!template) {
+      throw new TaskTemplateSnapshotError(
+        "MISSING_TASK_TEMPLATE_FOR_AD_HOC_SNAPSHOT",
+        `Global template ${templateId} does not exist for explicit ad-hoc initialization.`,
+        { planId, templateId },
+      );
+    }
+
+    const snapshot = normalizeTaskTemplateCatalogEntry(template, "ad_hoc_from_default");
+    const row = taskTemplateSnapshotToPersistenceRow(planId, snapshot);
+    const { error: insertError } = await supabaseAdmin
+      .from("plan_task_template_snapshots")
+      .upsert(row, {
+        onConflict: "plan_id,source_template_id",
+        ignoreDuplicates: true,
+      });
+    if (insertError) throw insertError;
+
+    const persisted = await readExisting();
+    if (!persisted) {
+      throw new TaskTemplateSnapshotError(
+        "MISSING_PLAN_TASK_TEMPLATE_SNAPSHOT",
+        `Plan ${planId}, template ${templateId} was not persisted after ad-hoc initialization.`,
+        { planId, templateId },
+      );
+    }
+    return persisted;
   }
 
   async getTaskTemplates(): Promise<TaskTemplate[]> {
@@ -3267,6 +3442,43 @@ export class SupabaseStorage implements IStorage {
     }
 
     return out;
+  }
+
+  async getPlanEngineInputDetails(planId: number): Promise<PlanFullDetails | undefined> {
+    const plan = await this.getPlan(planId);
+    if (!plan) return undefined;
+
+    try {
+      const { data: settings, error: settingsErr } = await supabaseAdmin
+        .from("program_settings")
+        .select("meal_task_template_name")
+        .eq("id", 1)
+        .single();
+      if (!settingsErr) {
+        (plan as any).mealTaskTemplateName = String(
+          (settings as any)?.meal_task_template_name ?? "Comer",
+        );
+      }
+    } catch {
+      (plan as any).mealTaskTemplateName = "Comer";
+    }
+
+    const [tasks, locks, availabilityResult, breaksResult] = await Promise.all([
+      this.getTasksForPlanForEngineInput(planId),
+      this.getLocksForPlan(planId),
+      supabaseAdmin.from("resource_availability").select("*").eq("plan_id", planId),
+      supabaseAdmin.from("plan_breaks").select("*").eq("plan_id", planId),
+    ]);
+    if (availabilityResult.error) throw availabilityResult.error;
+    if (breaksResult.error) throw breaksResult.error;
+
+    return {
+      plan,
+      tasks,
+      locks,
+      availability: availabilityResult.data ?? [],
+      breaks: breaksResult.data ?? [],
+    };
   }
 
   async getPlanFullDetails(planId: number) {

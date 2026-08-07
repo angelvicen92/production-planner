@@ -1,7 +1,13 @@
-import { IStorage } from "../server/storage";
-import { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput } from "./types";
+import type { IStorage } from "../server/storage";
+import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
 import { resolveWeight } from "@shared/optimizer";
 import { immutableMapView } from "@shared/immutableMapView";
+import {
+  TaskTemplateSnapshotError,
+  deriveTaskTemplateSnapshotCatalogFingerprint,
+  indexTaskTemplateSnapshots,
+  summarizeTaskTemplateSnapshotSources,
+} from "../server/taskTemplateSnapshot";
 
 type ContestantVocalCoachRow = Readonly<{
   id?: unknown;
@@ -10,6 +16,24 @@ type ContestantVocalCoachRow = Readonly<{
 }> | null | undefined;
 
 type PlanResourceItemRow = Readonly<Record<string, unknown>>;
+
+function cloneResourceRequirementsForEngineInput(
+  requirements: Readonly<ResourceRequirementsInput> | null,
+): ResourceRequirementsInput | null {
+  if (!requirements) return null;
+  return {
+    ...(requirements.byType ? { byType: { ...requirements.byType } } : {}),
+    ...(requirements.byItem ? { byItem: { ...requirements.byItem } } : {}),
+    ...(requirements.anyOf
+      ? {
+          anyOf: requirements.anyOf.map((group) => ({
+            quantity: group.quantity,
+            resourceItemIds: [...group.resourceItemIds],
+          })),
+        }
+      : {}),
+  };
+}
 
 function readPresentField(row: PlanResourceItemRow, camelKey: string, snakeKey: string): unknown {
   if (Object.prototype.hasOwnProperty.call(row, camelKey)) return row[camelKey];
@@ -87,10 +111,16 @@ export async function buildEngineInput(
   planId: number,
   storage: IStorage,
 ): Promise<EngineInput> {
-  const details = await storage.getPlanFullDetails(planId);
+  const [details, taskTemplateSnapshots] = await Promise.all([
+    storage.getPlanEngineInputDetails(planId),
+    storage.getPlanTaskTemplateSnapshots(planId),
+  ]);
   if (!details) {
     throw new Error(`Plan ${planId} not found`);
   }
+  const templateById = indexTaskTemplateSnapshots(taskTemplateSnapshots);
+  const taskTemplateSnapshotFingerprint = deriveTaskTemplateSnapshotCatalogFingerprint(taskTemplateSnapshots);
+  const taskTemplateSnapshotSources = summarizeTaskTemplateSnapshotSources(taskTemplateSnapshots);
 
   // TODO: Map DB entities to EngineInput types
   // This is where we isolate the domain from the engine
@@ -428,10 +458,8 @@ export async function buildEngineInput(
   const resourceItemComponents =
     (await safe(() => storage.getResourceItemComponentsMap(resourceItemIds), {})) ?? {};
 
-  // ✅ Dependencias: leemos task_templates y resolvemos por concursante
-  const templates = await storage.getTaskTemplates();
-  const templateById = new Map<number, any>();
-  for (const tt of templates as any[]) templateById.set(Number(tt.id), tt);
+  // Operational template semantics come exclusively from the per-plan snapshot.
+  const templates = [...taskTemplateSnapshots];
 
   const normalizeTransportTemplateName = (value: unknown) => String(value ?? "").trim().toLowerCase();
   const configuredTransportTemplateNames = new Set(
@@ -442,21 +470,17 @@ export async function buildEngineInput(
   );
   const configuredTransportTemplateIds = new Set<number>();
   const templateTransportSpaceIds = new Set<number>();
-  for (const tt of templates as any[]) {
-    const templateName = normalizeTransportTemplateName(tt?.name);
+  for (const snapshot of templates) {
+    const templateName = normalizeTransportTemplateName(snapshot.templateName);
     if (!configuredTransportTemplateNames.has(templateName)) continue;
-    const templateId = Number(tt?.id);
-    if (Number.isFinite(templateId) && templateId > 0) configuredTransportTemplateIds.add(templateId);
-    const spaceId = Number(tt?.space_id ?? tt?.spaceId ?? NaN);
-    if (Number.isFinite(spaceId) && spaceId > 0 && existingSpaceIds.has(spaceId)) {
-      templateTransportSpaceIds.add(spaceId);
-    }
+    configuredTransportTemplateIds.add(snapshot.sourceTemplateId);
+    const spaceId = snapshot.defaultSpaceId;
+    if (spaceId !== null && existingSpaceIds.has(spaceId)) templateTransportSpaceIds.add(spaceId);
   }
   const taskTransportSpaceIds = new Set<number>();
   for (const task of (details.tasks as any[]) ?? []) {
     const templateId = Number(task?.template_id ?? task?.templateId ?? NaN);
-    const joinedTemplateName = normalizeTransportTemplateName(task?.template?.name);
-    if (!configuredTransportTemplateIds.has(templateId) && !configuredTransportTemplateNames.has(joinedTemplateName)) continue;
+    if (!configuredTransportTemplateIds.has(templateId)) continue;
     const spaceId = Number(task?.space_id ?? task?.spaceId ?? NaN);
     if (Number.isFinite(spaceId) && spaceId > 0 && existingSpaceIds.has(spaceId)) {
       taskTransportSpaceIds.add(spaceId);
@@ -471,10 +495,9 @@ export async function buildEngineInput(
   const transportTemplateIdByName = (name: unknown): number | null => {
     const normalized = normalizeTransportTemplateName(name);
     if (!normalized) return null;
-    const matches = (templates as any[])
-      .filter((tpl: any) => normalizeTransportTemplateName(tpl?.name) === normalized)
-      .map((tpl: any) => Number(tpl?.id))
-      .filter((templateId: number) => Number.isFinite(templateId) && templateId > 0);
+    const matches = templates
+      .filter((snapshot) => normalizeTransportTemplateName(snapshot.templateName) === normalized)
+      .map((snapshot) => snapshot.sourceTemplateId);
     return matches.length === 1 ? matches[0] : null;
   };
   const arrivalTransportTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "");
@@ -482,149 +505,9 @@ export async function buildEngineInput(
   const arrivalTransportTemplateId = transportTemplateIdByName(arrivalTransportTemplateName);
   const departureTransportTemplateId = transportTemplateIdByName(departureTransportTemplateName);
 
-  // ✅ Mapa id -> nombre (para mensajes de dependencias)
-  const taskTemplateNameById: Record<number, string> = {};
-  for (const tt of templates as any[]) {
-    const id = Number(tt?.id);
-    if (!Number.isFinite(id) || id <= 0) continue;
-    const name = String(tt?.name ?? "").trim();
-    if (name) taskTemplateNameById[id] = name;
-  }
-
-  // helper para leer camelCase o snake_case (defensivo con ZIPs viejos)
-  const getHasDep = (tt: any) =>
-    Boolean(tt?.hasDependency ?? tt?.has_dependency ?? false);
-
-  const getDepTemplateId = (tt: any) => {
-    const v = tt?.dependsOnTemplateId ?? tt?.depends_on_template_id ?? null;
-    return v === null || v === undefined ? null : Number(v);
-  };
-
-  const getDepTemplateIds = (tt: any): number[] => {
-    const raw =
-      tt?.dependsOnTemplateIds ??
-      tt?.depends_on_template_ids ??
-      tt?.dependsOnTemplateIDs ??
-      null;
-
-    let arr: any[] = [];
-    if (Array.isArray(raw)) arr = raw;
-    else if (typeof raw === "string") {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) arr = parsed;
-      } catch {
-        arr = [];
-      }
-    }
-
-    return Array.from(
-      new Set(
-        arr
-          .map((x) => Number(x))
-          .filter((n) => Number.isFinite(n) && n > 0),
-      ),
-    );
-  };
-
-  const normalizeResourceRequirements = (raw: any) => {
-    let rr: any = null;
-
-    // ✅ soportar JSON guardado como string (legacy / UI antigua)
-    if (typeof raw === "string") {
-      try {
-        rr = JSON.parse(raw);
-      } catch {
-        rr = null;
-      }
-    } else if (raw && typeof raw === "object") {
-      rr = raw;
-    }
-
-    // ✅ soportar claves legacy snake_case dentro del JSON
-    if (rr && typeof rr === "object") {
-      if (rr.byType == null && rr.by_type != null) rr.byType = rr.by_type;
-      if (rr.byItem == null && rr.by_item != null) rr.byItem = rr.by_item;
-      if (rr.anyOf == null && rr.any_of != null) rr.anyOf = rr.any_of;
-    }
-
-    const byType: Record<number, number> = {};
-    const byItem: Record<number, number> = {};
-
-    const btRaw = (rr as any)?.byType ?? null;
-
-    // Formato A: array [{resourceTypeId, quantity}]
-      if (Array.isArray(btRaw)) {
-        for (const r of btRaw) {
-          const tid = Number((r as any)?.resourceTypeId ?? (r as any)?.resource_type_id);
-          const qty = Number((r as any)?.quantity ?? (r as any)?.qty ?? 0);
-          if (!Number.isFinite(tid) || tid <= 0) continue;
-          if (!Number.isFinite(qty) || qty <= 0) continue;
-          byType[tid] = Math.min(99, Math.max(0, Math.floor(qty)));
-        }
-      }
-    // Formato B: map { "<typeId>": quantity }
-    else if (btRaw && typeof btRaw === "object") {
-      for (const [k, v] of Object.entries(btRaw)) {
-        const tid = Number(k);
-        const qty = Number(v ?? 0);
-        if (!Number.isFinite(tid) || tid <= 0) continue;
-        if (!Number.isFinite(qty) || qty <= 0) continue;
-        byType[tid] = Math.min(99, Math.max(0, Math.floor(qty)));
-      }
-    }
-
-    const biRaw = (rr as any)?.byItem ?? null;
-
-    // Formato A: array [{resourceItemId, quantity}]
-      if (Array.isArray(biRaw)) {
-        for (const r of biRaw) {
-          const iid = Number((r as any)?.resourceItemId ?? (r as any)?.resource_item_id);
-          const qty = Number((r as any)?.quantity ?? (r as any)?.qty ?? 0);
-          if (!Number.isFinite(iid) || iid <= 0) continue;
-          if (!Number.isFinite(qty) || qty <= 0) continue;
-          byItem[iid] = Math.min(99, Math.max(0, Math.floor(qty)));
-        }
-      }
-    // Formato B: map { "<resourceItemId>": quantity }
-    else if (biRaw && typeof biRaw === "object") {
-      for (const [k, v] of Object.entries(biRaw)) {
-        const iid = Number(k);
-        const qty = Number(v ?? 0);
-        if (!Number.isFinite(iid) || iid <= 0) continue;
-        if (!Number.isFinite(qty) || qty <= 0) continue;
-        byItem[iid] = Math.min(99, Math.max(0, Math.floor(qty)));
-      }
-    }
-
-        const anyOfRaw = Array.isArray((rr as any)?.anyOf) ? (rr as any).anyOf : [];
-        const anyOf = anyOfRaw
-          .map((g: any) => {
-            const q = Number(g?.quantity ?? 1);
-            const ids = Array.isArray(g?.resourceItemIds)
-              ? g.resourceItemIds
-              : Array.isArray(g?.resource_item_ids)
-                ? g.resource_item_ids
-                : [];
-        const quantity = Number.isFinite(q) && q > 0 ? Math.min(99, Math.floor(q)) : 1;
-        const resourceItemIds = Array.from(
-          new Set(
-            ids
-              .map((n: any) => Number(n))
-              .filter((n: number) => Number.isFinite(n) && n > 0),
-          ),
-        );
-        return resourceItemIds.length > 0 ? { quantity, resourceItemIds } : null;
-      })
-      .filter(Boolean) as Array<{ quantity: number; resourceItemIds: number[] }>;
-
-    const out: any = {};
-    if (Object.keys(byType).length > 0) out.byType = byType;
-    if (Object.keys(byItem).length > 0) out.byItem = byItem;
-    if (anyOf.length > 0) out.anyOf = anyOf;
-
-    return Object.keys(out).length > 0 ? out : null;
-  };
+  const taskTemplateNameById: Record<number, string> = Object.fromEntries(
+    templates.map((snapshot) => [snapshot.sourceTemplateId, snapshot.templateName]),
+  );
 
   // Mapa rápido: (contestantId + templateId) -> taskId
   const taskIdByContestantAndTemplate = new Map<string, number>();
@@ -669,6 +552,10 @@ export async function buildEngineInput(
 
   return {
     planId: p.id,
+    taskTemplateSnapshotContractVersion: 1,
+    taskTemplateSnapshotCount: taskTemplateSnapshots.length,
+    taskTemplateSnapshotSources,
+    taskTemplateSnapshotFingerprint,
     planZoneSettings,
     planSpaceSettings,
 
@@ -715,10 +602,10 @@ export async function buildEngineInput(
         .toLowerCase();
       if (!mealName) return null;
 
-      const found = (templates as any[]).find(
-        (tpl: any) => String(tpl?.name ?? "").trim().toLowerCase() === mealName,
+      const found = templates.find(
+        (snapshot) => snapshot.templateName.trim().toLowerCase() === mealName,
       );
-      const inferred = Number(found?.id ?? NaN);
+      const inferred = Number(found?.sourceTemplateId ?? NaN);
       return Number.isFinite(inferred) && inferred > 0 ? inferred : null;
     })(),
 
@@ -842,27 +729,17 @@ export async function buildEngineInput(
 
         const templateId = Number(t.template_id ?? t.templateId);
 
-        // ✅ Fallback: si no está en el map global, usar la plantilla ya join-eada en la tarea
-        const tpl =
-          templateById.get(templateId) ??
-          (t.template ?? null);
+        const tpl = templateById.get(templateId);
+        if (!tpl) {
+          throw new TaskTemplateSnapshotError(
+            "MISSING_PLAN_TASK_TEMPLATE_SNAPSHOT",
+            `Plan ${planId}, task ${String(t.id)}, template ${templateId} has no daily snapshot.`,
+            { planId, taskId: t.id, templateId },
+          );
+        }
 
-        const depTemplateIdsFromArray = getDepTemplateIds(tpl);
-        const legacyDepTemplateId = getDepTemplateId(tpl);
-
-        // hasDependency: true si hay array con elementos o si legacy venía activo
-        const hasDependency =
-          depTemplateIdsFromArray.length > 0 || getHasDep(tpl);
-
-        // Normalizamos: lista final de templateIds prereq
-        const dependsOnTemplateIds = Array.from(
-          new Set(
-            [
-              ...depTemplateIdsFromArray,
-              ...(legacyDepTemplateId ? [legacyDepTemplateId] : []),
-            ].filter(Boolean) as number[],
-          ),
-        );
+        const dependsOnTemplateIds = [...tpl.dependencyTemplateIds];
+        const hasDependency = tpl.hasDependency || dependsOnTemplateIds.length > 0;
 
         // Resolución: si hay concursante, buscamos prereqs del mismo concursante
         const dependsOnTaskIds =
@@ -893,12 +770,7 @@ export async function buildEngineInput(
         const startPlanned = (t.start_planned ?? t.startPlanned ?? null) as string | null;
         const endPlanned = (t.end_planned ?? t.endPlanned ?? null) as string | null;
         const explicitDurationRaw = t.duration_override ?? t.durationOverride ?? null;
-        const templateDurationRaw =
-          (tpl as any)?.default_duration ??
-          (tpl as any)?.defaultDuration ??
-          (tpl as any)?.default_duration_min ??
-          (tpl as any)?.defaultDurationMin ??
-          null;
+        const templateDurationRaw = tpl.defaultDuration;
         const toNormalizedDuration = (value: unknown): number | null => {
           const parsed = Number(value);
           if (!Number.isFinite(parsed) || parsed <= 0) return null;
@@ -906,8 +778,10 @@ export async function buildEngineInput(
         };
         const effectiveDurationMin =
           toNormalizedDuration(explicitDurationRaw) ??
-          toNormalizedDuration(templateDurationRaw) ??
-          30;
+          toNormalizedDuration(templateDurationRaw);
+        if (effectiveDurationMin === null) {
+          throw new Error(`INVALID_PLAN_TASK_TEMPLATE_DURATION: plan ${planId}, template ${templateId}`);
+        }
         const lockForTask = lockByTaskId.get(Number(t.id));
         const manualDuration = (() => {
           const startMin = minutesFromHHMM(startPlanned);
@@ -923,7 +797,7 @@ export async function buildEngineInput(
             : contestantId;
         const rawSpaceId = isManualBlock && manualScopeType === "space" && Number.isFinite(manualScopeId as any)
           ? Number(manualScopeId)
-          : ((t.space_id ?? t.spaceId ?? null) as number | null);
+          : ((t.space_id ?? t.spaceId ?? tpl.defaultSpaceId ?? null) as number | null);
         const normalizedSpaceId = Number(rawSpaceId);
         // Preserve concrete task identity even when the mutable global catalog no longer contains it.
         // Planner Next resolves the authoritative daily relation from planSpaceSettings.
@@ -934,19 +808,13 @@ export async function buildEngineInput(
           planId: t.plan_id ?? t.planId,
           templateId,
           templateName: (isManualBlock
-            ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "BLOQUEO")
-            : (tpl?.name ?? t.template?.name ?? null)) as string | null,
-          
-          resourceRequirements: isManualBlock
-            ? []
-            : normalizeResourceRequirements(
-                (tpl as any)?.resourceRequirements ??
-                  (tpl as any)?.resource_requirements ??
-                  null,
-              ),
+            ? (t.manual_title ?? t.manualTitle ?? tpl.templateName ?? "BLOQUEO")
+            : tpl.templateName) as string | null,
+
+          resourceRequirements: isManualBlock ? null : cloneResourceRequirementsForEngineInput(tpl.resourceRequirements),
 
           zoneId: (() => {
-            const rawZoneId = t.zone_id ?? t.zoneId ?? null;
+            const rawZoneId = t.zone_id ?? t.zoneId ?? tpl.defaultZoneId ?? null;
             const normalizedZoneId = Number(rawZoneId);
             const explicitZoneId =
               Number.isFinite(normalizedZoneId) && normalizedZoneId > 0
@@ -958,8 +826,8 @@ export async function buildEngineInput(
 
             const templateName = String(
               (isManualBlock
-                ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "")
-                : (tpl?.name ?? t.template?.name ?? "")) ?? "",
+                ? (t.manual_title ?? t.manualTitle ?? tpl.templateName ?? "")
+                : tpl.templateName) ?? "",
             )
               .trim()
               .toLowerCase();
@@ -986,8 +854,8 @@ export async function buildEngineInput(
 
             const templateName = String(
               (isManualBlock
-                ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "")
-                : (tpl?.name ?? t.template?.name ?? "")) ?? "",
+                ? (t.manual_title ?? t.manualTitle ?? tpl.templateName ?? "")
+                : tpl.templateName) ?? "",
             )
               .trim()
               .toLowerCase();
@@ -1017,52 +885,9 @@ export async function buildEngineInput(
             ? (contestantNameById.get(effectiveContestantId) ?? null)
             : null,
           status: t.status,
-          itinerantTeamId:
-            (tpl as any)?.itinerantTeamRequirement === "specific" &&
-            Number.isFinite(Number((tpl as any)?.itinerantTeamId))
-              ? Number((tpl as any).itinerantTeamId)
-              : null,
-          allowedItinerantTeamIds: (() => {
-            const rulesJson =
-              (tpl as any)?.rulesJson ??
-              (tpl as any)?.rules_json ??
-              null;
-            const fromRules: unknown[] = Array.isArray((rulesJson as any)?.itinerantTeamAllowedIds)
-              ? (rulesJson as any).itinerantTeamAllowedIds
-              : Array.isArray((rulesJson as any)?.itinerant_team_allowed_ids)
-                ? (rulesJson as any).itinerant_team_allowed_ids
-                : [];
-
-            const normalized: number[] = Array.from(
-              new Set(
-                fromRules
-                  .map((id: any) => Number(id))
-                  .filter((id: number) => Number.isFinite(id) && id > 0),
-              ),
-            );
-
-            if (normalized.length > 0) return normalized;
-
-            const requirement = String(
-              (tpl as any)?.itinerantTeamRequirement ??
-                (tpl as any)?.itinerant_team_requirement ??
-                "none",
-            )
-              .trim()
-              .toLowerCase();
-            const specificId = Number(
-              (tpl as any)?.itinerantTeamId ?? (tpl as any)?.itinerant_team_id ?? NaN,
-            );
-            if (requirement === "specific" && Number.isFinite(specificId) && specificId > 0) {
-              return [specificId];
-            }
-
-            return [];
-          })(),
-          itinerantTeamRequirement:
-            (tpl as any)?.itinerantTeamRequirement ??
-            (tpl as any)?.itinerant_team_requirement ??
-            "none",
+          itinerantTeamId: tpl.itinerantTeamId,
+          allowedItinerantTeamIds: [...tpl.allowedItinerantTeamIds],
+          itinerantTeamRequirement: tpl.itinerantTeamRequirement,
 
           // ✅ Dependencias (ya resueltas a taskIds)
           hasDependency: isManualBlock ? false : hasDependency,
@@ -1073,11 +898,7 @@ export async function buildEngineInput(
           dependsOnTaskId: isManualBlock ? null : dependsOnTaskId,
 
         durationOverrideMin: isManualBlock ? manualDuration : effectiveDurationMin,
-        camerasOverride: (t.cameras_override ?? t.camerasOverride ?? null) as
-          | 0
-          | 1
-          | 2
-          | null,
+        camerasOverride: t.cameras_override ?? t.camerasOverride ?? tpl.defaultCameras,
 
         startPlanned,
         endPlanned,
