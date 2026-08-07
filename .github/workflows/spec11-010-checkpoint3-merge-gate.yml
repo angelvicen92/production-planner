@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -44,7 +44,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Apply reviewed checkpoint delta
-        run: node scripts/apply-spec11-010-checkpoint3-v2.cjs
+        run: node scripts/apply-spec11-010-checkpoint3-v3.cjs
 
       - name: Focal snapshot and buildInput validation
         run: >-
@@ -89,7 +89,8 @@ jobs:
           git rm \
             .github/workflows/spec11-010-checkpoint3-merge-gate.yml \
             scripts/apply-spec11-010-checkpoint3.cjs \
-            scripts/apply-spec11-010-checkpoint3-v2.cjs
+            scripts/apply-spec11-010-checkpoint3-v2.cjs \
+            scripts/apply-spec11-010-checkpoint3-v3.cjs
           git diff --cached --check
           test -z "$(git status --porcelain | grep '^??' || true)"
           git commit -m "SPEC11-010: consume daily optimizer snapshot in buildInput"
