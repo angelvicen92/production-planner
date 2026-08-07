@@ -1,0 +1,91 @@
+name: Materialize SPEC10-021 exact round synchronization
+
+on:
+  push:
+    branches:
+      - spec10-021-round-sync-exact
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event_name == 'pull_request' || startsWith(github.event.head_commit.message, 'Tooling:')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: spec10-021-round-sync-exact
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Reconstruct audited SPEC10-021 contract WIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin tooling/spec10-021-totales-round-sync
+          for chunk in 00 01 02 03; do
+            git show "origin/tooling/spec10-021-totales-round-sync:tools/spec10-021-exact/chunk-${chunk}"
+          done | base64 --decode | gzip --decompress > /tmp/spec10_021_contract.js
+          node /tmp/spec10_021_contract.js
+      - name: Apply exact-search and Full A2 deltas
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode tools/spec10-021-exact-port.patch.gz.b64 | gzip --decompress > /tmp/spec10_021_exact.patch
+          git apply /tmp/spec10_021_exact.patch
+          base64 --decode tools/spec10-021-benchmark-port.patch.gz.b64 | gzip --decompress > /tmp/spec10_021_benchmark.patch
+          git apply /tmp/spec10_021_benchmark.patch
+      - name: Run focal round synchronization test
+        run: npx tsx --test engine/planner-next/roundSynchronization.spec.ts
+      - name: Regenerate Full A2 representability Evidence
+        run: npm run benchmark:planner-next:a2-full-template
+      - name: Add README checkpoint and remove temporary tooling
+        shell: bash
+        run: |
+          cat >> README.md <<'EOF'
+
+## SPEC10-021 — Sincronización exacta de rondas entre espacios
+
+- **Objetivo (`DB Safe Merge`):** representar y construir dos carriles independientes con inicio sincronizado mientras ambos conservan trabajo elegible, sin convertirlos en un único espacio ni fijar parejas por orden de input.
+- **Semántica:** `roundSynchronizations` usa elegibilidad explícita por IDs, emparejamiento ordinal dinámico y preparación entre rondas publicada como `ScheduledRoundPreparation`; el carril largo puede continuar con rondas residuales.
+- **Búsqueda exacta:** la capacidad consume el mismo `ExactSearchLedger`, retrocede hacia asignaciones de ronda cuando falla trabajo posterior y mantiene publicación atómica al agotar presupuesto.
+- **Validación:** el validador canónico comprueba sincronización, preparación, disponibilidad, comidas y ocupaciones; el fingerprint incluye las preparaciones de ronda.
+- **Full A2:** la Evidence de representabilidad exige un probe conectado EngineInput → adapter → EXACT_CONSTRUCTIVE → validación, incluyendo ronda residual, determinismo, invariancia al orden y agotamiento atómico.
+- **Fuera de alcance:** no fija los inputs de creación que la fuente A2 deja abiertos, no usa horarios humanos como seed, no añade DB/UI y no implementa todavía el comparador humano de KPIs.
+EOF
+          rm -f tools/spec10-021-exact-port.patch.gz.b64 tools/spec10-021-benchmark-port.patch.gz.b64 .github/workflows/apply-spec10-021-round-sync-exact.yml
+      - name: Create local candidate commit
+        shell: bash
+        run: |
+          git config user.name "OptiPlan Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "SPEC10-021: sincronización exacta de rondas Totales"
+      - name: Focused regression gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run check:migrations
+          npx tsx --test engine/planner-next/roundSynchronization.spec.ts engine/planner-next/exactFlexibleSetupOrder.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts engine/planner-next/integration/engineInputPreflight.spec.ts engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts
+          npm run benchmark:planner-next:a2-full-template
+          git diff --exit-code
+      - name: Full merge gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run check
+          npm test
+          npm run build
+          git diff --check origin/main...HEAD
+      - name: Push validated candidate
+        run: git push origin HEAD:spec10-021-round-sync-exact

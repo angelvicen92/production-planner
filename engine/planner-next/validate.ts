@@ -2,6 +2,7 @@ import type {
   Person,
   PlannerNextProblem,
   ScheduledSetupPreparation,
+  ScheduledRoundPreparation,
   ScheduledSpaceMeal,
   ScheduledParticipantMeal,
   ScheduledResourceMeal,
@@ -32,6 +33,10 @@ import {
   coachRouteTransitionPreflightReasons,
   effectiveCoachTransitionMinutes,
 } from "./coachRouteTransitions";
+import {
+  roundSynchronizationPreflightReasons,
+  validateRoundSynchronizations,
+} from "./roundSynchronization";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -55,7 +60,10 @@ function validateAvailability(items: Array<Person | Space | Resource>, day: Wind
 
 /** Validates exactly the deliberately small contract supported by Planner Next. */
 export function preflight(problem: PlannerNextProblem): string[] {
-  const reasons = new Set<string>(anchoredAccompanimentPreflight(problem));
+  const reasons = new Set<string>([
+    ...anchoredAccompanimentPreflight(problem),
+    ...roundSynchronizationPreflightReasons(problem),
+  ]);
   const day = problem.day;
 
   if (!day || !Number.isFinite(day.start) || !Number.isFinite(day.end) || day.start >= day.end) {
@@ -296,7 +304,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = [], itinerantUnitMeals: import("./contracts").ScheduledItinerantUnitMeal[] = []): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = [], itinerantUnitMeals: import("./contracts").ScheduledItinerantUnitMeal[] = [], roundPreparations: ScheduledRoundPreparation[] = []): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -308,6 +316,14 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let secondaryContinuity = 0;
   let setup = 0;
   let setupPreparation = 0;
+  const roundValidation = validateRoundSynchronizations(
+    problem,
+    scheduled,
+    roundPreparations,
+    meals,
+  );
+  const roundSynchronization = roundValidation.synchronizationViolationCount;
+  const roundPreparation = roundValidation.preparationViolationCount;
   let jointGroup = 0;
   let technicalOperation = 0;
   let technicalChain = 0;
@@ -579,6 +595,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (secondaryContinuity) reasonCodes.push("SECONDARY_CONTINUITY_VIOLATION");
   if (setup) reasonCodes.push("SETUP_POLICY_VIOLATION");
   if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
+  if (roundSynchronization) reasonCodes.push("ROUND_SYNCHRONIZATION_VIOLATION");
+  if (roundPreparation) reasonCodes.push("ROUND_PREPARATION_VIOLATION");
   if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
   if (technicalOperation) reasonCodes.push("TECHNICAL_OPERATION_VIOLATION");
   if (technicalChain) reasonCodes.push("TECHNICAL_CHAIN_VIOLATION");
@@ -608,6 +626,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     secondaryContinuityViolationCount: secondaryContinuity,
     setupViolationCount: setup,
     setupPreparationViolationCount: setupPreparation,
+    ...(problem.roundSynchronizations?.length ? {
+      roundSynchronizationViolationCount: roundSynchronization,
+      roundPreparationViolationCount: roundPreparation,
+    } : {}),
     jointGroupViolationCount: jointGroup,
     technicalOperationViolationCount: technicalOperation,
     technicalChainViolationCount: technicalChain,
