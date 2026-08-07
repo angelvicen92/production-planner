@@ -25,7 +25,7 @@ restore_untracked() {
   if git stash pop "$stash_ref"; then
     stash_ref=""
   else
-    echo "Automatic restore could not complete cleanly. Your files remain محفوظ/ محفوظ in $stash_ref; nothing was dropped." >&2
+    echo "Automatic restore could not complete cleanly. Your files remain safely stored in $stash_ref; nothing was dropped." >&2
     echo "Inspect with: git stash show --stat $stash_ref" >&2
     return 1
   fi
