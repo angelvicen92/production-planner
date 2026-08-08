@@ -285,7 +285,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     if (!resourceIds.has("son-2")) issues.push(issue("ITINERANT_UNITS", "ITINERANT_RESOURCE_SET_INVALID", "resources.son-2", "SON 2 must be a canonical resource."));
     for (const unit of CANONICAL_ITINERANT_UNITS) {
       const actual = expansion.itinerantUnits.find((entry) => entry.id === unit.id);
-      if (!actual || actual.memberResourceIds.join(",") !== unit.memberResourceIds.join(",") || actual.availability !== "creation_input_required") issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID", unit.id, "Itinerant unit composition must match SPEC-08."));
+      if (!actual || actual.memberResourceIds.join(",") !== unit.memberResourceIds.join(",") || actual.availability.start !== unit.availability.start || actual.availability.end !== unit.availability.end || actual.availability.source !== unit.availability.source) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID", unit.id, "Itinerant unit composition or availability must match SPEC-08."));
     }
     const unitIds = new Set(expectedUnitIds);
     for (const resource of expansion.resources) if (unitIds.has(resource.id)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_REGISTERED_AS_RESOURCE", resource.id, "Itinerant unit identity must not be a hard resource."));
