@@ -211,6 +211,7 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
     itinerantOperations: CANONICAL_ITINERANT_OPERATIONS,
     assignments: PARTICIPANT_IDS.map(assignment),
     requiredCreationInputs: A2_BENCHMARK_SOURCE_CONFIGURATION.unresolvedCreationInputs,
+    effectiveConfiguration: A2_BENCHMARK_SOURCE_CONFIGURATION,
     rules: {
       noSeedSchedule: true,
       noLocks: true,
@@ -248,9 +249,9 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
       },
       inTransport: {
         minParticipantsPerGroup: 3,
-        minMinutesBetweenGroups: 30,
+        groupingTarget: 3, minGapMinutes: 35, vanCapacity: 6, groupingWeight: 3,
       },
-      outTransport: "creation_input_required",
+      outTransport: { groupingTarget: 3, minGapMinutes: 20, vanCapacity: 6, groupingWeight: 3 },
       ignoredEditorialNotes: ["NO_P15", "instrument", "wardrobe", "prop"],
     },
   });

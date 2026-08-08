@@ -72,9 +72,13 @@ test("invalid flexible setup contracts are rejected before adaptation", () => {
   assert.equal(preflightEngineInputForPlannerNext(offGrid).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
 });
 
-test("full A2 has no implementation blocker after exact flexible setup and round synchronization support", () => {
+test("full A2 retains only the new transport and scoped meal blockers", () => {
   const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));
   assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);
-  assert.deepEqual(analysis.implementationBlockers, []);
-  assert.equal(analysis.nextImplementationBlocker, null);
+  assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [
+    "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+    "ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+    "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+  ]);
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
 });

@@ -10,9 +10,7 @@ Se conservan tres composiciones explícitas, sin registrarlas como recursos hard
 
 ## Required creation inputs
 
-- **daily_participant_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **out_transport_policy**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
-- **scoped_meal_policies**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+
 
 Estos datos son inputs de creación del futuro día y no se seleccionan como siguiente capacidad técnica.
 
@@ -20,13 +18,15 @@ Estos datos son inputs de creación del futuro día y no se seleccionan como sig
 
 Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
 
-
+- **PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED** (ENGINE_INPUT): EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día. Pérdida si se aproxima: Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.
+- **ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED** (ADAPTER): El adaptador no proyecta una mealPolicy flexible equivalente y los intervalos fijos por alias de unidad no expresan una única obligación que siga a los recursos Reality durante la recomposición. Pérdida si se aproxima: La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.
+- **PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED** (PLANNER_NEXT): Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio. Pérdida si se aproxima: Un recurso podría trabajar durante su descanso operativo autorizado.
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-No hay blocker técnico pendiente. El probe conectado demuestra roundSynchronizationCapabilityProven=true, incluyendo emparejamiento ordinal dinámico, preparación explícita, ronda residual, determinismo, contabilidad de presupuesto y publicación atómica.
+Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=true y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED**.
 
 ## No implementado
 

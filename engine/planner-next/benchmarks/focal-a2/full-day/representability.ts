@@ -556,7 +556,52 @@ export function analyzeCanonicalFullA2Representability(
   const roundSynchronizationProbe = options.roundSynchronizationProbe ?? runRoundSynchronizationProbe();
   const roundSynchronizationCapability = roundSynchronizationCapabilityProven(roundSynchronizationProbe);
 
+  // Read-only contract probes: these booleans document the first loss observed in
+  // the current production types/preflight/adapter without pretending to execute
+  // a partial Full A2 input.
+  const participantAvailabilityProbe = {
+    sourceConfigurationPresent: expansion.participants.every((id) => Boolean(expansion.effectiveConfiguration.participantAvailability[id])),
+    engineInputContractPresent: true, engineInputPreflightSupported: true,
+    adapterProjectsAvailability: true, plannerNextContractPresent: true,
+    lossless: true, deterministic: true, inputImmutable: Object.isFrozen(expansion),
+  } as const;
+  const transportPolicyProbe = {
+    sourceConfigurationPresent: true, engineInputContractPresent: true,
+    engineInputPreflightSupported: false, adapterProjectsTransportPolicy: false,
+    plannerNextContractPresent: false, groupingTargetPreserved: false,
+    minGapPreserved: false, capacityPreserved: false, deterministic: true,
+    inputImmutable: Object.isFrozen(expansion),
+  } as const;
+  const scopedMealPolicyProbe = {
+    effectiveWindowPresent: true, durationPresent: true,
+    spaceMealPolicySourceRepresentable: true,
+    adapterProjectsFlexibleSpaceMeal: false, spaceMealBlocksOwnSpace: true,
+    spaceMealBlocksAssignedResourcesAcrossOtherSpaces: false,
+    validatorRejectsAssignedResourceWorkDuringMeal: false,
+    flexibleRealityResourceMealRepresentable: false,
+    recompositionDoesNotDuplicateMeal: false, participantSodexoIndependent: true,
+    deterministic: true, inputImmutable: Object.isFrozen(expansion),
+  } as const;
+
   const implementationBlockers: RepresentabilityBlocker[] = [];
+  implementationBlockers.push(blocker({
+    code: "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED", layer: "ENGINE_INPUT",
+    affectedRule: "política efectiva IN/OUT", canonicalIds: expansion.tasks.filter((task) => task.transport).map((task) => task.id),
+    operationalExplanation: "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
+    semanticLoss: "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.", implementationRank: 1,
+  }));
+  implementationBlockers.push(blocker({
+    code: "ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED", layer: "ADAPTER",
+    affectedRule: "comida operativa scoped y Reality a través de recomposición", canonicalIds: expansion.itinerantOperations.map((operation) => operation.id),
+    operationalExplanation: "El adaptador no proyecta una mealPolicy flexible equivalente y los intervalos fijos por alias de unidad no expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+    semanticLoss: "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.", implementationRank: 2,
+  }));
+  implementationBlockers.push(blocker({
+    code: "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED", layer: "PLANNER_NEXT",
+    affectedRule: "indisponibilidad hard de recursos durante comida de espacio", canonicalIds: expansion.resources.map((resource) => resource.id),
+    operationalExplanation: "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
+    semanticLoss: "Un recurso podría trabajar durante su descanso operativo autorizado.", implementationRank: 3,
+  }));
   if (!contractFieldPresence.taskInputHasJointGroupId) {
     implementationBlockers.push(blocker({
       code: "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
@@ -633,6 +678,9 @@ export function analyzeCanonicalFullA2Representability(
     implementationBlockers,
     blockers: [...requiredCreationInputs, ...implementationBlockers],
     nextImplementationBlocker,
+    participantAvailabilityProbe,
+    transportPolicyProbe,
+    scopedMealPolicyProbe,
     adapterProbe,
     jointGroupProbe,
     jointGroupCapabilityProven: jointGroupCapability,

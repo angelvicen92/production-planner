@@ -101,6 +101,12 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.rules.totalesSynchronization.synchronizedRounds = false; }, "TOTALES_RULES", "TOTALES_SYNCHRONIZATION_LOST");
   assertInvariantFails((e) => { e.rules.coachTransition.minutes = 15; }, "COACH_TRANSITION_RULE", "COACH_TRANSITION_RULE_CHANGED");
   assertInvariantFails((e) => { e.rules.inTransport.minParticipantsPerGroup = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
+  assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C01.end = "15:31"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C02.end = "18:39"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 30; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minParticipantsPerGroup = 1; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.realityDurationMinutes = 45; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.fixedHumanCutIntervals = [{ start: "14:00", end: "15:15" }]; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds = ["cam-3", "cam-4", "eva"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID");
   assertInvariantFails((e) => { const sodexo = e.tasks.find((task: any) => task.id === taskId("C01", "SODEXO")); sodexo.operationalKind = "auxiliary"; sodexo.meal.occupiesExclusiveSpace = true; }, "SODEXO_MEALS", "SODEXO_SEMANTICS_INVALID");
   assertInvariantFails((e) => { (e as any).leakedName = "Cristina Zuloaga"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");
@@ -124,7 +130,8 @@ test("representability separates source configuration, implementation blockers a
   let callCount = 0;
   const gate = runRepresentabilityGate(analysis, () => { callCount += 1; throw new Error("executor must not be called"); });
   assert.equal(analysis.status, "BLOCKED");
-  assert.ok(analysis.requiredCreationInputs.every((blocker) => blocker.layer === "SOURCE_CONFIGURATION"));
+  assert.deepEqual(expansion.requiredCreationInputs, []);
+  assert.deepEqual(analysis.requiredCreationInputs, []);
   assert.equal(analysis.jointGroupProbe.executed, true);
   assert.equal(analysis.jointGroupProbe.engineInputPreflightSupported, true);
   assert.equal(analysis.jointGroupProbe.adapterSupported, true);
@@ -170,8 +177,11 @@ test("representability separates source configuration, implementation blockers a
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 5);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, true);
-  assert.equal(analysis.implementationBlockers.length, 0);
-  assert.equal(analysis.nextImplementationBlocker, null);
+  assert.equal(analysis.implementationBlockers.length, 3);
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(analysis.participantAvailabilityProbe.lossless, true);
+  assert.equal(analysis.transportPolicyProbe.adapterProjectsTransportPolicy, false);
+  assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksAssignedResourcesAcrossOtherSpaces, false);
 
   const failedRoundAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: analysis.adapterProbe,
@@ -185,7 +195,7 @@ test("representability separates source configuration, implementation blockers a
   });
   assert.equal(failedRoundAnalysis.roundSynchronizationCapabilityProven, false);
   assert.ok(failedRoundAnalysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
-  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
+  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
 
   const failedRouteAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: {
@@ -198,7 +208,7 @@ test("representability separates source configuration, implementation blockers a
     setupPolicyProbe: analysis.setupPolicyProbe,
   });
   assert.ok(failedRouteAnalysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
-  assert.equal(failedRouteAnalysis.nextImplementationBlocker?.code, "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS");
+  assert.equal(failedRouteAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
 
   const failedSetupAnalysis = analyzeCanonicalFullA2Representability(
     expansion,
@@ -225,7 +235,7 @@ test("representability separates source configuration, implementation blockers a
 
   assert.equal(
     failedSetupAnalysis.nextImplementationBlocker?.code,
-    "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+    "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
   );
 
   const failedFlexibleAnalysis =
@@ -254,7 +264,7 @@ test("representability separates source configuration, implementation blockers a
   );
   assert.equal(
     failedFlexibleAnalysis.nextImplementationBlocker?.code,
-    "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+    "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
   );
 
   assert.equal(gate.status, "REJECTED_BLOCKED");
@@ -291,7 +301,7 @@ test("representability keeps dependent joint group blocker when the connected pr
   const analysis = analyzeCanonicalFullA2Representability(expansion, { jointGroupProbe: failingProbe });
   assert.equal(analysis.jointGroupCapabilityProven, false);
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED"));
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
 });
 
 test("generated artifacts are reproducible against current expansion", () => {
