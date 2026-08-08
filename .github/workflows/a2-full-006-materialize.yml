@@ -1,0 +1,152 @@
+name: Materialize A2-FULL-006
+
+on:
+  push:
+    branches:
+      - a2-full-006-fix-itinerant-validation
+
+permissions:
+  contents: write
+
+concurrency:
+  group: a2-full-006-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: a2-full-006-fix-itinerant-validation
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Materialize focused correction
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const validatePath = 'engine/planner-next/benchmarks/focal-a2/full-day/validate.ts';
+          let source = fs.readFileSync(validatePath, 'utf8');
+          const oldText = 'if (!actual || actual.memberResourceIds.join(",") !== unit.memberResourceIds.join(",") || actual.availability !== "creation_input_required") issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID", unit.id, "Itinerant unit composition must match SPEC-08."));';
+          const newText = 'if (!actual || actual.memberResourceIds.join(",") !== unit.memberResourceIds.join(",") || actual.availability.start !== unit.availability.start || actual.availability.end !== unit.availability.end || actual.availability.source !== unit.availability.source) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID", unit.id, "Itinerant unit composition or availability must match SPEC-08."));';
+          const matches = source.split(oldText).length - 1;
+          if (matches !== 1) throw new Error(`Expected exactly one stale itinerant availability assertion, found ${matches}`);
+          source = source.replace(oldText, newText);
+          fs.writeFileSync(validatePath, source);
+
+          const testPath = 'engine/planner-next/benchmarks/__tests__/fullA2ItinerantAvailabilityValidation.test.ts';
+          const testSource = `import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import {
+  createCanonicalFullA2Template,
+  expandCanonicalFullA2Template,
+  validateExpandedCanonicalFullA2Template,
+  type ExpandedCanonicalFullA2Template,
+} from "../focal-a2/full-day/canonicalFullA2Template";
+
+function cloneExpansion(): ExpandedCanonicalFullA2Template {
+  return structuredClone(expandCanonicalFullA2Template(createCanonicalFullA2Template())) as ExpandedCanonicalFullA2Template;
+}
+
+function assertItinerantAvailabilityMutationFails(mutator: (unit: any) => void): void {
+  const expansion: any = cloneExpansion();
+  const unit = expansion.itinerantUnits.find((entry: any) => entry.id === "reality-unit-a");
+  assert.ok(unit);
+  mutator(unit);
+  const validation = validateExpandedCanonicalFullA2Template(expansion);
+  const invariant = validation.invariants.find((entry) => entry.code === "ITINERANT_UNITS");
+  assert.equal(validation.status, "INVALID");
+  assert.equal(invariant?.passed, false);
+  assert.ok(invariant?.issueCodes.includes("ITINERANT_UNIT_SET_INVALID"));
+}
+
+test("canonical SPEC-08 itinerant windows remain canonically valid", () => {
+  const validation = validateExpandedCanonicalFullA2Template(cloneExpansion());
+  assert.equal(validation.status, "VALID", validation.issues.map((issue) => \`${'${issue.code}'}:${'${issue.entityId}'}\`).join("\\n"));
+  assert.equal(validation.issues.length, 0);
+  assert.equal(validation.invariants.find((entry) => entry.code === "ITINERANT_UNITS")?.passed, true);
+});
+
+test("itinerant unit validation rejects mutated start, end and source", () => {
+  assertItinerantAvailabilityMutationFails((unit) => { unit.availability.start = "11:05"; });
+  assertItinerantAvailabilityMutationFails((unit) => { unit.availability.end = "13:55"; });
+  assertItinerantAvailabilityMutationFails((unit) => { unit.availability.source = "OTHER_SOURCE"; });
+});
+
+test("checked-in Full A2 Evidence cannot declare an invalid canonical template", () => {
+  const evidence = JSON.parse(readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json", "utf8"));
+  assert.equal(evidence.validationStatus, "VALID");
+  assert.deepEqual(evidence.validationIssues, []);
+  const itinerant = evidence.invariants.find((entry: any) => entry.code === "ITINERANT_UNITS");
+  assert.equal(itinerant?.passed, true);
+  assert.deepEqual(itinerant?.issueCodes, []);
+});
+`;
+          fs.writeFileSync(testPath, testSource);
+
+          const readmePath = 'README.md';
+          let readme = fs.readFileSync(readmePath, 'utf8');
+          if (!readme.includes('## A2-FULL-006 — Validación canónica de disponibilidad itinerante')) {
+            readme += `\n\n## A2-FULL-006 — Validación canónica de disponibilidad itinerante\n\n- **Objetivo (DB Safe Merge):** corregir la regresión de benchmark introducida al materializar las ventanas Reality de SPEC-08: el validador seguía esperando el sentinel histórico \`creation_input_required\`.\n- **Semántica:** la composición y la disponibilidad de cada unidad itinerante se validan exactamente contra el contrato canónico estructurado (inicio, fin y procedencia), sin defaults ni uso del planning humano como seed.\n- **Gate reforzado:** el Full A2 regenerado debe conservar \`validationStatus=VALID\`, cero \`validationIssues\`, \`ITINERANT_UNITS.passed=true\`, cero blockers técnicos y únicamente los tres inputs de producción todavía no configurados.\n- **Fuera de alcance:** no cambia Planner Next, presupuesto, DB/UI ni resuelve disponibilidad de participantes, comidas scoped o política OUT.\n`;
+            fs.writeFileSync(readmePath, readme);
+          }
+          NODE
+
+      - name: Focused canonical tests
+        run: npx tsx --test engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts engine/planner-next/benchmarks/__tests__/fullA2ItinerantAvailabilityValidation.test.ts
+
+      - name: Regenerate Full A2 Evidence
+        run: npm run benchmark:planner-next:a2-full-template
+
+      - name: Assert Full A2 Evidence contract
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const e = JSON.parse(fs.readFileSync('docs/evidence/SPEC10-016-full-a2-canonical-template.json', 'utf8'));
+          const expectedInputs = ['daily_participant_availability', 'out_transport_policy', 'scoped_meal_policies'];
+          if (e.validationStatus !== 'VALID') throw new Error(`validationStatus=${e.validationStatus}`);
+          if (!Array.isArray(e.validationIssues) || e.validationIssues.length !== 0) throw new Error('validationIssues must be empty');
+          const itinerant = e.invariants?.find((x) => x.code === 'ITINERANT_UNITS');
+          if (!itinerant?.passed) throw new Error('ITINERANT_UNITS must pass');
+          if (JSON.stringify(e.requiredCreationInputs) !== JSON.stringify(expectedInputs)) throw new Error(`requiredCreationInputs=${JSON.stringify(e.requiredCreationInputs)}`);
+          if ((e.implementationBlockers?.length ?? -1) !== 0) throw new Error('implementationBlockers must be empty');
+          if (e.nextImplementationBlocker !== null) throw new Error('nextImplementationBlocker must be null');
+          if (e.roundSynchronizationCapabilityProven !== true) throw new Error('roundSynchronizationCapabilityProven must remain true');
+          if (e.representabilityStatus !== 'BLOCKED') throw new Error(`representabilityStatus=${e.representabilityStatus}`);
+          NODE
+
+      - name: Remove temporary tooling and stage product delta
+        run: |
+          rm .github/workflows/a2-full-006-materialize.yml
+          git add README.md engine/planner-next/benchmarks/focal-a2/full-day/validate.ts engine/planner-next/benchmarks/__tests__/fullA2ItinerantAvailabilityValidation.test.ts docs/evidence/SPEC10-016-full-a2-canonical-template.json docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
+          git add -u .github/workflows/a2-full-006-materialize.yml
+          git diff --cached --check
+          git config user.name "OptiPlan Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "A2-FULL-006: corregir validación de ventanas itinerantes"
+
+      - name: Full merge gate
+        run: |
+          npm run check:migrations
+          npm run check
+          npm test
+          npm run build
+          npm run benchmark:planner-next:a2-full-template
+          git diff --exit-code
+          git diff --check origin/main...HEAD
+
+      - name: Publish clean candidate
+        run: git push origin HEAD:a2-full-006-fix-itinerant-validation
