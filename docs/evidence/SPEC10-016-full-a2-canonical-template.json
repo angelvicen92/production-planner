@@ -19,7 +19,7 @@
     },
     {
       "path": "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
-      "sha256": "f7dc582fb5e324acf6951bc5cc8592a8683521e4d8f93f861dd8e59415e20743"
+      "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
   "manifestFingerprint": "8c7570f18accc14ee01efbc6072361fec34d1a3ad865bd3063c263e4c691acf5",
@@ -1391,8 +1391,12 @@
     "adapterProjectsTransportPolicy": true,
     "plannerNextContractPresent": true,
     "minimumPreserved": true,
-    "minGapPreserved": true,
     "maximumPreserved": true,
+    "minGapPreserved": true,
+    "groupingWeightPreserved": true,
+    "noSeparateTargetSemantic": true,
+    "capabilityDetected": true,
+    "capabilityUnsupported": true,
     "executionFailsClosed": true,
     "deterministic": true,
     "orderInvariant": true,
@@ -1791,8 +1795,12 @@
         "adapterProjectsTransportPolicy": true,
         "plannerNextContractPresent": true,
         "minimumPreserved": true,
-        "minGapPreserved": true,
         "maximumPreserved": true,
+        "minGapPreserved": true,
+        "groupingWeightPreserved": true,
+        "noSeparateTargetSemantic": true,
+        "capabilityDetected": true,
+        "capabilityUnsupported": true,
         "executionFailsClosed": true,
         "deterministic": true,
         "orderInvariant": true,

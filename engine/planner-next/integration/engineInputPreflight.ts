@@ -1573,15 +1573,19 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     ];
     const maximums = [input.vanCapacity, input.transportVanCapacity, settings?.vehicleCapacity, settings?.vanCapacity]
       .filter((value): value is number => value != null);
-    const required = [input.arrivalGroupingTarget, input.departureGroupingTarget, input.arrivalMinGapMinutes,
-      input.departureMinGapMinutes, input.vanCapacity, settings?.arrivalTargetGroupSize,
-      settings?.departureTargetGroupSize, settings?.arrivalMinGapMinutes, settings?.departureMinGapMinutes,
-      settings?.groupingWeight];
-    const finitePositive = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value > 0;
+    const sizes = [input.arrivalGroupingTarget, input.departureGroupingTarget, input.vanCapacity,
+      settings?.arrivalTargetGroupSize, settings?.departureTargetGroupSize];
+    const gaps = [input.arrivalMinGapMinutes, input.departureMinGapMinutes,
+      settings?.arrivalMinGapMinutes, settings?.departureMinGapMinutes];
+    const positiveInteger = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value > 0;
+    const nonNegativeInteger = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0;
+    const nonNegativeFinite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
     const aliasesAgree = (values: readonly (number | null | undefined)[]) => new Set(values.filter((value) => value != null)).size <= 1;
     const valid = settings?.source === "engine-buildInput-optimizer-transport"
-      && required.every(finitePositive)
-      && maximums.length > 0 && maximums.every(finitePositive)
+      && sizes.every(positiveInteger)
+      && gaps.every(nonNegativeInteger)
+      && nonNegativeFinite(settings.groupingWeight)
+      && maximums.length > 0 && maximums.every(positiveInteger)
       && aliasesAgree([input.arrivalGroupingTarget, settings.arrivalTargetGroupSize])
       && aliasesAgree([input.departureGroupingTarget, settings.departureTargetGroupSize])
       && aliasesAgree([input.arrivalMinGapMinutes, settings.arrivalMinGapMinutes])

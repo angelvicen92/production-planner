@@ -41,21 +41,18 @@
     "contractVersion": 1,
     "snapshotSource": "LEGACY_BACKFILL",
     "arrival": {
-      "minimumGroupSize": 3,
-      "legacySourceField": "arrivalGroupingTarget",
+      "groupingTarget": 3,
       "minGapMinutes": 35,
       "planTemplateSnapshotIdObserved": 29
     },
     "departure": {
-      "minimumGroupSize": 3,
-      "legacySourceField": "departureGroupingTarget",
+      "groupingTarget": 3,
       "minGapMinutes": 20,
       "planTemplateSnapshotIdObserved": 77
     },
-    "maximumGroupSize": 6,
-    "maximumSourceField": "vanCapacity",
+    "vanCapacity": 6,
     "groupingWeight": 3,
-    "interpretation": "Per the official transport semantics addendum, the legacy groupingTarget fields mean minimumGroupSize and vanCapacity means maximumGroupSize; no separate target exists. Template snapshot ids are runtime identities, not canonical benchmark ids."
+    "interpretation": "These are effective snapshot fields. groupingTarget remains a target; it must not be reinterpreted as minParticipantsPerGroup. Template snapshot ids are runtime identities, not canonical benchmark ids."
   },
   "mealConfiguration": {
     "effectiveMealWindow": { "start": "13:00", "end": "16:30" },

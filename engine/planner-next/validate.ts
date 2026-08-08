@@ -145,6 +145,29 @@ export function preflight(problem: PlannerNextProblem): string[] {
     reasons.add("MISSING_RESOURCE_ASSIGNED_SPACE_REFERENCE");
   }
   const taskIds = new Set(tasks.map(({ id }) => id));
+  if (Object.prototype.hasOwnProperty.call(problem, "transportPolicy")) {
+    const policy = problem.transportPolicy as unknown;
+    const record = policy !== null && typeof policy === "object" && !Array.isArray(policy)
+      ? policy as Record<string, unknown> : undefined;
+    const directions = [record?.arrival, record?.departure];
+    const validDirection = (value: unknown): value is Record<string, unknown> => {
+      if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+      const direction = value as Record<string, unknown>;
+      return Array.isArray(direction.taskIds)
+        && direction.taskIds.every((id) => typeof id === "string" && taskIds.has(id))
+        && new Set(direction.taskIds).size === direction.taskIds.length
+        && Number.isInteger(direction.minimumGroupSize) && (direction.minimumGroupSize as number) > 0
+        && Number.isInteger(direction.maximumGroupSize) && (direction.maximumGroupSize as number) > 0
+        && (direction.minimumGroupSize as number) <= (direction.maximumGroupSize as number)
+        && Number.isInteger(direction.minGapMinutes) && (direction.minGapMinutes as number) >= 0
+        && typeof direction.groupingWeight === "number" && Number.isFinite(direction.groupingWeight)
+        && direction.groupingWeight >= 0;
+    };
+    const bothValid = directions.every(validDirection);
+    if (!bothValid || (bothValid && directions[0]!.taskIds.some((id) => directions[1]!.taskIds.includes(id)))) {
+      reasons.add("INVALID_TRANSPORT_POLICY");
+    }
+  }
   const resourceIds = new Set(resources.map(({ id }) => id));
   const technicalIds = new Set(tasks.filter(t=>t?.kind==="technical").map(t=>t.id));
   const mainSpaceId = problem.mainFlow?.spaceId;

@@ -670,6 +670,42 @@ test("transporte detectado sólo por contrato estructurado", () => {
   assert.equal(preflightEngineInputForPlannerNext(input({ tasks: [task(1, { templateName: "IN" })] })).diagnostics.transportConfigured, false);
 });
 
+function validTransportInput(): EngineInput {
+  const value = createSupportedEngineInputAdapterFixture();
+  value.tasks[0]!.operationalRole = "transport_arrival";
+  value.tasks[1]!.operationalRole = "transport_departure";
+  value.arrivalGroupingTarget = 3; value.departureGroupingTarget = 3;
+  value.arrivalMinGapMinutes = 0; value.departureMinGapMinutes = 20; value.vanCapacity = 6;
+  value.transportSettings = { arrivalTargetGroupSize: 3, departureTargetGroupSize: 3,
+    arrivalMinGapMinutes: 0, departureMinGapMinutes: 20, vanCapacity: 6, groupingWeight: 0,
+    source: "engine-buildInput-optimizer-transport" };
+  return value;
+}
+
+test("transport preflight accepts integer sizes and zero-valued gap and weight", () => {
+  const value = validTransportInput(), before = clone(value);
+  const result = preflightEngineInputForPlannerNext(value);
+  assert.equal(result.status, "SUPPORTED");
+  assert.deepEqual(value, before);
+});
+
+test("transport preflight rejects partial, contradictory, and invalid numeric aliases", () => {
+  const mutations: Array<(value: EngineInput) => void> = [
+    (value) => { delete value.departureGroupingTarget; },
+    (value) => { value.transportSettings!.arrivalTargetGroupSize = 4; },
+    (value) => { value.transportSettings!.vehicleCapacity = 7; },
+    (value) => { value.arrivalGroupingTarget = 1.5; value.transportSettings!.arrivalTargetGroupSize = 1.5; },
+    (value) => { value.arrivalMinGapMinutes = -1; value.transportSettings!.arrivalMinGapMinutes = -1; },
+    (value) => { value.departureMinGapMinutes = 0.5; value.transportSettings!.departureMinGapMinutes = 0.5; },
+    (value) => { value.transportSettings!.groupingWeight = Number.POSITIVE_INFINITY; },
+    (value) => { value.transportSettings!.groupingWeight = -1; },
+  ];
+  for (const mutate of mutations) {
+    const value = validTransportInput(); mutate(value);
+    assert.ok(preflightEngineInputForPlannerNext(value).reasonCodes.includes("UNSUPPORTED_TRANSPORT_CONTRACT"));
+  }
+});
+
 test("setup detectado sin inferir familia por nombre", () => {
   const found = issue(input({ groupingBySpaceId: { 2: { key: "S:2", level: 2, minChain: 2 } } }), "UNSUPPORTED_SETUP_MAPPING");
   assert.equal(found.path, "groupingBySpaceId");

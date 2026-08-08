@@ -41,6 +41,25 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
   assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
 });
 
+test("transport adapter projects min/max policy from explicit operational roles only", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.tasks[0]!.operationalRole = "transport_arrival";
+  input.tasks[1]!.operationalRole = "transport_departure";
+  input.arrivalGroupingTarget = 3; input.departureGroupingTarget = 3;
+  input.arrivalMinGapMinutes = 0; input.departureMinGapMinutes = 20; input.vanCapacity = 6;
+  input.transportSettings = { arrivalTargetGroupSize: 3, departureTargetGroupSize: 3,
+    arrivalMinGapMinutes: 0, departureMinGapMinutes: 20, vanCapacity: 6, groupingWeight: 0,
+    source: "engine-buildInput-optimizer-transport" };
+  const before = clone(input);
+  const result = supported(input);
+  assert.deepEqual(result.problem.transportPolicy, {
+    arrival: { taskIds: [`task:${input.tasks[0]!.id}`], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 0, groupingWeight: 0 },
+    departure: { taskIds: [`task:${input.tasks[1]!.id}`], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 0 },
+  });
+  assert.equal(preflightPlannerNextProblem(result.problem).includes("INVALID_TRANSPORT_POLICY"), false);
+  assert.deepEqual(input, before);
+});
+
 test("domain divergence guard never publishes an invalid adapted problem", () => {
   const input = createSupportedEngineInputAdapterFixture(); input.plannerNext!.mainFlow.preferredEnd = "14:30";
   assert.equal(preflightEngineInputForPlannerNext(input).status, "SUPPORTED");
