@@ -1,11 +1,11 @@
 name: Codex task
-description: Define a single OptiPlan implementation unit for Codex.
+description: Define one OptiPlan implementation delta for Codex.
 title: "[CODEX] "
 body:
   - type: markdown
     attributes:
       value: |
-        Use this form for one logical implementation unit only. Follow AGENTS.md and the official OptiPlan documentation.
+        One logical unit only. Codex reads AGENTS.md first; do not repeat permanent context here.
 
   - type: dropdown
     id: change_type
@@ -21,62 +21,54 @@ body:
     id: objective
     attributes:
       label: Objective
-      description: State the concrete result this iteration must achieve.
+      description: One observable result.
     validations:
       required: true
 
   - type: textarea
-    id: justification
+    id: evidence
     attributes:
-      label: Why this is the next step
-      description: Explain the expected operational value and why lower-risk alternatives are insufficient.
+      label: Demonstrated defect or evidence
+      description: Point to the failing behavior, test, Evidence artifact or PR finding. Keep excerpts minimal.
     validations:
       required: true
 
   - type: textarea
-    id: scope
+    id: read_set
     attributes:
-      label: Scope
-      description: Define the files, components and behavior that may change.
+      label: Read
+      description: List only the files, symbols, tests and official sections needed for this delta.
+    validations:
+      required: true
+
+  - type: textarea
+    id: delta
+    attributes:
+      label: Change
+      description: State the exact implementation delta; do not restate project-wide rules.
     validations:
       required: true
 
   - type: textarea
     id: exclusions
     attributes:
-      label: Do not modify
-      description: List explicit exclusions and protected behavior.
+      label: Do not touch
+      description: Only task-specific exclusions not already covered by AGENTS.md.
     validations:
       required: true
 
   - type: textarea
-    id: acceptance
+    id: validation_now
     attributes:
-      label: Acceptance criteria
-      description: Use observable, testable criteria.
+      label: Validate now
+      description: TypeScript/lint, focal tests or causal benchmark required during implementation.
     validations:
       required: true
 
   - type: textarea
-    id: validation
+    id: merge_gate
     attributes:
-      label: Required validation
-      description: List commands, tests, benchmarks, Evidence and any human validation required.
-    validations:
-      required: true
-
-  - type: textarea
-    id: documentation
-    attributes:
-      label: Official documentation affected
-      description: Identify the governing documents and whether README must be updated.
-    validations:
-      required: true
-
-  - type: textarea
-    id: intervention
-    attributes:
-      label: Human intervention threshold
-      description: State exactly when the implementation must stop and request a decision.
+      label: Final gate
+      description: Full validation required only on the candidate head; write N/A when not applicable.
     validations:
       required: true
