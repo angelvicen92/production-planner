@@ -1,0 +1,47 @@
+name: A2-FULL-007 gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-publish:
+    if: ${{ github.head_ref == 'a2-full-007-source-defaults' && !contains(github.event.pull_request.head.sha, '0000000000000000000000000000000000000000') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: a2-full-007-source-defaults
+          fetch-depth: 0
+
+      - name: Guard terminal candidate
+        id: guard
+        shell: bash
+        run: |
+          message="$(git log -1 --pretty=%B)"
+          if [[ "$message" == *"[skip a2-full-007]"* ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js
+        if: ${{ steps.guard.outputs.run == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.guard.outputs.run == 'true' }}
+        run: npm ci
+
+      - name: Run DB Safe Merge gate and publish clean candidate
+        if: ${{ steps.guard.outputs.run == 'true' }}
+        run: bash scripts/a2-full-007-gate-finalize.sh
