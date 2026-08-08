@@ -14,6 +14,7 @@ const sourcePaths = [
   "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
   "docs/source/CUADRO_TAREAS_DIA_DE_PRUEBA_A2_v1.md",
   "docs/source/ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08.md",
+  "docs/source/ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08.md",
   "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
 ] as const;
 
@@ -191,7 +192,7 @@ ${requiredRows || "Todos los inputs de creación A2 conocidos para este benchmar
 
 ## Implementation blockers
 
-Estado de representabilidad: **${representability.status}**. La puerta ejecutada devuelve **${gate.status}**, con executorCallCount=${gate.executorCallCount}, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
+Estado de representabilidad: **${representability.status}**. La puerta ejecutada devuelve **${gate.status}**, con executorCallCount=${gate.executorCallCount}. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
 
 ${implementationRows}
 
@@ -203,7 +204,7 @@ ${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representab
 
 ## No implementado
 
-No se implementa botón, DB, API, UI, persistencia, contratos productivos, preflight productivo, adaptador productivo ni ejecución del motor para un subconjunto parcial.
+No se implementa botón, DB, API, UI, persistencia, búsqueda/agrupación de transporte ni ejecución del motor para un subconjunto parcial.
 `);
 
 console.log(JSON.stringify({

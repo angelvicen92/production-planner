@@ -14,9 +14,9 @@ Todos los inputs de creación A2 conocidos para este benchmark están resueltos.
 
 ## Implementation blockers
 
-Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
+Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
 
-- **ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED** (ENGINE_INPUT): EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día. Pérdida si se aproxima: Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.
+- **PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED** (PLANNER_NEXT): EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación. Pérdida si se aproxima: Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.
 - **ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED** (ENGINE_INPUT): El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición. Pérdida si se aproxima: La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.
 - **PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED** (PLANNER_NEXT): Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio. Pérdida si se aproxima: Un recurso podría trabajar durante su descanso operativo autorizado.
 
@@ -24,8 +24,8 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=true y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED**.
+Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=true y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED**.
 
 ## No implementado
 
-No se implementa botón, DB, API, UI, persistencia, contratos productivos, preflight productivo, adaptador productivo ni ejecución del motor para un subconjunto parcial.
+No se implementa botón, DB, API, UI, persistencia, búsqueda/agrupación de transporte ni ejecución del motor para un subconjunto parcial.

@@ -2,7 +2,7 @@ import type { PlannerNextProblem, PlannerSearchPolicy } from "./contracts";
 
 export type PlannerSearchPolicySelectionSource = "EXPLICIT" | "MIGRATION_DEFAULT";
 
-export type PlannerCapability = "ANCHORED_ACCOMPANIMENT";
+export type PlannerCapability = "ANCHORED_ACCOMPANIMENT" | "TRANSPORT_GROUPING";
 
 export interface PlannerCapabilityRequirement {
   capability: PlannerCapability;
@@ -34,6 +34,10 @@ export const PLANNER_CAPABILITY_REQUIREMENTS: Readonly<
     supportedPolicies: ["EXACT_CONSTRUCTIVE"],
     requiredPolicy: "EXACT_CONSTRUCTIVE",
   }),
+  TRANSPORT_GROUPING: defineCapabilityRequirement({
+    capability: "TRANSPORT_GROUPING",
+    supportedPolicies: [],
+  }),
 });
 
 const MIGRATION_DEFAULT_POLICY: PlannerSearchPolicy = "COMPATIBILITY_PRESERVING";
@@ -61,10 +65,10 @@ export function isPlannerCapabilitySupported(
 export function detectPlannerCapabilities(
   problem: Readonly<PlannerNextProblem>,
 ): readonly PlannerCapability[] {
-  return problem.anchoredAccompaniments !== undefined &&
-    problem.anchoredAccompaniments.length > 0
-    ? ["ANCHORED_ACCOMPANIMENT"]
-    : [];
+  return canonical([
+    ...(problem.anchoredAccompaniments?.length ? ["ANCHORED_ACCOMPANIMENT" as const] : []),
+    ...(problem.transportPolicy ? ["TRANSPORT_GROUPING" as const] : []),
+  ]);
 }
 
 export function resolvePlannerSearchPolicy(

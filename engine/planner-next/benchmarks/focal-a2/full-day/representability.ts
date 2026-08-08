@@ -10,6 +10,7 @@ import { spaceMealScenario } from "../../../scenarios/spaceMealScenario";
 import { createScheduledSpaceMeal } from "../../../spaceMeals";
 import { canPlaceTask } from "../../../placement";
 import { validatePlan } from "../../../validate";
+import { executePlannerNext } from "../../../executePlannerNext";
 import { resolveAssignedItinerantUnitMealBreaks } from "../../../integration/assignedItinerantUnitMealBreaks";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
@@ -71,33 +72,47 @@ function runParticipantAvailabilityProbe(expansion: ExpandedCanonicalFullA2Templ
 function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): RepresentabilityAnalysis["transportPolicyProbe"] {
   const policy = expansion.effectiveConfiguration.transportPolicy;
   const input = createSupportedEngineInputAdapterFixture();
-  input.arrivalGroupingTarget = policy.arrival.groupingTarget;
-  input.departureGroupingTarget = policy.departure.groupingTarget;
+  input.tasks[0]!.operationalRole = "transport_arrival";
+  input.tasks[1]!.operationalRole = "transport_departure";
+  input.arrivalGroupingTarget = policy.arrival.minimumGroupSize;
+  input.departureGroupingTarget = policy.departure.minimumGroupSize;
   input.arrivalMinGapMinutes = policy.arrival.minGapMinutes;
   input.departureMinGapMinutes = policy.departure.minGapMinutes;
-  input.vanCapacity = policy.arrival.vanCapacity;
-  input.transportSettings = { arrivalTargetGroupSize: policy.arrival.groupingTarget, departureTargetGroupSize: policy.departure.groupingTarget, arrivalMinGapMinutes: policy.arrival.minGapMinutes, departureMinGapMinutes: policy.departure.minGapMinutes, vanCapacity: policy.arrival.vanCapacity, groupingWeight: policy.arrival.groupingWeight, source: "engine-buildInput-optimizer-transport" };
+  input.vanCapacity = policy.arrival.maximumGroupSize;
+  input.transportSettings = { arrivalTargetGroupSize: policy.arrival.minimumGroupSize, departureTargetGroupSize: policy.departure.minimumGroupSize, arrivalMinGapMinutes: policy.arrival.minGapMinutes, departureMinGapMinutes: policy.departure.minGapMinutes, vanCapacity: policy.arrival.maximumGroupSize, groupingWeight: policy.arrival.groupingWeight, source: "engine-buildInput-optimizer-transport" };
   const snapshot = structuredClone(input);
   const preflight = preflightEngineInputForPlannerNext(input);
   const adapted = adaptEngineInputToPlannerNextProblem(input);
   const repeated = preflightEngineInputForPlannerNext(input);
+  const reversedInput = structuredClone(input); reversedInput.tasks.reverse();
+  const reversed = adaptEngineInputToPlannerNextProblem(reversedInput);
   const problem = adapted.status === "SUPPORTED" ? adapted.problem as unknown as Record<string, unknown> : null;
   const projected = problem?.transportPolicy as Record<string, unknown> | undefined;
   const engineInputContractPresent = ["arrivalGroupingTarget", "departureGroupingTarget", "arrivalMinGapMinutes", "departureMinGapMinutes", "vanCapacity", "transportSettings"].every((key) => Object.hasOwn(input, key))
     && input.transportSettings?.source === "engine-buildInput-optimizer-transport";
   const plannerNextContractPresent = projected !== undefined;
-  const groupingTargetPreserved = projected?.arrivalGroupingTarget === 3 && projected?.departureGroupingTarget === 3;
-  const minGapPreserved = projected?.arrivalMinGapMinutes === 35 && projected?.departureMinGapMinutes === 20;
-  const capacityPreserved = projected?.vanCapacity === 6;
+  const arrival = projected?.arrival as Record<string, unknown> | undefined;
+  const departure = projected?.departure as Record<string, unknown> | undefined;
+  const minimumPreserved = arrival?.minimumGroupSize === 3 && departure?.minimumGroupSize === 3;
+  const minGapPreserved = arrival?.minGapMinutes === 35 && departure?.minGapMinutes === 20;
+  const maximumPreserved = arrival?.maximumGroupSize === 6 && departure?.maximumGroupSize === 6;
+  const invalidInputs = [
+    (() => { const value = structuredClone(input); delete value.departureMinGapMinutes; return value; })(),
+    (() => { const value = structuredClone(input); value.transportSettings!.arrivalTargetGroupSize = 4; return value; })(),
+    (() => { const value = structuredClone(input); value.arrivalGroupingTarget = 7; value.transportSettings!.arrivalTargetGroupSize = 7; return value; })(),
+  ];
+  const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem) : null;
   return {
-    sourceConfigurationPresent: policy.arrival.minParticipantsPerGroup === 3 && policy.arrival.groupingTarget === 3 && policy.arrival.minGapMinutes === 35 && policy.arrival.vanCapacity === 6 && policy.arrival.groupingWeight === 3 && policy.departure.groupingTarget === 3 && !("minParticipantsPerGroup" in policy.departure) && policy.departure.minGapMinutes === 20 && policy.departure.vanCapacity === 6 && policy.departure.groupingWeight === 3,
+    sourceConfigurationPresent: policy.arrival.minimumGroupSize === 3 && policy.arrival.maximumGroupSize === 6 && policy.arrival.minGapMinutes === 35 && policy.arrival.groupingWeight === 3 && policy.departure.minimumGroupSize === 3 && policy.departure.maximumGroupSize === 6 && policy.departure.minGapMinutes === 20 && policy.departure.groupingWeight === 3,
     engineInputContractPresent,
     transportSettingsSourcePresent: input.transportSettings?.source === "engine-buildInput-optimizer-transport",
     engineInputPreflightSupported: preflight.status === "SUPPORTED",
-    unsupportedTransportContractObserved: preflight.reasonCodes.includes("UNSUPPORTED_TRANSPORT_CONTRACT"),
+    rejectsInvalidContracts: invalidInputs.every((value) => preflightEngineInputForPlannerNext(value).reasonCodes.includes("UNSUPPORTED_TRANSPORT_CONTRACT")),
     adapterProjectsTransportPolicy: adapted.status === "SUPPORTED" && projected !== undefined,
-    plannerNextContractPresent, groupingTargetPreserved, minGapPreserved, capacityPreserved,
+    plannerNextContractPresent, minimumPreserved, minGapPreserved, maximumPreserved,
+    executionFailsClosed: execution?.kind === "POLICY_REJECTED" && execution.policyResolution.reasonCodes.includes("SEARCH_POLICY_CAPABILITY_UNSUPPORTED"),
     deterministic: preflight.sourceFingerprint === repeated.sourceFingerprint && preflight.reasonCodes.join() === repeated.reasonCodes.join(),
+    orderInvariant: adapted.problemFingerprint === reversed.problemFingerprint,
     inputImmutable: JSON.stringify(input) === JSON.stringify(snapshot),
   };
 }
@@ -711,11 +726,11 @@ export function analyzeCanonicalFullA2Representability(
   const scopedMealPolicyProbe = runScopedMealPolicyProbe(expansion);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
-  if (!transportPolicyProbe.engineInputPreflightSupported || !transportPolicyProbe.adapterProjectsTransportPolicy || !transportPolicyProbe.plannerNextContractPresent || !transportPolicyProbe.groupingTargetPreserved || !transportPolicyProbe.minGapPreserved || !transportPolicyProbe.capacityPreserved) implementationBlockers.push(blocker({
-    code: "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED", layer: "ENGINE_INPUT",
+  if (transportPolicyProbe.executionFailsClosed) implementationBlockers.push(blocker({
+    code: "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED", layer: "PLANNER_NEXT",
     affectedRule: "política efectiva IN/OUT", canonicalIds: expansion.tasks.filter((task) => task.transport).map((task) => task.id),
-    operationalExplanation: "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
-    semanticLoss: "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.", implementationRank: 1,
+    operationalExplanation: "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
+    semanticLoss: "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.", implementationRank: 1,
   }));
   if (!scopedMealPolicyProbe.adapterProjectsFlexibleSpaceMeal || !scopedMealPolicyProbe.flexibleRealityResourceMealRepresentable || !scopedMealPolicyProbe.recompositionDoesNotDuplicateMeal) implementationBlockers.push(blocker({
     code: "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED", layer: "ENGINE_INPUT",

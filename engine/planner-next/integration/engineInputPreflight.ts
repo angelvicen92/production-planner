@@ -360,17 +360,15 @@ function sourceProjection(input: EngineInput): unknown {
     },
     transportSettings: input.transportSettings && {
       present: true,
-      arrivalTemplateId: input.transportSettings.arrivalTemplateId,
-      departureTemplateId: input.transportSettings.departureTemplateId,
-      transportSpaceId: input.transportSettings.transportSpaceId,
+      ...input.transportSettings,
     },
     transportSpaceId: input.transportSpaceId,
-    transportVanCapacityPresent: input.transportVanCapacity != null,
-    vanCapacityPresent: input.vanCapacity != null,
-    arrivalGroupingTargetPresent: input.arrivalGroupingTarget != null,
-    departureGroupingTargetPresent: input.departureGroupingTarget != null,
-    arrivalMinGapMinutesPresent: input.arrivalMinGapMinutes != null,
-    departureMinGapMinutesPresent: input.departureMinGapMinutes != null,
+    transportVanCapacityPresent: input.transportVanCapacity ?? false,
+    vanCapacityPresent: input.vanCapacity ?? false,
+    arrivalGroupingTargetPresent: input.arrivalGroupingTarget ?? false,
+    departureGroupingTargetPresent: input.departureGroupingTarget ?? false,
+    arrivalMinGapMinutesPresent: input.arrivalMinGapMinutes ?? false,
+    departureMinGapMinutesPresent: input.departureMinGapMinutes ?? false,
     arrivalTaskTemplateNamePresent: input.arrivalTaskTemplateName !== undefined,
     departureTaskTemplateNamePresent: input.departureTaskTemplateName !== undefined,
     plannerNext: plannerNextRecord ? {
@@ -1567,7 +1565,40 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     || input.tasks.some((task) => task.operationalRole === "transport_arrival" || task.operationalRole === "transport_departure"
       || task.transportGroupCapacity != null || task.transportGroupingTarget != null || task.transportGroupingWeight != null),
   );
-  if (transportConfigured) addIssue("UNSUPPORTED_TRANSPORT_CONTRACT", "plan", input.planId, "transportSettings", "Planner Next has no equivalent transport contract.");
+  if (transportConfigured) {
+    const settings = input.transportSettings;
+    const minimums = [
+      input.arrivalGroupingTarget, settings?.arrivalTargetGroupSize,
+      input.departureGroupingTarget, settings?.departureTargetGroupSize,
+    ];
+    const maximums = [input.vanCapacity, input.transportVanCapacity, settings?.vehicleCapacity, settings?.vanCapacity]
+      .filter((value): value is number => value != null);
+    const required = [input.arrivalGroupingTarget, input.departureGroupingTarget, input.arrivalMinGapMinutes,
+      input.departureMinGapMinutes, input.vanCapacity, settings?.arrivalTargetGroupSize,
+      settings?.departureTargetGroupSize, settings?.arrivalMinGapMinutes, settings?.departureMinGapMinutes,
+      settings?.groupingWeight];
+    const finitePositive = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value > 0;
+    const aliasesAgree = (values: readonly (number | null | undefined)[]) => new Set(values.filter((value) => value != null)).size <= 1;
+    const valid = settings?.source === "engine-buildInput-optimizer-transport"
+      && required.every(finitePositive)
+      && maximums.length > 0 && maximums.every(finitePositive)
+      && aliasesAgree([input.arrivalGroupingTarget, settings.arrivalTargetGroupSize])
+      && aliasesAgree([input.departureGroupingTarget, settings.departureTargetGroupSize])
+      && aliasesAgree([input.arrivalMinGapMinutes, settings.arrivalMinGapMinutes])
+      && aliasesAgree([input.departureMinGapMinutes, settings.departureMinGapMinutes])
+      && aliasesAgree(maximums)
+      && minimums.every((minimum) => minimum! <= maximums[0]!)
+      && input.tasks.some((task) => task.operationalRole === "transport_arrival")
+      && input.tasks.some((task) => task.operationalRole === "transport_departure")
+      && input.tasks.every((task) => {
+        if (task.operationalRole !== "transport_arrival" && task.operationalRole !== "transport_departure") return task.transportGroupCapacity == null && task.transportGroupingTarget == null && task.transportGroupingWeight == null;
+        const minimum = task.operationalRole === "transport_arrival" ? input.arrivalGroupingTarget : input.departureGroupingTarget;
+        return (task.transportGroupCapacity == null || task.transportGroupCapacity === maximums[0])
+          && (task.transportGroupingTarget == null || task.transportGroupingTarget === minimum)
+          && (task.transportGroupingWeight == null || task.transportGroupingWeight === settings.groupingWeight);
+      });
+    if (!valid) addIssue("UNSUPPORTED_TRANSPORT_CONTRACT", "plan", input.planId, "transportSettings", "Transport policy must be complete, consistent, positive, and satisfy minimumGroupSize <= maximumGroupSize.");
+  }
 
   const setupConfigurationDetected = Boolean(
     mapKeys(input.groupingBySpaceId).length || mapKeys(input.minimizeChangesBySpace).length

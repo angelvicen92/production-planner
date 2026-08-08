@@ -2839,3 +2839,7 @@ Full A2 materializa las tres ventanas de composición Reality canonizadas por SP
 ### A2-FULL-009 — configuración fuente efectiva y frontera técnica de representabilidad
 
 Se cierran los tres source inputs pendientes y se materializan disponibilidades anónimas, transporte efectivo y comidas A2 con provenance explícita. Los probes exponen blockers técnicos de transporte y comidas scoped sin cambiar algoritmos ni afirmar `FULL_HARD_VALID`.
+
+### A2-FULL-010 — política min/max de transporte en Planner Next
+
+Los nombres legacy `arrivalGroupingTarget` y `departureGroupingTarget` se interpretan exclusivamente como `minimumGroupSize`; `vanCapacity` se proyecta como `maximumGroupSize`. El preflight acepta sólo contratos completos, coherentes y con mínimo no mayor que el máximo, y el adapter construye `PlannerNextProblem.transportPolicy` identificando IN/OUT únicamente mediante `operationalRole` explícito. La capability `TRANSPORT_GROUPING` se detecta, pero ninguna search policy la soporta todavía: `executePlannerNext` responde fail-closed con `POLICY_REJECTED` y `SEARCH_POLICY_CAPABILITY_UNSUPPORTED`. Full A2 permanece `VALID` y `BLOCKED`, ahora en `PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED`, seguido por los blockers de comidas existentes.

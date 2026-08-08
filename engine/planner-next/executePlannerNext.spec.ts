@@ -91,6 +91,21 @@ test("explicit exact supports the anchored accompaniment capability", () => {
   assert.deepEqual(execution.policyResolution.unsupportedCapabilities, []);
 });
 
+test("transport grouping fails closed for every search policy", () => {
+  for (const policy of ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"] as const) {
+    const input = problem(policy);
+    input.transportPolicy = {
+      arrival: { taskIds: ["main-a"], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 35, groupingWeight: 3 },
+      departure: { taskIds: ["vocal-a"], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 },
+    };
+    const execution = executePlannerNext(input);
+    assert.equal(execution.kind, "POLICY_REJECTED");
+    assert.equal(execution.result, null);
+    assert.deepEqual(execution.policyResolution.unsupportedCapabilities, ["TRANSPORT_GROUPING"]);
+    assert.deepEqual(execution.policyResolution.reasonCodes, ["SEARCH_POLICY_CAPABILITY_UNSUPPORTED"]);
+  }
+});
+
 test("execution is deterministic apart from compatibility runtime", () => {
   const first = executePlannerNext(problem("COMPATIBILITY_PRESERVING"));
   const second = executePlannerNext(problem("COMPATIBILITY_PRESERVING"));
