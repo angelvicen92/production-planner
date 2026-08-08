@@ -46,7 +46,7 @@ jobs:
 
   a2-full-006-materialize:
     name: a2-full-006-materialize
-    if: ${{ github.event_name == 'push' && github.ref_name == 'a2-full-006-clean-validator' && !contains(github.event.head_commit.message, '[skip a2-full-006]') }}
+    if: ${{ false }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
