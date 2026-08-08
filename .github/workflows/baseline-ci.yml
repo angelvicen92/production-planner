@@ -43,3 +43,44 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  a2-full-006-finalize-v2:
+    name: a2-full-006-finalize-v2
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'a2-full-006-clean-validator' }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: a2-full-006-clean-validator
+          fetch-depth: 0
+
+      - name: Guard terminal candidate
+        id: guard
+        shell: bash
+        run: |
+          message="$(git log -1 --pretty=%B)"
+          if [[ "$message" == *"[skip a2-full-006]"* ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js
+        if: ${{ steps.guard.outputs.run == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.guard.outputs.run == 'true' }}
+        run: npm ci
+
+      - name: Finalize candidate
+        if: ${{ steps.guard.outputs.run == 'true' }}
+        run: bash scripts/a2-full-006-clean-finalize-v2.sh
