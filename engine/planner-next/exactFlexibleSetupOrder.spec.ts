@@ -177,9 +177,9 @@ test("full A2 retains only the new transport and scoped meal blockers", () => {
     false,
   );
   assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [
-    "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
-    "ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+    "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+    "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
     "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
   ]);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
 });

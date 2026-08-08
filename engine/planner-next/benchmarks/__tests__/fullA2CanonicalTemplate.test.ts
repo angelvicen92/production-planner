@@ -104,8 +104,16 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C01.end = "15:31"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C02.end = "18:39"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 30; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.groupingTarget = 4; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minParticipantsPerGroup = 1; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minGapMinutes = 25; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.vanCapacity = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.vanCapacity = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.defaultDurationMinutes = 70; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.realityDurationMinutes = 45; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.meals.effectiveWindow.start = "13:05"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.meals.participant.sodexoDurationMinutes = 45; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.meals.participant.maxSimultaneous = 9; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.fixedHumanCutIntervals = [{ start: "14:00", end: "15:15" }]; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds = ["cam-3", "cam-4", "eva"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID");
   assertInvariantFails((e) => { const sodexo = e.tasks.find((task: any) => task.id === taskId("C01", "SODEXO")); sodexo.operationalKind = "auxiliary"; sodexo.meal.occupiesExclusiveSpace = true; }, "SODEXO_MEALS", "SODEXO_SEMANTICS_INVALID");
@@ -178,7 +186,7 @@ test("representability separates source configuration, implementation blockers a
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 5);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, true);
   assert.equal(analysis.implementationBlockers.length, 3);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
   assert.equal(analysis.participantAvailabilityProbe.lossless, true);
   assert.equal(analysis.transportPolicyProbe.adapterProjectsTransportPolicy, false);
   assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksAssignedResourcesAcrossOtherSpaces, false);
@@ -195,7 +203,7 @@ test("representability separates source configuration, implementation blockers a
   });
   assert.equal(failedRoundAnalysis.roundSynchronizationCapabilityProven, false);
   assert.ok(failedRoundAnalysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
-  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
 
   const failedRouteAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: {
@@ -208,7 +216,7 @@ test("representability separates source configuration, implementation blockers a
     setupPolicyProbe: analysis.setupPolicyProbe,
   });
   assert.ok(failedRouteAnalysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
-  assert.equal(failedRouteAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(failedRouteAnalysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
 
   const failedSetupAnalysis = analyzeCanonicalFullA2Representability(
     expansion,
@@ -235,7 +243,7 @@ test("representability separates source configuration, implementation blockers a
 
   assert.equal(
     failedSetupAnalysis.nextImplementationBlocker?.code,
-    "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+    "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
   );
 
   const failedFlexibleAnalysis =
@@ -264,7 +272,7 @@ test("representability separates source configuration, implementation blockers a
   );
   assert.equal(
     failedFlexibleAnalysis.nextImplementationBlocker?.code,
-    "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+    "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
   );
 
   assert.equal(gate.status, "REJECTED_BLOCKED");
@@ -301,7 +309,7 @@ test("representability keeps dependent joint group blocker when the connected pr
   const analysis = analyzeCanonicalFullA2Representability(expansion, { jointGroupProbe: failingProbe });
   assert.equal(analysis.jointGroupCapabilityProven, false);
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED"));
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
 });
 
 test("generated artifacts are reproducible against current expansion", () => {

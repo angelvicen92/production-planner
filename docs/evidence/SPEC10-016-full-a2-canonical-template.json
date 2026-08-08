@@ -8,6 +8,14 @@
     {
       "path": "docs/source/CUADRO_TAREAS_DIA_DE_PRUEBA_A2_v1.md",
       "sha256": "c192c4b463c6078695bc274b17169bcb2d3395fb808988f1f406071231dd88f5"
+    },
+    {
+      "path": "docs/source/ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08.md",
+      "sha256": "aacde6b1c9c6c603854e84807a2110382a8e13e6bec35dc2537e503c5a09dc20"
+    },
+    {
+      "path": "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
+      "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
   "manifestFingerprint": "ad7b37ea5058fea8c31b8ee9a9a3112314737b7deccd0d363f211c88a9b29474",
@@ -1222,7 +1230,7 @@
   "requiredCreationInputBlockers": [],
   "implementationBlockers": [
     {
-      "code": "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+      "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
       "layer": "ENGINE_INPUT",
       "affectedRule": "política efectiva IN/OUT",
       "canonicalIds": [
@@ -1270,8 +1278,8 @@
       "implementationRank": 1
     },
     {
-      "code": "ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-      "layer": "ADAPTER",
+      "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+      "layer": "ENGINE_INPUT",
       "affectedRule": "comida operativa scoped y Reality a través de recomposición",
       "canonicalIds": [
         "itinerant.reality-unit-a.C01.reality-plato",
@@ -1287,7 +1295,7 @@
         "itinerant.reality-unit-combined.C12.reality-control-eva",
         "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
       ],
-      "operationalExplanation": "El adaptador no proyecta una mealPolicy flexible equivalente y los intervalos fijos por alias de unidad no expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+      "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
       "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
       "implementationRank": 2
     },
@@ -1311,7 +1319,7 @@
     }
   ],
   "nextImplementationBlocker": {
-    "code": "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+    "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
     "layer": "ENGINE_INPUT",
     "affectedRule": "política efectiva IN/OUT",
     "canonicalIds": [
@@ -1364,14 +1372,18 @@
     "engineInputPreflightSupported": true,
     "adapterProjectsAvailability": true,
     "plannerNextContractPresent": true,
+    "projectedWindowExact": true,
+    "mutationDetected": true,
     "lossless": true,
     "deterministic": true,
+    "orderInvariant": true,
     "inputImmutable": true
   },
   "transportPolicyProbe": {
     "sourceConfigurationPresent": true,
     "engineInputContractPresent": true,
     "engineInputPreflightSupported": false,
+    "unsupportedTransportContractObserved": true,
     "adapterProjectsTransportPolicy": false,
     "plannerNextContractPresent": false,
     "groupingTargetPreserved": false,
@@ -1384,6 +1396,7 @@
     "effectiveWindowPresent": true,
     "durationPresent": true,
     "spaceMealPolicySourceRepresentable": true,
+    "engineInputPreflightSupported": false,
     "adapterProjectsFlexibleSpaceMeal": false,
     "spaceMealBlocksOwnSpace": true,
     "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": false,
@@ -1513,7 +1526,7 @@
       "requiredCreationInputs": [],
       "implementationBlockers": [
         {
-          "code": "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+          "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
           "layer": "ENGINE_INPUT",
           "affectedRule": "política efectiva IN/OUT",
           "canonicalIds": [
@@ -1561,8 +1574,8 @@
           "implementationRank": 1
         },
         {
-          "code": "ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-          "layer": "ADAPTER",
+          "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
           "affectedRule": "comida operativa scoped y Reality a través de recomposición",
           "canonicalIds": [
             "itinerant.reality-unit-a.C01.reality-plato",
@@ -1578,7 +1591,7 @@
             "itinerant.reality-unit-combined.C12.reality-control-eva",
             "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
           ],
-          "operationalExplanation": "El adaptador no proyecta una mealPolicy flexible equivalente y los intervalos fijos por alias de unidad no expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+          "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
           "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
           "implementationRank": 2
         },
@@ -1603,7 +1616,7 @@
       ],
       "blockers": [
         {
-          "code": "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+          "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
           "layer": "ENGINE_INPUT",
           "affectedRule": "política efectiva IN/OUT",
           "canonicalIds": [
@@ -1651,8 +1664,8 @@
           "implementationRank": 1
         },
         {
-          "code": "ADAPTER_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-          "layer": "ADAPTER",
+          "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
           "affectedRule": "comida operativa scoped y Reality a través de recomposición",
           "canonicalIds": [
             "itinerant.reality-unit-a.C01.reality-plato",
@@ -1668,7 +1681,7 @@
             "itinerant.reality-unit-combined.C12.reality-control-eva",
             "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
           ],
-          "operationalExplanation": "El adaptador no proyecta una mealPolicy flexible equivalente y los intervalos fijos por alias de unidad no expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+          "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
           "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
           "implementationRank": 2
         },
@@ -1692,7 +1705,7 @@
         }
       ],
       "nextImplementationBlocker": {
-        "code": "PLANNER_NEXT_TRANSPORT_POLICY_UNSUPPORTED",
+        "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
         "layer": "ENGINE_INPUT",
         "affectedRule": "política efectiva IN/OUT",
         "canonicalIds": [
@@ -1745,14 +1758,18 @@
         "engineInputPreflightSupported": true,
         "adapterProjectsAvailability": true,
         "plannerNextContractPresent": true,
+        "projectedWindowExact": true,
+        "mutationDetected": true,
         "lossless": true,
         "deterministic": true,
+        "orderInvariant": true,
         "inputImmutable": true
       },
       "transportPolicyProbe": {
         "sourceConfigurationPresent": true,
         "engineInputContractPresent": true,
         "engineInputPreflightSupported": false,
+        "unsupportedTransportContractObserved": true,
         "adapterProjectsTransportPolicy": false,
         "plannerNextContractPresent": false,
         "groupingTargetPreserved": false,
@@ -1765,6 +1782,7 @@
         "effectiveWindowPresent": true,
         "durationPresent": true,
         "spaceMealPolicySourceRepresentable": true,
+        "engineInputPreflightSupported": false,
         "adapterProjectsFlexibleSpaceMeal": false,
         "spaceMealBlocksOwnSpace": true,
         "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": false,
@@ -1932,6 +1950,19 @@
     "technicalChain.contractResourceLost",
     "technicalChain.taskExtraResource",
     "technicalChain.durationChanged",
-    "itinerantOperation.kindChanged"
+    "itinerantOperation.kindChanged",
+    "effectiveConfiguration.participantAvailability.C01.end",
+    "effectiveConfiguration.participantAvailability.C02-C19.end",
+    "effectiveConfiguration.transportPolicy.arrival.minGapMinutes",
+    "effectiveConfiguration.transportPolicy.departure.groupingTarget",
+    "effectiveConfiguration.transportPolicy.departure.minParticipantsPerGroupInvented",
+    "effectiveConfiguration.transportPolicy.departure.minGapMinutes",
+    "effectiveConfiguration.transportPolicy.vanCapacity",
+    "effectiveConfiguration.meals.operational.defaultDurationMinutes",
+    "effectiveConfiguration.meals.operational.realityDurationMinutes45",
+    "effectiveConfiguration.meals.effectiveWindow",
+    "effectiveConfiguration.meals.participant.sodexoDurationMinutes",
+    "effectiveConfiguration.meals.participant.maxSimultaneous",
+    "effectiveConfiguration.meals.operational.fixedHumanCutIntervalIntroduced"
   ]
 }
