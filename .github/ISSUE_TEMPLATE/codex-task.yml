@@ -58,6 +58,14 @@ body:
       required: true
 
   - type: textarea
+    id: acceptance
+    attributes:
+      label: Accept when
+      description: List only observable acceptance criteria for this delta.
+    validations:
+      required: true
+
+  - type: textarea
     id: validation_now
     attributes:
       label: Validate now
