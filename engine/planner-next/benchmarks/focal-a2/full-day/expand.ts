@@ -194,5 +194,6 @@ export function expandCanonicalFullA2Template(template: CanonicalFullA2Template)
     itinerantOperations: sorted(template.itinerantOperations, (operation) => operation.id),
     rules: template.rules,
     requiredCreationInputs: [...template.requiredCreationInputs].sort(),
+    effectiveConfiguration: template.effectiveConfiguration,
   });
 }

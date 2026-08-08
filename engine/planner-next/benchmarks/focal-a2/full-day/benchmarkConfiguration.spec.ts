@@ -3,7 +3,7 @@ import test from "node:test";
 import { A2_BENCHMARK_SOURCE_CONFIGURATION } from "./benchmarkConfiguration";
 import { createCanonicalFullA2Template } from "./manifest";
 
-test("A2 source configuration resolves SPEC-08 itinerant windows and leaves three real decisions fail-closed", () => {
+test("A2 source configuration materializes all effective source decisions", () => {
   const config = A2_BENCHMARK_SOURCE_CONFIGURATION;
   assert.equal(config.executionDate, "2025-06-15");
   assert.deepEqual(config.effectiveDayWindow, {
@@ -19,11 +19,13 @@ test("A2 source configuration resolves SPEC-08 itinerant windows and leaves thre
     "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },
     "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
   });
-  assert.deepEqual(config.unresolvedCreationInputs, [
-    "daily_participant_availability",
-    "scoped_meal_policies",
-    "out_transport_policy",
-  ]);
+  assert.deepEqual(config.unresolvedCreationInputs, []);
+  assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
+  assert.equal(config.participantAvailability.C19.end, "18:40");
+  assert.equal(config.transportPolicy.arrival.minGapMinutes, 35);
+  assert.equal(config.transportPolicy.departure.groupingTarget, 3);
+  assert.equal("minParticipantsPerGroup" in config.transportPolicy.departure, false);
+  assert.equal(config.meals.operational.realityDurationMinutes, 75);
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
 });
 

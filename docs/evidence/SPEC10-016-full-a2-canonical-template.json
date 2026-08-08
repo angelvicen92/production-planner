@@ -1,5 +1,5 @@
 {
-  "contractVersion": "SPEC10-016.full-a2-template.v3",
+  "contractVersion": "A2-FULL-009.full-a2-template.v4",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -8,10 +8,18 @@
     {
       "path": "docs/source/CUADRO_TAREAS_DIA_DE_PRUEBA_A2_v1.md",
       "sha256": "c192c4b463c6078695bc274b17169bcb2d3395fb808988f1f406071231dd88f5"
+    },
+    {
+      "path": "docs/source/ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08.md",
+      "sha256": "aacde6b1c9c6c603854e84807a2110382a8e13e6bec35dc2537e503c5a09dc20"
+    },
+    {
+      "path": "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
+      "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "7a4976aa80cb59241a338ed4af19125042d260b7bcfbca1b8881e35e8f9b0564",
-  "expansionFingerprint": "daddeca8f07acc6db507596aec844f1c7be236f1ae89954aa6eac2f9261ce341",
+  "manifestFingerprint": "ad7b37ea5058fea8c31b8ee9a9a3112314737b7deccd0d363f211c88a9b29474",
+  "expansionFingerprint": "2dbe72f85f7ee29508f5988389b5ea2bfcd790c7efc99dd5f206c796f60fb170",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1026,6 +1034,13 @@
       "affectedCanonicalIds": []
     },
     {
+      "code": "EFFECTIVE_CONFIGURATION",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
       "code": "TRANSPORT_RULE",
       "passed": true,
       "evaluated": true,
@@ -1063,40 +1078,347 @@
   ],
   "validationStatus": "VALID",
   "validationIssues": [],
-  "requiredCreationInputs": [
-    "daily_participant_availability",
-    "out_transport_policy",
-    "scoped_meal_policies"
-  ],
+  "requiredCreationInputs": [],
+  "effectiveConfiguration": {
+    "version": "A2-FULL-009.source-configuration.v1",
+    "executionDate": "2025-06-15",
+    "effectiveDayWindow": {
+      "start": "09:00",
+      "end": "21:00",
+      "source": "PRD_DAY_SETUP_DEFAULT"
+    },
+    "spaceAvailability": "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN",
+    "resourceAvailability": "INHERIT_DAY_UNLESS_OVERRIDDEN",
+    "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
+    "itinerantUnitAvailability": {
+      "reality-unit-a": {
+        "start": "11:00",
+        "end": "14:00",
+        "source": "SPEC08_FOCAL_A2_SECTION_24"
+      },
+      "reality-unit-b": {
+        "start": "11:15",
+        "end": "13:30",
+        "source": "SPEC08_FOCAL_A2_SECTION_24"
+      },
+      "reality-unit-combined": {
+        "start": "16:00",
+        "end": "18:00",
+        "source": "SPEC08_FOCAL_A2_SECTION_24"
+      }
+    },
+    "participantAvailability": {
+      "C01": {
+        "start": "09:00",
+        "end": "15:30"
+      },
+      "C02": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C03": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C04": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C05": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C06": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C07": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C08": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C09": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C10": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C11": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C12": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C13": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C14": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C15": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C16": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C17": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C18": {
+        "start": "09:00",
+        "end": "18:40"
+      },
+      "C19": {
+        "start": "09:00",
+        "end": "18:40"
+      }
+    },
+    "transportPolicy": {
+      "arrival": {
+        "minParticipantsPerGroup": 3,
+        "groupingTarget": 3,
+        "minGapMinutes": 35,
+        "vanCapacity": 6,
+        "groupingWeight": 3
+      },
+      "departure": {
+        "groupingTarget": 3,
+        "minGapMinutes": 20,
+        "vanCapacity": 6,
+        "groupingWeight": 3
+      }
+    },
+    "meals": {
+      "effectiveWindow": {
+        "start": "13:00",
+        "end": "16:30"
+      },
+      "operational": {
+        "defaultDurationMinutes": 75,
+        "realityDurationMinutes": 75,
+        "flexible": true,
+        "followsAssignedResourcesAcrossRecomposition": true,
+        "fixedHumanCutIntervals": [],
+        "legacyItinerantMealBreakMinutesAuthoritative": false
+      },
+      "participant": {
+        "sodexoDurationMinutes": 40,
+        "maxSimultaneous": 10,
+        "independentFromOperationalMeal": true
+      }
+    },
+    "provenance": {
+      "participantAvailability": "A2-FULL-008-effective-configuration-probe",
+      "transportPolicy": "A2-FULL-008-effective-configuration-probe+SPEC-11",
+      "meals": "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11"
+    },
+    "unresolvedCreationInputs": []
+  },
   "representabilityStatus": "BLOCKED",
-  "requiredCreationInputBlockers": [
+  "requiredCreationInputBlockers": [],
+  "implementationBlockers": [
     {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "daily_participant_availability",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+      "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+      "layer": "ENGINE_INPUT",
+      "affectedRule": "política efectiva IN/OUT",
+      "canonicalIds": [
+        "C01.in",
+        "C01.out",
+        "C02.in",
+        "C02.out",
+        "C03.in",
+        "C03.out",
+        "C04.in",
+        "C04.out",
+        "C05.in",
+        "C05.out",
+        "C06.in",
+        "C06.out",
+        "C07.in",
+        "C07.out",
+        "C08.in",
+        "C08.out",
+        "C09.in",
+        "C09.out",
+        "C10.in",
+        "C10.out",
+        "C11.in",
+        "C11.out",
+        "C12.in",
+        "C12.out",
+        "C13.in",
+        "C13.out",
+        "C14.in",
+        "C14.out",
+        "C15.in",
+        "C15.out",
+        "C16.in",
+        "C16.out",
+        "C17.in",
+        "C17.out",
+        "C18.in",
+        "C18.out",
+        "C19.in",
+        "C19.out"
+      ],
+      "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
+      "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+      "implementationRank": 1
     },
     {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "out_transport_policy",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+      "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+      "layer": "ENGINE_INPUT",
+      "affectedRule": "comida operativa scoped y Reality a través de recomposición",
+      "canonicalIds": [
+        "itinerant.reality-unit-a.C01.reality-plato",
+        "itinerant.reality-unit-a.C08.reality-plato",
+        "itinerant.reality-unit-a.C09.reality-influencer",
+        "itinerant.reality-unit-a.C19.reality-corner-music",
+        "itinerant.reality-unit-b.C05.reality-plato",
+        "itinerant.reality-unit-b.C10.reality-manzano",
+        "itinerant.reality-unit-b.C17.reality-hall",
+        "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
+        "itinerant.reality-unit-combined.C06.reality-hall",
+        "itinerant.reality-unit-combined.C11.reality-buggy",
+        "itinerant.reality-unit-combined.C12.reality-control-eva",
+        "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
+      ],
+      "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+      "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
+      "implementationRank": 2
     },
     {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_SCOPED_MEAL_POLICIES",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "scoped_meal_policies",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+      "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+      "layer": "PLANNER_NEXT",
+      "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
+      "canonicalIds": [
+        "cam-2",
+        "cam-3",
+        "cam-4",
+        "coach-jose-maria",
+        "coach-lucia",
+        "eva",
+        "son-1",
+        "son-2"
+      ],
+      "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
+      "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
+      "implementationRank": 3
     }
   ],
-  "implementationBlockers": [],
-  "nextImplementationBlocker": null,
+  "nextImplementationBlocker": {
+    "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+    "layer": "ENGINE_INPUT",
+    "affectedRule": "política efectiva IN/OUT",
+    "canonicalIds": [
+      "C01.in",
+      "C01.out",
+      "C02.in",
+      "C02.out",
+      "C03.in",
+      "C03.out",
+      "C04.in",
+      "C04.out",
+      "C05.in",
+      "C05.out",
+      "C06.in",
+      "C06.out",
+      "C07.in",
+      "C07.out",
+      "C08.in",
+      "C08.out",
+      "C09.in",
+      "C09.out",
+      "C10.in",
+      "C10.out",
+      "C11.in",
+      "C11.out",
+      "C12.in",
+      "C12.out",
+      "C13.in",
+      "C13.out",
+      "C14.in",
+      "C14.out",
+      "C15.in",
+      "C15.out",
+      "C16.in",
+      "C16.out",
+      "C17.in",
+      "C17.out",
+      "C18.in",
+      "C18.out",
+      "C19.in",
+      "C19.out"
+    ],
+    "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
+    "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+    "implementationRank": 1
+  },
+  "participantAvailabilityProbe": {
+    "sourceConfigurationPresent": true,
+    "engineInputContractPresent": true,
+    "engineInputPreflightSupported": true,
+    "adapterProjectsAvailability": true,
+    "plannerNextContractPresent": true,
+    "projectedWindowExact": true,
+    "mutationDetected": true,
+    "lossless": true,
+    "deterministic": true,
+    "orderInvariant": true,
+    "inputImmutable": true
+  },
+  "transportPolicyProbe": {
+    "sourceConfigurationPresent": true,
+    "engineInputContractPresent": true,
+    "transportSettingsSourcePresent": true,
+    "engineInputPreflightSupported": false,
+    "unsupportedTransportContractObserved": true,
+    "adapterProjectsTransportPolicy": false,
+    "plannerNextContractPresent": false,
+    "groupingTargetPreserved": false,
+    "minGapPreserved": false,
+    "capacityPreserved": false,
+    "deterministic": true,
+    "inputImmutable": true
+  },
+  "scopedMealPolicyProbe": {
+    "effectiveWindowPresent": true,
+    "durationPresent": true,
+    "spaceMealPolicySourceRepresentable": true,
+    "engineInputPreflightSupported": false,
+    "adapterProjectsFlexibleSpaceMeal": false,
+    "assignedMealResourceHasOwnSpace": true,
+    "ownSpaceControlPlaceableWithoutMeal": true,
+    "ownSpacePlaceableWithMeal": false,
+    "crossSpaceControlPlaceableWithoutMeal": true,
+    "crossSpacePlaceableWithMeal": true,
+    "validationControlHardValid": true,
+    "validationWithMealHardValid": true,
+    "spaceMealBlocksOwnSpace": true,
+    "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": false,
+    "validatorRejectsAssignedResourceWorkDuringMeal": false,
+    "fixedRealityMealSupported": true,
+    "fixedRealityMealHasInterval": true,
+    "fixedRealityMealHasFlexibleWindowContract": false,
+    "recompositionAliasMealCount": 3,
+    "flexibleRealityResourceMealRepresentable": false,
+    "recompositionDoesNotDuplicateMeal": false,
+    "participantSodexoIndependent": true,
+    "deterministic": true,
+    "inputImmutable": true
+  },
   "adapterProbe": {
     "executed": true,
     "supported": true,
@@ -1213,60 +1535,288 @@
     "status": "REJECTED_BLOCKED",
     "analysis": {
       "status": "BLOCKED",
-      "requiredCreationInputs": [
+      "requiredCreationInputs": [],
+      "implementationBlockers": [
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_participant_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+          "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "política efectiva IN/OUT",
+          "canonicalIds": [
+            "C01.in",
+            "C01.out",
+            "C02.in",
+            "C02.out",
+            "C03.in",
+            "C03.out",
+            "C04.in",
+            "C04.out",
+            "C05.in",
+            "C05.out",
+            "C06.in",
+            "C06.out",
+            "C07.in",
+            "C07.out",
+            "C08.in",
+            "C08.out",
+            "C09.in",
+            "C09.out",
+            "C10.in",
+            "C10.out",
+            "C11.in",
+            "C11.out",
+            "C12.in",
+            "C12.out",
+            "C13.in",
+            "C13.out",
+            "C14.in",
+            "C14.out",
+            "C15.in",
+            "C15.out",
+            "C16.in",
+            "C16.out",
+            "C17.in",
+            "C17.out",
+            "C18.in",
+            "C18.out",
+            "C19.in",
+            "C19.out"
+          ],
+          "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
+          "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+          "implementationRank": 1
         },
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "out_transport_policy",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+          "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "comida operativa scoped y Reality a través de recomposición",
+          "canonicalIds": [
+            "itinerant.reality-unit-a.C01.reality-plato",
+            "itinerant.reality-unit-a.C08.reality-plato",
+            "itinerant.reality-unit-a.C09.reality-influencer",
+            "itinerant.reality-unit-a.C19.reality-corner-music",
+            "itinerant.reality-unit-b.C05.reality-plato",
+            "itinerant.reality-unit-b.C10.reality-manzano",
+            "itinerant.reality-unit-b.C17.reality-hall",
+            "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
+            "itinerant.reality-unit-combined.C06.reality-hall",
+            "itinerant.reality-unit-combined.C11.reality-buggy",
+            "itinerant.reality-unit-combined.C12.reality-control-eva",
+            "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
+          ],
+          "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+          "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
+          "implementationRank": 2
         },
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_SCOPED_MEAL_POLICIES",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "scoped_meal_policies",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+          "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
+          "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
+          "canonicalIds": [
+            "cam-2",
+            "cam-3",
+            "cam-4",
+            "coach-jose-maria",
+            "coach-lucia",
+            "eva",
+            "son-1",
+            "son-2"
+          ],
+          "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
+          "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
+          "implementationRank": 3
         }
       ],
-      "implementationBlockers": [],
       "blockers": [
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_participant_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+          "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "política efectiva IN/OUT",
+          "canonicalIds": [
+            "C01.in",
+            "C01.out",
+            "C02.in",
+            "C02.out",
+            "C03.in",
+            "C03.out",
+            "C04.in",
+            "C04.out",
+            "C05.in",
+            "C05.out",
+            "C06.in",
+            "C06.out",
+            "C07.in",
+            "C07.out",
+            "C08.in",
+            "C08.out",
+            "C09.in",
+            "C09.out",
+            "C10.in",
+            "C10.out",
+            "C11.in",
+            "C11.out",
+            "C12.in",
+            "C12.out",
+            "C13.in",
+            "C13.out",
+            "C14.in",
+            "C14.out",
+            "C15.in",
+            "C15.out",
+            "C16.in",
+            "C16.out",
+            "C17.in",
+            "C17.out",
+            "C18.in",
+            "C18.out",
+            "C19.in",
+            "C19.out"
+          ],
+          "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
+          "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+          "implementationRank": 1
         },
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "out_transport_policy",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+          "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "comida operativa scoped y Reality a través de recomposición",
+          "canonicalIds": [
+            "itinerant.reality-unit-a.C01.reality-plato",
+            "itinerant.reality-unit-a.C08.reality-plato",
+            "itinerant.reality-unit-a.C09.reality-influencer",
+            "itinerant.reality-unit-a.C19.reality-corner-music",
+            "itinerant.reality-unit-b.C05.reality-plato",
+            "itinerant.reality-unit-b.C10.reality-manzano",
+            "itinerant.reality-unit-b.C17.reality-hall",
+            "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
+            "itinerant.reality-unit-combined.C06.reality-hall",
+            "itinerant.reality-unit-combined.C11.reality-buggy",
+            "itinerant.reality-unit-combined.C12.reality-control-eva",
+            "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
+          ],
+          "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
+          "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
+          "implementationRank": 2
         },
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_SCOPED_MEAL_POLICIES",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "scoped_meal_policies",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+          "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
+          "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
+          "canonicalIds": [
+            "cam-2",
+            "cam-3",
+            "cam-4",
+            "coach-jose-maria",
+            "coach-lucia",
+            "eva",
+            "son-1",
+            "son-2"
+          ],
+          "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
+          "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
+          "implementationRank": 3
         }
       ],
-      "nextImplementationBlocker": null,
+      "nextImplementationBlocker": {
+        "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+        "layer": "ENGINE_INPUT",
+        "affectedRule": "política efectiva IN/OUT",
+        "canonicalIds": [
+          "C01.in",
+          "C01.out",
+          "C02.in",
+          "C02.out",
+          "C03.in",
+          "C03.out",
+          "C04.in",
+          "C04.out",
+          "C05.in",
+          "C05.out",
+          "C06.in",
+          "C06.out",
+          "C07.in",
+          "C07.out",
+          "C08.in",
+          "C08.out",
+          "C09.in",
+          "C09.out",
+          "C10.in",
+          "C10.out",
+          "C11.in",
+          "C11.out",
+          "C12.in",
+          "C12.out",
+          "C13.in",
+          "C13.out",
+          "C14.in",
+          "C14.out",
+          "C15.in",
+          "C15.out",
+          "C16.in",
+          "C16.out",
+          "C17.in",
+          "C17.out",
+          "C18.in",
+          "C18.out",
+          "C19.in",
+          "C19.out"
+        ],
+        "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
+        "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+        "implementationRank": 1
+      },
+      "participantAvailabilityProbe": {
+        "sourceConfigurationPresent": true,
+        "engineInputContractPresent": true,
+        "engineInputPreflightSupported": true,
+        "adapterProjectsAvailability": true,
+        "plannerNextContractPresent": true,
+        "projectedWindowExact": true,
+        "mutationDetected": true,
+        "lossless": true,
+        "deterministic": true,
+        "orderInvariant": true,
+        "inputImmutable": true
+      },
+      "transportPolicyProbe": {
+        "sourceConfigurationPresent": true,
+        "engineInputContractPresent": true,
+        "transportSettingsSourcePresent": true,
+        "engineInputPreflightSupported": false,
+        "unsupportedTransportContractObserved": true,
+        "adapterProjectsTransportPolicy": false,
+        "plannerNextContractPresent": false,
+        "groupingTargetPreserved": false,
+        "minGapPreserved": false,
+        "capacityPreserved": false,
+        "deterministic": true,
+        "inputImmutable": true
+      },
+      "scopedMealPolicyProbe": {
+        "effectiveWindowPresent": true,
+        "durationPresent": true,
+        "spaceMealPolicySourceRepresentable": true,
+        "engineInputPreflightSupported": false,
+        "adapterProjectsFlexibleSpaceMeal": false,
+        "assignedMealResourceHasOwnSpace": true,
+        "ownSpaceControlPlaceableWithoutMeal": true,
+        "ownSpacePlaceableWithMeal": false,
+        "crossSpaceControlPlaceableWithoutMeal": true,
+        "crossSpacePlaceableWithMeal": true,
+        "validationControlHardValid": true,
+        "validationWithMealHardValid": true,
+        "spaceMealBlocksOwnSpace": true,
+        "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": false,
+        "validatorRejectsAssignedResourceWorkDuringMeal": false,
+        "fixedRealityMealSupported": true,
+        "fixedRealityMealHasInterval": true,
+        "fixedRealityMealHasFlexibleWindowContract": false,
+        "recompositionAliasMealCount": 3,
+        "flexibleRealityResourceMealRepresentable": false,
+        "recompositionDoesNotDuplicateMeal": false,
+        "participantSodexoIndependent": true,
+        "deterministic": true,
+        "inputImmutable": true
+      },
       "adapterProbe": {
         "executed": true,
         "supported": true,
@@ -1393,7 +1943,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "daddeca8f07acc6db507596aec844f1c7be236f1ae89954aa6eac2f9261ce341",
+    "shuffledExpansionFingerprint": "2dbe72f85f7ee29508f5988389b5ea2bfcd790c7efc99dd5f206c796f60fb170",
     "matches": true
   },
   "inputImmutable": {
@@ -1424,6 +1974,19 @@
     "technicalChain.contractResourceLost",
     "technicalChain.taskExtraResource",
     "technicalChain.durationChanged",
-    "itinerantOperation.kindChanged"
+    "itinerantOperation.kindChanged",
+    "effectiveConfiguration.participantAvailability.C01.end",
+    "effectiveConfiguration.participantAvailability.C02-C19.end",
+    "effectiveConfiguration.transportPolicy.arrival.minGapMinutes",
+    "effectiveConfiguration.transportPolicy.departure.groupingTarget",
+    "effectiveConfiguration.transportPolicy.departure.minParticipantsPerGroupInvented",
+    "effectiveConfiguration.transportPolicy.departure.minGapMinutes",
+    "effectiveConfiguration.transportPolicy.vanCapacity",
+    "effectiveConfiguration.meals.operational.defaultDurationMinutes",
+    "effectiveConfiguration.meals.operational.realityDurationMinutes45",
+    "effectiveConfiguration.meals.effectiveWindow",
+    "effectiveConfiguration.meals.participant.sodexoDurationMinutes",
+    "effectiveConfiguration.meals.participant.maxSimultaneous",
+    "effectiveConfiguration.meals.operational.fixedHumanCutIntervalIntroduced"
   ]
 }

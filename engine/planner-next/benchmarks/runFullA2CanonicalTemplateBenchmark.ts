@@ -13,6 +13,8 @@ import {
 const sourcePaths = [
   "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
   "docs/source/CUADRO_TAREAS_DIA_DE_PRUEBA_A2_v1.md",
+  "docs/source/ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08.md",
+  "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
 ] as const;
 
 function sha256File(path: string): string {
@@ -88,10 +90,14 @@ const evidence = {
   validationStatus: validation.status,
   validationIssues: validation.issues,
   requiredCreationInputs: expansion.requiredCreationInputs,
+  effectiveConfiguration: expansion.effectiveConfiguration,
   representabilityStatus: representability.status,
   requiredCreationInputBlockers: representability.requiredCreationInputs,
   implementationBlockers: representability.implementationBlockers,
   nextImplementationBlocker: representability.nextImplementationBlocker,
+  participantAvailabilityProbe: representability.participantAvailabilityProbe,
+  transportPolicyProbe: representability.transportPolicyProbe,
+  scopedMealPolicyProbe: representability.scopedMealPolicyProbe,
   adapterProbe: representability.adapterProbe,
   jointGroupProbe: representability.jointGroupProbe,
   jointGroupCapabilityProven: representability.jointGroupCapabilityProven,
@@ -143,6 +149,19 @@ const evidence = {
     "technicalChain.taskExtraResource",
     "technicalChain.durationChanged",
     "itinerantOperation.kindChanged",
+    "effectiveConfiguration.participantAvailability.C01.end",
+    "effectiveConfiguration.participantAvailability.C02-C19.end",
+    "effectiveConfiguration.transportPolicy.arrival.minGapMinutes",
+    "effectiveConfiguration.transportPolicy.departure.groupingTarget",
+    "effectiveConfiguration.transportPolicy.departure.minParticipantsPerGroupInvented",
+    "effectiveConfiguration.transportPolicy.departure.minGapMinutes",
+    "effectiveConfiguration.transportPolicy.vanCapacity",
+    "effectiveConfiguration.meals.operational.defaultDurationMinutes",
+    "effectiveConfiguration.meals.operational.realityDurationMinutes45",
+    "effectiveConfiguration.meals.effectiveWindow",
+    "effectiveConfiguration.meals.participant.sodexoDurationMinutes",
+    "effectiveConfiguration.meals.participant.maxSimultaneous",
+    "effectiveConfiguration.meals.operational.fixedHumanCutIntervalIntroduced",
   ],
 };
 
@@ -168,9 +187,7 @@ Se conservan tres composiciones explícitas, sin registrarlas como recursos hard
 
 ## Required creation inputs
 
-${requiredRows}
-
-Estos datos son inputs de creación del futuro día y no se seleccionan como siguiente capacidad técnica.
+${requiredRows || "Todos los inputs de creación A2 conocidos para este benchmark están resueltos. Los blockers restantes son exclusivamente técnicos y están demostrados por los probes ejecutables."}
 
 ## Implementation blockers
 

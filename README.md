@@ -2835,3 +2835,7 @@ Full A2 materializa las tres ventanas de composición Reality canonizadas por SP
 - **Regresión histórica detectada:** el test Full A2 conservaba la expectativa anterior a SPEC10-021 de que la sincronización exacta de rondas seguía bloqueada. Se actualiza para exigir capacidad probada en el caso normal y reaparición del blocker cuando el probe de rondas falla.
 - **Gate reforzado:** Full A2 debe conservar `validationStatus=VALID`, cero `validationIssues`, `ITINERANT_UNITS.passed=true`, cero blockers técnicos y únicamente los tres inputs de producción todavía no configurados.
 - **Fuera de alcance:** no cambia Planner Next, presupuesto, DB/UI ni resuelve disponibilidad de participantes, comidas scoped o política OUT.
+
+### A2-FULL-009 — configuración fuente efectiva y frontera técnica de representabilidad
+
+Se cierran los tres source inputs pendientes y se materializan disponibilidades anónimas, transporte efectivo y comidas A2 con provenance explícita. Los probes exponen blockers técnicos de transporte y comidas scoped sin cambiar algoritmos ni afirmar `FULL_HARD_VALID`.

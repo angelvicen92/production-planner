@@ -46,3 +46,9 @@ El gate de creación no debería seguir mostrando nueve decisiones humanas. Debe
 La siguiente implementación deberá corregir el contrato de creación/representabilidad para que el benchmark distinga estos valores resueltos o heredados de las cuatro decisiones realmente pendientes. No se añadirá una nueva capacidad del planificador mientras Full A2 siga bloqueado por datos de entrada.
 
 Después de resolver esos cuatro datos, Full A2 deberá construir un `EngineInput` sin horarios humanos, ejecutar `EXACT_CONSTRUCTIVE`, superar gates hard y entrar por primera vez en comparación P01–P10 contra la referencia humana.
+
+## A2-FULL-009 — cierre de fuente
+
+Antes de A2-FULL-009, Full A2 conservaba tres decisiones de creación (`daily_participant_availability`, `scoped_meal_policies` y `out_transport_policy`). A2-FULL-009 las resuelve exclusivamente desde la Evidence efectiva A2-FULL-008, el addendum oficial de comidas y las fuentes A2 existentes. `requiredCreationInputs` queda vacío.
+
+Los bloqueos restantes ya no son de fuente: los probes read-only sitúan la primera pérdida de transporte en el preflight/adapter de EngineInput y separan las pérdidas de comida flexible scoped, recomposición Reality e indisponibilidad hard de recursos. El gate permanece fail-closed; no se construye un EngineInput parcial ni se ejecuta Planner Next.

@@ -165,7 +165,7 @@ test("exact setup enumeration is atomic on shared-ledger exhaustion", () => {
   assert.equal(generated.evidence.branchesExplored, 1);
 });
 
-test("full A2 has no implementation blocker after flexible setup and exact round synchronization support", () => {
+test("full A2 retains only the new transport and scoped meal blockers", () => {
   const analysis = analyzeCanonicalFullA2Representability(
     expandCanonicalFullA2Template(createCanonicalFullA2Template()),
   );
@@ -176,6 +176,10 @@ test("full A2 has no implementation blocker after flexible setup and exact round
     ),
     false,
   );
-  assert.deepEqual(analysis.implementationBlockers, []);
-  assert.equal(analysis.nextImplementationBlocker, null);
+  assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [
+    "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+    "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+    "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+  ]);
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
 });

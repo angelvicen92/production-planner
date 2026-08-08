@@ -1,7 +1,7 @@
 import type { EngineInput, TaskInput } from "../../../../types";
 import type { PlannerNextProblem } from "../../../contracts";
 
-export const CONTRACT_VERSION = "SPEC10-016.full-a2-template.v3";
+export const CONTRACT_VERSION = "A2-FULL-009.full-a2-template.v4";
 
 export const PARTICIPANT_IDS = Array.from({ length: 19 }, (_, index) => `C${String(index + 1).padStart(2, "0")}`) as readonly string[];
 
@@ -195,11 +195,8 @@ export interface CanonicalTemplateRules {
     readonly minutes: 30;
     readonly scope: "coach";
   };
-  readonly inTransport: {
-    readonly minParticipantsPerGroup: 3;
-    readonly minMinutesBetweenGroups: 30;
-  };
-  readonly outTransport: "creation_input_required";
+  readonly inTransport: { readonly minParticipantsPerGroup: 3; readonly groupingTarget: 3; readonly minGapMinutes: 35; readonly vanCapacity: 6; readonly groupingWeight: 3 };
+  readonly outTransport: { readonly groupingTarget: 3; readonly minGapMinutes: 20; readonly vanCapacity: 6; readonly groupingWeight: 3 };
   readonly ignoredEditorialNotes: readonly ["NO_P15", "instrument", "wardrobe", "prop"];
 }
 
@@ -213,6 +210,7 @@ export interface CanonicalFullA2Template {
   readonly itinerantOperations: readonly CanonicalItinerantOperation[];
   readonly assignments: readonly CanonicalParticipantAssignment[];
   readonly requiredCreationInputs: readonly string[];
+  readonly effectiveConfiguration: typeof import("./benchmarkConfiguration").A2_BENCHMARK_SOURCE_CONFIGURATION;
   readonly rules: CanonicalTemplateRules;
 }
 
@@ -231,6 +229,7 @@ export interface ExpandedCanonicalFullA2Template {
   readonly itinerantOperations: readonly CanonicalItinerantOperation[];
   readonly rules: CanonicalTemplateRules;
   readonly requiredCreationInputs: readonly string[];
+  readonly effectiveConfiguration: typeof import("./benchmarkConfiguration").A2_BENCHMARK_SOURCE_CONFIGURATION;
 }
 
 export interface ValidationIssue {
@@ -272,6 +271,9 @@ export interface RepresentabilityAnalysis {
   readonly implementationBlockers: readonly RepresentabilityBlocker[];
   readonly blockers: readonly RepresentabilityBlocker[];
   readonly nextImplementationBlocker: RepresentabilityBlocker | null;
+  readonly participantAvailabilityProbe: { readonly sourceConfigurationPresent: boolean; readonly engineInputContractPresent: boolean; readonly engineInputPreflightSupported: boolean; readonly adapterProjectsAvailability: boolean; readonly plannerNextContractPresent: boolean; readonly projectedWindowExact: boolean; readonly mutationDetected: boolean; readonly lossless: boolean; readonly deterministic: boolean; readonly orderInvariant: boolean; readonly inputImmutable: boolean };
+  readonly transportPolicyProbe: { readonly sourceConfigurationPresent: boolean; readonly engineInputContractPresent: boolean; readonly transportSettingsSourcePresent: boolean; readonly engineInputPreflightSupported: boolean; readonly unsupportedTransportContractObserved: boolean; readonly adapterProjectsTransportPolicy: boolean; readonly plannerNextContractPresent: boolean; readonly groupingTargetPreserved: boolean; readonly minGapPreserved: boolean; readonly capacityPreserved: boolean; readonly deterministic: boolean; readonly inputImmutable: boolean };
+  readonly scopedMealPolicyProbe: { readonly effectiveWindowPresent: boolean; readonly durationPresent: boolean; readonly spaceMealPolicySourceRepresentable: boolean; readonly engineInputPreflightSupported: boolean; readonly adapterProjectsFlexibleSpaceMeal: boolean; readonly assignedMealResourceHasOwnSpace: boolean; readonly ownSpaceControlPlaceableWithoutMeal: boolean; readonly ownSpacePlaceableWithMeal: boolean; readonly crossSpaceControlPlaceableWithoutMeal: boolean; readonly crossSpacePlaceableWithMeal: boolean; readonly validationControlHardValid: boolean; readonly validationWithMealHardValid: boolean; readonly spaceMealBlocksOwnSpace: boolean; readonly spaceMealBlocksAssignedResourcesAcrossOtherSpaces: boolean; readonly validatorRejectsAssignedResourceWorkDuringMeal: boolean; readonly fixedRealityMealSupported: boolean; readonly fixedRealityMealHasInterval: boolean; readonly fixedRealityMealHasFlexibleWindowContract: boolean; readonly recompositionAliasMealCount: number; readonly flexibleRealityResourceMealRepresentable: boolean; readonly recompositionDoesNotDuplicateMeal: boolean; readonly participantSodexoIndependent: boolean; readonly deterministic: boolean; readonly inputImmutable: boolean };
   readonly adapterProbe: {
     readonly executed: true;
     readonly supported: boolean;
