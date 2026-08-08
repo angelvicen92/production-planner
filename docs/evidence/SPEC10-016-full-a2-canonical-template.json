@@ -14,12 +14,16 @@
       "sha256": "aacde6b1c9c6c603854e84807a2110382a8e13e6bec35dc2537e503c5a09dc20"
     },
     {
+      "path": "docs/source/ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08.md",
+      "sha256": "e04e140e87055b0ad9424b6e4b831d1a74dd9da8ef695b0cad225bcd261e61c0"
+    },
+    {
       "path": "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "ad7b37ea5058fea8c31b8ee9a9a3112314737b7deccd0d363f211c88a9b29474",
-  "expansionFingerprint": "2dbe72f85f7ee29508f5988389b5ea2bfcd790c7efc99dd5f206c796f60fb170",
+  "manifestFingerprint": "8c7570f18accc14ee01efbc6072361fec34d1a3ad865bd3063c263e4c691acf5",
+  "expansionFingerprint": "69bdf1c25ef122147290950e2cfac3c17e6232adf93a14558ab17b7accc0473c",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1187,16 +1191,15 @@
     },
     "transportPolicy": {
       "arrival": {
-        "minParticipantsPerGroup": 3,
-        "groupingTarget": 3,
+        "minimumGroupSize": 3,
+        "maximumGroupSize": 6,
         "minGapMinutes": 35,
-        "vanCapacity": 6,
         "groupingWeight": 3
       },
       "departure": {
-        "groupingTarget": 3,
+        "minimumGroupSize": 3,
+        "maximumGroupSize": 6,
         "minGapMinutes": 20,
-        "vanCapacity": 6,
         "groupingWeight": 3
       }
     },
@@ -1221,7 +1224,7 @@
     },
     "provenance": {
       "participantAvailability": "A2-FULL-008-effective-configuration-probe",
-      "transportPolicy": "A2-FULL-008-effective-configuration-probe+SPEC-11",
+      "transportPolicy": "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11",
       "meals": "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11"
     },
     "unresolvedCreationInputs": []
@@ -1230,8 +1233,8 @@
   "requiredCreationInputBlockers": [],
   "implementationBlockers": [
     {
-      "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
-      "layer": "ENGINE_INPUT",
+      "code": "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED",
+      "layer": "PLANNER_NEXT",
       "affectedRule": "política efectiva IN/OUT",
       "canonicalIds": [
         "C01.in",
@@ -1273,8 +1276,8 @@
         "C19.in",
         "C19.out"
       ],
-      "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
-      "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+      "operationalExplanation": "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
+      "semanticLoss": "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.",
       "implementationRank": 1
     },
     {
@@ -1319,8 +1322,8 @@
     }
   ],
   "nextImplementationBlocker": {
-    "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
-    "layer": "ENGINE_INPUT",
+    "code": "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED",
+    "layer": "PLANNER_NEXT",
     "affectedRule": "política efectiva IN/OUT",
     "canonicalIds": [
       "C01.in",
@@ -1362,8 +1365,8 @@
       "C19.in",
       "C19.out"
     ],
-    "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
-    "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+    "operationalExplanation": "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
+    "semanticLoss": "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.",
     "implementationRank": 1
   },
   "participantAvailabilityProbe": {
@@ -1383,14 +1386,20 @@
     "sourceConfigurationPresent": true,
     "engineInputContractPresent": true,
     "transportSettingsSourcePresent": true,
-    "engineInputPreflightSupported": false,
-    "unsupportedTransportContractObserved": true,
-    "adapterProjectsTransportPolicy": false,
-    "plannerNextContractPresent": false,
-    "groupingTargetPreserved": false,
-    "minGapPreserved": false,
-    "capacityPreserved": false,
+    "engineInputPreflightSupported": true,
+    "rejectsInvalidContracts": true,
+    "adapterProjectsTransportPolicy": true,
+    "plannerNextContractPresent": true,
+    "minimumPreserved": true,
+    "maximumPreserved": true,
+    "minGapPreserved": true,
+    "groupingWeightPreserved": true,
+    "noSeparateTargetSemantic": true,
+    "capabilityDetected": true,
+    "capabilityUnsupported": true,
+    "executionFailsClosed": true,
     "deterministic": true,
+    "orderInvariant": true,
     "inputImmutable": true
   },
   "scopedMealPolicyProbe": {
@@ -1538,8 +1547,8 @@
       "requiredCreationInputs": [],
       "implementationBlockers": [
         {
-          "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
-          "layer": "ENGINE_INPUT",
+          "code": "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
           "affectedRule": "política efectiva IN/OUT",
           "canonicalIds": [
             "C01.in",
@@ -1581,8 +1590,8 @@
             "C19.in",
             "C19.out"
           ],
-          "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
-          "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+          "operationalExplanation": "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
+          "semanticLoss": "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.",
           "implementationRank": 1
         },
         {
@@ -1628,8 +1637,8 @@
       ],
       "blockers": [
         {
-          "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
-          "layer": "ENGINE_INPUT",
+          "code": "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
           "affectedRule": "política efectiva IN/OUT",
           "canonicalIds": [
             "C01.in",
@@ -1671,8 +1680,8 @@
             "C19.in",
             "C19.out"
           ],
-          "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
-          "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+          "operationalExplanation": "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
+          "semanticLoss": "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.",
           "implementationRank": 1
         },
         {
@@ -1717,8 +1726,8 @@
         }
       ],
       "nextImplementationBlocker": {
-        "code": "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
-        "layer": "ENGINE_INPUT",
+        "code": "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED",
+        "layer": "PLANNER_NEXT",
         "affectedRule": "política efectiva IN/OUT",
         "canonicalIds": [
           "C01.in",
@@ -1760,8 +1769,8 @@
           "C19.in",
           "C19.out"
         ],
-        "operationalExplanation": "EngineInput declara los parámetros, pero su preflight los rechaza como transporte no soportado y el adaptador no los proyecta a PlannerNextProblem; ignorarlos puede producir IN/OUT incompatibles con la configuración del día.",
-        "semanticLoss": "Se pierden target de agrupación, separación entre grupos, capacidad de vehículo y peso de agrupación.",
+        "operationalExplanation": "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
+        "semanticLoss": "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.",
         "implementationRank": 1
       },
       "participantAvailabilityProbe": {
@@ -1781,14 +1790,20 @@
         "sourceConfigurationPresent": true,
         "engineInputContractPresent": true,
         "transportSettingsSourcePresent": true,
-        "engineInputPreflightSupported": false,
-        "unsupportedTransportContractObserved": true,
-        "adapterProjectsTransportPolicy": false,
-        "plannerNextContractPresent": false,
-        "groupingTargetPreserved": false,
-        "minGapPreserved": false,
-        "capacityPreserved": false,
+        "engineInputPreflightSupported": true,
+        "rejectsInvalidContracts": true,
+        "adapterProjectsTransportPolicy": true,
+        "plannerNextContractPresent": true,
+        "minimumPreserved": true,
+        "maximumPreserved": true,
+        "minGapPreserved": true,
+        "groupingWeightPreserved": true,
+        "noSeparateTargetSemantic": true,
+        "capabilityDetected": true,
+        "capabilityUnsupported": true,
+        "executionFailsClosed": true,
         "deterministic": true,
+        "orderInvariant": true,
         "inputImmutable": true
       },
       "scopedMealPolicyProbe": {
@@ -1943,7 +1958,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "2dbe72f85f7ee29508f5988389b5ea2bfcd790c7efc99dd5f206c796f60fb170",
+    "shuffledExpansionFingerprint": "69bdf1c25ef122147290950e2cfac3c17e6232adf93a14558ab17b7accc0473c",
     "matches": true
   },
   "inputImmutable": {

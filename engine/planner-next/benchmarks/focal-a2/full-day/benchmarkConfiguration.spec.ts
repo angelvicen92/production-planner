@@ -23,8 +23,8 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
   assert.equal(config.participantAvailability.C19.end, "18:40");
   assert.equal(config.transportPolicy.arrival.minGapMinutes, 35);
-  assert.equal(config.transportPolicy.departure.groupingTarget, 3);
-  assert.equal("minParticipantsPerGroup" in config.transportPolicy.departure, false);
+  assert.deepEqual(config.transportPolicy.arrival, { minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 35, groupingWeight: 3 });
+  assert.deepEqual(config.transportPolicy.departure, { minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
 });

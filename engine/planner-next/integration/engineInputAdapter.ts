@@ -86,6 +86,10 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
     ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
+    ...(problem.transportPolicy ? { transportPolicy: {
+      arrival: { ...problem.transportPolicy.arrival, taskIds: [...problem.transportPolicy.arrival.taskIds].sort(compare) },
+      departure: { ...problem.transportPolicy.departure, taskIds: [...problem.transportPolicy.departure.taskIds].sort(compare) },
+    } } : {}),
   };
 }
 
@@ -263,6 +267,18 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     ...(itinerantUnitMeals.length ? { itinerantUnitMeals: itinerantUnitMeals.map(meal=>({id:canonical("break",meal.breakId),itinerantUnitId:canonical("itinerant-team",meal.itinerantTeamId),interval:{...meal.interval}})) } : {}),
     ...(activeTasks.some((task) => task.plannerNextKind === "auxiliary") ? { auxiliaryPolicy: { participantPresencePreference: "OFF" as const } } : {}),
     ...(anchoredAccompaniments?.length ? { anchoredAccompaniments } : {}),
+    ...(input.transportSettings ? { transportPolicy: {
+      arrival: {
+        taskIds: activeTasks.filter((task) => task.operationalRole === "transport_arrival").map((task) => canonical("task", task.id)),
+        minimumGroupSize: input.arrivalGroupingTarget!, maximumGroupSize: input.vanCapacity!,
+        minGapMinutes: input.arrivalMinGapMinutes!, groupingWeight: input.transportSettings.groupingWeight!,
+      },
+      departure: {
+        taskIds: activeTasks.filter((task) => task.operationalRole === "transport_departure").map((task) => canonical("task", task.id)),
+        minimumGroupSize: input.departureGroupingTarget!, maximumGroupSize: input.vanCapacity!,
+        minGapMinutes: input.departureMinGapMinutes!, groupingWeight: input.transportSettings.groupingWeight!,
+      },
+    } } : {}),
   };
   const coachIds = new Set(problem.coaches.map((coach) => coach.id));
   const channelOverlapIds = problem.resources.map((resource) => resource.id).filter((id) => coachIds.has(id)).sort(compare);

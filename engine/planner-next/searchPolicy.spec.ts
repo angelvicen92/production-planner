@@ -83,6 +83,24 @@ test("anchored accompaniment is detected canonically and requires the exact poli
   });
 });
 
+test("transport grouping is detected but unsupported by every search policy", () => {
+  assert.deepEqual(PLANNER_CAPABILITY_REQUIREMENTS.TRANSPORT_GROUPING, {
+    capability: "TRANSPORT_GROUPING", supportedPolicies: [],
+  });
+  for (const policy of ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"] as const) {
+    const value = problem(policy);
+    value.transportPolicy = {
+      arrival: { taskIds: ["arrival"], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 35, groupingWeight: 3 },
+      departure: { taskIds: ["departure"], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 },
+    };
+    assert.deepEqual(detectPlannerCapabilities(value), ["TRANSPORT_GROUPING"]);
+    const resolution = resolvePlannerSearchPolicy(value);
+    assert.equal(resolution.compatible, false);
+    assert.deepEqual(resolution.unsupportedCapabilities, ["TRANSPORT_GROUPING"]);
+    assert.deepEqual(resolution.reasonCodes, ["SEARCH_POLICY_CAPABILITY_UNSUPPORTED"]);
+  }
+});
+
 test("the requirement contract can support both policies without requiring either", () => {
   const requirement: PlannerCapabilityRequirement = {
     capability: "ANCHORED_ACCOMPANIMENT",

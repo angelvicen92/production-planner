@@ -19,8 +19,8 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
     return [id, Object.freeze({ start: "09:00" as const, end: index === 0 ? "15:30" as const : "18:40" as const })];
   }))),
   transportPolicy: Object.freeze({
-    arrival: Object.freeze({ minParticipantsPerGroup: 3 as const, groupingTarget: 3 as const, minGapMinutes: 35 as const, vanCapacity: 6 as const, groupingWeight: 3 as const }),
-    departure: Object.freeze({ groupingTarget: 3 as const, minGapMinutes: 20 as const, vanCapacity: 6 as const, groupingWeight: 3 as const }),
+    arrival: Object.freeze({ minimumGroupSize: 3 as const, maximumGroupSize: 6 as const, minGapMinutes: 35 as const, groupingWeight: 3 as const }),
+    departure: Object.freeze({ minimumGroupSize: 3 as const, maximumGroupSize: 6 as const, minGapMinutes: 20 as const, groupingWeight: 3 as const }),
   }),
   meals: Object.freeze({
     effectiveWindow: Object.freeze({ start: "13:00" as const, end: "16:30" as const }),
@@ -29,7 +29,7 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   }),
   provenance: Object.freeze({
     participantAvailability: "A2-FULL-008-effective-configuration-probe" as const,
-    transportPolicy: "A2-FULL-008-effective-configuration-probe+SPEC-11" as const,
+    transportPolicy: "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11" as const,
     meals: "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11" as const,
   }),
   unresolvedCreationInputs: Object.freeze([] as const),

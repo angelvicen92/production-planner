@@ -138,6 +138,18 @@ export interface PlannerNextProblem {
   participantMealCapacity?: { maxSimultaneous: number };
   resourceMeals?: ResourceMealBreak[];
   itinerantUnitMeals?: ItinerantUnitMealBreak[];
+  transportPolicy?: {
+    arrival: TransportGroupingPolicy;
+    departure: TransportGroupingPolicy;
+  };
+}
+
+export interface TransportGroupingPolicy {
+  taskIds: string[];
+  minimumGroupSize: number;
+  maximumGroupSize: number;
+  minGapMinutes: Minute;
+  groupingWeight: number;
 }
 
 export interface ItinerantUnitMealBreak { id:string; itinerantUnitId:string; interval:Window }
