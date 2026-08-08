@@ -3,7 +3,7 @@ import test from "node:test";
 import { A2_BENCHMARK_SOURCE_CONFIGURATION } from "./benchmarkConfiguration";
 import { createCanonicalFullA2Template } from "./manifest";
 
-test("A2 source configuration resolves SPEC-08 itinerant windows and leaves three real decisions fail-closed", () => {
+test("A2 source configuration captures owner defaults while canonical projection remains fail-closed", () => {
   const config = A2_BENCHMARK_SOURCE_CONFIGURATION;
   assert.equal(config.executionDate, "2025-06-15");
   assert.deepEqual(config.effectiveDayWindow, {
@@ -19,6 +19,28 @@ test("A2 source configuration resolves SPEC-08 itinerant windows and leaves thre
     "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },
     "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
   });
+  assert.deepEqual(config.participantAvailabilityDefault, {
+    mode: "INHERIT_EFFECTIVE_DAY_WINDOW",
+    source: "A2_PRODUCTION_OWNER_2026_08_08",
+  });
+  assert.deepEqual(config.scopedMealPolicyDefault, {
+    scopeSelector: "PDF_SPACE_SCOPES_MARKED_CORTE_COMIDA",
+    durationMinutes: 75,
+    placement: "OPTIMIZE_WITHIN_EFFECTIVE_MEAL_WINDOW",
+    effectiveMealWindow: "INHERIT_EFFECTIVE_PLAN_MEAL_WINDOW",
+    humanScheduleMealTimesAreAuthoritative: false,
+    source: "A2_PRODUCTION_OWNER_2026_08_08",
+  });
+  assert.deepEqual(config.outTransportPolicyDefault, {
+    minParticipantsPerGroup: 1,
+    groupingRequired: false,
+    departureMinGapMinutes: "INHERIT_EFFECTIVE_TRANSPORT_CONFIGURATION",
+    source: "A2_PRODUCTION_OWNER_2026_08_08",
+  });
+  assert.equal(config.sourceDecisionDocument, "docs/source/ADDENDUM_A2_CONFIGURACION_OPERATIVA_2026-08-08.md");
+
+  // Capturing source decisions must not silently clear representability. The next
+  // iteration has to project them into the canonical Full A2 contract first.
   assert.deepEqual(config.unresolvedCreationInputs, [
     "daily_participant_availability",
     "scoped_meal_policies",
