@@ -2826,3 +2826,12 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 ## A2-FULL-005 — SPEC-08 itinerant availability
 
 Full A2 materializa las tres ventanas de composición Reality canonizadas por SPEC-08 para el benchmark A2 y reduce el gate fuente a participante, comidas scoped y política OUT. No usa horarios de tareas humanas como seed ni cambia el algoritmo.
+
+
+## A2-FULL-006 — Validación canónica de disponibilidad itinerante
+
+- **Objetivo (DB Safe Merge):** corregir la regresión de benchmark introducida al materializar las ventanas Reality de SPEC-08: el validador seguía esperando el sentinel histórico `creation_input_required`.
+- **Semántica:** la composición y disponibilidad de cada unidad itinerante se validan exactamente contra el contrato canónico estructurado (inicio, fin y procedencia), sin defaults ni uso del planning humano como seed.
+- **Regresión histórica detectada:** el test Full A2 conservaba la expectativa anterior a SPEC10-021 de que la sincronización exacta de rondas seguía bloqueada. Se actualiza para exigir capacidad probada en el caso normal y reaparición del blocker cuando el probe de rondas falla.
+- **Gate reforzado:** Full A2 debe conservar `validationStatus=VALID`, cero `validationIssues`, `ITINERANT_UNITS.passed=true`, cero blockers técnicos y únicamente los tres inputs de producción todavía no configurados.
+- **Fuera de alcance:** no cambia Planner Next, presupuesto, DB/UI ni resuelve disponibilidad de participantes, comidas scoped o política OUT.

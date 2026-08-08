@@ -151,13 +151,41 @@ test("representability separates source configuration, implementation blockers a
   assert.equal(analysis.flexibleSetupOrderProbe.preparationTargetsSecondFamily, true);
   assert.equal(analysis.flexibleSetupOrderProbe.atomicOnBudgetExhaustion, true);
   assert.equal(analysis.flexibleSetupOrderCapabilityProven, true);
+  assert.equal(analysis.roundSynchronizationProbe.executed, true);
+  assert.equal(analysis.roundSynchronizationProbe.exactPolicySelected, true);
+  assert.equal(analysis.roundSynchronizationProbe.complete, true);
+  assert.equal(analysis.roundSynchronizationProbe.hardValid, true);
+  assert.equal(analysis.roundSynchronizationProbe.roundSynchronizationViolationCount, 0);
+  assert.equal(analysis.roundSynchronizationProbe.roundPreparationViolationCount, 0);
+  assert.equal(analysis.roundSynchronizationProbe.residualRoundSupported, true);
+  assert.equal(analysis.roundSynchronizationProbe.deterministic, true);
+  assert.equal(analysis.roundSynchronizationProbe.orderInvariant, true);
+  assert.equal(analysis.roundSynchronizationProbe.inputImmutable, true);
+  assert.equal(analysis.roundSynchronizationProbe.sharedBudgetAccounting, true);
+  assert.equal(analysis.roundSynchronizationProbe.atomicOnBudgetExhaustion, true);
+  assert.equal(analysis.roundSynchronizationCapabilityProven, true);
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"));
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
-  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
+  assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 5);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, true);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
+  assert.equal(analysis.implementationBlockers.length, 0);
+  assert.equal(analysis.nextImplementationBlocker, null);
+
+  const failedRoundAnalysis = analyzeCanonicalFullA2Representability(expansion, {
+    adapterProbe: analysis.adapterProbe,
+    jointGroupProbe: analysis.jointGroupProbe,
+    setupPolicyProbe: analysis.setupPolicyProbe,
+    flexibleSetupOrderProbe: analysis.flexibleSetupOrderProbe,
+    roundSynchronizationProbe: {
+      ...analysis.roundSynchronizationProbe,
+      complete: false,
+    },
+  });
+  assert.equal(failedRoundAnalysis.roundSynchronizationCapabilityProven, false);
+  assert.ok(failedRoundAnalysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
+  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
 
   const failedRouteAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: {

@@ -1041,16 +1041,10 @@
     },
     {
       "code": "ITINERANT_UNITS",
-      "passed": false,
+      "passed": true,
       "evaluated": true,
-      "issueCodes": [
-        "ITINERANT_UNIT_SET_INVALID"
-      ],
-      "affectedCanonicalIds": [
-        "reality-unit-a",
-        "reality-unit-b",
-        "reality-unit-combined"
-      ]
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
       "code": "KNOWN_RESOURCES",
@@ -1067,27 +1061,8 @@
       "affectedCanonicalIds": []
     }
   ],
-  "validationStatus": "INVALID",
-  "validationIssues": [
-    {
-      "invariantCode": "ITINERANT_UNITS",
-      "code": "ITINERANT_UNIT_SET_INVALID",
-      "entityId": "reality-unit-a",
-      "message": "Itinerant unit composition must match SPEC-08."
-    },
-    {
-      "invariantCode": "ITINERANT_UNITS",
-      "code": "ITINERANT_UNIT_SET_INVALID",
-      "entityId": "reality-unit-b",
-      "message": "Itinerant unit composition must match SPEC-08."
-    },
-    {
-      "invariantCode": "ITINERANT_UNITS",
-      "code": "ITINERANT_UNIT_SET_INVALID",
-      "entityId": "reality-unit-combined",
-      "message": "Itinerant unit composition must match SPEC-08."
-    }
-  ],
+  "validationStatus": "VALID",
+  "validationIssues": [],
   "requiredCreationInputs": [
     "daily_participant_availability",
     "out_transport_policy",
