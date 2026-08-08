@@ -1,0 +1,76 @@
+{
+  "evidenceId": "A2-FULL-008-effective-configuration-probe",
+  "capturedAt": "2026-08-08",
+  "kind": "READ_ONLY_EFFECTIVE_CONFIGURATION_OBSERVATION",
+  "purpose": "Freeze the effective configuration observed in the focal A2 test plan without promoting runtime data to source-document authority or using human schedule times as seed/lock/hint.",
+  "source": {
+    "planId": 27,
+    "storedPlanDate": "2026-02-27",
+    "benchmarkExecutionDate": "2025-06-15",
+    "dateSemantics": "The stored test-plan date is not the benchmark execution date. Values below are configuration evidence only.",
+    "probeProvidedByProductionOwner": true,
+    "probeMode": "read-only Supabase queries"
+  },
+  "participantAvailability": {
+    "provenance": "contestants availability_start/availability_end from focal test plan 27",
+    "canonicalMappingAuthority": "CUADRO_TAREAS_DIA_DE_PRUEBA_A2_v1.md",
+    "byParticipantId": {
+      "C01": { "start": "09:00", "end": "15:30" },
+      "C02": { "start": "09:00", "end": "18:40" },
+      "C03": { "start": "09:00", "end": "18:40" },
+      "C04": { "start": "09:00", "end": "18:40" },
+      "C05": { "start": "09:00", "end": "18:40" },
+      "C06": { "start": "09:00", "end": "18:40" },
+      "C07": { "start": "09:00", "end": "18:40" },
+      "C08": { "start": "09:00", "end": "18:40" },
+      "C09": { "start": "09:00", "end": "18:40" },
+      "C10": { "start": "09:00", "end": "18:40" },
+      "C11": { "start": "09:00", "end": "18:40" },
+      "C12": { "start": "09:00", "end": "18:40" },
+      "C13": { "start": "09:00", "end": "18:40" },
+      "C14": { "start": "09:00", "end": "18:40" },
+      "C15": { "start": "09:00", "end": "18:40" },
+      "C16": { "start": "09:00", "end": "18:40" },
+      "C17": { "start": "09:00", "end": "18:40" },
+      "C18": { "start": "09:00", "end": "18:40" },
+      "C19": { "start": "09:00", "end": "18:40" }
+    },
+    "humanInOutUsed": false
+  },
+  "transportSnapshot": {
+    "contractVersion": 1,
+    "snapshotSource": "LEGACY_BACKFILL",
+    "arrival": {
+      "groupingTarget": 3,
+      "minGapMinutes": 35,
+      "planTemplateSnapshotIdObserved": 29
+    },
+    "departure": {
+      "groupingTarget": 3,
+      "minGapMinutes": 20,
+      "planTemplateSnapshotIdObserved": 77
+    },
+    "vanCapacity": 6,
+    "groupingWeight": 3,
+    "interpretation": "These are effective snapshot fields. groupingTarget remains a target; it must not be reinterpreted as minParticipantsPerGroup. Template snapshot ids are runtime identities, not canonical benchmark ids."
+  },
+  "mealConfiguration": {
+    "effectiveMealWindow": { "start": "13:00", "end": "16:30" },
+    "spaceMealBreakMinutes": 75,
+    "participantMealDurationMinutes": 40,
+    "participantMealMaxSimultaneous": 10,
+    "mealMode": "flexible_meal_window",
+    "programSettingsItinerantMealBreakMinutesObserved": 45,
+    "planBreakRowsObserved": {
+      "spaceMealDurationMinutes": 75,
+      "itinerantMealDurationMinutes": 75
+    },
+    "authorityNote": "The observed legacy/program value 45 for itinerant meals is superseded for focal A2 by ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08.md, which explicitly sets the Reality default to 75 minutes. Auto-materialized plan_break rows are evidence of runtime state, not by themselves source authority."
+  },
+  "safety": {
+    "humanScheduleTimesUsedAsInput": false,
+    "inventedDefaults": false,
+    "pr678DefaultsReused": false,
+    "configurationEvidenceMustBeProjectedLosslessly": true
+  }
+}
