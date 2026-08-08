@@ -1,61 +1,55 @@
 # OptiPlan — instrucciones permanentes para Codex
 
-## Fuente de verdad
+Este archivo es un **mapa estable**, no una enciclopedia. El prompt de cada tarea contiene sólo el delta. Para la política completa de contexto y créditos, consulta `docs/governance/CODEX_EFFICIENCY_PROTOCOL.md` únicamente cuando sea relevante.
 
-- Respeta la documentación oficial y las SPEC/addenda citadas por la tarea.
-- No inventes requisitos, reglas de negocio, contratos ni arquitectura.
-- Si una ambigüedad material impide implementar correctamente, detén la implementación y repórtala.
+## Invariantes
 
-## Principios invariantes
-
-- La producción tiene que salir: viabilidad operativa antes que optimización local.
+- Respeta las fuentes oficiales y SPEC citadas por la tarea; no inventes requisitos, reglas, contratos ni arquitectura.
+- Producción primero: viabilidad operativa antes que optimización local.
 - El motor propone; el humano decide.
 - `done` e `in_progress` son inmutables; sólo se replantea lo pendiente o interrumpido.
 - Locks y restricciones hard nunca se convierten en preferencias soft.
-- Determinismo, input inmutable, simulación antes de consolidación y Evidence cuando la tarea la requiera.
-- Configuración explícita; no hardcodes, inferencias por nombre ni IDs de fixtures en lógica productiva.
+- Preserva determinismo, input inmutable, simulación antes de consolidación y Evidence cuando aplique.
+- Configuración explícita: sin hardcodes, inferencias por nombre ni IDs de fixtures en lógica productiva.
 - Robustez ante `null`, `undefined`, relaciones incompletas y RLS.
 - La evidencia prevalece sobre la intuición.
 
 ## Alcance
 
-- Implementa una sola unidad lógica.
-- Modifica únicamente los archivos necesarios para el objetivo solicitado.
-- No hagas refactors amplios, limpiezas generales ni mejoras adyacentes no pedidas.
+- Implementa una sola unidad lógica y modifica sólo los archivos necesarios.
 - Reutiliza autoridades y utilidades existentes antes de crear componentes nuevos.
+- No hagas refactors amplios, limpiezas generales ni mejoras adyacentes no pedidas.
 - No modifiques DB, schema, migraciones, RLS, UI, API, ORC, V3, V4 o publicación salvo autorización expresa.
-- No abras otro PR cuando la tarea indique continuar uno existente.
-- No hagas merge.
+- Si una ambigüedad material impide implementar correctamente, detente y repórtala.
+- No abras otro PR si la tarea indica continuar uno existente. No hagas merge.
 
-## Uso eficiente de contexto
+## Contexto
 
-- Lee primero este archivo, el prompt y sólo los documentos/archivos directamente relevantes.
-- Usa búsquedas dirigidas; no recorras todo el repositorio sin necesidad.
-- No repitas en la respuesta final el prompt, la documentación ni grandes fragmentos de código.
-- No actualices README, Evidence o benchmarks salvo que el objetivo o los criterios de aceptación lo exijan.
+1. Lee este archivo y el prompt.
+2. Lee sólo las rutas indicadas en `Leer:` o las fuentes directamente citadas.
+3. Usa búsquedas dirigidas para localizar símbolos o dependencias inmediatas.
+4. Amplía el contexto sólo si aparece una dependencia real no prevista.
+
+No recorras por defecto todo el repositorio, `README`, `docs/`, Evidence o todas las SPEC. No repitas en la respuesta final el prompt, documentación, logs extensos ni grandes fragmentos de código.
 
 ## Validación escalonada
 
-### Durante la implementación
+Durante implementación:
 
-- Ejecuta TypeScript/lint y los tests focalizados de los contratos modificados.
-- Corrige esos fallos antes de ampliar pruebas.
-- No repitas `npm ci` si las dependencias no cambiaron y ya se ejecutó correctamente en la tarea.
+- ejecuta TypeScript/lint y tests focales directamente afectados;
+- no repitas `npm ci` si las dependencias no cambiaron y el entorno ya está preparado;
+- no ejecutes suite global, Full A2, Focal completo o todos los benchmarks tras cada corrección local.
 
-### Merge gate
-
-Ejecuta suite Planner Next, suite global, build, Focal y benchmarks reproducibles sólo cuando el prompt indique que el cambio está listo para revisión final o cuando el alcance lo haga imprescindible.
-
-Si una validación no puede ejecutarse, informa causa y riesgo residual; no sustituyas Evidence ausente por afirmaciones.
+Sobre un head candidato, ejecuta el merge gate completo sólo cuando el prompt lo exija o el alcance lo haga imprescindible. Si una validación no puede ejecutarse, informa causa y riesgo residual.
 
 ## Entrega
 
-La respuesta final debe ser breve e incluir únicamente:
+Sé breve. Incluye únicamente:
 
 1. objetivo completado;
 2. archivos modificados;
-3. decisiones relevantes;
+3. decisión técnica relevante;
 4. tests ejecutados y resultado;
-5. limitaciones o riesgos reales;
+5. riesgos o validaciones pendientes;
 6. URL y head del PR cuando aplique;
-7. confirmación de que no se hizo merge.
+7. confirmación de que no hiciste merge.
