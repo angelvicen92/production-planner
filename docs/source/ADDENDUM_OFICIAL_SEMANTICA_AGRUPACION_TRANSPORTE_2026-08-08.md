@@ -145,3 +145,31 @@ Antes de considerar soportado el transporte en Planner Next deberá demostrarse 
 6. IN y OUT pueden tener mínimos distintos;
 7. los valores proceden del snapshot efectivo del día;
 8. el comportamiento es determinista, explicable e independiente del orden de entrada.
+
+## 12. Sincronización temporal de los grupos
+
+La agrupación de transporte es una obligación temporal conjunta, no sólo una partición contable de participantes.
+
+Para **IN**:
+
+- todos los participantes asignados al mismo grupo comparten el mismo horario de la tarea IN;
+- por tanto, sus tareas IN se materializan sincronizadas en el mismo intervalo;
+- `arrivalMinGapMinutes` es la separación mínima entre los instantes de inicio de dos grupos IN consecutivos.
+
+Para **OUT**:
+
+- todos los participantes asignados al mismo grupo comparten el mismo horario de la tarea OUT;
+- por tanto, sus tareas OUT se materializan sincronizadas en el mismo intervalo;
+- `departureMinGapMinutes` es la separación mínima entre los instantes de inicio de dos grupos OUT consecutivos.
+
+Un participante pertenece a un único grupo por dirección. La búsqueda debe elegir conjuntamente la partición y el horario de los grupos, respetando disponibilidad, precedencias, ocupación del participante y el resto de restricciones hard del día.
+
+No se utilizarán horarios humanos de referencia para decidir integrantes ni horarios de los grupos.
+
+La Evidence de soporte de transporte deberá demostrar además que:
+
+1. cada grupo IN y OUT está internamente sincronizado;
+2. los grupos consecutivos de cada dirección respetan su `minGapMinutes` efectivo;
+3. ningún participante aparece en más de un grupo de la misma dirección;
+4. todas las tareas de transporte quedan cubiertas exactamente una vez;
+5. una partición u horario imposible produce inviabilidad explicable, sin relajar mínimo, máximo ni separación temporal.
