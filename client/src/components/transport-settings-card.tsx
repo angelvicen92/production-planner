@@ -165,7 +165,7 @@ export function TransportSettingsCard() {
         </div>
 
         <div className="space-y-1">
-          <Label>Objetivo agrupación llegada</Label>
+          <Label>Mínimo participantes por grupo de llegada</Label>
           <Input
             type="number"
             value={draft.arrivalGroupingTarget}
@@ -181,7 +181,7 @@ export function TransportSettingsCard() {
           />
         </div>
         <div className="space-y-1">
-          <Label>Objetivo agrupación salida</Label>
+          <Label>Mínimo participantes por grupo de salida</Label>
           <Input
             type="number"
             value={draft.departureGroupingTarget}
@@ -229,7 +229,7 @@ export function TransportSettingsCard() {
           />
         </div>
         <div className="space-y-1">
-          <Label>Capacidad furgoneta</Label>
+          <Label>Máximo participantes por grupo (capacidad furgoneta)</Label>
           <Input
             type="number"
             value={draft.vanCapacity}
