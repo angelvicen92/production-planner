@@ -2,6 +2,8 @@
 
 Este archivo es un **mapa estable**, no una enciclopedia. El prompt de cada tarea contiene sólo el delta. Para la política completa de contexto y créditos, consulta `docs/governance/CODEX_EFFICIENCY_PROTOCOL.md` únicamente cuando sea relevante.
 
+Codex sólo debe recibir tareas que ya han superado el gate de autonomía definido en `docs/governance/AUTONOMY_FIRST_EXECUTION_PROTOCOL.md`: ChatGPT ya ha decidido que necesita una capacidad local de edición, ejecución o validación que no puede cubrir directamente. No reabras por defecto esa decisión ni conviertas el delta en una auditoría general.
+
 ## Invariantes
 
 - Respeta las fuentes oficiales y SPEC citadas por la tarea; no inventes requisitos, reglas, contratos ni arquitectura.
