@@ -10,6 +10,7 @@ import { spaceMealScenario } from "../../../scenarios/spaceMealScenario";
 import { createScheduledSpaceMeal } from "../../../spaceMeals";
 import { canPlaceTask } from "../../../placement";
 import { validatePlan } from "../../../validate";
+import { resolveAssignedItinerantUnitMealBreaks } from "../../../integration/assignedItinerantUnitMealBreaks";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -46,7 +47,10 @@ function runParticipantAvailabilityProbe(expansion: ExpandedCanonicalFullA2Templ
   mutation.contestantAvailabilityById![201] = { start: "09:00", end: "15:35" };
   const changed = project(mutation);
   const expected = { start: 540, end: 930 };
-  const sourceConfigurationPresent = expansion.effectiveConfiguration.participantAvailability.C01?.end === "15:30";
+  const sourceConfigurationPresent = expansion.participants.every((id) => {
+    const window = expansion.effectiveConfiguration.participantAvailability[id];
+    return window?.start === "09:00" && window.end === (id === "C01" ? "15:30" : "18:40");
+  });
   const engineInputContractPresent = Object.hasOwn(input, "contestantAvailabilityById") && Object.hasOwn(input.contestantAvailabilityById!, 201);
   const engineInputPreflightSupported = baseline.preflight.status === "SUPPORTED";
   const adapterProjectsAvailability = baseline.adapted.status === "SUPPORTED" && baseline.window !== null;
@@ -72,14 +76,15 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   input.arrivalMinGapMinutes = policy.arrival.minGapMinutes;
   input.departureMinGapMinutes = policy.departure.minGapMinutes;
   input.vanCapacity = policy.arrival.vanCapacity;
-  input.transportSettings = { arrivalTargetGroupSize: policy.arrival.groupingTarget, departureTargetGroupSize: policy.departure.groupingTarget, arrivalMinGapMinutes: policy.arrival.minGapMinutes, departureMinGapMinutes: policy.departure.minGapMinutes, vanCapacity: policy.arrival.vanCapacity, groupingWeight: policy.arrival.groupingWeight };
+  input.transportSettings = { arrivalTargetGroupSize: policy.arrival.groupingTarget, departureTargetGroupSize: policy.departure.groupingTarget, arrivalMinGapMinutes: policy.arrival.minGapMinutes, departureMinGapMinutes: policy.departure.minGapMinutes, vanCapacity: policy.arrival.vanCapacity, groupingWeight: policy.arrival.groupingWeight, source: "engine-buildInput-optimizer-transport" };
   const snapshot = structuredClone(input);
   const preflight = preflightEngineInputForPlannerNext(input);
   const adapted = adaptEngineInputToPlannerNextProblem(input);
   const repeated = preflightEngineInputForPlannerNext(input);
   const problem = adapted.status === "SUPPORTED" ? adapted.problem as unknown as Record<string, unknown> : null;
   const projected = problem?.transportPolicy as Record<string, unknown> | undefined;
-  const engineInputContractPresent = ["arrivalGroupingTarget", "departureGroupingTarget", "arrivalMinGapMinutes", "departureMinGapMinutes", "vanCapacity", "transportSettings"].every((key) => Object.hasOwn(input, key));
+  const engineInputContractPresent = ["arrivalGroupingTarget", "departureGroupingTarget", "arrivalMinGapMinutes", "departureMinGapMinutes", "vanCapacity", "transportSettings"].every((key) => Object.hasOwn(input, key))
+    && input.transportSettings?.source === "engine-buildInput-optimizer-transport";
   const plannerNextContractPresent = projected !== undefined;
   const groupingTargetPreserved = projected?.arrivalGroupingTarget === 3 && projected?.departureGroupingTarget === 3;
   const minGapPreserved = projected?.arrivalMinGapMinutes === 35 && projected?.departureMinGapMinutes === 20;
@@ -87,6 +92,7 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   return {
     sourceConfigurationPresent: policy.arrival.minParticipantsPerGroup === 3 && policy.arrival.groupingTarget === 3 && policy.arrival.minGapMinutes === 35 && policy.arrival.vanCapacity === 6 && policy.arrival.groupingWeight === 3 && policy.departure.groupingTarget === 3 && !("minParticipantsPerGroup" in policy.departure) && policy.departure.minGapMinutes === 20 && policy.departure.vanCapacity === 6 && policy.departure.groupingWeight === 3,
     engineInputContractPresent,
+    transportSettingsSourcePresent: input.transportSettings?.source === "engine-buildInput-optimizer-transport",
     engineInputPreflightSupported: preflight.status === "SUPPORTED",
     unsupportedTransportContractObserved: preflight.reasonCodes.includes("UNSUPPORTED_TRANSPORT_CONTRACT"),
     adapterProjectsTransportPolicy: adapted.status === "SUPPORTED" && projected !== undefined,
@@ -107,29 +113,56 @@ function runScopedMealPolicyProbe(expansion: ExpandedCanonicalFullA2Template): R
   const adapted = adaptEngineInputToPlannerNextProblem(adapterInput);
   const problem = spaceMealScenario();
   const mealSpace = problem.spaces.find(({ id }) => id === "meal-room")!;
-  mealSpace.mealPolicy = { window: { start: 780, end: 990 }, duration: 75 };
-  problem.resources.push({ id: "assigned-meal-resource", availability: [{ start: 540, end: 1120 }], presencePreference: "OFF", transitionMinutes: 0 });
-  const meal = createScheduledSpaceMeal("meal-room", 780, 75);
+  problem.spaces.push({ id: "cross-meal-room", availability: [{ start: 600, end: 660 }] });
+  problem.resources.push({ id: "assigned-meal-resource", availability: [{ start: 600, end: 660 }], presencePreference: "OFF", transitionMinutes: 0, assignedSpaceId: "meal-room" });
+  const meal = createScheduledSpaceMeal("meal-room", 620, 20);
   const ownTask = { ...problem.tasks.find(({ spaceId }) => spaceId === "meal-room")!, duration: 20 };
-  const crossSpaceTask = { ...ownTask, id: "cross-space-resource-work", kind: "technical" as const, participantId: undefined, spaceId: problem.spaces.find(({ id }) => id !== "meal-room")!.id, requiredResourceIds: ["assigned-meal-resource"], start: 780, end: 800 };
-  const ownBlocked = !canPlaceTask(problem, ownTask, 780, [], [meal]);
-  const crossSpaceBlocked = !canPlaceTask(problem, crossSpaceTask, 780, [], [meal]);
-  const validation = validatePlan({ ...problem, tasks: [crossSpaceTask] }, [crossSpaceTask], [], [meal]);
+  const crossSpaceTask = { id: "cross-space-resource-work", kind: "technical" as const, duration: 20, spaceId: "cross-meal-room", dependencies: [] as string[], requiredResourceIds: ["assigned-meal-resource"], start: 620, end: 640 };
+  const ownSpaceControlPlaceableWithoutMeal = canPlaceTask(problem, ownTask, 620, [], []);
+  const ownSpacePlaceableWithMeal = canPlaceTask(problem, ownTask, 620, [], [meal]);
+  const crossSpaceControlPlaceableWithoutMeal = canPlaceTask(problem, crossSpaceTask, 620, [], []);
+  const crossSpacePlaceableWithMeal = canPlaceTask(problem, crossSpaceTask, 620, [], [meal]);
+  const validationSpaces = problem.spaces.filter(({ id }) => [problem.mainFlow.spaceId, "meal-room", "cross-meal-room"].includes(id));
+  const validationBase = { ...problem, participants: [], coaches: [], resources: problem.resources.filter(({ id }) => id === "assigned-meal-resource"), tasks: [crossSpaceTask], spaces: validationSpaces };
+  const validationControlProblem = { ...validationBase, spaces: validationSpaces.map((space) => space.id === "meal-room" ? { id: space.id, availability: space.availability } : space) };
+  const validationControl = validatePlan(validationControlProblem, [crossSpaceTask], [], []);
+  const validationWithMeal = validatePlan(validationBase, [crossSpaceTask], [], [meal]);
   const projectedSpace = adapted.status === "SUPPORTED" ? adapted.problem.spaces.find(({ id }) => id === "space:301") : undefined;
-  const flexibleRealityResourceMealRepresentable = adapted.status === "SUPPORTED"
-    && Array.isArray(adapted.problem.itinerantUnitMeals)
-    && adapted.problem.itinerantUnitMeals.some((item) => item.duration === 75 && "window" in item);
+  const fixedMealInput = createSupportedEngineInputAdapterFixture();
+  fixedMealInput.protectedBreaks = [{ id: "reality-fixed-meal", kind: "meal", itinerantTeamId: 71, start: "13:00", end: "14:15" }];
+  const fixedMeals = resolveAssignedItinerantUnitMealBreaks(fixedMealInput);
+  const fixedMeal = fixedMeals[0];
+  const fixedRealityMealSupported = fixedMeals.length === 1 && fixedMeal?.status === "SUPPORTED";
+  const fixedRealityMealHasInterval = fixedMeal?.interval.start === 780 && fixedMeal.interval.end === 855;
+  const fixedRealityMealHasFlexibleWindowContract = fixedMeal !== undefined && ("window" in fixedMeal || "duration" in fixedMeal);
+  const recompositionInput = createSupportedEngineInputAdapterFixture();
+  recompositionInput.protectedBreaks = [71, 72, 73].map((itinerantTeamId) => ({ id: `reality-meal-${itinerantTeamId}`, kind: "meal" as const, itinerantTeamId, start: "13:00", end: "14:15" }));
+  const recompositionMeals = resolveAssignedItinerantUnitMealBreaks(recompositionInput);
+  const recompositionAliasMealCount = recompositionMeals.filter(({ status }) => status === "SUPPORTED").length;
+  const flexibleRealityResourceMealRepresentable = fixedRealityMealSupported && fixedRealityMealHasInterval && fixedRealityMealHasFlexibleWindowContract;
+  const recompositionDoesNotDuplicateMeal = recompositionAliasMealCount === 1 && new Set(recompositionMeals.map(({ itinerantUnitId }) => itinerantUnitId)).size === 1;
   return {
     effectiveWindowPresent: config.effectiveWindow.start === "13:00" && config.effectiveWindow.end === "16:30",
     durationPresent: config.operational.defaultDurationMinutes === 75 && config.operational.realityDurationMinutes === 75,
-    spaceMealPolicySourceRepresentable: "mealPolicy" in mealSpace && mealSpace.mealPolicy?.duration === 75,
+    spaceMealPolicySourceRepresentable: "mealPolicy" in mealSpace && mealSpace.mealPolicy?.duration === 20,
     engineInputPreflightSupported: enginePreflight.status === "SUPPORTED",
     adapterProjectsFlexibleSpaceMeal: projectedSpace?.mealPolicy?.duration === 75 && projectedSpace.mealPolicy.window.start === 780 && projectedSpace.mealPolicy.window.end === 990,
-    spaceMealBlocksOwnSpace: ownBlocked,
-    spaceMealBlocksAssignedResourcesAcrossOtherSpaces: crossSpaceBlocked,
-    validatorRejectsAssignedResourceWorkDuringMeal: validation.resourceOverlapViolationCount > 0,
+    assignedMealResourceHasOwnSpace: problem.resources.find(({ id }) => id === "assigned-meal-resource")?.assignedSpaceId === "meal-room",
+    ownSpaceControlPlaceableWithoutMeal,
+    ownSpacePlaceableWithMeal,
+    crossSpaceControlPlaceableWithoutMeal,
+    crossSpacePlaceableWithMeal,
+    validationControlHardValid: validationControl.hardValid,
+    validationWithMealHardValid: validationWithMeal.hardValid,
+    spaceMealBlocksOwnSpace: ownSpaceControlPlaceableWithoutMeal && !ownSpacePlaceableWithMeal,
+    spaceMealBlocksAssignedResourcesAcrossOtherSpaces: crossSpaceControlPlaceableWithoutMeal && !crossSpacePlaceableWithMeal,
+    validatorRejectsAssignedResourceWorkDuringMeal: validationControl.hardValid && !validationWithMeal.hardValid,
+    fixedRealityMealSupported,
+    fixedRealityMealHasInterval,
+    fixedRealityMealHasFlexibleWindowContract,
+    recompositionAliasMealCount,
     flexibleRealityResourceMealRepresentable,
-    recompositionDoesNotDuplicateMeal: flexibleRealityResourceMealRepresentable && adapted.status === "SUPPORTED" && adapted.problem.itinerantUnitMeals.filter((item) => item.duration === 75).length === 1,
+    recompositionDoesNotDuplicateMeal,
     participantSodexoIndependent: expansion.tasks.filter(({ type }) => type === "SODEXO" && expansion.effectiveConfiguration.meals.participant.independentFromOperationalMeal).length === expansion.participants.length,
     deterministic: enginePreflight.sourceFingerprint === preflightEngineInputForPlannerNext(adapterInput).sourceFingerprint,
     inputImmutable: JSON.stringify(adapterInput) === JSON.stringify(adapterSnapshot),

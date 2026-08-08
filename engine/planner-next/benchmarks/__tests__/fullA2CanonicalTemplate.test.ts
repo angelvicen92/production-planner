@@ -188,8 +188,25 @@ test("representability separates source configuration, implementation blockers a
   assert.equal(analysis.implementationBlockers.length, 3);
   assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
   assert.equal(analysis.participantAvailabilityProbe.lossless, true);
+  assert.equal(analysis.participantAvailabilityProbe.sourceConfigurationPresent, true);
+  assert.equal(analysis.transportPolicyProbe.transportSettingsSourcePresent, true);
   assert.equal(analysis.transportPolicyProbe.adapterProjectsTransportPolicy, false);
+  assert.equal(analysis.scopedMealPolicyProbe.assignedMealResourceHasOwnSpace, true);
+  assert.equal(analysis.scopedMealPolicyProbe.ownSpaceControlPlaceableWithoutMeal, true);
+  assert.equal(analysis.scopedMealPolicyProbe.ownSpacePlaceableWithMeal, false);
+  assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksOwnSpace, true);
+  assert.equal(analysis.scopedMealPolicyProbe.crossSpaceControlPlaceableWithoutMeal, true);
+  assert.equal(analysis.scopedMealPolicyProbe.crossSpacePlaceableWithMeal, true);
   assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksAssignedResourcesAcrossOtherSpaces, false);
+  assert.equal(analysis.scopedMealPolicyProbe.validationControlHardValid, true);
+  assert.equal(analysis.scopedMealPolicyProbe.validationWithMealHardValid, true);
+  assert.equal(analysis.scopedMealPolicyProbe.validatorRejectsAssignedResourceWorkDuringMeal, false);
+  assert.equal(analysis.scopedMealPolicyProbe.fixedRealityMealSupported, true);
+  assert.equal(analysis.scopedMealPolicyProbe.fixedRealityMealHasInterval, true);
+  assert.equal(analysis.scopedMealPolicyProbe.fixedRealityMealHasFlexibleWindowContract, false);
+  assert.equal(analysis.scopedMealPolicyProbe.recompositionAliasMealCount, 3);
+  assert.equal(analysis.scopedMealPolicyProbe.flexibleRealityResourceMealRepresentable, false);
+  assert.equal(analysis.scopedMealPolicyProbe.recompositionDoesNotDuplicateMeal, false);
 
   const failedRoundAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: analysis.adapterProbe,
