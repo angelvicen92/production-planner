@@ -43,3 +43,30 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  a2-full-006-materialize:
+    name: a2-full-006-materialize
+    if: ${{ github.event_name == 'push' && github.ref_name == 'a2-full-006-clean-validator' && !contains(github.event.head_commit.message, '[skip a2-full-006]') }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: a2-full-006-clean-validator
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Materialize, validate and publish candidate
+        run: bash scripts/a2-full-006-ci-finalize.sh
