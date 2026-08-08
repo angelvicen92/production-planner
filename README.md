@@ -2822,3 +2822,7 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - **Validación:** el validador canónico comprueba sincronización, preparación, disponibilidad, comidas y ocupaciones; el fingerprint incluye las preparaciones de ronda.
 - **Full A2:** el probe conectado EngineInput → adapter → EXACT_CONSTRUCTIVE → validación demuestra ronda residual, determinismo, invariancia al orden y agotamiento atómico. Tras A2-FULL-004 no quedan blockers técnicos de representabilidad; permanecen cuatro decisiones de configuración fuente.
 - **Fuera de alcance:** no inventa disponibilidades, comidas scoped ni política OUT, no usa horarios humanos como seed y no aumenta presupuesto para ocultar inviabilidad.
+
+## A2-FULL-005 — SPEC-08 itinerant availability
+
+Full A2 materializa las tres ventanas de composición Reality canonizadas por SPEC-08 para el benchmark A2 y reduce el gate fuente a participante, comidas scoped y política OUT. No usa horarios de tareas humanas como seed ni cambia el algoritmo.

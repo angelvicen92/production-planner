@@ -10,8 +10,8 @@
       "sha256": "c192c4b463c6078695bc274b17169bcb2d3395fb808988f1f406071231dd88f5"
     }
   ],
-  "manifestFingerprint": "a4c0ba4fec18c3eab5e00d81268baf4901aa35b331009420ac205d9e53baaea7",
-  "expansionFingerprint": "8ccc880299b454202dc5501aa20709f9876cb4f1e5e0024e8c367210ff476cd3",
+  "manifestFingerprint": "7a4976aa80cb59241a338ed4af19125042d260b7bcfbca1b8881e35e8f9b0564",
+  "expansionFingerprint": "daddeca8f07acc6db507596aec844f1c7be236f1ae89954aa6eac2f9261ce341",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -110,7 +110,11 @@
         "cam-3",
         "son-1"
       ],
-      "availability": "creation_input_required"
+      "availability": {
+        "start": "11:00",
+        "end": "14:00",
+        "source": "SPEC08_FOCAL_A2_SECTION_24"
+      }
     },
     {
       "id": "reality-unit-b",
@@ -119,7 +123,11 @@
         "cam-4",
         "son-2"
       ],
-      "availability": "creation_input_required"
+      "availability": {
+        "start": "11:15",
+        "end": "13:30",
+        "source": "SPEC08_FOCAL_A2_SECTION_24"
+      }
     },
     {
       "id": "reality-unit-combined",
@@ -129,7 +137,11 @@
         "cam-4",
         "son-1"
       ],
-      "availability": "creation_input_required"
+      "availability": {
+        "start": "16:00",
+        "end": "18:00",
+        "source": "SPEC08_FOCAL_A2_SECTION_24"
+      }
     }
   ],
   "itinerantOperations": [
@@ -1029,10 +1041,16 @@
     },
     {
       "code": "ITINERANT_UNITS",
-      "passed": true,
+      "passed": false,
       "evaluated": true,
-      "issueCodes": [],
-      "affectedCanonicalIds": []
+      "issueCodes": [
+        "ITINERANT_UNIT_SET_INVALID"
+      ],
+      "affectedCanonicalIds": [
+        "reality-unit-a",
+        "reality-unit-b",
+        "reality-unit-combined"
+      ]
     },
     {
       "code": "KNOWN_RESOURCES",
@@ -1049,24 +1067,34 @@
       "affectedCanonicalIds": []
     }
   ],
-  "validationStatus": "VALID",
-  "validationIssues": [],
+  "validationStatus": "INVALID",
+  "validationIssues": [
+    {
+      "invariantCode": "ITINERANT_UNITS",
+      "code": "ITINERANT_UNIT_SET_INVALID",
+      "entityId": "reality-unit-a",
+      "message": "Itinerant unit composition must match SPEC-08."
+    },
+    {
+      "invariantCode": "ITINERANT_UNITS",
+      "code": "ITINERANT_UNIT_SET_INVALID",
+      "entityId": "reality-unit-b",
+      "message": "Itinerant unit composition must match SPEC-08."
+    },
+    {
+      "invariantCode": "ITINERANT_UNITS",
+      "code": "ITINERANT_UNIT_SET_INVALID",
+      "entityId": "reality-unit-combined",
+      "message": "Itinerant unit composition must match SPEC-08."
+    }
+  ],
   "requiredCreationInputs": [
-    "daily_itinerant_unit_availability",
     "daily_participant_availability",
     "out_transport_policy",
     "scoped_meal_policies"
   ],
   "representabilityStatus": "BLOCKED",
   "requiredCreationInputBlockers": [
-    {
-      "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
-      "layer": "SOURCE_CONFIGURATION",
-      "affectedRule": "daily_itinerant_unit_availability",
-      "canonicalIds": [],
-      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-    },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
       "layer": "SOURCE_CONFIGURATION",
@@ -1212,14 +1240,6 @@
       "status": "BLOCKED",
       "requiredCreationInputs": [
         {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_itinerant_unit_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
-        {
           "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
           "layer": "SOURCE_CONFIGURATION",
           "affectedRule": "daily_participant_availability",
@@ -1246,14 +1266,6 @@
       ],
       "implementationBlockers": [],
       "blockers": [
-        {
-          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
-          "layer": "SOURCE_CONFIGURATION",
-          "affectedRule": "daily_itinerant_unit_availability",
-          "canonicalIds": [],
-          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
-          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
-        },
         {
           "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
           "layer": "SOURCE_CONFIGURATION",
@@ -1406,7 +1418,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "8ccc880299b454202dc5501aa20709f9876cb4f1e5e0024e8c367210ff476cd3",
+    "shuffledExpansionFingerprint": "daddeca8f07acc6db507596aec844f1c7be236f1ae89954aa6eac2f9261ce341",
     "matches": true
   },
   "inputImmutable": {

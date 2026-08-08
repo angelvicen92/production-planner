@@ -160,9 +160,9 @@ export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
 
 
 export const CANONICAL_ITINERANT_UNITS: readonly CanonicalItinerantUnit[] = Object.freeze([
-  { id: "reality-unit-a", label: "Unidad Reality A", memberResourceIds: ["cam-3", "son-1"], availability: "creation_input_required" },
-  { id: "reality-unit-b", label: "Unidad Reality B", memberResourceIds: ["cam-4", "son-2"], availability: "creation_input_required" },
-  { id: "reality-unit-combined", label: "Unidad Reality combinada", memberResourceIds: ["cam-3", "cam-4", "son-1"], availability: "creation_input_required" },
+  { id: "reality-unit-a", label: "Unidad Reality A", memberResourceIds: ["cam-3", "son-1"], availability: A2_BENCHMARK_SOURCE_CONFIGURATION.itinerantUnitAvailability["reality-unit-a"] },
+  { id: "reality-unit-b", label: "Unidad Reality B", memberResourceIds: ["cam-4", "son-2"], availability: A2_BENCHMARK_SOURCE_CONFIGURATION.itinerantUnitAvailability["reality-unit-b"] },
+  { id: "reality-unit-combined", label: "Unidad Reality combinada", memberResourceIds: ["cam-3", "cam-4", "son-1"], availability: A2_BENCHMARK_SOURCE_CONFIGURATION.itinerantUnitAvailability["reality-unit-combined"] },
 ]);
 
 export const CANONICAL_ITINERANT_OPERATIONS: readonly CanonicalItinerantOperation[] = Object.freeze([

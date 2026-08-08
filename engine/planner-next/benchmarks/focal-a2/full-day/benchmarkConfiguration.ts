@@ -1,5 +1,5 @@
 export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
-  version: "A2-FULL-004.source-configuration.v1" as const,
+  version: "A2-FULL-005.source-configuration.v1" as const,
   executionDate: "2025-06-15" as const,
   effectiveDayWindow: Object.freeze({
     start: "09:00" as const,
@@ -9,9 +9,13 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   spaceAvailability: "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN" as const,
   resourceAvailability: "INHERIT_DAY_UNLESS_OVERRIDDEN" as const,
   productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,
+  itinerantUnitAvailability: Object.freeze({
+    "reality-unit-a": Object.freeze({ start: "11:00" as const, end: "14:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
+    "reality-unit-b": Object.freeze({ start: "11:15" as const, end: "13:30" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
+    "reality-unit-combined": Object.freeze({ start: "16:00" as const, end: "18:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
+  }),
   unresolvedCreationInputs: Object.freeze([
     "daily_participant_availability",
-    "daily_itinerant_unit_availability",
     "scoped_meal_policies",
     "out_transport_policy",
   ] as const),
