@@ -197,3 +197,36 @@ test("an unusable preferred OUT grouping backtracks to a valid partition under t
   assert.deepEqual([...new Set(outs.map(({ start }) => start))], [80, 100]);
   assert.deepEqual([...new Set(outs.map(({ start }) => outs.filter((other) => other.start === start).length))], [3]);
 });
+
+function coreArrivalDependencyProblem(): PlannerNextProblem {
+  const window = [{ start: 0, end: 120 }];
+  return {
+    day: { start: 0, end: 120 }, protectedMeal: { start: 110, end: 120 }, resources: [],
+    spaces: ["main", "vocal", "transport"].map((id) => ({ id, availability: window })),
+    participants: [{ id: "core", availability: window }], coaches: [{ id: "coach", availability: window }],
+    tasks: [
+      { id: "arrival-core", kind: "auxiliary", participantId: "core", duration: 10, spaceId: "transport", dependencies: [], availability: [{ start: 0, end: 10 }] },
+      { id: "vocal", kind: "vocal", participantId: "core", coachId: "coach", duration: 10, spaceId: "vocal", dependencies: ["arrival-core"] },
+      { id: "main", kind: "main", participantId: "core", coachId: "coach", duration: 10, spaceId: "main", dependencies: ["vocal"], blockKey: "coach" },
+    ],
+    mainFlow: { spaceId: "main", preferredEnd: 100, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 20_000 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
+    transportPolicy: {
+      arrival: { ...policy(1, 1, 0), taskIds: ["arrival-core"] },
+      departure: { ...policy(1, 1, 0), taskIds: [] },
+    },
+  };
+}
+
+test("exact core defers a vocal dependency on participant IN and validates it in the full continuation", () => {
+  const problem = coreArrivalDependencyProblem();
+  assert.deepEqual(preflight(problem), []);
+  const result = executePlannerNext(problem);
+  assert.equal(result.kind, "EXACT_CONSTRUCTIVE");
+  assert.equal(result.result?.complete, true, JSON.stringify(result.result && { status: result.result.status, coreReasons: result.result.evidence.coreReasonCodes, reasons: result.result.evidence.reasonCodes }));
+  const arrival = result.result!.scheduledTasks.find(({ id }) => id === "arrival-core")!;
+  const vocal = result.result!.scheduledTasks.find(({ id }) => id === "vocal")!;
+  assert.ok(arrival.end <= vocal.start);
+});
