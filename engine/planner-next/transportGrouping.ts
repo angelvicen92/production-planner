@@ -30,7 +30,7 @@ function combinations<T>(values: readonly T[], size: number): T[][] {
   return result;
 }
 
-function canPartition(count: number, minimum: number, maximum: number): boolean {
+export function canPartitionTransportCount(count: number, minimum: number, maximum: number): boolean {
   if (count === 0) return true;
   const minimumGroups = Math.ceil(count / maximum);
   const maximumGroups = Math.floor(count / minimum);
@@ -48,7 +48,7 @@ export function transportGroupCandidates(
   const sizes = Array.from(
     { length: Math.min(policy.maximumGroupSize, ordered.length) - policy.minimumGroupSize + 1 },
     (_, index) => policy.minimumGroupSize + index,
-  ).filter((size) => canPartition(ordered.length - size, policy.minimumGroupSize, policy.maximumGroupSize));
+  ).filter((size) => canPartitionTransportCount(ordered.length - size, policy.minimumGroupSize, policy.maximumGroupSize));
   if (policy.groupingWeight > 0) sizes.sort((left, right) => right - left);
   return sizes.flatMap((size) => combinations(rest, size - 1).map((tail) => [first, ...tail]));
 }
@@ -70,6 +70,10 @@ export function canPlaceTransportGroup(
     && tasks.every((task) => task.duration === first.duration)
     && new Set(tasks.map((task) => task.participantId)).size === tasks.length
     && previousGroupStarts.every((other) => Math.abs(start - other) >= policy.minGapMinutes)
+    && tasks.every((task) => task.dependencies.every((dependencyId) => {
+      const dependency = placed.find(({ id }) => id === dependencyId);
+      return dependency !== undefined && dependency.end <= start;
+    }))
     // Each member is checked against all external occupations. Members deliberately do not
     // become external occupations for one another because the synchronized group is one operation.
     && tasks.every((task) => canPlaceTask(problem, task, start, [...placed]));
@@ -118,8 +122,9 @@ export function validateTransportGrouping(
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    if (groups.some((group) => group.length < policy.minimumGroupSize
-      || group.length > policy.maximumGroupSize
+    if (groups.some((group) => (policy.minGapMinutes === 0
+      ? !canPartitionTransportCount(group.length, policy.minimumGroupSize, policy.maximumGroupSize)
+      : group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize)
       || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) violationCount += 1;
     for (let index = 1; index < groups.length; index += 1) {
       if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;

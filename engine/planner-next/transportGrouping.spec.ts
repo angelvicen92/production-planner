@@ -49,6 +49,16 @@ test("independent validation enforces coverage, synchronization, bounds, and con
   assert.ok(validateTransportGrouping(problem, valid.map((task) => task.start === 620 ? { ...task, start: 615, end: 625 } : task)).violationCount > 0, "gap");
 });
 
+test("simultaneous groups are partitionable with zero gap and rejected with a positive gap", () => {
+  const zeroGap = validationProblem(6);
+  zeroGap.transportPolicy!.arrival = { ...policy(2, 3, 0), taskIds: zeroGap.tasks.map(({ id }) => id) };
+  const simultaneous = zeroGap.tasks.map((task) => scheduled(task, 600));
+  assert.equal(validateTransportGrouping(zeroGap, simultaneous).violationCount, 0);
+  const positiveGap = structuredClone(zeroGap);
+  positiveGap.transportPolicy!.arrival.minGapMinutes = 5;
+  assert.ok(validateTransportGrouping(positiveGap, simultaneous).violationCount > 0);
+});
+
 function exactProblem(orderReversed = false): PlannerNextProblem {
   const window = [{ start: 0, end: 120 }];
   const transportParticipants = Array.from({ length: 6 }, (_, index) => ({ id: `transport-p-${index}`, availability: window }));
@@ -100,4 +110,70 @@ test("exact constructive jointly chooses conflict-free synchronized groups deter
   const transport = first.result!.scheduledTasks.filter(({ id }) => id.startsWith("arrival-"));
   assert.equal(validateTransportGrouping(original, transport).violationCount, 0);
   assert.equal(new Set(transport.map(({ start }) => start)).size, 2);
+});
+
+function arrivalWorkStyleDepartureProblem(reverse = false, departureCount = 2): PlannerNextProblem {
+  const window = [{ start: 0, end: 140 }];
+  const people = Array.from({ length: departureCount }, (_, index) => `p-${index}`);
+  const auxiliaryTasks: Task[] = people.flatMap((participantId, index) => {
+    const departureStart = departureCount === 2 || index < departureCount / 2 ? 80 : 100;
+    return [
+      { id: `in-${participantId}`, kind: "auxiliary", participantId, duration: 10, spaceId: `in-${index}`, dependencies: [], availability: [{ start: 0, end: 10 }] },
+      { id: `work-${participantId}`, kind: "auxiliary", participantId, duration: 10, spaceId: `work-${index}`, dependencies: [], availability: [{ start: 20, end: 30 }] },
+      { id: `style-${participantId}`, kind: "auxiliary", participantId, duration: 10, spaceId: `style-${index}`, dependencies: [], availability: [{ start: 40, end: 50 }] },
+      { id: `out-${participantId}`, kind: "auxiliary", participantId, duration: 10, spaceId: `out-${index}`, dependencies: [`style-${participantId}`], availability: [{ start: departureStart, end: departureStart + 10 }] },
+    ];
+  });
+  const allSpaces = ["main", "vocal", ...auxiliaryTasks.map(({ spaceId }) => spaceId)];
+  const problem: PlannerNextProblem = {
+    day: { start: 0, end: 140 }, protectedMeal: { start: 130, end: 140 }, resources: [],
+    spaces: [...new Set(allSpaces)].map((id) => ({ id, availability: window })),
+    participants: [{ id: "core", availability: window }, ...people.map((id) => ({ id, availability: window }))],
+    coaches: [{ id: "coach", availability: window }],
+    tasks: [
+      { id: "vocal", kind: "vocal", participantId: "core", coachId: "coach", duration: 10, spaceId: "vocal", dependencies: [] },
+      { id: "main", kind: "main", participantId: "core", coachId: "coach", duration: 10, spaceId: "main", dependencies: ["vocal"], blockKey: "coach" },
+      ...auxiliaryTasks,
+    ],
+    mainFlow: { spaceId: "main", preferredEnd: 120, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 100_000 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
+    transportPolicy: {
+      arrival: { ...policy(2, 2, 0), taskIds: people.map((id) => `in-${id}`) },
+      departure: { ...policy(departureCount === 2 ? 2 : 2, departureCount === 2 ? 2 : 4, 20), taskIds: people.map((id) => `out-${id}`) },
+    },
+  };
+  if (reverse) {
+    problem.tasks.reverse(); problem.participants.reverse(); problem.spaces.reverse();
+    problem.transportPolicy!.arrival.taskIds.reverse(); problem.transportPolicy!.departure.taskIds.reverse();
+  }
+  return problem;
+}
+
+test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly", () => {
+  const problem = arrivalWorkStyleDepartureProblem(), snapshot = structuredClone(problem);
+  const first = executePlannerNext(problem), repeated = executePlannerNext(arrivalWorkStyleDepartureProblem());
+  const reversed = executePlannerNext(arrivalWorkStyleDepartureProblem(true));
+  assert.equal(first.kind, "EXACT_CONSTRUCTIVE"); assert.equal(first.result?.complete, true);
+  assert.equal(repeated.kind, "EXACT_CONSTRUCTIVE"); assert.equal(reversed.kind, "EXACT_CONSTRUCTIVE");
+  assert.equal(first.result!.evidence.fullFingerprint, repeated.result!.evidence.fullFingerprint);
+  assert.equal(first.result!.evidence.fullFingerprint, reversed.result!.evidence.fullFingerprint);
+  for (const out of first.result!.scheduledTasks.filter(({ id }) => id.startsWith("out-"))) {
+    const style = first.result!.scheduledTasks.find(({ id }) => id === out.dependencies[0])!;
+    assert.ok(out.start >= style.end);
+  }
+  assert.deepEqual(problem, snapshot);
+});
+
+test("an unusable preferred OUT grouping backtracks to a valid partition under the shared ledger", () => {
+  const problem = arrivalWorkStyleDepartureProblem(false, 6);
+  problem.transportPolicy!.arrival.taskIds = [];
+  problem.transportPolicy!.departure = { ...policy(2, 4, 20), taskIds: problem.transportPolicy!.departure.taskIds };
+  const result = executePlannerNext(problem);
+  assert.equal(result.kind, "EXACT_CONSTRUCTIVE"); assert.equal(result.result?.complete, true);
+  assert.ok(result.result!.evidence.standaloneBacktracks > 0);
+  const outs = result.result!.scheduledTasks.filter(({ id }) => id.startsWith("out-"));
+  assert.deepEqual([...new Set(outs.map(({ start }) => start))], [80, 100]);
+  assert.deepEqual([...new Set(outs.map(({ start }) => outs.filter((other) => other.start === start).length))], [3]);
 });

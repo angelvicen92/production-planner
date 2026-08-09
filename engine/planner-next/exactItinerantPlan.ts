@@ -144,6 +144,8 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
 function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
   const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
   const setupTaskIds = new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ id }) => id));
+  const departureIds = new Set(problem.transportPolicy?.departure.taskIds ?? []);
+  const departureDependencyIds = new Set(problem.tasks.filter(({ id }) => !departureIds.has(id)).map(({ id }) => id));
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined;
@@ -155,7 +157,9 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
       reasons.push(`UNSUPPORTED_STANDALONE_REQUIRED_BLOCK:${task.id}`);
     if (space?.mealPolicy !== undefined)
       reasons.push(`UNSUPPORTED_STANDALONE_SECONDARY_MEAL:${task.id}`);
-    const allowedDependencies = isSetupTask
+    const allowedDependencies = departureIds.has(task.id)
+      ? departureDependencyIds
+      : isSetupTask
       ? new Set([...coreIds, ...setupTaskIds])
       : coreIds;
     if (task.dependencies.some((id) => !allowedDependencies.has(id)))
@@ -188,37 +192,40 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     evidence.standaloneLeafSearchBranches += 1;
     return true;
   };
+  const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
+    if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+    evidence.standaloneCompleteLeafCount += 1;
+    const candidate = orderScheduled([...coreTasks, ...placed]);
+    const expected = [...problem.tasks].sort(byId).map(({ id }) => id), actual = [...candidate].sort(byId).map(({ id }) => id);
+    const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
+    const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
+    const mealWitness=exact?assessParticipantMealFutureFeasibility(problem,candidate,mealBudget,"MATERIALIZE"):null;
+    if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
+    const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+    const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
+    if (exact && mealWitness?.complete && validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations).hardValid) {
+      const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
+      const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
+        maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
+        totalGapCount: quality.totalGapCount, totalSpaceChangeCount: quality.totalSpaceChangeCount };
+      const candidateFingerprint = fingerprint(candidate,preparations,coreMeals,fixedItinerantMeals,roundPreparations);
+      evidence.completePlansObserved += 1;
+      if (!found) {
+        found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.firstCompleteFingerprint = candidateFingerprint;
+        evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact; evidence.selectedCompleteQuality = compact;
+      } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
+        found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.completeIncumbentReplacements += 1;
+        evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;
+      }
+      return selection === "FIRST_HARD_VALID" ? "FOUND" : "DEAD_END";
+    }
+    return "DEAD_END";
+  };
+  let completeAfterOrdinary = completeLeaf;
   const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
-      if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
-      evidence.standaloneCompleteLeafCount += 1;
-      const candidate = orderScheduled([...coreTasks, ...placed]);
-      const expected = [...problem.tasks].sort(byId).map(({ id }) => id), actual = [...candidate].sort(byId).map(({ id }) => id);
-      const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
-      const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-      const mealWitness=exact?assessParticipantMealFutureFeasibility(problem,candidate,mealBudget,"MATERIALIZE"):null;
-      if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
-      const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-      const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
-      if (exact && mealWitness?.complete && validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations).hardValid) {
-        const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
-        const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
-          maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
-          totalGapCount: quality.totalGapCount, totalSpaceChangeCount: quality.totalSpaceChangeCount };
-        const candidateFingerprint = fingerprint(candidate,preparations,coreMeals,fixedItinerantMeals,roundPreparations);
-        evidence.completePlansObserved += 1;
-        if (!found) {
-          found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.firstCompleteFingerprint = candidateFingerprint;
-          evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact;
-          evidence.selectedCompleteQuality = compact;
-        } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
-          found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; evidence.completeIncumbentReplacements += 1;
-          evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;
-        }
-        return selection === "FIRST_HARD_VALID" ? "FOUND" : "DEAD_END";
-      }
-      return "DEAD_END";
+      return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder);
     }
     const alternatives: Positions[] = [];
     for (const task of [...remaining].sort(byId)) {
@@ -365,41 +372,33 @@ const searchRounds = (
   return explored.outcome;
 };
 
-const transportDirections = problem.transportPolicy
-  ? (["arrival", "departure"] as const).filter((direction) => problem.transportPolicy![direction].taskIds.length > 0)
-  : [];
-const searchTransportDirection = (
-  directionIndex: number,
+const searchTransportGroups = (
+  direction: "arrival" | "departure",
   remaining: Task[],
   placed: ScheduledTask[],
   groupStarts: number[],
   selectionOrder: string[],
+  continuation: (placed: ScheduledTask[], selectionOrder: string[]) => StandaloneOutcome,
 ): StandaloneOutcome => {
-  if (directionIndex >= transportDirections.length) return searchRounds(0, placed, [], selectionOrder);
-  const direction = transportDirections[directionIndex]!;
+  if (!problem.transportPolicy || remaining.length === 0) return continuation(placed, selectionOrder);
   const policy = problem.transportPolicy![direction];
-  if (remaining.length === 0) {
-    const nextDirection = transportDirections[directionIndex + 1];
-    const next = nextDirection
-      ? problem.tasks.filter((task) => problem.transportPolicy![nextDirection].taskIds.includes(task.id)).sort(byId)
-      : [];
-    return searchTransportDirection(directionIndex + 1, next, placed, [], selectionOrder);
-  }
   const candidates = transportGroupCandidates(remaining, policy);
   if (candidates.length === 0) return "DEAD_END";
   for (const group of candidates) {
     const starts = transportGroupStarts(problem, group, [...coreTasks, ...placed], groupStarts, policy);
+    if (starts.length === 0) evidence.standaloneBacktracks += 1;
     for (const start of starts) {
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
       evidence.standaloneBranches += 1;
       const scheduled = scheduleTransportGroup(group, start);
       const memberIds = new Set(group.map(({ id }) => id));
-      const child = searchTransportDirection(
-        directionIndex,
+      const child = searchTransportGroups(
+        direction,
         remaining.filter(({ id }) => !memberIds.has(id)),
         [...placed, ...scheduled],
         [...groupStarts, start],
         [...selectionOrder, ...group.map(({ id }) => id)],
+        continuation,
       );
       if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
@@ -407,11 +406,28 @@ const searchTransportDirection = (
   }
   return "DEAD_END";
 };
-const firstDirection = transportDirections[0];
-const firstTransportTasks = firstDirection
-  ? problem.tasks.filter((task) => problem.transportPolicy![firstDirection].taskIds.includes(task.id)).sort(byId)
+const departureTasks = problem.transportPolicy
+  ? problem.tasks.filter((task) => problem.transportPolicy!.departure.taskIds.includes(task.id)).sort(byId)
   : [];
-const searchOutcome = searchTransportDirection(0, firstTransportTasks, [], [], []);
+completeAfterOrdinary = (placed, preparations, roundPreparations, selectionOrder) => searchTransportGroups(
+  "departure",
+  departureTasks,
+  placed,
+  [],
+  selectionOrder,
+  (withDeparture, finalOrder) => completeLeaf(withDeparture, preparations, roundPreparations, finalOrder),
+);
+const arrivalTasks = problem.transportPolicy
+  ? problem.tasks.filter((task) => problem.transportPolicy!.arrival.taskIds.includes(task.id)).sort(byId)
+  : [];
+const searchOutcome = searchTransportGroups(
+  "arrival",
+  arrivalTasks,
+  [],
+  [],
+  [],
+  (withArrival, arrivalOrder) => searchRounds(0, withArrival, [], arrivalOrder),
+);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals };
 }
