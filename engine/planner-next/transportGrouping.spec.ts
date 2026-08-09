@@ -151,7 +151,21 @@ function arrivalWorkStyleDepartureProblem(reverse = false, departureCount = 2): 
   return problem;
 }
 
-test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly", () => {
+test("independent transport validation enforces IN first and OUT last even beyond dependency edges", () => {
+  const problem = arrivalWorkStyleDepartureProblem();
+  const execution = executePlannerNext(problem);
+  assert.equal(execution.kind, "EXACT_CONSTRUCTIVE");
+  assert.equal(execution.result?.complete, true);
+  const valid = execution.result!.scheduledTasks;
+  assert.equal(validateTransportGrouping(problem, valid).violationCount, 0);
+
+  const lateArrival = valid.map((task) => task.id.startsWith("in-") ? { ...task, start: 60, end: 70 } : task);
+  assert.ok(validateTransportGrouping(problem, lateArrival).violationCount > 0, "IN after participant work must fail");
+  const earlyDeparture = valid.map((task) => task.id.startsWith("out-") ? { ...task, start: 30, end: 40 } : task);
+  assert.ok(validateTransportGrouping(problem, earlyDeparture).violationCount > 0, "OUT before participant work must fail");
+});
+
+test("exact continuation constructs IN first, work, ESTILISMO_SALIDA, then dependent OUT last immutably and order-invariantly", () => {
   const problem = arrivalWorkStyleDepartureProblem(), snapshot = structuredClone(problem);
   const first = executePlannerNext(problem), repeated = executePlannerNext(arrivalWorkStyleDepartureProblem());
   const reversed = executePlannerNext(arrivalWorkStyleDepartureProblem(true));
@@ -159,9 +173,15 @@ test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent O
   assert.equal(repeated.kind, "EXACT_CONSTRUCTIVE"); assert.equal(reversed.kind, "EXACT_CONSTRUCTIVE");
   assert.equal(first.result!.evidence.fullFingerprint, repeated.result!.evidence.fullFingerprint);
   assert.equal(first.result!.evidence.fullFingerprint, reversed.result!.evidence.fullFingerprint);
+  for (const incoming of first.result!.scheduledTasks.filter(({ id }) => id.startsWith("in-"))) {
+    const other = first.result!.scheduledTasks.filter((task) => task.participantId === incoming.participantId && task.id !== incoming.id);
+    assert.ok(other.every((task) => incoming.end <= task.start), `${incoming.id} must be first`);
+  }
   for (const out of first.result!.scheduledTasks.filter(({ id }) => id.startsWith("out-"))) {
     const style = first.result!.scheduledTasks.find(({ id }) => id === out.dependencies[0])!;
     assert.ok(out.start >= style.end);
+    const other = first.result!.scheduledTasks.filter((task) => task.participantId === out.participantId && task.id !== out.id);
+    assert.ok(other.every((task) => task.end <= out.start), `${out.id} must be last`);
   }
   assert.deepEqual(problem, snapshot);
 });
