@@ -14,6 +14,27 @@ export function taskAvoidsItinerantUnitMeals(problem:PlannerNextProblem,task:Tas
   return !task.itinerantUnitId||(problem.itinerantUnitMeals??[]).every(meal=>meal.itinerantUnitId!==task.itinerantUnitId||!overlaps(meal.interval,{start,end}));
 }
 
+function transportDirection(problem: PlannerNextProblem, taskId: string): "arrival" | "departure" | undefined {
+  if (problem.transportPolicy?.arrival.taskIds.includes(taskId)) return "arrival";
+  if (problem.transportPolicy?.departure.taskIds.includes(taskId)) return "departure";
+  return undefined;
+}
+
+/** IN is the first participant obligation and OUT is the last, independently of explicit dependency edges. */
+function respectsTransportBoundary(problem: PlannerNextProblem, task: Task, start: number, end: number, placed: ScheduledTask[]): boolean {
+  if (task.participantId === undefined || problem.transportPolicy === undefined) return true;
+  const direction = transportDirection(problem, task.id);
+  return placed.every((other) => {
+    if (other.participantId !== task.participantId || other.id === task.id) return true;
+    const otherDirection = transportDirection(problem, other.id);
+    if (direction === "arrival") return end <= other.start;
+    if (direction === "departure") return other.end <= start;
+    if (otherDirection === "arrival") return other.end <= start;
+    if (otherDirection === "departure") return end <= other.start;
+    return true;
+  });
+}
+
 /** The single hard-placement predicate used by every Planner Next phase. */
 export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[], scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): boolean {
   const end = start + task.duration;
@@ -21,7 +42,7 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
   const space = problem.spaces.find((x) => x.id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
-  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)) return false;
+  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)||!respectsTransportBoundary(problem,task,start,end,placed)) return false;
   if (start < problem.day.start || end > problem.day.end || !occupationAvoidsProtectedMeal(problem,task.spaceId,start,end)
     || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
