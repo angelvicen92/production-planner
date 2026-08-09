@@ -445,7 +445,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     if(invalid)mainFlowMeal=1;
   }
   if (mains.length > 0) {
-    if (!mainPolicy && (!lastMain || lastMain.end !== problem.mainFlow.preferredEnd)) block += 1;
+    // preferredEnd guides search/ranking; hard validity does not require the final main to end there.
     for (let index = 1; index < mains.length; index += 1) {
       const previous = mains[index - 1]; const current = mains[index];
       const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&between.some(x=>x.end===problem.protectedMeal.start)&&between.some(x=>x.start===problem.protectedMeal.end));if (!previous || !current || !connected) block += 1;

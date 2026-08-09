@@ -141,7 +141,7 @@ function arrivalWorkStyleDepartureProblem(reverse = false, departureCount = 2): 
     budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 100_000 },
     auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
     transportPolicy: {
-      arrival: { ...policy(2, 2, 0), taskIds: people.map((id) => `in-${id}`) },
+      arrival: { ...policy(2, Math.max(2, departureCount), 0), taskIds: people.map((id) => `in-${id}`) },
       departure: { ...policy(2, departureCount === 2 ? 2 : 4, 20), taskIds: people.map((id) => `out-${id}`) },
     },
   };
@@ -181,7 +181,7 @@ test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent O
   const problem = arrivalWorkStyleDepartureProblem(), snapshot = structuredClone(problem);
   const first = executePlannerNext(problem), repeated = executePlannerNext(arrivalWorkStyleDepartureProblem());
   const reversed = executePlannerNext(arrivalWorkStyleDepartureProblem(true));
-  assert.equal(first.kind, "EXACT_CONSTRUCTIVE"); assert.equal(first.result?.complete, true);
+  assert.equal(first.kind, "EXACT_CONSTRUCTIVE"); assert.equal(first.result?.complete, true, JSON.stringify(first.result && { status: first.result.status, reasons: first.result.evidence.reasonCodes, coreReasons: first.result.evidence.coreReasonCodes, remaining: first.result.remainingTaskIds, branches: first.result.evidence.branchesExplored, coreBranches: first.result.evidence.coreBranchesExplored, standaloneBranches: first.result.evidence.standaloneBranchesExplored }));
   assert.equal(repeated.kind, "EXACT_CONSTRUCTIVE"); assert.equal(reversed.kind, "EXACT_CONSTRUCTIVE");
   assert.equal(first.result!.evidence.fullFingerprint, repeated.result!.evidence.fullFingerprint);
   assert.equal(first.result!.evidence.fullFingerprint, reversed.result!.evidence.fullFingerprint);
@@ -200,7 +200,7 @@ test("an unusable preferred OUT grouping backtracks to a valid partition under t
   const problem = arrivalWorkStyleDepartureProblem(false, 6);
   problem.transportPolicy!.departure = { ...policy(2, 4, 20), taskIds: problem.transportPolicy!.departure.taskIds };
   const result = executePlannerNext(problem);
-  assert.equal(result.kind, "EXACT_CONSTRUCTIVE"); assert.equal(result.result?.complete, true);
+  assert.equal(result.kind, "EXACT_CONSTRUCTIVE"); assert.equal(result.result?.complete, true, JSON.stringify(result.result && { status: result.result.status, reasons: result.result.evidence.reasonCodes, coreReasons: result.result.evidence.coreReasonCodes, remaining: result.result.remainingTaskIds, branches: result.result.evidence.branchesExplored, coreBranches: result.result.evidence.coreBranchesExplored, standaloneBranches: result.result.evidence.standaloneBranchesExplored }));
   assert.ok(result.result!.evidence.standaloneBacktracks > 0);
   const outs = result.result!.scheduledTasks.filter(({ id }) => id.startsWith("out-"));
   assert.deepEqual([...new Set(outs.map(({ start }) => start))], [80, 100]);

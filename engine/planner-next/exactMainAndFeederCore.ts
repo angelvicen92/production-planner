@@ -124,6 +124,26 @@ const readonlyTaskCopy = <T extends Task | ScheduledTask>(task: T): Readonly<T> 
   availability: task.availability === undefined ? undefined : Object.freeze(task.availability.map((window) => Object.freeze({ ...window }))),
 }) as Readonly<T>;
 
+function latestDepartureStartByParticipant(problem: PlannerNextProblem): ReadonlyMap<string, number> {
+  const departureIds = new Set(problem.transportPolicy?.departure.taskIds ?? []);
+  const latest = new Map<string, number>();
+  for (const task of problem.tasks.filter(({ id }) => departureIds.has(id))) {
+    if (!task.participantId) continue;
+    const participant = problem.participants.find(({ id }) => id === task.participantId);
+    const space = problem.spaces.find(({ id }) => id === task.spaceId);
+    const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
+    const windowSets = [task.availability, participant?.availability, space?.availability,
+      ...resources.map((resource) => resource?.availability)]
+      .filter((windows): windows is Array<{ start: number; end: number }> => Array.isArray(windows) && windows.length > 0);
+    const latestEnd = Math.min(problem.day.end,
+      ...windowSets.map((windows) => Math.max(...windows.map(({ end }) => end))));
+    const latestStart = latestEnd - task.duration;
+    const previous = latest.get(task.participantId);
+    latest.set(task.participantId, previous === undefined ? latestStart : Math.min(previous, latestStart));
+  }
+  return latest;
+}
+
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
     mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, constructiveFeederStartChecks: 0,
@@ -179,6 +199,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns);
   if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
+  const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
   const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
@@ -248,6 +269,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const operation = materializeAnchoredOperation(problem, task, slot, placed, meals);
       const feeder = feederByMain.get(task.id)!;
       if (!operation) continue;
+      const departureDeadline = latestDepartureStart.get(task.participantId);
+      if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
       const participant = problem.participants.find(({ id }) => id === task.participantId)!;
       const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
       const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start - start) + (end - operation.end))) : 0;
@@ -326,6 +349,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
+        const departureDeadline = latestDepartureStart.get(task.participantId);
+        if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
         positions.push(position);
       }
       edges.set(task.id, positions);
@@ -368,20 +393,28 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
-      if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
-        return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-      evidence.timelineCandidatesExplored += 1;
-      const slots = timeline?.slots ?? pattern.map((_, index) => problem.mainFlow.preferredEnd - pattern.length * duration + index * duration);
-      for (const composite of positions) {
-        if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+      const candidateEnds = timeline
+        ? [problem.mainFlow.preferredEnd]
+        : [...new Set([problem.mainFlow.preferredEnd,
+          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline))])]
+          .sort((left, right) => right - left);
+      for (const candidateEnd of candidateEnds) {
+        if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
-          timeline?.key ?? null);
-        if (result === "BUDGET_EXHAUSTED")
-          return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        if (result === "FOUND") {
-          if (selected) selected.timeline = timeline;
-          break outer;
+        evidence.timelineCandidatesExplored += 1;
+        const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
+        if (slots.length > 0 && slots[0]! < problem.day.start) continue;
+        for (const composite of positions) {
+          if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
+            timeline?.key ?? null);
+          if (result === "BUDGET_EXHAUSTED")
+            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+          if (result === "FOUND") {
+            if (selected) selected.timeline = timeline;
+            break outer;
+          }
         }
       }
     }
