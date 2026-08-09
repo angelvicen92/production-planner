@@ -49,14 +49,15 @@ test("independent validation enforces coverage, synchronization, bounds, and con
   assert.ok(validateTransportGrouping(problem, valid.map((task) => task.start === 620 ? { ...task, start: 615, end: 625 } : task)).violationCount > 0, "gap");
 });
 
-test("simultaneous groups are partitionable with zero gap and rejected with a positive gap", () => {
+test("a materialized synchronized group obeys hard maximum even when configured gap is zero", () => {
   const zeroGap = validationProblem(6);
   zeroGap.transportPolicy!.arrival = { ...policy(2, 3, 0), taskIds: zeroGap.tasks.map(({ id }) => id) };
-  const simultaneous = zeroGap.tasks.map((task) => scheduled(task, 600));
-  assert.equal(validateTransportGrouping(zeroGap, simultaneous).violationCount, 0);
-  const positiveGap = structuredClone(zeroGap);
-  positiveGap.transportPolicy!.arrival.minGapMinutes = 5;
-  assert.ok(validateTransportGrouping(positiveGap, simultaneous).violationCount > 0);
+  const oversized = zeroGap.tasks.map((task) => scheduled(task, 600));
+  assert.ok(validateTransportGrouping(zeroGap, oversized).violationCount > 0);
+
+  const legal = validationProblem(3);
+  legal.transportPolicy!.arrival = { ...policy(2, 3, 0), taskIds: legal.tasks.map(({ id }) => id) };
+  assert.equal(validateTransportGrouping(legal, legal.tasks.map((task) => scheduled(task, 600))).violationCount, 0);
 });
 
 function exactProblem(orderReversed = false): PlannerNextProblem {
@@ -82,8 +83,8 @@ function exactProblem(orderReversed = false): PlannerNextProblem {
     budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 20_000 },
     auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
     transportPolicy: {
-    arrival: { ...policy(3, 3, 20), taskIds: transportTasks.map(({ id }) => id) },
-    departure: { ...policy(2, 4, 10), taskIds: [] },
+      arrival: { ...policy(3, 3, 20), taskIds: transportTasks.map(({ id }) => id) },
+      departure: { ...policy(2, 4, 10), taskIds: [] },
     },
   };
   if (orderReversed) {
@@ -141,7 +142,7 @@ function arrivalWorkStyleDepartureProblem(reverse = false, departureCount = 2): 
     auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
     transportPolicy: {
       arrival: { ...policy(2, 2, 0), taskIds: people.map((id) => `in-${id}`) },
-      departure: { ...policy(departureCount === 2 ? 2 : 2, departureCount === 2 ? 2 : 4, 20), taskIds: people.map((id) => `out-${id}`) },
+      departure: { ...policy(2, departureCount === 2 ? 2 : 4, 20), taskIds: people.map((id) => `out-${id}`) },
     },
   };
   if (reverse) {
@@ -150,6 +151,20 @@ function arrivalWorkStyleDepartureProblem(reverse = false, departureCount = 2): 
   }
   return problem;
 }
+
+test("transport validation enforces IN as first and OUT as last participant obligations", () => {
+  const problem = arrivalWorkStyleDepartureProblem();
+  const timeline = problem.tasks
+    .filter((task) => /^(in|work|style|out)-/.test(task.id))
+    .map((task) => scheduled(task, task.id.startsWith("in-") ? 0 : task.id.startsWith("work-") ? 20 : task.id.startsWith("style-") ? 40 : 80));
+  assert.equal(validateTransportGrouping(problem, timeline).violationCount, 0);
+
+  const beforeIn = timeline.map((task) => task.id === "work-p-0" ? { ...task, start: 5, end: 15 } : task);
+  assert.ok(validateTransportGrouping(problem, beforeIn).violationCount > 0, "IN must be the first participant obligation");
+
+  const afterOut = timeline.map((task) => task.id === "work-p-0" ? { ...task, start: 85, end: 95 } : task);
+  assert.ok(validateTransportGrouping(problem, afterOut).violationCount > 0, "OUT must be the last participant obligation");
+});
 
 test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly", () => {
   const problem = arrivalWorkStyleDepartureProblem(), snapshot = structuredClone(problem);
