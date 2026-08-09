@@ -1,9 +1,12 @@
 name: Temporary ChatGPT transport repair
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'codex/continua-optiplan-y-actualiza-pr-#688-y3l4qi'
+      - main
+    paths:
+      - 'engine/**'
+      - '.github/workflows/tmp-chatgpt-repair-690.yml'
 
 permissions:
   contents: write
@@ -15,6 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -190,6 +194,8 @@ jobs:
       - name: Full A2 representability benchmark
         run: npm run benchmark:planner-next:a2-full-template
       - name: Commit repair and remove temporary workflow
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           rm .github/workflows/tmp-chatgpt-repair-690.yml
           git config user.name 'github-actions[bot]'
@@ -197,4 +203,4 @@ jobs:
           git add engine/planner-next/exactMainAndFeederCore.ts engine/planner-next/flexibleSetupOrder.spec.ts .github/workflows/tmp-chatgpt-repair-690.yml docs/evidence/SPEC10-016-full-a2-canonical-template.json docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
           git diff --cached --check
           git commit -m 'Fix transport continuation around departure bounds'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:${HEAD_BRANCH}"
