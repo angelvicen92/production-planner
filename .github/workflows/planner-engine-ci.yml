@@ -46,54 +46,20 @@ jobs:
       - name: Full A2 benchmark first run
         run: |
           npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-first.txt
-          cp docs/evidence/A2-FULL-001-full-a2-representability.json /tmp/A2-FULL-001-first.json
-          cp docs/evidence/A2-FULL-010-transport-policy-representability.json /tmp/A2-FULL-010-first.json
+          cp docs/evidence/SPEC10-016-full-a2-canonical-template.json /tmp/SPEC10-016-full-a2-first.json
+          cp docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md /tmp/SPEC10-016-full-a2-first.md
 
       - name: Full A2 benchmark second run
         run: npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-second.txt
 
-      - name: Verify deterministic benchmark and Evidence
+      - name: Verify deterministic benchmark and generated artifacts
         run: |
           cmp /tmp/full-a2-first.txt /tmp/full-a2-second.txt
-          cmp /tmp/A2-FULL-001-first.json docs/evidence/A2-FULL-001-full-a2-representability.json
-          cmp /tmp/A2-FULL-010-first.json docs/evidence/A2-FULL-010-transport-policy-representability.json
+          cmp /tmp/SPEC10-016-full-a2-first.json docs/evidence/SPEC10-016-full-a2-canonical-template.json
+          cmp /tmp/SPEC10-016-full-a2-first.md docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
 
       - name: Verify generated Evidence is current
-        run: |
-          node <<'NODE'
-          const assert = require('node:assert/strict');
-          const fs = require('node:fs');
-          const { execFileSync } = require('node:child_process');
-
-          const paths = [
-            'docs/evidence/A2-FULL-001-full-a2-representability.json',
-            'docs/evidence/A2-FULL-010-transport-policy-representability.json',
-          ];
-
-          const normalize = (value) => {
-            const copy = structuredClone(value);
-            if (copy.repository) {
-              delete copy.repository.codeSha;
-              delete copy.repository.branch;
-              delete copy.repository.head;
-            }
-            return copy;
-          };
-
-          for (const path of paths) {
-            const committed = JSON.parse(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
-            const generated = JSON.parse(fs.readFileSync(path, 'utf8'));
-            assert.deepStrictEqual(
-              normalize(generated),
-              normalize(committed),
-              `${path} differs from committed Evidence beyond repository provenance`,
-            );
-          }
-          NODE
-          git restore -- \
-            docs/evidence/A2-FULL-001-full-a2-representability.json \
-            docs/evidence/A2-FULL-010-transport-policy-representability.json
-          git diff --exit-code
+        run: git diff --exit-code
 
       - name: Diff hygiene
         run: git diff --check
