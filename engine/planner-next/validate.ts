@@ -191,7 +191,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const itinerantMeals=Array.isArray(problem.itinerantUnitMeals)?problem.itinerantUnitMeals:[];
   if(hasDuplicateIds(itinerantMeals))reasons.add("ITINERANT_UNIT_MEAL_IDENTITY_CONFLICT");
   for(const meal of itinerantMeals)if(typeof meal.id!=="string"||!meal.id||!/^itinerant-team:[1-9]\d*$/.test(meal.itinerantUnitId)||invalidWindow(meal.interval,day)||meal.interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");
-  for(let i=0;i<itinerantMeals.length;i++)for(let j=i+1;j<itinerantMeals.length;j++){const a=itinerantMeals[i]!,b=itinerantMeals[j]!;if(a.itinerantUnitId===b.itinerantUnitId&&a.interval.start<b.interval.end&&b.interval.start<a.interval.end)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");}
+  for(let i=0;i<itinerantMeals.length;i++)for(let j=i+1;j<itinerantMeals.length;j++){const a=itinerantMeals[i]!,b=itinerantMeals[j]!;if(a.itinerantUnitId===b.itinerantUnitId&&a.interval.start<b.interval.end&&meal.interval.start<a.interval.end)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");}
   const usedUnitIds=new Set([...tasks.map(task=>task.itinerantUnitId),...itinerantMeals.map(meal=>meal.itinerantUnitId)].filter((id):id is string=>id!==undefined));
   if(tasks.some(task=>task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))||resources.some(resource=>usedUnitIds.has(resource.id)))reasons.add("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
@@ -351,7 +351,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const roundSynchronization = roundValidation.synchronizationViolationCount;
   const roundPreparation = roundValidation.preparationViolationCount;
   let jointGroup = 0;
-  const transportGrouping = validateTransportGrouping(problem, scheduled).violationCount;
+  const transportGrouping = validateTransportGrouping(problem, scheduled, participantMeals).violationCount;
   let technicalOperation = 0;
   let technicalChain = 0;
   let spaceMeal = 0;
