@@ -202,6 +202,7 @@ export interface ValidationSummary {
   roundSynchronizationViolationCount?: number;
   roundPreparationViolationCount?: number;
   jointGroupViolationCount: number;
+  transportGroupingViolationCount?: number;
   technicalOperationViolationCount: number;
   technicalChainViolationCount: number;
   spaceMealViolationCount: number;

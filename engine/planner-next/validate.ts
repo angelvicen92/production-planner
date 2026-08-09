@@ -37,6 +37,7 @@ import {
   roundSynchronizationPreflightReasons,
   validateRoundSynchronizations,
 } from "./roundSynchronization";
+import { synchronizedTransportTasks, validateTransportGrouping } from "./transportGrouping";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -277,7 +278,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (!task.participantId || !participantIds.has(task.participantId) || !task.spaceId || !spaceIds.has(task.spaceId)
         || !Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_AUXILIARY_TASK");
       if (task.blockKey !== undefined) reasons.add("AUXILIARY_BLOCK_KEY_UNSUPPORTED");
-      if (!Array.isArray(task.dependencies) || (task.jointGroupId === undefined && task.dependencies.length > 0)) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
+      const isTransportTask = problem.transportPolicy !== undefined
+        && (problem.transportPolicy.arrival.taskIds.includes(task.id) || problem.transportPolicy.departure.taskIds.includes(task.id));
+      if (!Array.isArray(task.dependencies) || (task.jointGroupId === undefined && !isTransportTask && task.dependencies.length > 0)) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
     }
   }
   if (technicalChainHasBranching(tasks)) reasons.add("TECHNICAL_CHAIN_BRANCHING_UNSUPPORTED");
@@ -348,6 +351,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const roundSynchronization = roundValidation.synchronizationViolationCount;
   const roundPreparation = roundValidation.preparationViolationCount;
   let jointGroup = 0;
+  const transportGrouping = validateTransportGrouping(problem, scheduled).violationCount;
   let technicalOperation = 0;
   let technicalChain = 0;
   let spaceMeal = 0;
@@ -391,7 +395,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const a = scheduled[first];
       const b = scheduled[second];
       if (!a || !b || !overlaps(a, b)) continue;
-      const internal=synchronizedJointTasks(a,b) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===a.id) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===b.id);
+      const internal=(synchronizedJointTasks(a,b) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===a.id) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===b.id))
+        || synchronizedTransportTasks(problem, a, b);
       const sharedParticipant = a.participantId !== undefined && b.participantId !== undefined && a.participantId === b.participantId;
       if (!internal && (sharedParticipant || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId)) overlap += 1;
       if (!internal && (a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))) resourceOverlap += 1;
@@ -621,6 +626,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (roundSynchronization) reasonCodes.push("ROUND_SYNCHRONIZATION_VIOLATION");
   if (roundPreparation) reasonCodes.push("ROUND_PREPARATION_VIOLATION");
   if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
+  if (transportGrouping) reasonCodes.push("TRANSPORT_GROUPING_VIOLATION");
   if (technicalOperation) reasonCodes.push("TECHNICAL_OPERATION_VIOLATION");
   if (technicalChain) reasonCodes.push("TECHNICAL_CHAIN_VIOLATION");
   if (spaceMeal) reasonCodes.push("SPACE_MEAL_VIOLATION");
@@ -654,6 +660,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       roundPreparationViolationCount: roundPreparation,
     } : {}),
     jointGroupViolationCount: jointGroup,
+    ...(problem.transportPolicy ? { transportGroupingViolationCount: transportGrouping } : {}),
     technicalOperationViolationCount: technicalOperation,
     technicalChainViolationCount: technicalChain,
     spaceMealViolationCount:spaceMeal,

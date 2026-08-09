@@ -81,6 +81,11 @@ test("unsupported feeder shapes and failures are atomic", () => {
   assert.deepEqual(unsupported.scheduledTasks, []); assert.deepEqual(unsupported.scheduledSpaceMeals, []);
   const multiple = mainFlowVocalScenario(); multiple.tasks.push({ ...multiple.tasks.find(({ id }) => id === "vocal-participant-z")!, id: "second-vocal" });
   assert.equal(constructExactMainAndFeederCore(multiple).status, "UNSUPPORTED_CORE_SHAPE");
+  const nonArrivalDependency = mainFlowVocalScenario();
+  nonArrivalDependency.tasks.find(({ id }) => id === "vocal-participant-z")!.dependencies = ["main-participant-c"];
+  const nonArrival = constructExactMainAndFeederCore(nonArrivalDependency);
+  assert.equal(nonArrival.status, "UNSUPPORTED_CORE_SHAPE");
+  assert.ok(nonArrival.evidence.reasonCodes.includes("UNSUPPORTED_FEEDER_DEPENDENCY:main-participant-z"));
   const impossible = mainFlowVocalScenario(); impossible.participants.forEach((participant) => { participant.availability = [{ start: 540, end: 560 }]; });
   const infeasible = constructExactMainAndFeederCore(impossible);
   assert.equal(infeasible.status, "INFEASIBLE"); assert.deepEqual(infeasible.scheduledTasks, []);

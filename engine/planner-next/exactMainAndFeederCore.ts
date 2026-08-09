@@ -146,14 +146,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const mains = canonical(problem.tasks.filter((task) => task.kind === "main"));
   const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"));
+  const arrivalTaskIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const feederByMain = new Map<string, Task>();
   const unsupported: string[] = [];
   for (const main of mains) {
     const matching = vocals.filter((task) => task.participantId === main.participantId);
     if (matching.length !== 1) unsupported.push(`${matching.length === 0 ? "MISSING" : "MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
-    else if (!main.dependencies.includes(matching[0]!.id) || matching[0]!.dependencies.length !== 0)
+    else if (!main.dependencies.includes(matching[0]!.id)
+      || matching[0]!.dependencies.some((dependencyId) => !arrivalTaskIds.has(dependencyId)))
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
-    else feederByMain.set(main.id, matching[0]!);
+    else feederByMain.set(main.id, { ...matching[0]!, dependencies: matching[0]!.dependencies.filter((id) => !arrivalTaskIds.has(id)) });
   }
   if (unsupported.length > 0 || mains.length === 0)
     return fail("UNSUPPORTED_CORE_SHAPE", unsupported.length ? unsupported : ["MISSING_MAIN_TASK"]);
@@ -194,7 +196,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
-      const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id));
+      const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
+        ...task,
+        dependencies: task.kind === "vocal"
+          ? task.dependencies.filter((dependencyId) => !arrivalTaskIds.has(dependencyId))
+          : [...task.dependencies],
+      }));
       const deferredSetupSpaceIds = new Set(problem.spaces
         .filter((space) => space.setupPolicy !== undefined
           && !reducedTasks.some((task) => task.spaceId === space.id))
@@ -209,6 +216,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         roundSynchronizations: undefined,
         participantMeals: undefined,
         participantMealCapacity: undefined,
+        transportPolicy: undefined,
       };
       const expected = [...coreIds].sort();
       const actual = placed.map(({ id }) => id).sort();
@@ -217,12 +225,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
       const validation = validatePlan(reduced, placed, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
       if (validShape && validation.hardValid) {
-        const ordered = [...placed].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
+        const ordered = placed.map((task) => ({
+          ...task,
+          dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
+        })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
           remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (continuation === "ACCEPT") { selected = { tasks: placed, meals, pattern }; return "FOUND"; }
+        if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
       }
       return "DEAD_END";
     }

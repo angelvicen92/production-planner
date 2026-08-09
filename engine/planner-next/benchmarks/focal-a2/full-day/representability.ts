@@ -106,9 +106,10 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
     (() => { const value = structuredClone(input); value.transportSettings!.arrivalTargetGroupSize = 4; return value; })(),
     (() => { const value = structuredClone(input); value.arrivalGroupingTarget = 7; value.transportSettings!.arrivalTargetGroupSize = 7; return value; })(),
   ];
-  const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem) : null;
+  const exactProblem = adapted.status === "SUPPORTED" ? { ...adapted.problem, searchPolicy: "EXACT_CONSTRUCTIVE" as const } : null;
+  const execution = exactProblem ? executePlannerNext(exactProblem) : null;
   const capabilities = adapted.status === "SUPPORTED" ? detectPlannerCapabilities(adapted.problem) : [];
-  const resolution = adapted.status === "SUPPORTED" ? resolvePlannerSearchPolicy(adapted.problem) : null;
+  const resolution = exactProblem ? resolvePlannerSearchPolicy(exactProblem) : null;
   return {
     sourceConfigurationPresent: policy.arrival.minimumGroupSize === 3 && policy.arrival.maximumGroupSize === 6 && policy.arrival.minGapMinutes === 35 && policy.arrival.groupingWeight === 3 && policy.departure.minimumGroupSize === 3 && policy.departure.maximumGroupSize === 6 && policy.departure.minGapMinutes === 20 && policy.departure.groupingWeight === 3,
     engineInputContractPresent,
@@ -119,8 +120,8 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
     plannerNextContractPresent, minimumPreserved, maximumPreserved, minGapPreserved, groupingWeightPreserved,
     noSeparateTargetSemantic,
     capabilityDetected: capabilities.includes("TRANSPORT_GROUPING"),
-    capabilityUnsupported: resolution?.unsupportedCapabilities.includes("TRANSPORT_GROUPING") === true,
-    executionFailsClosed: execution?.kind === "POLICY_REJECTED" && execution.policyResolution.reasonCodes.includes("SEARCH_POLICY_CAPABILITY_UNSUPPORTED"),
+    capabilitySupportedByExact: resolution?.supportedCapabilities.includes("TRANSPORT_GROUPING") === true,
+    executionAcceptedByExact: execution?.kind === "EXACT_CONSTRUCTIVE",
     deterministic: preflight.sourceFingerprint === repeated.sourceFingerprint && preflight.reasonCodes.join() === repeated.reasonCodes.join(),
     orderInvariant: adapted.problemFingerprint === reversed.problemFingerprint,
     inputImmutable: JSON.stringify(input) === JSON.stringify(snapshot),
@@ -743,15 +744,9 @@ export function analyzeCanonicalFullA2Representability(
     && transportPolicyProbe.minimumPreserved && transportPolicyProbe.maximumPreserved
     && transportPolicyProbe.minGapPreserved && transportPolicyProbe.groupingWeightPreserved
     && transportPolicyProbe.noSeparateTargetSemantic && transportPolicyProbe.capabilityDetected
-    && transportPolicyProbe.capabilityUnsupported && transportPolicyProbe.executionFailsClosed
+    && transportPolicyProbe.capabilitySupportedByExact && transportPolicyProbe.executionAcceptedByExact
     && transportPolicyProbe.deterministic && transportPolicyProbe.orderInvariant && transportPolicyProbe.inputImmutable;
-  if (transportRepresentationProven) implementationBlockers.push(blocker({
-    code: "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED", layer: "PLANNER_NEXT",
-    affectedRule: "política efectiva IN/OUT", canonicalIds: expansion.tasks.filter((task) => task.transport).map((task) => task.id),
-    operationalExplanation: "EngineInput y el adaptador preservan losslessly la política min/max de transporte, pero ninguna search policy implementa todavía su búsqueda/agrupación.",
-    semanticLoss: "Ejecutar sin soporte podría incumplir mínimos, máximos o separación entre grupos; la ejecución falla cerrada.", implementationRank: 1,
-  }));
-  else implementationBlockers.push(blocker({
+  if (!transportRepresentationProven) implementationBlockers.push(blocker({
     code: "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED", layer: "ENGINE_INPUT",
     affectedRule: "política efectiva IN/OUT", canonicalIds: expansion.tasks.filter((task) => task.transport).map((task) => task.id),
     operationalExplanation: "La representación lossless de la política efectiva de transporte no ha quedado demostrada de extremo a extremo.",
