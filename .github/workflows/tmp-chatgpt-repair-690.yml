@@ -35,9 +35,11 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Apply focused repair
+      - name: Apply focused repair and diagnostics
         if: steps.guard.outputs.skip != 'true'
-        run: python .github/tmp-repair-690.py
+        run: |
+          python .github/tmp-repair-690.py
+          python .github/tmp-diagnose-690.py
 
       - name: Install dependencies
         if: steps.guard.outputs.skip != 'true'
@@ -52,7 +54,16 @@ jobs:
           code=${PIPESTATUS[0]}
           set -e
           if [ "$code" -ne 0 ]; then
-            tail -n 320 /tmp/npm-test.log > .chatgpt-690-test.log
+            python - <<'PY'
+          from pathlib import Path
+          lines = Path('/tmp/npm-test.log').read_text(errors='replace').splitlines()
+          hits = [i for i, line in enumerate(lines) if 'not ok ' in line or 'AssertionError' in line or 'ERR_ASSERTION' in line or 'transportGrouping.spec' in line or 'failing tests' in line]
+          selected = set()
+          for i in hits:
+            selected.update(range(max(0, i - 10), min(len(lines), i + 22)))
+          out = [f'{i+1}: {lines[i]}' for i in sorted(selected)]
+          Path('.chatgpt-690-test.log').write_text('\n'.join(out[-900:]) + '\n')
+          PY
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -f .chatgpt-690-test.log
@@ -73,10 +84,10 @@ jobs:
         if: steps.guard.outputs.skip != 'true'
         shell: bash
         run: |
-          rm -f .github/workflows/tmp-chatgpt-repair-690.yml .github/tmp-repair-690.py .chatgpt-690-test.log
+          rm -f .github/workflows/tmp-chatgpt-repair-690.yml .github/tmp-repair-690.py .github/tmp-diagnose-690.py .chatgpt-690-test.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A engine/planner-next/exactMainAndFeederCore.ts engine/planner-next/flexibleSetupOrder.spec.ts docs/evidence/SPEC10-016-full-a2-canonical-template.json docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md .github/workflows/tmp-chatgpt-repair-690.yml .github/tmp-repair-690.py .chatgpt-690-test.log
+          git add -A engine/planner-next/exactMainAndFeederCore.ts engine/planner-next/flexibleSetupOrder.spec.ts docs/evidence/SPEC10-016-full-a2-canonical-template.json docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md .github/workflows/tmp-chatgpt-repair-690.yml .github/tmp-repair-690.py .github/tmp-diagnose-690.py .chatgpt-690-test.log
           git diff --cached --check
           git commit -m 'Fix transport continuation around departure bounds'
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
