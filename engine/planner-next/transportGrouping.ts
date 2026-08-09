@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
 import { canPlaceTask } from "./placement";
 
 export type TransportDirection = "arrival" | "departure";
@@ -103,19 +103,24 @@ function participantBoundaryViolation(
   direction: TransportDirection,
   transportTask: ScheduledTask,
   scheduled: readonly ScheduledTask[],
+  participantMeals: readonly ScheduledParticipantMeal[],
 ): boolean {
   const participantId = transportTask.participantId;
   if (!participantId) return true;
-  const otherObligations = scheduled.filter((task) => task.participantId === participantId && task.id !== transportTask.id);
+  const otherObligations = [
+    ...scheduled.filter((task) => task.participantId === participantId && task.id !== transportTask.id),
+    ...participantMeals.filter((meal) => meal.participantId === participantId),
+  ];
   return direction === "arrival"
-    ? otherObligations.some((task) => task.start < transportTask.end)
-    : otherObligations.some((task) => task.end > transportTask.start);
+    ? otherObligations.some((obligation) => obligation.start < transportTask.end)
+    : otherObligations.some((obligation) => obligation.end > transportTask.start);
 }
 
 /** Independent final validation: derives groups solely from direction plus executed interval. */
 export function validateTransportGrouping(
   problem: Readonly<PlannerNextProblem>,
   scheduled: readonly ScheduledTask[],
+  participantMeals: readonly ScheduledParticipantMeal[] = [],
 ): TransportValidation {
   const groupsByDirection = { arrival: [] as ScheduledTask[][], departure: [] as ScheduledTask[][] };
   let violationCount = 0;
@@ -143,7 +148,7 @@ export function validateTransportGrouping(
     for (let index = 1; index < groups.length; index += 1) {
       if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;
     }
-    if (actual.some((task) => participantBoundaryViolation(direction, task, scheduled))) violationCount += 1;
+    if (actual.some((task) => participantBoundaryViolation(direction, task, scheduled, participantMeals))) violationCount += 1;
   }
   return { violationCount, groupsByDirection };
 }
