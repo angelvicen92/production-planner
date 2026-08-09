@@ -126,6 +126,8 @@ export function validateTransportGrouping(
     const actual = scheduled.filter((task) => expected.includes(task.id));
     if (actual.length !== expected.length
       || expected.some((id) => actual.filter((task) => task.id === id).length !== 1)) violationCount += 1;
+    if (actual.some((task) => !task.participantId)
+      || new Set(actual.map((task) => task.participantId)).size !== actual.length) violationCount += 1;
     const byInterval = new Map<string, ScheduledTask[]>();
     for (const task of actual) {
       const key = `${task.start}:${task.end}`;
