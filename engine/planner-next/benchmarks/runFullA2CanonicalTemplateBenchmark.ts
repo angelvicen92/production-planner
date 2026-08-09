@@ -204,7 +204,7 @@ ${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representab
 
 ## No implementado
 
-No se implementa botón, DB, API, UI, persistencia, búsqueda/agrupación de transporte ni ejecución del motor para un subconjunto parcial.
+No se implementa botón, DB, API, UI, persistencia, comidas scoped ni ejecución del motor para un subconjunto parcial.
 `);
 
 console.log(JSON.stringify({

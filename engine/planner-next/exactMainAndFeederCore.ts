@@ -124,6 +124,26 @@ const readonlyTaskCopy = <T extends Task | ScheduledTask>(task: T): Readonly<T> 
   availability: task.availability === undefined ? undefined : Object.freeze(task.availability.map((window) => Object.freeze({ ...window }))),
 }) as Readonly<T>;
 
+function latestDepartureStartByParticipant(problem: PlannerNextProblem): ReadonlyMap<string, number> {
+  const departureIds = new Set(problem.transportPolicy?.departure.taskIds ?? []);
+  const latest = new Map<string, number>();
+  for (const task of problem.tasks.filter(({ id }) => departureIds.has(id))) {
+    if (!task.participantId) continue;
+    const participant = problem.participants.find(({ id }) => id === task.participantId);
+    const space = problem.spaces.find(({ id }) => id === task.spaceId);
+    const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
+    const windowSets = [task.availability, participant?.availability, space?.availability,
+      ...resources.map((resource) => resource?.availability)]
+      .filter((windows): windows is Array<{ start: number; end: number }> => Array.isArray(windows) && windows.length > 0);
+    const latestEnd = Math.min(problem.day.end,
+      ...windowSets.map((windows) => Math.max(...windows.map(({ end }) => end))));
+    const latestStart = latestEnd - task.duration;
+    const previous = latest.get(task.participantId);
+    latest.set(task.participantId, previous === undefined ? latestStart : Math.min(previous, latestStart));
+  }
+  return latest;
+}
+
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
     mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, constructiveFeederStartChecks: 0,
@@ -146,14 +166,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const mains = canonical(problem.tasks.filter((task) => task.kind === "main"));
   const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"));
+  const arrivalTaskIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const feederByMain = new Map<string, Task>();
   const unsupported: string[] = [];
   for (const main of mains) {
     const matching = vocals.filter((task) => task.participantId === main.participantId);
     if (matching.length !== 1) unsupported.push(`${matching.length === 0 ? "MISSING" : "MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
-    else if (!main.dependencies.includes(matching[0]!.id) || matching[0]!.dependencies.length !== 0)
+    else if (!main.dependencies.includes(matching[0]!.id)
+      || matching[0]!.dependencies.some((dependencyId) => !arrivalTaskIds.has(dependencyId)))
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
-    else feederByMain.set(main.id, matching[0]!);
+    else feederByMain.set(main.id, { ...matching[0]!, dependencies: matching[0]!.dependencies.filter((id) => !arrivalTaskIds.has(id)) });
   }
   if (unsupported.length > 0 || mains.length === 0)
     return fail("UNSUPPORTED_CORE_SHAPE", unsupported.length ? unsupported : ["MISSING_MAIN_TASK"]);
@@ -177,6 +199,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns);
   if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
+  const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
   const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
@@ -194,7 +217,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
-      const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id));
+      const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
+        ...task,
+        dependencies: task.kind === "vocal"
+          ? task.dependencies.filter((dependencyId) => !arrivalTaskIds.has(dependencyId))
+          : [...task.dependencies],
+      }));
       const deferredSetupSpaceIds = new Set(problem.spaces
         .filter((space) => space.setupPolicy !== undefined
           && !reducedTasks.some((task) => task.spaceId === space.id))
@@ -209,6 +237,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         roundSynchronizations: undefined,
         participantMeals: undefined,
         participantMealCapacity: undefined,
+        transportPolicy: undefined,
       };
       const expected = [...coreIds].sort();
       const actual = placed.map(({ id }) => id).sort();
@@ -217,12 +246,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
       const validation = validatePlan(reduced, placed, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
       if (validShape && validation.hardValid) {
-        const ordered = [...placed].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
+        const ordered = placed.map((task) => ({
+          ...task,
+          dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
+        })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
           remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (continuation === "ACCEPT") { selected = { tasks: placed, meals, pattern }; return "FOUND"; }
+        if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
       }
       return "DEAD_END";
     }
@@ -236,6 +269,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const operation = materializeAnchoredOperation(problem, task, slot, placed, meals);
       const feeder = feederByMain.get(task.id)!;
       if (!operation) continue;
+      const departureDeadline = latestDepartureStart.get(task.participantId);
+      if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
       const participant = problem.participants.find(({ id }) => id === task.participantId)!;
       const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
       const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start - start) + (end - operation.end))) : 0;
@@ -314,6 +349,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
+        const departureDeadline = latestDepartureStart.get(task.participantId);
+        if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
         positions.push(position);
       }
       edges.set(task.id, positions);
@@ -356,20 +393,28 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
-      if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
-        return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-      evidence.timelineCandidatesExplored += 1;
-      const slots = timeline?.slots ?? pattern.map((_, index) => problem.mainFlow.preferredEnd - pattern.length * duration + index * duration);
-      for (const composite of positions) {
-        if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+      const candidateEnds = timeline
+        ? [problem.mainFlow.preferredEnd]
+        : [...new Set([problem.mainFlow.preferredEnd,
+          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline))])]
+          .sort((left, right) => right - left);
+      for (const candidateEnd of candidateEnds) {
+        if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
-          timeline?.key ?? null);
-        if (result === "BUDGET_EXHAUSTED")
-          return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        if (result === "FOUND") {
-          if (selected) selected.timeline = timeline;
-          break outer;
+        evidence.timelineCandidatesExplored += 1;
+        const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
+        if (slots.length > 0 && slots[0]! < problem.day.start) continue;
+        for (const composite of positions) {
+          if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
+            timeline?.key ?? null);
+          if (result === "BUDGET_EXHAUSTED")
+            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+          if (result === "FOUND") {
+            if (selected) selected.timeline = timeline;
+            break outer;
+          }
         }
       }
     }

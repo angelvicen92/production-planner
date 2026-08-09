@@ -36,7 +36,8 @@ export const PLANNER_CAPABILITY_REQUIREMENTS: Readonly<
   }),
   TRANSPORT_GROUPING: defineCapabilityRequirement({
     capability: "TRANSPORT_GROUPING",
-    supportedPolicies: [],
+    supportedPolicies: ["EXACT_CONSTRUCTIVE"],
+    requiredPolicy: "EXACT_CONSTRUCTIVE",
   }),
 });
 

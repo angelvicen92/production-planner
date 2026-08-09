@@ -83,9 +83,9 @@ test("anchored accompaniment is detected canonically and requires the exact poli
   });
 });
 
-test("transport grouping is detected but unsupported by every search policy", () => {
+test("transport grouping is supported only by the implemented exact policy", () => {
   assert.deepEqual(PLANNER_CAPABILITY_REQUIREMENTS.TRANSPORT_GROUPING, {
-    capability: "TRANSPORT_GROUPING", supportedPolicies: [],
+    capability: "TRANSPORT_GROUPING", supportedPolicies: ["EXACT_CONSTRUCTIVE"], requiredPolicy: "EXACT_CONSTRUCTIVE",
   });
   for (const policy of ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"] as const) {
     const value = problem(policy);
@@ -95,9 +95,9 @@ test("transport grouping is detected but unsupported by every search policy", ()
     };
     assert.deepEqual(detectPlannerCapabilities(value), ["TRANSPORT_GROUPING"]);
     const resolution = resolvePlannerSearchPolicy(value);
-    assert.equal(resolution.compatible, false);
-    assert.deepEqual(resolution.unsupportedCapabilities, ["TRANSPORT_GROUPING"]);
-    assert.deepEqual(resolution.reasonCodes, ["SEARCH_POLICY_CAPABILITY_UNSUPPORTED"]);
+    assert.equal(resolution.compatible, policy === "EXACT_CONSTRUCTIVE");
+    assert.deepEqual(resolution.unsupportedCapabilities, policy === "EXACT_CONSTRUCTIVE" ? [] : ["TRANSPORT_GROUPING"]);
+    assert.deepEqual(resolution.reasonCodes, policy === "EXACT_CONSTRUCTIVE" ? [] : ["SEARCH_POLICY_CAPABILITY_UNSUPPORTED"]);
   }
 });
 
