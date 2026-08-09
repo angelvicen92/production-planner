@@ -1,0 +1,92 @@
+name: Temporary flexible operational meal contract
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Guard diagnostics
+        id: guard
+        shell: bash
+        run: |
+          case "$(git log -1 --pretty=%s)" in
+            "chore: capture flexible meal contract failure") echo "skip=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "skip=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply contract delta
+        if: steps.guard.outputs.skip != 'true'
+        run: python .github/tmp-flex-meal-contract.py
+
+      - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Focal tests
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set +e
+          npx tsx --test \
+            engine/planner-next/flexibleOperationalMealPolicy.spec.ts \
+            engine/planner-next/flexibleSetupOrder.spec.ts \
+            engine/planner-next/integration/engineInputPreflight.spec.ts \
+            engine/planner-next/integration/engineInputAdapter.spec.ts 2>&1 | tee /tmp/focal.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -ne 0 ]; then
+            tail -n 400 /tmp/focal.log > .chatgpt-meal-contract.log
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -f .chatgpt-meal-contract.log
+            git commit -m 'chore: capture flexible meal contract failure'
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+            exit "$code"
+          fi
+
+      - name: TypeScript check
+        if: steps.guard.outputs.skip != 'true'
+        run: npm run check
+
+      - name: Full A2 benchmark
+        if: steps.guard.outputs.skip != 'true'
+        run: npm run benchmark:planner-next:a2-full-template
+
+      - name: Full test suite
+        if: steps.guard.outputs.skip != 'true'
+        run: npm test
+
+      - name: Production build
+        if: steps.guard.outputs.skip != 'true'
+        run: npm run build
+
+      - name: Commit validated contract
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
+        run: |
+          rm -f .github/workflows/tmp-flex-meal-contract.yml .github/tmp-flex-meal-contract.py .chatgpt-meal-contract.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Represent flexible operational meal policies losslessly'
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
