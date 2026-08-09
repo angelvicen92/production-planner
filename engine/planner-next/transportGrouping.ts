@@ -99,6 +99,19 @@ export interface TransportValidation {
   groupsByDirection: Readonly<Record<TransportDirection, readonly ScheduledTask[][]>>;
 }
 
+function participantBoundaryViolation(
+  direction: TransportDirection,
+  transportTask: ScheduledTask,
+  scheduled: readonly ScheduledTask[],
+): boolean {
+  const participantId = transportTask.participantId;
+  if (!participantId) return true;
+  const otherObligations = scheduled.filter((task) => task.participantId === participantId && task.id !== transportTask.id);
+  return direction === "arrival"
+    ? otherObligations.some((task) => task.start < transportTask.end)
+    : otherObligations.some((task) => task.end > transportTask.start);
+}
+
 /** Independent final validation: derives groups solely from direction plus executed interval. */
 export function validateTransportGrouping(
   problem: Readonly<PlannerNextProblem>,
@@ -122,13 +135,13 @@ export function validateTransportGrouping(
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    if (groups.some((group) => (policy.minGapMinutes === 0
-      ? !canPartitionTransportCount(group.length, policy.minimumGroupSize, policy.maximumGroupSize)
-      : group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize)
+    if (groups.some((group) => group.length < policy.minimumGroupSize
+      || group.length > policy.maximumGroupSize
       || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) violationCount += 1;
     for (let index = 1; index < groups.length; index += 1) {
       if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;
     }
+    if (actual.some((task) => participantBoundaryViolation(direction, task, scheduled))) violationCount += 1;
   }
   return { violationCount, groupsByDirection };
 }
