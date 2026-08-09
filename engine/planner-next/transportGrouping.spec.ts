@@ -166,6 +166,17 @@ test("transport validation enforces IN as first and OUT as last participant obli
   assert.ok(validateTransportGrouping(problem, afterOut).violationCount > 0, "OUT must be the last participant obligation");
 });
 
+test("final transport validation treats a materialized participant meal as a bounded obligation", () => {
+  const problem = arrivalWorkStyleDepartureProblem();
+  const timeline = problem.tasks
+    .filter((task) => /^(in|work|style|out)-/.test(task.id))
+    .map((task) => scheduled(task, task.id.startsWith("in-") ? 0 : task.id.startsWith("work-") ? 20 : task.id.startsWith("style-") ? 40 : 80));
+  const meal = { id: "meal-p-0", sourceTaskId: "meal-source-p-0", participantId: "p-0", duration: 10, start: 95, end: 105 };
+  assert.ok(validateTransportGrouping(problem, timeline, [meal]).violationCount > 0, "meal after OUT must violate OUT-last");
+  const finalValidation = validatePlan(problem, timeline, [], [], [meal]);
+  assert.ok((finalValidation.transportGroupingViolationCount ?? 0) > 0, "validatePlan must pass participant meals to transport validation");
+});
+
 test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly", () => {
   const problem = arrivalWorkStyleDepartureProblem(), snapshot = structuredClone(problem);
   const first = executePlannerNext(problem), repeated = executePlannerNext(arrivalWorkStyleDepartureProblem());
