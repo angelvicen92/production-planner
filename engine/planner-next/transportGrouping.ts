@@ -99,6 +99,18 @@ export interface TransportValidation {
   groupsByDirection: Readonly<Record<TransportDirection, readonly ScheduledTask[][]>>;
 }
 
+function violatesParticipantBoundary(
+  direction: TransportDirection,
+  task: ScheduledTask,
+  scheduled: readonly ScheduledTask[],
+): boolean {
+  if (task.participantId === undefined) return true;
+  return scheduled.some((other) => {
+    if (other.id === task.id || other.participantId !== task.participantId) return false;
+    return direction === "arrival" ? task.end > other.start : other.end > task.start;
+  });
+}
+
 /** Independent final validation: derives groups solely from direction plus executed interval. */
 export function validateTransportGrouping(
   problem: Readonly<PlannerNextProblem>,
@@ -113,6 +125,7 @@ export function validateTransportGrouping(
     const actual = scheduled.filter((task) => expected.includes(task.id));
     if (actual.length !== expected.length
       || expected.some((id) => actual.filter((task) => task.id === id).length !== 1)) violationCount += 1;
+    if (actual.some((task) => violatesParticipantBoundary(direction, task, scheduled))) violationCount += 1;
     const byInterval = new Map<string, ScheduledTask[]>();
     for (const task of actual) {
       const key = `${task.start}:${task.end}`;
