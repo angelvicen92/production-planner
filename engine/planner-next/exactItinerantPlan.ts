@@ -19,6 +19,7 @@ import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
+import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -328,7 +329,8 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.roundSynchronizationZeroAlternativePrunes += delta.zeroAlternativePrunes;
 };
 
-const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id));
+const dynamicTransportIds = transportTaskIds(problem);
+const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id) && !dynamicTransportIds.has(id));
 const originalOrdinary = ordinaryPending.splice(0, ordinaryPending.length, ...pendingWithoutRounds.filter(({ id }) => !setupTaskIds.has(id)).sort(byId));
 void originalOrdinary;
 
@@ -363,7 +365,53 @@ const searchRounds = (
   return explored.outcome;
 };
 
-const searchOutcome = searchRounds(0, [], [], []);
+const transportDirections = problem.transportPolicy
+  ? (["arrival", "departure"] as const).filter((direction) => problem.transportPolicy![direction].taskIds.length > 0)
+  : [];
+const searchTransportDirection = (
+  directionIndex: number,
+  remaining: Task[],
+  placed: ScheduledTask[],
+  groupStarts: number[],
+  selectionOrder: string[],
+): StandaloneOutcome => {
+  if (directionIndex >= transportDirections.length) return searchRounds(0, placed, [], selectionOrder);
+  const direction = transportDirections[directionIndex]!;
+  const policy = problem.transportPolicy![direction];
+  if (remaining.length === 0) {
+    const nextDirection = transportDirections[directionIndex + 1];
+    const next = nextDirection
+      ? problem.tasks.filter((task) => problem.transportPolicy![nextDirection].taskIds.includes(task.id)).sort(byId)
+      : [];
+    return searchTransportDirection(directionIndex + 1, next, placed, [], selectionOrder);
+  }
+  const candidates = transportGroupCandidates(remaining, policy);
+  if (candidates.length === 0) return "DEAD_END";
+  for (const group of candidates) {
+    const starts = transportGroupStarts(problem, group, [...coreTasks, ...placed], groupStarts, policy);
+    for (const start of starts) {
+      if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
+      evidence.standaloneBranches += 1;
+      const scheduled = scheduleTransportGroup(group, start);
+      const memberIds = new Set(group.map(({ id }) => id));
+      const child = searchTransportDirection(
+        directionIndex,
+        remaining.filter(({ id }) => !memberIds.has(id)),
+        [...placed, ...scheduled],
+        [...groupStarts, start],
+        [...selectionOrder, ...group.map(({ id }) => id)],
+      );
+      if (child !== "DEAD_END") return child;
+      evidence.standaloneBacktracks += 1;
+    }
+  }
+  return "DEAD_END";
+};
+const firstDirection = transportDirections[0];
+const firstTransportTasks = firstDirection
+  ? problem.tasks.filter((task) => problem.transportPolicy![firstDirection].taskIds.includes(task.id)).sort(byId)
+  : [];
+const searchOutcome = searchTransportDirection(0, firstTransportTasks, [], [], []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals };
 }

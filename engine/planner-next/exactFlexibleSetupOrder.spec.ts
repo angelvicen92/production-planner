@@ -165,7 +165,7 @@ test("exact setup enumeration is atomic on shared-ledger exhaustion", () => {
   assert.equal(generated.evidence.branchesExplored, 1);
 });
 
-test("full A2 retains only the new transport and scoped meal blockers", () => {
+test("full A2 leaves transport behind and retains only scoped meal blockers", () => {
   const analysis = analyzeCanonicalFullA2Representability(
     expandCanonicalFullA2Template(createCanonicalFullA2Template()),
   );
@@ -177,10 +177,9 @@ test("full A2 retains only the new transport and scoped meal blockers", () => {
     false,
   );
   assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [
-    "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED",
     "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
     "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
   ]);
-  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED");
-  assert.equal(analysis.nextImplementationBlocker?.layer, "PLANNER_NEXT");
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.layer, "ENGINE_INPUT");
 });

@@ -209,6 +209,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         roundSynchronizations: undefined,
         participantMeals: undefined,
         participantMealCapacity: undefined,
+        transportPolicy: undefined,
       };
       const expected = [...coreIds].sort();
       const actual = placed.map(({ id }) => id).sort();
