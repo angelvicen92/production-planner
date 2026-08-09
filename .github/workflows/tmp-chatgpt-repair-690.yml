@@ -4,9 +4,7 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'engine/**'
-      - '.github/workflows/tmp-chatgpt-repair-690.yml'
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
