@@ -1,0 +1,320 @@
+  ...
+# Subtest: an invalid global row prevents construction of any snapshot row array
+ok 2124 - an invalid global row prevents construction of any snapshot row array
+  ---
+  duration_ms: 0.254855
+  ...
+# Subtest: ad hoc rows use full-workday nulls by default and preserve valid explicit windows
+ok 2125 - ad hoc rows use full-workday nulls by default and preserve valid explicit windows
+  ---
+  duration_ms: 0.2452
+  ...
+# Subtest: invalid ad hoc and override pairs fail before producing a persistence row
+ok 2126 - invalid ad hoc and override pairs fail before producing a persistence row
+  ---
+  duration_ms: 0.261685
+  ...
+# Subtest: availability-only patches do not contain or erase is_available
+ok 2127 - availability-only patches do not contain or erase is_available
+  ---
+  duration_ms: 0.267603
+  ...
+# Subtest: valid workday and inherited hierarchy
+ok 2128 - valid workday and inherited hierarchy
+  ---
+  duration_ms: 1.865583
+  ...
+# Subtest: invalid workday format
+ok 2129 - invalid workday format
+  ---
+  duration_ms: 0.243768
+  ...
+# Subtest: invalid workday zero
+ok 2130 - invalid workday zero
+  ---
+  duration_ms: 0.14276
+  ...
+# Subtest: invalid workday inverted
+ok 2131 - invalid workday inverted
+  ---
+  duration_ms: 0.130222
+  ...
+# Subtest: explicit and equal zone windows are accepted
+ok 2132 - explicit and equal zone windows are accepted
+  ---
+  duration_ms: 0.269306
+  ...
+# Subtest: zone starts before
+ok 2133 - zone starts before
+  ---
+  duration_ms: 0.166695
+  ...
+# Subtest: zone ends after
+ok 2134 - zone ends after
+  ---
+  duration_ms: 0.144452
+  ...
+# Subtest: zone outside
+ok 2135 - zone outside
+  ---
+  duration_ms: 0.254844
+  ...
+# Subtest: zone partial
+ok 2136 - zone partial
+  ---
+  duration_ms: 0.610978
+  ...
+# Subtest: zone mixed
+ok 2137 - zone mixed
+  ---
+  duration_ms: 0.220313
+  ...
+# Subtest: zone format
+ok 2138 - zone format
+  ---
+  duration_ms: 0.135029
+  ...
+# Subtest: zone order
+ok 2139 - zone order
+  ---
+  duration_ms: 0.159344
+  ...
+# Subtest: explicit, equal and inherited space windows are accepted
+ok 2140 - explicit, equal and inherited space windows are accepted
+  ---
+  duration_ms: 0.324987
+  ...
+# Subtest: space starts before
+ok 2141 - space starts before
+  ---
+  duration_ms: 0.262066
+  ...
+# Subtest: space ends after
+ok 2142 - space ends after
+  ---
+  duration_ms: 0.138644
+  ...
+# Subtest: space outside
+ok 2143 - space outside
+  ---
+  duration_ms: 0.186795
+  ...
+# Subtest: space partial
+ok 2144 - space partial
+  ---
+  duration_ms: 0.117152
+  ...
+# Subtest: space mixed
+ok 2145 - space mixed
+  ---
+  duration_ms: 0.470431
+  ...
+# Subtest: space format
+ok 2146 - space format
+  ---
+  duration_ms: 0.175518
+  ...
+# Subtest: space order
+ok 2147 - space order
+  ---
+  duration_ms: 0.156851
+  ...
+# Subtest: inherited zone permits an explicit space
+ok 2148 - inherited zone permits an explicit space
+  ---
+  duration_ms: 0.230419
+  ...
+# Subtest: workday and zone modifications expose descendant invalidity
+ok 2149 - workday and zone modifications expose descendant invalidity
+  ---
+  duration_ms: 0.185964
+  ...
+# Subtest: irrelevant names and parent ids do not influence deterministic immutable resolution
+ok 2150 - irrelevant names and parent ids do not influence deterministic immutable resolution
+  ---
+  duration_ms: 0.390564
+  ...
+# Subtest: snapshot builder copies defaults, frozen zone relation, null inheritance and deterministic order
+ok 2151 - snapshot builder copies defaults, frozen zone relation, null inheritance and deterministic order
+  ---
+  duration_ms: 0.652709
+  ...
+# Subtest: snapshot builder honors complete override and rejects partial override
+ok 2152 - snapshot builder honors complete override and rejects partial override
+  ---
+  duration_ms: 0.716013
+  ...
+# Subtest: plan creation preparation maps every catalog conflict to a typed safe reason
+ok 2153 - plan creation preparation maps every catalog conflict to a typed safe reason
+  ---
+  duration_ms: 1.037325
+  ...
+# Subtest: one invalid catalog row rejects the complete logical batch
+ok 2154 - one invalid catalog row rejects the complete logical batch
+  ---
+  duration_ms: 0.302836
+  ...
+# Subtest: global catalog validation checks proposed workday, zone and space changes without mutation
+ok 2155 - global catalog validation checks proposed workday, zone and space changes without mutation
+  ---
+  duration_ms: 0.663826
+  ...
+# Subtest: late initialization preserves daily authority, copies only missing rows and is deterministic
+ok 2156 - late initialization preserves daily authority, copies only missing rows and is deterministic
+  ---
+  duration_ms: 0.802921
+  ...
+# Subtest: late initialization rejects missing space against existing daily zone rather than wider global zone
+ok 2157 - late initialization rejects missing space against existing daily zone rather than wider global zone
+  ---
+  duration_ms: 0.236918
+  ...
+# Subtest: malformed route IDs are 400 before storage
+ok 2158 - malformed route IDs are 400 before storage
+  ---
+  duration_ms: 1.792836
+  ...
+# Subtest: invalid shared-schema body is 400
+ok 2159 - invalid shared-schema body is 400
+  ---
+  duration_ms: 2.720169
+  ...
+# Subtest: missing or inaccessible plan, zone and space are 404
+ok 2160 - missing or inaccessible plan, zone and space are 404
+  ---
+  duration_ms: 1.209439
+  ...
+# Subtest: unexpected storage failure is sanitized as 500
+ok 2161 - unexpected storage failure is sanitized as 500
+  ---
+  duration_ms: 0.395822
+  ...
+# Subtest: typed spatial domain conflicts are safe 400 responses
+ok 2162 - typed spatial domain conflicts are safe 400 responses
+  ---
+  duration_ms: 0.534045
+  ...
+# Subtest: valid empty lists and successful responses remain 200
+ok 2163 - valid empty lists and successful responses remain 200
+  ---
+  duration_ms: 0.500666
+  ...
+# Subtest: 073 keeps snapshot schema, constraints, FKs and idempotent backfill
+ok 2164 - 073 keeps snapshot schema, constraints, FKs and idempotent backfill
+  ---
+  duration_ms: 1.428671
+  ...
+# Subtest: 073 enables server-only RLS and revokes client table and sequence access
+ok 2165 - 073 enables server-only RLS and revokes client table and sequence access
+  ---
+  duration_ms: 0.596967
+  ...
+# Subtest: normalizes camel and snake rows to the same immutable contract
+ok 2166 - normalizes camel and snake rows to the same immutable contract
+  ---
+  duration_ms: 15.37816
+  ...
+# Subtest: resource requirements are deterministic and do not mutate input
+ok 2167 - resource requirements are deterministic and do not mutate input
+  ---
+  duration_ms: 0.763182
+  ...
+# Subtest: specific itinerant requirement needs a valid id in persisted rows
+ok 2168 - specific itinerant requirement needs a valid id in persisted rows
+  ---
+  duration_ms: 0.742021
+  ...
+# Subtest: unknown versions are rejected
+ok 2169 - unknown versions are rejected
+  ---
+  duration_ms: 0.45565
+  ...
+# Subtest: fingerprints are invariant to input order and change with semantics
+ok 2170 - fingerprints are invariant to input order and change with semantics
+  ---
+  duration_ms: 1.873314
+  ...
+# Subtest: batch validation is atomic and sorted
+ok 2171 - batch validation is atomic and sorted
+  ---
+  duration_ms: 1.979841
+  ...
+# Subtest: index is runtime read-only and rejects duplicate persisted snapshots
+ok 2172 - index is runtime read-only and rejects duplicate persisted snapshots
+  ---
+  duration_ms: 0.661973
+  ...
+# Subtest: duplicate quantity rows are order invariant and keep the strongest requirement
+ok 2173 - duplicate quantity rows are order invariant and keep the strongest requirement
+  ---
+  duration_ms: 0.358117
+  ...
+# Subtest: effective dependency and specific team semantics are canonicalized
+ok 2174 - effective dependency and specific team semantics are canonicalized
+  ---
+  duration_ms: 0.517491
+  ...
+# Subtest: plan creation validates and persists the complete snapshot before dependent initialization
+ok 2175 - plan creation validates and persists the complete snapshot before dependent initialization
+  ---
+  duration_ms: 1.409212
+  ...
+# Subtest: contestant auto-create reads the daily snapshot and compensates on failure
+ok 2176 - contestant auto-create reads the daily snapshot and compensates on failure
+  ---
+  duration_ms: 0.289796
+  ...
+# Subtest: daily task creation inherits operational values from the plan snapshot
+ok 2177 - daily task creation inherits operational values from the plan snapshot
+  ---
+  duration_ms: 0.39426
+  ...
+# Subtest: ad-hoc initialization is explicit and cannot initialize an empty or missing plan catalog
+ok 2178 - ad-hoc initialization is explicit and cannot initialize an empty or missing plan catalog
+  ---
+  duration_ms: 0.266612
+  ...
+# Subtest: buildEngineInput treats snapshots as hard input and never reads global templates
+ok 2179 - buildEngineInput treats snapshots as hard input and never reads global templates
+  ---
+  duration_ms: 0.423122
+  ...
+# Subtest: the EngineInput task path uses snapshot dependencies, resources, duration and location
+ok 2180 - the EngineInput task path uses snapshot dependencies, resources, duration and location
+  ---
+  duration_ms: 0.334972
+  ...
+# Subtest: manual blocks explicitly extend the plan snapshot before direct insertion
+ok 2181 - manual blocks explicitly extend the plan snapshot before direct insertion
+  ---
+  duration_ms: 0.319469
+  ...
+# Subtest: 074 creates the versioned per-plan snapshot without a destructive template FK
+ok 2182 - 074 creates the versioned per-plan snapshot without a destructive template FK
+  ---
+  duration_ms: 1.320261
+  ...
+# Subtest: 074 backfills the complete legacy catalog idempotently
+ok 2183 - 074 backfills the complete legacy catalog idempotently
+  ---
+  duration_ms: 0.400709
+  ...
+# Subtest: 074 is server-only and protects table and sequence
+ok 2184 - 074 is server-only and protects table and sequence
+  ---
+  duration_ms: 0.424233
+  ...
+# Subtest: Drizzle schema mirrors the migration constraints and omits a stored fingerprint
+ok 2185 - Drizzle schema mirrors the migration constraints and omits a stored fingerprint
+  ---
+  duration_ms: 0.4145
+  ...
+1..2185
+# tests 2201
+# suites 8
+# pass 2199
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 166153.637479
