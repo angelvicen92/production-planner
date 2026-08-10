@@ -10,6 +10,7 @@ import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
 import { resolveAssignedResourceMealBreaks } from "./assignedResourceMealBreaks";
 import { resolveAssignedItinerantUnitMealBreaks } from "./assignedItinerantUnitMealBreaks";
+import { resolveFlexibleOperationalMealPolicies } from "./flexibleOperationalMealPolicies";
 import {
   projectEngineInputCoachRouteTransitions,
   resolveEngineInputCoachRouteTransitions,
@@ -65,6 +66,7 @@ export type EngineInputPreflightReasonCode =
   | "UNREPRESENTABLE_SPACE_LOCK"
   | "UNREPRESENTABLE_TIME_LOCK"
   | "UNSUPPORTED_BREAK_SCOPE"
+  | "UNSUPPORTED_OPERATIONAL_MEAL_POLICY"
   | "UNSUPPORTED_COACH_ROUTE_TRANSITION"
   | "UNSUPPORTED_COACH_RESOURCE_MAPPING"
   | "UNSUPPORTED_LOCK_TYPE"
@@ -205,7 +207,7 @@ const SET_ARRAY_KEYS = new Set([
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
   "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
-  "roundSynchronizations",
+  "roundSynchronizations", "operationalMealPolicies", "planResourceItemIds",
 ]);
 const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder"]);
 
@@ -325,6 +327,7 @@ function sourceProjection(input: EngineInput): unknown {
     actualMealEnd: input.actualMealEnd,
     globalHardBreaks: input.globalHardBreaks,
     protectedBreaks: input.protectedBreaks?.map((entry) => ({ ...entry, label: undefined })),
+    operationalMealPolicies: input.operationalMealPolicies,
     contestantMealDurationMinutes: input.contestantMealDurationMinutes,
     contestantMealMaxSimultaneous: input.contestantMealMaxSimultaneous,
     mealTaskTemplateId: input.mealTaskTemplateId,
@@ -438,6 +441,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
   const resourceMealTaskIds = new Set(input.tasks.filter(task=>task.breakKind==="resource_meal").map(task=>task.id));
   const resourceMeals = resolveAssignedResourceMealBreaks(input);
+  const operationalMealPolicies = resolveFlexibleOperationalMealPolicies(input);
   const setupPoliciesValue = (input as unknown as Record<string, unknown>).setupPolicies;
   const setupPoliciesPresent = Object.prototype.hasOwnProperty.call(
     input as unknown as Record<string, unknown>,
@@ -499,6 +503,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   };
 
   for (const defect of flexibleParticipantMeals.defects) addIssue(defect.code, "task", defect.taskId, `tasks.${defect.taskId}.participantMeal`, "Flexible participant meal task cannot be represented exactly.", defect.details);
+  for (const policy of operationalMealPolicies) if (policy.status === "UNSUPPORTED") addIssue(
+    "UNSUPPORTED_OPERATIONAL_MEAL_POLICY", "break", policy.id || "missing", `operationalMealPolicies.${policy.id || "missing"}`,
+    "Flexible operational meal policy cannot be represented exactly.", { defects: policy.defects, resourceIds: policy.resourceIds, spaceIds: policy.spaceIds, window: policy.window, duration: policy.duration },
+  );
 
   addIdentity("plan", input.planId, "planId", true);
 
@@ -534,6 +542,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("plan-resource", resource.id, `planResourceItems.${resource.id}.id`, true);
     addIdentity("resource-item", resource.resourceItemId, `planResourceItems.${resource.id}.resourceItemId`, true);
     addIdentity("resource-type", resource.typeId, `planResourceItems.${resource.id}.typeId`);
+  });
+  (input.operationalMealPolicies ?? []).forEach((policy, index) => {
+    addIdentity("break", policy.id, `operationalMealPolicies.${index}.id`, true);
+    policy.planResourceItemIds?.forEach((id) => addIdentity("plan-resource", id, `operationalMealPolicies.${index}.planResourceItemIds`));
+    policy.spaceIds?.forEach((id) => addIdentity("space", id, `operationalMealPolicies.${index}.spaceIds`));
   });
   const runtimeInput = input as unknown as Record<string, unknown>;
   const coachMappingPresent = Object.prototype.hasOwnProperty.call(runtimeInput, "vocalCoachPlanResourceItemIdByContestantId");
@@ -592,6 +605,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
   input.tasks.forEach((task) => { if (isPositiveInteger(task.spaceId)) referencedSpaceIds.add(String(task.spaceId)); });
   input.protectedBreaks?.forEach((entry) => { if (entry.spaceId != null) referencedSpaceIds.add(String(entry.spaceId)); });
+  input.operationalMealPolicies?.flatMap((policy) => policy.spaceIds ?? []).forEach((id) => referencedSpaceIds.add(String(id)));
   if (input.actualMeal?.spaceId != null) referencedSpaceIds.add(String(input.actualMeal.spaceId));
   if (input.transportSpaceId != null) referencedSpaceIds.add(String(input.transportSpaceId));
   if (input.transportSettings?.transportSpaceId != null) referencedSpaceIds.add(String(input.transportSettings.transportSpaceId));
@@ -1343,6 +1357,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   };
   effectiveTaskResourceAssignments.assignments.forEach((assignment) => assignment.effectiveResourceIds
     .forEach((id) => requireResource(id, assignment.taskId)));
+  operationalMealPolicies.filter((policy) => policy.status === "SUPPORTED").forEach((policy) => policy.resourceIds.forEach((id) => requireResource(id)));
   coachRouteTransitionResolution.routes.forEach((route) => {
     requireResource(route.coachPlanResourceItemId);
   });
@@ -1455,8 +1470,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       });
     }
   };
-  if ((input.mealMode === "flexible_meal_window" || input.mealWindow || input.mealWindowStart || input.mealWindowEnd) && flexibleParticipantMeals.obligations.length === 0) {
-    addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "mealWindow", "Flexible meal window cannot map exactly to a fixed protected meal.", { scope: "flexible-window" });
+  if ((input.mealMode === "flexible_meal_window" || input.mealWindow || input.mealWindowStart || input.mealWindowEnd)
+    && flexibleParticipantMeals.obligations.length === 0 && operationalMealPolicies.length === 0) {
+    addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "mealWindow", "Flexible meal window has no exact participant or operational meal obligation.", { scope: "flexible-window" });
   }
   if (input.actualMeal) classifyBreak(input.actualMeal, "actualMeal", true);
   input.protectedBreaks?.forEach((entry) => classifyBreak(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
@@ -1551,7 +1567,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const breakCount = concreteMeals.length + nonConcreteProtectedBreakCount + scopedActualMealCount
     + (input.globalHardBreaks?.length ?? 0) + flexibleMealCount
     + (input.contestantMealDurationMinutes != null || input.contestantMealMaxSimultaneous != null ? 1 : 0)
-    + mapKeys(input.spaceMealBreakMinutesByZoneId).length + taskBreakCount;
+    + mapKeys(input.spaceMealBreakMinutesByZoneId).length + operationalMealPolicies.length + taskBreakCount;
   const participantScopedMealCount = participantMeals.meals.length;
   const supportedParticipantScopedMealCount = participantMeals.meals.filter((meal) => meal.status === "SUPPORTED").length;
   const unsupportedParticipantScopedMealCount = participantScopedMealCount - supportedParticipantScopedMealCount;

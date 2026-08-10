@@ -248,6 +248,18 @@ export interface EngineInputCoachRouteTransitionInput {
   minutes: number;
 }
 
+export interface EngineInputOperationalMealPolicyInput {
+  /** Stable identity of one operational meal obligation. */
+  id: string;
+  /** Flexible window selected from effective day configuration. */
+  window: TimeWindow;
+  durationMinutes: number;
+  /** IDs from the plan_resource_items snapshot; never itinerant-unit aliases. */
+  planResourceItemIds: number[];
+  /** Optional physical spaces blocked by the same single meal obligation. */
+  spaceIds?: number[];
+}
+
 export interface EngineInput {
   planId: number;
   /** Derived from the authoritative per-plan task-template snapshot catalog. */
@@ -268,6 +280,8 @@ export interface EngineInput {
   roundSynchronizations?: EngineInputRoundSynchronizationInput[];
   /** Directional hard travel time for one concrete coach between two spaces. */
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
+  /** Flexible operational meals scoped by physical resources/spaces. */
+  operationalMealPolicies?: EngineInputOperationalMealPolicyInput[];
   workDay: TimeWindow;
   /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
   mealMode?: "global_hard_break" | "flexible_meal_window";

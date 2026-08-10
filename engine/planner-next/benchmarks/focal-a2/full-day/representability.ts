@@ -133,10 +133,17 @@ function runScopedMealPolicyProbe(expansion: ExpandedCanonicalFullA2Template): R
   const adapterInput = createSupportedEngineInputAdapterFixture();
   adapterInput.mealMode = "flexible_meal_window";
   adapterInput.mealWindow = { ...config.effectiveWindow };
-  adapterInput.spaceMealBreakMinutesByZoneId = { 401: config.operational.defaultDurationMinutes };
+  adapterInput.operationalMealPolicies = [
+    { id: "operational-space-meal", window: { ...config.effectiveWindow }, durationMinutes: config.operational.defaultDurationMinutes, planResourceItemIds: [504], spaceIds: [301] },
+    { id: "operational-reality-meal", window: { ...config.effectiveWindow }, durationMinutes: config.operational.realityDurationMinutes, planResourceItemIds: [502, 503], spaceIds: [] },
+  ];
   const adapterSnapshot = structuredClone(adapterInput);
   const enginePreflight = preflightEngineInputForPlannerNext(adapterInput);
   const adapted = adaptEngineInputToPlannerNextProblem(adapterInput);
+  const projectedPolicies = adapted.status === "SUPPORTED" ? adapted.problem.operationalMealPolicies ?? [] : [];
+  const projectedSpaceMeal = projectedPolicies.find(({ id }) => id === "break:operational-space-meal");
+  const projectedRealityMeal = projectedPolicies.find(({ id }) => id === "break:operational-reality-meal");
+
   const problem = spaceMealScenario();
   const mealSpace = problem.spaces.find(({ id }) => id === "meal-room")!;
   problem.spaces.push({ id: "cross-meal-room", availability: [{ start: 600, end: 660 }] });
@@ -153,7 +160,7 @@ function runScopedMealPolicyProbe(expansion: ExpandedCanonicalFullA2Template): R
   const validationControlProblem = { ...validationBase, spaces: validationSpaces.map((space) => space.id === "meal-room" ? { id: space.id, availability: space.availability } : space) };
   const validationControl = validatePlan(validationControlProblem, [crossSpaceTask], [], []);
   const validationWithMeal = validatePlan(validationBase, [crossSpaceTask], [], [meal]);
-  const projectedSpace = adapted.status === "SUPPORTED" ? adapted.problem.spaces.find(({ id }) => id === "space:301") : undefined;
+
   const fixedMealInput = createSupportedEngineInputAdapterFixture();
   fixedMealInput.protectedBreaks = [{ id: "reality-fixed-meal", kind: "meal", itinerantTeamId: 71, start: "13:00", end: "14:15" }];
   const fixedMeals = resolveAssignedItinerantUnitMealBreaks(fixedMealInput);
@@ -161,34 +168,31 @@ function runScopedMealPolicyProbe(expansion: ExpandedCanonicalFullA2Template): R
   const fixedRealityMealSupported = fixedMeals.length === 1 && fixedMeal?.status === "SUPPORTED";
   const fixedRealityMealHasInterval = fixedMeal?.interval.start === 780 && fixedMeal.interval.end === 855;
   const fixedRealityMealHasFlexibleWindowContract = fixedMeal !== undefined && ("window" in fixedMeal || "duration" in fixedMeal);
-  const recompositionInput = createSupportedEngineInputAdapterFixture();
-  recompositionInput.protectedBreaks = [71, 72, 73].map((itinerantTeamId) => ({ id: `reality-meal-${itinerantTeamId}`, kind: "meal" as const, itinerantTeamId, start: "13:00", end: "14:15" }));
-  const recompositionMeals = resolveAssignedItinerantUnitMealBreaks(recompositionInput);
-  const recompositionAliasMealCount = recompositionMeals.filter(({ status }) => status === "SUPPORTED").length;
-  const flexibleRealityResourceMealRepresentable = fixedRealityMealSupported && fixedRealityMealHasInterval && fixedRealityMealHasFlexibleWindowContract;
-  const recompositionDoesNotDuplicateMeal = recompositionAliasMealCount === 1 && new Set(recompositionMeals.map(({ itinerantUnitId }) => itinerantUnitId)).size === 1;
+
+  const adapterProjectsFlexibleSpaceMeal = projectedSpaceMeal?.duration === 75
+    && projectedSpaceMeal.window.start === 780 && projectedSpaceMeal.window.end === 990
+    && projectedSpaceMeal.spaceIds.join() === "space:301" && projectedSpaceMeal.resourceIds.join() === "plan-resource:504";
+  const flexibleRealityResourceMealRepresentable = projectedRealityMeal?.duration === 75
+    && projectedRealityMeal.window.start === 780 && projectedRealityMeal.window.end === 990
+    && projectedRealityMeal.spaceIds.length === 0
+    && projectedRealityMeal.resourceIds.join() === "plan-resource:502,plan-resource:503";
+  const recompositionAliasMealCount = projectedPolicies.filter(({ id }) => id === "break:operational-reality-meal").length;
+  const recompositionDoesNotDuplicateMeal = expansion.itinerantUnits.length > 1 && recompositionAliasMealCount === 1;
+
   return {
     effectiveWindowPresent: config.effectiveWindow.start === "13:00" && config.effectiveWindow.end === "16:30",
     durationPresent: config.operational.defaultDurationMinutes === 75 && config.operational.realityDurationMinutes === 75,
     spaceMealPolicySourceRepresentable: "mealPolicy" in mealSpace && mealSpace.mealPolicy?.duration === 20,
     engineInputPreflightSupported: enginePreflight.status === "SUPPORTED",
-    adapterProjectsFlexibleSpaceMeal: projectedSpace?.mealPolicy?.duration === 75 && projectedSpace.mealPolicy.window.start === 780 && projectedSpace.mealPolicy.window.end === 990,
+    adapterProjectsFlexibleSpaceMeal,
     assignedMealResourceHasOwnSpace: problem.resources.find(({ id }) => id === "assigned-meal-resource")?.assignedSpaceId === "meal-room",
-    ownSpaceControlPlaceableWithoutMeal,
-    ownSpacePlaceableWithMeal,
-    crossSpaceControlPlaceableWithoutMeal,
-    crossSpacePlaceableWithMeal,
-    validationControlHardValid: validationControl.hardValid,
-    validationWithMealHardValid: validationWithMeal.hardValid,
+    ownSpaceControlPlaceableWithoutMeal, ownSpacePlaceableWithMeal, crossSpaceControlPlaceableWithoutMeal, crossSpacePlaceableWithMeal,
+    validationControlHardValid: validationControl.hardValid, validationWithMealHardValid: validationWithMeal.hardValid,
     spaceMealBlocksOwnSpace: ownSpaceControlPlaceableWithoutMeal && !ownSpacePlaceableWithMeal,
     spaceMealBlocksAssignedResourcesAcrossOtherSpaces: crossSpaceControlPlaceableWithoutMeal && !crossSpacePlaceableWithMeal,
     validatorRejectsAssignedResourceWorkDuringMeal: validationControl.hardValid && !validationWithMeal.hardValid,
-    fixedRealityMealSupported,
-    fixedRealityMealHasInterval,
-    fixedRealityMealHasFlexibleWindowContract,
-    recompositionAliasMealCount,
-    flexibleRealityResourceMealRepresentable,
-    recompositionDoesNotDuplicateMeal,
+    fixedRealityMealSupported, fixedRealityMealHasInterval, fixedRealityMealHasFlexibleWindowContract, recompositionAliasMealCount,
+    flexibleRealityResourceMealRepresentable, recompositionDoesNotDuplicateMeal,
     participantSodexoIndependent: expansion.tasks.filter(({ type }) => type === "SODEXO" && expansion.effectiveConfiguration.meals.participant.independentFromOperationalMeal).length === expansion.participants.length,
     deterministic: enginePreflight.sourceFingerprint === preflightEngineInputForPlannerNext(adapterInput).sourceFingerprint,
     inputImmutable: JSON.stringify(adapterInput) === JSON.stringify(adapterSnapshot),

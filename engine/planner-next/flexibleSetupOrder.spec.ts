@@ -72,13 +72,12 @@ test("invalid flexible setup contracts are rejected before adaptation", () => {
   assert.equal(preflightEngineInputForPlannerNext(offGrid).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
 });
 
-test("full A2 retains only scoped meal blockers after transport support", () => {
+test("full A2 retains only Planner Next meal exclusivity after flexible scoped meal projection", () => {
   const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));
-  assert.equal(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"), false);
+  assert.equal(analysis.implementationBlockers.some((item) => item.code === "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED"), false);
   assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [
-    "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
     "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
   ]);
-  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED");
-  assert.equal(analysis.nextImplementationBlocker?.layer, "ENGINE_INPUT");
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.layer, "PLANNER_NEXT");
 });

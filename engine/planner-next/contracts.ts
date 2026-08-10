@@ -137,6 +137,7 @@ export interface PlannerNextProblem {
   participantMeals?: ParticipantMealObligation[];
   participantMealCapacity?: { maxSimultaneous: number };
   resourceMeals?: ResourceMealBreak[];
+  operationalMealPolicies?: OperationalMealPolicy[];
   itinerantUnitMeals?: ItinerantUnitMealBreak[];
   transportPolicy?: {
     arrival: TransportGroupingPolicy;
@@ -157,6 +158,15 @@ export interface ScheduledItinerantUnitMeal { id:string; itinerantUnitId:string;
 
 export interface ResourceMealBreak { id:string; sourceTaskId:string; resourceIds:string[]; interval:Window; status:"pending"|"interrupted"|"done"|"in_progress" }
 export interface ScheduledResourceMeal { id:string; sourceTaskId:string; resourceIds:string[]; start:Minute; end:Minute; duration:Minute }
+
+/** One flexible operational pause. Physical resources keep this identity across recomposition. */
+export interface OperationalMealPolicy {
+  id: string;
+  window: Window;
+  duration: Minute;
+  resourceIds: string[];
+  spaceIds: string[];
+}
 
 export interface ParticipantMealObligation {
   id: string;

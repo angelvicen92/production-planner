@@ -176,10 +176,19 @@ test("full A2 leaves transport behind and retains only scoped meal blockers", ()
     ),
     false,
   );
+  assert.equal(
+    analysis.implementationBlockers.some(
+      (item) =>
+        item.code === "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
+    ),
+    false,
+  );
   assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [
-    "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
     "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
   ]);
-  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED");
-  assert.equal(analysis.nextImplementationBlocker?.layer, "ENGINE_INPUT");
+  assert.equal(
+    analysis.nextImplementationBlocker?.code,
+    "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+  );
+  assert.equal(analysis.nextImplementationBlocker?.layer, "PLANNER_NEXT");
 });

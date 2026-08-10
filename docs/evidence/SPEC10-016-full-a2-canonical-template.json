@@ -1233,28 +1233,6 @@
   "requiredCreationInputBlockers": [],
   "implementationBlockers": [
     {
-      "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-      "layer": "ENGINE_INPUT",
-      "affectedRule": "comida operativa scoped y Reality a través de recomposición",
-      "canonicalIds": [
-        "itinerant.reality-unit-a.C01.reality-plato",
-        "itinerant.reality-unit-a.C08.reality-plato",
-        "itinerant.reality-unit-a.C09.reality-influencer",
-        "itinerant.reality-unit-a.C19.reality-corner-music",
-        "itinerant.reality-unit-b.C05.reality-plato",
-        "itinerant.reality-unit-b.C10.reality-manzano",
-        "itinerant.reality-unit-b.C17.reality-hall",
-        "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
-        "itinerant.reality-unit-combined.C06.reality-hall",
-        "itinerant.reality-unit-combined.C11.reality-buggy",
-        "itinerant.reality-unit-combined.C12.reality-control-eva",
-        "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
-      ],
-      "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
-      "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
-      "implementationRank": 2
-    },
-    {
       "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
       "layer": "PLANNER_NEXT",
       "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
@@ -1274,26 +1252,22 @@
     }
   ],
   "nextImplementationBlocker": {
-    "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-    "layer": "ENGINE_INPUT",
-    "affectedRule": "comida operativa scoped y Reality a través de recomposición",
+    "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+    "layer": "PLANNER_NEXT",
+    "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
     "canonicalIds": [
-      "itinerant.reality-unit-a.C01.reality-plato",
-      "itinerant.reality-unit-a.C08.reality-plato",
-      "itinerant.reality-unit-a.C09.reality-influencer",
-      "itinerant.reality-unit-a.C19.reality-corner-music",
-      "itinerant.reality-unit-b.C05.reality-plato",
-      "itinerant.reality-unit-b.C10.reality-manzano",
-      "itinerant.reality-unit-b.C17.reality-hall",
-      "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
-      "itinerant.reality-unit-combined.C06.reality-hall",
-      "itinerant.reality-unit-combined.C11.reality-buggy",
-      "itinerant.reality-unit-combined.C12.reality-control-eva",
-      "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
+      "cam-2",
+      "cam-3",
+      "cam-4",
+      "coach-jose-maria",
+      "coach-lucia",
+      "eva",
+      "son-1",
+      "son-2"
     ],
-    "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
-    "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
-    "implementationRank": 2
+    "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
+    "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
+    "implementationRank": 3
   },
   "participantAvailabilityProbe": {
     "sourceConfigurationPresent": true,
@@ -1332,8 +1306,8 @@
     "effectiveWindowPresent": true,
     "durationPresent": true,
     "spaceMealPolicySourceRepresentable": true,
-    "engineInputPreflightSupported": false,
-    "adapterProjectsFlexibleSpaceMeal": false,
+    "engineInputPreflightSupported": true,
+    "adapterProjectsFlexibleSpaceMeal": true,
     "assignedMealResourceHasOwnSpace": true,
     "ownSpaceControlPlaceableWithoutMeal": true,
     "ownSpacePlaceableWithMeal": false,
@@ -1347,9 +1321,9 @@
     "fixedRealityMealSupported": true,
     "fixedRealityMealHasInterval": true,
     "fixedRealityMealHasFlexibleWindowContract": false,
-    "recompositionAliasMealCount": 3,
-    "flexibleRealityResourceMealRepresentable": false,
-    "recompositionDoesNotDuplicateMeal": false,
+    "recompositionAliasMealCount": 1,
+    "flexibleRealityResourceMealRepresentable": true,
+    "recompositionDoesNotDuplicateMeal": true,
     "participantSodexoIndependent": true,
     "deterministic": true,
     "inputImmutable": true
@@ -1473,28 +1447,6 @@
       "requiredCreationInputs": [],
       "implementationBlockers": [
         {
-          "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-          "layer": "ENGINE_INPUT",
-          "affectedRule": "comida operativa scoped y Reality a través de recomposición",
-          "canonicalIds": [
-            "itinerant.reality-unit-a.C01.reality-plato",
-            "itinerant.reality-unit-a.C08.reality-plato",
-            "itinerant.reality-unit-a.C09.reality-influencer",
-            "itinerant.reality-unit-a.C19.reality-corner-music",
-            "itinerant.reality-unit-b.C05.reality-plato",
-            "itinerant.reality-unit-b.C10.reality-manzano",
-            "itinerant.reality-unit-b.C17.reality-hall",
-            "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
-            "itinerant.reality-unit-combined.C06.reality-hall",
-            "itinerant.reality-unit-combined.C11.reality-buggy",
-            "itinerant.reality-unit-combined.C12.reality-control-eva",
-            "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
-          ],
-          "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
-          "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
-          "implementationRank": 2
-        },
-        {
           "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
           "layer": "PLANNER_NEXT",
           "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
@@ -1515,28 +1467,6 @@
       ],
       "blockers": [
         {
-          "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-          "layer": "ENGINE_INPUT",
-          "affectedRule": "comida operativa scoped y Reality a través de recomposición",
-          "canonicalIds": [
-            "itinerant.reality-unit-a.C01.reality-plato",
-            "itinerant.reality-unit-a.C08.reality-plato",
-            "itinerant.reality-unit-a.C09.reality-influencer",
-            "itinerant.reality-unit-a.C19.reality-corner-music",
-            "itinerant.reality-unit-b.C05.reality-plato",
-            "itinerant.reality-unit-b.C10.reality-manzano",
-            "itinerant.reality-unit-b.C17.reality-hall",
-            "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
-            "itinerant.reality-unit-combined.C06.reality-hall",
-            "itinerant.reality-unit-combined.C11.reality-buggy",
-            "itinerant.reality-unit-combined.C12.reality-control-eva",
-            "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
-          ],
-          "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
-          "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
-          "implementationRank": 2
-        },
-        {
           "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
           "layer": "PLANNER_NEXT",
           "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
@@ -1556,26 +1486,22 @@
         }
       ],
       "nextImplementationBlocker": {
-        "code": "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED",
-        "layer": "ENGINE_INPUT",
-        "affectedRule": "comida operativa scoped y Reality a través de recomposición",
+        "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
+        "layer": "PLANNER_NEXT",
+        "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
         "canonicalIds": [
-          "itinerant.reality-unit-a.C01.reality-plato",
-          "itinerant.reality-unit-a.C08.reality-plato",
-          "itinerant.reality-unit-a.C09.reality-influencer",
-          "itinerant.reality-unit-a.C19.reality-corner-music",
-          "itinerant.reality-unit-b.C05.reality-plato",
-          "itinerant.reality-unit-b.C10.reality-manzano",
-          "itinerant.reality-unit-b.C17.reality-hall",
-          "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
-          "itinerant.reality-unit-combined.C06.reality-hall",
-          "itinerant.reality-unit-combined.C11.reality-buggy",
-          "itinerant.reality-unit-combined.C12.reality-control-eva",
-          "itinerant.reality-unit-combined.C13.alfombra-roja-eva"
+          "cam-2",
+          "cam-3",
+          "cam-4",
+          "coach-jose-maria",
+          "coach-lucia",
+          "eva",
+          "son-1",
+          "son-2"
         ],
-        "operationalExplanation": "El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición.",
-        "semanticLoss": "La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.",
-        "implementationRank": 2
+        "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
+        "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
+        "implementationRank": 3
       },
       "participantAvailabilityProbe": {
         "sourceConfigurationPresent": true,
@@ -1614,8 +1540,8 @@
         "effectiveWindowPresent": true,
         "durationPresent": true,
         "spaceMealPolicySourceRepresentable": true,
-        "engineInputPreflightSupported": false,
-        "adapterProjectsFlexibleSpaceMeal": false,
+        "engineInputPreflightSupported": true,
+        "adapterProjectsFlexibleSpaceMeal": true,
         "assignedMealResourceHasOwnSpace": true,
         "ownSpaceControlPlaceableWithoutMeal": true,
         "ownSpacePlaceableWithMeal": false,
@@ -1629,9 +1555,9 @@
         "fixedRealityMealSupported": true,
         "fixedRealityMealHasInterval": true,
         "fixedRealityMealHasFlexibleWindowContract": false,
-        "recompositionAliasMealCount": 3,
-        "flexibleRealityResourceMealRepresentable": false,
-        "recompositionDoesNotDuplicateMeal": false,
+        "recompositionAliasMealCount": 1,
+        "flexibleRealityResourceMealRepresentable": true,
+        "recompositionDoesNotDuplicateMeal": true,
         "participantSodexoIndependent": true,
         "deterministic": true,
         "inputImmutable": true
