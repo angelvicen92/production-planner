@@ -45,6 +45,15 @@ jobs:
           from pathlib import Path
           path = Path('engine/planner-next/flexibleOperationalMealPolicy.spec.ts')
           text = path.read_text()
+          text = text.replace(
+            'import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";',
+            'import { createSpec10020FlexibleSetupOrderEngineInputFixture } from "./integration/engineInputAdapter.fixture";',
+            1,
+          ).replace(
+            'const input = createSupportedEngineInputAdapterFixture();',
+            'const input = createSpec10020FlexibleSetupOrderEngineInputFixture();',
+            1,
+          )
           old = '''  adapted.problem!.searchPolicy = "EXACT_CONSTRUCTIVE";\n  adapted.problem!.budget.maxBranchExpansions = Math.max(adapted.problem!.budget.maxBranchExpansions, 300000);\n  const execution = executePlannerNext(adapted.problem!);'''
           new = '''  const exactProblem = structuredClone(adapted.problem!);\n  exactProblem.searchPolicy = "EXACT_CONSTRUCTIVE";\n  exactProblem.budget.maxBranchExpansions = Math.max(exactProblem.budget.maxBranchExpansions, 300000);\n  const execution = executePlannerNext(exactProblem);'''
           if text.count(old) != 1:
