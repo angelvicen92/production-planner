@@ -1,5 +1,6 @@
 name: Regenerate Full A2 Evidence
 
+# Temporary one-shot workflow: refresh generated Full A2 Evidence, then delete itself.
 on:
   push:
     branches:
