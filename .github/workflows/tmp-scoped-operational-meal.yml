@@ -25,7 +25,22 @@ jobs:
           node-version: 20
           cache: npm
       - name: Apply implementation patch
-        run: python .github/tmp-scoped-operational-meal.py
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/tmp-scoped-operational-meal.py')
+          text = path.read_text()
+          text = text.replace(
+              "'''  return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals };'''",
+              "'''return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals };'''",
+          ).replace(
+              "'''  return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };'''",
+              "'''return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };'''",
+          )
+          path.write_text(text)
+          PY
+          python .github/tmp-scoped-operational-meal.py
       - name: Install dependencies
         run: npm ci
       - name: TypeScript check
