@@ -80,7 +80,12 @@ jobs:
           code=${PIPESTATUS[0]}
           set -e
           if [ "$code" -ne 0 ]; then
-            tail -n 800 /tmp/full-suite.log > .chatgpt-meal-contract.log
+            {
+              echo '=== FAILED TEST CONTEXT ==='
+              grep -n -B 35 -A 80 -E '^not ok |AssertionError|ERR_ASSERTION|ERR_TEST_FAILURE' /tmp/full-suite.log || true
+              echo '=== SUITE SUMMARY ==='
+              tail -n 40 /tmp/full-suite.log
+            } > .chatgpt-meal-contract.log
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -f .chatgpt-meal-contract.log
