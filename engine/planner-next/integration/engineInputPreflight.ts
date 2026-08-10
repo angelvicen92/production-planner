@@ -1452,10 +1452,12 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const mains = active.filter((task) => task.contestantId === participantId && task.plannerNextKind === "main");
     const vocals = active.filter((task) => task.contestantId === participantId && task.plannerNextKind === "vocal");
     const main = mains[0], vocal = vocals[0];
+    const mainDependencies = main
+      ? [...new Set(main.dependsOnTaskIds ?? (main.dependsOnTaskId != null ? [main.dependsOnTaskId] : []))]
+      : [];
     const exact = mains.length === 1 && vocals.length === 1 && main && vocal
-      && (main.dependsOnTaskIds ?? (main.dependsOnTaskId != null ? [main.dependsOnTaskId] : [])).length === 1
-      && (main.dependsOnTaskIds ?? [main.dependsOnTaskId!])[0] === vocal.id;
-    if (!exact) addIssue("UNSUPPORTED_TASK_ROLE", "participant", participantId, `participants.${participantId}.mainVocalPair`, "Each main participant requires exactly one vocal feeder and the main must depend exclusively on it.", { mainTaskIds: mains.map((task) => task.id), vocalTaskIds: vocals.map((task) => task.id) });
+      && mainDependencies.includes(vocal.id);
+    if (!exact) addIssue("UNSUPPORTED_TASK_ROLE", "participant", participantId, `participants.${participantId}.mainVocalPair`, "Each main participant requires exactly one vocal feeder and the main must depend on it; additional canonical prerequisites are allowed.", { mainTaskIds: mains.map((task) => task.id), vocalTaskIds: vocals.map((task) => task.id), mainDependencyTaskIds: mainDependencies });
   }
 
   const classifyBreak = (entry: ProtectedBreakInput, path: string, concreteMeal = false): void => {
