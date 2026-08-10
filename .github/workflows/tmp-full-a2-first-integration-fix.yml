@@ -1,0 +1,55 @@
+name: Full A2 first integration fix
+
+on:
+  push:
+    branches:
+      - optiplan/full-a2-first-execution
+    paths:
+      - .github/workflows/tmp-full-a2-first-integration-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: optiplan/full-a2-first-execution
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Patch stale main-vocal preflight and add regression
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('engine/planner-next/integration/engineInputPreflight.ts')
+          s=p.read_text()
+          old='''    const main = mains[0], vocal = vocals[0];\n    const exact = mains.length === 1 && vocals.length === 1 && main && vocal\n      && (main.dependsOnTaskIds ?? (main.dependsOnTaskId != null ? [main.dependsOnTaskId] : [])).length === 1\n      && (main.dependsOnTaskIds ?? [main.dependsOnTaskId!])[0] === vocal.id;\n    if (!exact) addIssue("UNSUPPORTED_TASK_ROLE", "participant", participantId, `participants.${participantId}.mainVocalPair`, "Each main participant requires exactly one vocal feeder and the main must depend exclusively on it.", { mainTaskIds: mains.map((task) => task.id), vocalTaskIds: vocals.map((task) => task.id) });'''
+          new='''    const main = mains[0], vocal = vocals[0];\n    const mainDependencies = main\n      ? [...new Set(main.dependsOnTaskIds ?? (main.dependsOnTaskId != null ? [main.dependsOnTaskId] : []))]\n      : [];\n    const exact = mains.length === 1 && vocals.length === 1 && main && vocal\n      && mainDependencies.includes(vocal.id);\n    if (!exact) addIssue("UNSUPPORTED_TASK_ROLE", "participant", participantId, `participants.${participantId}.mainVocalPair`, "Each main participant requires exactly one vocal feeder and the main must depend on it; additional canonical prerequisites are allowed.", { mainTaskIds: mains.map((task) => task.id), vocalTaskIds: vocals.map((task) => task.id), mainDependencyTaskIds: mainDependencies });'''
+          if old not in s: raise SystemExit('target preflight block not found')
+          p.write_text(s.replace(old,new))
+          q=Path('engine/planner-next/integration/engineInputPreflight.spec.ts')
+          t=q.read_text()
+          marker='''\ntest("full-A2 main/vocal relation allows additional canonical prerequisites", () => {\n  const value = createSupportedEngineInputAdapterFixture();\n  value.tasks.push({ id: 106, planId: value.planId, templateId: 906, status: "pending", durationOverrideMin: 10, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 303, zoneId: 403 });\n  value.tasks[0] = { ...value.tasks[0], dependsOnTaskIds: [102, 106] };\n  const result = preflightEngineInputForPlannerNext(value);\n  assert.equal(result.status, "SUPPORTED", JSON.stringify(result.issues));\n});\n'''
+          if 'full-A2 main/vocal relation allows additional canonical prerequisites' not in t:
+              q.write_text(t+marker)
+          PY
+      - name: Focused tests
+        run: npx tsx --test engine/planner-next/integration/engineInputPreflight.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts
+      - name: TypeScript check
+        run: npm run check
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          rm .github/workflows/tmp-full-a2-first-integration-fix.yml
+          git add engine/planner-next/integration/engineInputPreflight.ts engine/planner-next/integration/engineInputPreflight.spec.ts .github/workflows/tmp-full-a2-first-integration-fix.yml
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Allow Full A2 main prerequisites in EngineInput preflight"
+          git push origin HEAD:optiplan/full-a2-first-execution
