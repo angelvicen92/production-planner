@@ -12,6 +12,7 @@ import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
 import { resolveAssignedResourceMealBreaks } from "./assignedResourceMealBreaks";
 import { resolveAssignedItinerantUnitMealBreaks } from "./assignedItinerantUnitMealBreaks";
+import { resolveFlexibleOperationalMealPolicies } from "./flexibleOperationalMealPolicies";
 import {
   preflightEngineInputForPlannerNext,
   resolveProtectedTaskInterval,
@@ -82,6 +83,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     })),
     ...(problem.participantMeals ? { participantMeals: sorted(problem.participantMeals, (entry) => `${entry.participantId}\0${entry.sourceTaskId}`) } : {}),
     ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
+    ...(problem.operationalMealPolicies ? { operationalMealPolicies: sorted(problem.operationalMealPolicies, (entry) => entry.id).map((entry) => ({ ...entry, resourceIds: [...entry.resourceIds].sort(compare), spaceIds: [...entry.spaceIds].sort(compare) })) } : {}),
     ...(problem.itinerantUnitMeals ? { itinerantUnitMeals: sorted(problem.itinerantUnitMeals, entry=>entry.id) } : {}),
     ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
     ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
@@ -123,6 +125,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const participantMeals = resolveParticipantScopedMeals({ ...input, actualMeal: input.actualMeal&&linkedBreakIds.has(String(input.actualMeal.id))?undefined:input.actualMeal, protectedBreaks: input.protectedBreaks?.filter(entry=>!linkedBreakIds.has(String(entry.id))) });
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
   const resourceMealResolution = resolveAssignedResourceMealBreaks(input);
+  const operationalMealPolicies = resolveFlexibleOperationalMealPolicies(input);
   const itinerantUnitMeals = resolveAssignedItinerantUnitMealBreaks(input);
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
   const assignments = resolveEffectiveTaskResourceAssignments(input).assignments;
@@ -138,12 +141,16 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   }));
   const configuredCoachIds=new Set(Object.values(input.vocalCoachPlanResourceItemIdByContestantId??{}));
   const routeCoachIds = sourceCoachRouteTransitions.map((route) => route.coachPlanResourceItemId);
-  const mealResourceIds=new Set(resourceMealResolution.meals.flatMap(meal=>[...meal.resourceIds]));
+  const mealResourceIds=new Set([
+    ...resourceMealResolution.meals.flatMap(meal=>[...meal.resourceIds]),
+    ...operationalMealPolicies.flatMap((meal) => [...meal.resourceIds]),
+  ]);
   const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id)), routeCoachIds));
   const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(
     config.mainFlow.spaceId,
     sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId]),
     sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
+    operationalMealPolicies.flatMap((policy) => [...policy.spaceIds]),
   ));
   const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
 
@@ -264,6 +271,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     searchPolicy: config.searchPolicy,
     ...(flexibleParticipantMeals.obligations.length ? { participantMeals: flexibleParticipantMeals.obligations, participantMealCapacity: { maxSimultaneous: input.contestantMealMaxSimultaneous! } } : {}),
     ...(resourceMealResolution.meals.length ? { resourceMeals: resourceMealResolution.meals.map(meal=>({id:canonical("break",meal.breakId),sourceTaskId:canonical("task",meal.sourceTaskId),resourceIds:meal.resourceIds.map(id=>canonical("plan-resource",id)),interval:{...meal.minuteInterval},status:meal.taskStatus as "pending"|"interrupted"|"done"|"in_progress"})) } : {}),
+    ...(operationalMealPolicies.length ? { operationalMealPolicies: operationalMealPolicies.map((meal) => ({ id: canonical("break", meal.id), window: { ...meal.window }, duration: meal.duration, resourceIds: meal.resourceIds.map((id) => canonical("plan-resource", id)), spaceIds: meal.spaceIds.map((id) => canonical("space", id)) })) } : {}),
     ...(itinerantUnitMeals.length ? { itinerantUnitMeals: itinerantUnitMeals.map(meal=>({id:canonical("break",meal.breakId),itinerantUnitId:canonical("itinerant-team",meal.itinerantTeamId),interval:{...meal.interval}})) } : {}),
     ...(activeTasks.some((task) => task.plannerNextKind === "auxiliary") ? { auxiliaryPolicy: { participantPresencePreference: "OFF" as const } } : {}),
     ...(anchoredAccompaniments?.length ? { anchoredAccompaniments } : {}),

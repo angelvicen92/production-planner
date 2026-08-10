@@ -16,14 +16,13 @@ Todos los inputs de creación A2 conocidos para este benchmark están resueltos.
 
 Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
 
-- **ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED** (ENGINE_INPUT): El preflight de EngineInput rechaza la política flexible scoped antes de que el adaptador pueda proyectar una mealPolicy equivalente; los intervalos fijos por alias de unidad tampoco expresan una única obligación que siga a los recursos Reality durante la recomposición. Pérdida si se aproxima: La comida puede duplicarse por composición o no bloquear recursos asignados cuando trabajan en otro espacio.
 - **PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED** (PLANNER_NEXT): Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio. Pérdida si se aproxima: Un recurso podría trabajar durante su descanso operativo autorizado.
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=true y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED**.
+Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=true y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED**.
 
 ## No implementado
 
