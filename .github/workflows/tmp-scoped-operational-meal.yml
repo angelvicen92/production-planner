@@ -45,15 +45,11 @@ jobs:
           from pathlib import Path
           path = Path('engine/planner-next/flexibleOperationalMealPolicy.spec.ts')
           text = path.read_text()
-          text = text.replace(
-            'import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";',
-            'import { createSpec10020FlexibleSetupOrderEngineInputFixture } from "./integration/engineInputAdapter.fixture";',
-            1,
-          ).replace(
-            'const input = createSupportedEngineInputAdapterFixture();',
-            'const input = createSpec10020FlexibleSetupOrderEngineInputFixture();',
-            1,
-          )
+          fixture_old = '''  const input = createSupportedEngineInputAdapterFixture();\n  input.mealMode = "flexible_meal_window";'''
+          fixture_new = '''  const input = createSupportedEngineInputAdapterFixture();\n  input.tasks = input.tasks.filter((task) => task.id !== 105);\n  input.locks = input.locks.filter((lock) => lock.taskId !== 105);\n  input.mealMode = "flexible_meal_window";'''
+          if text.count(fixture_old) != 1:
+              raise RuntimeError(f'expected one base fixture block, found {text.count(fixture_old)}')
+          text = text.replace(fixture_old, fixture_new, 1)
           old = '''  adapted.problem!.searchPolicy = "EXACT_CONSTRUCTIVE";\n  adapted.problem!.budget.maxBranchExpansions = Math.max(adapted.problem!.budget.maxBranchExpansions, 300000);\n  const execution = executePlannerNext(adapted.problem!);'''
           new = '''  const exactProblem = structuredClone(adapted.problem!);\n  exactProblem.searchPolicy = "EXACT_CONSTRUCTIVE";\n  exactProblem.budget.maxBranchExpansions = Math.max(exactProblem.budget.maxBranchExpansions, 300000);\n  const execution = executePlannerNext(exactProblem);'''
           if text.count(old) != 1:
