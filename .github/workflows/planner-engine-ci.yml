@@ -1,44 +1,71 @@
 name: Planner Engine CI
 
 on:
-  push:
+  pull_request:
     branches:
-      - optiplan/full-a2-first-execution
+      - main
     paths:
+      - "engine/**"
+      - "docs/source/**"
+      - "docs/evidence/**"
+      - "docs/coverage/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/planner-engine-ci.yml"
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: planner-engine-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  full-a2-first-execution:
-    name: full-a2-first-execution
+  planner-engine-ci:
+    name: planner-engine-ci
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
-      - name: Checkout candidate branch
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: optiplan/full-a2-first-execution
-          fetch-depth: 0
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
-      - name: Run Full A2 first execution benchmark
-        run: npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts
+
+      - name: Full test suite
+        run: npm test
+
+      - name: Full A2 benchmark first run
+        run: |
+          npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-first.txt
+          cp docs/evidence/SPEC10-016-full-a2-canonical-template.json /tmp/SPEC10-016-full-a2-first.json
+          cp docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md /tmp/SPEC10-016-full-a2-first.md
+
+      - name: Full A2 benchmark second run
+        run: npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-second.txt
+
+      - name: Verify deterministic benchmark and generated artifacts
+        run: |
+          cmp /tmp/full-a2-first.txt /tmp/full-a2-second.txt
+          cmp /tmp/SPEC10-016-full-a2-first.json docs/evidence/SPEC10-016-full-a2-canonical-template.json
+          cmp /tmp/SPEC10-016-full-a2-first.md docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
+
+      - name: Verify generated Evidence is current
+        run: git diff --exit-code
+
+      - name: Diff hygiene
+        run: git diff --check
+
       - name: TypeScript check
         run: npm run check
-      - name: Restore canonical CI and commit Evidence
-        run: |
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/planner-engine-ci.yml
-          git add .github/workflows/planner-engine-ci.yml docs/evidence/A2-FULL-EXEC-001-first-execution.json
-          git diff --cached --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Record first Full A2 execution Evidence"
-          git push origin HEAD:optiplan/full-a2-first-execution
+
+      - name: Production build
+        run: npm run build
