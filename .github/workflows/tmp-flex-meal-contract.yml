@@ -73,7 +73,21 @@ jobs:
 
       - name: Full test suite
         if: steps.guard.outputs.skip != 'true'
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test 2>&1 | tee /tmp/full-suite.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -ne 0 ]; then
+            tail -n 800 /tmp/full-suite.log > .chatgpt-meal-contract.log
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -f .chatgpt-meal-contract.log
+            git commit -m 'chore: capture flexible meal contract failure'
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+            exit "$code"
+          fi
 
       - name: Production build
         if: steps.guard.outputs.skip != 'true'
