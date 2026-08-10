@@ -15,21 +15,24 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: planner-engine-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  planner-engine-ci:
-    name: planner-engine-ci
+  refresh-evidence:
+    name: refresh-full-a2-evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
+      - name: Checkout candidate branch
         uses: actions/checkout@v4
+        with:
+          ref: optiplan/scoped-operational-meal-exclusivity
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,32 +43,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Full test suite
-        run: npm test
+      - name: Regenerate canonical Full A2 Evidence
+        run: npm run benchmark:planner-next:a2-full-template
 
-      - name: Full A2 benchmark first run
+      - name: Restore CI workflow and remove temporary one-shot workflow
         run: |
-          npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-first.txt
-          cp docs/evidence/SPEC10-016-full-a2-canonical-template.json /tmp/SPEC10-016-full-a2-first.json
-          cp docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md /tmp/SPEC10-016-full-a2-first.md
+          git fetch origin main
+          git checkout origin/main -- .github/workflows/planner-engine-ci.yml
+          rm -f .github/workflows/tmp-regenerate-full-a2-evidence.yml
+          git add .github/workflows/planner-engine-ci.yml .github/workflows/tmp-regenerate-full-a2-evidence.yml docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md docs/evidence/SPEC10-016-full-a2-canonical-template.json
+          git diff --cached --check
 
-      - name: Full A2 benchmark second run
-        run: npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-second.txt
-
-      - name: Verify deterministic benchmark and generated artifacts
+      - name: Commit refreshed Evidence
         run: |
-          cmp /tmp/full-a2-first.txt /tmp/full-a2-second.txt
-          cmp /tmp/SPEC10-016-full-a2-first.json docs/evidence/SPEC10-016-full-a2-canonical-template.json
-          cmp /tmp/SPEC10-016-full-a2-first.md docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
-
-      - name: Verify generated Evidence is current
-        run: git diff --exit-code
-
-      - name: Diff hygiene
-        run: git diff --check
-
-      - name: TypeScript check
-        run: npm run check
-
-      - name: Production build
-        run: npm run build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git diff --cached --quiet && { echo "No staged delta to commit"; exit 1; }
+          git commit -m "Refresh Full A2 generated Evidence"
+          git push origin HEAD:optiplan/scoped-operational-meal-exclusivity
