@@ -50,6 +50,7 @@ jobs:
           if text.count(old) != 1:
               raise RuntimeError(f'expected one mutable adapted-problem test block, found {text.count(old)}')
           text = text.replace(old, new, 1).replace('validatePlan(adapted.problem!, result.scheduledTasks', 'validatePlan(exactProblem, result.scheduledTasks', 1)
+          text = text.replace('assert.equal(execution.result?.complete, true);', 'assert.equal(execution.result?.complete, true, JSON.stringify(execution.result?.evidence));', 1)
           path.write_text(text)
           PY
       - name: Install dependencies
