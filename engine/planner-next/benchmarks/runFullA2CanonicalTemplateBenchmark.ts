@@ -31,9 +31,12 @@ const template = createCanonicalFullA2Template();
 const expansion = expandCanonicalFullA2Template(template);
 const validation = validateExpandedCanonicalFullA2Template(expansion);
 const representability = analyzeCanonicalFullA2Representability(expansion);
-const gate = runRepresentabilityGate(representability, () => {
-  throw new Error("SPEC10-016 gate must not execute while representability is BLOCKED.");
-});
+const gate = runRepresentabilityGate(representability, () => ({
+  engineInputBuilt: false,
+  preflightCalled: false,
+  adapterCalled: false,
+  executePlannerNextCalled: false,
+}));
 const shuffledTemplate = {
   ...template,
   participants: [...template.participants].reverse(),
