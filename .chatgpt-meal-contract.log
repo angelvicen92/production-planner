@@ -1,793 +1,165 @@
-  ...
-# Subtest: evidence report diagnoses main flow gap worse
-ok 2030 - evidence report diagnoses main flow gap worse
-  ---
-  duration_ms: 0.294109
-  ...
-# Subtest: evidence report classifies simple scenario early exit as no-action
-ok 2031 - evidence report classifies simple scenario early exit as no-action
-  ---
-  duration_ms: 0.200284
-  ...
-# Subtest: evidence report serializes scenario identity and representative rejection action
-ok 2032 - evidence report serializes scenario identity and representative rejection action
-  ---
-  duration_ms: 0.179736
-  ...
-# Subtest: evidence report differentiates representative V4 worse action
-ok 2033 - evidence report differentiates representative V4 worse action
-  ---
-  duration_ms: 0.16071
-  ...
-# Subtest: PULL_SEGMENT_AFTER_GAP skips non-main-flow rows and finds next main-flow segment
-ok 2034 - PULL_SEGMENT_AFTER_GAP skips non-main-flow rows and finds next main-flow segment
-  ---
-  duration_ms: 1.213276
-  ...
-# Subtest: flowOrder ranks same-fit alternatives before later strategic tasks
-ok 2035 - flowOrder ranks same-fit alternatives before later strategic tasks
-  ---
-  duration_ms: 0.608476
-  ...
-# Subtest: exact-fit alternatives are tried before shorter alternatives
-ok 2036 - exact-fit alternatives are tried before shorter alternatives
-  ---
-  duration_ms: 0.457184
-  ...
-# Subtest: PULL_SEGMENT_AFTER_GAP does not include done, in-progress or locked tasks
-ok 2037 - PULL_SEGMENT_AFTER_GAP does not include done, in-progress or locked tasks
-  ---
-  duration_ms: 0.436135
-  ...
-# Subtest: resource validation allows explicit resource without overlap
-ok 2038 - resource validation allows explicit resource without overlap
-  ---
-  duration_ms: 0.280324
-  ...
-# Subtest: resource validation rejects explicit resource overlap
-ok 2039 - resource validation rejects explicit resource overlap
-  ---
-  duration_ms: 0.24094
-  ...
-# Subtest: anyOf x2 with five free resources resolves two deterministically
-ok 2040 - anyOf x2 with five free resources resolves two deterministically
-  ---
-  duration_ms: 0.255968
-  ...
-# Subtest: anyOf x2 with only one free resource rejects insufficient capacity
-ok 2041 - anyOf x2 with only one free resource rejects insufficient capacity
-  ---
-  duration_ms: 0.217777
-  ...
-# Subtest: ambiguous non-critical anyOf can place with warning
-ok 2042 - ambiguous non-critical anyOf can place with warning
-  ---
-  duration_ms: 0.316531
-  ...
-# Subtest: ambiguous critical anyOf rejects placement
-ok 2043 - ambiguous critical anyOf rejects placement
-  ---
-  duration_ms: 0.295021
-  ...
-# Subtest: resolved anyOf assignments are respected by later validation
-ok 2044 - resolved anyOf assignments are respected by later validation
-  ---
-  duration_ms: 0.249606
-  ...
-# Subtest: deterministic anyOf selection prefers less used, non-critical, then lower id
-ok 2045 - deterministic anyOf selection prefers less used, non-critical, then lower id
-  ---
-  duration_ms: 0.222005
-  ...
-# Subtest: gap closure placement accepts resolved anyOf instead of ambiguous blocker
-ok 2046 - gap closure placement accepts resolved anyOf instead of ambiguous blocker
-  ---
-  duration_ms: 0.259224
-  ...
-# Subtest: camera capacity validation allows within capacity and rejects overflow
-ok 2047 - camera capacity validation allows within capacity and rejects overflow
-  ---
-  duration_ms: 0.239868
-  ...
-# Subtest: canPlaceTaskAt no longer rejects deterministic resources as generic unsafe
-ok 2048 - canPlaceTaskAt no longer rejects deterministic resources as generic unsafe
-  ---
-  duration_ms: 0.184354
-  ...
-# Subtest: canPlaceTaskAt rejects moving a task after an already planned dependent
-ok 2049 - canPlaceTaskAt rejects moving a task after an already planned dependent
-  ---
-  duration_ms: 0.186689
-  ...
-# Subtest: summarizeGapClosureBlocker prioritizes concrete conflicts over generic messages
-ok 2050 - summarizeGapClosureBlocker prioritizes concrete conflicts over generic messages
-  ---
-  duration_ms: 0.157885
-  ...
-# Subtest: evidence report prints gap targeting proof fields
-ok 2051 - evidence report prints gap targeting proof fields
-  ---
-  duration_ms: 0.404926
-  ...
-# Subtest: compareV3AndV4Quality marks V4 better when continuity is not worse and score improves
-ok 2052 - compareV3AndV4Quality marks V4 better when continuity is not worse and score improves
-  ---
-  duration_ms: 1.813416
-  ...
-# Subtest: compareV3AndV4Quality marks V4 worse when it increases unplanned tasks
-ok 2053 - compareV3AndV4Quality marks V4 worse when it increases unplanned tasks
-  ---
-  duration_ms: 0.341979
-  ...
-# Subtest: buildV4GuidedInput reorders only pending task slots and preserves task objects and locks
-ok 2054 - buildV4GuidedInput reorders only pending task slots and preserves task objects and locks
-  ---
-  duration_ms: 6.615827
-  ...
-# Subtest: buildV4GuidedInput falls back safely without mainFlowSequence
-ok 2055 - buildV4GuidedInput falls back safely without mainFlowSequence
-  ---
-  duration_ms: 0.617033
-  ...
-# Subtest: improveMainFlowContinuity safely places an unplanned pending main-flow task inside an internal gap
-ok 2056 - improveMainFlowContinuity safely places an unplanned pending main-flow task inside an internal gap
-  ---
-  duration_ms: 9.064029
-  ...
-# Subtest: improveMainFlowContinuity returns the original plan when the only candidate is locked
-ok 2057 - improveMainFlowContinuity returns the original plan when the only candidate is locked
-  ---
-  duration_ms: 0.954943
-  ...
-# Subtest: V4 post optimizer reduces makespan with a hard-valid pending move
-ok 2058 - V4 post optimizer reduces makespan with a hard-valid pending move
-  ---
-  duration_ms: 21.830132
-  ...
-# Subtest: V4 post optimizer never moves done, in-progress or real locked tasks
-ok 2059 - V4 post optimizer never moves done, in-progress or real locked tasks
-  ---
-  duration_ms: 7.584215
-  ...
-# Subtest: normalizes the complete V1 heuristic set in BASIC mode
-ok 2060 - normalizes the complete V1 heuristic set in BASIC mode
-  ---
-  duration_ms: 17.174166
-  ...
-# Subtest: ADVANCED mode uses advanced values for mode-controlled heuristics
-ok 2061 - ADVANCED mode uses advanced values for mode-controlled heuristics
-  ---
-  duration_ms: 0.617113
-  ...
-# Subtest: transport grouping preserves the current direct 0..10 weight independently of edit mode
-ok 2062 - transport grouping preserves the current direct 0..10 weight independently of edit mode
-  ---
-  duration_ms: 0.844517
-  ...
-# Subtest: legacy fallbacks are normalized deterministically without mutating input
-ok 2063 - legacy fallbacks are normalized deterministically without mutating input
-  ---
-  duration_ms: 0.710437
-  ...
-# Subtest: output is deeply frozen
-ok 2064 - output is deeply frozen
-  ---
-  duration_ms: 0.672306
-  ...
-# Subtest: fingerprint is deterministic across equivalent grouping-zone order and duplicates
-ok 2065 - fingerprint is deterministic across equivalent grouping-zone order and duplicates
-  ---
-  duration_ms: 0.772793
-  ...
-# Subtest: provenance source does not change the configuration fingerprint
-ok 2066 - provenance source does not change the configuration fingerprint
-  ---
-  duration_ms: 1.052807
-  ...
-# Subtest: behavioral changes alter the configuration fingerprint
-ok 2067 - behavioral changes alter the configuration fingerprint
-  ---
-  duration_ms: 0.942801
-  ...
-# Subtest: active transport grouping requires the corresponding daily template snapshot identity
-ok 2068 - active transport grouping requires the corresponding daily template snapshot identity
-  ---
-  duration_ms: 1.034171
-  ...
-# Subtest: inactive transport directions may keep a null template identity
-ok 2069 - inactive transport directions may keep a null template identity
-  ---
-  duration_ms: 0.622012
-  ...
-# Subtest: numeric compatibility inputs are clamped to contract ranges
-ok 2070 - numeric compatibility inputs are clamped to contract ranges
-  ---
-  duration_ms: 0.577759
-  ...
-# Subtest: source/provenance change alone is not a semantic optimizer diff
-ok 2071 - source/provenance change alone is not a semantic optimizer diff
-  ---
-  duration_ms: 28.509487
-  ...
-# Subtest: diff order is canonical across mode, zone, heuristics, grouping, transport and near-hard
-ok 2072 - diff order is canonical across mode, zone, heuristics, grouping, transport and near-hard
-  ---
-  duration_ms: 1.517394
-  ...
-# Subtest: heuristic diff exposes basic, advanced and effective values without flattening authority
-ok 2073 - heuristic diff exposes basic, advanced and effective values without flattening authority
-  ---
-  duration_ms: 1.022389
-  ...
-# Subtest: contestant total span is visible in diff even though the legacy adapter still neutralizes it
-ok 2074 - contestant total span is visible in diff even though the legacy adapter still neutralizes it
-  ---
-  duration_ms: 0.727168
-  ...
-# Subtest: grouping zones compare canonical sets, not caller order or duplicates
-ok 2075 - grouping zones compare canonical sets, not caller order or duplicates
-  ---
-  duration_ms: 1.010528
-  ...
-# Subtest: legacy provenance is explicit but does not manufacture a semantic change
-ok 2076 - legacy provenance is explicit but does not manufacture a semantic change
-  ---
-  duration_ms: 0.799253
-  ...
-# Subtest: diff output is deeply frozen and inputs remain untouched
-ok 2077 - diff output is deeply frozen and inputs remain untouched
-  ---
-  duration_ms: 0.640096
-  ...
-# Subtest: plan creation validates optimizer settings before persisting the plan
-ok 2078 - plan creation validates optimizer settings before persisting the plan
-  ---
-  duration_ms: 4.577309
-  ...
-# Subtest: plan creation persists daily template identities, spatial scope, then the optimizer snapshot atomically by compensation
-ok 2079 - plan creation persists daily template identities, spatial scope, then the optimizer snapshot atomically by compensation
-  ---
-  duration_ms: 0.441736
-  ...
-# Subtest: typed optimizer snapshot storage reads only per-plan snapshot tables
-ok 2080 - typed optimizer snapshot storage reads only per-plan snapshot tables
-  ---
-  duration_ms: 0.357307
-  ...
-# Subtest: checkpoint 3 makes the daily optimizer snapshot the only buildEngineInput optimizer authority
-ok 2081 - checkpoint 3 makes the daily optimizer snapshot the only buildEngineInput optimizer authority
-  ---
-  duration_ms: 0.320008
-  ...
-# Subtest: 075 creates the three structured V1 snapshot tables with bounded values
-ok 2082 - 075 creates the three structured V1 snapshot tables with bounded values
-  ---
-  duration_ms: 1.548582
-  ...
-# Subtest: 075 references daily task-template identities and enforces same-plan scope
-ok 2083 - 075 references daily task-template identities and enforces same-plan scope
-  ---
-  duration_ms: 0.555768
-  ...
-# Subtest: 075 backfill is explicit legacy reconstruction and never chooses the first nominal match
-ok 2084 - 075 backfill is explicit legacy reconstruction and never chooses the first nominal match
-  ---
-  duration_ms: 0.382124
-  ...
-# Subtest: 075 is server-only for all snapshot tables and sequences
-ok 2085 - 075 is server-only for all snapshot tables and sequences
-  ---
-  duration_ms: 0.598187
-  ...
-# Subtest: Drizzle schema mirrors the optimizer snapshot persistence without derived authorities
-ok 2086 - Drizzle schema mirrors the optimizer snapshot persistence without derived authorities
-  ---
-  duration_ms: 0.461431
-  ...
-# Subtest: transport legacy names resolve only through unique daily template snapshot identities
-ok 2087 - transport legacy names resolve only through unique daily template snapshot identities
-  ---
-  duration_ms: 2.288256
-  ...
-# Subtest: active transport rejects missing and ambiguous legacy names without choosing the first match
-ok 2088 - active transport rejects missing and ambiguous legacy names without choosing the first match
-  ---
-  duration_ms: 1.11931
-  ...
-# Subtest: inactive ambiguous transport direction remains null
-ok 2089 - inactive ambiguous transport direction remains null
-  ---
-  duration_ms: 0.296845
-  ...
-# Subtest: persistence projection stores canonical inputs but not derived weight or fingerprint
-ok 2090 - persistence projection stores canonical inputs but not derived weight or fingerprint
-  ---
-  duration_ms: 17.474355
-  ...
-# Subtest: hydration rejects incomplete or duplicate heuristic rows
-ok 2091 - hydration rejects incomplete or duplicate heuristic rows
-  ---
-  duration_ms: 0.799704
-  ...
-# Subtest: zone validation is daily-snapshot scoped
-ok 2092 - zone validation is daily-snapshot scoped
-  ---
-  duration_ms: 0.660233
-  ...
-# Subtest: equivalent global defaults produce READY preview with provenance-only candidate
-ok 2093 - equivalent global defaults produce READY preview with provenance-only candidate
-  ---
-  duration_ms: 18.68083
-  ...
-# Subtest: changed global defaults produce canonical semantic diff but do not mutate the current snapshot
-ok 2094 - changed global defaults produce canonical semantic diff but do not mutate the current snapshot
-  ---
-  duration_ms: 1.201194
-  ...
-# Subtest: transport names are resolved only to unambiguous daily snapshot identities
-ok 2095 - transport names are resolved only to unambiguous daily snapshot identities
-  ---
-  duration_ms: 0.955745
-  ...
-# Subtest: active ambiguous transport is BLOCKED and never chooses the first daily identity
-ok 2096 - active ambiguous transport is BLOCKED and never chooses the first daily identity
-  ---
-  duration_ms: 0.728891
-  ...
-# Subtest: candidate zone outside the daily spatial snapshot is BLOCKED
-ok 2097 - candidate zone outside the daily spatial snapshot is BLOCKED
-  ---
-  duration_ms: 0.929856
-  ...
-# Subtest: inactive ambiguous transport may preview as null instead of blocking
-ok 2098 - inactive ambiguous transport may preview as null instead of blocking
-  ---
-  duration_ms: 1.095256
-  ...
-# Subtest: known invalid global optimizer input becomes deterministic BLOCKED preview
-ok 2099 - known invalid global optimizer input becomes deterministic BLOCKED preview
-  ---
-  duration_ms: 0.52999
-  ...
-# Subtest: preview result is deeply frozen
-ok 2100 - preview result is deeply frozen
-  ---
-  duration_ms: 0.726276
-  ...
-# Subtest: cancelled planning runs cannot become active for commit
-ok 2101 - cancelled planning runs cannot become active for commit
-  ---
-  duration_ms: 2.64518
-  ...
-# Subtest: late cancellation prevents writes before commit starts
-ok 2102 - late cancellation prevents writes before commit starts
-  ---
-  duration_ms: 0.684789
-  ...
-# Subtest: cancellation during commit restores the complete snapshot
-ok 2103 - cancellation during commit restores the complete snapshot
-  ---
-  duration_ms: 1.189942
-  ...
-# Subtest: failed conditional success update rolls back all applied writes
-ok 2104 - failed conditional success update rolls back all applied writes
-  ---
-  duration_ms: 0.447576
-  ...
-# Subtest: commits for the same plan are serialized so rollback cannot race a retry
-ok 2105 - commits for the same plan are serialized so rollback cannot race a retry
-  ---
-  duration_ms: 8.690592
-  ...
-# Subtest: running cancellation patch records a complete terminal cancellation
-ok 2106 - running cancellation patch records a complete terminal cancellation
-  ---
-  duration_ms: 0.440793
-  ...
-# Subtest: cancelling a previously empty plan restores null planned values
-ok 2107 - cancelling a previously empty plan restores null planned values
-  ---
-  duration_ms: 0.636388
-  ...
-# Subtest: missing progress columns fall back to legacy fields without rejecting generation
-ok 2108 - missing progress columns fall back to legacy fields without rejecting generation
-  ---
-  duration_ms: 2.624752
-  ...
-# Subtest: a rejected progress chain is recovered before the next update
-ok 2109 - a rejected progress chain is recovered before the next update
-  ---
-  duration_ms: 0.614017
-  ...
-# Subtest: final success update retries with the minimum legacy success payload
-ok 2110 - final success update retries with the minimum legacy success payload
-  ---
-  duration_ms: 0.540429
-  ...
-# Subtest: all progress update failures are reported as skipped instead of thrown
-ok 2111 - all progress update failures are reported as skipped instead of thrown
-  ---
-  duration_ms: 0.504332
-  ...
-# Subtest: valid workday and meal settings produce one complete patch
-ok 2112 - valid workday and meal settings produce one complete patch
-  ---
-  duration_ms: 4.869096
-  ...
-# Subtest: invalid workday descendants and partial pairs produce no patch
-ok 2113 - invalid workday descendants and partial pairs produce no patch
-  ---
-  duration_ms: 0.946117
-  ...
-# Subtest: meal-only update does not require workday and preserves fields
-ok 2114 - meal-only update does not require workday and preserves fields
-  ---
-  duration_ms: 0.319597
-  ...
-# Subtest: shared contract still rejects unsupported program settings
-ok 2115 - shared contract still rejects unsupported program settings
-  ---
-  duration_ms: 1.83102
-  ...
-# Subtest: missing fields and a null pair mean the full workday
-ok 2116 - missing fields and a null pair mean the full workday
-  ---
-  duration_ms: 2.008601
-  ...
-# Subtest: valid explicit windows remain exact, including 00:00-23:59
-ok 2117 - valid explicit windows remain exact, including 00:00-23:59
-  ---
-  duration_ms: 0.316541
-  ...
-# Subtest: partial pairs are rejected with a typed error
-ok 2118 - partial pairs are rejected with a typed error
-  ---
-  duration_ms: 0.74955
-  ...
-# Subtest: empty, non-canonical, and out-of-range times are rejected
-ok 2119 - empty, non-canonical, and out-of-range times are rejected
-  ---
-  duration_ms: 0.339574
-  ...
-# Subtest: zero duration, inverted windows, and midnight crossing are rejected
-ok 2120 - zero duration, inverted windows, and midnight crossing are rejected
-  ---
-  duration_ms: 0.422139
-  ...
-# Subtest: numbers, objects, arrays, and invalid containers are never coerced
-ok 2121 - numbers, objects, arrays, and invalid containers are never coerced
-  ---
-  duration_ms: 0.325127
-  ...
-# Subtest: normalization is pure and its output is frozen
-ok 2122 - normalization is pure and its output is frozen
-  ---
-  duration_ms: 0.425865
-  ...
-# Subtest: global defaults map to an independent frozen snapshot
-ok 2123 - global defaults map to an independent frozen snapshot
-  ---
-  duration_ms: 0.295482
-  ...
-# Subtest: a null global default preserves nulls in the snapshot
-ok 2124 - a null global default preserves nulls in the snapshot
-  ---
-  duration_ms: 0.356345
-  ...
-# Subtest: default snapshot rows copy explicit and null defaults without later synchronization
-ok 2125 - default snapshot rows copy explicit and null defaults without later synchronization
-  ---
-  duration_ms: 0.679178
-  ...
-# Subtest: an invalid global row prevents construction of any snapshot row array
-ok 2126 - an invalid global row prevents construction of any snapshot row array
-  ---
-  duration_ms: 0.357067
-  ...
-# Subtest: ad hoc rows use full-workday nulls by default and preserve valid explicit windows
-ok 2127 - ad hoc rows use full-workday nulls by default and preserve valid explicit windows
-  ---
-  duration_ms: 0.324627
-  ...
-# Subtest: invalid ad hoc and override pairs fail before producing a persistence row
-ok 2128 - invalid ad hoc and override pairs fail before producing a persistence row
-  ---
-  duration_ms: 0.303497
-  ...
-# Subtest: availability-only patches do not contain or erase is_available
-ok 2129 - availability-only patches do not contain or erase is_available
-  ---
-  duration_ms: 0.321502
-  ...
-# Subtest: valid workday and inherited hierarchy
-ok 2130 - valid workday and inherited hierarchy
-  ---
-  duration_ms: 4.111499
-  ...
-# Subtest: invalid workday format
-ok 2131 - invalid workday format
-  ---
-  duration_ms: 0.289911
-  ...
-# Subtest: invalid workday zero
-ok 2132 - invalid workday zero
-  ---
-  duration_ms: 0.163295
-  ...
-# Subtest: invalid workday inverted
-ok 2133 - invalid workday inverted
-  ---
-  duration_ms: 0.143368
-  ...
-# Subtest: explicit and equal zone windows are accepted
-ok 2134 - explicit and equal zone windows are accepted
-  ---
-  duration_ms: 0.336198
-  ...
-# Subtest: zone starts before
-ok 2135 - zone starts before
-  ---
-  duration_ms: 0.184906
-  ...
-# Subtest: zone ends after
-ok 2136 - zone ends after
-  ---
-  duration_ms: 0.161442
-  ...
-# Subtest: zone outside
-ok 2137 - zone outside
-  ---
-  duration_ms: 0.344794
-  ...
-# Subtest: zone partial
-ok 2138 - zone partial
-  ---
-  duration_ms: 0.232704
-  ...
-# Subtest: zone mixed
-ok 2139 - zone mixed
-  ---
-  duration_ms: 2.624391
-  ...
-# Subtest: zone format
-ok 2140 - zone format
-  ---
-  duration_ms: 0.163656
-  ...
-# Subtest: zone order
-ok 2141 - zone order
-  ---
-  duration_ms: 0.155581
-  ...
-# Subtest: explicit, equal and inherited space windows are accepted
-ok 2142 - explicit, equal and inherited space windows are accepted
-  ---
-  duration_ms: 0.330718
-  ...
-# Subtest: space starts before
-ok 2143 - space starts before
-  ---
-  duration_ms: 0.332411
-  ...
-# Subtest: space ends after
-ok 2144 - space ends after
-  ---
-  duration_ms: 0.161642
-  ...
-# Subtest: space outside
-ok 2145 - space outside
-  ---
-  duration_ms: 0.138789
-  ...
-# Subtest: space partial
-ok 2146 - space partial
-  ---
-  duration_ms: 0.146132
-  ...
-# Subtest: space mixed
-ok 2147 - space mixed
-  ---
-  duration_ms: 0.313645
-  ...
-# Subtest: space format
-ok 2148 - space format
-  ---
-  duration_ms: 0.159788
-  ...
-# Subtest: space order
-ok 2149 - space order
-  ---
-  duration_ms: 0.16593
-  ...
-# Subtest: inherited zone permits an explicit space
-ok 2150 - inherited zone permits an explicit space
-  ---
-  duration_ms: 0.242032
-  ...
-# Subtest: workday and zone modifications expose descendant invalidity
-ok 2151 - workday and zone modifications expose descendant invalidity
-  ---
-  duration_ms: 0.245208
-  ...
-# Subtest: irrelevant names and parent ids do not influence deterministic immutable resolution
-ok 2152 - irrelevant names and parent ids do not influence deterministic immutable resolution
-  ---
-  duration_ms: 0.381622
-  ...
-# Subtest: snapshot builder copies defaults, frozen zone relation, null inheritance and deterministic order
-ok 2153 - snapshot builder copies defaults, frozen zone relation, null inheritance and deterministic order
-  ---
-  duration_ms: 0.710046
-  ...
-# Subtest: snapshot builder honors complete override and rejects partial override
-ok 2154 - snapshot builder honors complete override and rejects partial override
-  ---
-  duration_ms: 0.754921
-  ...
-# Subtest: plan creation preparation maps every catalog conflict to a typed safe reason
-ok 2155 - plan creation preparation maps every catalog conflict to a typed safe reason
-  ---
-  duration_ms: 1.143105
-  ...
-# Subtest: one invalid catalog row rejects the complete logical batch
-ok 2156 - one invalid catalog row rejects the complete logical batch
-  ---
-  duration_ms: 0.231382
-  ...
-# Subtest: global catalog validation checks proposed workday, zone and space changes without mutation
-ok 2157 - global catalog validation checks proposed workday, zone and space changes without mutation
-  ---
-  duration_ms: 0.700809
-  ...
-# Subtest: late initialization preserves daily authority, copies only missing rows and is deterministic
-ok 2158 - late initialization preserves daily authority, copies only missing rows and is deterministic
-  ---
-  duration_ms: 0.934976
-  ...
-# Subtest: late initialization rejects missing space against existing daily zone rather than wider global zone
-ok 2159 - late initialization rejects missing space against existing daily zone rather than wider global zone
-  ---
-  duration_ms: 0.277369
-  ...
-# Subtest: malformed route IDs are 400 before storage
-ok 2160 - malformed route IDs are 400 before storage
-  ---
-  duration_ms: 1.949471
-  ...
-# Subtest: invalid shared-schema body is 400
-ok 2161 - invalid shared-schema body is 400
-  ---
-  duration_ms: 2.886652
-  ...
-# Subtest: missing or inaccessible plan, zone and space are 404
-ok 2162 - missing or inaccessible plan, zone and space are 404
-  ---
-  duration_ms: 1.237642
-  ...
-# Subtest: unexpected storage failure is sanitized as 500
-ok 2163 - unexpected storage failure is sanitized as 500
-  ---
-  duration_ms: 0.33204
-  ...
-# Subtest: typed spatial domain conflicts are safe 400 responses
-ok 2164 - typed spatial domain conflicts are safe 400 responses
-  ---
-  duration_ms: 0.609349
-  ...
-# Subtest: valid empty lists and successful responses remain 200
-ok 2165 - valid empty lists and successful responses remain 200
-  ---
-  duration_ms: 0.398504
-  ...
-# Subtest: 073 keeps snapshot schema, constraints, FKs and idempotent backfill
-ok 2166 - 073 keeps snapshot schema, constraints, FKs and idempotent backfill
-  ---
-  duration_ms: 1.320206
-  ...
-# Subtest: 073 enables server-only RLS and revokes client table and sequence access
-ok 2167 - 073 enables server-only RLS and revokes client table and sequence access
-  ---
-  duration_ms: 0.510374
-  ...
-# Subtest: normalizes camel and snake rows to the same immutable contract
-ok 2168 - normalizes camel and snake rows to the same immutable contract
-  ---
-  duration_ms: 16.076416
-  ...
-# Subtest: resource requirements are deterministic and do not mutate input
-ok 2169 - resource requirements are deterministic and do not mutate input
-  ---
-  duration_ms: 0.62662
-  ...
-# Subtest: specific itinerant requirement needs a valid id in persisted rows
-ok 2170 - specific itinerant requirement needs a valid id in persisted rows
-  ---
-  duration_ms: 0.653039
-  ...
-# Subtest: unknown versions are rejected
-ok 2171 - unknown versions are rejected
-  ---
-  duration_ms: 0.44977
-  ...
-# Subtest: fingerprints are invariant to input order and change with semantics
-ok 2172 - fingerprints are invariant to input order and change with semantics
-  ---
-  duration_ms: 1.894749
-  ...
-# Subtest: batch validation is atomic and sorted
-ok 2173 - batch validation is atomic and sorted
-  ---
-  duration_ms: 2.048596
-  ...
-# Subtest: index is runtime read-only and rejects duplicate persisted snapshots
-ok 2174 - index is runtime read-only and rejects duplicate persisted snapshots
-  ---
-  duration_ms: 0.636458
-  ...
-# Subtest: duplicate quantity rows are order invariant and keep the strongest requirement
-ok 2175 - duplicate quantity rows are order invariant and keep the strongest requirement
-  ---
-  duration_ms: 0.33731
-  ...
-# Subtest: effective dependency and specific team semantics are canonicalized
-ok 2176 - effective dependency and specific team semantics are canonicalized
-  ---
-  duration_ms: 0.566128
-  ...
-# Subtest: plan creation validates and persists the complete snapshot before dependent initialization
-ok 2177 - plan creation validates and persists the complete snapshot before dependent initialization
-  ---
-  duration_ms: 6.129077
-  ...
-# Subtest: contestant auto-create reads the daily snapshot and compensates on failure
-ok 2178 - contestant auto-create reads the daily snapshot and compensates on failure
-  ---
-  duration_ms: 0.309949
-  ...
-# Subtest: daily task creation inherits operational values from the plan snapshot
-ok 2179 - daily task creation inherits operational values from the plan snapshot
-  ---
-  duration_ms: 3.620181
-  ...
-# Subtest: ad-hoc initialization is explicit and cannot initialize an empty or missing plan catalog
-ok 2180 - ad-hoc initialization is explicit and cannot initialize an empty or missing plan catalog
-  ---
-  duration_ms: 0.296493
-  ...
-# Subtest: buildEngineInput treats snapshots as hard input and never reads global templates
-ok 2181 - buildEngineInput treats snapshots as hard input and never reads global templates
-  ---
-  duration_ms: 0.474907
+=== FAILED TEST CONTEXT ===
+6626-ok 1300 - Focal observations are read from accepted artifact rather than hardcoded
+6627-  ---
+6628-  duration_ms: 619.585561
+6629-  ...
+6630-# Subtest: source manifest keeps 167 rows and distinguishes reviewed from not audited
+6631-ok 1301 - source manifest keeps 167 rows and distinguishes reviewed from not audited
+6632-  ---
+6633-  duration_ms: 0.564673
+6634-  ...
+6635-# Subtest: all probes are deterministic and inputs remain immutable
+6636-ok 1302 - all probes are deterministic and inputs remain immutable
+6637-  ---
+6638-  duration_ms: 2968.003187
+6639-  ...
+6640-# Subtest: functional correction remains isolated from DB, UI and API
+6641-ok 1303 - functional correction remains isolated from DB, UI and API
+6642-  ---
+6643-  duration_ms: 33.286863
+6644-  ...
+6645-# Subtest: EXACT_CONSTRUCTIVE explores both flexible setup orders and publishes preparation
+6646-ok 1304 - EXACT_CONSTRUCTIVE explores both flexible setup orders and publishes preparation
+6647-  ---
+6648-  duration_ms: 141.206833
+6649-  ...
+6650-# Subtest: EXACT_CONSTRUCTIVE preserves historical explicit setup order
+6651-ok 1305 - EXACT_CONSTRUCTIVE preserves historical explicit setup order
+6652-  ---
+6653-  duration_ms: 27.376749
+6654-  ...
+6655-# Subtest: exact setup enumeration is atomic on shared-ledger exhaustion
+6656-ok 1306 - exact setup enumeration is atomic on shared-ledger exhaustion
+6657-  ---
+6658-  duration_ms: 15.428282
+6659-  ...
+6660-# Subtest: full A2 leaves transport behind and retains only scoped meal blockers
+6661:not ok 1307 - full A2 leaves transport behind and retains only scoped meal blockers
+6662-  ---
+6663-  duration_ms: 1667.874777
+6664-  location: '/home/runner/work/production-planner/production-planner/engine/planner-next/exactFlexibleSetupOrder.spec.ts:1:5385'
+6665-  failureType: 'testCodeFailure'
+6666-  error: |-
+6667-    Expected values to be strictly deep-equal:
+6668-    + actual - expected
+6669-    
+6670-      [
+6671-    -   'ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED',
+6672-        'PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED'
+6673-      ]
+6674:  code: 'ERR_ASSERTION'
+6675:  name: 'AssertionError'
+6676-  expected:
+6677-    0: 'ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED'
+6678-    1: 'PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED'
+6679-  actual:
+6680-    0: 'PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED'
+6681-  operator: 'deepStrictEqual'
+6682-  stack: |-
+6683-    TestContext.<anonymous> (/home/runner/work/production-planner/production-planner/engine/planner-next/exactFlexibleSetupOrder.spec.ts:179:10)
+6684-    Test.runInAsyncScope (node:async_hooks:206:9)
+6685-    Test.run (node:internal/test_runner/test:796:25)
+6686-    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+6687-    Test.postRun (node:internal/test_runner/test:889:19)
+6688-    Test.run (node:internal/test_runner/test:835:12)
+6689-    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+6690-  ...
+6691-# Subtest: compatible standalone tasks complete atomically and preserve the exact core
+6692-ok 1308 - compatible standalone tasks complete atomically and preserve the exact core
+6693-  ---
+6694-  duration_ms: 38.776421
+6695-  ...
+6696-# Subtest: shared resources never overlap and the narrower task is selected first
+6697-ok 1309 - shared resources never overlap and the narrower task is selected first
+6698-  ---
+6699-  duration_ms: 3.276342
+6700-  ...
+6701-# Subtest: bestK=1 retains a deferred standalone start
+6702-ok 1310 - bestK=1 retains a deferred standalone start
+6703-  ---
+6704-  duration_ms: 1.812846
+6705-  ...
+6706-# Subtest: standalone DFS backtracks from a valid start that blocks an equal-scarcity task
+6707-ok 1311 - standalone DFS backtracks from a valid start that blocks an equal-scarcity task
+6708-  ---
+6709-  duration_ms: 1.388545
+6710-  ...
+6711-# Subtest: a blocking first core leaf is rejected and a later hard-valid core leaf completes standalone
+6712-ok 1312 - a blocking first core leaf is rejected and a later hard-valid core leaf completes standalone
+6713-  ---
+6714-  duration_ms: 3.398403
+6715-  ...
+6716-# Subtest: the last accumulating core occupation is recorded when it removes a prior witness
+6717-ok 1313 - the last accumulating core occupation is recorded when it removes a prior witness
+6718-  ---
+6719-  duration_ms: 29.784955
+6720-  ...
+6721-# Subtest: zero alternatives are infeasible and failures publish no partial core
+6722-ok 1314 - zero alternatives are infeasible and failures publish no partial core
+6723-  ---
+6724-  duration_ms: 4.960512
+6725-  ...
+6726-# Subtest: unsupported standalone shapes are explicit and atomic
+6727-ok 1315 - unsupported standalone shapes are explicit and atomic
+6728-  ---
+6729-  duration_ms: 0.525289
+6730-  ...
+6731-# Subtest: the global branch threshold completes at B and B-1 exhausts exactly
+6732-ok 1316 - the global branch threshold completes at B and B-1 exhausts exactly
+6733-  ---
+6734-  duration_ms: 5.095191
+6735-  ...
+6736-# Subtest: results are deterministic and invariant to input collection order
+6737-ok 1317 - results are deterministic and invariant to input collection order
+6738-  ---
+6739-  duration_ms: 10.651551
+6740-  ...
+6741-# Subtest: complete quality replaces only a strictly dominating incumbent
+6742-ok 1318 - complete quality replaces only a strictly dominating incumbent
+6743-  ---
+6744-  duration_ms: 0.33099
+6745-  ...
+6746-# Subtest: the public constructor selects the best dominant leaf while the compatibility constructor remains first-complete
+6747-ok 1319 - the public constructor selects the best dominant leaf while the compatibility constructor remains first-complete
+6748-  ---
+6749-  duration_ms: 9.898415
+6750-  ...
+6751-# Subtest: a core-only problem preserves the historical first-complete route
+6752-ok 1320 - a core-only problem preserves the historical first-complete route
+6753-  ---
+6754-  duration_ms: 2.382172
+6755-  ...
+=== SUITE SUMMARY ===
   ...
 # Subtest: the EngineInput task path uses snapshot dependencies, resources, duration and location
 ok 2182 - the EngineInput task path uses snapshot dependencies, resources, duration and location
   ---
-  duration_ms: 0.353139
+  duration_ms: 0.342238
   ...
 # Subtest: manual blocks explicitly extend the plan snapshot before direct insertion
 ok 2183 - manual blocks explicitly extend the plan snapshot before direct insertion
   ---
-  duration_ms: 0.382945
+  duration_ms: 0.41065
   ...
 # Subtest: 074 creates the versioned per-plan snapshot without a destructive template FK
 ok 2184 - 074 creates the versioned per-plan snapshot without a destructive template FK
   ---
-  duration_ms: 1.523295
+  duration_ms: 1.706095
   ...
 # Subtest: 074 backfills the complete legacy catalog idempotently
 ok 2185 - 074 backfills the complete legacy catalog idempotently
   ---
-  duration_ms: 0.439872
+  duration_ms: 0.551555
   ...
 # Subtest: 074 is server-only and protects table and sequence
 ok 2186 - 074 is server-only and protects table and sequence
   ---
-  duration_ms: 0.454429
+  duration_ms: 0.471249
   ...
 # Subtest: Drizzle schema mirrors the migration constraints and omits a stored fingerprint
 ok 2187 - Drizzle schema mirrors the migration constraints and omits a stored fingerprint
   ---
-  duration_ms: 0.459749
+  duration_ms: 0.522264
   ...
 1..2187
 # tests 2203
@@ -797,4 +169,4 @@ ok 2187 - Drizzle schema mirrors the migration constraints and omits a stored fi
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 175427.894828
+# duration_ms 182398.264981
