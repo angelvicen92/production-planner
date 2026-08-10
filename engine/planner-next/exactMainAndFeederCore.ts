@@ -237,6 +237,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         roundSynchronizations: undefined,
         participantMeals: undefined,
         participantMealCapacity: undefined,
+        operationalMealPolicies: undefined,
         transportPolicy: undefined,
       };
       const expected = [...coreIds].sort();

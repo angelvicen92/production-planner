@@ -168,6 +168,15 @@ export interface OperationalMealPolicy {
   spaceIds: string[];
 }
 
+export interface ScheduledOperationalMeal {
+  id: string;
+  resourceIds: string[];
+  spaceIds: string[];
+  duration: Minute;
+  start: Minute;
+  end: Minute;
+}
+
 export interface ParticipantMealObligation {
   id: string;
   sourceTaskId: string;
@@ -220,6 +229,7 @@ export interface ValidationSummary {
   anchoredAccompanimentViolationCount: number;
   participantMealViolationCount: number;
   resourceMealViolationCount: number;
+  operationalMealViolationCount?: number;
   itinerantUnitMealViolationCount: number;
   reasonCodes: string[];
 }
@@ -350,6 +360,7 @@ export interface PlanResult {
   scheduledSpaceMeals: ScheduledSpaceMeal[];
   scheduledParticipantMeals: ScheduledParticipantMeal[];
   scheduledResourceMeals: ScheduledResourceMeal[];
+  scheduledOperationalMeals?: ScheduledOperationalMeal[];
   scheduledItinerantUnitMeals: ScheduledItinerantUnitMeal[];
   metrics: PlanMetrics;
 }

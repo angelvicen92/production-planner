@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { ScheduledItinerantUnitMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
-export function fingerprint(tasks: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], itinerantMeals:ScheduledItinerantUnitMeal[]=[], roundPreparations:ScheduledRoundPreparation[]=[]): string {
+import type { ScheduledItinerantUnitMeal, ScheduledOperationalMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
+export function fingerprint(tasks: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], itinerantMeals:ScheduledItinerantUnitMeal[]=[], roundPreparations:ScheduledRoundPreparation[]=[], operationalMeals:ScheduledOperationalMeal[]=[]): string {
   const stable = [...tasks].sort((a,b) => a.id.localeCompare(b.id)).map((task) => task.kind === "technical"
     ? ({ id: task.id, kind: task.kind, start: task.start, end: task.end, spaceId: task.spaceId, itinerantUnitId:task.itinerantUnitId, requiredResourceIds: [...(task.requiredResourceIds ?? [])].sort(), ...(task.dependencies.length ? { dependencies: [...task.dependencies].sort() } : {}) })
     : task.jointGroupId === undefined ? ({id:task.id,start:task.start,end:task.end,spaceId:task.spaceId,participantId:task.participantId,coachId:task.coachId,itinerantUnitId:task.itinerantUnitId}) : ({id:task.id,start:task.start,end:task.end,spaceId:task.spaceId,participantId:task.participantId,coachId:task.coachId,jointGroupId:task.jointGroupId,itinerantUnitId:task.itinerantUnitId}));
@@ -8,5 +8,6 @@ export function fingerprint(tasks: ScheduledTask[], preparations: ScheduledSetup
   const mealRecords=[...meals].sort((a,b)=>a.id.localeCompare(b.id)).map(({id,kind,spaceId,entryIndex,duration,start,end})=>({id,kind,spaceId,entryIndex,duration,start,end}));
   const itinerantMealRecords=[...itinerantMeals].sort((a,b)=>a.id.localeCompare(b.id)).map(({id,itinerantUnitId,start,end,duration})=>({id,itinerantUnitId,start,end,duration}));
   const roundPreparationRecords=[...roundPreparations].sort((a,b)=>a.id.localeCompare(b.id)).map(({id,kind,synchronizationId,spaceId,roundIndex,duration,start,end})=>({id,kind,synchronizationId,spaceId,roundIndex,duration,start,end}));
-  return createHash("sha256").update(JSON.stringify(preparationRecords.length||mealRecords.length||itinerantMealRecords.length||roundPreparationRecords.length ? [...stable,...preparationRecords,...mealRecords,...itinerantMealRecords,...roundPreparationRecords] : stable)).digest("hex");
+  const operationalMealRecords=[...operationalMeals].sort((a,b)=>a.id.localeCompare(b.id)).map(({id,resourceIds,spaceIds,duration,start,end})=>({id,resourceIds:[...resourceIds].sort(),spaceIds:[...spaceIds].sort(),duration,start,end}));
+  return createHash("sha256").update(JSON.stringify(preparationRecords.length||mealRecords.length||itinerantMealRecords.length||roundPreparationRecords.length||operationalMealRecords.length ? [...stable,...preparationRecords,...mealRecords,...itinerantMealRecords,...roundPreparationRecords,...operationalMealRecords] : stable)).digest("hex");
 }
