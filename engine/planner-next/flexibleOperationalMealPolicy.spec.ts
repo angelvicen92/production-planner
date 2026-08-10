@@ -9,6 +9,8 @@ import { resolveFlexibleOperationalMealPolicies } from "./integration/flexibleOp
 import { operationalMealCandidates } from "./operationalMeals";
 import { validatePlan } from "./validate";
 
+// Core-leaf validation intentionally precedes operational-meal materialization; this regression
+// proves the final exact continuation owns and validates the scoped meal witness atomically.
 function fixture() {
   const input = createSupportedEngineInputAdapterFixture();
   input.mealMode = "flexible_meal_window";
