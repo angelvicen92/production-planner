@@ -91,6 +91,7 @@ test("exact search materializes the scoped meal and enforces its resource across
   assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
 });
 
+// A single physical resource may participate in only one operational meal policy.
 test("shared resources cannot receive duplicate operational meals", () => {
   const input = fixture();
   input.operationalMealPolicies!.push({ id: "duplicate-resource-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [503], spaceIds: [] });
