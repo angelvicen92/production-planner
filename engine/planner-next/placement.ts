@@ -14,6 +14,15 @@ export function taskAvoidsItinerantUnitMeals(problem:PlannerNextProblem,task:Tas
   return !task.itinerantUnitId||(problem.itinerantUnitMeals??[]).every(meal=>meal.itinerantUnitId!==task.itinerantUnitId||!overlaps(meal.interval,{start,end}));
 }
 
+export function taskAvoidsScheduledSpaceMealResources(problem: PlannerNextProblem, task: Task, start: number, end: number, meals: ScheduledSpaceMeal[]): boolean {
+  const required = new Set(task.requiredResourceIds ?? []);
+  if (required.size === 0) return true;
+  return meals.every((meal) => {
+    if (!overlaps(meal, { start, end })) return true;
+    return !problem.resources.some((resource) => resource.assignedSpaceId === meal.spaceId && required.has(resource.id));
+  });
+}
+
 /** The single hard-placement predicate used by every Planner Next phase. */
 export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[], scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): boolean {
   const end = start + task.duration;
@@ -25,7 +34,8 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   if (start < problem.day.start || end > problem.day.end || !occupationAvoidsProtectedMeal(problem,task.spaceId,start,end)
     || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
-  if(scheduledSpaceMeals.some(meal=>meal.spaceId===task.spaceId&&overlaps(meal,{start,end})))return false;
+  if(scheduledSpaceMeals.some(meal=>meal.spaceId===task.spaceId&&overlaps(meal,{start,end}))
+    || !taskAvoidsScheduledSpaceMealResources(problem, task, start, end, scheduledSpaceMeals)) return false;
   return !placed.some((other) => {
     const sharedParticipant = other.participantId !== undefined
       && task.participantId !== undefined

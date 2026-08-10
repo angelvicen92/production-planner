@@ -6,6 +6,7 @@ import type {
   ScheduledSpaceMeal,
   ScheduledParticipantMeal,
   ScheduledResourceMeal,
+  ScheduledOperationalMeal,
   ScheduledTask,
   Space,
   Resource,
@@ -22,7 +23,8 @@ import { followsSetupPolicy, hasSetupReentry, setupBlockCounts, setupFamilySeque
 import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
 import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "./technicalOperations";
 import { canPlaceTask } from "./placement";
-import { createScheduledSpaceMeal, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
+import { createScheduledSpaceMeal, spaceMealAvoidsAssignedResourceTasks, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
+import { operationalMealCandidates } from "./operationalMeals";
 import { mainFlowMealAligned, hasMainFlowMeal } from "./mainFlowMeal";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { evaluateResourcePresence } from "./resourcePresence";
@@ -337,7 +339,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = [], itinerantUnitMeals: import("./contracts").ScheduledItinerantUnitMeal[] = [], roundPreparations: ScheduledRoundPreparation[] = []): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = [], itinerantUnitMeals: import("./contracts").ScheduledItinerantUnitMeal[] = [], roundPreparations: ScheduledRoundPreparation[] = [], operationalMeals: ScheduledOperationalMeal[] = []): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -364,6 +366,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let spaceMeal = 0;
   let participantMeal = 0;
   let resourceMeal = 0;
+  let operationalMeal = 0;
   let itinerantUnitMeal = 0;
   let itinerantUnitResourceAlias = false;
   const publishedResourceMeals=resourceMeals;
@@ -584,7 +587,23 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   }
   technicalChain=[...invalidTechnicalChainRootIds].sort().length;
 
-  const invalidMealSpaces=new Set<string>();const policyIds=new Set(spacesWithMealPolicy(problem).map(s=>s.id));for(const space of spacesWithMealPolicy(problem)){const policy=space.mealPolicy!,own=meals.filter(m=>m.spaceId===space.id),m=own[0];if(own.length!==1||!m||m.entryIndex!==1||m.id!==spaceMealId(space.id)||m.kind!=="space-meal"||m.spaceId!==space.id||m.duration!==policy.duration||m.end-m.start!==m.duration||m.start%5!==0||!spaceMealWithinDay(problem,m)||!spaceMealWithinWindow(policy,m)||!spaceMealWithinAvailability(space,m)||!spaceMealAvoidsTasks(m,scheduled)||!spaceMealAvoidsMeals(m,meals.filter(x=>x!==m)))invalidMealSpaces.add(space.id)}for(const m of meals)if(!policyIds.has(m.spaceId))invalidMealSpaces.add(m.spaceId);spaceMeal=[...invalidMealSpaces].sort().length;
+  const invalidMealSpaces=new Set<string>();const policyIds=new Set(spacesWithMealPolicy(problem).map(s=>s.id));for(const space of spacesWithMealPolicy(problem)){const policy=space.mealPolicy!,own=meals.filter(m=>m.spaceId===space.id),m=own[0];if(own.length!==1||!m||m.entryIndex!==1||m.id!==spaceMealId(space.id)||m.kind!=="space-meal"||m.spaceId!==space.id||m.duration!==policy.duration||m.end-m.start!==m.duration||m.start%5!==0||!spaceMealWithinDay(problem,m)||!spaceMealWithinWindow(policy,m)||!spaceMealWithinAvailability(space,m)||!spaceMealAvoidsTasks(m,scheduled)||!spaceMealAvoidsAssignedResourceTasks(problem,m,scheduled)||!spaceMealAvoidsMeals(m,meals.filter(x=>x!==m)))invalidMealSpaces.add(space.id)}for(const m of meals)if(!policyIds.has(m.spaceId))invalidMealSpaces.add(m.spaceId);spaceMeal=[...invalidMealSpaces].sort().length;
+
+  const expectedOperationalMeals=new Map((problem.operationalMealPolicies??[]).map(policy=>[policy.id,policy]));
+  const operationalCounts=new Map<string,number>();
+  const invalidOperationalMealIds=new Set<string>();
+  for(const meal of operationalMeals){
+    operationalCounts.set(meal.id,(operationalCounts.get(meal.id)??0)+1);
+    const expected=expectedOperationalMeals.get(meal.id);
+    const canonicalResources=expected?[...expected.resourceIds].sort():[];
+    const canonicalSpaces=expected?[...expected.spaceIds].sort():[];
+    const exactFields=expected!==undefined&&meal.duration===expected.duration&&meal.end-meal.start===meal.duration&&[...meal.resourceIds].sort().join("\0")===canonicalResources.join("\0")&&[...meal.spaceIds].sort().join("\0")===canonicalSpaces.join("\0");
+    const validCandidate=expected!==undefined&&operationalMealCandidates(problem,expected,scheduled,operationalMeals.filter(candidate=>candidate!==meal)).some(candidate=>candidate.start===meal.start&&candidate.end===meal.end);
+    if(!exactFields||!validCandidate)invalidOperationalMealIds.add(meal.id);
+  }
+  for(const policy of problem.operationalMealPolicies??[])if(operationalCounts.get(policy.id)!==1)invalidOperationalMealIds.add(policy.id);
+  for(const meal of operationalMeals)if(!expectedOperationalMeals.has(meal.id))invalidOperationalMealIds.add(meal.id);
+  operationalMeal=invalidOperationalMealIds.size;
 
   const expectedParticipantMeals = new Map((problem.participantMeals ?? []).map((meal) => [meal.sourceTaskId, meal]));
   const actualCounts = new Map<string, number>();
@@ -641,6 +660,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (anchoredAccompaniment) reasonCodes.push("ANCHORED_ACCOMPANIMENT_VIOLATION");
   if (participantMeal) reasonCodes.push("PARTICIPANT_MEAL_VIOLATION");
   if (resourceMeal) reasonCodes.push("RESOURCE_MEAL_VIOLATION");
+  if (operationalMeal) reasonCodes.push("OPERATIONAL_MEAL_VIOLATION");
   if (itinerantUnitMeal) reasonCodes.push("ITINERANT_UNIT_MEAL_VIOLATION");
   if(itinerantUnitResourceAlias)reasonCodes.push("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
@@ -675,6 +695,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     anchoredAccompanimentViolationCount:anchoredAccompaniment,
     participantMealViolationCount: participantMeal,
     resourceMealViolationCount: resourceMeal,
+    ...(problem.operationalMealPolicies?.length || operationalMeals.length ? { operationalMealViolationCount: operationalMeal } : {}),
     itinerantUnitMealViolationCount: itinerantUnitMeal,
     reasonCodes: reasonCodes.sort(),
   };

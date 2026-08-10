@@ -1229,46 +1229,10 @@
     },
     "unresolvedCreationInputs": []
   },
-  "representabilityStatus": "BLOCKED",
+  "representabilityStatus": "FULLY_REPRESENTABLE",
   "requiredCreationInputBlockers": [],
-  "implementationBlockers": [
-    {
-      "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
-      "layer": "PLANNER_NEXT",
-      "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
-      "canonicalIds": [
-        "cam-2",
-        "cam-3",
-        "cam-4",
-        "coach-jose-maria",
-        "coach-lucia",
-        "eva",
-        "son-1",
-        "son-2"
-      ],
-      "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
-      "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
-      "implementationRank": 3
-    }
-  ],
-  "nextImplementationBlocker": {
-    "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
-    "layer": "PLANNER_NEXT",
-    "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
-    "canonicalIds": [
-      "cam-2",
-      "cam-3",
-      "cam-4",
-      "coach-jose-maria",
-      "coach-lucia",
-      "eva",
-      "son-1",
-      "son-2"
-    ],
-    "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
-    "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
-    "implementationRank": 3
-  },
+  "implementationBlockers": [],
+  "nextImplementationBlocker": null,
   "participantAvailabilityProbe": {
     "sourceConfigurationPresent": true,
     "engineInputContractPresent": true,
@@ -1312,12 +1276,12 @@
     "ownSpaceControlPlaceableWithoutMeal": true,
     "ownSpacePlaceableWithMeal": false,
     "crossSpaceControlPlaceableWithoutMeal": true,
-    "crossSpacePlaceableWithMeal": true,
+    "crossSpacePlaceableWithMeal": false,
     "validationControlHardValid": true,
-    "validationWithMealHardValid": true,
+    "validationWithMealHardValid": false,
     "spaceMealBlocksOwnSpace": true,
-    "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": false,
-    "validatorRejectsAssignedResourceWorkDuringMeal": false,
+    "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": true,
+    "validatorRejectsAssignedResourceWorkDuringMeal": true,
     "fixedRealityMealSupported": true,
     "fixedRealityMealHasInterval": true,
     "fixedRealityMealHasFlexibleWindowContract": false,
@@ -1441,68 +1405,13 @@
   },
   "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
-    "status": "REJECTED_BLOCKED",
+    "status": "EXECUTED",
     "analysis": {
-      "status": "BLOCKED",
+      "status": "FULLY_REPRESENTABLE",
       "requiredCreationInputs": [],
-      "implementationBlockers": [
-        {
-          "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
-          "layer": "PLANNER_NEXT",
-          "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
-          "canonicalIds": [
-            "cam-2",
-            "cam-3",
-            "cam-4",
-            "coach-jose-maria",
-            "coach-lucia",
-            "eva",
-            "son-1",
-            "son-2"
-          ],
-          "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
-          "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
-          "implementationRank": 3
-        }
-      ],
-      "blockers": [
-        {
-          "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
-          "layer": "PLANNER_NEXT",
-          "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
-          "canonicalIds": [
-            "cam-2",
-            "cam-3",
-            "cam-4",
-            "coach-jose-maria",
-            "coach-lucia",
-            "eva",
-            "son-1",
-            "son-2"
-          ],
-          "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
-          "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
-          "implementationRank": 3
-        }
-      ],
-      "nextImplementationBlocker": {
-        "code": "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",
-        "layer": "PLANNER_NEXT",
-        "affectedRule": "indisponibilidad hard de recursos durante comida de espacio",
-        "canonicalIds": [
-          "cam-2",
-          "cam-3",
-          "cam-4",
-          "coach-jose-maria",
-          "coach-lucia",
-          "eva",
-          "son-1",
-          "son-2"
-        ],
-        "operationalExplanation": "Placement bloquea el espacio que come, pero validation/search no demuestran rechazo hard del mismo recurso asignado trabajando simultáneamente en otro espacio.",
-        "semanticLoss": "Un recurso podría trabajar durante su descanso operativo autorizado.",
-        "implementationRank": 3
-      },
+      "implementationBlockers": [],
+      "blockers": [],
+      "nextImplementationBlocker": null,
       "participantAvailabilityProbe": {
         "sourceConfigurationPresent": true,
         "engineInputContractPresent": true,
@@ -1546,12 +1455,12 @@
         "ownSpaceControlPlaceableWithoutMeal": true,
         "ownSpacePlaceableWithMeal": false,
         "crossSpaceControlPlaceableWithoutMeal": true,
-        "crossSpacePlaceableWithMeal": true,
+        "crossSpacePlaceableWithMeal": false,
         "validationControlHardValid": true,
-        "validationWithMealHardValid": true,
+        "validationWithMealHardValid": false,
         "spaceMealBlocksOwnSpace": true,
-        "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": false,
-        "validatorRejectsAssignedResourceWorkDuringMeal": false,
+        "spaceMealBlocksAssignedResourcesAcrossOtherSpaces": true,
+        "validatorRejectsAssignedResourceWorkDuringMeal": true,
         "fixedRealityMealSupported": true,
         "fixedRealityMealHasInterval": true,
         "fixedRealityMealHasFlexibleWindowContract": false,
@@ -1675,7 +1584,7 @@
       },
       "roundSynchronizationCapabilityProven": true
     },
-    "executorCallCount": 0,
+    "executorCallCount": 1,
     "engineInputBuilt": false,
     "preflightCalled": false,
     "adapterCalled": false,

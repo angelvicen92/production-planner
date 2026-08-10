@@ -36,7 +36,8 @@ export const PLANNER_CAPABILITY_REQUIREMENTS: Readonly<
   }),
   OPERATIONAL_MEAL_POLICY: defineCapabilityRequirement({
     capability: "OPERATIONAL_MEAL_POLICY",
-    supportedPolicies: [],
+    supportedPolicies: ["EXACT_CONSTRUCTIVE"],
+    requiredPolicy: "EXACT_CONSTRUCTIVE",
   }),
   TRANSPORT_GROUPING: defineCapabilityRequirement({
     capability: "TRANSPORT_GROUPING",
