@@ -1,0 +1,41 @@
+name: Temporary scoped operational meal implementation
+
+on:
+  push:
+    branches: [optiplan/scoped-operational-meal-exclusivity]
+
+permissions:
+  contents: write
+
+jobs:
+  implement-and-validate:
+    if: github.event.head_commit.message != 'Implement scoped operational meal exclusivity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: optiplan/scoped-operational-meal-exclusivity
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply implementation patch
+        run: python .github/tmp-scoped-operational-meal.py
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript check
+        run: npm run check
+      - name: Focal tests
+        run: npx tsx --test engine/planner-next/flexibleOperationalMealPolicy.spec.ts engine/planner-next/spaceMeals.spec.ts
+      - name: Commit implementation
+        shell: bash
+        run: |
+          rm -f .github/tmp-scoped-operational-meal.py .github/workflows/tmp-scoped-operational-meal.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Implement scoped operational meal exclusivity'
+          git push origin HEAD:optiplan/scoped-operational-meal-exclusivity
