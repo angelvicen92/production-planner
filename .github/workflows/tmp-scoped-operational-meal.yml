@@ -36,7 +36,119 @@ jobs:
           path.write_text(text)
           PY
           python .github/tmp-scoped-operational-meal.py
-          echo 'aW1wb3J0IGFzc2VydCBmcm9tICJub2RlOmFzc2VydC9zdHJpY3QiOwppbXBvcnQgdGVzdCBmcm9tICJub2RlOnRlc3QiOwppbXBvcnQgeyBleGVjdXRlUGxhbm5lck5leHQgfSBmcm9tICIuL2V4ZWN1dGVQbGFubmVyTmV4dCI7CmltcG9ydCB7IGFkYXB0RW5naW5lSW5wdXRUb1BsYW5uZXJOZXh0UHJvYmxlbSB9IGZyb20gIi4vaW50ZWdyYXRpb24vZW5naW5lSW5wdXRBZGFwdGVyIjsKaW1wb3J0IHsgY3JlYXRlU3VwcG9ydGVkRW5naW5lSW5wdXRBZGFwdGVyRml4dHVyZSB9IGZyb20gIi4vaW50ZWdyYXRpb24vZW5naW5lSW5wdXRBZGFwdGVyLmZpeHR1cmUiOwppbXBvcnQgeyBwcmVmbGlnaHRFbmdpbmVJbnB1dEZvclBsYW5uZXJOZXh0IH0gZnJvbSAiLi9pbnRlZ3JhdGlvbi9lbmdpbmVJbnB1dFByZWZsaWdodCI7CmltcG9ydCB7IHJlc29sdmVGbGV4aWJsZU9wZXJhdGlvbmFsTWVhbFBvbGljaWVzIH0gZnJvbSAiLi9pbnRlZ3JhdGlvbi9mbGV4aWJsZU9wZXJhdGlvbmFsTWVhbFBvbGljaWVzIjsKaW1wb3J0IHsgb3BlcmF0aW9uYWxNZWFsQ2FuZGlkYXRlcyB9IGZyb20gIi4vb3BlcmF0aW9uYWxNZWFscyI7CmltcG9ydCB7IG1haW5GbG93Vm9jYWxTY2VuYXJpbyB9IGZyb20gIi4vc2NlbmFyaW9zL21haW5GbG93Vm9jYWxTY2VuYXJpbyI7CmltcG9ydCB7IHZhbGlkYXRlUGxhbiB9IGZyb20gIi4vdmFsaWRhdGUiOwoKZnVuY3Rpb24gZml4dHVyZSgpIHsKICBjb25zdCBpbnB1dCA9IGNyZWF0ZVN1cHBvcnRlZEVuZ2luZUlucHV0QWRhcHRlckZpeHR1cmUoKTsKICBpbnB1dC5tZWFsTW9kZSA9ICJmbGV4aWJsZV9tZWFsX3dpbmRvdyI7CiAgaW5wdXQubWVhbFdpbmRvdyA9IHsgc3RhcnQ6ICIxMzowMCIsIGVuZDogIjE2OjMwIiB9OwogIGlucHV0Lm9wZXJhdGlvbmFsTWVhbFBvbGljaWVzID0gWwogICAgeyBpZDogInNwYWNlLW1lYWwiLCB3aW5kb3c6IHsgc3RhcnQ6ICIxMzowMCIsIGVuZDogIjE2OjMwIiB9LCBkdXJhdGlvbk1pbnV0ZXM6IDc1LCBwbGFuUmVzb3VyY2VJdGVtSWRzOiBbNTA0XSwgc3BhY2VJZHM6IFszMDFdIH0sCiAgICB7IGlkOiAicmVhbGl0eS1tZWFsIiwgd2luZG93OiB7IHN0YXJ0OiAiMTM6MDAiLCBlbmQ6ICIxNjozMCIgfSwgZHVyYXRpb25NaW51dGVzOiA3NSwgcGxhblJlc291cmNlSXRlbUlkczogWzUwMywgNTAyXSwgc3BhY2VJZHM6IFtdIH0sCiAgXTsKICByZXR1cm4gaW5wdXQ7Cn0KCnRlc3QoImZsZXhpYmxlIG9wZXJhdGlvbmFsIG1lYWxzIHByb2plY3QgbG9zc2xlc3NseSBhbmQgZGV0ZXJtaW5pc3RpY2FsbHkiLCAoKSA9PiB7CiAgY29uc3QgaW5wdXQgPSBmaXh0dXJlKCksIHNuYXBzaG90ID0gc3RydWN0dXJlZENsb25lKGlucHV0KTsKICBjb25zdCByZXNvbHZlZCA9IHJlc29sdmVGbGV4aWJsZU9wZXJhdGlvbmFsTWVhbFBvbGljaWVzKGlucHV0KTsKICBhc3NlcnQuZGVlcEVxdWFsKHJlc29sdmVkLm1hcCgobWVhbCkgPT4gKHsgaWQ6IG1lYWwuaWQsIHN0YXR1czogbWVhbC5zdGF0dXMsIHJlc291cmNlczogbWVhbC5yZXNvdXJjZUlkcywgc3BhY2VzOiBtZWFsLnNwYWNlSWRzLCB3aW5kb3c6IG1lYWwud2luZG93LCBkdXJhdGlvbjogbWVhbC5kdXJhdGlvbiB9KSksIFsKICAgIHsgaWQ6ICJyZWFsaXR5LW1lYWwiLCBzdGF0dXM6ICJTVVBQT1JURUQiLCByZXNvdXJjZXM6IFs1MDIsIDUwM10sIHNwYWNlczogW10sIHdpbmRvdzogeyBzdGFydDogNzgwLCBlbmQ6IDk5MCB9LCBkdXJhdGlvbjogNzUgfSwKICAgIHsgaWQ6ICJzcGFjZS1tZWFsIiwgc3RhdHVzOiAiU1VQUE9SVEVEIiwgcmVzb3VyY2VzOiBbNTA0XSwgc3BhY2VzOiBbMzAxXSwgd2luZG93OiB7IHN0YXJ0OiA3ODAsIGVuZDogOTkwIH0sIGR1cmF0aW9uOiA3NSB9LAogIF0pOwogIGNvbnN0IHByZWZsaWdodCA9IHByZWZsaWdodEVuZ2luZUlucHV0Rm9yUGxhbm5lck5leHQoaW5wdXQpOwogIGFzc2VydC5lcXVhbChwcmVmbGlnaHQuc3RhdHVzLCAiU1VQUE9SVEVEIiwgSlNPTi5zdHJpbmdpZnkocHJlZmxpZ2h0Lmlzc3VlcykpOwogIGNvbnN0IGFkYXB0ZWQgPSBhZGFwdEVuZ2luZUlucHV0VG9QbGFubmVyTmV4dFByb2JsZW0oaW5wdXQpOwogIGFzc2VydC5lcXVhbChhZGFwdGVkLnN0YXR1cywgIlNVUFBPUlRFRCIsIEpTT04uc3RyaW5naWZ5KGFkYXB0ZWQuaXNzdWVzKSk7CiAgYXNzZXJ0LmRlZXBFcXVhbChhZGFwdGVkLnByb2JsZW0hLm9wZXJhdGlvbmFsTWVhbFBvbGljaWVzLCBbCiAgICB7IGlkOiAiYnJlYWs6cmVhbGl0eS1tZWFsIiwgd2luZG93OiB7IHN0YXJ0OiA3ODAsIGVuZDogOTkwIH0sIGR1cmF0aW9uOiA3NSwgcmVzb3VyY2VJZHM6IFsicGxhbi1yZXNvdXJjZTo1MDIiLCAicGxhbi1yZXNvdXJjZTo1MDMiXSwgc3BhY2VJZHM6IFtdIH0sCiAgICB7IGlkOiAiYnJlYWs6c3BhY2UtbWVhbCIsIHdpbmRvdyA6IHsgc3RhcnQ6IDc4MCwgZW5kOiA5OTAgfSwgZHVyYXRpb246IDc1LCByZXNvdXJjZUlkczogWyJwbGFuLXJlc291cmNlOjUwNCJdLCBzcGFjZUlkczogWyJzcGFjZTozMDEiXSB9LAogIF0pOwogIGNvbnN0IHJldmVyc2VkID0gZml4dHVyZSgpOwogIHJldmVyc2VkLm9wZXJhdGlvbmFsTWVhbFBvbGljaWVzIS5yZXZlcnNlKCk7CiAgcmV2ZXJzZWQub3BlcmF0aW9uYWxNZWFsUG9saWNpZXMhLmZvckVhY2goKHBvbGljeSkgPT4geyBwb2xpY3kucGxhblJlc291cmNlSXRlbUlkcy5yZXZlcnNlKCk7IHBvbGljeS5zcGFjZUlkcz8ucmV2ZXJzZSgpOyB9KTsKICByZXZlcnNlZC5wbGFuUmVzb3VyY2VJdGVtcy5yZXZlcnNlKCk7CiAgY29uc3QgYWRhcHRlZFJldmVyc2VkID0gYWRhcHRFbmdpbmVJbnB1dFRvUGxhbm5lck5leHRQcm9ibGVtKHJldmVyc2VkKTsKICBhc3NlcnQuZXF1YWwoYWRhcHRlZFJldmVyc2VkLnN0YXR1cywgIlNVUFBPUlRFRCIpOwogIGFzc2VydC5lcXVhbChhZGFwdGVkLnByb2JsZW1GaW5nZXJwcmludCwgYWRhcHRlZFJldmVyc2VkLnByb2JsZW1GaW5nZXJwcmludCk7CiAgYXNzZXJ0LmRlZXBFcXVhbChpbnB1dCwgc25hcHNob3QpOwp9KTsKCnRlc3QoImV4YWN0IHNlYXJjaCBtYXRlcmlhbGl6ZXMgc2NvcGVkIG9wZXJhdGlvbmFsIG1lYWxzIGFuZCBlbmZvcmNlcyByZXNvdXJjZSBleGNsdXNpdml0eSBhY3Jvc3Mgc3BhY2VzIiwgKCkgPT4gewogIGNvbnN0IHNvdXJjZSA9IG1haW5GbG93Vm9jYWxTY2VuYXJpbygpOwogIHNvdXJjZS5zZWFyY2hQb2xpY3kgPSAiRVhBQ1RfQ09OU1RSVUNUSVZFIjsKICBzb3VyY2UuYnVkZ2V0ID0geyBiZXN0SzogMjAsIG1heEJhY2t0cmFja3M6IDEwMDAwLCBtYXhQYXR0ZXJuczogMTAwMDAsIG1heEJyYW5jaEV4cGFuc2lvbnM6IDMwMDAwMCB9OwogIHNvdXJjZS5yZXNvdXJjZXMucHVzaCh7IGlkOiAic2NvcGVkLW1lYWwtcmVzb3VyY2UiLCBhdmFpbGFiaWxpdHk6IFt7IC4uLnNvdXJjZS5kYXkgfV0sIHByZXNlbmNlUHJlZmVyZW5jZTogIk9GRiIsIHRyYW5zaXRpb25NaW51dGVzOiAwIH0pOwogIGNvbnN0IHJlc291cmNlVGFzayA9IHNvdXJjZS50YXNrcy5maW5kKCh7IGlkIH0pID0+IGlkID09PSAibWFpbi1wYXJ0aWNpcGFudC1jIikhOwogIHJlc291cmNlVGFzay5yZXF1aXJlZFJlc291cmNlSWRzID0gWyJzY29wZWQtbWVhbC1yZXNvdXJjZSJdOwogIHNvdXJjZS5vcGVyYXRpb25hbE1lYWxQb2xpY2llcyA9IFt7CiAgICBpZDogInNjb3BlZC1vcGVyYXRpb25hbC1tZWFsIiwKICAgIHdpbmRvdyA6IHsgc3RhcnQ6IDk2MCwgZW5kOiAxMDIwIH0sCiAgICBkdXJhdGlvbjogMzAsCiAgICByZXNvdXJjZUlkczogWyJzY29wZWQtbWVhbC1yZXNvdXJjZSJdLAogICAgc3BhY2VJZHM6IFsidm9jYWwtcm9vbS1hIl0sCiAgfV07CiAgY29uc3Qgc3ludGhldGljQ29uZmxpY3QgPSB7IC4uLnJlc291cmNlVGFzaywgc3RhcnQ6IDk2MCwgZW5kOiA5NzUgfTsKICBjb25zdCBjYW5kaWRhdGVzID0gb3BlcmF0aW9uYWxNZWFsQ2FuZGlkYXRlcyhzb3VyY2UsIHNvdXJjZS5vcGVyYXRpb25hbE1lYWxQb2xpY2llc1swXSEsIFtzeW50aGV0aWNDb25mbGljdF0sIFtdKTsKICBhc3NlcnQub2soY2FuZGlkYXRlcy5sZW5ndGggPiAwKTsKICBhc3NlcnQub2soY2FuZGlkYXRlcy5ldmVyeSgobWVhbCkgPT4gc3ludGhldGljQ29uZmxpY3QuZW5kIDw9IG1lYWwuc3RhcnQgfHwgbWVhbC5lbmQgPD0gc3ludGhldGljQ29uZmxpY3Quc3RhcnQpKTsKICBjb25zdCBleGVjdXRpb24gPSBleGVjdXRlUGxhbm5lck5leHQoc291cmNlKTsKICBhc3NlcnQuZXF1YWwoZXhlY3V0aW9uLmtpbmQsICJFWEFDVF9DT05TVFJVQ1RJVkUiKTsKICBhc3NlcnQuZXF1YWwoZXhlY3V0aW9uLnJlc3VsdD8uY29tcGxldGUsIHRydWUsIEpTT04uc3RyaW5naWZ5KGV4ZWN1dGlvbi5yZXN1bHQ/LmV2aWRlbmNlKSk7CiAgY29uc3QgcmVzdWx0ID0gZXhlY3V0aW9uLnJlc3VsdCE7CiAgY29uc3Qgb3BlcmF0aW9uYWxNZWFscyA9IHJlc3VsdC5zY2hlZHVsZWRPcGVyYXRpb25hbE1lYWxzID8/IFtdOwogIGFzc2VydC5lcXVhbChvcGVyYXRpb25hbE1lYWxzLmxlbmd0aCwgMSk7CiAgY29uc3Qgc2NoZWR1bGVkTWVhbCA9IG9wZXJhdGlvbmFsTWVhbHNbMF0hOwogIGNvbnN0IHNjaGVkdWxlZFJlc291cmNlVGFzayA9IHJlc3VsdC5zY2hlZHVsZWRUYXNrcy5maW5kKCh7IGlkIH0pID0+IGlkID09PSByZXNvdXJjZVRhc2suaWQpITsKICBhc3NlcnQub2soc2NoZWR1bGVkUmVzb3VyY2VUYXNrLmVuZCA8PSBzY2hlZHVsZWRNZWFsLnN0YXJ0IHx8IHNjaGVkdWxlZE1lYWwuZW5kIDw9IHNjaGVkdWxlZFJlc291cmNlVGFzay5zdGFydCk7CiAgY29uc3QgdmFsaWRhdGlvbiA9IHZhbGlkYXRlUGxh bihzb3VyY2UsIHJlc3VsdC5zY2hlZHVsZWRUYXNrcywgcmVzdWx0LnNjaGVkdWxlZFNldHVwUHJlcGFyYXRpb25zLCByZXN1bHQuc2NoZWR1bGVkU3BhY2VNZWFscywgcmVzdWx0LnNjaGVkdWxlZFBhcnRpY2lwYW50TWVhbHMsIHJlc3VsdC5zY2hlZHVsZWRSZXNvdXJjZU1lYWxzLCByZXN1bHQuc2NoZWR1bGVkSXRpbmVyYW50VW5pdE1lYWxzLCByZXN1bHQuc2NoZWR1bGVkUm91bmRQcmVwYXJhdGlvbnMsIG9wZXJhdGlvbmFsTWVhbHMpOwogIGFzc2VydC5lcXVhbCh2YWxpZGF0aW9uLmhhcmRWYWxpZCwgdHJ1ZSwgdmFsaWRhdGlvbi5yZWFzb25Db2Rlcy5qb2luKCIsIikpOwp9KTsKCnRlc3QoInNoYXJlZCByZXNvdXJjZXMgY2Fubm90IHJlY2VpdmUgZHVwbGljYXRlIG9wZXJhdGlvbmFsIG1lYWxzIiwgKCkgPT4gewogIGNvbnN0IGlucHV0ID0gZml4dHVyZSgpOwogIGlucHV0Lm9wZXJhdGlvbmFsTWVhbFBvbGljaWVzIS5wdXNoKHsgaWQ6ICJkdXBsaWNhdGUtcmVzb3VyY2UtbWVhbCIsIHdpbmRvdyA6IHsgc3RhcnQ6ICIxMzowMCIsIGVuZDogIjE2OjMwIiB9LCBkdXJhdGlvbk1pbnV0ZXM6IDc1LCBwbGFuUmVzb3VyY2VJdGVtSWRzOiBbNTAzXSwgc3BhY2VJZHM6IFtdIH0pOwogIGNvbnN0IHByZWZsaWdodCA9IHByZWZsaWdodEVuZ2luZUlucHV0Rm9yUGxhbm5lck5leHQoaW5wdXQpOwogIGFzc2VydC5lcXVhbChwcmVmbGlnaHQuc3RhdHVzLCAiVU5TVVBQT1JURUQiKTsKICBhc3NlcnQu b2socHJlZmxpZ2h0LnJlYXNvbkNvZGVzLmluY2x1ZGVzKCJVTlNVUFBPUlRFRF9PUEVSQVRJT05BTF9NRUFMX1BPTElDWSIpKTsKfSk7Cg==' | tr -d ' ' | base64 -d > engine/planner-next/flexibleOperationalMealPolicy.spec.ts
+          cat > engine/planner-next/flexibleOperationalMealPolicy.spec.ts <<'EOF'
+          import assert from "node:assert/strict";
+          import test from "node:test";
+          import type { PlannerNextProblem, ScheduledTask } from "./contracts";
+          import { executePlannerNext } from "./executePlannerNext";
+          import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
+          import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";
+          import { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
+          import { resolveFlexibleOperationalMealPolicies } from "./integration/flexibleOperationalMealPolicies";
+          import { operationalMealCandidates } from "./operationalMeals";
+          import { validatePlan } from "./validate";
+
+          function fixture() {
+            const input = createSupportedEngineInputAdapterFixture();
+            input.mealMode = "flexible_meal_window";
+            input.mealWindow = { start: "13:00", end: "16:30" };
+            input.operationalMealPolicies = [
+              { id: "space-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [504], spaceIds: [301] },
+              { id: "reality-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [503, 502], spaceIds: [] },
+            ];
+            return input;
+          }
+
+          function exactMealProblem(): PlannerNextProblem {
+            const availability = [{ start: 0, end: 120 }];
+            return {
+              day: { start: 0, end: 120 },
+              protectedMeal: { start: 110, end: 120 },
+              spaces: ["main", "vocal", "meal-room"].map((id) => ({ id, availability })),
+              resources: [{ id: "unit", availability, presencePreference: "OFF", transitionMinutes: 0 }],
+              participants: [{ id: "core", availability }],
+              coaches: [{ id: "coach", availability }],
+              tasks: [
+                { id: "vocal", kind: "vocal", participantId: "core", coachId: "coach", duration: 10, spaceId: "vocal", dependencies: [] },
+                { id: "main", kind: "main", participantId: "core", coachId: "coach", duration: 10, spaceId: "main", dependencies: ["vocal"], blockKey: "coach", requiredResourceIds: ["unit"] },
+              ],
+              mainFlow: { spaceId: "main", preferredEnd: 100, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+              participantTransitionMinutes: 0,
+              resourceTransitionMinutes: 0,
+              auxiliaryPolicy: { participantPresencePreference: "OFF" },
+              budget: { bestK: 1, maxBacktracks: 0, maxPatterns: 20, maxBranchExpansions: 20_000 },
+              searchPolicy: "EXACT_CONSTRUCTIVE",
+              operationalMealPolicies: [{ id: "scoped-meal", window: { start: 20, end: 40 }, duration: 10, resourceIds: ["unit"], spaceIds: ["meal-room"] }],
+            };
+          }
+
+          test("flexible operational meals project losslessly and deterministically", () => {
+            const input = fixture(), snapshot = structuredClone(input);
+            const resolved = resolveFlexibleOperationalMealPolicies(input);
+            assert.deepEqual(resolved.map((meal) => ({ id: meal.id, status: meal.status, resources: meal.resourceIds, spaces: meal.spaceIds, window: meal.window, duration: meal.duration })), [
+              { id: "reality-meal", status: "SUPPORTED", resources: [502, 503], spaces: [], window: { start: 780, end: 990 }, duration: 75 },
+              { id: "space-meal", status: "SUPPORTED", resources: [504], spaces: [301], window: { start: 780, end: 990 }, duration: 75 },
+            ]);
+            const preflight = preflightEngineInputForPlannerNext(input);
+            assert.equal(preflight.status, "SUPPORTED", JSON.stringify(preflight.issues));
+            const adapted = adaptEngineInputToPlannerNextProblem(input);
+            assert.equal(adapted.status, "SUPPORTED", JSON.stringify(adapted.issues));
+            assert.deepEqual(adapted.problem!.operationalMealPolicies, [
+              { id: "break:reality-meal", window: { start: 780, end: 990 }, duration: 75, resourceIds: ["plan-resource:502", "plan-resource:503"], spaceIds: [] },
+              { id: "break:space-meal", window: { start: 780, end: 990 }, duration: 75, resourceIds: ["plan-resource:504"], spaceIds: ["space:301"] },
+            ]);
+            const reversed = fixture();
+            reversed.operationalMealPolicies!.reverse();
+            reversed.operationalMealPolicies!.forEach((policy) => { policy.planResourceItemIds.reverse(); policy.spaceIds?.reverse(); });
+            reversed.planResourceItems.reverse();
+            const adaptedReversed = adaptEngineInputToPlannerNextProblem(reversed);
+            assert.equal(adaptedReversed.status, "SUPPORTED");
+            assert.equal(adapted.problemFingerprint, adaptedReversed.problemFingerprint);
+            assert.deepEqual(input, snapshot);
+          });
+
+          test("exact search materializes the scoped meal and enforces its resource across spaces", () => {
+            const source = exactMealProblem();
+            const policy = source.operationalMealPolicies![0]!;
+            const conflictingTask = { ...source.tasks.find(({ id }) => id === "main")!, start: 20, end: 30 } as ScheduledTask;
+            const candidates = operationalMealCandidates(source, policy, [conflictingTask], []);
+            assert.ok(candidates.length > 0);
+            assert.ok(candidates.every((meal) => conflictingTask.end <= meal.start || meal.end <= conflictingTask.start));
+
+            const execution = executePlannerNext(source);
+            assert.equal(execution.kind, "EXACT_CONSTRUCTIVE");
+            assert.equal(execution.result?.complete, true, JSON.stringify(execution.result?.evidence));
+            const result = execution.result!;
+            const meals = result.scheduledOperationalMeals ?? [];
+            assert.equal(meals.length, 1);
+            const scheduledMeal = meals[0]!;
+            const scheduledResourceTask = result.scheduledTasks.find(({ id }) => id === "main")!;
+            assert.ok(scheduledResourceTask.end <= scheduledMeal.start || scheduledMeal.end <= scheduledResourceTask.start);
+            const validation = validatePlan(source, result.scheduledTasks, result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals, result.scheduledResourceMeals, result.scheduledItinerantUnitMeals, result.scheduledRoundPreparations, meals);
+            assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
+          });
+
+          test("shared resources cannot receive duplicate operational meals", () => {
+            const input = fixture();
+            input.operationalMealPolicies!.push({ id: "duplicate-resource-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [503], spaceIds: [] });
+            const preflight = preflightEngineInputForPlannerNext(input);
+            assert.equal(preflight.status, "UNSUPPORTED");
+            assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_OPERATIONAL_MEAL_POLICY"));
+          });
+          EOF
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('engine/planner-next/flexibleOperationalMealPolicy.spec.ts')
+          path.write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in path.read_text().splitlines()) + '\n')
+
+          path = Path('engine/planner-next/exactFlexibleSetupOrder.spec.ts')
+          text = path.read_text()
+          old = '''  assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), [\n    "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",\n  ]);\n  assert.equal(\n    analysis.nextImplementationBlocker?.code,\n    "PLANNER_NEXT_SCOPED_MEAL_RESOURCE_EXCLUSIVITY_UNSUPPORTED",\n  );\n  assert.equal(analysis.nextImplementationBlocker?.layer, "PLANNER_NEXT");'''
+          new = '''  assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), []);\n  assert.equal(analysis.nextImplementationBlocker, null);'''
+          if text.count(old) != 1:
+              raise RuntimeError(f'expected one obsolete scoped-meal blocker assertion, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1).replace('full A2 leaves transport behind and retains only scoped meal blockers', 'full A2 has no remaining implementation representability blockers', 1))
+          PY
       - name: Install dependencies
         run: npm ci
       - name: TypeScript check
