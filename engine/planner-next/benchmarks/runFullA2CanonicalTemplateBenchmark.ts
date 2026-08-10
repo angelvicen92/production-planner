@@ -207,7 +207,7 @@ ${next ? `Los probes focales demuestran jointGroupCapabilityProven=${representab
 
 ## No implementado
 
-No se implementa botón, DB, API, UI, persistencia, comidas scoped ni ejecución del motor para un subconjunto parcial.
+No se implementa botón, DB, API, UI ni persistencia. Este benchmark cierra representabilidad; no ejecuta ni publica todavía un planning Full A2 completo, y no publica subconjuntos parciales como solución.
 `);
 
 console.log(JSON.stringify({
