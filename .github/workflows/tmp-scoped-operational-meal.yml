@@ -36,6 +36,16 @@ jobs:
           path.write_text(text)
           PY
           python .github/tmp-scoped-operational-meal.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('engine/planner-next/exactMainAndFeederCore.ts')
+          text = path.read_text()
+          old = '''        roundSynchronizations: undefined,\n        participantMeals: undefined,\n        participantMealCapacity: undefined,\n        transportPolicy: undefined,'''
+          new = '''        roundSynchronizations: undefined,\n        participantMeals: undefined,\n        participantMealCapacity: undefined,\n        operationalMealPolicies: undefined,\n        transportPolicy: undefined,'''
+          if text.count(old) != 1:
+              raise RuntimeError(f'expected one deferred leaf-policy block, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
           cat > engine/planner-next/flexibleOperationalMealPolicy.spec.ts <<'EOF'
           import assert from "node:assert/strict";
           import test from "node:test";
