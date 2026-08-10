@@ -43,27 +43,103 @@ jobs:
           python .github/tmp-scoped-operational-meal.py
           python - <<'PY'
           from pathlib import Path
-          path = Path('engine/planner-next/flexibleOperationalMealPolicy.spec.ts')
-          text = path.read_text()
-          fixture_old = '''  const input = createSupportedEngineInputAdapterFixture();\n  input.mealMode = "flexible_meal_window";'''
-          fixture_new = '''  const input = createSupportedEngineInputAdapterFixture();\n  input.tasks = input.tasks.filter((task) => task.id !== 105);\n  input.locks = input.locks.filter((lock) => lock.taskId !== 105);\n  input.mealMode = "flexible_meal_window";'''
-          if text.count(fixture_old) != 1:
-              raise RuntimeError(f'expected one base fixture block, found {text.count(fixture_old)}')
-          text = text.replace(fixture_old, fixture_new, 1)
-          old = '''  adapted.problem!.searchPolicy = "EXACT_CONSTRUCTIVE";\n  adapted.problem!.budget.maxBranchExpansions = Math.max(adapted.problem!.budget.maxBranchExpansions, 300000);\n  const execution = executePlannerNext(adapted.problem!);'''
-          new = '''  const exactProblem = structuredClone(adapted.problem!);\n  exactProblem.searchPolicy = "EXACT_CONSTRUCTIVE";\n  exactProblem.budget.maxBranchExpansions = Math.max(exactProblem.budget.maxBranchExpansions, 300000);\n  const execution = executePlannerNext(exactProblem);'''
-          if text.count(old) != 1:
-              raise RuntimeError(f'expected one mutable adapted-problem test block, found {text.count(old)}')
-          text = text.replace(old, new, 1).replace('validatePlan(adapted.problem!, result.scheduledTasks', 'validatePlan(exactProblem, result.scheduledTasks', 1)
-          text = text.replace('assert.equal(execution.result?.complete, true);', 'assert.equal(execution.result?.complete, true, JSON.stringify(execution.result?.evidence));', 1)
-          path.write_text(text)
+          spec = '''import assert from "node:assert/strict";
+import test from "node:test";
+import { executePlannerNext } from "./executePlannerNext";
+import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
+import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";
+import { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
+import { resolveFlexibleOperationalMealPolicies } from "./integration/flexibleOperationalMealPolicies";
+import { operationalMealCandidates } from "./operationalMeals";
+import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
+import { validatePlan } from "./validate";
+
+function fixture() {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.mealMode = "flexible_meal_window";
+  input.mealWindow = { start: "13:00", end: "16:30" };
+  input.operationalMealPolicies = [
+    { id: "space-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [504], spaceIds: [301] },
+    { id: "reality-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [503, 502], spaceIds: [] },
+  ];
+  return input;
+}
+
+test("flexible operational meals project losslessly and deterministically", () => {
+  const input = fixture(), snapshot = structuredClone(input);
+  const resolved = resolveFlexibleOperationalMealPolicies(input);
+  assert.deepEqual(resolved.map((meal) => ({ id: meal.id, status: meal.status, resources: meal.resourceIds, spaces: meal.spaceIds, window: meal.window, duration: meal.duration })), [
+    { id: "reality-meal", status: "SUPPORTED", resources: [502, 503], spaces: [], window: { start: 780, end: 990 }, duration: 75 },
+    { id: "space-meal", status: "SUPPORTED", resources: [504], spaces: [301], window: { start: 780, end: 990 }, duration: 75 },
+  ]);
+  const preflight = preflightEngineInputForPlannerNext(input);
+  assert.equal(preflight.status, "SUPPORTED", JSON.stringify(preflight.issues));
+  const adapted = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(adapted.status, "SUPPORTED", JSON.stringify(adapted.issues));
+  assert.deepEqual(adapted.problem!.operationalMealPolicies, [
+    { id: "break:reality-meal", window: { start: 780, end: 990 }, duration: 75, resourceIds: ["plan-resource:502", "plan-resource:503"], spaceIds: [] },
+    { id: "break:space-meal", window: { start: 780, end: 990 }, duration: 75, resourceIds: ["plan-resource:504"], spaceIds: ["space:301"] },
+  ]);
+
+  const reversed = fixture();
+  reversed.operationalMealPolicies!.reverse();
+  reversed.operationalMealPolicies!.forEach((policy) => { policy.planResourceItemIds.reverse(); policy.spaceIds?.reverse(); });
+  reversed.planResourceItems.reverse();
+  const adaptedReversed = adaptEngineInputToPlannerNextProblem(reversed);
+  assert.equal(adaptedReversed.status, "SUPPORTED");
+  assert.equal(adapted.problemFingerprint, adaptedReversed.problemFingerprint);
+  assert.deepEqual(input, snapshot);
+});
+
+test("exact search materializes scoped operational meals and enforces resource exclusivity across spaces", () => {
+  const source = mainFlowVocalScenario();
+  source.searchPolicy = "EXACT_CONSTRUCTIVE";
+  source.budget = { bestK: 20, maxBacktracks: 10000, maxPatterns: 10000, maxBranchExpansions: 300000 };
+  source.resources.push({ id: "scoped-meal-resource", availability: [{ ...source.day }], presencePreference: "OFF", transitionMinutes: 0 });
+  const resourceTask = source.tasks.find(({ id }) => id === "main-participant-c")!;
+  resourceTask.requiredResourceIds = ["scoped-meal-resource"];
+  source.operationalMealPolicies = [{
+    id: "scoped-operational-meal",
+    window: { start: 960, end: 1020 },
+    duration: 30,
+    resourceIds: ["scoped-meal-resource"],
+    spaceIds: ["vocal-room-a"],
+  }];
+
+  const syntheticConflict = { ...resourceTask, start: 960, end: 975 };
+  const candidates = operationalMealCandidates(source, source.operationalMealPolicies[0]!, [syntheticConflict], []);
+  assert.ok(candidates.length > 0);
+  assert.ok(candidates.every((meal) => syntheticConflict.end <= meal.start || meal.end <= syntheticConflict.start));
+
+  const execution = executePlannerNext(source);
+  assert.equal(execution.kind, "EXACT_CONSTRUCTIVE");
+  assert.equal(execution.result?.complete, true, JSON.stringify(execution.result?.evidence));
+  const result = execution.result!;
+  const operationalMeals = result.scheduledOperationalMeals ?? [];
+  assert.equal(operationalMeals.length, 1);
+  const scheduledMeal = operationalMeals[0]!;
+  const scheduledResourceTask = result.scheduledTasks.find(({ id }) => id === resourceTask.id)!;
+  assert.ok(scheduledResourceTask.end <= scheduledMeal.start || scheduledMeal.end <= scheduledResourceTask.start);
+  const validation = validatePlan(source, result.scheduledTasks, result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals, result.scheduledResourceMeals, result.scheduledItinerantUnitMeals, result.scheduledRoundPreparations, operationalMeals);
+  assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
+});
+
+test("shared resources cannot receive duplicate operational meals", () => {
+  const input = fixture();
+  input.operationalMealPolicies!.push({ id: "duplicate-resource-meal", window: { start: "13:00", end: "16:30" }, durationMinutes: 75, planResourceItemIds: [503], spaceIds: [] });
+  const preflight = preflightEngineInputForPlannerNext(input);
+  assert.equal(preflight.status, "UNSUPPORTED");
+  assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_OPERATIONAL_MEAL_POLICY"));
+});
+'''
+          Path('engine/planner-next/flexibleOperationalMealPolicy.spec.ts').write_text(spec)
           PY
       - name: Install dependencies
         run: npm ci
       - name: TypeScript check
         run: npm run check
       - name: Focal tests
-        run: npx tsx --test engine/planner-next/flexibleOperationalMealPolicy.spec.ts engine/planner-next/spaceMeals.spec.ts
+        run: npx tsx --test engine/planner-next/flexibleOperationalMealPolicy.spec.ts engine/planner-next/spaceMeals.spec.ts engine/planner-next/exactFlexibleSetupOrder.spec.ts
       - name: Commit implementation
         shell: bash
         run: |
