@@ -1,0 +1,87 @@
+{
+  "evidenceId": "A2-FULL-EXEC-001-first-execution",
+  "canonicalObligationCount": 269,
+  "canonicalValidationStatus": "VALID",
+  "engineInput": {
+    "taskCount": 269,
+    "participantCount": 19,
+    "sourceHumanTimesUsed": false,
+    "searchBudgetIsTechnicalExecutionConfiguration": true,
+    "genericTransitionMinutes": {
+      "participant": 0,
+      "resource": 0
+    },
+    "operationalMealProjection": [
+      [
+        "reality-operations",
+        [
+          "cam-3",
+          "cam-4",
+          "son-1",
+          "son-2"
+        ]
+      ],
+      [
+        "cam2-operations",
+        [
+          "cam-2"
+        ]
+      ],
+      [
+        "eva-operations",
+        [
+          "eva"
+        ]
+      ],
+      [
+        "coach-lucia",
+        [
+          "coach-lucia"
+        ]
+      ],
+      [
+        "coach-jose-maria",
+        [
+          "coach-jose-maria"
+        ]
+      ]
+    ],
+    "itineraryAvailabilityProjected": false,
+    "itineraryAvailabilityGap": "EngineInput has itinerantTeamId identity but no lossless per-itinerant-unit availability field used by the adapter; Full A2 success cannot be declared until this source rule is preserved."
+  },
+  "preflight": {
+    "status": "SUPPORTED",
+    "reasonCodes": [],
+    "issues": []
+  },
+  "adapter": {
+    "status": "UNSUPPORTED",
+    "reasonCodes": [
+      "ADAPTED_PROBLEM_NOT_REPRESENTABLE"
+    ],
+    "issues": [
+      {
+        "code": "ADAPTED_PROBLEM_NOT_REPRESENTABLE",
+        "entityKind": "plan",
+        "entityId": "27001",
+        "path": "plannerNextProblem",
+        "message": "The adapted problem is rejected by the canonical Planner Next preflight.",
+        "details": {
+          "plannerNextReasonCodes": [
+            "AUXILIARY_DEPENDENCY_UNSUPPORTED",
+            "MISSING_TASK_REFERENCE",
+            "UNSUPPORTED_MAIN_DEPENDENCIES"
+          ]
+        }
+      }
+    ],
+    "problemFingerprint": null
+  },
+  "execution": null,
+  "result": {
+    "publishedCanonicalObligations": 0,
+    "diagnosticScheduledCanonicalObligations": 0,
+    "targetCanonicalObligations": 269,
+    "fullHardValidEligible": false
+  }
+}
