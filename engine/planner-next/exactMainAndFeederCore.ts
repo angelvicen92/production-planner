@@ -391,16 +391,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
+      const departureEnds = [...latestDepartureStart.values()];
       const candidateEnds = timeline
         ? [problem.mainFlow.preferredEnd]
-        : [...new Set([problem.mainFlow.preferredEnd,
-          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline)),
-          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : [])])]
-          .sort((left, right) => left === problem.mainFlow.preferredEnd ? -1
-            : right === problem.mainFlow.preferredEnd ? 1
-              : left <= problem.mainFlow.preferredEnd && right <= problem.mainFlow.preferredEnd
-                ? right - left
-                : left - right);
+        : [...new Set([
+          problem.mainFlow.preferredEnd,
+          ...departureEnds
+            .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+            .sort((left, right) => left - right),
+          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+          ...departureEnds
+            .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+            .sort((left, right) => right - left),
+        ])];
       for (const candidateEnd of candidateEnds) {
         if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);

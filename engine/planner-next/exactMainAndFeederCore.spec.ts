@@ -65,25 +65,30 @@ test("explores the first valid feeder start immediately without enumerating earl
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, 1);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal")!.start, 80);
+  assert.equal(result.evidence.timelineCandidatesExplored, 1);
 });
 
-test("completes a continuous main flow later in the day when it cannot end by preferredEnd", () => {
+test("uses an intermediate departure deadline before the invalid end-of-day fallback", () => {
   const problem = syntheticProblem([
-    { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },
-    { id: "main-a", kind: "main", participantId: "a", duration: 40, spaceId: "main", dependencies: ["vocal-a"], blockKey: "block" },
-    { id: "vocal-b", kind: "vocal", participantId: "b", duration: 10, spaceId: "vocal-b", dependencies: [] },
-    { id: "main-b", kind: "main", participantId: "b", duration: 40, spaceId: "main", dependencies: ["vocal-b"], blockKey: "block" },
-  ], ["a", "b"], ["vocal-a", "vocal-b"]);
+    { id: "vocal", kind: "vocal", participantId: "p", duration: 10, spaceId: "vocal-room", dependencies: [] },
+    { id: "main", kind: "main", participantId: "p", duration: 80, spaceId: "main", dependencies: ["vocal"], blockKey: "block" },
+    { id: "departure", kind: "auxiliary", participantId: "p", duration: 10, spaceId: "side", dependencies: [],
+      availability: [{ start: 0, end: 110 }] },
+  ], ["p"], ["vocal-room", "side"]);
   problem.mainFlow.preferredEnd = 60;
   problem.protectedMeal = undefined;
+  problem.auxiliaryPolicy = { participantPresencePreference: "OFF" };
+  problem.transportPolicy = {
+    arrival: { taskIds: [], minimumGroupSize: 1, maximumGroupSize: 1, minGapMinutes: 0, groupingWeight: 0 },
+    departure: { taskIds: ["departure"], minimumGroupSize: 1, maximumGroupSize: 1, minGapMinutes: 0, groupingWeight: 0 },
+  };
 
   const result = constructExactMainAndFeederCore(problem);
-  const mains = result.scheduledTasks.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
-  assert.equal(result.status, "COMPLETE");
-  assert.equal(mains.length, 2);
-  assert.ok(mains[1]!.end > problem.mainFlow.preferredEnd);
-  assert.equal(mains[0]!.end, mains[1]!.start);
-  assert.ok(mains[0]!.start >= problem.day.start && mains[1]!.end <= problem.day.end);
+  const main = result.scheduledTasks.find(({ kind }) => kind === "main");
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(main?.end, 100);
+  assert.ok(main!.end > problem.mainFlow.preferredEnd && main!.end < problem.day.end);
+  assert.equal(result.evidence.timelineCandidatesExplored, 2);
 });
 
 test("is invariant to canonical input collection order", () => {
