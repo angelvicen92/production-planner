@@ -171,7 +171,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   for (const main of mains) {
     const matching = vocals.filter((task) => task.participantId === main.participantId);
     if (matching.length !== 1) unsupported.push(`${matching.length === 0 ? "MISSING" : "MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
-    else if (!main.dependencies.includes(matching[0]!.id))
+    else if (!main.dependencies.includes(matching[0]!.id)
+      || matching[0]!.dependencies.some((dependencyId) => mains.some(({ id }) => id === dependencyId)))
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
     else feederByMain.set(main.id, { ...matching[0]!, dependencies: [...matching[0]!.dependencies] });
   }
@@ -390,11 +391,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
+      const departureEnds = [...latestDepartureStart.values()];
       const candidateEnds = timeline
         ? [problem.mainFlow.preferredEnd]
-        : [...new Set([problem.mainFlow.preferredEnd,
-          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline))])]
-          .sort((left, right) => right - left);
+        : [...new Set([
+          problem.mainFlow.preferredEnd,
+          ...departureEnds
+            .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+            .sort((left, right) => left - right),
+          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+          ...departureEnds
+            .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+            .sort((left, right) => right - left),
+        ])];
       for (const candidateEnd of candidateEnds) {
         if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);

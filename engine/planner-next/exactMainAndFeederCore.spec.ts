@@ -65,6 +65,30 @@ test("explores the first valid feeder start immediately without enumerating earl
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, 1);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal")!.start, 80);
+  assert.equal(result.evidence.timelineCandidatesExplored, 1);
+});
+
+test("uses an intermediate departure deadline before the invalid end-of-day fallback", () => {
+  const problem = syntheticProblem([
+    { id: "vocal", kind: "vocal", participantId: "p", duration: 10, spaceId: "vocal-room", dependencies: [] },
+    { id: "main", kind: "main", participantId: "p", duration: 80, spaceId: "main", dependencies: ["vocal"], blockKey: "block" },
+    { id: "departure", kind: "auxiliary", participantId: "p", duration: 10, spaceId: "side", dependencies: [],
+      availability: [{ start: 0, end: 110 }] },
+  ], ["p"], ["vocal-room", "side"]);
+  problem.mainFlow.preferredEnd = 60;
+  problem.protectedMeal = undefined;
+  problem.auxiliaryPolicy = { participantPresencePreference: "OFF" };
+  problem.transportPolicy = {
+    arrival: { taskIds: [], minimumGroupSize: 1, maximumGroupSize: 1, minGapMinutes: 0, groupingWeight: 0 },
+    departure: { taskIds: ["departure"], minimumGroupSize: 1, maximumGroupSize: 1, minGapMinutes: 0, groupingWeight: 0 },
+  };
+
+  const result = constructExactMainAndFeederCore(problem);
+  const main = result.scheduledTasks.find(({ kind }) => kind === "main");
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(main?.end, 100);
+  assert.ok(main!.end > problem.mainFlow.preferredEnd && main!.end < problem.day.end);
+  assert.equal(result.evidence.timelineCandidatesExplored, 2);
 });
 
 test("is invariant to canonical input collection order", () => {
@@ -124,7 +148,7 @@ test("defers an impossible future feeder to exact construction without publishin
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "INFEASIBLE");
   assert.ok(result.evidence.residualMatchingChecks > 0);
-  assert.equal(result.evidence.residualMatchingPrunes, 0);
+  assert.ok(result.evidence.residualMatchingPrunes > 0);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
