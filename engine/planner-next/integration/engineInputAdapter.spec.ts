@@ -9,6 +9,7 @@ import { createSpec10017JointGroupEngineInputFixture, createSpec10018SetupPolicy
 import { runSpec10017Probe } from "../benchmarks/runSpec10017JointGroupsBenchmark";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { isFlexibleParticipantMealTask } from "./flexibleParticipantMealTasks";
+import { canPlaceTask } from "../placement";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const freeze = <T>(value: T): T => { if (value && typeof value === "object") { Object.values(value as object).forEach(freeze); Object.freeze(value); } return value; };
@@ -356,9 +357,24 @@ test("flexible participant meal task adapts separately with reversible identity 
     const before = structuredClone(input); const adapted = adaptEngineInputToPlannerNextProblem(input);
     assert.equal(adapted.status, "SUPPORTED", adapted.reasonCodes.join(",")); if (adapted.status !== "SUPPORTED") return;
     assert.equal(adapted.problem.tasks.some(task=>task.id==="task:106"),false);
+    assert.equal(adapted.problem.protectedMeal,undefined);
+    const productive=adapted.problem.tasks.find(task=>task.id==="task:101")!;
+    assert.equal(canPlaceTask(adapted.problem,productive,780,[]),true);
     assert.deepEqual(adapted.problem.participantMeals?.map(meal=>({sourceTaskId:meal.sourceTaskId,participantId:meal.participantId,duration:meal.duration,window:meal.window})),[{sourceTaskId:"task:106",participantId:"participant:201",duration:45,window:{start:840,end:960}}]);
     assert.ok(adapted.identityMap.some(entry=>entry.namespace==="task"&&entry.sourceId==="106"&&entry.canonicalId==="task:106"));
     assert.deepEqual(input,before);
+});
+
+test("legacy and explicit global meal modes preserve the historical hard break",()=>{
+  for(const mode of [undefined,"global_hard_break"] as const){
+    const input=createSupportedEngineInputAdapterFixture();
+    input.mealMode=mode;
+    const before=structuredClone(input),adapted=supported(input);
+    assert.deepEqual(adapted.problem.protectedMeal,{start:780,end:840});
+    const productive=adapted.problem.tasks.find(task=>task.id==="task:101")!;
+    assert.equal(canPlaceTask(adapted.problem,productive,780,[]),false);
+    assert.deepEqual(input,before);
+  }
 });
 
 test("flexible meal classification requires explicit mode and never accepts generic breakKind meal",()=>{const input=createSupportedEngineInputAdapterFixture();const task={id:999,planId:701,templateId:999,status:"pending" as const,contestantId:201,operationalRole:"meal_break_placeholder" as const};input.mealMode="global_hard_break";input.mealTaskTemplateId=999;assert.equal(isFlexibleParticipantMealTask(input,task),false);input.mealMode="flexible_meal_window";assert.equal(isFlexibleParticipantMealTask(input,task),true);assert.equal(isFlexibleParticipantMealTask({...input,mealTaskTemplateId:undefined},{...task,operationalRole:"productive_task",breakKind:"meal"}),false);});

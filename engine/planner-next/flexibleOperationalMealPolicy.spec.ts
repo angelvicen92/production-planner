@@ -26,7 +26,6 @@ function exactMealProblem(): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
   return {
     day: { start: 0, end: 120 },
-    protectedMeal: { start: 110, end: 120 },
     spaces: ["main", "vocal", "meal-room"].map((id) => ({ id, availability })),
     resources: [{ id: "unit", availability, presencePreference: "OFF", transitionMinutes: 0 }],
     participants: [{ id: "core", availability }],

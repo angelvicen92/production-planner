@@ -58,9 +58,10 @@ function bridgeEnd(
   previousEnd: number,
   meals: ScheduledSpaceMeal[],
 ): number {
-  if (protectedMealBlocksSpace(problem, spaceId)
-    && previousEnd === problem.protectedMeal.start) {
-    return problem.protectedMeal.end;
+  const protectedMeal = problem.protectedMeal;
+  if (protectedMeal && protectedMealBlocksSpace(problem, spaceId)
+    && previousEnd === protectedMeal.start) {
+    return protectedMeal.end;
   }
   const meal = meals.find((candidate) =>
     candidate.spaceId === spaceId && candidate.start === previousEnd);
@@ -88,7 +89,7 @@ function preparationAvoidsExistingOccupations(
 ): boolean {
   if (preparation.start < problem.day.start || preparation.end > problem.day.end) return false;
   if (!intervalFitsSpace(problem, preparation.spaceId, preparation.start, preparation.end)) return false;
-  if (protectedMealBlocksSpace(problem, preparation.spaceId)
+  if (problem.protectedMeal && protectedMealBlocksSpace(problem, preparation.spaceId)
     && overlaps(preparation, problem.protectedMeal)) return false;
   if (meals.some((meal) => meal.spaceId === preparation.spaceId && overlaps(meal, preparation))) return false;
   if (baseTasks.some((task) => task.spaceId === preparation.spaceId && overlaps(task, preparation))) return false;

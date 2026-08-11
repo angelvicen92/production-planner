@@ -3,7 +3,7 @@ import { createScheduledSpaceMeal } from "./spaceMeals";
 export interface MainFlowTimeline { key:string; slots:number[]; meal:ScheduledSpaceMeal; splitIndex:number; morningTaskCount:number; afternoonTaskCount:number; strategyRank:number }
 export const mainFlowMealPolicy=(p:PlannerNextProblem):SpaceMealPolicy|undefined=>p.spaces.find(s=>s.id===p.mainFlow.spaceId)?.mealPolicy;
 export const hasMainFlowMeal=(p:PlannerNextProblem)=>mainFlowMealPolicy(p)!==undefined;
-export const mainFlowMealAligned=(p:PlannerNextProblem)=>{const x=mainFlowMealPolicy(p),m=p.protectedMeal;return !!x&&x.window.start===m.start&&x.window.end===m.end&&x.duration===m.end-m.start&&p.mainFlow.preferredEnd===m.start};
+export const mainFlowMealAligned=(p:PlannerNextProblem)=>{const x=mainFlowMealPolicy(p),m=p.protectedMeal;if(!x)return false;return m?x.window.start===m.start&&x.window.end===m.end&&x.duration===m.end-m.start&&p.mainFlow.preferredEnd===m.start:x.window.start<=p.mainFlow.preferredEnd&&p.mainFlow.preferredEnd+x.duration<=x.window.end};
 export const createMainFlowMeal=(p:PlannerNextProblem)=>createScheduledSpaceMeal(p.mainFlow.spaceId,p.mainFlow.preferredEnd,mainFlowMealPolicy(p)!.duration);
 export const blockBoundaries=(pattern:string[])=>pattern.slice(1).flatMap((key,i)=>key!==pattern[i]?[i+1]:[]);
 export const isBlockBoundary=(pattern:string[],cut:number)=>cut>0&&cut<pattern.length&&pattern[cut-1]!==pattern[cut];

@@ -250,7 +250,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
 
   const problem: PlannerNextProblem = {
     day: window(input.workDay),
-    protectedMeal: window(input.meal),
+    ...(input.mealMode === "flexible_meal_window" ? {} : { protectedMeal: window(input.meal) }),
     spaces,
     resources,
     participants,
