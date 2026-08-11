@@ -36,7 +36,7 @@ test("auxiliary contract failures are stable and crash safe", () => {
     [(p:any) => { p.auxiliaryPolicy.participantPresencePreference="WRONG"; }, "INVALID_AUXILIARY_POLICY"],
     [(p:any) => { p.tasks.find((x:any)=>x.kind==="auxiliary").coachId="coach-a"; }, "AUXILIARY_COACH_UNSUPPORTED"],
     [(p:any) => { p.tasks.find((x:any)=>x.kind==="auxiliary").blockKey="x"; }, "AUXILIARY_BLOCK_KEY_UNSUPPORTED"],
-    [(p:any) => { p.tasks.find((x:any)=>x.kind==="auxiliary").dependencies=["vocal-participant-a"]; }, "AUXILIARY_DEPENDENCY_UNSUPPORTED"],
+    [(p:any) => { p.tasks.find((x:any)=>x.kind==="auxiliary").dependencies=["missing-task"]; }, "MISSING_TASK_REFERENCE"],
   ] as const) { const p=auxiliaryScarcityScenario("OFF") as any; mutate(p); assert.ok(preflight(p).includes(code)); }
 });
 

@@ -242,7 +242,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
       const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
-      const validation = validatePlan(reduced, placed, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
+      const reducedPlaced = placed.map((task) => ({
+        ...task,
+        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
+      }));
+      const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
       if (validShape && validation.hardValid) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
         const ordered = placed.map((task) => ({
