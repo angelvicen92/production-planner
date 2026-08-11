@@ -113,7 +113,8 @@ export type PlannerSearchPolicy =
 
 export interface PlannerNextProblem {
   day: Window;
-  protectedMeal: Window;
+  /** Legacy/global hard meal break. Absent for flexible participant meal windows. */
+  protectedMeal?: Window;
   spaces: Space[];
   resources: Resource[];
   participants: Person[];

@@ -73,7 +73,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     reasons.add("INVALID_DAY");
   }
   const usableDay = day && Number.isFinite(day.start) && Number.isFinite(day.end) && day.start < day.end;
-  if (!problem.protectedMeal || !usableDay || invalidWindow(problem.protectedMeal, day)) {
+  if (problem.protectedMeal !== undefined && (!usableDay || invalidWindow(problem.protectedMeal, day))) {
     reasons.add("INVALID_PROTECTED_MEAL");
   }
   const preferredEnd = problem.mainFlow?.preferredEnd;
@@ -460,16 +460,16 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const mainPolicy = problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)?.mealPolicy;
   const ownMeals = meals.filter(x=>x.spaceId===problem.mainFlow.spaceId);
   if (mainPolicy) {
-    const meal=ownMeals[0], morning=mainFlowOccupations.filter(x=>x.end<=problem.protectedMeal.start), afternoon=mainFlowOccupations.filter(x=>x.start>=problem.protectedMeal.end);
+    const meal=ownMeals[0], mealStart=meal?.start??problem.mainFlow.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
     const consecutive=(xs:ScheduledTask[])=>xs.slice(1).every((x,i)=>xs[i]?.end===x.start);
-    const morningMains=mains.filter(x=>x.end<=meal!.start),afternoonMains=mains.filter(x=>x.start>=meal!.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==problem.mainFlow.preferredEnd||meal.start!==problem.protectedMeal.start||meal.end!==problem.protectedMeal.end||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
+    const morningMains=mains.filter(x=>x.end<=mealStart),afternoonMains=mains.filter(x=>x.start>=mealEnd);const globalMealMismatch=problem.protectedMeal!==undefined&&(meal?.start!==problem.protectedMeal.start||meal?.end!==problem.protectedMeal.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==problem.mainFlow.preferredEnd||globalMealMismatch||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
     if(invalid)mainFlowMeal=1;
   }
   if (mains.length > 0) {
     // preferredEnd guides search/ranking; hard validity does not require the final main to end there.
     for (let index = 1; index < mains.length; index += 1) {
       const previous = mains[index - 1]; const current = mains[index];
-      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&between.some(x=>x.end===problem.protectedMeal.start)&&between.some(x=>x.start===problem.protectedMeal.end));if (!previous || !current || !connected) block += 1;
+      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
     }
     const runs: Array<{ key: string; count: number }> = [];
     for (const task of mains) {

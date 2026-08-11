@@ -135,7 +135,7 @@ function gapIsAuthorized(
   meals: ScheduledSpaceMeal[],
 ): boolean {
   if (previousEnd === nextOccupationStart) return true;
-  if (protectedMealBlocksSpace(problem, spaceId)
+  if (problem.protectedMeal && protectedMealBlocksSpace(problem, spaceId)
     && previousEnd === problem.protectedMeal.start
     && nextOccupationStart === problem.protectedMeal.end) return true;
   return meals.some((meal) =>
@@ -234,7 +234,7 @@ export function validateRoundSynchronizations(
             && overlaps(preparation.start, preparation.end, meal.start, meal.end))
           : true;
         const overlapsProtectedMeal = preparation
-          ? protectedMealBlocksSpace(problem, lane.spaceId) && overlaps(
+          ? problem.protectedMeal !== undefined && protectedMealBlocksSpace(problem, lane.spaceId) && overlaps(
             preparation.start,
             preparation.end,
             problem.protectedMeal.start,

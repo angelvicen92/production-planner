@@ -9,10 +9,10 @@ export const sortedSpaceMeals=(meals:ScheduledSpaceMeal[])=>[...meals].sort((a,b
 export const isRequiredBlockMealSpace=(problem:PlannerNextProblem,spaceId:string)=>problem.spaces.some(s=>s.id===spaceId&&s.secondaryContinuity==="REQUIRED"&&s.mealPolicy!==undefined);
 export const isMainFlowMealSpace=(problem:PlannerNextProblem,spaceId:string)=>spaceId===problem.mainFlow.spaceId&&spaceMealPolicy(problem,spaceId)!==undefined;
 /** Whether protectedMeal is represented by the explicit, space-local main-flow meal. */
-export const hasExplicitMainFlowMeal=(problem:PlannerNextProblem):boolean=>{const policy=spaceMealPolicy(problem,problem.mainFlow.spaceId);return policy!==undefined&&policy.duration===problem.protectedMeal.end-problem.protectedMeal.start&&policy.window.start<=problem.protectedMeal.start&&policy.window.end>=problem.protectedMeal.end&&problem.mainFlow.preferredEnd===problem.protectedMeal.start};
+export const hasExplicitMainFlowMeal=(problem:PlannerNextProblem):boolean=>{const policy=spaceMealPolicy(problem,problem.mainFlow.spaceId),meal=problem.protectedMeal;return meal!==undefined&&policy!==undefined&&policy.duration===meal.end-meal.start&&policy.window.start<=meal.start&&policy.window.end>=meal.end&&problem.mainFlow.preferredEnd===meal.start};
 /** Legacy protected meals are global; an aligned explicit main meal only blocks its space. */
-export const protectedMealBlocksSpace=(problem:PlannerNextProblem,spaceId:string):boolean=>!hasExplicitMainFlowMeal(problem)||spaceId===problem.mainFlow.spaceId;
-export const occupationAvoidsProtectedMeal=(problem:PlannerNextProblem,spaceId:string,start:number,end:number):boolean=>!protectedMealBlocksSpace(problem,spaceId)||!overlaps({start,end},problem.protectedMeal);
+export const protectedMealBlocksSpace=(problem:PlannerNextProblem,spaceId:string):boolean=>problem.protectedMeal!==undefined&&(!hasExplicitMainFlowMeal(problem)||spaceId===problem.mainFlow.spaceId);
+export const occupationAvoidsProtectedMeal=(problem:PlannerNextProblem,spaceId:string,start:number,end:number):boolean=>!problem.protectedMeal||!protectedMealBlocksSpace(problem,spaceId)||!overlaps({start,end},problem.protectedMeal);
 export const independentSpaceMealIds=(problem:PlannerNextProblem,meals:ScheduledSpaceMeal[])=>spacesWithMealPolicy(problem).map(s=>s.id).filter(id=>!isRequiredBlockMealSpace(problem,id)&&!isMainFlowMealSpace(problem,id)&&!meals.some(m=>m.spaceId===id));
 export const requiredBlockMealSpaceIds=(problem:PlannerNextProblem,meals:ScheduledSpaceMeal[])=>spacesWithMealPolicy(problem).map(s=>s.id).filter(id=>isRequiredBlockMealSpace(problem,id)&&!meals.some(m=>m.spaceId===id));
 export const pendingSpaceMealIds=independentSpaceMealIds;
