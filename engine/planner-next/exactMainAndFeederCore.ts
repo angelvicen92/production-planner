@@ -171,7 +171,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   for (const main of mains) {
     const matching = vocals.filter((task) => task.participantId === main.participantId);
     if (matching.length !== 1) unsupported.push(`${matching.length === 0 ? "MISSING" : "MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
-    else if (!main.dependencies.includes(matching[0]!.id))
+    else if (!main.dependencies.includes(matching[0]!.id)
+      || matching[0]!.dependencies.some((dependencyId) => mains.some(({ id }) => id === dependencyId)))
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
     else feederByMain.set(main.id, { ...matching[0]!, dependencies: [...matching[0]!.dependencies] });
   }
@@ -393,8 +394,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const candidateEnds = timeline
         ? [problem.mainFlow.preferredEnd]
         : [...new Set([problem.mainFlow.preferredEnd,
-          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline))])]
-          .sort((left, right) => right - left);
+          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline)),
+          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : [])])]
+          .sort((left, right) => left === problem.mainFlow.preferredEnd ? -1
+            : right === problem.mainFlow.preferredEnd ? 1
+              : left <= problem.mainFlow.preferredEnd && right <= problem.mainFlow.preferredEnd
+                ? right - left
+                : left - right);
       for (const candidateEnd of candidateEnds) {
         if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);

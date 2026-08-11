@@ -62,7 +62,7 @@
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
-    "status": "CORE_FAILED",
+    "status": "BRANCH_BUDGET_EXHAUSTED",
     "complete": false,
     "scheduledTaskCount": 0,
     "scheduledParticipantMealCount": 0,
@@ -276,8 +276,8 @@
       "task:10269"
     ],
     "evidence": {
-      "branchesExplored": 318,
-      "coreBranches": 318,
+      "branchesExplored": 300000,
+      "coreBranches": 300000,
       "standaloneBranches": 0,
       "standaloneStartChecks": 0,
       "standaloneTaskSelections": 0,
@@ -519,18 +519,17 @@
         "task:10268",
         "task:10269"
       ],
-      "coreStatus": "INFEASIBLE",
+      "coreStatus": "BRANCH_BUDGET_EXHAUSTED",
       "coreReasonCodes": [
-        "NO_COMPLETE_HARD_VALID_CORE"
+        "MATCHING_SEARCH_BUDGET_EXHAUSTED"
       ],
       "reasonCodes": [
-        "CORE_INFEASIBLE",
-        "NO_COMPLETE_HARD_VALID_CORE"
+        "CORE_BRANCH_BUDGET_EXHAUSTED"
       ],
-      "coreBacktracks": 0,
+      "coreBacktracks": 30387,
       "coreMaximumDepth": 0,
       "coreCompleteLeafCount": 0,
-      "lastExhaustionPhase": null,
+      "lastExhaustionPhase": "CORE",
       "completePlansObserved": 0,
       "completeIncumbentReplacements": 0,
       "completeSelectionMode": "BEST_DOMINATING_WITHIN_BUDGET",

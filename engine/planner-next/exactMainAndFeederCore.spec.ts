@@ -67,6 +67,25 @@ test("explores the first valid feeder start immediately without enumerating earl
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal")!.start, 80);
 });
 
+test("completes a continuous main flow later in the day when it cannot end by preferredEnd", () => {
+  const problem = syntheticProblem([
+    { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", duration: 40, spaceId: "main", dependencies: ["vocal-a"], blockKey: "block" },
+    { id: "vocal-b", kind: "vocal", participantId: "b", duration: 10, spaceId: "vocal-b", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", duration: 40, spaceId: "main", dependencies: ["vocal-b"], blockKey: "block" },
+  ], ["a", "b"], ["vocal-a", "vocal-b"]);
+  problem.mainFlow.preferredEnd = 60;
+  problem.protectedMeal = undefined;
+
+  const result = constructExactMainAndFeederCore(problem);
+  const mains = result.scheduledTasks.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
+  assert.equal(result.status, "COMPLETE");
+  assert.equal(mains.length, 2);
+  assert.ok(mains[1]!.end > problem.mainFlow.preferredEnd);
+  assert.equal(mains[0]!.end, mains[1]!.start);
+  assert.ok(mains[0]!.start >= problem.day.start && mains[1]!.end <= problem.day.end);
+});
+
 test("is invariant to canonical input collection order", () => {
   const baseline = mainFlowVocalScenario(), reversed = mainFlowVocalScenario();
   reversed.tasks.reverse(); reversed.participants.reverse(); reversed.spaces.reverse(); reversed.resources.reverse();
@@ -124,7 +143,7 @@ test("defers an impossible future feeder to exact construction without publishin
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "INFEASIBLE");
   assert.ok(result.evidence.residualMatchingChecks > 0);
-  assert.equal(result.evidence.residualMatchingPrunes, 0);
+  assert.ok(result.evidence.residualMatchingPrunes > 0);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
