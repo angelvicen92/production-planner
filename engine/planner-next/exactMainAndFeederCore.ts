@@ -166,16 +166,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const mains = canonical(problem.tasks.filter((task) => task.kind === "main"));
   const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"));
-  const arrivalTaskIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const feederByMain = new Map<string, Task>();
   const unsupported: string[] = [];
   for (const main of mains) {
     const matching = vocals.filter((task) => task.participantId === main.participantId);
     if (matching.length !== 1) unsupported.push(`${matching.length === 0 ? "MISSING" : "MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
-    else if (!main.dependencies.includes(matching[0]!.id)
-      || matching[0]!.dependencies.some((dependencyId) => !arrivalTaskIds.has(dependencyId)))
+    else if (!main.dependencies.includes(matching[0]!.id))
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
-    else feederByMain.set(main.id, { ...matching[0]!, dependencies: matching[0]!.dependencies.filter((id) => !arrivalTaskIds.has(id)) });
+    else feederByMain.set(main.id, { ...matching[0]!, dependencies: [...matching[0]!.dependencies] });
   }
   if (unsupported.length > 0 || mains.length === 0)
     return fail("UNSUPPORTED_CORE_SHAPE", unsupported.length ? unsupported : ["MISSING_MAIN_TASK"]);
@@ -219,9 +217,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.completeLeafCount += 1;
       const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
         ...task,
-        dependencies: task.kind === "vocal"
-          ? task.dependencies.filter((dependencyId) => !arrivalTaskIds.has(dependencyId))
-          : [...task.dependencies],
+        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
       }));
       const deferredSetupSpaceIds = new Set(problem.spaces
         .filter((space) => space.setupPolicy !== undefined

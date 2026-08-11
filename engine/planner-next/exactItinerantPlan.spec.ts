@@ -58,6 +58,32 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.equal(result.evidence.standaloneForwardImpactedTaskChecks, 0);
 });
 
+test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
+  const input = problem([
+    { ...auxiliary("joint-a", "a", [{ start: 20, end: 40 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+    { ...auxiliary("joint-b", "b", [{ start: 20, end: 40 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+  ]);
+  const result = constructExactItinerantPlan(input);
+  const members = result.scheduledTasks.filter(({ jointGroupId }) => jointGroupId === "group");
+  assert.equal(result.status, "COMPLETE");
+  assert.equal(members.length, 2);
+  assert.equal(members[0]!.start, members[1]!.start);
+  assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
+});
+
+test("EXACT_CONSTRUCTIVE schedules a technical dependency chain atomically", () => {
+  const input = problem([
+    { id: "technical-a", kind: "technical", duration: 10, spaceId: "technical-a", dependencies: [], requiredResourceIds: ["unit"], availability: [{ start: 20, end: 40 }] },
+    { id: "technical-b", kind: "technical", duration: 10, spaceId: "technical-b", dependencies: ["technical-a"], requiredResourceIds: ["unit"], availability: [{ start: 20, end: 40 }] },
+  ]);
+  const result = constructExactItinerantPlan(input);
+  const first = result.scheduledTasks.find(({ id }) => id === "technical-a")!;
+  const second = result.scheduledTasks.find(({ id }) => id === "technical-b")!;
+  assert.equal(result.status, "COMPLETE");
+  assert.ok(first.end <= second.start);
+  assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
+});
+
 test("shared resources never overlap and the narrower task is selected first", () => {
   const input = problem([
     auxiliary("flexible", "a", [{ start: 0, end: 60 }], ["unit"]),

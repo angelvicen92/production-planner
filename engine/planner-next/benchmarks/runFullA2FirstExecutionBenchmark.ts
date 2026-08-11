@@ -48,8 +48,10 @@ const tasks: TaskInput[] = expansion.tasks.map((task) => {
     status: "pending",
     durationOverrideMin: task.duration,
     contestantId: participant,
-    spaceId: spaceId.get(task.spaceId)!,
-    zoneId: zoneId.get(task.spaceId)!,
+    ...(isMeal ? {} : {
+      spaceId: spaceId.get(task.spaceId)!,
+      zoneId: zoneId.get(task.spaceId)!,
+    }),
     plannerNextKind,
     operationalRole: isMeal ? "meal_break_placeholder"
       : task.transport?.direction === "arrival" ? "transport_arrival"

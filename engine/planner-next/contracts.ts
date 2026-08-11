@@ -184,6 +184,8 @@ export interface ParticipantMealObligation {
   duration: Minute;
   window: Window;
   status: "pending" | "interrupted" | "done" | "in_progress";
+  /** Canonical predecessor identities; may reference tasks or other participant-meal sourceTaskIds. */
+  dependencies?: string[];
   fixedInterval?: Window;
 }
 

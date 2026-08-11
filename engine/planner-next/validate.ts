@@ -175,11 +175,18 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const technicalIds = new Set(tasks.filter(t=>t?.kind==="technical").map(t=>t.id));
   const mainSpaceId = problem.mainFlow?.spaceId;
   const participantMeals = Array.isArray(problem.participantMeals) ? problem.participantMeals : [];
+  const participantMealSourceTaskIds = new Set(participantMeals.map((meal) => meal.sourceTaskId));
+  const dependencyIds = new Set([...taskIds, ...participantMealSourceTaskIds]);
   if (hasDuplicateIds(participantMeals)) reasons.add("DUPLICATE_PARTICIPANT_MEAL_ID");
+  if ([...participantMealSourceTaskIds].some((id) => taskIds.has(id))) reasons.add("PARTICIPANT_MEAL_IDENTITY_CONFLICT");
   if (new Set(participantMeals.map((meal) => meal.sourceTaskId)).size !== participantMeals.length) reasons.add("PARTICIPANT_MEAL_IDENTITY_CONFLICT");
   if (participantMeals.length > 0 && (!problem.participantMealCapacity || !Number.isInteger(problem.participantMealCapacity.maxSimultaneous) || problem.participantMealCapacity.maxSimultaneous <= 0)) reasons.add("INVALID_PARTICIPANT_MEAL_CAPACITY");
   for (const meal of participantMeals) {
     if (!participantIds.has(meal.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
+    const dependencies = Array.isArray(meal.dependencies) ? meal.dependencies : [];
+    if ((meal.dependencies !== undefined && !Array.isArray(meal.dependencies))
+      || new Set(dependencies).size !== dependencies.length
+      || dependencies.some((id) => typeof id !== "string" || id === meal.sourceTaskId || !dependencyIds.has(id))) reasons.add("MISSING_TASK_REFERENCE");
     if (!Number.isInteger(meal.duration) || meal.duration <= 0 || meal.duration%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || invalidWindow(meal.window, day) || meal.window.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || meal.window.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || meal.duration > meal.window.end - meal.window.start) reasons.add("INVALID_PARTICIPANT_MEAL_OBLIGATION");
     if (meal.status!=="pending"&&meal.status!=="interrupted"&&meal.status!=="done"&&meal.status!=="in_progress") reasons.add("INVALID_PARTICIPANT_MEAL_STATUS");
     if ((meal.status==="done"||meal.status==="in_progress")&&!meal.fixedInterval) reasons.add("PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL");
@@ -278,7 +285,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (!spaceIds.has(task.spaceId)) reasons.add("MISSING_SPACE_REFERENCE");
     if (!Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_TASK_DURATION");
     if (!Array.isArray(task.dependencies)
-      || task.dependencies.some((dependencyId) => !taskIds.has(dependencyId))) {
+      || task.dependencies.some((dependencyId) => !dependencyIds.has(dependencyId))) {
       reasons.add("MISSING_TASK_REFERENCE");
     }
     if (task.kind === "main" && task.spaceId !== mainSpaceId) reasons.add("INVALID_MAIN_FLOW_SPACE");
@@ -287,9 +294,6 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (!task.participantId || !participantIds.has(task.participantId) || !task.spaceId || !spaceIds.has(task.spaceId)
         || !Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_AUXILIARY_TASK");
       if (task.blockKey !== undefined) reasons.add("AUXILIARY_BLOCK_KEY_UNSUPPORTED");
-      const isTransportTask = problem.transportPolicy !== undefined
-        && (problem.transportPolicy.arrival.taskIds.includes(task.id) || problem.transportPolicy.departure.taskIds.includes(task.id));
-      if (!Array.isArray(task.dependencies) || (task.jointGroupId === undefined && !isTransportTask && task.dependencies.length > 0)) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
     }
   }
   if (technicalChainHasBranching(tasks)) reasons.add("TECHNICAL_CHAIN_BRANCHING_UNSUPPORTED");
@@ -325,9 +329,6 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (!main || !vocal) continue;
     if (!Array.isArray(main.dependencies) || !main.dependencies.includes(vocal.id)) {
       reasons.add("MISSING_FEEDER_DEPENDENCY");
-    }
-    if (main.dependencies.length !== 1 || main.dependencies[0] !== vocal.id) {
-      reasons.add("UNSUPPORTED_MAIN_DEPENDENCIES");
     }
     if (main.coachId !== vocal.coachId) reasons.add("MAIN_FEEDER_COACH_MISMATCH");
     if (!main.blockKey) reasons.add("MISSING_MAIN_BLOCK_KEY");
@@ -371,6 +372,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let itinerantUnitResourceAlias = false;
   const publishedResourceMeals=resourceMeals;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
+  const participantMealBySourceTaskId = new Map(participantMeals.map((meal) => [meal.sourceTaskId, meal]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
   const spaces = new Map(problem.spaces.map((item) => [item.id, item]));
@@ -397,7 +399,16 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     }
     for (const dependencyId of task.dependencies) {
       const feeder = byId.get(dependencyId);
-      if (!feeder || feeder.end > task.start) dependency += 1;
+      const meal = participantMealBySourceTaskId.get(dependencyId);
+      if ((!feeder && !meal) || (feeder ? feeder.end : meal!.end) > task.start) dependency += 1;
+    }
+  }
+  for (const meal of participantMeals) {
+    const obligation = problem.participantMeals?.find((item) => item.sourceTaskId === meal.sourceTaskId);
+    for (const dependencyId of obligation?.dependencies ?? []) {
+      const taskDependency = byId.get(dependencyId);
+      const mealDependency = participantMealBySourceTaskId.get(dependencyId);
+      if ((!taskDependency && !mealDependency) || (taskDependency ? taskDependency.end : mealDependency!.end) > meal.start) dependency += 1;
     }
   }
   for (let first = 0; first < scheduled.length; first += 1) {
