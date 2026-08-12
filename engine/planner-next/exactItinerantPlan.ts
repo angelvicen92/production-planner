@@ -85,6 +85,17 @@ export interface ExactItinerantPlanEvidence {
   coreBacktracks: number;
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
+  residualMatchingInvocations: number;
+  residualMatchingFullBuilds: number;
+  residualMatchingIncrementalUpdates: number;
+  residualMatchingEdgeCacheHits: number;
+  residualMatchingEdgeCacheMisses: number;
+  residualMatchingPositionChecks: number;
+  residualMatchingAugmentTraversals: number;
+  residualMatchingBranchesExplored: number;
+  residualMatchingPrunes: number;
+  residualMatchingRepairs: number;
+  residualMatchingRepairFailures: number;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
   completePlansObserved: number;
   completeIncumbentReplacements: number;
@@ -507,7 +518,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
-    coreMaximumDepth: 0, coreCompleteLeafCount: 0, lastExhaustionPhase: null,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0,
+    residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
+    residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
+    residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
+    residualMatchingAugmentTraversals: 0, residualMatchingBranchesExplored: 0,
+    residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
+    lastExhaustionPhase: null,
     completePlansObserved: 0, completeIncumbentReplacements: 0, completeSelectionMode,
     completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
     firstCompleteQuality: null, selectedCompleteQuality: null,
@@ -583,6 +600,17 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
   evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
   evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
+  evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
+  evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
+  evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;
+  evidence.residualMatchingEdgeCacheHits = core.evidence.residualMatchingEdgeCacheHits;
+  evidence.residualMatchingEdgeCacheMisses = core.evidence.residualMatchingEdgeCacheMisses;
+  evidence.residualMatchingPositionChecks = core.evidence.residualMatchingPositionChecks;
+  evidence.residualMatchingAugmentTraversals = core.evidence.residualMatchingAugmentTraversals;
+  evidence.residualMatchingBranchesExplored = core.evidence.residualMatchingBranchesExplored;
+  evidence.residualMatchingPrunes = core.evidence.residualMatchingPrunes;
+  evidence.residualMatchingRepairs = core.evidence.residualMatchingRepairs;
+  evidence.residualMatchingRepairFailures = core.evidence.residualMatchingRepairFailures;
   evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
   const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();
