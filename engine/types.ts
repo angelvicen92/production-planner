@@ -260,6 +260,13 @@ export interface EngineInputOperationalMealPolicyInput {
   spaceIds?: number[];
 }
 
+export interface EngineInputItinerantTeamAvailabilityInput {
+  /** Stable source identity of the composition, distinct from its members. */
+  itinerantTeamId: number;
+  /** All hard availability windows for this composition on the planning day. */
+  windows: TimeWindow[];
+}
+
 export interface EngineInput {
   planId: number;
   /** Derived from the authoritative per-plan task-template snapshot catalog. */
@@ -282,6 +289,8 @@ export interface EngineInput {
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
   /** Flexible operational meals scoped by physical resources/spaces. */
   operationalMealPolicies?: EngineInputOperationalMealPolicyInput[];
+  /** Explicit hard availability of each referenced itinerant composition. */
+  itinerantTeamAvailability?: EngineInputItinerantTeamAvailabilityInput[];
   workDay: TimeWindow;
   /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
   mealMode?: "global_hard_break" | "flexible_meal_window";

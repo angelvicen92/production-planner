@@ -156,6 +156,10 @@ input.operationalMealPolicies = operationalMealGroups.map(([id, resources]) => (
   durationMinutes: config.meals.operational.defaultDurationMinutes,
   planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
 }));
+input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailability).map(([canonicalId, availability]) => ({
+  itinerantTeamId: itinerantUnitId.get(canonicalId)!,
+  windows: [{ start: availability.start, end: availability.end }],
+}));
 input.arrivalGroupingTarget = config.transportPolicy.arrival.minimumGroupSize;
 input.departureGroupingTarget = config.transportPolicy.departure.minimumGroupSize;
 input.arrivalMinGapMinutes = config.transportPolicy.arrival.minGapMinutes;
@@ -181,7 +185,14 @@ const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
   : 0;
 const publishedCanonicalObligations = exactResult?.complete ? scheduledCanonicalObligations : 0;
-const itineraryAvailabilityProjected = false;
+const projectedItinerantAvailability = adapted.status === "SUPPORTED"
+  ? adapted.problem.itinerantUnits ?? []
+  : [];
+const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => {
+  const source = config.itinerantUnitAvailability[unit.id as keyof typeof config.itinerantUnitAvailability];
+  const projected = projectedItinerantAvailability.find((entry) => entry.id === `itinerant-team:${itinerantUnitId.get(unit.id)}`);
+  return Boolean(source && projected?.availability.some((window) => window.start === Number(source.start.slice(0, 2)) * 60 + Number(source.start.slice(3)) && window.end === Number(source.end.slice(0, 2)) * 60 + Number(source.end.slice(3))));
+});
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
@@ -195,7 +206,7 @@ const evidence = {
     genericTransitionMinutes: { participant: 0, resource: 0 },
     operationalMealProjection: operationalMealGroups,
     itineraryAvailabilityProjected,
-    itineraryAvailabilityGap: "EngineInput has itinerantTeamId identity but no lossless per-itinerant-unit availability field used by the adapter; Full A2 success cannot be declared until this source rule is preserved.",
+    ...(!itineraryAvailabilityProjected ? { itineraryAvailabilityGap: "Not every referenced itinerant unit has its source availability represented losslessly in Planner Next." } : {}),
   },
   preflight: {
     status: preflight.status,

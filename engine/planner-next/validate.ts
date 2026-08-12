@@ -209,6 +209,11 @@ export function preflight(problem: PlannerNextProblem): string[] {
   for(const meal of itinerantMeals)if(typeof meal.id!=="string"||!meal.id||!/^itinerant-team:[1-9]\d*$/.test(meal.itinerantUnitId)||invalidWindow(meal.interval,day)||meal.interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");
   for(let i=0;i<itinerantMeals.length;i++)for(let j=i+1;j<itinerantMeals.length;j++){const a=itinerantMeals[i]!,b=itinerantMeals[j]!;if(a.itinerantUnitId===b.itinerantUnitId&&a.interval.start<b.interval.end&&b.interval.start<a.interval.end)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");}
   const usedUnitIds=new Set([...tasks.map(task=>task.itinerantUnitId),...itinerantMeals.map(meal=>meal.itinerantUnitId)].filter((id):id is string=>id!==undefined));
+  const itinerantUnits=Array.isArray(problem.itinerantUnits)?problem.itinerantUnits:[];
+  if(hasDuplicateIds(itinerantUnits))reasons.add("DUPLICATE_ITINERANT_UNIT_ID");
+  for(const unit of itinerantUnits)if(typeof unit.id!=="string"||!/^itinerant-team:[1-9]\d*$/.test(unit.id)||!Array.isArray(unit.availability)||unit.availability.length===0||unit.availability.some(interval=>invalidWindow(interval,day)||interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0))reasons.add("INVALID_ITINERANT_UNIT_AVAILABILITY");
+  const availableUnitIds=new Set(itinerantUnits.map(unit=>unit.id));
+  if(tasks.some(task=>task.itinerantUnitId!==undefined&&!availableUnitIds.has(task.itinerantUnitId)))reasons.add("MISSING_ITINERANT_UNIT_AVAILABILITY");
   if(tasks.some(task=>task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))||resources.some(resource=>usedUnitIds.has(resource.id)))reasons.add("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
@@ -393,6 +398,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       || (task.coachId !== undefined && (!coach || !contains(coach.availability, task.start, task.end)))
       || !space || !contains(space.availability, task.start, task.end)) availability += 1;
     if (!taskFitsAvailability(task,task.start,task.end)) taskAvailabilityIds.add(task.id);
+    if(task.itinerantUnitId!==undefined){const unit=problem.itinerantUnits?.find(entry=>entry.id===task.itinerantUnitId);if(!unit||!contains(unit.availability,task.start,task.end))availability+=1;}
     for (const resourceId of task.requiredResourceIds ?? []) {
       const resource = resources.get(resourceId);
       if (!resource || !contains(resource.availability, task.start, task.end)) resourceAvailability += 1;

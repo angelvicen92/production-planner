@@ -45,6 +45,7 @@ export type EngineInputPreflightReasonCode =
   | "MISSING_SEARCH_POLICY_CONFIGURATION"
   | "MISSING_SPACE_AVAILABILITY"
   | "MISSING_SPACE_REFERENCE"
+  | "MISSING_ITINERANT_UNIT_AVAILABILITY"
   | "MISSING_TASK_DURATION"
   | "MISSING_TASK_REFERENCE"
   | "MISSING_TRANSITION_CONFIGURATION"
@@ -207,7 +208,7 @@ const SET_ARRAY_KEYS = new Set([
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
   "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
-  "roundSynchronizations", "operationalMealPolicies", "planResourceItemIds",
+  "roundSynchronizations", "operationalMealPolicies", "planResourceItemIds", "itinerantTeamAvailability", "windows",
 ]);
 const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder"]);
 
@@ -328,6 +329,7 @@ function sourceProjection(input: EngineInput): unknown {
     globalHardBreaks: input.globalHardBreaks,
     protectedBreaks: input.protectedBreaks?.map((entry) => ({ ...entry, label: undefined })),
     operationalMealPolicies: input.operationalMealPolicies,
+    itinerantTeamAvailability: input.itinerantTeamAvailability,
     contestantMealDurationMinutes: input.contestantMealDurationMinutes,
     contestantMealMaxSimultaneous: input.contestantMealMaxSimultaneous,
     mealTaskTemplateId: input.mealTaskTemplateId,
@@ -547,6 +549,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("break", policy.id, `operationalMealPolicies.${index}.id`, true);
     policy.planResourceItemIds?.forEach((id) => addIdentity("plan-resource", id, `operationalMealPolicies.${index}.planResourceItemIds`));
     policy.spaceIds?.forEach((id) => addIdentity("space", id, `operationalMealPolicies.${index}.spaceIds`));
+  });
+  (input.itinerantTeamAvailability ?? []).forEach((entry, index) => {
+    addIdentity("itinerant-team", entry?.itinerantTeamId, `itinerantTeamAvailability.${index}.itinerantTeamId`, true);
   });
   const runtimeInput = input as unknown as Record<string, unknown>;
   const coachMappingPresent = Object.prototype.hasOwnProperty.call(runtimeInput, "vocalCoachPlanResourceItemIdByContestantId");
@@ -1304,6 +1309,31 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     .filter(([participantId, coachId]) => /^[1-9]\d*$/.test(participantId) && isPositiveInteger(coachId))
     .map(([participantId, coachId]) => [Number(participantId), coachId as number]));
   const active = input.tasks.filter((task) => task.status !== "cancelled" && !flexibleParticipantMealTaskIds.has(task.id) && !resourceMealTaskIds.has(task.id));
+  const itinerantAvailabilityById = new Map<number, EngineInput["itinerantTeamAvailability"]>();
+  for (const [index, entry] of (input.itinerantTeamAvailability ?? []).entries()) {
+    const path = `itinerantTeamAvailability.${index}`;
+    const id = entry?.itinerantTeamId;
+    if (!isPositiveInteger(id) || !Array.isArray(entry?.windows) || entry.windows.length === 0) {
+      addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, path, "Itinerant-unit availability requires a valid identity and at least one explicit window.");
+      continue;
+    }
+    if (itinerantAvailabilityById.has(id)) {
+      addIssue("DUPLICATE_ID", "itinerant-team", id, path, "Duplicate itinerant-unit availability definition.");
+      continue;
+    }
+    itinerantAvailabilityById.set(id, [entry]);
+    const dayStart = toMinutes(input.workDay.start), dayEnd = toMinutes(input.workDay.end);
+    for (const [windowIndex, availability] of entry.windows.entries()) {
+      const start = toMinutes(availability?.start), end = toMinutes(availability?.end);
+      if (start === null || end === null || start >= end || dayStart === null || dayEnd === null || start < dayStart || end > dayEnd
+        || start % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0 || end % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) {
+        addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, `${path}.windows.${windowIndex}`, "Itinerant-unit availability window is invalid or outside the planning day.", { window: availability });
+      }
+    }
+  }
+  for (const task of active) if (isPositiveInteger(task.itinerantTeamId) && !itinerantAvailabilityById.has(task.itinerantTeamId)) {
+    addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY", "task", task.id, `tasks.${task.id}.itinerantTeamId`, "Referenced itinerant unit has no explicit availability; full-day availability is never inferred.", { itinerantTeamId: task.itinerantTeamId });
+  }
   const participantIdsByCoachId = new Map<number, readonly number[]>();
   for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(
     coachId,
