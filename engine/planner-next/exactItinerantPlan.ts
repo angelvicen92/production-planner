@@ -540,8 +540,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.standaloneForwardImpactedTaskChecks += 1;
       let witness = false;
       for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
-        if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
-        evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
+        evidence.standaloneForwardStartChecks += 1;
         if (canPlaceTask(problem, task, start, candidate.tasks, candidate.meals)) { witness = true; break; }
       }
       if (witness) { evidence.standaloneForwardWitnessesFound += 1; continue; }

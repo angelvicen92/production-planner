@@ -203,7 +203,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
     meals: ScheduledSpaceMeal[]): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
-    if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
     evidence.feederCandidatesEvaluated += 1;
     evidence.constructiveFeederStartChecks += 1;
     return canPlaceTask(problem, feeder, start, [...placed, ...operation], meals) ? "VALID" : "INVALID";
@@ -339,7 +338,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
     meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number): SearchOutcome => {
-    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
     evidence.residualMatchingChecks += 1;
     const remaining = mains.filter(({ id }) => !used.has(id));
     if (remaining.length === 0) return "FOUND";
@@ -348,7 +346,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const positions: number[] = [];
       for (let position = nextDepth; position < mains.length; position += 1) {
         if (task.blockKey !== pattern[position] || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
-        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
         const departureDeadline = latestDepartureStart.get(task.participantId);
@@ -362,7 +359,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const augment = (taskId: string, seen: Set<number>): "MATCHED" | "UNMATCHED" | "BUDGET_EXHAUSTED" => {
       for (const position of edges.get(taskId) ?? []) {
         if (seen.has(position)) continue;
-        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         seen.add(position);
         const owner = positionOwner.get(position);
         if (owner === undefined) { positionOwner.set(position, taskId); return "MATCHED"; }

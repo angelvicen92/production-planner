@@ -105,9 +105,9 @@ function lexicographicNumbers(a: readonly (number | string)[], b: readonly (numb
 }
 
 export function residualObligationAlignmentTuple(key: ResidualObligationAlignmentKey): readonly (number | string)[] {
-  return [key.emptyStaticDomainCount, key.projectedPresenceLowerBound, key.projectedMaximumGapLowerBound,
+  return [key.participantSlack, key.emptyStaticDomainCount, key.projectedPresenceLowerBound, key.projectedMaximumGapLowerBound,
     key.sumIndependentIdleExpansion, key.sumIndependentPresenceExpansion, key.sumIndependentMinimumGap,
-    key.participantSlack, key.firstObligation, key.candidateId];
+    key.firstObligation, key.candidateId];
 }
 
 /**

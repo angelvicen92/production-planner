@@ -177,25 +177,29 @@ assert.equal(
 );
 assert.equal(
   first.evidence.selectedCoreFingerprint,
-  "44f10279aa01fa7628c01962e9fbdd819d69486ae11df4fe4851de946600f07f",
+  "0948b758c96f17ec546c331ce6d8b42464dbdbe95970d0640ae5fbea95fdbae9",
 );
 assert.equal(
   first.evidence.fullFingerprint,
-  "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357",
+  "befdf960d5c0f95bf5e336cf146e6a0768c1bf5d9a08ac7d95c9d14d09df6efb",
 );
 assert.equal(first.evidence.branchesExplored, 300_000);
-assert.equal(first.evidence.coreBranches, 48_224);
-assert.equal(first.evidence.standaloneBranches, 251_776);
-assert.equal(first.evidence.completePlansObserved, 78);
+assert.equal(first.evidence.coreBranches, 596);
+assert.equal(first.evidence.standaloneBranches, 299_404);
+assert.equal(first.evidence.coreMaximumDepth, 19);
+assert.ok(first.evidence.coreCompleteLeafCount > 0);
+assert.equal(first.evidence.standaloneForwardBranches, 0);
+assert.ok(first.evidence.standaloneForwardStartChecks > 0);
+assert.equal(first.evidence.completePlansObserved, 96);
 assert.equal(first.evidence.completeIncumbentReplacements, 2);
 assert.equal(first.evidence.completeSelectionMode, "BEST_DOMINATING_WITHIN_BUDGET");
 assert.equal(first.evidence.completeSelectionStoppedByBudget, true);
-assert.equal(first.evidence.firstCompleteFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
-assert.equal(first.evidence.selectedCompleteFingerprint, "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357");
-assert.equal(quality.qualityFingerprint, "256244c1ccad494ca319d921dfcdc8c696b54a4b16506d42567f2e29abb5657b");
+assert.equal(first.evidence.firstCompleteFingerprint, "fded1fd188ba3daa833f68ce74533e6db43fd6e801d64f7f4cebea42aa5224d6");
+assert.equal(first.evidence.selectedCompleteFingerprint, "befdf960d5c0f95bf5e336cf146e6a0768c1bf5d9a08ac7d95c9d14d09df6efb");
+assert.equal(quality.qualityFingerprint, "66f332a9d1ebbc6e15c193fd3d983e477228dcf01f2d8a939513633d4b3b4061");
 assert.deepEqual({ totalPresence: quality.totalPresenceSpanMinutes, productive: quality.totalProductiveMinutes,
   idle: quality.totalIdleMinutes, maximumPresence: quality.maximumParticipantPresenceSpanMinutes,
   maximumIdle: quality.maximumParticipantIdleMinutes, maximumGap: quality.maximumSingleGapMinutes,
   gaps: quality.totalGapCount, spaceChanges: quality.totalSpaceChangeCount },
-{ totalPresence: 3_290, productive: 900, idle: 2_390, maximumPresence: 425,
-  maximumIdle: 365, maximumGap: 225, gaps: 28, spaceChanges: 34 });
+{ totalPresence: 3_500, productive: 900, idle: 2_600, maximumPresence: 410,
+  maximumIdle: 350, maximumGap: 225, gaps: 28, spaceChanges: 34 });
