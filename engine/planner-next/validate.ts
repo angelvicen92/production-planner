@@ -73,7 +73,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     reasons.add("INVALID_DAY");
   }
   const usableDay = day && Number.isFinite(day.start) && Number.isFinite(day.end) && day.start < day.end;
-  if (!problem.protectedMeal || !usableDay || invalidWindow(problem.protectedMeal, day)) {
+  if (problem.protectedMeal !== undefined && (!usableDay || invalidWindow(problem.protectedMeal, day))) {
     reasons.add("INVALID_PROTECTED_MEAL");
   }
   const preferredEnd = problem.mainFlow?.preferredEnd;
@@ -175,11 +175,18 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const technicalIds = new Set(tasks.filter(t=>t?.kind==="technical").map(t=>t.id));
   const mainSpaceId = problem.mainFlow?.spaceId;
   const participantMeals = Array.isArray(problem.participantMeals) ? problem.participantMeals : [];
+  const participantMealSourceTaskIds = new Set(participantMeals.map((meal) => meal.sourceTaskId));
+  const dependencyIds = new Set([...taskIds, ...participantMealSourceTaskIds]);
   if (hasDuplicateIds(participantMeals)) reasons.add("DUPLICATE_PARTICIPANT_MEAL_ID");
+  if ([...participantMealSourceTaskIds].some((id) => taskIds.has(id))) reasons.add("PARTICIPANT_MEAL_IDENTITY_CONFLICT");
   if (new Set(participantMeals.map((meal) => meal.sourceTaskId)).size !== participantMeals.length) reasons.add("PARTICIPANT_MEAL_IDENTITY_CONFLICT");
   if (participantMeals.length > 0 && (!problem.participantMealCapacity || !Number.isInteger(problem.participantMealCapacity.maxSimultaneous) || problem.participantMealCapacity.maxSimultaneous <= 0)) reasons.add("INVALID_PARTICIPANT_MEAL_CAPACITY");
   for (const meal of participantMeals) {
     if (!participantIds.has(meal.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
+    const dependencies = Array.isArray(meal.dependencies) ? meal.dependencies : [];
+    if ((meal.dependencies !== undefined && !Array.isArray(meal.dependencies))
+      || new Set(dependencies).size !== dependencies.length
+      || dependencies.some((id) => typeof id !== "string" || id === meal.sourceTaskId || !dependencyIds.has(id))) reasons.add("MISSING_TASK_REFERENCE");
     if (!Number.isInteger(meal.duration) || meal.duration <= 0 || meal.duration%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || invalidWindow(meal.window, day) || meal.window.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || meal.window.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || meal.duration > meal.window.end - meal.window.start) reasons.add("INVALID_PARTICIPANT_MEAL_OBLIGATION");
     if (meal.status!=="pending"&&meal.status!=="interrupted"&&meal.status!=="done"&&meal.status!=="in_progress") reasons.add("INVALID_PARTICIPANT_MEAL_STATUS");
     if ((meal.status==="done"||meal.status==="in_progress")&&!meal.fixedInterval) reasons.add("PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL");
@@ -278,7 +285,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (!spaceIds.has(task.spaceId)) reasons.add("MISSING_SPACE_REFERENCE");
     if (!Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_TASK_DURATION");
     if (!Array.isArray(task.dependencies)
-      || task.dependencies.some((dependencyId) => !taskIds.has(dependencyId))) {
+      || task.dependencies.some((dependencyId) => !dependencyIds.has(dependencyId))) {
       reasons.add("MISSING_TASK_REFERENCE");
     }
     if (task.kind === "main" && task.spaceId !== mainSpaceId) reasons.add("INVALID_MAIN_FLOW_SPACE");
@@ -287,9 +294,6 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (!task.participantId || !participantIds.has(task.participantId) || !task.spaceId || !spaceIds.has(task.spaceId)
         || !Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_AUXILIARY_TASK");
       if (task.blockKey !== undefined) reasons.add("AUXILIARY_BLOCK_KEY_UNSUPPORTED");
-      const isTransportTask = problem.transportPolicy !== undefined
-        && (problem.transportPolicy.arrival.taskIds.includes(task.id) || problem.transportPolicy.departure.taskIds.includes(task.id));
-      if (!Array.isArray(task.dependencies) || (task.jointGroupId === undefined && !isTransportTask && task.dependencies.length > 0)) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
     }
   }
   if (technicalChainHasBranching(tasks)) reasons.add("TECHNICAL_CHAIN_BRANCHING_UNSUPPORTED");
@@ -325,9 +329,6 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (!main || !vocal) continue;
     if (!Array.isArray(main.dependencies) || !main.dependencies.includes(vocal.id)) {
       reasons.add("MISSING_FEEDER_DEPENDENCY");
-    }
-    if (main.dependencies.length !== 1 || main.dependencies[0] !== vocal.id) {
-      reasons.add("UNSUPPORTED_MAIN_DEPENDENCIES");
     }
     if (main.coachId !== vocal.coachId) reasons.add("MAIN_FEEDER_COACH_MISMATCH");
     if (!main.blockKey) reasons.add("MISSING_MAIN_BLOCK_KEY");
@@ -371,6 +372,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let itinerantUnitResourceAlias = false;
   const publishedResourceMeals=resourceMeals;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
+  const participantMealBySourceTaskId = new Map(participantMeals.map((meal) => [meal.sourceTaskId, meal]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
   const spaces = new Map(problem.spaces.map((item) => [item.id, item]));
@@ -397,7 +399,16 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     }
     for (const dependencyId of task.dependencies) {
       const feeder = byId.get(dependencyId);
-      if (!feeder || feeder.end > task.start) dependency += 1;
+      const meal = participantMealBySourceTaskId.get(dependencyId);
+      if ((!feeder && !meal) || (feeder ? feeder.end : meal!.end) > task.start) dependency += 1;
+    }
+  }
+  for (const meal of participantMeals) {
+    const obligation = problem.participantMeals?.find((item) => item.sourceTaskId === meal.sourceTaskId);
+    for (const dependencyId of obligation?.dependencies ?? []) {
+      const taskDependency = byId.get(dependencyId);
+      const mealDependency = participantMealBySourceTaskId.get(dependencyId);
+      if ((!taskDependency && !mealDependency) || (taskDependency ? taskDependency.end : mealDependency!.end) > meal.start) dependency += 1;
     }
   }
   for (let first = 0; first < scheduled.length; first += 1) {
@@ -449,16 +460,16 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const mainPolicy = problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)?.mealPolicy;
   const ownMeals = meals.filter(x=>x.spaceId===problem.mainFlow.spaceId);
   if (mainPolicy) {
-    const meal=ownMeals[0], morning=mainFlowOccupations.filter(x=>x.end<=problem.protectedMeal.start), afternoon=mainFlowOccupations.filter(x=>x.start>=problem.protectedMeal.end);
+    const meal=ownMeals[0], mealStart=meal?.start??problem.mainFlow.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
     const consecutive=(xs:ScheduledTask[])=>xs.slice(1).every((x,i)=>xs[i]?.end===x.start);
-    const morningMains=mains.filter(x=>x.end<=meal!.start),afternoonMains=mains.filter(x=>x.start>=meal!.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==problem.mainFlow.preferredEnd||meal.start!==problem.protectedMeal.start||meal.end!==problem.protectedMeal.end||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
+    const morningMains=mains.filter(x=>x.end<=mealStart),afternoonMains=mains.filter(x=>x.start>=mealEnd);const globalMealMismatch=problem.protectedMeal!==undefined&&(meal?.start!==problem.protectedMeal.start||meal?.end!==problem.protectedMeal.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==problem.mainFlow.preferredEnd||globalMealMismatch||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
     if(invalid)mainFlowMeal=1;
   }
   if (mains.length > 0) {
     // preferredEnd guides search/ranking; hard validity does not require the final main to end there.
     for (let index = 1; index < mains.length; index += 1) {
       const previous = mains[index - 1]; const current = mains[index];
-      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&between.some(x=>x.end===problem.protectedMeal.start)&&between.some(x=>x.start===problem.protectedMeal.end));if (!previous || !current || !connected) block += 1;
+      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
     }
     const runs: Array<{ key: string; count: number }> = [];
     for (const task of mains) {

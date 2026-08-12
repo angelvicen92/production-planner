@@ -1790,3 +1790,11 @@ test("SPEC10-020 accepts valid flexible setup order deterministically", () => {
   assert.equal(flexible.status, "SUPPORTED");
   assert.equal(flexible.reasonCodes.includes("UNSUPPORTED_FLEXIBLE_SETUP_ORDER"), false);
 });
+
+test("full-A2 main/vocal relation allows additional canonical prerequisites", () => {
+  const value = createSupportedEngineInputAdapterFixture();
+  value.tasks.push({ id: 106, planId: value.planId, templateId: 906, status: "pending", durationOverrideMin: 10, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 303, zoneId: 403 });
+  value.tasks[0] = { ...value.tasks[0], dependsOnTaskIds: [102, 106] };
+  const result = preflightEngineInputForPlannerNext(value);
+  assert.equal(result.status, "SUPPORTED", JSON.stringify(result.issues));
+});

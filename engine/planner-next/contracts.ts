@@ -113,7 +113,8 @@ export type PlannerSearchPolicy =
 
 export interface PlannerNextProblem {
   day: Window;
-  protectedMeal: Window;
+  /** Legacy/global hard meal break. Absent for flexible participant meal windows. */
+  protectedMeal?: Window;
   spaces: Space[];
   resources: Resource[];
   participants: Person[];
@@ -184,6 +185,8 @@ export interface ParticipantMealObligation {
   duration: Minute;
   window: Window;
   status: "pending" | "interrupted" | "done" | "in_progress";
+  /** Canonical predecessor identities; may reference tasks or other participant-meal sourceTaskIds. */
+  dependencies?: string[];
   fixedInterval?: Window;
 }
 

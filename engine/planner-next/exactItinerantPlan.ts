@@ -21,6 +21,8 @@ import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
+import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
+import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey } from "./technicalChains";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -145,27 +147,18 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
 
 function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
   const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
-  const setupTaskIds = new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ id }) => id));
-  const departureIds = new Set(problem.transportPolicy?.departure.taskIds ?? []);
-  const departureDependencyIds = new Set(problem.tasks.filter(({ id }) => !departureIds.has(id)).map(({ id }) => id));
+  void coreIds;
+  const technicalChainIds = new Set(getTechnicalChains(pending).flat().map(({ id }) => id));
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined;
-    if (task.kind !== "auxiliary") reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
+    if (task.kind !== "auxiliary" && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
-    if (task.jointGroupId !== undefined) reasons.push(`UNSUPPORTED_STANDALONE_JOINT_GROUP:${task.id}`);
     if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
       reasons.push(`UNSUPPORTED_STANDALONE_REQUIRED_BLOCK:${task.id}`);
     if (space?.mealPolicy !== undefined)
       reasons.push(`UNSUPPORTED_STANDALONE_SECONDARY_MEAL:${task.id}`);
-    const allowedDependencies = departureIds.has(task.id)
-      ? departureDependencyIds
-      : isSetupTask
-      ? new Set([...coreIds, ...setupTaskIds])
-      : coreIds;
-    if (task.dependencies.some((id) => !allowedDependencies.has(id)))
-      reasons.push(`UNSUPPORTED_STANDALONE_DEPENDENCY:${task.id}`);
   }
   return [...new Set(reasons)].sort();
 }
@@ -342,9 +335,62 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
 };
 
 const dynamicTransportIds = transportTaskIds(problem);
-const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id) && !dynamicTransportIds.has(id));
+const jointItems = jointGroupIds(pending).map((id) => ({
+  key: jointWorkItemKey(id),
+  kind: "joint" as const,
+  tasks: jointGroupMembers(pending, id),
+}));
+const technicalItems = getTechnicalChains(pending).map((tasks) => ({
+  key: technicalChainWorkItemKey(tasks[0]!.id),
+  kind: "technical" as const,
+  tasks,
+}));
+const atomicItems = [...jointItems, ...technicalItems].sort((left, right) => left.key.localeCompare(right.key));
+const atomicTaskIds = new Set(atomicItems.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id) && !dynamicTransportIds.has(id) && !atomicTaskIds.has(id));
 const originalOrdinary = ordinaryPending.splice(0, ordinaryPending.length, ...pendingWithoutRounds.filter(({ id }) => !setupTaskIds.has(id)).sort(byId));
 void originalOrdinary;
+
+const searchAtomicItems = (
+  index: number,
+  placed: ScheduledTask[],
+  selectionOrder: string[],
+): StandaloneOutcome => {
+  if (index >= atomicItems.length) return searchSetup(0, placed, [], placed.length, selectionOrder);
+  const item = atomicItems[index]!;
+  if (item.kind === "joint") {
+    const duration = item.tasks[0]?.duration ?? 0;
+    for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) {
+      if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
+      evidence.standaloneBranches += 1;
+      if (!canPlaceJointGroup(problem, item.tasks, start, [...coreTasks, ...placed])) continue;
+      const scheduled = scheduleJointGroup(item.tasks, start);
+      const child = searchAtomicItems(index + 1, [...placed, ...scheduled], [...selectionOrder, ...scheduled.map(({ id }) => id)]);
+      if (child !== "DEAD_END") return child;
+      evidence.standaloneBacktracks += 1;
+    }
+    for (const task of item.tasks)
+      evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
+    return "DEAD_END";
+  }
+  const generated = generateTechnicalChainCandidates(
+    problem,
+    item.tasks,
+    [...coreTasks, ...placed],
+    Math.max(0, ledger.limit - ledger.branchesExplored),
+  );
+  if (generated.consumed > 0 && !ledger.consume("STANDALONE", generated.consumed)) return "BUDGET_EXHAUSTED";
+  if (generated.exhausted) return "BUDGET_EXHAUSTED";
+  for (const candidate of generated.candidates) {
+    const child = searchAtomicItems(index + 1, [...placed, ...candidate.tasks],
+      [...selectionOrder, ...candidate.tasks.map(({ id }) => id)]);
+    if (child !== "DEAD_END") return child;
+    evidence.standaloneBacktracks += 1;
+  }
+  for (const task of item.tasks)
+    evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
+  return "DEAD_END";
+};
 
 const searchRounds = (
   index: number,
@@ -354,7 +400,7 @@ const searchRounds = (
 ): StandaloneOutcome => {
   if (index >= roundPolicies.length) {
     activeRoundPreparations = [...roundPreparations];
-    return searchSetup(0, placed, [], placed.length, selectionOrder);
+    return searchAtomicItems(0, placed, selectionOrder);
   }
   const policy = roundPolicies[index]!;
   evidence.roundSynchronizationSearchInvocations += 1;

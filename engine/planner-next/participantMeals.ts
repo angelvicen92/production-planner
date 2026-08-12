@@ -40,6 +40,9 @@ export function participantMealCandidates(problem: PlannerNextProblem, obligatio
   const capacity = problem.participantMealCapacity?.maxSimultaneous ?? 0;
   const ownTasks = tasks.filter((task) => task.participantId === obligation.participantId);
   const ownMeals = placed.filter((meal) => meal.participantId === obligation.participantId);
+  const taskById = new Map(tasks.map((task) => [task.id, task]));
+  const mealBySourceTaskId = new Map(placed.map((meal) => [meal.sourceTaskId, meal]));
+  const obligationBySourceTaskId = new Map((problem.participantMeals ?? []).map((meal) => [meal.sourceTaskId, meal]));
   const result: ScheduledParticipantMeal[] = [];
   const starts = obligation.fixedInterval ? [obligation.fixedInterval.start] : Array.from(
     { length: Math.max(0, Math.floor((obligation.window.end - obligation.duration - obligation.window.start) / PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES) + 1) },
@@ -49,6 +52,14 @@ export function participantMealCandidates(problem: PlannerNextProblem, obligatio
     const end = start + obligation.duration;
     const candidate = { id: obligation.id, sourceTaskId: obligation.sourceTaskId, participantId: obligation.participantId, duration: obligation.duration, start, end };
     if (end > obligation.window.end || !contains(participant.availability, start, end)) continue;
+    if ((obligation.dependencies ?? []).some((dependencyId) => {
+      const dependencyTask = taskById.get(dependencyId);
+      if (dependencyTask) return dependencyTask.end > start;
+      const dependencyMeal = mealBySourceTaskId.get(dependencyId);
+      return dependencyMeal ? dependencyMeal.end > start : false;
+    })) continue;
+    if (tasks.some((task) => task.dependencies.includes(obligation.sourceTaskId) && end > task.start)) continue;
+    if (placed.some((meal) => (obligationBySourceTaskId.get(meal.sourceTaskId)?.dependencies ?? []).includes(obligation.sourceTaskId) && end > meal.start)) continue;
     if (ownTasks.some((task) => overlaps(task, candidate)) || ownMeals.some((meal) => intervalOverlaps(meal, candidate))) continue;
     if (maximumConcurrent([...placed, candidate]) > capacity) continue;
     result.push(candidate);

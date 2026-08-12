@@ -41,7 +41,10 @@ export function resolveFlexibleParticipantMealTasks(input: EngineInput): Flexibl
       fixedInterval = { start: engineTimeToMinute(interval.start), end: engineTimeToMinute(interval.end) };
       if (fixedInterval.end-fixedInterval.start !== duration || fixedInterval.start<window.start || fixedInterval.end>window.end) { defects.push({ taskId: task.id, code: "UNREPRESENTABLE_PARTICIPANT_MEAL_TASK", details: { fixedInterval, duration, window } }); continue; }
     }
-    obligations.push({ id: `participant-meal:${task.id}`, sourceTaskId: `task:${task.id}`, participantId: `participant:${task.contestantId}`, duration: duration!, window, status: task.status as ParticipantMealObligation["status"], ...(fixedInterval ? { fixedInterval } : {}) });
+    const dependencies = [...new Set(task.dependsOnTaskIds ?? (task.dependsOnTaskId != null ? [task.dependsOnTaskId] : []))]
+      .sort((a, b) => a - b)
+      .map((id) => `task:${id}`);
+    obligations.push({ id: `participant-meal:${task.id}`, sourceTaskId: `task:${task.id}`, participantId: `participant:${task.contestantId}`, duration: duration!, window, status: task.status as ParticipantMealObligation["status"], dependencies, ...(fixedInterval ? { fixedInterval } : {}) });
   }
   return { obligations, defects };
 }

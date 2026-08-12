@@ -166,16 +166,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const mains = canonical(problem.tasks.filter((task) => task.kind === "main"));
   const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"));
-  const arrivalTaskIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const feederByMain = new Map<string, Task>();
   const unsupported: string[] = [];
   for (const main of mains) {
     const matching = vocals.filter((task) => task.participantId === main.participantId);
     if (matching.length !== 1) unsupported.push(`${matching.length === 0 ? "MISSING" : "MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
     else if (!main.dependencies.includes(matching[0]!.id)
-      || matching[0]!.dependencies.some((dependencyId) => !arrivalTaskIds.has(dependencyId)))
+      || matching[0]!.dependencies.some((dependencyId) => mains.some(({ id }) => id === dependencyId)))
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
-    else feederByMain.set(main.id, { ...matching[0]!, dependencies: matching[0]!.dependencies.filter((id) => !arrivalTaskIds.has(id)) });
+    else feederByMain.set(main.id, { ...matching[0]!, dependencies: [...matching[0]!.dependencies] });
   }
   if (unsupported.length > 0 || mains.length === 0)
     return fail("UNSUPPORTED_CORE_SHAPE", unsupported.length ? unsupported : ["MISSING_MAIN_TASK"]);
@@ -219,9 +218,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.completeLeafCount += 1;
       const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
         ...task,
-        dependencies: task.kind === "vocal"
-          ? task.dependencies.filter((dependencyId) => !arrivalTaskIds.has(dependencyId))
-          : [...task.dependencies],
+        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
       }));
       const deferredSetupSpaceIds = new Set(problem.spaces
         .filter((space) => space.setupPolicy !== undefined
@@ -245,7 +242,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
       const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
-      const validation = validatePlan(reduced, placed, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
+      const reducedPlaced = placed.map((task) => ({
+        ...task,
+        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
+      }));
+      const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
       if (validShape && validation.hardValid) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
         const ordered = placed.map((task) => ({
@@ -394,11 +395,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
+      const departureEnds = [...latestDepartureStart.values()];
       const candidateEnds = timeline
         ? [problem.mainFlow.preferredEnd]
-        : [...new Set([problem.mainFlow.preferredEnd,
-          ...[...latestDepartureStart.values()].map((deadline) => Math.min(problem.mainFlow.preferredEnd, deadline))])]
-          .sort((left, right) => right - left);
+        : [...new Set([
+          problem.mainFlow.preferredEnd,
+          ...departureEnds
+            .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+            .sort((left, right) => left - right),
+          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+          ...departureEnds
+            .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+            .sort((left, right) => right - left),
+        ])];
       for (const candidateEnd of candidateEnds) {
         if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);

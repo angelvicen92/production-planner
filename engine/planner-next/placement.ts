@@ -23,6 +23,21 @@ export function taskAvoidsScheduledSpaceMealResources(problem: PlannerNextProble
   });
 }
 
+/** Enforces every precedence relation whose opposite endpoint is already scheduled.
+ * Search order is not temporal order, so predecessor and dependent checks are both required. */
+export function taskRespectsScheduledDependencies(task: Task, start: number, placed: ScheduledTask[]): boolean {
+  const end = start + task.duration;
+  const placedById = new Map(placed.map((item) => [item.id, item]));
+  for (const dependencyId of task.dependencies) {
+    const dependency = placedById.get(dependencyId);
+    if (dependency && dependency.end > start) return false;
+  }
+  for (const dependent of placed) {
+    if (dependent.dependencies.includes(task.id) && end > dependent.start) return false;
+  }
+  return true;
+}
+
 /** The single hard-placement predicate used by every Planner Next phase. */
 export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[], scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): boolean {
   const end = start + task.duration;
@@ -30,7 +45,7 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
   const space = problem.spaces.find((x) => x.id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
-  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)) return false;
+  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)||!taskRespectsScheduledDependencies(task,start,placed)) return false;
   if (start < problem.day.start || end > problem.day.end || !occupationAvoidsProtectedMeal(problem,task.spaceId,start,end)
     || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
