@@ -133,6 +133,17 @@ export interface ExactMainAndFeederSearchOptions {
   onMainChoiceAccepted?: (candidate: ExactMainChoiceDescriptor) => void;
   /** Test oracle: rebuilds every residual graph without changing search semantics. */
   residualMatchingMode?: "INCREMENTAL" | "FULL_RECOMPUTE";
+  /** Read-only diagnostic used by exact-certificate tests; it cannot influence the search. */
+  onResidualMatchingDerived?: (trace: Readonly<{
+    selectedTaskId: string;
+    consumedPosition: number;
+    selectedTaskPreviousPosition: number | null;
+    consumedPositionPreviousOwner: string | null;
+    invalidatedMatchedEdges: number;
+    invalidatedUnmatchedEdges: number;
+    reusedInvalidEdges: number;
+    unmatchedBeforeRepair: number;
+  }>) => void;
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -438,10 +449,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     } else {
       evidence.residualMatchingIncrementalUpdates += 1;
       const consumedPosition = nextDepth - 1;
+      let invalidatedMatchedEdges = 0;
+      let invalidatedUnmatchedEdges = 0;
+      let reusedInvalidEdges = 0;
       // Both vertices are removed independently: the parent's matching need not pair them together.
       for (const task of remaining) {
         const parentInvalid = parent.invalidPositions.get(task.id) ?? new Set<number>();
-        invalidPositions.set(task.id, new Set([...parentInvalid].filter((position) => positionSet.has(position))));
+        const retainedInvalid = [...parentInvalid].filter((position) => positionSet.has(position));
+        reusedInvalidEdges += retainedInvalid.length;
+        invalidPositions.set(task.id, new Set(retainedInvalid));
         const taskEdges: ResidualMatchingEdge[] = [];
         for (const edge of parent.validEdges.get(task.id) ?? []) {
           if (edge.position === consumedPosition || !positionSet.has(edge.position)) continue;
@@ -454,7 +470,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           const refreshed = evaluate(task, edge.position);
           if (refreshed === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
           if (refreshed) taskEdges.push(refreshed);
-          else invalidPositions.get(task.id)!.add(edge.position);
+          else {
+            invalidPositions.get(task.id)!.add(edge.position);
+            if (parent.matching.get(task.id) === edge.position) invalidatedMatchedEdges += 1;
+            else invalidatedUnmatchedEdges += 1;
+          }
         }
         validEdges.set(task.id, taskEdges);
         if (taskEdges.length === 0) return { outcome: "DEAD_END" };
@@ -462,6 +482,25 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // Assert the requested removal in the derivation rather than relying only on `used`.
       if (parent.taskIds.includes(selectedTaskId) && remainingIdSet.has(selectedTaskId))
         throw new Error("RESIDUAL_MATCHING_SELECTED_TASK_NOT_REMOVED");
+
+      if (options.onResidualMatchingDerived) {
+        const retainedTaskIds = new Set<string>();
+        for (const [taskId, position] of parent.matching) {
+          if (remainingIdSet.has(taskId) && positionSet.has(position)
+            && (validEdges.get(taskId) ?? []).some((edge) => edge.position === position)) retainedTaskIds.add(taskId);
+        }
+        options.onResidualMatchingDerived(Object.freeze({
+          selectedTaskId,
+          consumedPosition,
+          selectedTaskPreviousPosition: parent.matching.get(selectedTaskId) ?? null,
+          consumedPositionPreviousOwner: [...parent.matching]
+            .find(([, position]) => position === consumedPosition)?.[0] ?? null,
+          invalidatedMatchedEdges,
+          invalidatedUnmatchedEdges,
+          reusedInvalidEdges,
+          unmatchedBeforeRepair: remainingIds.filter((id) => !retainedTaskIds.has(id)).length,
+        }));
+      }
     }
 
     const matching = new Map<string, number>();
