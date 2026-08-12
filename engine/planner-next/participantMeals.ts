@@ -20,6 +20,13 @@ export interface ParticipantMealWitness {
 }
 export interface ParticipantMealSearchBudget { remaining: number; consume?: (count?: number) => boolean }
 export type ParticipantMealAssessmentMode = "PROBE" | "MATERIALIZE";
+export interface PartialParticipantMealFeasibility {
+  readonly feasible: boolean;
+  readonly budgetExhausted: boolean;
+  readonly blockingMealTaskIds: readonly string[];
+  readonly checksExplored: number;
+  readonly readOnly: true;
+}
 
 const byIdentity = (a: ParticipantMealObligation, b: ParticipantMealObligation): number => a.sourceTaskId.localeCompare(b.sourceTaskId, "en") || a.id.localeCompare(b.id, "en");
 const intervalOverlaps = (a: Window, b: Window): boolean => a.start < b.end && b.start < a.end;
@@ -67,6 +74,26 @@ export function participantMealCandidates(problem: PlannerNextProblem, obligatio
   const existing=ownTasks.length?[Math.min(...ownTasks.map(x=>x.start)),Math.max(...ownTasks.map(x=>x.end))] as const:null;
   const components=(candidate:ScheduledParticipantMeal)=>{const spanIncrease=existing?Math.max(existing[1],candidate.end)-Math.min(existing[0],candidate.start)-(existing[1]-existing[0]):candidate.duration;const internalGap=Boolean(existing&&existing[0]<=candidate.start&&candidate.end<=existing[1]);const concurrent=placed.filter(x=>intervalOverlaps(x,candidate)).length;return {start:candidate.start,spanIncrease,internalGap,residualSlack:obligation.window.end-obligation.window.start-obligation.duration,capacityFree:capacity-concurrent-1};};
   return result.sort((a,b)=>{const x=components(a),y=components(b);return x.spanIncrease-y.spanIncrease||Number(y.internalGap)-Number(x.internalGap)||y.residualSlack-x.residualSlack||y.capacityFree-x.capacityFree||a.start-b.start||a.sourceTaskId.localeCompare(b.sourceTaskId)});
+}
+
+/** Necessary-only partial-core check: each obligation is considered independently. */
+export function assessPartialParticipantMealFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
+  budget: ParticipantMealSearchBudget, addedTasks?: readonly ScheduledTask[]): PartialParticipantMealFeasibility {
+  let checksExplored = 0;
+  const affected = addedTasks === undefined ? (problem.participantMeals ?? []) : (problem.participantMeals ?? []).filter((obligation) => addedTasks.some((task) =>
+    task.participantId === obligation.participantId
+    || obligation.dependencies?.includes(task.id)
+    || task.dependencies.includes(obligation.sourceTaskId)));
+  for (const obligation of [...affected].sort(byIdentity)) {
+    if (budget.remaining <= 0 || (budget.consume && !budget.consume(1)))
+      return freeze({ feasible: false, budgetExhausted: true, blockingMealTaskIds: [], checksExplored, readOnly: true });
+    budget.remaining -= 1;
+    checksExplored += 1;
+    // No placed meals: joint capacity and conflicts between meals cannot cause a partial prune.
+    if (participantMealCandidates(problem, obligation, tasks, []).length === 0)
+      return freeze({ feasible: false, budgetExhausted: false, blockingMealTaskIds: [obligation.sourceTaskId], checksExplored, readOnly: true });
+  }
+  return freeze({ feasible: true, budgetExhausted: false, blockingMealTaskIds: [], checksExplored, readOnly: true });
 }
 
 /** Exact deterministic joint witness; smallest-domain-first and ID only as final tie-break. */

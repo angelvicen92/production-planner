@@ -15,7 +15,8 @@ import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
-import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
+import { assessPartialParticipantMealFeasibility, assessParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
+import { staticTaskStartDomain } from "./taskAvailability";
 import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
@@ -532,14 +533,14 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   }
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, onPartialCoreCandidate(candidate) {
-    if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessParticipantMealFutureFeasibility(problem,candidate.tasks,mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")?"BUDGET_EXHAUSTED":"REJECT";}}
+    if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessPartialParticipantMealFeasibility(problem,candidate.tasks,mealBudget,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.checksExplored;if(!mealProbe.feasible){if(!mealProbe.budgetExhausted)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return mealProbe.budgetExhausted?"BUDGET_EXHAUSTED":"REJECT";}}
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
     evidence.standaloneForwardChecks += 1;
     for (const task of impacted) {
       evidence.standaloneForwardImpactedTaskChecks += 1;
       let witness = false;
-      for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
+      for (const start of staticTaskStartDomain(problem, task)) {
         if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
         evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
         if (canPlaceTask(problem, task, start, candidate.tasks, candidate.meals)) { witness = true; break; }

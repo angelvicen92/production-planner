@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ParticipantMealObligation, PlannerNextProblem, ScheduledTask } from "./contracts";
-import { assessParticipantMealFutureFeasibility, participantMealCandidates, scheduleParticipantMeals } from "./participantMeals";
+import { assessPartialParticipantMealFeasibility, assessParticipantMealFutureFeasibility, participantMealCandidates, scheduleParticipantMeals } from "./participantMeals";
 import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { preflight, validatePlan } from "./validate";
@@ -41,6 +41,23 @@ test("joint witness rejects capacity collision although every meal has an indivi
   const source=problem(obligations,2);
   assert.ok(obligations.every(item=>participantMealCandidates(source,item,[],[]).length===1));
   const result=scheduleParticipantMeals(source,[],500);assert.equal(result.complete,false);assert.deepEqual(result.scheduled,[]);assert.ok(result.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"));
+});
+
+test("partial meal feasibility prunes only an individually proven hard impossibility and accounts checks",()=>{
+  const source=problem([meal("1","p1",{start:780,end:825}),meal("2","p2",{start:780,end:825}),meal("3","p3",{start:780,end:825})],2);
+  let consumed=0;const budget={remaining:3,consume:()=>{consumed+=1;return true}};
+  const partial=assessPartialParticipantMealFeasibility(source,[],budget);
+  assert.equal(partial.feasible,true);assert.equal(partial.checksExplored,3);assert.equal(consumed,3);assert.equal(budget.remaining,0);
+  assert.equal(scheduleParticipantMeals(source,[],500).complete,false,"joint conflict remains the final exact witness's responsibility");
+  source.participants.find(x=>x.id==="p1")!.availability=[{start:480,end:780}];
+  const impossible=assessPartialParticipantMealFeasibility(source,[],{remaining:10});
+  assert.equal(impossible.feasible,false);assert.equal(impossible.budgetExhausted,false);assert.deepEqual(impossible.blockingMealTaskIds,["task:1"]);
+});
+
+test("partial meal feasibility exhausts its shared budget atomically and deterministically",()=>{
+  const source=problem([meal("1","p1"),meal("2","p2")],1);
+  const run=()=>{const budget={remaining:1};return {result:assessPartialParticipantMealFeasibility(source,[],budget),remaining:budget.remaining}};
+  const first=run(),second=run();assert.deepEqual(first,second);assert.equal(first.result.budgetExhausted,true);assert.equal(first.result.checksExplored,1);assert.equal(first.remaining,0);
 });
 
 test("meals occupy only their participant and exact boundaries remain valid",()=>{
