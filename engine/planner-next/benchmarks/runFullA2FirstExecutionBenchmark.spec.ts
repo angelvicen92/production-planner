@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
 
 test("Full A2 first executable integration reports an atomic completion count", () => {
+  const originalEvidence = existsSync(EVIDENCE_PATH) ? readFileSync(EVIDENCE_PATH) : null;
   const child = spawnSync(process.execPath, ["--import", "tsx", "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts"], {
     encoding: "utf8",
     env: process.env,
@@ -35,6 +36,10 @@ test("Full A2 first executable integration reports an atomic completion count", 
       fullHardValidEligible: evidence.result.fullHardValidEligible,
     }));
   } finally {
-    rmSync(EVIDENCE_PATH, { force: true });
+    if (originalEvidence === null) {
+      rmSync(EVIDENCE_PATH, { force: true });
+    } else {
+      writeFileSync(EVIDENCE_PATH, originalEvidence);
+    }
   }
 });
