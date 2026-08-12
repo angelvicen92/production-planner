@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { EngineInput } from "../../types";
-import { preflight as preflightPlannerNextProblem } from "../validate";
+import { preflight as preflightPlannerNextProblem, validatePlan } from "../validate";
 import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
 import { createSpec10017JointGroupEngineInputFixture, createSpec10018SetupPolicyEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
@@ -24,6 +24,33 @@ test("strict time conversion round-trips every relevant boundary", () => {
   for (const value of ["00:00", "08:00", "08:05", "12:59", "13:00", "18:00", "23:59"]) assert.equal(minuteToEngineTime(engineTimeToMinute(value)), value);
   for (const invalid of ["8:00", "24:00", "12:60", "08:00:00"]) assert.throws(() => engineTimeToMinute(invalid), RangeError);
   for (const invalid of [-1, 1.5, 1440]) assert.throws(() => minuteToEngineTime(invalid), RangeError);
+});
+
+test("itinerant-unit availability is fail-closed, canonical, enforced, and fingerprinted", () => {
+  const missing = createSupportedEngineInputAdapterFixture();
+  missing.tasks[0]!.itinerantTeamId = 7;
+  assert.ok(preflightEngineInputForPlannerNext(missing).reasonCodes.includes("MISSING_ITINERANT_UNIT_AVAILABILITY"));
+  assert.equal(adaptEngineInputToPlannerNextProblem(missing).status, "UNSUPPORTED");
+
+  const input = clone(missing);
+  input.itinerantTeamAvailability = [
+    { itinerantTeamId: 8, windows: [{ start: "15:00", end: "16:00" }] },
+    { itinerantTeamId: 7, windows: [{ start: "10:00", end: "11:00" }, { start: "08:00", end: "09:00" }] },
+  ];
+  const result = supported(input);
+  assert.deepEqual(result.problem.itinerantUnits, [{ id: "itinerant-team:7", availability: [{ start: 480, end: 540 }, { start: 600, end: 660 }] }, { id: "itinerant-team:8", availability: [{ start: 900, end: 960 }] }]);
+  const task = result.problem.tasks.find(({ id }) => id === "task:101")!;
+  assert.equal(canPlaceTask(result.problem, task, 600, []), true);
+  assert.equal(canPlaceTask(result.problem, task, 570, []), false);
+  assert.ok(validatePlan({ ...result.problem, tasks: [task] }, [{ ...task, start: 570, end: 600 }]).availabilityViolationCount > 0);
+
+  const reordered = clone(input);
+  reordered.itinerantTeamAvailability!.reverse();
+  reordered.itinerantTeamAvailability![0]!.windows.reverse();
+  assert.equal(supported(reordered).problemFingerprint, result.problemFingerprint);
+  const changed = clone(input);
+  changed.itinerantTeamAvailability![1]!.windows[0]!.end = "10:55";
+  assert.notEqual(supported(changed).problemFingerprint, result.problemFingerprint);
 });
 
 test("synthetic fixture is accepted by both canonical preflights", () => {

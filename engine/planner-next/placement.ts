@@ -14,6 +14,12 @@ export function taskAvoidsItinerantUnitMeals(problem:PlannerNextProblem,task:Tas
   return !task.itinerantUnitId||(problem.itinerantUnitMeals??[]).every(meal=>meal.itinerantUnitId!==task.itinerantUnitId||!overlaps(meal.interval,{start,end}));
 }
 
+export function taskFitsItinerantUnitAvailability(problem: PlannerNextProblem, task: Task, start: number, end: number): boolean {
+  if (!task.itinerantUnitId) return true;
+  const unit = problem.itinerantUnits?.find(({ id }) => id === task.itinerantUnitId);
+  return Boolean(unit && contains(unit.availability, start, end));
+}
+
 export function taskAvoidsScheduledSpaceMealResources(problem: PlannerNextProblem, task: Task, start: number, end: number, meals: ScheduledSpaceMeal[]): boolean {
   const required = new Set(task.requiredResourceIds ?? []);
   if (required.size === 0) return true;
@@ -45,7 +51,7 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
   const space = problem.spaces.find((x) => x.id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
-  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)||!taskRespectsScheduledDependencies(task,start,placed)) return false;
+  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskFitsItinerantUnitAvailability(problem,task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)||!taskRespectsScheduledDependencies(task,start,placed)) return false;
   if (start < problem.day.start || end > problem.day.end || !occupationAvoidsProtectedMeal(problem,task.spaceId,start,end)
     || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;

@@ -46,8 +46,7 @@
         ]
       ]
     ],
-    "itineraryAvailabilityProjected": false,
-    "itineraryAvailabilityGap": "EngineInput has itinerantTeamId identity but no lossless per-itinerant-unit availability field used by the adapter; Full A2 success cannot be declared until this source rule is preserved."
+    "itineraryAvailabilityProjected": true
   },
   "preflight": {
     "status": "SUPPORTED",
@@ -58,7 +57,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "7eb1eef636a40d777455a2118641c50434e97cbe296bf2fd3f887ae6bd35d33f"
+    "problemFingerprint": "238b4f1f33d30d35b8447ff1828bf756cd65a9a1ababaf3a3a460aef082c4d60"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -277,8 +276,8 @@
     ],
     "evidence": {
       "branchesExplored": 300000,
-      "coreBranches": 212863,
-      "standaloneBranches": 87137,
+      "coreBranches": 183038,
+      "standaloneBranches": 116962,
       "standaloneStartChecks": 0,
       "standaloneTaskSelections": 0,
       "standaloneZeroAlternativePrunes": 0,
@@ -289,36 +288,35 @@
       "coreLeavesRejectedByStandalone": 0,
       "standaloneSearchInvocations": 0,
       "standaloneBlockingTaskCounts": {},
-      "standaloneForwardChecks": 719,
-      "standaloneForwardStartChecks": 73476,
-      "standaloneForwardWitnessesFound": 7695,
-      "standaloneForwardPrunes": 231,
+      "standaloneForwardChecks": 624,
+      "standaloneForwardStartChecks": 105106,
+      "standaloneForwardWitnessesFound": 6186,
+      "standaloneForwardPrunes": 216,
       "standaloneForwardBlockingTaskCounts": {
-        "task:10150": 26,
+        "task:10150": 27,
         "task:10246": 26,
         "task:10092": 26,
-        "task:10120": 26,
-        "task:10135": 26,
-        "task:10077": 26,
-        "task:10105": 25,
-        "task:10060": 25,
-        "task:10221": 25
+        "task:10120": 27,
+        "task:10135": 27,
+        "task:10077": 27,
+        "task:10105": 29,
+        "task:10221": 27
       },
       "standaloneForwardPrunesByDepth": {
-        "3": 9,
-        "4": 222
+        "3": 11,
+        "4": 205
       },
-      "standaloneForwardImpactedTaskChecks": 7926,
+      "standaloneForwardImpactedTaskChecks": 6402,
       "standaloneLeafSearchBranches": 0,
-      "standaloneForwardBranches": 73476,
+      "standaloneForwardBranches": 105106,
       "firstStandaloneForwardPruneDepth": 4,
       "lastStandaloneForwardPruneDepth": 4,
-      "lastStandaloneForwardBlockingTaskId": "task:10077",
+      "lastStandaloneForwardBlockingTaskId": "task:10150",
       "lastStandaloneForwardCausingCoreTaskIds": [
-        "task:10072",
-        "task:10080"
+        "task:10147",
+        "task:10153"
       ],
-      "lastStandaloneForwardCausingMainTaskId": "task:10072",
+      "lastStandaloneForwardCausingMainTaskId": "task:10147",
       "lastStandaloneForwardCausingFeederStart": 540,
       "selectedStandaloneTaskIds": [],
       "selectedStandaloneStarts": {},
@@ -542,7 +540,7 @@
       "reasonCodes": [
         "CORE_BRANCH_BUDGET_EXHAUSTED"
       ],
-      "coreBacktracks": 716,
+      "coreBacktracks": 621,
       "coreMaximumDepth": 4,
       "coreCompleteLeafCount": 0,
       "lastExhaustionPhase": "CORE",
@@ -570,8 +568,8 @@
       "roundSynchronizationBacktracks": 0,
       "roundSynchronizationZeroAlternativePrunes": 0,
       "selectedRoundPreparationIds": [],
-      "participantMealBranchesExplored": 13661,
-      "participantMealFutureFeasibilityChecks": 719,
+      "participantMealBranchesExplored": 11856,
+      "participantMealFutureFeasibilityChecks": 624,
       "participantMealFutureInfeasibleBranches": 0,
       "participantMealBlockingTaskIds": [],
       "participantMealAcceptedWitnessFingerprint": null,

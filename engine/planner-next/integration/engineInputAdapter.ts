@@ -74,6 +74,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     resources: sorted(problem.resources, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
     participants: sorted(problem.participants, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
     coaches: sorted(problem.coaches, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })),
+    ...(problem.itinerantUnits ? { itinerantUnits: sorted(problem.itinerantUnits, (entry) => entry.id).map((entry) => ({ ...entry, availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) })) } : {}),
     tasks: sorted(problem.tasks, (entry) => entry.id).map((entry) => ({
       ...entry,
       dependencies: [...entry.dependencies].sort(compare),
@@ -194,6 +195,13 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable coach ${id}`);
     return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])] };
   });
+  const itinerantUnits = [...(input.itinerantTeamAvailability ?? [])].sort((a, b) => a.itinerantTeamId - b.itinerantTeamId).map((availability) => {
+    const id = availability.itinerantTeamId;
+    return {
+      id: canonical("itinerant-team", id),
+      availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
+    };
+  });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {
     const availability = spatial.spacesById.get(id)?.effectiveWindow;
@@ -255,6 +263,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     resources,
     participants,
     coaches,
+    ...(itinerantUnits.length ? { itinerantUnits } : {}),
     tasks,
     mainFlow: {
       spaceId: canonical("space", config.mainFlow.spaceId),

@@ -10,6 +10,11 @@ export interface Person {
   availability: Window[];
 }
 
+export interface ItinerantUnit {
+  id: string;
+  availability: Window[];
+}
+
 export interface Space {
   id: string;
   availability: Window[];
@@ -119,6 +124,8 @@ export interface PlannerNextProblem {
   resources: Resource[];
   participants: Person[];
   coaches: Person[];
+  /** Hard availability of itinerant compositions, independently of their members. */
+  itinerantUnits?: ItinerantUnit[];
   tasks: Task[];
   mainFlow: {
     spaceId: string;

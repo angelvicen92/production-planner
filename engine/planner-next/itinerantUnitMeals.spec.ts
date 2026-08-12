@@ -43,7 +43,7 @@ test("rejects missing identity, invalid unit, mixed scope, duplicate and same-un
 });
 
 test("placement and validation apply strict unit scope without a fictitious resource",()=>{
-  const problem=mainFlowVocalScenario();const task=problem.tasks.find(x=>x.kind==="auxiliary")??problem.tasks[0]!;task.itinerantUnitId="itinerant-team:7";problem.itinerantUnitMeals=[{id:"meal-7",itinerantUnitId:"itinerant-team:7",interval:{start:720,end:780}}];
+  const problem=mainFlowVocalScenario();const task=problem.tasks.find(x=>x.kind==="auxiliary")??problem.tasks[0]!;task.itinerantUnitId="itinerant-team:7";problem.itinerantUnits=[{id:"itinerant-team:7",availability:[{...problem.day}]},{id:"itinerant-team:8",availability:[{...problem.day}]}];problem.itinerantUnitMeals=[{id:"meal-7",itinerantUnitId:"itinerant-team:7",interval:{start:720,end:780}}];
   assert.equal(canPlaceTask(problem,task,720-task.duration,[]),true);assert.equal(canPlaceTask(problem,task,750,[]),false);assert.equal(canPlaceTask(problem,task,780,[]),true);
   const other={...task,id:"other",itinerantUnitId:"itinerant-team:8",start:735,end:735+task.duration};assert.equal(canPlaceTask(problem,other,735,[]),true);assert.ok(!(task.requiredResourceIds??[]).includes("itinerant-team:7"));
   const published=[{id:"meal-7",itinerantUnitId:"itinerant-team:7",start:720,end:780,duration:60}];assert.equal(validatePlan({...problem,tasks:[]},[],[],[],[],[],published).itinerantUnitMealViolationCount,0);assert.ok(validatePlan({...problem,tasks:[]},[],[],[],[],[],[]).itinerantUnitMealViolationCount>0);assert.ok(validatePlan({...problem,tasks:[]},[],[],[],[],[],[published[0]!,published[0]!]).itinerantUnitMealViolationCount>0);
