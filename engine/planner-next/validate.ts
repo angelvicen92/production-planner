@@ -108,6 +108,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const spaces = Array.isArray(problem.spaces) ? problem.spaces : [];
   const tasks = Array.isArray(problem.tasks) ? problem.tasks : [];
   const resources = Array.isArray(problem.resources) ? problem.resources : [];
+  const itinerantUnits = Array.isArray(problem.itinerantUnits) ? problem.itinerantUnits : [];
   if (tasks.some(task=>task && Object.prototype.hasOwnProperty.call(task,"jointGroupId") && (typeof task.jointGroupId!=="string" || task.jointGroupId.trim()===""))) reasons.add("INVALID_JOINT_GROUP_ID");
   if (!Array.isArray(problem.resources)) reasons.add("INVALID_RESOURCE_CONTRACT");
   if (hasDuplicateIds(participants)) reasons.add("DUPLICATE_PARTICIPANT_ID");
@@ -115,6 +116,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if (hasDuplicateIds(spaces)) reasons.add("DUPLICATE_SPACE_ID");
   if (hasDuplicateIds(tasks)) reasons.add("DUPLICATE_TASK_ID");
   if (hasDuplicateIds(resources)) reasons.add("DUPLICATE_RESOURCE_ID");
+  if (hasDuplicateIds(itinerantUnits)) reasons.add("DUPLICATE_ITINERANT_UNIT_ID");
+  if (itinerantUnits.some(({ id }) => typeof id !== "string" || id.trim() === "")) reasons.add("INVALID_ITINERANT_UNIT_ID");
+  if (tasks.some((task) => task.itinerantUnitId !== undefined && !itinerantUnits.some((unit) => unit.id === task.itinerantUnitId))) reasons.add("MISSING_ITINERANT_UNIT_REFERENCE");
+  if (usableDay && validateAvailability(itinerantUnits, day)) reasons.add("INVALID_ITINERANT_UNIT_AVAILABILITY");
   if (resources.some(({ id }) => typeof id !== "string" || id.trim() === "")) reasons.add("INVALID_RESOURCE_CONTRACT");
   if (resources.some(({ transitionMinutes }) => transitionMinutes !== undefined
     && (typeof transitionMinutes !== "number" || !Number.isFinite(transitionMinutes)
@@ -377,6 +382,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
   const spaces = new Map(problem.spaces.map((item) => [item.id, item]));
   const resources = new Map(problem.resources.map((item) => [item.id, item]));
+  const itinerantUnits = new Map((problem.itinerantUnits ?? []).map((item) => [item.id, item]));
   const taskAvailabilityIds=new Set<string>();
   const expectedTaskById=new Map(problem.tasks.map(task=>[task.id,task]));
 
@@ -391,6 +397,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       || !occupationAvoidsProtectedMeal(problem,task.spaceId,task.start,task.end)
       || (task.kind !== "technical" && (!participant || !contains(participant.availability, task.start, task.end)))
       || (task.coachId !== undefined && (!coach || !contains(coach.availability, task.start, task.end)))
+      || (task.itinerantUnitId !== undefined && (!itinerantUnits.get(task.itinerantUnitId) || !contains(itinerantUnits.get(task.itinerantUnitId)!.availability, task.start, task.end)))
       || !space || !contains(space.availability, task.start, task.end)) availability += 1;
     if (!taskFitsAvailability(task,task.start,task.end)) taskAvailabilityIds.add(task.id);
     for (const resourceId of task.requiredResourceIds ?? []) {

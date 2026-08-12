@@ -382,6 +382,9 @@ export interface EngineInput {
   // Key: contestantId -> ventana HH:mm
   contestantAvailabilityById?: Record<number, TimeWindow>;
 
+  /** Authoritative availability windows keyed by itinerant composition identity. */
+  itinerantUnitAvailabilityById?: Record<number, TimeWindow[]>;
+
   // ✅ Optimización diaria autoritativa (SPEC11-010).
   // Los campos legacy inferiores se derivan exclusivamente del snapshot del plan.
   optimizerSnapshotContractVersion?: 1;

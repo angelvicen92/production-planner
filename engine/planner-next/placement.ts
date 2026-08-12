@@ -45,9 +45,11 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
   const space = problem.spaces.find((x) => x.id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
+  const itinerantUnit = task.itinerantUnitId === undefined ? undefined : problem.itinerantUnits?.find((unit) => unit.id === task.itinerantUnitId);
   if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)||!taskAvoidsItinerantUnitMeals(problem,task,start,end)||!taskRespectsScheduledDependencies(task,start,placed)) return false;
   if (start < problem.day.start || end > problem.day.end || !occupationAvoidsProtectedMeal(problem,task.spaceId,start,end)
     || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
+    || (task.itinerantUnitId !== undefined && (!itinerantUnit || !contains(itinerantUnit.availability, start, end)))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
   if(scheduledSpaceMeals.some(meal=>meal.spaceId===task.spaceId&&overlaps(meal,{start,end}))
     || !taskAvoidsScheduledSpaceMealResources(problem, task, start, end, scheduledSpaceMeals)) return false;

@@ -42,6 +42,29 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
   assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
 });
 
+test("includes itinerant-unit availability in the canonical problem fingerprint", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.tasks[4]!.itinerantTeamId = 71;
+  input.itinerantUnitAvailabilityById = { 71: [{ start: "10:00", end: "12:00" }, { start: "13:00", end: "15:00" }] };
+  const first = supported(input);
+  assert.deepEqual(first.problem.itinerantUnits, [{ id: "itinerant-team:71", availability: [{ start: 600, end: 720 }, { start: 780, end: 900 }] }]);
+  const changed = clone(input);
+  changed.itinerantUnitAvailabilityById![71]![1]!.end = "14:55";
+  assert.notEqual(supported(changed).problemFingerprint, first.problemFingerprint);
+  const reordered = clone(input);
+  reordered.itinerantUnitAvailabilityById![71]!.reverse();
+  assert.equal(supported(reordered).problemFingerprint, first.problemFingerprint);
+});
+
+test("itinerant-unit availability fails closed when absent, malformed, or not referenced", () => {
+  const missing = createSupportedEngineInputAdapterFixture(); missing.tasks[4]!.itinerantTeamId = 71;
+  assert.ok(preflightEngineInputForPlannerNext(missing).reasonCodes.includes("MISSING_ITINERANT_UNIT_AVAILABILITY"));
+  const malformed = clone(missing); malformed.itinerantUnitAvailabilityById = { 71: [] };
+  assert.ok(preflightEngineInputForPlannerNext(malformed).reasonCodes.includes("INVALID_ITINERANT_UNIT_AVAILABILITY"));
+  const unknown = createSupportedEngineInputAdapterFixture(); unknown.itinerantUnitAvailabilityById = { 71: [{ start: "10:00", end: "12:00" }] };
+  assert.ok(preflightEngineInputForPlannerNext(unknown).reasonCodes.includes("INVALID_ITINERANT_UNIT_AVAILABILITY"));
+});
+
 test("transport adapter projects min/max policy from explicit operational roles only", () => {
   const input = createSupportedEngineInputAdapterFixture();
   input.tasks[0]!.operationalRole = "transport_arrival";

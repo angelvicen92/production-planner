@@ -37,6 +37,8 @@ export type EngineInputPreflightReasonCode =
   | "MISSING_DEPENDENCY_REFERENCE"
   | "MISSING_MAIN_FLOW_CONFIGURATION"
   | "MISSING_PARTICIPANT_AVAILABILITY"
+  | "MISSING_ITINERANT_UNIT_AVAILABILITY"
+  | "INVALID_ITINERANT_UNIT_AVAILABILITY"
   | "MISSING_PARTICIPANT_REFERENCE"
   | "MISSING_PARTICIPANT_MEAL_WINDOW"
   | "MISSING_RESOURCE_AVAILABILITY"
@@ -340,6 +342,7 @@ function sourceProjection(input: EngineInput): unknown {
     ...(mappingPresent ? { vocalCoachPlanResourceItemIdByContestantId: runtime.vocalCoachPlanResourceItemIdByContestantId } : {}),
     resourceItemComponents: input.resourceItemComponents,
     contestantAvailabilityById: input.contestantAvailabilityById,
+    itinerantUnitAvailabilityById: input.itinerantUnitAvailabilityById,
     zoneResourceAssignments: input.zoneResourceAssignments,
     spaceResourceAssignments: input.spaceResourceAssignments,
     spaceParentById: input.spaceParentById,
@@ -802,6 +805,33 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   input.globalHardBreaks?.forEach((entry) => validateInterval(entry, "break", `${entry.start}-${entry.end}`, `globalHardBreaks.${entry.start}-${entry.end}`));
   input.protectedBreaks?.forEach((entry) => validateInterval(entry, "break", entry.id ?? `${entry.start}-${entry.end}`, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
   Object.entries(input.contestantAvailabilityById ?? {}).forEach(([id, window]) => validateInterval(window, "participant", id, `contestantAvailabilityById.${id}`));
+  const referencedItinerantUnitIds = identities.get("itinerant-team") ?? new Set<string>();
+  const itinerantAvailability = input.itinerantUnitAvailabilityById as unknown;
+  const availabilityRecord = itinerantAvailability !== null && typeof itinerantAvailability === "object" && !Array.isArray(itinerantAvailability)
+    ? itinerantAvailability as Record<string, unknown> : undefined;
+  if (referencedItinerantUnitIds.size && !availabilityRecord) {
+    for (const id of referencedItinerantUnitIds) addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, `itinerantUnitAvailabilityById.${id}`, "Referenced itinerant unit has no authoritative availability.");
+  } else if (availabilityRecord) {
+    for (const [id, rawWindows] of Object.entries(availabilityRecord)) {
+      if (!referencedItinerantUnitIds.has(id)) {
+        addIssue("INVALID_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, `itinerantUnitAvailabilityById.${id}`, "Availability refers to an unknown itinerant unit identity.");
+        continue;
+      }
+      if (!Array.isArray(rawWindows) || rawWindows.length === 0) {
+        addIssue("INVALID_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, `itinerantUnitAvailabilityById.${id}`, "Itinerant-unit availability must contain at least one window.");
+        continue;
+      }
+      rawWindows.forEach((rawWindow, index) => {
+        const validShape = rawWindow !== null && typeof rawWindow === "object" && !Array.isArray(rawWindow);
+        if (!validShape || !validateInterval(rawWindow as TimeWindow, "itinerant-team", id, `itinerantUnitAvailabilityById.${id}.${index}`)) {
+          addIssue("INVALID_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, `itinerantUnitAvailabilityById.${id}.${index}`, "Itinerant-unit availability window is malformed.");
+        }
+      });
+    }
+    for (const id of referencedItinerantUnitIds) if (!Object.prototype.hasOwnProperty.call(availabilityRecord, id)) {
+      addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY", "itinerant-team", id, `itinerantUnitAvailabilityById.${id}`, "Referenced itinerant unit has no authoritative availability.");
+    }
+  }
 
   const taskById = new Map(input.tasks.map((task) => [String(task.id), task]));
   const dependencies = new Map<string, string[]>();

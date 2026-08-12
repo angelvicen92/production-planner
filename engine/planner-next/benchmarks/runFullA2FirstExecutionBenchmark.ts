@@ -82,6 +82,10 @@ input.locks = [];
 input.planZoneSettings = expansion.spaces.map((space) => ({ zoneId: zoneId.get(space.id)!, availabilityStart: null, availabilityEnd: null, source: "A2-FULL-EXEC-001" }));
 input.planSpaceSettings = expansion.spaces.map((space) => ({ spaceId: spaceId.get(space.id)!, zoneId: zoneId.get(space.id)!, availabilityStart: null, availabilityEnd: null, source: "A2-FULL-EXEC-001" }));
 input.contestantAvailabilityById = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, { ...config.participantAvailability[id] }]));
+input.itinerantUnitAvailabilityById = Object.fromEntries(expansion.itinerantUnits.map((unit) => [
+  itinerantUnitId.get(unit.id)!,
+  [{ start: config.itinerantUnitAvailability[unit.id].start, end: config.itinerantUnitAvailability[unit.id].end }],
+]));
 input.planResourceItems = expansion.resources.map((resource, index) => ({
   id: resourceId.get(resource.id)!, resourceItemId: 7001 + index, typeId: 8001 + index,
   name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
@@ -181,7 +185,9 @@ const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
   : 0;
 const publishedCanonicalObligations = exactResult?.complete ? scheduledCanonicalObligations : 0;
-const itineraryAvailabilityProjected = false;
+const itineraryAvailabilityProjected = adapted.status === "SUPPORTED"
+  && adapted.problem.itinerantUnits?.length === expansion.itinerantUnits.length
+  && adapted.problem.itinerantUnits.every((unit) => unit.availability.length > 0);
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
@@ -195,7 +201,8 @@ const evidence = {
     genericTransitionMinutes: { participant: 0, resource: 0 },
     operationalMealProjection: operationalMealGroups,
     itineraryAvailabilityProjected,
-    itineraryAvailabilityGap: "EngineInput has itinerantTeamId identity but no lossless per-itinerant-unit availability field used by the adapter; Full A2 success cannot be declared until this source rule is preserved.",
+    ...(adapted.status === "SUPPORTED" ? { itinerantUnitAvailabilityProjection: adapted.problem.itinerantUnits } : {}),
+    ...(!itineraryAvailabilityProjected ? { itineraryAvailabilityGap: "The canonical problem does not contain every configured itinerant-unit availability window." } : {}),
   },
   preflight: {
     status: preflight.status,

@@ -26,3 +26,10 @@ test("validatePlan counts each unavailable productive task once",()=>{
   const scheduled={...task,start:600,end:615};const v=validatePlan(p,[scheduled]);
   assert.equal(v.taskAvailabilityViolationCount,1);assert.ok(v.reasonCodes.includes(`TASK_AVAILABILITY:${task.id}`));
 });
+
+test("validatePlan rejects a scheduled task outside its itinerant composition window",()=>{
+  const p=mainFlowMealScenario(),task=p.tasks[0]!;task.itinerantUnitId="itinerant-team:1";
+  p.itinerantUnits=[{id:task.itinerantUnitId,availability:[{start:540,end:590}]}];
+  const validation=validatePlan(p,[{...task,start:600,end:615}]);
+  assert.equal(validation.availabilityViolationCount,1);assert.ok(validation.reasonCodes.includes("AVAILABILITY_VIOLATION"));
+});
