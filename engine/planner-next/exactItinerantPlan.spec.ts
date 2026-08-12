@@ -126,6 +126,8 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.equal([...Array(3)].some((_, index) => canPlaceTask(input, standalone, 70 + index * 5, isolated.scheduledTasks)), false);
   const integrated = constructExactItinerantPlan(input);
   assert.equal(integrated.status, "COMPLETE"); assert.ok(integrated.evidence.standaloneForwardPrunes > 0);
+  assert.ok(integrated.evidence.standaloneForwardStartChecks > 0);
+  assert.equal(integrated.evidence.standaloneForwardBranches, 0);
   assert.equal(integrated.evidence.coreLeavesRejectedByStandalone, 0);
   assert.ok(integrated.evidence.firstStandaloneForwardPruneDepth! < integrated.evidence.coreMaximumDepth);
   assert.equal(integrated.evidence.lastStandaloneForwardBlockingTaskId, "standalone");

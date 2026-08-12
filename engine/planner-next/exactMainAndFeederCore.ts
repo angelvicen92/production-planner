@@ -202,8 +202,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
   const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
-    meals: ScheduledSpaceMeal[]): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
-    if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+    meals: ScheduledSpaceMeal[]): "VALID" | "INVALID" => {
     evidence.feederCandidatesEvaluated += 1;
     evidence.constructiveFeederStartChecks += 1;
     return canPlaceTask(problem, feeder, start, [...placed, ...operation], meals) ? "VALID" : "INVALID";
@@ -308,14 +307,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       let validStartFound = false;
       for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
         const startCheck = checkFeederStart(choice.feeder, start, choice.operation, placed, meals);
-        if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (startCheck === "INVALID") continue;
         validStartFound = true;
         const scheduledFeeder: ScheduledTask = { ...choice.feeder, start, end: start + choice.feeder.duration };
         const nextPlaced = [...placed, ...choice.operation, scheduledFeeder];
         const nextUsed = new Set(used).add(choice.task.id);
         const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
-        if (matching === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (matching === "DEAD_END") {
           evidence.residualMatchingPrunes += 1;
           evidence.backtracks += 1;
@@ -339,7 +336,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
     meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number): SearchOutcome => {
-    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
     evidence.residualMatchingChecks += 1;
     const remaining = mains.filter(({ id }) => !used.has(id));
     if (remaining.length === 0) return "FOUND";
@@ -348,7 +344,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const positions: number[] = [];
       for (let position = nextDepth; position < mains.length; position += 1) {
         if (task.blockKey !== pattern[position] || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
-        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
         const departureDeadline = latestDepartureStart.get(task.participantId);
@@ -359,22 +354,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if (positions.length === 0) return "DEAD_END";
     }
     const positionOwner = new Map<number, string>();
-    const augment = (taskId: string, seen: Set<number>): "MATCHED" | "UNMATCHED" | "BUDGET_EXHAUSTED" => {
+    const augment = (taskId: string, seen: Set<number>): "MATCHED" | "UNMATCHED" => {
       for (const position of edges.get(taskId) ?? []) {
         if (seen.has(position)) continue;
-        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         seen.add(position);
         const owner = positionOwner.get(position);
         if (owner === undefined) { positionOwner.set(position, taskId); return "MATCHED"; }
         const displaced = augment(owner, seen);
-        if (displaced === "BUDGET_EXHAUSTED") return displaced;
         if (displaced === "MATCHED") { positionOwner.set(position, taskId); return "MATCHED"; }
       }
       return "UNMATCHED";
     };
     for (const { id } of remaining) {
       const result = augment(id, new Set());
-      if (result === "BUDGET_EXHAUSTED") return result;
       if (result === "UNMATCHED") return "DEAD_END";
     }
     return "FOUND";

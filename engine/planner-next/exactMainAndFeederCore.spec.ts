@@ -68,6 +68,18 @@ test("explores the first valid feeder start immediately without enumerating earl
   assert.equal(result.evidence.timelineCandidatesExplored, 1);
 });
 
+test("invalid feeder starts retain telemetry without consuming branch budget", () => {
+  const create = (availability: Array<{ start: number; end: number }>) => syntheticProblem([
+    { id: "vocal", kind: "vocal", participantId: "p", duration: 10, spaceId: "vocal-room", dependencies: [], availability },
+    { id: "main", kind: "main", participantId: "p", duration: 10, spaceId: "main", dependencies: ["vocal"], blockKey: "coach" },
+  ], ["p"], ["vocal-room"]);
+  const latest = constructExactMainAndFeederCore(create([{ start: 80, end: 90 }]));
+  const earlier = constructExactMainAndFeederCore(create([{ start: 60, end: 70 }]));
+  assert.equal(latest.status, "COMPLETE"); assert.equal(earlier.status, "COMPLETE");
+  assert.ok(earlier.evidence.constructiveFeederStartChecks > latest.evidence.constructiveFeederStartChecks);
+  assert.equal(earlier.evidence.branchesExplored, latest.evidence.branchesExplored);
+});
+
 test("uses an intermediate departure deadline before the invalid end-of-day fallback", () => {
   const problem = syntheticProblem([
     { id: "vocal", kind: "vocal", participantId: "p", duration: 10, spaceId: "vocal-room", dependencies: [] },
@@ -161,6 +173,16 @@ test("residual matching prunes an uncovered state and preserves a covered real s
   const solution = constructExactMainAndFeederCore(covered);
   assert.equal(solution.status, "COMPLETE");
   assert.equal(solution.scheduledTasks.filter(({ kind }) => kind === "main").length, 2);
+});
+
+test("deterministic residual matching never owns branch-budget exhaustion", () => {
+  const complete = constructExactMainAndFeederCore(mainBacktrackingProblem());
+  assert.ok(complete.evidence.residualMatchingChecks > 0);
+  const bounded = mainBacktrackingProblem(); bounded.budget.maxBranchExpansions = complete.evidence.branchesExplored - 1;
+  const exhausted = constructExactMainAndFeederCore(bounded);
+  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.ok(exhausted.evidence.residualMatchingChecks > 0);
+  assert.ok(!exhausted.evidence.reasonCodes.includes("MATCHING_SEARCH_BUDGET_EXHAUSTED"));
 });
 
 test("the exact branch threshold completes at B and exhausts atomically at B-1", () => {
