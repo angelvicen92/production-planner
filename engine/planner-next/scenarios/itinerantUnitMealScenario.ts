@@ -4,6 +4,7 @@ import { resourceMealScenario } from "./resourceMealScenario";
 export function itinerantUnitMealScenario(policy:"COMPATIBILITY_PRESERVING"|"EXACT_CONSTRUCTIVE"):PlannerNextProblem{
   const problem=resourceMealScenario(policy);delete problem.resourceMeals;
   problem.resources=[{id:"camera-7",availability:[{...problem.day}],presencePreference:"OFF",transitionMinutes:0},{id:"sound-7",availability:[{...problem.day}],presencePreference:"OFF",transitionMinutes:0},{id:"camera-8",availability:[{...problem.day}],presencePreference:"OFF",transitionMinutes:0},{id:"sound-8",availability:[{...problem.day}],presencePreference:"OFF",transitionMinutes:0}];
+  problem.itinerantUnits=[{id:"itinerant-team:7",availability:[{...problem.day}]},{id:"itinerant-team:8",availability:[{...problem.day}]}];
   for(const task of problem.tasks){if(task.id==="resource-before"||task.id==="flexible-productive"){task.itinerantUnitId="itinerant-team:7";task.requiredResourceIds=["camera-7","sound-7"];}if(task.id==="other-during-meal"){task.itinerantUnitId="itinerant-team:8";task.requiredResourceIds=["camera-8","sound-8"];}}
   problem.itinerantUnitMeals=[{id:"unit-7-meal",itinerantUnitId:"itinerant-team:7",interval:{start:720,end:780}}];return problem;
 }

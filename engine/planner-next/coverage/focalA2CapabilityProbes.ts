@@ -227,7 +227,9 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
     input.mealMode="flexible_meal_window";input.mealWindow={start,end};input.mealTaskTemplateId=999;input.contestantMealDurationMinutes=engineTimeToMinute(end)-engineTimeToMinute(start);input.contestantMealMaxSimultaneous=2;
     input.tasks.push({id:106,planId:input.planId,templateId:999,status:"pending",contestantId:options.participantId??201,operationalRole:"meal_break_placeholder"});
   } else if (scope === "itinerant-unit") {
-    input.protectedBreaks = [{ id: "unit-meal", kind: "meal", start, end, itinerantTeamId: options.itinerantTeamId ?? 7 }];
+    const itinerantTeamId = options.itinerantTeamId ?? 7;
+    input.protectedBreaks = [{ id: "unit-meal", kind: "meal", start, end, itinerantTeamId }];
+    input.itinerantUnitAvailabilityById = { [itinerantTeamId]: [{ ...input.workDay }] };
   } else {
     input.tasks.push({id:106,planId:input.planId,templateId:999,status:"pending",
       breakId: 135,
