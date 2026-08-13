@@ -1,6 +1,6 @@
 # OptiPlan — Adaptive Execution Routing Protocol
 
-Versión 2.0 · 10 de agosto de 2026  
+Versión 2.1 · 13 de agosto de 2026  
 Estado: documento de gobierno operativo del repositorio
 
 ## Autoridad
@@ -53,6 +53,14 @@ Métrica rectora:
 > **coste total por cambio verificado y aceptado**
 
 No minimizar autonomía, créditos o intervención humana de forma aislada.
+
+## Diagnóstico causal de Planner Next
+
+Cuando un benchmark de búsqueda se estanque, agote presupuesto o una optimización libere ramas sin producir progreso estructural, el siguiente paso no debe ser otra optimización por intuición.
+
+Antes de modificar ordering, dominios, matching, Future Feasibility, backtracking o reparto de presupuesto, aplicar `docs/governance/PLANNER_CAUSAL_DIAGNOSTIC_PROTOCOL.md`: reconstruir la Evidence actual, localizar profundidad/fase limitante, causas de rechazo y decisiones blocker, y formular un único delta causal.
+
+Los IDs, conteos y porcentajes de una ejecución son Evidence dinámica, nunca reglas permanentes.
 
 ## Reglas de usuario
 
