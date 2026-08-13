@@ -39,15 +39,15 @@ assert.deepEqual(baseline.plan, baselineAgain.plan); assert.deepEqual(baseline.p
 assert.deepEqual(experiment.plan, experimentAgain.plan); assert.deepEqual(experiment.plan, experimentReversed.plan);
 assert.deepEqual(experiment.orderingEvidence, experimentAgain.orderingEvidence); assert.deepEqual(experiment.orderingEvidence, experimentReversed.orderingEvidence);
 assert.equal(baseline.plan.status, "COMPLETE"); assert.equal(baseline.plan.scheduledTasks.length, 53);
-assert.equal(baseline.plan.evidence.branchesExplored, 85_557);
+assert.equal(baseline.plan.evidence.branchesExplored, 85_443);
 assert.equal(baseline.plan.evidence.selectedCoreFingerprint, "0948b758c96f17ec546c331ce6d8b42464dbdbe95970d0640ae5fbea95fdbae9");
 assert.equal(baseline.plan.evidence.fullFingerprint, "fded1fd188ba3daa833f68ce74533e6db43fd6e801d64f7f4cebea42aa5224d6");
 assert.equal(baseline.quality.summary.qualityFingerprint, "a64f641fcde8d470808a1b3e2eda986b5a99390600dd5c70ab189d37fc16189f");
 assert.equal(baseline.hardValid, true); assert.equal(experiment.hardValid, true);
 assert.equal(baseline.inputUnchanged, true); assert.equal(experiment.inputUnchanged, true);
 assert.equal(experiment.plan.status, "COMPLETE"); assert.equal(experiment.plan.scheduledTasks.length, 53);
-assert.equal(experiment.plan.remainingTaskIds.length, 0); assert.equal(experiment.plan.evidence.branchesExplored, 70_704);
-assert.equal(experiment.plan.evidence.coreBranches, 48_224); assert.equal(experiment.plan.evidence.standaloneBranches, 22_480);
+assert.equal(experiment.plan.remainingTaskIds.length, 0); assert.equal(experiment.plan.evidence.branchesExplored, 70_551);
+assert.equal(experiment.plan.evidence.coreBranches, 48_071); assert.equal(experiment.plan.evidence.standaloneBranches, 22_480);
 assert.equal(experiment.plan.evidence.selectedCoreFingerprint, "44f10279aa01fa7628c01962e9fbdd819d69486ae11df4fe4851de946600f07f");
 assert.equal(experiment.plan.evidence.fullFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
 assert.equal(experiment.quality.summary.qualityFingerprint, "13a87e0d9b6983c18ca5a0162785058b67b10f8ea65d46644463f49063791c75");

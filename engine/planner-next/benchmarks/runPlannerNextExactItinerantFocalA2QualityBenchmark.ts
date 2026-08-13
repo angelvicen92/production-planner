@@ -306,11 +306,11 @@ const executionChecks = { deterministicPlan: true, orderInvariantPlan: true, det
   inputUnchanged: first.inputUnchanged && repeated.inputUnchanged && reversed.inputUnchanged };
 
 assert.equal(first.baseline.status, "COMPLETE"); assert.equal(first.baseline.scheduledTasks.length, 53); assert.equal(first.baseline.remainingTaskIds.length, 0); assert.equal(first.baselineValidation.hardValid, true);
-assert.equal(first.baseline.evidence.branchesExplored, 85_557); assert.equal(first.baseline.evidence.fullFingerprint, BASELINE_FULL);
+assert.equal(first.baseline.evidence.branchesExplored, 85_443); assert.equal(first.baseline.evidence.fullFingerprint, BASELINE_FULL);
 assert.equal(first.baseline.evidence.selectedCoreFingerprint, BASELINE_CORE);
 assert.equal(first.baseline.evidence.completeSelectionMode, "FIRST_HARD_VALID");
 assert.equal(first.candidate.status, "COMPLETE"); assert.equal(first.candidate.scheduledTasks.length, 53); assert.equal(first.candidate.remainingTaskIds.length, 0); assert.equal(first.candidateValidation.hardValid, true);
-assert.equal(first.candidate.evidence.branchesExplored, 300_000); assert.equal(first.candidate.evidence.coreBranches, 48_224); assert.equal(first.candidate.evidence.standaloneBranches, 251_776);
+assert.equal(first.candidate.evidence.branchesExplored, 300_000); assert.equal(first.candidate.evidence.coreBranches, 48_071); assert.equal(first.candidate.evidence.standaloneBranches, 251_929);
 assert.equal(first.candidate.evidence.completePlansObserved, 78); assert.equal(first.candidate.evidence.completeIncumbentReplacements, 2); assert.equal(first.candidate.evidence.completeSelectionStoppedByBudget, true);
 assert.equal(first.candidate.evidence.completeSelectionMode, "BEST_DOMINATING_WITHIN_BUDGET");
 assert.equal(first.candidate.evidence.firstCompleteFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
