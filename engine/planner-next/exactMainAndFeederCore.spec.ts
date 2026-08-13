@@ -298,6 +298,10 @@ test("cohort causal diagnostics are passive and preserve structural depth and co
   assert.equal(enabled.status, disabled.status);
   assert.equal(enabled.evidence.maximumDepth, 4);
   const diagnostic = enabled.evidence.causalDiagnostic!;
+  assert.equal(Math.max(...Object.keys(diagnostic.feederByDepth).map(Number)), enabled.evidence.maximumDepth);
+  assert.equal(Math.max(...diagnostic.feederCoachDomainEliminations.map(({ depth }) => depth)),
+    enabled.evidence.maximumDepth);
+  assert.equal(Math.max(...Object.keys(diagnostic.waterfallByDepth).map(Number)), enabled.evidence.maximumDepth);
   assert.ok(diagnostic.feederCoachDomainEliminations.length > 0);
   assert.ok(diagnostic.feederCoachDomainEliminations.every(({ reason }) =>
     reason === "OVERLAP_COACH" || reason === "TRANSITION_COACH"));

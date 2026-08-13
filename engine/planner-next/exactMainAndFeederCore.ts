@@ -417,13 +417,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
     const assignMains = (position: number, blockPlaced: ScheduledTask[], blockUsed: Set<string>,
       cohort: MainChoice[], blockCertificate: ResidualMatchingCertificate | undefined): SearchOutcome => {
-      evidence.maximumDepth = Math.max(evidence.maximumDepth, Math.min(position, runEnd - 1));
+      evidence.maximumDepth = Math.max(evidence.maximumDepth, position);
       if (position === runEnd) {
         const blockOperations = cohort.flatMap(({ operation }) => operation);
         const scheduleFeeders = (scheduled: ScheduledTask[], remaining: MainChoice[]): SearchOutcome => {
           if (remaining.length === 0) {
             const nextPlaced = [...blockPlaced, ...scheduled];
-            matchingDiagnosticDepth=runEnd-1;
+            matchingDiagnosticDepth=runEnd;
             const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd,
               options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
               cohort.at(-1)!.task.id, scheduled);
@@ -437,7 +437,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               pattern: [...pattern], timelineKey }) ?? "CONTINUE";
             if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
             if (partial === "REJECT") { evidence.backtracks += 1; return "DEAD_END"; }
-            if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd-1)) return "BUDGET_EXHAUSTED";
+            if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
             const child = search(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd, timelineKey,
               matching.certificate);
             if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
@@ -458,7 +458,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (diagnostic) for (const elimination of startDomain.eliminations) {
             const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations, ...scheduled]);
             const row: ExactFeederCoachDomainElimination = {
-              depth: position - 1,
+              depth: position,
               mainTaskId: choice.task.id,
               feederTaskId: choice.feeder.id,
               participantId: choice.task.participantId ?? null,
@@ -472,14 +472,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             if (existing) existing.startsEliminated += row.startsEliminated;
             else { eliminationByKey.set(key, row); diagnostic.feederCoachDomainEliminations.push(row); }
           }
-          const feederRow=diagnostic?(diagnostic.feederByDepth[String(position-1)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+          const feederRow=diagnostic?(diagnostic.feederByDepth[String(position)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
           if(feederRow)feederRow.mainChoicesReachingFeeder++;
           let validStartFound = false;
           const starts = startDomain.starts((considered, eliminated) => {
             if (feederRow) { feederRow.startsConsidered += considered; feederRow.startsCoachEliminated += eliminated; }
           });
           for (const start of starts) {
-            const check = checkFeederStart(choice,start,[...blockPlaced,...blockOperations,...scheduled],meals,position-1);
+            const check = checkFeederStart(choice,start,[...blockPlaced,...blockOperations,...scheduled],meals,position);
             if (check === "BUDGET_EXHAUSTED") return check;
             if(feederRow){feederRow.startsEvaluated++;if(check==="VALID")feederRow.valid++;else feederRow.invalid++;}
             if (check === "INVALID") continue;
