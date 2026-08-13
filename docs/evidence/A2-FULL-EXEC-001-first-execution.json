@@ -4172,6 +4172,7 @@
           "count": 1614
         }
       ],
+      "criticalRejectionCount": 77280,
       "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10256, which accounts for 35,420 of 77,280 (45.8%) depth-4 feeder rejections, while preserving every hard constraint and the 300,000-branch budget."
     }
   },
