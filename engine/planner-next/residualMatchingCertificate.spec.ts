@@ -158,9 +158,28 @@ test("hard continuation gate preserves solutions, skips callbacks only on exact 
   assert.equal(missing.evidence.continuationGateChecks, 0);
   assert.deepEqual(repeated, enabled);
   assert.equal(enabled.evidence.nextPositionEdgesExamined, traces.reduce((sum, trace) => sum + trace.edgesExamined, 0));
+  assert.equal(enabled.evidence.continuationGateBranches, enabled.evidence.nextPositionEdgesExamined);
   assert.equal(enabled.status, disabled.status);
   assert.equal(enabled.complete, disabled.complete);
   assert.equal(enabled.evidence.coreFingerprint, disabled.evidence.coreFingerprint);
   assert.deepEqual(enabled.scheduledTasks, disabled.scheduledTasks);
   assert.ok(enabledCallbacks <= disabledCallbacks);
+});
+
+test("every hard-continuation edge is one atomic CORE branch", () => {
+  const problem = mainFlowVocalScenario();
+  const complete = runExactMainAndFeederSearch(structuredClone(problem), { causalDiagnostic: true });
+  assert.ok(complete.evidence.continuationGateBranches > 0);
+  assert.equal(complete.evidence.continuationGateBranches, complete.evidence.nextPositionEdgesExamined);
+  assert.equal(Object.values(complete.evidence.causalDiagnostic!.waterfallByDepth)
+    .reduce((sum, row) => sum + row.hardContinuation, 0), complete.evidence.continuationGateBranches);
+  assert.equal(Object.values(complete.evidence.causalDiagnostic!.waterfallByDepth)
+    .reduce((sum, row) => sum + row.total, 0), complete.evidence.branchesExplored);
+
+  const exhaustedLedger = createExactSearchLedger(complete.evidence.branchesExplored - 1);
+  const exhausted = runExactMainAndFeederSearch(structuredClone(problem), { ledger: exhaustedLedger });
+  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(exhausted.scheduledTasks, []);
+  assert.equal(exhausted.evidence.continuationGateBranches, exhausted.evidence.nextPositionEdgesExamined);
+  assert.equal(exhausted.evidence.branchesExplored, exhaustedLedger.coreBranches);
 });

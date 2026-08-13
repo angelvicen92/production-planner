@@ -33,6 +33,7 @@ export interface ExactMainAndFeederCoreEvidence {
   residualMatchingRepairs: number;
   residualMatchingRepairFailures: number;
   continuationGateChecks: number;
+  continuationGateBranches: number;
   nextPositionEdgesExamined: number;
   emptyFeederDomainPrunes: number;
   zeroAlternativePrunes: number;
@@ -48,9 +49,9 @@ export interface ExactMainAndFeederCoreEvidence {
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
-export type ExactBranchCategory = "MAIN_CANDIDATE" | "FEEDER_START" | "RESIDUAL_MATCHING" | "CONTINUATION"
+export type ExactBranchCategory = "MAIN_CANDIDATE" | "FEEDER_START" | "RESIDUAL_MATCHING" | "HARD_CONTINUATION" | "CONTINUATION"
   | "PARTICIPANT_MEAL" | "STANDALONE_FORWARD" | "OTHER";
-export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number; residualMatching:number; continuation:number; participantMeal:number; standaloneForward:number; other:number; total:number }
+export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number; residualMatching:number; hardContinuation:number; continuation:number; participantMeal:number; standaloneForward:number; other:number; total:number }
 export interface ExactDepthFeeder { startsConsidered:number; startsCoachEliminated:number; startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
 export interface ExactCriticalFeederRejection { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; startsAttempted:number; firstRejectionReason:PlacementRejectionReason; blockingPlacedTaskId:string|null; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; count:number }
 export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; startsEliminated:number }
@@ -309,7 +310,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingPositionChecks: 0, residualMatchingAugmentTraversals: 0,
     residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
-    continuationGateChecks: 0, nextPositionEdgesExamined: 0, emptyFeederDomainPrunes: 0,
+    continuationGateChecks: 0, continuationGateBranches: 0, nextPositionEdgesExamined: 0, emptyFeederDomainPrunes: 0,
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [], causalDiagnostic:null };
@@ -324,8 +325,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
-  const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
-  const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
+  const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,hardContinuation:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
+  const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",HARD_CONTINUATION:"hardContinuation",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
   const allTaskIds = canonical(Array.isArray(problem.tasks) ? problem.tasks : []).map(({ id }) => id);
   const fail = (status: Exclude<ExactMainAndFeederCoreStatus, "COMPLETE">, reasons: string[], coreIds: Set<string> = new Set()): ExactMainAndFeederCoreResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();
@@ -526,6 +527,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             edges.filter((edge) => edge.position === nextPosition).map((edge) => ({ taskId, edge })));
           let emptyDomains = 0;
           for (const { taskId, edge } of nextEdges) {
+            if (!consumeBranch("HARD_CONTINUATION_SEARCH_BUDGET_EXHAUSTED", "HARD_CONTINUATION", nextPosition))
+              return "BUDGET_EXHAUSTED";
+            evidence.continuationGateBranches += 1;
             evidence.nextPositionEdgesExamined += 1;
             const nextMain = mains.find(({ id }) => id === taskId)!;
             const nextFeeder = feederByMain.get(taskId)!;

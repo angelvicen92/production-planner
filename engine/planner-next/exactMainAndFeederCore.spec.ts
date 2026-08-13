@@ -154,6 +154,58 @@ test("defers an impossible future feeder to exact construction without publishin
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
 });
 
+test("hard continuation rejects multiple empty next edges before the historical callback", () => {
+  const problem = syntheticProblem(["a", "b", "c", "d"].flatMap((id): Task[] => [
+    { id: `vocal-${id}`, kind: "vocal", participantId: id, coachId: "coach", duration: 10,
+      spaceId: `vocal-${id}`, dependencies: [] },
+    { id: `main-${id}`, kind: "main", participantId: id, coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: [`vocal-${id}`], blockKey: "coach" },
+  ]), ["a", "b", "c", "d"], ["vocal-a", "vocal-b", "vocal-c", "vocal-d"]);
+  problem.coachRouteTransitions = ["b", "c", "d"].flatMap((id) => [
+    { coachId: "coach", fromSpaceId: `vocal-${id}`, toSpaceId: "main", minutes: 100 },
+    { coachId: "coach", fromSpaceId: "main", toSpaceId: `vocal-${id}`, minutes: 100 },
+  ]);
+  problem.participants.find(({ id }) => id === "a")!.availability = [{ start: 0, end: 70 }];
+  let enabledCallbacks = 0, disabledCallbacks = 0;
+  const traces: Array<{ edgesExamined: number; emptyDomains: number; pruned: boolean }> = [];
+  const enabled = runExactMainAndFeederSearch(structuredClone(problem), {
+    onPartialCoreCandidate: () => { enabledCallbacks += 1; return "CONTINUE"; },
+    onContinuationGateChecked: (trace) => traces.push(trace),
+  });
+  const disabled = runExactMainAndFeederSearch(structuredClone(problem), { continuationGateMode: "OFF",
+    onPartialCoreCandidate: () => { disabledCallbacks += 1; return "CONTINUE"; } });
+  assert.ok(traces.some((trace) => trace.edgesExamined > 1 && trace.emptyDomains === trace.edgesExamined && trace.pruned),
+    JSON.stringify({ traces, evidence: enabled.evidence }));
+  assert.equal(enabledCallbacks, 0);
+  assert.ok(disabledCallbacks > 0);
+  assert.equal(enabled.status, "INFEASIBLE");
+  assert.equal(disabled.status, "INFEASIBLE");
+  assert.deepEqual(enabled.scheduledTasks, disabled.scheduledTasks);
+});
+
+test("one non-empty feeder domain prevents the multiple-edge continuation prune", () => {
+  const problem = syntheticProblem(["a", "b", "c", "d"].flatMap((id): Task[] => [
+    { id: `vocal-${id}`, kind: "vocal", participantId: id, coachId: "coach", duration: 10,
+      spaceId: `vocal-${id}`, dependencies: [] },
+    { id: `main-${id}`, kind: "main", participantId: id, coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: [`vocal-${id}`], blockKey: "coach" },
+  ]), ["a", "b", "c", "d"], ["vocal-a", "vocal-b", "vocal-c", "vocal-d"]);
+  problem.coachRouteTransitions = ["b", "c"].flatMap((id) => [
+    { coachId: "coach", fromSpaceId: `vocal-${id}`, toSpaceId: "main", minutes: 100 },
+    { coachId: "coach", fromSpaceId: "main", toSpaceId: `vocal-${id}`, minutes: 100 },
+  ]);
+  problem.participants.find(({ id }) => id === "a")!.availability = [{ start: 0, end: 70 }];
+  let callbacks = 0;
+  const traces: Array<{ edgesExamined: number; emptyDomains: number; pruned: boolean }> = [];
+  runExactMainAndFeederSearch(problem, {
+    onPartialCoreCandidate: () => { callbacks += 1; return "CONTINUE"; },
+    onContinuationGateChecked: (trace) => traces.push(trace),
+  });
+  assert.ok(traces.some((trace) => trace.edgesExamined > 1
+    && trace.emptyDomains === trace.edgesExamined - 1 && !trace.pruned), JSON.stringify(traces));
+  assert.ok(callbacks > 0);
+});
+
 test("residual matching prunes an uncovered state and preserves a covered real solution", () => {
   const pruned = constructExactMainAndFeederCore(mainBacktrackingProblem());
   assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.residualMatchingPrunes > 0);
