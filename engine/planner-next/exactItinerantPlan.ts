@@ -6,6 +6,7 @@ import {
   type ExactMainAndFeederCoreStatus,
   type ExactSearchLedger,
   type ExactMainAndFeederSearchOptions,
+  type ExactCoreCausalDiagnostic,
 } from "./exactMainAndFeederCore";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
@@ -125,6 +126,7 @@ export interface ExactItinerantPlanEvidence {
   roundSynchronizationZeroAlternativePrunes: number;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
+  causalDiagnostic:ExactCoreCausalDiagnostic|null;
 }
 
 export interface ExactItinerantPlanResult {
@@ -587,6 +589,7 @@ export interface ExactItinerantPlanSearchOptions {
   standaloneCompletionSelection?: StandaloneCompletionSelection;
   /** Test oracle only; production always uses the exact analytic static domain. */
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
+  causalDiagnostic?: boolean;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -626,7 +629,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     roundSynchronizationAssignmentBranches: 0, roundSynchronizationAssignmentChecks: 0,
     roundSynchronizationCompleteAssignments: 0, roundSynchronizationBacktracks: 0,
     roundSynchronizationZeroAlternativePrunes: 0, selectedRoundPreparationIds: [],
-    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],
+    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
@@ -638,8 +641,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSetupPreparations: [], scheduledRoundPreparations: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledOperationalMeals:[],scheduledItinerantUnitMeals:[],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   }
-  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, onPartialCoreCandidate(candidate) {
-    if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessParticipantMealFutureFeasibility(problem,candidate.tasks,mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")?"BUDGET_EXHAUSTED":"REJECT";}}
+  const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
+  const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
+  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
+    if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>{const ok=ledger.consume("STANDALONE",count);if(ok&&options.causalDiagnostic)supplemental(candidate.depth).participantMeal+=count;return ok;}};const mealProbe=assessParticipantMealFutureFeasibility(problem,candidate.tasks,mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")?"BUDGET_EXHAUSTED":"REJECT";}}
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
     evidence.standaloneForwardChecks += 1;
@@ -655,6 +660,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         : staticDomain.starts();
       for (const start of starts) {
         if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
+        if(options.causalDiagnostic)supplemental(candidate.depth).standaloneForward+=1;
         evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
         if (canPlaceTask(problem, task, start, candidate.tasks, candidate.meals)) { witness = true; break; }
       }
@@ -692,6 +698,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     return "ACCEPT";
   }});
+  evidence.causalDiagnostic=core.evidence.causalDiagnostic;
+  if(evidence.causalDiagnostic)for(const [depth,extra] of Object.entries(supplementalByDepth)){const row=evidence.causalDiagnostic.waterfallByDepth[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};row.participantMeal+=extra.participantMeal;row.standaloneForward+=extra.standaloneForward;row.total+=extra.participantMeal+extra.standaloneForward;evidence.causalDiagnostic.waterfallByDepth[depth]=row;}
   evidence.branchesExplored = ledger.branchesExplored; evidence.coreBranches = ledger.coreBranches;
   evidence.standaloneBranches = ledger.standaloneBranches; evidence.lastExhaustionPhase = ledger.lastExhaustionPhase;
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
@@ -744,14 +752,15 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false): ExactItinerantPlanResult {
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return constructFirstHardValidExactItinerantPlan(problem);
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
     standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET",
+    causalDiagnostic,
   });
 }

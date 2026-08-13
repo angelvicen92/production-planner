@@ -36,7 +36,7 @@ export type PlannerNextExecution =
       result: ExactItinerantPlanResult;
     };
 
-export function executePlannerNext(problem: PlannerNextProblem): PlannerNextExecution {
+export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean}={}): PlannerNextExecution {
   const policyResolution = resolvePlannerSearchPolicy(problem);
 
   if (!policyResolution.compatible) {
@@ -54,6 +54,6 @@ export function executePlannerNext(problem: PlannerNextProblem): PlannerNextExec
   return {
     kind: "EXACT_CONSTRUCTIVE",
     policyResolution,
-    result: withParticipantMeals(problem, constructExactItinerantPlan(problem)),
+    result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic)),
   };
 }
