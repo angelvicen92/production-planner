@@ -158,29 +158,66 @@ export interface ExactMainAndFeederSearchOptions {
   feederStartDomainMode?: "COACH_DOMAIN" | "FULL_GRID";
 }
 
-/** Lazily preserves the five-minute, latest-first grid while removing only starts
- * that can be proven invalid against an already placed task sharing the feeder coach. */
-export function* exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task, latestStart: number,
-  blockers: readonly ScheduledTask[], mode: "COACH_DOMAIN" | "FULL_GRID" = "COACH_DOMAIN",
-  onConsidered?: (eliminatedByCoach: boolean) => void): Generator<number> {
-  for (let start = latestStart; start >= problem.day.start; start -= 5) {
-    const end = start + feeder.duration;
-    const eliminatedByCoach = mode === "COACH_DOMAIN" && feeder.coachId !== undefined
-      && blockers.some((blocker) => {
-        if (blocker.coachId !== feeder.coachId) return false;
-        if (end <= blocker.start) {
-          return blocker.start - end < effectiveCoachTransitionMinutes(
-            problem, feeder.coachId!, feeder.spaceId, blocker.spaceId);
-        }
-        if (blocker.end <= start) {
-          return start - blocker.end < effectiveCoachTransitionMinutes(
-            problem, feeder.coachId!, blocker.spaceId, feeder.spaceId);
-        }
-        return true;
+export interface ExactFeederStartInterval { readonly start: number; readonly end: number }
+export interface ExactFeederStartDomain {
+  readonly intervals: readonly ExactFeederStartInterval[];
+  readonly fullGridStartCount: number;
+  readonly eligibleStartCount: number;
+  readonly coachEliminatedStartCount: number;
+  starts(onProgress?: (considered: number, coachEliminated: number) => void): Generator<number>;
+}
+
+const gridCountInInterval = (latestStart: number, interval: ExactFeederStartInterval): number => {
+  const firstIndex = Math.max(0, Math.ceil((latestStart - interval.end) / 5));
+  const lastIndex = Math.floor((latestStart - interval.start) / 5);
+  return Math.max(0, lastIndex - firstIndex + 1);
+};
+
+/** Builds disjoint allowed intervals analytically. Production iteration visits only
+ * eligible grid points; FULL_GRID deliberately retains the historical test oracle. */
+export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task, latestStart: number,
+  blockers: readonly ScheduledTask[], mode: "COACH_DOMAIN" | "FULL_GRID" = "COACH_DOMAIN"): ExactFeederStartDomain {
+  const fullInterval = { start: problem.day.start, end: latestStart };
+  const fullGridStartCount = latestStart < problem.day.start ? 0 : gridCountInInterval(latestStart, fullInterval);
+  let intervals: ExactFeederStartInterval[] = fullGridStartCount === 0 ? [] : [fullInterval];
+  if (mode === "COACH_DOMAIN" && feeder.coachId !== undefined) {
+    for (const blocker of blockers) {
+      if (blocker.coachId !== feeder.coachId) continue;
+      const beforeBoundary = blocker.start - feeder.duration - effectiveCoachTransitionMinutes(
+        problem, feeder.coachId, feeder.spaceId, blocker.spaceId);
+      const afterBoundary = blocker.end + effectiveCoachTransitionMinutes(
+        problem, feeder.coachId, blocker.spaceId, feeder.spaceId);
+      intervals = intervals.flatMap((interval) => {
+        const before = { start: interval.start, end: Math.min(interval.end, beforeBoundary) };
+        const after = { start: Math.max(interval.start, afterBoundary), end: interval.end };
+        return [before, after].filter(({ start, end }) => start <= end);
       });
-    onConsidered?.(eliminatedByCoach);
-    if (!eliminatedByCoach) yield start;
+    }
   }
+  intervals.sort((a, b) => a.start - b.start || a.end - b.end);
+  const eligibleStartCount = intervals.reduce((sum, interval) => sum + gridCountInInterval(latestStart, interval), 0);
+  return {
+    intervals: Object.freeze(intervals.map((interval) => Object.freeze(interval))),
+    fullGridStartCount,
+    eligibleStartCount,
+    coachEliminatedStartCount: fullGridStartCount - eligibleStartCount,
+    *starts(onProgress) {
+      let nextUnaccountedGridIndex = 0;
+      for (let index = intervals.length - 1; index >= 0; index--) {
+        const interval = intervals[index]!;
+        const firstGridIndex = Math.max(0, Math.ceil((latestStart - interval.end) / 5));
+        const lastGridIndex = Math.floor((latestStart - interval.start) / 5);
+        for (let gridIndex = firstGridIndex; gridIndex <= lastGridIndex; gridIndex++) {
+          const considered = gridIndex - nextUnaccountedGridIndex + 1;
+          onProgress?.(considered, considered - 1);
+          nextUnaccountedGridIndex = gridIndex + 1;
+          yield latestStart - 5 * gridIndex;
+        }
+      }
+      const trailingEliminated = fullGridStartCount - nextUnaccountedGridIndex;
+      if (trailingEliminated > 0) onProgress?.(trailingEliminated, trailingEliminated);
+    },
+  };
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -420,13 +457,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       );
       let validStartFound = false;
       const blockers = [...placed, ...choice.operation];
-      const starts = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
-        blockers, options.feederStartDomainMode, (eliminated) => {
-          if (feederRow) {
-            feederRow.startsConsidered++;
-            if (eliminated) feederRow.startsCoachEliminated++;
-          }
-        });
+      const startDomain = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
+        blockers, options.feederStartDomainMode);
+      const starts = startDomain.starts((considered, eliminated) => {
+        if (feederRow) {
+          feederRow.startsConsidered += considered;
+          feederRow.startsCoachEliminated += eliminated;
+        }
+      });
       for (const start of starts) {
         const startCheck = checkFeederStart(choice,start,placed,meals,depth);
         if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";

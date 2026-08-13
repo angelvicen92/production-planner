@@ -27,7 +27,7 @@ const blocker = (start: number, end: number, spaceId = "blocker-space"): Schedul
 });
 
 function starts(input: PlannerNextProblem, task: Task, placed: ScheduledTask[], mode: "COACH_DOMAIN" | "FULL_GRID" = "COACH_DOMAIN") {
-  return [...exactFeederStartDomain(input, task, 90, placed, mode)];
+  return [...exactFeederStartDomain(input, task, 90, placed, mode).starts()];
 }
 
 test("coach domain exactly removes overlap and both directional transition margins", () => {
@@ -64,16 +64,33 @@ test("coach domain uses zero in one space, route fallback, and ignores absent or
 test("coach domain is lazy, includes operation blockers, preserves grid boundaries and is deterministic", () => {
   const task = feeder(), operationBlocker = blocker(40, 50);
   const input = problem(task, [operationBlocker]);
-  let considered = 0;
-  const domain = exactFeederStartDomain(input, task, 92, [operationBlocker], "COACH_DOMAIN", () => considered++);
-  assert.equal(considered, 0);
-  const first = domain.next();
+  const domain = exactFeederStartDomain(input, task, 92, [operationBlocker]);
+  const iterator = domain.starts();
+  const first = iterator.next();
   assert.deepEqual(first, { value: 92, done: false });
-  assert.equal(considered, 1);
-  const remaining = [first.value!, ...domain];
-  assert.deepEqual(remaining, [...exactFeederStartDomain(input, task, 92, [operationBlocker])]);
+  const remaining = [first.value!, ...iterator];
+  assert.deepEqual(remaining, [...exactFeederStartDomain(input, task, 92, [operationBlocker]).starts()]);
   assert.ok(remaining.every((start) => (92 - start) % 5 === 0 && start >= input.day.start));
   assert.equal(remaining.at(-1), 2);
+});
+
+test("coach domain jumps analytically over a huge forbidden grid interval", () => {
+  const task = feeder();
+  const input = problem(task);
+  input.day.end = 2_000_100;
+  input.spaces.forEach((space) => { space.availability = [{ start: 0, end: input.day.end }]; });
+  input.participants[0]!.availability = [{ start: 0, end: input.day.end }];
+  input.coaches[0]!.availability = [{ start: 0, end: input.day.end }];
+  const latestStart = 2_000_000;
+  const domain = exactFeederStartDomain(input, task, latestStart, [blocker(500_000, 2_000_000)]);
+  assert.equal(domain.fullGridStartCount, 400_001);
+  assert.equal(domain.eligibleStartCount, 99_997);
+  assert.equal(domain.coachEliminatedStartCount, 300_004);
+  assert.deepEqual(domain.intervals, [{ start: 0, end: 499_980 }]);
+  const progress: Array<[number, number]> = [];
+  assert.deepEqual(domain.starts((considered, eliminated) => progress.push([considered, eliminated])).next(),
+    { value: 499_980, done: false });
+  assert.deepEqual(progress, [[300_005, 300_004]]);
 });
 
 test("FULL_GRID oracle preserves the first valid start and coach-domain accounting counts only evaluations", () => {
