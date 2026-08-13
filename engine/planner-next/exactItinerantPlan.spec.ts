@@ -4,7 +4,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
-import { standaloneForwardStaticStarts } from "./exactItinerantPlan";
+import { standaloneForwardStaticDomain } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
 import { validatePlan } from "./validate";
 
@@ -216,8 +216,10 @@ test("static forward domain exactly intersects hard windows and subtracts hard m
     { id: "space-meal", kind: "space-meal", spaceId: "domain-space", entryIndex: 1, duration: 5, start: 17, end: 22 },
     { id: "resource-meal", kind: "space-meal", spaceId: "meal-resource-space", entryIndex: 1, duration: 5, start: 80, end: 85 },
   ];
-  const starts = standaloneForwardStaticStarts(input, task, meals);
+  const domain = standaloneForwardStaticDomain(input, task, meals), starts = [...domain.starts()];
   assert.deepEqual(starts, [7]);
+  assert.equal(domain.eligibleStartCount, starts.length);
+  assert.deepEqual(domain.intervals, [{ start: 7, end: 7 }]);
   const fullGrid = Array.from({ length: Math.floor((input.day.end - task.duration - input.day.start) / 5) + 1 }, (_, i) => input.day.start + i * 5);
   assert.deepEqual(starts, fullGrid.filter((start) => canPlaceTask(input, task, start, [], meals)));
 });
@@ -227,8 +229,24 @@ test("static forward domain supports multi-window technical tasks without a part
     dependencies: [], availability: [{ start: 1, end: 11 }, { start: 21, end: 36 }] };
   const input = problem([]); input.day = { start: 1, end: 41 };
   input.spaces.push({ id: "technical-domain", availability: [{ start: 0, end: 50 }] });
-  assert.deepEqual(standaloneForwardStaticStarts(input, task), [1, 21, 26]);
+  assert.deepEqual([...standaloneForwardStaticDomain(input, task).starts()], [1, 21, 26]);
   assert.equal(canPlaceTask(input, task, 1, []), true);
+});
+
+test("a large static domain counts analytically and yields only the first requested witness", () => {
+  const task: Task = { id: "large-domain", kind: "technical", duration: 5, spaceId: "large-space",
+    dependencies: [] };
+  const input = problem([]);
+  input.day = { start: 2, end: 5_000_007 };
+  input.protectedMeal = undefined;
+  input.spaces.push({ id: "large-space", availability: [{ ...input.day }] });
+  const domain = standaloneForwardStaticDomain(input, task);
+  assert.deepEqual(domain.intervals, [{ start: 2, end: 5_000_002 }]);
+  assert.equal(domain.eligibleStartCount, 1_000_001);
+  const starts = domain.starts();
+  assert.deepEqual(starts.next(), { value: 2, done: false });
+  assert.equal(canPlaceTask(input, task, 2, []), true);
+  assert.deepEqual(starts.return(), { value: undefined, done: true });
 });
 
 test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and deterministic order with exact accounting", () => {

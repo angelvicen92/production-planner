@@ -146,6 +146,11 @@ type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
+export interface StandaloneForwardStaticDomain {
+  readonly intervals: ReadonlyArray<Readonly<ClosedStartInterval>>;
+  readonly eligibleStartCount: number;
+  starts(): Generator<number, void, undefined>;
+}
 interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; roundPreparations: ScheduledRoundPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null; operationalMeals: OperationalMealWitness | null }
 
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
@@ -175,16 +180,31 @@ function windowStartDomain(windows: Array<{ start: number; end: number }>, durat
   return windows.filter(({ start, end }) => start + duration <= end).map(({ start, end }) => ({ start, end: end - duration }));
 }
 
-/** Exact placed-independent start domain, projected onto the original day-start-relative five-minute grid. */
-export function standaloneForwardStaticStarts(problem: PlannerNextProblem, task: Task,
-  scheduledSpaceMeals: ScheduledSpaceMeal[] = []): number[] {
+function mergeStartIntervals(intervals: ClosedStartInterval[]): ClosedStartInterval[] {
+  const merged: ClosedStartInterval[] = [];
+  for (const interval of [...intervals].sort((a, b) => a.start - b.start || a.end - b.end)) {
+    const previous = merged.at(-1);
+    if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+    else merged.push({ ...interval });
+  }
+  return merged;
+}
+
+function firstGridStart(dayStart: number, intervalStart: number): number {
+  return dayStart + Math.max(0, Math.ceil((intervalStart - dayStart) / 5)) * 5;
+}
+
+/** Exact placed-independent interval domain with a lazy projection onto the original day-relative grid. */
+export function standaloneForwardStaticDomain(problem: PlannerNextProblem, task: Task,
+  scheduledSpaceMeals: ScheduledSpaceMeal[] = []): StandaloneForwardStaticDomain {
   const participant = task.kind === "technical" ? undefined : problem.participants.find(({ id }) => id === task.participantId);
   const coach = task.kind === "technical" || task.coachId === undefined ? undefined : problem.coaches.find(({ id }) => id === task.coachId);
   const space = problem.spaces.find(({ id }) => id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
   const unit = task.itinerantUnitId === undefined ? undefined : problem.itinerantUnits?.find(({ id }) => id === task.itinerantUnitId);
   if ((task.kind !== "technical" && !participant) || (task.coachId !== undefined && !coach) || !space
-    || resources.some((resource) => !resource) || (task.itinerantUnitId !== undefined && !unit)) return [];
+    || resources.some((resource) => !resource) || (task.itinerantUnitId !== undefined && !unit))
+    return { intervals: [], eligibleStartCount: 0, *starts() {} };
   let domain: ClosedStartInterval[] = [{ start: problem.day.start, end: problem.day.end - task.duration }];
   const availabilities = [task.availability, participant?.availability, coach?.availability, space.availability,
     ...resources.map((resource) => resource!.availability), unit?.availability]
@@ -197,12 +217,21 @@ export function standaloneForwardStaticStarts(problem: PlannerNextProblem, task:
       || resources.some((resource) => resource!.assignedSpaceId === meal.spaceId)),
   ];
   for (const interval of blocked) domain = subtractBlockedInterval(domain, interval, task.duration);
-  const starts: number[] = [];
-  for (const interval of domain) {
-    const first = problem.day.start + Math.max(0, Math.ceil((interval.start - problem.day.start) / 5)) * 5;
-    for (let start = first; start <= interval.end; start += 5) starts.push(start);
-  }
-  return [...new Set(starts)].sort((a, b) => a - b);
+  const intervals = mergeStartIntervals(domain);
+  const eligibleStartCount = intervals.reduce((count, interval) => {
+    const first = firstGridStart(problem.day.start, interval.start);
+    return count + (first <= interval.end ? Math.floor((interval.end - first) / 5) + 1 : 0);
+  }, 0);
+  return {
+    intervals,
+    eligibleStartCount,
+    *starts() {
+      for (const interval of intervals) {
+        const first = firstGridStart(problem.day.start, interval.start);
+        for (let start = first; start <= interval.end; start += 5) yield start;
+      }
+    },
+  };
 }
 
 function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
@@ -618,12 +647,12 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.standaloneForwardImpactedTaskChecks += 1;
       let witness = false;
       const fullGridCount = Math.max(0, Math.floor((problem.day.end - task.duration - problem.day.start) / 5) + 1);
-      const staticStarts = standaloneForwardStaticStarts(problem, task, candidate.meals);
-      evidence.standaloneForwardStaticEligibleStarts += staticStarts.length;
-      evidence.standaloneForwardStaticEliminatedStarts += fullGridCount - staticStarts.length;
+      const staticDomain = standaloneForwardStaticDomain(problem, task, candidate.meals);
+      evidence.standaloneForwardStaticEligibleStarts += staticDomain.eligibleStartCount;
+      evidence.standaloneForwardStaticEliminatedStarts += fullGridCount - staticDomain.eligibleStartCount;
       const starts = options.standaloneForwardStartDomainMode === "FULL_GRID"
         ? Array.from({ length: fullGridCount }, (_, index) => problem.day.start + index * 5)
-        : staticStarts;
+        : staticDomain.starts();
       for (const start of starts) {
         if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
         evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
