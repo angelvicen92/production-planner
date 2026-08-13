@@ -14,15 +14,15 @@ Todos los inputs de creación A2 conocidos para este benchmark están resueltos.
 
 ## Implementation blockers
 
-Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
+Estado de representabilidad: **FULLY_REPRESENTABLE**. La puerta ejecutada devuelve **EXECUTED**, con executorCallCount=1. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
 
-- **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): El probe conectado no demuestra todavía dos carriles independientes con emparejamiento ordinal dinámico, preparación explícita, ronda residual y búsqueda EXACT_CONSTRUCTIVE hard-valid. Pérdida si se aproxima: Sin esa capacidad se perdería la sincronización REQUIRED o se fijaría indebidamente el emparejamiento por orden de entrada.
+
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-Los probes focales demuestran jointGroupCapabilityProven=true, setupPolicyCapabilityProven=true, flexibleSetupOrderCapabilityProven=true, roundSynchronizationCapabilityProven=false y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED**.
+No hay blocker técnico pendiente. El probe conectado demuestra roundSynchronizationCapabilityProven=true, incluyendo emparejamiento ordinal dinámico, preparación explícita, ronda residual, determinismo, contabilidad de presupuesto y publicación atómica.
 
 ## No implementado
 

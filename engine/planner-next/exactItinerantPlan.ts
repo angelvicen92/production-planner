@@ -585,7 +585,7 @@ return { outcome, tasks: found, preparations: foundPreparations, roundPreparatio
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
 export interface ExactItinerantPlanSearchOptions {
-  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted">;
+  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted" | "feederStartDomainMode">;
   standaloneCompletionSelection?: StandaloneCompletionSelection;
   /** Test oracle only; production always uses the exact analytic static domain. */
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;

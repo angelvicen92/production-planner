@@ -3,6 +3,9 @@ import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { exactFeederStartDomain, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { canPlaceTask, diagnoseTaskPlacement } from "./placement";
+import { constructExactItinerantPlan } from "./exactItinerantPlan";
+import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
+import { createSpec10021RoundSynchronizationEngineInputFixture } from "./integration/engineInputAdapter.fixture";
 
 const availability = [{ start: 0, end: 120 }];
 
@@ -130,4 +133,21 @@ test("FULL_GRID oracle preserves the first valid start and coach-domain accounti
   assert.equal(rows.reduce((sum, row) => sum + row.startsConsidered, 0),
     rows.reduce((sum, row) => sum + row.startsEvaluated + row.startsCoachEliminated, 0));
   assert.ok(derived.evidence.branchesExplored <= full.evidence.branchesExplored);
+});
+
+test("SPEC10-021 has exact COACH_DOMAIN and FULL_GRID solution parity", () => {
+  const adapted = adaptEngineInputToPlannerNextProblem(createSpec10021RoundSynchronizationEngineInputFixture());
+  assert.equal(adapted.status, "SUPPORTED");
+  assert.ok(adapted.problem);
+  const coachDomain = constructExactItinerantPlan(structuredClone(adapted.problem), {
+    coreOrderer: { feederStartDomainMode: "COACH_DOMAIN" },
+  });
+  const fullGrid = constructExactItinerantPlan(structuredClone(adapted.problem), {
+    coreOrderer: { feederStartDomainMode: "FULL_GRID" },
+  });
+  assert.equal(coachDomain.complete, true);
+  assert.equal(fullGrid.complete, true);
+  assert.equal(coachDomain.evidence.fullFingerprint, fullGrid.evidence.fullFingerprint);
+  assert.deepEqual(coachDomain.scheduledTasks, fullGrid.scheduledTasks);
+  assert.deepEqual(coachDomain.scheduledRoundPreparations, fullGrid.scheduledRoundPreparations);
 });
