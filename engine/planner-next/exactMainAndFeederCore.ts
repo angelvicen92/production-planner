@@ -5,7 +5,7 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, type PlacementRejectionReason } from "./placement";
-import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
+import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { preflight, validatePlan } from "./validate";
 
@@ -48,7 +48,7 @@ export interface ExactMainAndFeederCoreEvidence {
 export type ExactBranchCategory = "MAIN_CANDIDATE" | "FEEDER_START" | "RESIDUAL_MATCHING" | "CONTINUATION"
   | "PARTICIPANT_MEAL" | "STANDALONE_FORWARD" | "OTHER";
 export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number; residualMatching:number; continuation:number; participantMeal:number; standaloneForward:number; other:number; total:number }
-export interface ExactDepthFeeder { startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
+export interface ExactDepthFeeder { startsConsidered:number; startsCoachEliminated:number; startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
 export interface ExactCriticalFeederRejection { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; startsAttempted:number; firstRejectionReason:PlacementRejectionReason; blockingPlacedTaskId:string|null; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; count:number }
 export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[] }
 
@@ -154,6 +154,33 @@ export interface ExactMainAndFeederSearchOptions {
   }>) => void;
   causalDiagnostic?: boolean;
   onBranchConsumed?: (category:ExactBranchCategory,depth:number,count:number)=>void;
+  /** Test oracle: evaluates the unchanged complete grid instead of the coach-derived domain. */
+  feederStartDomainMode?: "COACH_DOMAIN" | "FULL_GRID";
+}
+
+/** Lazily preserves the five-minute, latest-first grid while removing only starts
+ * that can be proven invalid against an already placed task sharing the feeder coach. */
+export function* exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task, latestStart: number,
+  blockers: readonly ScheduledTask[], mode: "COACH_DOMAIN" | "FULL_GRID" = "COACH_DOMAIN",
+  onConsidered?: (eliminatedByCoach: boolean) => void): Generator<number> {
+  for (let start = latestStart; start >= problem.day.start; start -= 5) {
+    const end = start + feeder.duration;
+    const eliminatedByCoach = mode === "COACH_DOMAIN" && feeder.coachId !== undefined
+      && blockers.some((blocker) => {
+        if (blocker.coachId !== feeder.coachId) return false;
+        if (end <= blocker.start) {
+          return blocker.start - end < effectiveCoachTransitionMinutes(
+            problem, feeder.coachId!, feeder.spaceId, blocker.spaceId);
+        }
+        if (blocker.end <= start) {
+          return start - blocker.end < effectiveCoachTransitionMinutes(
+            problem, feeder.coachId!, blocker.spaceId, feeder.spaceId);
+        }
+        return true;
+      });
+    onConsidered?.(eliminatedByCoach);
+    if (!eliminatedByCoach) yield start;
+  }
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -381,7 +408,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     options.onMainChoicesRanked?.(Object.freeze([...baselineDescriptors]),
       Object.freeze(choices.map((choice) => descriptorById.get(choice.task.id)!)));
     for (const choice of choices) {
-      const feederRow=diagnostic?(diagnostic.feederByDepth[String(depth)]??={startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+      const feederRow=diagnostic?(diagnostic.feederByDepth[String(depth)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
       if(feederRow)feederRow.mainChoicesReachingFeeder++;
       options.onMainChoiceEntered?.(descriptorById.get(choice.task.id)!);
       const deadline = latestFeederEndBeforeMain(
@@ -392,7 +419,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         choice.firstObligation,
       );
       let validStartFound = false;
-      for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
+      const blockers = [...placed, ...choice.operation];
+      const starts = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
+        blockers, options.feederStartDomainMode, (eliminated) => {
+          if (feederRow) {
+            feederRow.startsConsidered++;
+            if (eliminated) feederRow.startsCoachEliminated++;
+          }
+        });
+      for (const start of starts) {
         const startCheck = checkFeederStart(choice,start,placed,meals,depth);
         if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if(feederRow){feederRow.startsEvaluated++;if(startCheck==="VALID")feederRow.valid++;else feederRow.invalid++;}
