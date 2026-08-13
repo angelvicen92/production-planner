@@ -18,12 +18,23 @@ test("Full A2 first executable integration reports an atomic completion count", 
       canonicalObligationCount: number;
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
-      execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean };
+      execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
+        diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
+          topBlockingPlacedTasks: Array<{ id: string; count: number }>;
+          topFeederBlockerPairs: Array<{ id: string; count: number }>;
+          criticalRejectionCount: number; recommendation: string | null } };
       result: { publishedCanonicalObligations: number; diagnosticScheduledCanonicalObligations: number; targetCanonicalObligations: number; fullHardValidEligible: boolean };
     };
     assert.equal(evidence.canonicalObligationCount, 269);
     assert.equal(evidence.result.targetCanonicalObligations, 269);
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
+    const report = evidence.execution?.diagnosticReport;
+    assert.ok(report);
+    assert.ok(report.criticalRejectionCount > 0);
+    assert.ok(report.criticalRejectionReasons.length > 0);
+    assert.ok(report.topBlockingPlacedTasks.length > 0);
+    assert.ok(report.topFeederBlockerPairs.length > 0);
+    assert.ok(report.recommendation);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,
       preflightReasonCodes: evidence.preflight.reasonCodes,
