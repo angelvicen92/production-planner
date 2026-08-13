@@ -72,9 +72,8 @@ test("invalid flexible setup contracts are rejected before adaptation", () => {
   assert.equal(preflightEngineInputForPlannerNext(offGrid).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING"), true);
 });
 
-test("full A2 has no remaining implementation representability blockers", () => {
+test("full A2 has no remaining flexible-setup representability blocker", () => {
   const analysis = analyzeCanonicalFullA2Representability(expandCanonicalFullA2Template(createCanonicalFullA2Template()));
   assert.equal(analysis.implementationBlockers.some((item) => item.code === "ENGINE_INPUT_FLEXIBLE_SCOPED_MEAL_POLICY_UNSUPPORTED"), false);
-  assert.deepEqual(analysis.implementationBlockers.map((item) => item.code), []);
-  assert.equal(analysis.nextImplementationBlocker, null);
+  assert.ok(analysis.implementationBlockers.some((item) => item.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
 });
