@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
+import { standaloneForwardStaticStarts } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
 import { validatePlan } from "./validate";
 
@@ -195,6 +196,54 @@ test("results are deterministic and invariant to input collection order", () => 
   const reversed = constructExactItinerantPlan(reversedInput);
   assert.deepEqual(first, second); assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
   assert.deepEqual(first.scheduledTasks, reversed.scheduledTasks);
+});
+
+test("static forward domain exactly intersects hard windows and subtracts hard meals", () => {
+  const task: Task = { id: "domain", kind: "auxiliary", participantId: "person", coachId: "domain-coach",
+    duration: 10, spaceId: "domain-space", dependencies: [], requiredResourceIds: ["domain-resource"],
+    itinerantUnitId: "unit-a", availability: [{ start: 7, end: 28 }, { start: 55, end: 91 }] };
+  const input = problem([task]);
+  input.day = { start: 2, end: 102 };
+  input.protectedMeal = { start: 70, end: 75 };
+  input.participants.find(({ id }) => id === "person")!.availability = [{ start: 5, end: 30 }, { start: 50, end: 100 }];
+  input.coaches.push({ id: "domain-coach", availability: [{ start: 0, end: 29 }, { start: 50, end: 100 }] });
+  input.spaces.find(({ id }) => id === "domain-space")!.availability = [{ start: 0, end: 30 }, { start: 52, end: 100 }];
+  input.resources.push({ id: "domain-resource", availability: [{ start: 0, end: 30 }, { start: 50, end: 100 }],
+    assignedSpaceId: "meal-resource-space", presencePreference: "OFF" });
+  input.itinerantUnits = [{ id: "unit-a", availability: [{ start: 0, end: 30 }, { start: 50, end: 90 }] }];
+  input.itinerantUnitMeals = [{ id: "unit-meal", itinerantUnitId: "unit-a", interval: { start: 60, end: 65 } }];
+  const meals: ScheduledSpaceMeal[] = [
+    { id: "space-meal", kind: "space-meal", spaceId: "domain-space", entryIndex: 1, duration: 5, start: 17, end: 22 },
+    { id: "resource-meal", kind: "space-meal", spaceId: "meal-resource-space", entryIndex: 1, duration: 5, start: 80, end: 85 },
+  ];
+  const starts = standaloneForwardStaticStarts(input, task, meals);
+  assert.deepEqual(starts, [7]);
+  const fullGrid = Array.from({ length: Math.floor((input.day.end - task.duration - input.day.start) / 5) + 1 }, (_, i) => input.day.start + i * 5);
+  assert.deepEqual(starts, fullGrid.filter((start) => canPlaceTask(input, task, start, [], meals)));
+});
+
+test("static forward domain supports multi-window technical tasks without a participant", () => {
+  const task: Task = { id: "technical-domain", kind: "technical", duration: 10, spaceId: "technical-domain",
+    dependencies: [], availability: [{ start: 1, end: 11 }, { start: 21, end: 36 }] };
+  const input = problem([]); input.day = { start: 1, end: 41 };
+  input.spaces.push({ id: "technical-domain", availability: [{ start: 0, end: 50 }] });
+  assert.deepEqual(standaloneForwardStaticStarts(input, task), [1, 21, 26]);
+  assert.equal(canPlaceTask(input, task, 1, []), true);
+});
+
+test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and deterministic order with exact accounting", () => {
+  const create = () => coreLeafContinuationProblem();
+  const staticResult = runExactItinerantPlanSearch(create(), { standaloneForwardStartDomainMode: "STATIC_DOMAIN" });
+  const oracle = runExactItinerantPlanSearch(create(), { standaloneForwardStartDomainMode: "FULL_GRID" });
+  assert.equal(staticResult.status, oracle.status);
+  assert.equal(staticResult.evidence.fullFingerprint, oracle.evidence.fullFingerprint);
+  assert.equal(staticResult.evidence.lastStandaloneForwardBlockingTaskId, oracle.evidence.lastStandaloneForwardBlockingTaskId);
+  assert.equal(staticResult.evidence.standaloneForwardPrunes, oracle.evidence.standaloneForwardPrunes);
+  assert.ok(staticResult.evidence.standaloneForwardStaticEliminatedStarts > 0);
+  assert.ok(staticResult.evidence.standaloneForwardStartChecks < oracle.evidence.standaloneForwardStartChecks);
+  assert.equal(staticResult.evidence.standaloneForwardBranches, staticResult.evidence.standaloneForwardStartChecks);
+  assert.equal(oracle.evidence.standaloneForwardBranches, oracle.evidence.standaloneForwardStartChecks);
+  assert.deepEqual(runExactItinerantPlanSearch(create(), { standaloneForwardStartDomainMode: "STATIC_DOMAIN" }), staticResult);
 });
 
 test("complete quality replaces only a strictly dominating incumbent", () => {
