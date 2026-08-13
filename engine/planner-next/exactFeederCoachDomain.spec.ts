@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { exactFeederStartDomain, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement } from "./placement";
 
 const availability = [{ start: 0, end: 120 }];
 
@@ -41,6 +41,10 @@ test("coach domain exactly removes overlap and both directional transition margi
   const full = starts(input, task, placed, "FULL_GRID");
   const expected = full.filter((start) => canPlaceTask(input, task, start, placed));
   assert.deepEqual(starts(input, task, placed), expected);
+  const expectedCauses=full.filter(start=>!canPlaceTask(input,task,start,placed)).reduce<Record<string,number>>((counts,start)=>{const diagnosis=diagnoseTaskPlacement(input,task,start,placed);const key=`${diagnosis.firstRejectionReason}|${diagnosis.blockingPlacedTaskId}`;counts[key]=(counts[key]??0)+1;return counts;},{});
+  const domain=exactFeederStartDomain(input,task,90,placed);
+  const analyticCauses=domain.eliminations.reduce<Record<string,number>>((counts,row)=>{const key=`${row.reason}|${row.blockingPlacedTaskId}`;counts[key]=(counts[key]??0)+row.startsEliminated;return counts;},{});
+  assert.deepEqual(analyticCauses,expectedCauses);
   assert.ok(!expected.includes(20)); // feeder -> blocker transition boundary minus one grid step
   assert.ok(expected.includes(15)); // exact feeder -> blocker boundary
   assert.ok(!expected.includes(45)); // overlap
@@ -59,6 +63,16 @@ test("coach domain uses zero in one space, route fallback, and ignores absent or
   delete noCoach.coachId;
   assert.deepEqual(starts(problem(noCoach), noCoach, [blocker(40, 50)]), starts(problem(noCoach), noCoach, [blocker(40, 50)], "FULL_GRID"));
   assert.deepEqual(starts(input, task, [{ ...blocker(40, 50), coachId: "other" }]), starts(input, task, [], "FULL_GRID"));
+});
+
+test("coach attribution preserves FULL_GRID first-blocker order without double counting",()=>{
+  const task=feeder(),input=problem(task);
+  const placed=[blocker(40,60),blocker(50,70,"second-space")];
+  input.spaces.push({id:"second-space",availability});
+  const full=starts(input,task,placed,"FULL_GRID");
+  const expected=full.reduce<Record<string,number>>((counts,start)=>{const row=diagnoseTaskPlacement(input,task,start,placed);if(row.firstRejectionReason==="OVERLAP_COACH"||row.firstRejectionReason==="TRANSITION_COACH"){const key=`${row.firstRejectionReason}|${row.blockingPlacedTaskId}`;counts[key]=(counts[key]??0)+1;}return counts;},{});
+  const analytic=exactFeederStartDomain(input,task,90,placed).eliminations.reduce<Record<string,number>>((counts,row)=>{const key=`${row.reason}|${row.blockingPlacedTaskId}`;counts[key]=(counts[key]??0)+row.startsEliminated;return counts;},{});
+  assert.deepEqual(analytic,expected);
 });
 
 test("coach domain is lazy, includes operation blockers, preserves grid boundaries and is deterministic", () => {
@@ -86,6 +100,10 @@ test("coach domain jumps analytically over a huge forbidden grid interval", () =
   assert.equal(domain.fullGridStartCount, 400_001);
   assert.equal(domain.eligibleStartCount, 99_997);
   assert.equal(domain.coachEliminatedStartCount, 300_004);
+  assert.deepEqual(domain.eliminations,[
+    {reason:"OVERLAP_COACH",blockingPlacedTaskId:"blocker-500000-2000000-blocker-space",startsEliminated:300_001},
+    {reason:"TRANSITION_COACH",blockingPlacedTaskId:"blocker-500000-2000000-blocker-space",startsEliminated:3},
+  ]);
   assert.deepEqual(domain.intervals, [{ start: 0, end: 499_980 }]);
   const progress: Array<[number, number]> = [];
   assert.deepEqual(domain.starts((considered, eliminated) => progress.push([considered, eliminated])).next(),

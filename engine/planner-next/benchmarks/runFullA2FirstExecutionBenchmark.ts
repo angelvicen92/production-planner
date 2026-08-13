@@ -196,9 +196,11 @@ const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => 
 
 const diagnostic = exactResult?.evidence.causalDiagnostic ?? null;
 const criticalDepth = exactResult?.evidence.coreMaximumDepth ?? null;
-const criticalRejections = diagnostic?.feederRejections.filter((row) => row.depth === criticalDepth) ?? [];
-const top = (key: (row: typeof criticalRejections[number]) => string | null) => Object.entries(criticalRejections.reduce<Record<string,number>>((counts,row)=>{const value=key(row);if(value)counts[value]=(counts[value]??0)+row.count;return counts;},{})).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,10).map(([id,count])=>({id,count}));
-const criticalRejectionCount = criticalRejections.reduce((sum, row) => sum + row.count, 0);
+const criticalRejections = diagnostic?.feederRejections.filter((row) => row.depth === criticalDepth).map(row=>({...row,causalCount:row.count,reason:row.firstRejectionReason})) ?? [];
+const criticalEliminations = diagnostic?.feederCoachDomainEliminations.filter((row) => row.depth === criticalDepth).map(row=>({...row,causalCount:row.startsEliminated})) ?? [];
+const criticalCauses=[...criticalRejections,...criticalEliminations];
+const top = (key: (row: typeof criticalCauses[number]) => string | null) => Object.entries(criticalCauses.reduce<Record<string,number>>((counts,row)=>{const value=key(row);if(value)counts[value]=(counts[value]??0)+row.causalCount;return counts;},{})).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,10).map(([id,count])=>({id,count}));
+const criticalRejectionCount = criticalCauses.reduce((sum, row) => sum + row.causalCount, 0);
 const leadingBlocker = top((row) => row.blockingPlacedTaskId)[0] ?? null;
 const recommendation = leadingBlocker && criticalRejectionCount > 0
   ? `Next PR: run one feeder-aware core-ordering experiment around blocker ${leadingBlocker.id}, which accounts for ${new Intl.NumberFormat("en-US").format(leadingBlocker.count)} of ${new Intl.NumberFormat("en-US").format(criticalRejectionCount)} (${(leadingBlocker.count / criticalRejectionCount * 100).toFixed(1)}%) depth-${criticalDepth} feeder rejections, while preserving every hard constraint and the ${new Intl.NumberFormat("en-US").format(exactResult!.evidence.branchesExplored)}-branch budget.`
@@ -208,7 +210,7 @@ const diagnosticReport = diagnostic ? {
   waterfallReconciles: Object.values(diagnostic.waterfallByDepth).reduce((sum,row)=>sum+row.total,0) === exactResult!.evidence.branchesExplored,
   feederByDepth: diagnostic.feederByDepth,
   criticalDepth,
-  criticalRejectionReasons: top((row)=>row.firstRejectionReason),
+  criticalRejectionReasons: top((row)=>row.reason),
   topMainTasks: top((row)=>row.mainTaskId),
   topFeederTasks: top((row)=>row.feederTaskId),
   topBlockingPlacedTasks: top((row)=>row.blockingPlacedTaskId),

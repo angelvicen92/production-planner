@@ -50,7 +50,8 @@ export type ExactBranchCategory = "MAIN_CANDIDATE" | "FEEDER_START" | "RESIDUAL_
 export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number; residualMatching:number; continuation:number; participantMeal:number; standaloneForward:number; other:number; total:number }
 export interface ExactDepthFeeder { startsConsidered:number; startsCoachEliminated:number; startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
 export interface ExactCriticalFeederRejection { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; startsAttempted:number; firstRejectionReason:PlacementRejectionReason; blockingPlacedTaskId:string|null; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; count:number }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[] }
+export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; startsEliminated:number }
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[] }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -164,6 +165,7 @@ export interface ExactFeederStartDomain {
   readonly fullGridStartCount: number;
   readonly eligibleStartCount: number;
   readonly coachEliminatedStartCount: number;
+  readonly eliminations: readonly Readonly<{ reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; startsEliminated:number }>[];
   starts(onProgress?: (considered: number, coachEliminated: number) => void): Generator<number>;
 }
 
@@ -172,6 +174,9 @@ const gridCountInInterval = (latestStart: number, interval: ExactFeederStartInte
   const lastIndex = Math.floor((latestStart - interval.start) / 5);
   return Math.max(0, lastIndex - firstIndex + 1);
 };
+const gridCountInClosedRange = (latestStart:number, intervals:readonly ExactFeederStartInterval[], start:number, end:number):number =>
+  start>end?0:intervals.reduce((sum,interval)=>{const intersection={start:Math.max(interval.start,start),end:Math.min(interval.end,end)};
+    return sum+(intersection.start<=intersection.end?gridCountInInterval(latestStart,intersection):0);},0);
 
 /** Builds disjoint allowed intervals analytically. Production iteration visits only
  * eligible grid points; FULL_GRID deliberately retains the historical test oracle. */
@@ -180,6 +185,7 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
   const fullInterval = { start: problem.day.start, end: latestStart };
   const fullGridStartCount = latestStart < problem.day.start ? 0 : gridCountInInterval(latestStart, fullInterval);
   let intervals: ExactFeederStartInterval[] = fullGridStartCount === 0 ? [] : [fullInterval];
+  const eliminations:Array<{reason:"OVERLAP_COACH"|"TRANSITION_COACH";blockingPlacedTaskId:string;startsEliminated:number}>=[];
   if (mode === "COACH_DOMAIN" && feeder.coachId !== undefined) {
     for (const blocker of blockers) {
       if (blocker.coachId !== feeder.coachId) continue;
@@ -187,6 +193,11 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
         problem, feeder.coachId, feeder.spaceId, blocker.spaceId);
       const afterBoundary = blocker.end + effectiveCoachTransitionMinutes(
         problem, feeder.coachId, blocker.spaceId, feeder.spaceId);
+      const transitionBefore=gridCountInClosedRange(latestStart,intervals,beforeBoundary+1,blocker.start-feeder.duration);
+      const overlap=gridCountInClosedRange(latestStart,intervals,blocker.start-feeder.duration+1,blocker.end-1);
+      const transitionAfter=gridCountInClosedRange(latestStart,intervals,blocker.end,afterBoundary-1);
+      if(overlap>0)eliminations.push({reason:"OVERLAP_COACH",blockingPlacedTaskId:blocker.id,startsEliminated:overlap});
+      if(transitionBefore+transitionAfter>0)eliminations.push({reason:"TRANSITION_COACH",blockingPlacedTaskId:blocker.id,startsEliminated:transitionBefore+transitionAfter});
       intervals = intervals.flatMap((interval) => {
         const before = { start: interval.start, end: Math.min(interval.end, beforeBoundary) };
         const after = { start: Math.max(interval.start, afterBoundary), end: interval.end };
@@ -201,6 +212,7 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
     fullGridStartCount,
     eligibleStartCount,
     coachEliminatedStartCount: fullGridStartCount - eligibleStartCount,
+    eliminations:Object.freeze(eliminations.map(row=>Object.freeze(row))),
     *starts(onProgress) {
       let nextUnaccountedGridIndex = 0;
       for (let index = intervals.length - 1; index >= 0; index--) {
@@ -290,8 +302,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[]}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[]}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
+  const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
   const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
   const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
@@ -459,6 +472,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const blockers = [...placed, ...choice.operation];
       const startDomain = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
         blockers, options.feederStartDomainMode);
+      if(diagnostic)for(const elimination of startDomain.eliminations){const current=choice.operation.some(({id})=>id===elimination.blockingPlacedTaskId);const prior=current?{mainTaskId:choice.task.id,depth:depth+1}:introducedBy(elimination.blockingPlacedTaskId,placed);const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,...elimination,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId};const key=[row.depth,row.mainTaskId,row.feederTaskId,row.participantId??"",row.reason,row.blockingPlacedTaskId,row.blockingDecisionDepth??"",row.blockingDecisionMainTaskId??""].join("|");const existing=eliminationByKey.get(key);if(existing)existing.startsEliminated+=row.startsEliminated;else{eliminationByKey.set(key,row);diagnostic.feederCoachDomainEliminations.push(row);}}
       const starts = startDomain.starts((considered, eliminated) => {
         if (feederRow) {
           feederRow.startsConsidered += considered;
