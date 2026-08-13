@@ -276,8 +276,8 @@
     ],
     "evidence": {
       "branchesExplored": 300000,
-      "coreBranches": 152674,
-      "standaloneBranches": 147326,
+      "coreBranches": 277260,
+      "standaloneBranches": 22740,
       "standaloneStartChecks": 0,
       "standaloneTaskSelections": 0,
       "standaloneZeroAlternativePrunes": 0,
@@ -288,37 +288,37 @@
       "coreLeavesRejectedByStandalone": 0,
       "standaloneSearchInvocations": 0,
       "standaloneBlockingTaskCounts": {},
-      "standaloneForwardChecks": 1301,
-      "standaloneForwardStartChecks": 122607,
-      "standaloneForwardWitnessesFound": 12948,
-      "standaloneForwardPrunes": 446,
+      "standaloneForwardChecks": 258,
+      "standaloneForwardStartChecks": 17838,
+      "standaloneForwardWitnessesFound": 2634,
+      "standaloneForwardPrunes": 49,
       "standaloneForwardBlockingTaskCounts": {
-        "task:10150": 55,
-        "task:10246": 55,
-        "task:10092": 55,
-        "task:10120": 55,
-        "task:10135": 56,
-        "task:10077": 56,
-        "task:10105": 59,
-        "task:10221": 55
+        "task:10221": 6,
+        "task:10150": 7,
+        "task:10246": 7,
+        "task:10092": 7,
+        "task:10120": 7,
+        "task:10135": 7,
+        "task:10077": 6,
+        "task:10233": 2
       },
       "standaloneForwardPrunesByDepth": {
-        "3": 33,
-        "4": 413
+        "2": 1,
+        "3": 48
       },
-      "standaloneForwardImpactedTaskChecks": 13395,
+      "standaloneForwardImpactedTaskChecks": 2683,
       "standaloneLeafSearchBranches": 0,
-      "standaloneForwardBranches": 122607,
-      "standaloneForwardStaticEligibleStarts": 1434446,
-      "standaloneForwardStaticEliminatedStarts": 479873,
-      "firstStandaloneForwardPruneDepth": 4,
+      "standaloneForwardBranches": 17838,
+      "standaloneForwardStaticEligibleStarts": 297626,
+      "standaloneForwardStaticEliminatedStarts": 86230,
+      "firstStandaloneForwardPruneDepth": 3,
       "lastStandaloneForwardPruneDepth": 3,
-      "lastStandaloneForwardBlockingTaskId": "task:10120",
+      "lastStandaloneForwardBlockingTaskId": "task:10135",
       "lastStandaloneForwardCausingCoreTaskIds": [
-        "task:10116",
-        "task:10123"
+        "task:10131",
+        "task:10138"
       ],
-      "lastStandaloneForwardCausingMainTaskId": "task:10116",
+      "lastStandaloneForwardCausingMainTaskId": "task:10131",
       "lastStandaloneForwardCausingFeederStart": 540,
       "selectedStandaloneTaskIds": [],
       "selectedStandaloneStarts": {},
@@ -537,26 +537,29 @@
       ],
       "coreStatus": "BRANCH_BUDGET_EXHAUSTED",
       "coreReasonCodes": [
-        "BRANCH_BUDGET_EXHAUSTED"
+        "MATCHING_SEARCH_BUDGET_EXHAUSTED"
       ],
       "reasonCodes": [
-        "STANDALONE_BRANCH_BUDGET_EXHAUSTED"
+        "CORE_BRANCH_BUDGET_EXHAUSTED"
       ],
-      "coreBacktracks": 1298,
-      "coreMaximumDepth": 4,
+      "coreBacktracks": 2457,
+      "coreMaximumDepth": 3,
       "coreCompleteLeafCount": 0,
-      "residualMatchingInvocations": 1301,
+      "residualMatchingInvocations": 2461,
       "residualMatchingFullBuilds": 1,
-      "residualMatchingIncrementalUpdates": 1300,
+      "residualMatchingIncrementalUpdates": 2460,
       "residualMatchingEdgeCacheHits": 0,
-      "residualMatchingEdgeCacheMisses": 138801,
-      "residualMatchingPositionChecks": 138965,
-      "residualMatchingAugmentTraversals": 4127,
-      "residualMatchingBranchesExplored": 144393,
+      "residualMatchingEdgeCacheMisses": 262542,
+      "residualMatchingPositionChecks": 262705,
+      "residualMatchingAugmentTraversals": 7726,
+      "residualMatchingBranchesExplored": 272892,
       "residualMatchingPrunes": 0,
-      "residualMatchingRepairs": 1114,
+      "residualMatchingRepairs": 2108,
       "residualMatchingRepairFailures": 0,
-      "lastExhaustionPhase": "STANDALONE",
+      "continuationGateChecks": 2460,
+      "nextPositionEdgesExamined": 17221,
+      "emptyFeederDomainPrunes": 2202,
+      "lastExhaustionPhase": "CORE",
       "completePlansObserved": 0,
       "completeIncumbentReplacements": 0,
       "completeSelectionMode": "BEST_DOMINATING_WITHIN_BUDGET",
@@ -581,8 +584,8 @@
       "roundSynchronizationBacktracks": 0,
       "roundSynchronizationZeroAlternativePrunes": 0,
       "selectedRoundPreparationIds": [],
-      "participantMealBranchesExplored": 24719,
-      "participantMealFutureFeasibilityChecks": 1301,
+      "participantMealBranchesExplored": 4902,
+      "participantMealFutureFeasibilityChecks": 258,
       "participantMealFutureInfeasibleBranches": 0,
       "participantMealBlockingTaskIds": [],
       "participantMealAcceptedWitnessFingerprint": null,
@@ -602,43 +605,33 @@
           },
           "1": {
             "mainCandidate": 10,
-            "feederStart": 5,
-            "residualMatching": 680,
-            "continuation": 5,
+            "feederStart": 10,
+            "residualMatching": 1361,
+            "continuation": 9,
             "participantMeal": 19,
             "standaloneForward": 33,
             "other": 0,
-            "total": 752
+            "total": 1442
           },
           "2": {
-            "mainCandidate": 45,
-            "feederStart": 154,
-            "residualMatching": 18930,
-            "continuation": 120,
-            "participantMeal": 95,
-            "standaloneForward": 195,
+            "mainCandidate": 81,
+            "feederStart": 289,
+            "residualMatching": 35532,
+            "continuation": 199,
+            "participantMeal": 190,
+            "standaloneForward": 517,
             "other": 0,
-            "total": 19539
+            "total": 36808
           },
           "3": {
-            "mainCandidate": 960,
-            "feederStart": 1141,
-            "residualMatching": 124532,
-            "continuation": 728,
-            "participantMeal": 2926,
-            "standaloneForward": 11337,
-            "other": 0,
-            "total": 141624
-          },
-          "4": {
-            "mainCandidate": 5096,
-            "feederStart": 0,
-            "residualMatching": 0,
+            "mainCandidate": 1592,
+            "feederStart": 2161,
+            "residualMatching": 235748,
             "continuation": 0,
-            "participantMeal": 21679,
-            "standaloneForward": 111042,
+            "participantMeal": 4693,
+            "standaloneForward": 17288,
             "other": 0,
-            "total": 137817
+            "total": 261482
           }
         },
         "feederByDepth": {
@@ -652,40 +645,31 @@
             "mainChoicesWithValidFeeder": 1
           },
           "1": {
-            "startsConsidered": 11,
-            "startsCoachEliminated": 6,
-            "startsEvaluated": 5,
-            "valid": 5,
+            "startsConsidered": 22,
+            "startsCoachEliminated": 12,
+            "startsEvaluated": 10,
+            "valid": 10,
             "invalid": 0,
-            "mainChoicesReachingFeeder": 1,
-            "mainChoicesWithValidFeeder": 1
+            "mainChoicesReachingFeeder": 2,
+            "mainChoicesWithValidFeeder": 2
           },
           "2": {
-            "startsConsidered": 604,
-            "startsCoachEliminated": 450,
-            "startsEvaluated": 154,
-            "valid": 154,
+            "startsConsidered": 1129,
+            "startsCoachEliminated": 840,
+            "startsEvaluated": 289,
+            "valid": 289,
             "invalid": 0,
-            "mainChoicesReachingFeeder": 34,
-            "mainChoicesWithValidFeeder": 34
+            "mainChoicesReachingFeeder": 63,
+            "mainChoicesWithValidFeeder": 63
           },
           "3": {
-            "startsConsidered": 17640,
-            "startsCoachEliminated": 16499,
-            "startsEvaluated": 1141,
-            "valid": 1141,
+            "startsConsidered": 29251,
+            "startsCoachEliminated": 27090,
+            "startsEvaluated": 2161,
+            "valid": 2161,
             "invalid": 0,
-            "mainChoicesReachingFeeder": 840,
-            "mainChoicesWithValidFeeder": 693
-          },
-          "4": {
-            "startsConsidered": 122304,
-            "startsCoachEliminated": 122304,
-            "startsEvaluated": 0,
-            "valid": 0,
-            "invalid": 0,
-            "mainChoicesReachingFeeder": 5096,
-            "mainChoicesWithValidFeeder": 0
+            "mainChoicesReachingFeeder": 1393,
+            "mainChoicesWithValidFeeder": 1393
           }
         },
         "feederRejections": [],
@@ -719,7 +703,7 @@
             "participantId": "participant:216",
             "reason": "TRANSITION_COACH",
             "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 30,
+            "startsEliminated": 48,
             "blockingDecisionDepth": 1,
             "blockingDecisionMainTaskId": "task:10256"
           },
@@ -730,2746 +714,1019 @@
             "participantId": "participant:216",
             "reason": "OVERLAP_COACH",
             "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 15,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 22,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 612,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 426,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2640,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3168,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1584,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 528,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2136,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2640,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3168,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1584,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 528,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2136,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2640,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3168,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1584,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 528,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2136,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2760,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3312,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1656,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 552,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2256,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2760,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3312,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1656,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 552,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2256,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3120,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3744,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1872,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 624,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2532,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3640,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 4368,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 2184,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 728,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2954,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 322,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 612,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 426,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2640,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3168,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1584,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 528,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2136,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 612,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 426,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 612,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 426,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 315,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 630,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 315,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 441,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 160,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 184,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 184,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 315,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 630,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 315,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 441,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 160,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 184,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 184,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 360,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 720,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 360,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 502,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 184,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 184,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 208,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 30,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 15,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 22,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 612,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 306,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 426,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 322,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 2640,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 3168,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 1584,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10229",
-            "startsEliminated": 528,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 2136,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 152,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10108",
-            "startsEliminated": 176,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10102"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 30,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 15,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 22,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10224",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10218"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 322,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10153",
-            "startsEliminated": 144,
-            "blockingDecisionDepth": 4,
-            "blockingDecisionMainTaskId": "task:10147"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10249",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10243"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 30,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 15,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 22,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 322,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10095",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10088"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 30,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 15,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 22,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 322,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 276,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10123",
-            "startsEliminated": 61,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10116"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
-            "startsEliminated": 30,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 15,
-            "blockingDecisionDepth": 1,
-            "blockingDecisionMainTaskId": "task:10256"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 22,
-            "blockingDecisionDepth": 2,
-            "blockingDecisionMainTaskId": "task:10229"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 266,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10218",
-            "feederTaskId": "task:10224",
-            "participantId": "participant:216",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 3,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10138",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10131"
-          },
-          {
-            "depth": 2,
-            "mainTaskId": "task:10072",
-            "feederTaskId": "task:10080",
-            "participantId": "participant:206",
-            "reason": "TRANSITION_COACH",
-            "blockingPlacedTaskId": "task:10256",
             "startsEliminated": 24,
             "blockingDecisionDepth": 1,
             "blockingDecisionMainTaskId": "task:10256"
           },
           {
             "depth": 2,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 36,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1020,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1020,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1020,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1020,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1020,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 510,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 522,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1044,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
             "mainTaskId": "task:10072",
             "feederTaskId": "task:10080",
             "participantId": "participant:206",
             "reason": "OVERLAP_COACH",
             "blockingPlacedTaskId": "task:10262",
-            "startsEliminated": 12,
+            "startsEliminated": 522,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 597,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 1194,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 597,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 721,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 54,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 27,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 36,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 432,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 864,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 432,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 618,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 54,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 27,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 36,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 54,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 27,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 36,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 54,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 27,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 36,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 54,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 27,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 36,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 77,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 98,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 54,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 27,
             "blockingDecisionDepth": 1,
             "blockingDecisionMainTaskId": "task:10256"
           },
@@ -3480,7 +1737,7 @@
             "participantId": "participant:206",
             "reason": "OVERLAP_COACH",
             "blockingPlacedTaskId": "task:10236",
-            "startsEliminated": 17,
+            "startsEliminated": 36,
             "blockingDecisionDepth": 2,
             "blockingDecisionMainTaskId": "task:10229"
           },
@@ -3491,84 +1748,7 @@
             "participantId": "participant:216",
             "reason": "OVERLAP_COACH",
             "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10147",
-            "feederTaskId": "task:10153",
-            "participantId": "participant:211",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10243",
-            "feederTaskId": "task:10249",
-            "participantId": "participant:218",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10088",
-            "feederTaskId": "task:10095",
-            "participantId": "participant:207",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10116",
-            "feederTaskId": "task:10123",
-            "participantId": "participant:209",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10131",
-            "feederTaskId": "task:10138",
-            "participantId": "participant:210",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10102",
-            "feederTaskId": "task:10108",
-            "participantId": "participant:208",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
-            "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
-          },
-          {
-            "depth": 4,
-            "mainTaskId": "task:10056",
-            "feederTaskId": "task:10063",
-            "participantId": "participant:205",
-            "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 266,
+            "startsEliminated": 77,
             "blockingDecisionDepth": 3,
             "blockingDecisionMainTaskId": "task:10072"
           },
@@ -3579,20 +1759,141 @@
             "participantId": "participant:211",
             "reason": "OVERLAP_COACH",
             "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
+            "startsEliminated": 80,
             "blockingDecisionDepth": 3,
             "blockingDecisionMainTaskId": "task:10072"
           },
           {
-            "depth": 4,
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10080",
+            "startsEliminated": 80,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10072"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10080",
+            "startsEliminated": 80,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10072"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10080",
+            "startsEliminated": 80,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10072"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10080",
+            "startsEliminated": 80,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10072"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10080",
+            "startsEliminated": 80,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10072"
+          },
+          {
+            "depth": 1,
+            "mainTaskId": "task:10218",
+            "feederTaskId": "task:10224",
+            "participantId": "participant:216",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 1,
             "mainTaskId": "task:10218",
             "feederTaskId": "task:10224",
             "participantId": "participant:216",
             "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 228,
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
             "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
+            "blockingDecisionMainTaskId": "task:10229"
           },
           {
             "depth": 3,
@@ -3600,10 +1901,21 @@
             "feederTaskId": "task:10249",
             "participantId": "participant:218",
             "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
             "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
+            "blockingDecisionMainTaskId": "task:10229"
           },
           {
             "depth": 3,
@@ -3611,10 +1923,21 @@
             "feederTaskId": "task:10095",
             "participantId": "participant:207",
             "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
             "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
+            "blockingDecisionMainTaskId": "task:10229"
           },
           {
             "depth": 3,
@@ -3622,10 +1945,21 @@
             "feederTaskId": "task:10123",
             "participantId": "participant:209",
             "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
             "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
+            "blockingDecisionMainTaskId": "task:10229"
           },
           {
             "depth": 3,
@@ -3633,10 +1967,43 @@
             "feederTaskId": "task:10138",
             "participantId": "participant:210",
             "reason": "OVERLAP_COACH",
-            "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
             "blockingDecisionDepth": 3,
-            "blockingDecisionMainTaskId": "task:10072"
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 90,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10229"
           },
           {
             "depth": 3,
@@ -3644,8 +2011,195 @@
             "feederTaskId": "task:10108",
             "participantId": "participant:208",
             "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 93,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10102",
+            "feederTaskId": "task:10108",
+            "participantId": "participant:208",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10236",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10229"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10147",
+            "feederTaskId": "task:10153",
+            "participantId": "participant:211",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10256",
+            "startsEliminated": 156,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10262",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "task:10256"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 78,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10153",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10147"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10243",
+            "feederTaskId": "task:10249",
+            "participantId": "participant:218",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10249",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10243"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10088",
+            "feederTaskId": "task:10095",
+            "participantId": "participant:207",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10095",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10088"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10116",
+            "feederTaskId": "task:10123",
+            "participantId": "participant:209",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10123",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10116"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10131",
+            "feederTaskId": "task:10138",
+            "participantId": "participant:210",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10138",
+            "startsEliminated": 21,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "task:10131"
+          },
+          {
+            "depth": 2,
+            "mainTaskId": "task:10072",
+            "feederTaskId": "task:10080",
+            "participantId": "participant:206",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10224",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "task:10218"
+          },
+          {
+            "depth": 3,
+            "mainTaskId": "task:10229",
+            "feederTaskId": "task:10236",
+            "participantId": "participant:217",
+            "reason": "OVERLAP_COACH",
             "blockingPlacedTaskId": "task:10080",
-            "startsEliminated": 55,
+            "startsEliminated": 3,
             "blockingDecisionDepth": 3,
             "blockingDecisionMainTaskId": "task:10072"
           }
@@ -3666,43 +2220,33 @@
         },
         "1": {
           "mainCandidate": 10,
-          "feederStart": 5,
-          "residualMatching": 680,
-          "continuation": 5,
+          "feederStart": 10,
+          "residualMatching": 1361,
+          "continuation": 9,
           "participantMeal": 19,
           "standaloneForward": 33,
           "other": 0,
-          "total": 752
+          "total": 1442
         },
         "2": {
-          "mainCandidate": 45,
-          "feederStart": 154,
-          "residualMatching": 18930,
-          "continuation": 120,
-          "participantMeal": 95,
-          "standaloneForward": 195,
+          "mainCandidate": 81,
+          "feederStart": 289,
+          "residualMatching": 35532,
+          "continuation": 199,
+          "participantMeal": 190,
+          "standaloneForward": 517,
           "other": 0,
-          "total": 19539
+          "total": 36808
         },
         "3": {
-          "mainCandidate": 960,
-          "feederStart": 1141,
-          "residualMatching": 124532,
-          "continuation": 728,
-          "participantMeal": 2926,
-          "standaloneForward": 11337,
-          "other": 0,
-          "total": 141624
-        },
-        "4": {
-          "mainCandidate": 5096,
-          "feederStart": 0,
-          "residualMatching": 0,
+          "mainCandidate": 1592,
+          "feederStart": 2161,
+          "residualMatching": 235748,
           "continuation": 0,
-          "participantMeal": 21679,
-          "standaloneForward": 111042,
+          "participantMeal": 4693,
+          "standaloneForward": 17288,
           "other": 0,
-          "total": 137817
+          "total": 261482
         }
       },
       "waterfallReconciles": true,
@@ -3717,215 +2261,206 @@
           "mainChoicesWithValidFeeder": 1
         },
         "1": {
-          "startsConsidered": 11,
-          "startsCoachEliminated": 6,
-          "startsEvaluated": 5,
-          "valid": 5,
+          "startsConsidered": 22,
+          "startsCoachEliminated": 12,
+          "startsEvaluated": 10,
+          "valid": 10,
           "invalid": 0,
-          "mainChoicesReachingFeeder": 1,
-          "mainChoicesWithValidFeeder": 1
+          "mainChoicesReachingFeeder": 2,
+          "mainChoicesWithValidFeeder": 2
         },
         "2": {
-          "startsConsidered": 604,
-          "startsCoachEliminated": 450,
-          "startsEvaluated": 154,
-          "valid": 154,
+          "startsConsidered": 1129,
+          "startsCoachEliminated": 840,
+          "startsEvaluated": 289,
+          "valid": 289,
           "invalid": 0,
-          "mainChoicesReachingFeeder": 34,
-          "mainChoicesWithValidFeeder": 34
+          "mainChoicesReachingFeeder": 63,
+          "mainChoicesWithValidFeeder": 63
         },
         "3": {
-          "startsConsidered": 17640,
-          "startsCoachEliminated": 16499,
-          "startsEvaluated": 1141,
-          "valid": 1141,
+          "startsConsidered": 29251,
+          "startsCoachEliminated": 27090,
+          "startsEvaluated": 2161,
+          "valid": 2161,
           "invalid": 0,
-          "mainChoicesReachingFeeder": 840,
-          "mainChoicesWithValidFeeder": 693
-        },
-        "4": {
-          "startsConsidered": 122304,
-          "startsCoachEliminated": 122304,
-          "startsEvaluated": 0,
-          "valid": 0,
-          "invalid": 0,
-          "mainChoicesReachingFeeder": 5096,
-          "mainChoicesWithValidFeeder": 0
+          "mainChoicesReachingFeeder": 1393,
+          "mainChoicesWithValidFeeder": 1393
         }
       },
-      "criticalDepth": 4,
+      "criticalDepth": 3,
       "criticalRejectionReasons": [
         {
           "id": "OVERLAP_COACH",
-          "count": 91728
+          "count": 18732
         },
         {
           "id": "TRANSITION_COACH",
-          "count": 30576
+          "count": 8358
         }
       ],
       "topMainTasks": [
         {
-          "id": "task:10056",
-          "count": 17472
-        },
-        {
           "id": "task:10102",
-          "count": 14976
+          "count": 3870
         },
         {
           "id": "task:10072",
-          "count": 13248
-        },
-        {
-          "id": "task:10131",
-          "count": 13248
+          "count": 3384
         },
         {
           "id": "task:10088",
-          "count": 12672
+          "count": 3306
         },
         {
           "id": "task:10116",
-          "count": 12672
+          "count": 3306
+        },
+        {
+          "id": "task:10131",
+          "count": 3306
         },
         {
           "id": "task:10147",
-          "count": 12672
-        },
-        {
-          "id": "task:10218",
-          "count": 12672
+          "count": 3306
         },
         {
           "id": "task:10243",
-          "count": 12672
+          "count": 3306
+        },
+        {
+          "id": "task:10218",
+          "count": 2808
+        },
+        {
+          "id": "task:10229",
+          "count": 498
         }
       ],
       "topFeederTasks": [
         {
-          "id": "task:10063",
-          "count": 17472
-        },
-        {
           "id": "task:10108",
-          "count": 14976
+          "count": 3870
         },
         {
           "id": "task:10080",
-          "count": 13248
-        },
-        {
-          "id": "task:10138",
-          "count": 13248
+          "count": 3384
         },
         {
           "id": "task:10095",
-          "count": 12672
+          "count": 3306
         },
         {
           "id": "task:10123",
-          "count": 12672
+          "count": 3306
+        },
+        {
+          "id": "task:10138",
+          "count": 3306
         },
         {
           "id": "task:10153",
-          "count": 12672
-        },
-        {
-          "id": "task:10224",
-          "count": 12672
+          "count": 3306
         },
         {
           "id": "task:10249",
-          "count": 12672
+          "count": 3306
+        },
+        {
+          "id": "task:10224",
+          "count": 2808
+        },
+        {
+          "id": "task:10236",
+          "count": 498
         }
       ],
       "topBlockingPlacedTasks": [
         {
           "id": "task:10256",
-          "count": 56056
+          "count": 12537
         },
         {
           "id": "task:10236",
-          "count": 20678
+          "count": 5194
         },
         {
           "id": "task:10262",
-          "count": 15288
-        },
-        {
-          "id": "task:10229",
-          "count": 5096
-        },
-        {
-          "id": "task:10095",
-          "count": 3486
-        },
-        {
-          "id": "task:10123",
-          "count": 3486
-        },
-        {
-          "id": "task:10153",
-          "count": 3486
+          "count": 4179
         },
         {
           "id": "task:10224",
-          "count": 3486
+          "count": 1190
+        },
+        {
+          "id": "task:10095",
+          "count": 686
+        },
+        {
+          "id": "task:10123",
+          "count": 686
+        },
+        {
+          "id": "task:10138",
+          "count": 686
+        },
+        {
+          "id": "task:10153",
+          "count": 686
         },
         {
           "id": "task:10249",
-          "count": 3486
+          "count": 686
         },
         {
           "id": "task:10080",
-          "count": 3150
+          "count": 560
         }
       ],
       "topFeederBlockerPairs": [
         {
-          "id": "task:10063 + task:10256",
-          "count": 8008
-        },
-        {
           "id": "task:10108 + task:10256",
-          "count": 6864
+          "count": 1791
         },
         {
           "id": "task:10080 + task:10256",
-          "count": 6072
-        },
-        {
-          "id": "task:10138 + task:10256",
-          "count": 6072
+          "count": 1566
         },
         {
           "id": "task:10095 + task:10256",
-          "count": 5808
+          "count": 1530
         },
         {
           "id": "task:10123 + task:10256",
-          "count": 5808
+          "count": 1530
+        },
+        {
+          "id": "task:10138 + task:10256",
+          "count": 1530
         },
         {
           "id": "task:10153 + task:10256",
-          "count": 5808
-        },
-        {
-          "id": "task:10224 + task:10256",
-          "count": 5808
+          "count": 1530
         },
         {
           "id": "task:10249 + task:10256",
-          "count": 5808
+          "count": 1530
         },
         {
-          "id": "task:10063 + task:10236",
-          "count": 2954
+          "id": "task:10224 + task:10256",
+          "count": 1296
+        },
+        {
+          "id": "task:10108 + task:10236",
+          "count": 742
+        },
+        {
+          "id": "task:10080 + task:10236",
+          "count": 639
         }
       ],
-      "criticalRejectionCount": 122304,
-      "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10256, which accounts for 56,056 of 122,304 (45.8%) depth-4 feeder rejections, while preserving every hard constraint and the 300,000-branch budget."
+      "criticalRejectionCount": 27090,
+      "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10256, which accounts for 12,537 of 27,090 (46.3%) depth-3 feeder rejections, while preserving every hard constraint and the 300,000-branch budget."
     }
   },
   "result": {

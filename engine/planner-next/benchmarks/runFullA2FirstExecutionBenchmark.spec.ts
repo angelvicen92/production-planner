@@ -18,12 +18,18 @@ test("Full A2 first executable integration reports an atomic completion count", 
       canonicalObligationCount: number;
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
-      execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean };
+      execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
+        evidence: null | { continuationGateChecks: number; nextPositionEdgesExamined: number;
+          emptyFeederDomainPrunes: number; participantMealBranchesExplored: number;
+          standaloneForwardBranches: number } };
       result: { publishedCanonicalObligations: number; diagnosticScheduledCanonicalObligations: number; targetCanonicalObligations: number; fullHardValidEligible: boolean };
     };
     assert.equal(evidence.canonicalObligationCount, 269);
     assert.equal(evidence.result.targetCanonicalObligations, 269);
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
+    assert.ok((evidence.execution?.evidence?.continuationGateChecks ?? 0) > 0);
+    assert.ok((evidence.execution?.evidence?.nextPositionEdgesExamined ?? 0) > 0);
+    assert.ok((evidence.execution?.evidence?.emptyFeederDomainPrunes ?? 0) > 0);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,
       preflightReasonCodes: evidence.preflight.reasonCodes,

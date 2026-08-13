@@ -32,6 +32,9 @@ export interface ExactMainAndFeederCoreEvidence {
   residualMatchingPrunes: number;
   residualMatchingRepairs: number;
   residualMatchingRepairFailures: number;
+  continuationGateChecks: number;
+  nextPositionEdgesExamined: number;
+  emptyFeederDomainPrunes: number;
   zeroAlternativePrunes: number;
   backtracks: number;
   maximumDepth: number;
@@ -73,6 +76,8 @@ interface MainChoice {
 interface ResidualMatchingEdge {
   readonly position: number;
   readonly operation: readonly ScheduledTask[];
+  /** Exact anchor returned by the already-paid operation materialization. */
+  readonly firstObligation: number;
 }
 
 /** A successful, branch-local proof that every remaining main has a distinct position. */
@@ -157,6 +162,18 @@ export interface ExactMainAndFeederSearchOptions {
   onBranchConsumed?: (category:ExactBranchCategory,depth:number,count:number)=>void;
   /** Test oracle: evaluates the unchanged complete grid instead of the coach-derived domain. */
   feederStartDomainMode?: "COACH_DOMAIN" | "FULL_GRID";
+  /** Test oracle only: disables the exact hard continuation prune. */
+  continuationGateMode?: "ON" | "OFF";
+  /** Test oracle: models a successful matcher that did not return a reusable certificate. */
+  continuationGateCertificateMode?: "USE" | "OMIT";
+  /** Read-only test trace; it cannot influence search or accounting. */
+  onContinuationGateChecked?: (trace: Readonly<{
+    nextPosition: number;
+    edgesExamined: number;
+    emptyDomains: number;
+    pruned: boolean;
+    firstObligations: readonly number[];
+  }>) => void;
 }
 
 export interface ExactFeederStartInterval { readonly start: number; readonly end: number }
@@ -292,6 +309,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingPositionChecks: 0, residualMatchingAugmentTraversals: 0,
     residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
+    continuationGateChecks: 0, nextPositionEdgesExamined: 0, emptyFeederDomainPrunes: 0,
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [], causalDiagnostic:null };
@@ -499,6 +517,33 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           evidence.backtracks += 1;
           continue;
         }
+        const matchingCertificate = options.continuationGateCertificateMode === "OMIT"
+          ? undefined : matching.certificate;
+        if (options.continuationGateMode !== "OFF" && matchingCertificate && depth + 1 < mains.length) {
+          evidence.continuationGateChecks += 1;
+          const nextPosition = depth + 1;
+          const nextEdges = [...matchingCertificate.validEdges.entries()].flatMap(([taskId, edges]) =>
+            edges.filter((edge) => edge.position === nextPosition).map((edge) => ({ taskId, edge })));
+          let emptyDomains = 0;
+          for (const { taskId, edge } of nextEdges) {
+            evidence.nextPositionEdgesExamined += 1;
+            const nextMain = mains.find(({ id }) => id === taskId)!;
+            const nextFeeder = feederByMain.get(taskId)!;
+            const deadline = latestFeederEndBeforeMain(problem, nextFeeder, nextMain.spaceId,
+              slots[nextPosition]!, edge.firstObligation);
+            const domain = exactFeederStartDomain(problem, nextFeeder, deadline - nextFeeder.duration,
+              [...nextPlaced, ...edge.operation], options.feederStartDomainMode);
+            if (domain.eligibleStartCount === 0) emptyDomains += 1;
+          }
+          const pruned = nextEdges.length > 0 && emptyDomains === nextEdges.length;
+          options.onContinuationGateChecked?.(Object.freeze({ nextPosition, edgesExamined: nextEdges.length,
+            emptyDomains, pruned, firstObligations: Object.freeze(nextEdges.map(({ edge }) => edge.firstObligation)) }));
+          if (pruned) {
+            evidence.emptyFeederDomainPrunes += 1;
+            evidence.backtracks += 1;
+            continue;
+          }
+        }
         const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced, addedTasks: [...choice.operation, scheduledFeeder],
           meals, depth: depth + 1, mainTaskId: choice.task.id, feederStart: start, pattern: [...pattern],
           timelineKey }) ?? "CONTINUE";
@@ -538,7 +583,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if (!operation) return null;
       const departureDeadline = latestDepartureStart.get(task.participantId);
       if (departureDeadline !== undefined && operation.end > departureDeadline) return null;
-      return { position, operation: operation.tasks.map((item) => ({ ...item,
+      return { position, firstObligation: operation.start, operation: operation.tasks.map((item) => ({ ...item,
         dependencies: [...item.dependencies], requiredResourceIds: item.requiredResourceIds === undefined
           ? undefined : [...item.requiredResourceIds] })) };
     };

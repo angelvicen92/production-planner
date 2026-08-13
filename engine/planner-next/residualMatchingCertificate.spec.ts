@@ -137,3 +137,30 @@ test("matching budget exhaustion is atomic and every paid unit reaches the share
   assert.deepEqual(exhausted.scheduledTasks, []);
   assert.ok(exhausted.evidence.residualMatchingBranchesExplored <= ledger.coreBranches);
 });
+
+test("hard continuation gate preserves solutions, skips callbacks only on exact prunes, and is deterministic", () => {
+  const problem = mainFlowVocalScenario();
+  let enabledCallbacks = 0, disabledCallbacks = 0, missingCallbacks = 0;
+  const traces: Array<{ edgesExamined: number; emptyDomains: number; pruned: boolean }> = [];
+  const enabled = runExactMainAndFeederSearch(structuredClone(problem), {
+    onPartialCoreCandidate: () => { enabledCallbacks += 1; return "CONTINUE"; },
+    onContinuationGateChecked: (trace) => traces.push(trace),
+  });
+  const repeated = runExactMainAndFeederSearch(structuredClone(problem));
+  const disabled = runExactMainAndFeederSearch(structuredClone(problem), {
+    continuationGateMode: "OFF", onPartialCoreCandidate: () => { disabledCallbacks += 1; return "CONTINUE"; },
+  });
+  const missing = runExactMainAndFeederSearch(structuredClone(problem), {
+    continuationGateCertificateMode: "OMIT", onPartialCoreCandidate: () => { missingCallbacks += 1; return "CONTINUE"; },
+  });
+  assert.ok(traces.some((trace) => trace.emptyDomains < trace.edgesExamined && !trace.pruned));
+  assert.equal(missingCallbacks, disabledCallbacks);
+  assert.equal(missing.evidence.continuationGateChecks, 0);
+  assert.deepEqual(repeated, enabled);
+  assert.equal(enabled.evidence.nextPositionEdgesExamined, traces.reduce((sum, trace) => sum + trace.edgesExamined, 0));
+  assert.equal(enabled.status, disabled.status);
+  assert.equal(enabled.complete, disabled.complete);
+  assert.equal(enabled.evidence.coreFingerprint, disabled.evidence.coreFingerprint);
+  assert.deepEqual(enabled.scheduledTasks, disabled.scheduledTasks);
+  assert.ok(enabledCallbacks <= disabledCallbacks);
+});
