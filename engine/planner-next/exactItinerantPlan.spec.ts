@@ -295,12 +295,7 @@ test("a core-only problem preserves the historical first-complete route", () => 
   const input = problem([]);
   const historical = constructFirstHardValidExactItinerantPlan(input);
   const accepted = constructExactItinerantPlan(input);
-  const gateOff = runExactItinerantPlanSearch(structuredClone(input), {
-    coreOrderer: { continuationGateMode: "OFF" },
-  });
   assert.deepEqual(accepted, historical);
-  assert.equal(gateOff.evidence.fullFingerprint, accepted.evidence.fullFingerprint);
-  assert.deepEqual(gateOff.scheduledTasks, accepted.scheduledTasks);
   assert.equal(accepted.evidence.completeSelectionMode, "FIRST_HARD_VALID");
   assert.equal(accepted.evidence.completePlansObserved, 1);
 });

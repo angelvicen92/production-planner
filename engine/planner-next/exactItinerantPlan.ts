@@ -100,10 +100,6 @@ export interface ExactItinerantPlanEvidence {
   residualMatchingPrunes: number;
   residualMatchingRepairs: number;
   residualMatchingRepairFailures: number;
-  continuationGateChecks: number;
-  continuationGateBranches: number;
-  nextPositionEdgesExamined: number;
-  emptyFeederDomainPrunes: number;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
   completePlansObserved: number;
   completeIncumbentReplacements: number;
@@ -589,7 +585,7 @@ return { outcome, tasks: found, preparations: foundPreparations, roundPreparatio
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
 export interface ExactItinerantPlanSearchOptions {
-  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted" | "feederStartDomainMode" | "continuationGateMode">;
+  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted" | "feederStartDomainMode">;
   standaloneCompletionSelection?: StandaloneCompletionSelection;
   /** Test oracle only; production always uses the exact analytic static domain. */
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
@@ -621,7 +617,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
     residualMatchingAugmentTraversals: 0, residualMatchingBranchesExplored: 0,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
-    continuationGateChecks: 0, continuationGateBranches: 0, nextPositionEdgesExamined: 0, emptyFeederDomainPrunes: 0,
     lastExhaustionPhase: null,
     completePlansObserved: 0, completeIncumbentReplacements: 0, completeSelectionMode,
     completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
@@ -704,7 +699,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
-  if(evidence.causalDiagnostic)for(const [depth,extra] of Object.entries(supplementalByDepth)){const row=evidence.causalDiagnostic.waterfallByDepth[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,hardContinuation:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};row.participantMeal+=extra.participantMeal;row.standaloneForward+=extra.standaloneForward;row.total+=extra.participantMeal+extra.standaloneForward;evidence.causalDiagnostic.waterfallByDepth[depth]=row;}
+  if(evidence.causalDiagnostic)for(const [depth,extra] of Object.entries(supplementalByDepth)){const row=evidence.causalDiagnostic.waterfallByDepth[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};row.participantMeal+=extra.participantMeal;row.standaloneForward+=extra.standaloneForward;row.total+=extra.participantMeal+extra.standaloneForward;evidence.causalDiagnostic.waterfallByDepth[depth]=row;}
   evidence.branchesExplored = ledger.branchesExplored; evidence.coreBranches = ledger.coreBranches;
   evidence.standaloneBranches = ledger.standaloneBranches; evidence.lastExhaustionPhase = ledger.lastExhaustionPhase;
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
@@ -721,10 +716,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.residualMatchingPrunes = core.evidence.residualMatchingPrunes;
   evidence.residualMatchingRepairs = core.evidence.residualMatchingRepairs;
   evidence.residualMatchingRepairFailures = core.evidence.residualMatchingRepairFailures;
-  evidence.continuationGateChecks = core.evidence.continuationGateChecks;
-  evidence.continuationGateBranches = core.evidence.continuationGateBranches;
-  evidence.nextPositionEdgesExamined = core.evidence.nextPositionEdgesExamined;
-  evidence.emptyFeederDomainPrunes = core.evidence.emptyFeederDomainPrunes;
   evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
   const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();
