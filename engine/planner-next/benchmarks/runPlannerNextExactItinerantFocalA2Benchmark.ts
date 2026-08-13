@@ -184,8 +184,8 @@ assert.equal(
   "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357",
 );
 assert.equal(first.evidence.branchesExplored, 300_000);
-assert.equal(first.evidence.coreBranches, 48_224);
-assert.equal(first.evidence.standaloneBranches, 251_776);
+assert.equal(first.evidence.coreBranches, 48_071);
+assert.equal(first.evidence.standaloneBranches, 251_929);
 assert.equal(first.evidence.completePlansObserved, 78);
 assert.equal(first.evidence.completeIncumbentReplacements, 2);
 assert.equal(first.evidence.completeSelectionMode, "BEST_DOMINATING_WITHIN_BUDGET");

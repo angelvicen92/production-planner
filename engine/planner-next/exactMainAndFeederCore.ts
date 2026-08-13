@@ -21,7 +21,17 @@ export interface ExactMainAndFeederCoreEvidence {
   constructiveFeederStartChecks: number;
   matchingFeederStartChecks: number;
   residualMatchingChecks: number;
+  residualMatchingInvocations: number;
+  residualMatchingFullBuilds: number;
+  residualMatchingIncrementalUpdates: number;
+  residualMatchingEdgeCacheHits: number;
+  residualMatchingEdgeCacheMisses: number;
+  residualMatchingPositionChecks: number;
+  residualMatchingAugmentTraversals: number;
+  residualMatchingBranchesExplored: number;
   residualMatchingPrunes: number;
+  residualMatchingRepairs: number;
+  residualMatchingRepairFailures: number;
   zeroAlternativePrunes: number;
   backtracks: number;
   maximumDepth: number;
@@ -49,6 +59,25 @@ interface MainChoice {
   feeder: Task;
   participantSlack: number;
   firstObligation: number;
+}
+
+interface ResidualMatchingEdge {
+  readonly position: number;
+  readonly operation: readonly ScheduledTask[];
+}
+
+/** A successful, branch-local proof that every remaining main has a distinct position. */
+interface ResidualMatchingCertificate {
+  readonly taskIds: readonly string[];
+  readonly positions: readonly number[];
+  readonly validEdges: ReadonlyMap<string, readonly ResidualMatchingEdge[]>;
+  readonly invalidPositions: ReadonlyMap<string, ReadonlySet<number>>;
+  readonly matching: ReadonlyMap<string, number>;
+}
+
+interface ResidualMatchingResult {
+  readonly outcome: SearchOutcome;
+  readonly certificate?: ResidualMatchingCertificate;
 }
 
 /** Immutable, derived view exposed only to experimental candidate-ordering code. */
@@ -102,6 +131,19 @@ export interface ExactMainAndFeederSearchOptions {
   onMainChoicesRanked?: (baseline: readonly ExactMainChoiceDescriptor[], ordered: readonly ExactMainChoiceDescriptor[]) => void;
   onMainChoiceEntered?: (candidate: ExactMainChoiceDescriptor) => void;
   onMainChoiceAccepted?: (candidate: ExactMainChoiceDescriptor) => void;
+  /** Test oracle: rebuilds every residual graph without changing search semantics. */
+  residualMatchingMode?: "INCREMENTAL" | "FULL_RECOMPUTE";
+  /** Read-only diagnostic used by exact-certificate tests; it cannot influence the search. */
+  onResidualMatchingDerived?: (trace: Readonly<{
+    selectedTaskId: string;
+    consumedPosition: number;
+    selectedTaskPreviousPosition: number | null;
+    consumedPositionPreviousOwner: string | null;
+    invalidatedMatchedEdges: number;
+    invalidatedUnmatchedEdges: number;
+    reusedInvalidEdges: number;
+    unmatchedBeforeRepair: number;
+  }>) => void;
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -123,6 +165,17 @@ const readonlyTaskCopy = <T extends Task | ScheduledTask>(task: T): Readonly<T> 
   requiredResourceIds: task.requiredResourceIds === undefined ? undefined : Object.freeze([...task.requiredResourceIds]),
   availability: task.availability === undefined ? undefined : Object.freeze(task.availability.map((window) => Object.freeze({ ...window }))),
 }) as Readonly<T>;
+
+/** Pure conservative invalidation predicate for a previously valid residual edge. */
+export const residualMatchingOperationsMayInteract = (left: readonly ScheduledTask[],
+  right: readonly ScheduledTask[]): boolean => left.some((candidate) => right.some((added) => {
+  const dependency = candidate.dependencies.includes(added.id) || added.dependencies.includes(candidate.id);
+  const participant = candidate.participantId !== undefined && candidate.participantId === added.participantId;
+  const coach = candidate.coachId !== undefined && candidate.coachId === added.coachId;
+  const sharedResource = (candidate.requiredResourceIds ?? [])
+    .some((id) => (added.requiredResourceIds ?? []).includes(id));
+  return dependency || participant || coach || candidate.spaceId === added.spaceId || sharedResource;
+}));
 
 function latestDepartureStartByParticipant(problem: PlannerNextProblem): ReadonlyMap<string, number> {
   const departureIds = new Set(problem.transportPolicy?.departure.taskIds ?? []);
@@ -147,8 +200,13 @@ function latestDepartureStartByParticipant(problem: PlannerNextProblem): Readonl
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
     mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, constructiveFeederStartChecks: 0,
-    matchingFeederStartChecks: 0, residualMatchingChecks: 0,
-    residualMatchingPrunes: 0, zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
+    matchingFeederStartChecks: 0, residualMatchingChecks: 0, residualMatchingInvocations: 0,
+    residualMatchingFullBuilds: 0, residualMatchingIncrementalUpdates: 0,
+    residualMatchingEdgeCacheHits: 0, residualMatchingEdgeCacheMisses: 0,
+    residualMatchingPositionChecks: 0, residualMatchingAugmentTraversals: 0,
+    residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
+    residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
+    zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [] };
 }
@@ -193,6 +251,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     evidence.branchesExplored = ledger.coreBranches;
     return true;
   };
+  const consumeMatchingBranch = (): boolean => {
+    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return false;
+    evidence.residualMatchingBranchesExplored += 1;
+    return true;
+  };
   const duration = mains[0]!.duration;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns);
@@ -211,7 +274,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
     meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, depth: number,
-    timelineKey: string | null): SearchOutcome => {
+    timelineKey: string | null, certificate?: ResidualMatchingCertificate): SearchOutcome => {
     evidence.maximumDepth = Math.max(evidence.maximumDepth, depth);
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
@@ -314,9 +377,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const scheduledFeeder: ScheduledTask = { ...choice.feeder, start, end: start + choice.feeder.duration };
         const nextPlaced = [...placed, ...choice.operation, scheduledFeeder];
         const nextUsed = new Set(used).add(choice.task.id);
-        const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
-        if (matching === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (matching === "DEAD_END") {
+        const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1,
+          options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : certificate,
+          choice.task.id, [...choice.operation, scheduledFeeder]);
+        if (matching.outcome === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (matching.outcome === "DEAD_END") {
           evidence.residualMatchingPrunes += 1;
           evidence.backtracks += 1;
           continue;
@@ -327,7 +392,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (partial === "REJECT") { evidence.backtracks += 1; continue; }
         if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
-        const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1, timelineKey);
+        const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1, timelineKey,
+          matching.certificate);
         if (child === "FOUND") { options.onMainChoiceAccepted?.(descriptorById.get(choice.task.id)!); return "FOUND"; }
         if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         evidence.backtracks += 1;
@@ -338,46 +404,151 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
-    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number): SearchOutcome => {
-    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number,
+    parent: ResidualMatchingCertificate | undefined, selectedTaskId: string,
+    addedTasks: readonly ScheduledTask[]): ResidualMatchingResult => {
+    if (!consumeMatchingBranch()) return { outcome: "BUDGET_EXHAUSTED" };
     evidence.residualMatchingChecks += 1;
+    evidence.residualMatchingInvocations += 1;
     const remaining = mains.filter(({ id }) => !used.has(id));
-    if (remaining.length === 0) return "FOUND";
-    const edges = new Map<string, number[]>();
-    for (const task of remaining) {
-      const positions: number[] = [];
-      for (let position = nextDepth; position < mains.length; position += 1) {
-        if (task.blockKey !== pattern[position] || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
-        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
-        const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
-        if (!operation) continue;
-        const departureDeadline = latestDepartureStart.get(task.participantId);
-        if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
-        positions.push(position);
+    const remainingIds = remaining.map(({ id }) => id);
+    const remainingIdSet = new Set(remainingIds);
+    const positions = Array.from({ length: mains.length - nextDepth }, (_, index) => nextDepth + index);
+    const positionSet = new Set(positions);
+    const validEdges = new Map<string, ResidualMatchingEdge[]>();
+    const invalidPositions = new Map<string, Set<number>>();
+
+    const evaluate = (task: Task, position: number): ResidualMatchingEdge | null | "BUDGET_EXHAUSTED" => {
+      if (!consumeMatchingBranch()) return "BUDGET_EXHAUSTED";
+      evidence.residualMatchingPositionChecks += 1;
+      const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
+      if (!operation) return null;
+      const departureDeadline = latestDepartureStart.get(task.participantId);
+      if (departureDeadline !== undefined && operation.end > departureDeadline) return null;
+      return { position, operation: operation.tasks.map((item) => ({ ...item,
+        dependencies: [...item.dependencies], requiredResourceIds: item.requiredResourceIds === undefined
+          ? undefined : [...item.requiredResourceIds] })) };
+    };
+
+    if (parent === undefined) {
+      evidence.residualMatchingFullBuilds += 1;
+      for (const task of remaining) {
+        const taskEdges: ResidualMatchingEdge[] = [];
+        const taskInvalid = new Set<number>();
+        for (const position of positions) {
+          if (task.blockKey !== pattern[position]
+            || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
+          const edge = evaluate(task, position);
+          if (edge === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
+          if (edge) taskEdges.push(edge); else taskInvalid.add(position);
+        }
+        validEdges.set(task.id, taskEdges);
+        invalidPositions.set(task.id, taskInvalid);
+        if (taskEdges.length === 0) return { outcome: "DEAD_END" };
       }
-      edges.set(task.id, positions);
-      if (positions.length === 0) return "DEAD_END";
+    } else {
+      evidence.residualMatchingIncrementalUpdates += 1;
+      const consumedPosition = nextDepth - 1;
+      let invalidatedMatchedEdges = 0;
+      let invalidatedUnmatchedEdges = 0;
+      let reusedInvalidEdges = 0;
+      // Both vertices are removed independently: the parent's matching need not pair them together.
+      for (const task of remaining) {
+        const parentInvalid = parent.invalidPositions.get(task.id) ?? new Set<number>();
+        const retainedInvalid = [...parentInvalid].filter((position) => positionSet.has(position));
+        reusedInvalidEdges += retainedInvalid.length;
+        invalidPositions.set(task.id, new Set(retainedInvalid));
+        const taskEdges: ResidualMatchingEdge[] = [];
+        for (const edge of parent.validEdges.get(task.id) ?? []) {
+          if (edge.position === consumedPosition || !positionSet.has(edge.position)) continue;
+          if (!residualMatchingOperationsMayInteract(edge.operation, addedTasks)) {
+            evidence.residualMatchingEdgeCacheHits += 1;
+            taskEdges.push(edge);
+            continue;
+          }
+          evidence.residualMatchingEdgeCacheMisses += 1;
+          const refreshed = evaluate(task, edge.position);
+          if (refreshed === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
+          if (refreshed) taskEdges.push(refreshed);
+          else {
+            invalidPositions.get(task.id)!.add(edge.position);
+            if (parent.matching.get(task.id) === edge.position) invalidatedMatchedEdges += 1;
+            else invalidatedUnmatchedEdges += 1;
+          }
+        }
+        validEdges.set(task.id, taskEdges);
+        if (taskEdges.length === 0) return { outcome: "DEAD_END" };
+      }
+      // Assert the requested removal in the derivation rather than relying only on `used`.
+      if (parent.taskIds.includes(selectedTaskId) && remainingIdSet.has(selectedTaskId))
+        throw new Error("RESIDUAL_MATCHING_SELECTED_TASK_NOT_REMOVED");
+
+      if (options.onResidualMatchingDerived) {
+        const retainedTaskIds = new Set<string>();
+        for (const [taskId, position] of parent.matching) {
+          if (remainingIdSet.has(taskId) && positionSet.has(position)
+            && (validEdges.get(taskId) ?? []).some((edge) => edge.position === position)) retainedTaskIds.add(taskId);
+        }
+        options.onResidualMatchingDerived(Object.freeze({
+          selectedTaskId,
+          consumedPosition,
+          selectedTaskPreviousPosition: parent.matching.get(selectedTaskId) ?? null,
+          consumedPositionPreviousOwner: [...parent.matching]
+            .find(([, position]) => position === consumedPosition)?.[0] ?? null,
+          invalidatedMatchedEdges,
+          invalidatedUnmatchedEdges,
+          reusedInvalidEdges,
+          unmatchedBeforeRepair: remainingIds.filter((id) => !retainedTaskIds.has(id)).length,
+        }));
+      }
     }
+
+    const matching = new Map<string, number>();
     const positionOwner = new Map<number, string>();
+    if (parent !== undefined) {
+      for (const [taskId, position] of parent.matching) {
+        if (!remainingIdSet.has(taskId) || !positionSet.has(position)) continue;
+        if (!(validEdges.get(taskId) ?? []).some((edge) => edge.position === position)) continue;
+        matching.set(taskId, position);
+        positionOwner.set(position, taskId);
+      }
+    }
     const augment = (taskId: string, seen: Set<number>): "MATCHED" | "UNMATCHED" | "BUDGET_EXHAUSTED" => {
-      for (const position of edges.get(taskId) ?? []) {
+      for (const { position } of validEdges.get(taskId) ?? []) {
         if (seen.has(position)) continue;
-        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+        if (!consumeMatchingBranch()) return "BUDGET_EXHAUSTED";
+        evidence.residualMatchingAugmentTraversals += 1;
         seen.add(position);
         const owner = positionOwner.get(position);
-        if (owner === undefined) { positionOwner.set(position, taskId); return "MATCHED"; }
+        if (owner === undefined) {
+          positionOwner.set(position, taskId);
+          matching.set(taskId, position);
+          return "MATCHED";
+        }
         const displaced = augment(owner, seen);
         if (displaced === "BUDGET_EXHAUSTED") return displaced;
-        if (displaced === "MATCHED") { positionOwner.set(position, taskId); return "MATCHED"; }
+        if (displaced === "MATCHED") {
+          positionOwner.set(position, taskId);
+          matching.set(taskId, position);
+          return "MATCHED";
+        }
       }
       return "UNMATCHED";
     };
-    for (const { id } of remaining) {
-      const result = augment(id, new Set());
-      if (result === "BUDGET_EXHAUSTED") return result;
-      if (result === "UNMATCHED") return "DEAD_END";
+    const unmatched = remainingIds.filter((id) => !matching.has(id));
+    if (parent !== undefined && unmatched.length > 0) evidence.residualMatchingRepairs += 1;
+    for (const taskId of unmatched) {
+      const result = augment(taskId, new Set());
+      if (result === "BUDGET_EXHAUSTED") return { outcome: result };
+      if (result === "UNMATCHED") {
+        if (parent !== undefined) evidence.residualMatchingRepairFailures += 1;
+        return { outcome: "DEAD_END" };
+      }
     }
-    return "FOUND";
+    const certificate: ResidualMatchingCertificate = {
+      taskIds: remainingIds, positions, validEdges, invalidPositions, matching,
+    };
+    return { outcome: "FOUND", certificate };
   };
 
   outer: for (const pattern of patterns.patterns) {
