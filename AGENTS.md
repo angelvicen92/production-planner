@@ -1,6 +1,6 @@
 # OptiPlan — instrucciones permanentes para Codex
 
-Este archivo es un **mapa estable**, no una enciclopedia. El prompt de cada tarea contiene sólo el delta. Para contexto y créditos consulta `docs/governance/CODEX_EFFICIENCY_PROTOCOL.md` cuando sea relevante. Para selección de ejecutor consulta `docs/governance/EXECUTION_ROUTING_PROTOCOL.md`.
+Este archivo es un **mapa estable**, no una enciclopedia. El prompt de cada tarea contiene sólo el delta. Para contexto y créditos consulta `docs/governance/CODEX_EFFICIENCY_PROTOCOL.md` cuando sea relevante. Para selección de ejecutor consulta `docs/governance/EXECUTION_ROUTING_PROTOCOL.md`. Para cambios sobre búsqueda o diagnóstico de Planner Next consulta `docs/governance/PLANNER_CAUSAL_DIAGNOSTIC_PROTOCOL.md` cuando exista estancamiento, agotamiento de presupuesto o una optimización que no produzca progreso estructural.
 
 Cuando una tarea llega a Codex, ChatGPT ya ha definido objetivo, alcance y criterios de aceptación y ha elegido Codex porque su entorno de código/ejecución es adecuado para esa unidad. No reabras por defecto la estrategia global, pero comprueba las dependencias locales necesarias y reporta cualquier incompatibilidad material que descubras en el código real.
 
