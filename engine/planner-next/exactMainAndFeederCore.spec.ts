@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
+import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
 import type { PlannerNextProblem, Task } from "./contracts";
@@ -173,6 +173,18 @@ test("the exact branch threshold completes at B and exhausts atomically at B-1",
   const exhausted = constructExactMainAndFeederCore(below);
   assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED"); assert.equal(exhausted.evidence.branchesExplored, branchThreshold - 1);
   assert.deepEqual(exhausted.scheduledTasks, []); assert.deepEqual(exhausted.scheduledSpaceMeals, []);
+});
+
+test("causal diagnostics are read-only and reconcile every already-consumed branch", () => {
+  const problem=feederStartBacktrackingProblem();
+  const disabled=runExactMainAndFeederSearch(structuredClone(problem));
+  const enabled=runExactMainAndFeederSearch(structuredClone(problem),{causalDiagnostic:true});
+  assert.deepEqual({...enabled.evidence,causalDiagnostic:null},disabled.evidence);
+  assert.deepEqual(enabled.scheduledTasks,disabled.scheduledTasks);
+  assert.equal(enabled.status,disabled.status);
+  assert.equal(Object.values(enabled.evidence.causalDiagnostic!.waterfallByDepth).reduce((sum,row)=>sum+row.total,0),enabled.evidence.branchesExplored);
+  assert.equal(Object.values(enabled.evidence.causalDiagnostic!.feederByDepth).reduce((sum,row)=>sum+row.startsEvaluated,0),enabled.evidence.constructiveFeederStartChecks);
+  assert.ok(enabled.evidence.causalDiagnostic!.feederRejections.some(row=>row.firstRejectionReason==="TASK_AVAILABILITY"));
 });
 
 test("a minimal anchored core is adjacent, fed before its first obligation, and hard-valid", () => {

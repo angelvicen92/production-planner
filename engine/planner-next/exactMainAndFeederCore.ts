@@ -4,7 +4,7 @@ import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns } from "./mainFlowPatterns";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, type PlacementRejectionReason } from "./placement";
 import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { preflight, validatePlan } from "./validate";
@@ -42,7 +42,15 @@ export interface ExactMainAndFeederCoreEvidence {
   selectedFeederTaskIds: string[];
   coreFingerprint: string | null;
   reasonCodes: string[];
+  causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
+
+export type ExactBranchCategory = "MAIN_CANDIDATE" | "FEEDER_START" | "RESIDUAL_MATCHING" | "CONTINUATION"
+  | "PARTICIPANT_MEAL" | "STANDALONE_FORWARD" | "OTHER";
+export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number; residualMatching:number; continuation:number; participantMeal:number; standaloneForward:number; other:number; total:number }
+export interface ExactDepthFeeder { startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
+export interface ExactCriticalFeederRejection { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; startsAttempted:number; firstRejectionReason:PlacementRejectionReason; blockingPlacedTaskId:string|null; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; count:number }
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[] }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -144,6 +152,8 @@ export interface ExactMainAndFeederSearchOptions {
     reusedInvalidEdges: number;
     unmatchedBeforeRepair: number;
   }>) => void;
+  causalDiagnostic?: boolean;
+  onBranchConsumed?: (category:ExactBranchCategory,depth:number,count:number)=>void;
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -208,7 +218,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
-    selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [] };
+    selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [], causalDiagnostic:null };
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -216,6 +226,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[]}:null;
+  const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
+  evidence.causalDiagnostic=diagnostic;
+  const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
+  const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
   const allTaskIds = canonical(Array.isArray(problem.tasks) ? problem.tasks : []).map(({ id }) => id);
   const fail = (status: Exclude<ExactMainAndFeederCoreStatus, "COMPLETE">, reasons: string[], coreIds: Set<string> = new Set()): ExactMainAndFeederCoreResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();
@@ -246,13 +261,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   if ([...anchoredIds].some((id) => !coreIds.has(id))) return fail("UNSUPPORTED_CORE_SHAPE", ["UNSUPPORTED_NON_MAIN_ANCHORED_OPERATION"], coreIds);
 
   let exhaustionReason = "BRANCH_BUDGET_EXHAUSTED";
-  const consumeBranch = (reason: string): boolean => {
+  const consumeBranch = (reason: string,category:ExactBranchCategory="OTHER",depth=0): boolean => {
     if (!ledger.consume("CORE")) { exhaustionReason = reason; return false; }
+    recordBranch(category,depth);
     evidence.branchesExplored = ledger.coreBranches;
     return true;
   };
+  let matchingDiagnosticDepth=0;
   const consumeMatchingBranch = (): boolean => {
-    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return false;
+    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",matchingDiagnosticDepth)) return false;
     evidence.residualMatchingBranchesExplored += 1;
     return true;
   };
@@ -264,12 +281,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
-  const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
-    meals: ScheduledSpaceMeal[]): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
-    if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+  const feederMainById=new Map([...feederByMain].map(([mainId,feeder])=>[feeder.id,mainId]));
+  const introducedBy=(id:string,placed:ScheduledTask[]):{mainTaskId:string|null;depth:number|null}=>{const direct=mains.some(x=>x.id===id)?id:feederMainById.get(id)??applicableContracts.find(c=>[...c.beforeTaskIds,...c.afterTaskIds].includes(id))?.anchorTaskId??null;if(!direct)return {mainTaskId:null,depth:null};return {mainTaskId:direct,depth:placed.filter(x=>x.kind==="main").findIndex(x=>x.id===direct)+1};};
+  const checkFeederStart = (choice:MainChoice, start: number, placed: ScheduledTask[], meals: ScheduledSpaceMeal[],depth:number): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
+    if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",depth)) return "BUDGET_EXHAUSTED";
     evidence.feederCandidatesEvaluated += 1;
     evidence.constructiveFeederStartChecks += 1;
-    return canPlaceTask(problem, feeder, start, [...placed, ...operation], meals) ? "VALID" : "INVALID";
+    const assessed=diagnostic?diagnoseTaskPlacement(problem,choice.feeder,start,[...placed,...choice.operation],meals):null;
+    const valid=assessed?assessed.valid:canPlaceTask(problem,choice.feeder,start,[...placed,...choice.operation],meals);
+    if(!valid&&diagnostic&&assessed?.firstRejectionReason){const blocker=assessed.blockingPlacedTaskId;const prior=blocker?introducedBy(blocker,placed):{mainTaskId:null,depth:null};const key=[depth,choice.task.id,choice.feeder.id,choice.task.participantId??"",assessed.firstRejectionReason,blocker??"",prior.depth??"",prior.mainTaskId??""].join("|");const existing=rejectionByKey.get(key);if(existing){existing.count++;existing.startsAttempted++;}else{const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,startsAttempted:1,firstRejectionReason:assessed.firstRejectionReason,blockingPlacedTaskId:blocker,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId,count:1};rejectionByKey.set(key,row);diagnostic.feederRejections.push(row);}}
+    return valid?"VALID":"INVALID";
   };
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
@@ -329,7 +350,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     for (const task of mains) {
       if (used.has(task.id) || task.blockKey !== pattern[depth]
         || !taskFitsRequiredCompositePosition(task, depth, requiredBlocks, composite)) continue;
-      if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+      if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED","MAIN_CANDIDATE",depth)) return "BUDGET_EXHAUSTED";
       evidence.mainCandidatesEvaluated += 1;
       const operation = materializeAnchoredOperation(problem, task, slot, placed, meals);
       const feeder = feederByMain.get(task.id)!;
@@ -360,6 +381,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     options.onMainChoicesRanked?.(Object.freeze([...baselineDescriptors]),
       Object.freeze(choices.map((choice) => descriptorById.get(choice.task.id)!)));
     for (const choice of choices) {
+      const feederRow=diagnostic?(diagnostic.feederByDepth[String(depth)]??={startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+      if(feederRow)feederRow.mainChoicesReachingFeeder++;
       options.onMainChoiceEntered?.(descriptorById.get(choice.task.id)!);
       const deadline = latestFeederEndBeforeMain(
         problem,
@@ -370,13 +393,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       );
       let validStartFound = false;
       for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
-        const startCheck = checkFeederStart(choice.feeder, start, choice.operation, placed, meals);
+        const startCheck = checkFeederStart(choice,start,placed,meals,depth);
         if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if(feederRow){feederRow.startsEvaluated++;if(startCheck==="VALID")feederRow.valid++;else feederRow.invalid++;}
         if (startCheck === "INVALID") continue;
+        if(!validStartFound&&feederRow)feederRow.mainChoicesWithValidFeeder++;
         validStartFound = true;
         const scheduledFeeder: ScheduledTask = { ...choice.feeder, start, end: start + choice.feeder.duration };
         const nextPlaced = [...placed, ...choice.operation, scheduledFeeder];
         const nextUsed = new Set(used).add(choice.task.id);
+        matchingDiagnosticDepth=depth;
         const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1,
           options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : certificate,
           choice.task.id, [...choice.operation, scheduledFeeder]);
@@ -391,7 +417,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           timelineKey }) ?? "CONTINUE";
         if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (partial === "REJECT") { evidence.backtracks += 1; continue; }
-        if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+        if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",depth)) return "BUDGET_EXHAUSTED";
         const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1, timelineKey,
           matching.certificate);
         if (child === "FOUND") { options.onMainChoiceAccepted?.(descriptorById.get(choice.task.id)!); return "FOUND"; }
@@ -559,6 +585,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, compositeAllowance);
     if (!ledger.consume("CORE", positionsResult.rawCombinationCount))
       return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+    recordBranch("OTHER",0,positionsResult.rawCombinationCount);
     evidence.branchesExplored = ledger.coreBranches;
     if (positionsResult.exhausted)
       return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);

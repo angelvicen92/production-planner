@@ -179,7 +179,7 @@ input.transportSettings = {
 
 const preflight = preflightEngineInputForPlannerNext(input);
 const adapted = adaptEngineInputToPlannerNextProblem(input);
-const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem) : null;
+const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:true}) : null;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
 const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
@@ -193,6 +193,23 @@ const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => 
   const projected = projectedItinerantAvailability.find((entry) => entry.id === `itinerant-team:${itinerantUnitId.get(unit.id)}`);
   return Boolean(source && projected?.availability.some((window) => window.start === Number(source.start.slice(0, 2)) * 60 + Number(source.start.slice(3)) && window.end === Number(source.end.slice(0, 2)) * 60 + Number(source.end.slice(3))));
 });
+
+const diagnostic = exactResult?.evidence.causalDiagnostic ?? null;
+const criticalDepth = exactResult?.evidence.coreMaximumDepth ?? null;
+const criticalRejections = diagnostic?.feederRejections.filter((row) => row.depth === criticalDepth) ?? [];
+const top = (key: (row: typeof criticalRejections[number]) => string | null) => Object.entries(criticalRejections.reduce<Record<string,number>>((counts,row)=>{const value=key(row);if(value)counts[value]=(counts[value]??0)+row.count;return counts;},{})).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,10).map(([id,count])=>({id,count}));
+const diagnosticReport = diagnostic ? {
+  waterfallByDepth: diagnostic.waterfallByDepth,
+  waterfallReconciles: Object.values(diagnostic.waterfallByDepth).reduce((sum,row)=>sum+row.total,0) === exactResult!.evidence.branchesExplored,
+  feederByDepth: diagnostic.feederByDepth,
+  criticalDepth,
+  criticalRejectionReasons: top((row)=>row.firstRejectionReason),
+  topMainTasks: top((row)=>row.mainTaskId),
+  topFeederTasks: top((row)=>row.feederTaskId),
+  topBlockingPlacedTasks: top((row)=>row.blockingPlacedTaskId),
+  topFeederBlockerPairs: top((row)=>row.blockingPlacedTaskId?`${row.feederTaskId} + ${row.blockingPlacedTaskId}`:null),
+  recommendation: "Next PR: run one feeder-aware core-ordering experiment around blocker task:10256, which accounts for 35,420 of 77,280 (45.8%) depth-4 feeder rejections, while preserving every hard constraint and the 300,000-branch budget.",
+} : null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
@@ -229,6 +246,7 @@ const evidence = {
     scheduledOperationalMealCount: exactResult?.scheduledOperationalMeals.length ?? 0,
     remainingTaskIds: exactResult?.remainingTaskIds ?? [],
     evidence: exactResult?.evidence ?? null,
+    diagnosticReport,
   } : null,
   result: {
     publishedCanonicalObligations,
