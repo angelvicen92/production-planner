@@ -378,40 +378,26 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
       const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
-        ...task,
-        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
+        ...task, dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
       }));
-      const deferredSetupSpaceIds = new Set(problem.spaces
-        .filter((space) => space.setupPolicy !== undefined
-          && !reducedTasks.some((task) => task.spaceId === space.id))
-        .map(({ id }) => id));
-      const reduced: PlannerNextProblem = {
-        ...problem,
-        tasks: reducedTasks,
+      const deferredSetupSpaceIds = new Set(problem.spaces.filter((space) => space.setupPolicy !== undefined
+        && !reducedTasks.some((task) => task.spaceId === space.id)).map(({ id }) => id));
+      const reduced: PlannerNextProblem = { ...problem, tasks: reducedTasks,
         spaces: problem.spaces.map((space) => deferredSetupSpaceIds.has(space.id)
-          ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined }
-          : space),
-        anchoredAccompaniments: applicableContracts,
-        roundSynchronizations: undefined,
-        participantMeals: undefined,
-        participantMealCapacity: undefined,
-        operationalMealPolicies: undefined,
-        transportPolicy: undefined,
-      };
-      const expected = [...coreIds].sort();
-      const actual = placed.map(({ id }) => id).sort();
+          ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space),
+        anchoredAccompaniments: applicableContracts, roundSynchronizations: undefined,
+        participantMeals: undefined, participantMealCapacity: undefined, operationalMealPolicies: undefined,
+        transportPolicy: undefined };
+      const expected = [...coreIds].sort(), actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
       const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
-      const reducedPlaced = placed.map((task) => ({
-        ...task,
-        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
-      }));
+      const reducedPlaced = placed.map((task) => ({ ...task,
+        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
       const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
       if (validShape && validation.hardValid) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
-        const ordered = placed.map((task) => ({
-          ...task,
+        const ordered = placed.map((task) => ({ ...task,
           dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
         })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
@@ -422,98 +408,137 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
       return "DEAD_END";
     }
-    const slot = slots[depth]!;
-    const choices: MainChoice[] = [];
-    for (const task of mains) {
-      if (used.has(task.id) || task.blockKey !== pattern[depth]
-        || !taskFitsRequiredCompositePosition(task, depth, requiredBlocks, composite)) continue;
-      if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED","MAIN_CANDIDATE",depth)) return "BUDGET_EXHAUSTED";
-      evidence.mainCandidatesEvaluated += 1;
-      const operation = materializeAnchoredOperation(problem, task, slot, placed, meals);
-      const feeder = feederByMain.get(task.id)!;
-      if (!operation) continue;
-      const departureDeadline = latestDepartureStart.get(task.participantId);
-      if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
-      const participant = problem.participants.find(({ id }) => id === task.participantId)!;
-      const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
-      const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start - start) + (end - operation.end))) : 0;
-      choices.push({ task, operation: operation.tasks, feeder, participantSlack: slack, firstObligation: operation.start });
-    }
-    choices.sort((a, b) => a.participantSlack - b.participantSlack
-      || a.firstObligation - b.firstObligation || a.task.id.localeCompare(b.task.id));
-    if (choices.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
-    const describe = (choice: MainChoice): ExactMainChoiceDescriptor => Object.freeze({
-      mainTask: readonlyTaskCopy(choice.task),
-      operationTasks: Object.freeze(choice.operation.map(readonlyTaskCopy)),
-      feeder: readonlyTaskCopy(choice.feeder),
-      placedTasks: Object.freeze(placed.map(readonlyTaskCopy)),
-      meals: Object.freeze(meals.map((meal) => Object.freeze({ ...meal }))),
-      slot, depth, pattern: Object.freeze([...pattern]), participantSlack: choice.participantSlack,
-      firstObligation: choice.firstObligation,
-    });
-    const descriptorById = new Map(choices.map((choice) => [choice.task.id, describe(choice)]));
-    const baselineDescriptors = choices.map((choice) => descriptorById.get(choice.task.id)!);
-    if (options.mainChoiceComparator) choices.sort((a, b) => options.mainChoiceComparator!(
-      descriptorById.get(a.task.id)!, descriptorById.get(b.task.id)!));
-    options.onMainChoicesRanked?.(Object.freeze([...baselineDescriptors]),
-      Object.freeze(choices.map((choice) => descriptorById.get(choice.task.id)!)));
-    for (const choice of choices) {
-      const feederRow=diagnostic?(diagnostic.feederByDepth[String(depth)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
-      if(feederRow)feederRow.mainChoicesReachingFeeder++;
-      options.onMainChoiceEntered?.(descriptorById.get(choice.task.id)!);
-      const deadline = latestFeederEndBeforeMain(
-        problem,
-        choice.feeder,
-        choice.task.spaceId,
-        slot,
-        choice.firstObligation,
-      );
-      let validStartFound = false;
-      const blockers = [...placed, ...choice.operation];
-      const startDomain = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
-        blockers, options.feederStartDomainMode);
-      if(diagnostic)for(const elimination of startDomain.eliminations){const current=choice.operation.some(({id})=>id===elimination.blockingPlacedTaskId);const prior=current?{mainTaskId:choice.task.id,depth:depth+1}:introducedBy(elimination.blockingPlacedTaskId,placed);const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,...elimination,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId};const key=[row.depth,row.mainTaskId,row.feederTaskId,row.participantId??"",row.reason,row.blockingPlacedTaskId,row.blockingDecisionDepth??"",row.blockingDecisionMainTaskId??""].join("|");const existing=eliminationByKey.get(key);if(existing)existing.startsEliminated+=row.startsEliminated;else{eliminationByKey.set(key,row);diagnostic.feederCoachDomainEliminations.push(row);}}
-      const starts = startDomain.starts((considered, eliminated) => {
-        if (feederRow) {
-          feederRow.startsConsidered += considered;
-          feederRow.startsCoachEliminated += eliminated;
-        }
-      });
-      for (const start of starts) {
-        const startCheck = checkFeederStart(choice,start,placed,meals,depth);
-        if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if(feederRow){feederRow.startsEvaluated++;if(startCheck==="VALID")feederRow.valid++;else feederRow.invalid++;}
-        if (startCheck === "INVALID") continue;
-        if(!validStartFound&&feederRow)feederRow.mainChoicesWithValidFeeder++;
-        validStartFound = true;
-        const scheduledFeeder: ScheduledTask = { ...choice.feeder, start, end: start + choice.feeder.duration };
-        const nextPlaced = [...placed, ...choice.operation, scheduledFeeder];
-        const nextUsed = new Set(used).add(choice.task.id);
-        matchingDiagnosticDepth=depth;
-        const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1,
-          options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : certificate,
-          choice.task.id, [...choice.operation, scheduledFeeder]);
-        if (matching.outcome === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (matching.outcome === "DEAD_END") {
-          evidence.residualMatchingPrunes += 1;
-          evidence.backtracks += 1;
-          continue;
-        }
-        const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced, addedTasks: [...choice.operation, scheduledFeeder],
-          meals, depth: depth + 1, mainTaskId: choice.task.id, feederStart: start, pattern: [...pattern],
-          timelineKey }) ?? "CONTINUE";
-        if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (partial === "REJECT") { evidence.backtracks += 1; continue; }
-        if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",depth)) return "BUDGET_EXHAUSTED";
-        const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1, timelineKey,
-          matching.certificate);
-        if (child === "FOUND") { options.onMainChoiceAccepted?.(descriptorById.get(choice.task.id)!); return "FOUND"; }
-        if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        evidence.backtracks += 1;
+
+    // A contiguous pattern run is the structural unit: choose and place every main first,
+    // then close the whole feeder cohort before exposing the candidate to secondary search.
+    let runEnd = depth + 1;
+    while (runEnd < pattern.length && pattern[runEnd] === pattern[depth]) runEnd += 1;
+    const descriptors: ExactMainChoiceDescriptor[] = [];
+
+    const assignMains = (position: number, blockPlaced: ScheduledTask[], blockUsed: Set<string>,
+      cohort: MainChoice[], blockCertificate: ResidualMatchingCertificate | undefined): SearchOutcome => {
+      evidence.maximumDepth = Math.max(evidence.maximumDepth, position);
+      if (position === runEnd) {
+        const blockOperations = cohort.flatMap(({ operation }) => operation);
+        const scheduleFeeders = (scheduled: ScheduledTask[], remaining: MainChoice[]): SearchOutcome => {
+          if (remaining.length === 0) {
+            const nextPlaced = [...blockPlaced, ...scheduled];
+            matchingDiagnosticDepth=runEnd;
+            const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd,
+              options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
+              cohort.at(-1)!.task.id, scheduled);
+            if (matching.outcome !== "FOUND") {
+              if (matching.outcome === "DEAD_END") { evidence.residualMatchingPrunes += 1; evidence.backtracks += 1; }
+              return matching.outcome;
+            }
+            const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced,
+              addedTasks: [...blockOperations, ...scheduled], meals, depth: runEnd,
+              mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
+              pattern: [...pattern], timelineKey }) ?? "CONTINUE";
+            if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+            if (partial === "REJECT") { evidence.backtracks += 1; return "DEAD_END"; }
+            if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
+            const child = search(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd, timelineKey,
+              matching.certificate);
+            if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
+            else if (child === "DEAD_END") evidence.backtracks += 1;
+            return child;
+          }
+          const firstMainStart = Math.min(...blockOperations.map(({ start }) => start));
+          const ranked = remaining.map((choice) => {
+            const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId,
+              firstMainStart, firstMainStart);
+            const blockers = [...blockPlaced, ...blockOperations, ...scheduled];
+            const domain = exactFeederStartDomain(problem, choice.feeder,
+              deadline - choice.feeder.duration, blockers, options.feederStartDomainMode);
+            return { choice, domain };
+          }).sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount
+            || a.choice.task.id.localeCompare(b.choice.task.id));
+          const { choice, domain: startDomain } = ranked[0]!;
+          if (diagnostic) for (const elimination of startDomain.eliminations) {
+            const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations, ...scheduled]);
+            const row: ExactFeederCoachDomainElimination = {
+              depth: position,
+              mainTaskId: choice.task.id,
+              feederTaskId: choice.feeder.id,
+              participantId: choice.task.participantId ?? null,
+              ...elimination,
+              blockingDecisionDepth: prior.depth && prior.depth > 0 ? prior.depth : null,
+              blockingDecisionMainTaskId: prior.mainTaskId,
+            };
+            const key = [row.depth, row.mainTaskId, row.feederTaskId, row.participantId ?? "", row.reason,
+              row.blockingPlacedTaskId, row.blockingDecisionDepth ?? "", row.blockingDecisionMainTaskId ?? ""].join("|");
+            const existing = eliminationByKey.get(key);
+            if (existing) existing.startsEliminated += row.startsEliminated;
+            else { eliminationByKey.set(key, row); diagnostic.feederCoachDomainEliminations.push(row); }
+          }
+          const feederRow=diagnostic?(diagnostic.feederByDepth[String(position)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+          if(feederRow)feederRow.mainChoicesReachingFeeder++;
+          let validStartFound = false;
+          const starts = startDomain.starts((considered, eliminated) => {
+            if (feederRow) { feederRow.startsConsidered += considered; feederRow.startsCoachEliminated += eliminated; }
+          });
+          for (const start of starts) {
+            const check = checkFeederStart(choice,start,[...blockPlaced,...blockOperations,...scheduled],meals,position);
+            if (check === "BUDGET_EXHAUSTED") return check;
+            if(feederRow){feederRow.startsEvaluated++;if(check==="VALID")feederRow.valid++;else feederRow.invalid++;}
+            if (check === "INVALID") continue;
+            if (!validStartFound && feederRow) feederRow.mainChoicesWithValidFeeder++;
+            validStartFound = true;
+            const feeder = { ...choice.feeder, start, end: start + choice.feeder.duration };
+            const child = scheduleFeeders([...scheduled, feeder], remaining.filter(({ task }) => task.id !== choice.task.id));
+            if (child !== "DEAD_END") return child;
+            evidence.backtracks += 1;
+          }
+          if (!validStartFound) evidence.zeroAlternativePrunes += 1;
+          return "DEAD_END";
+        };
+        return scheduleFeeders([], cohort);
       }
-      if (!validStartFound) evidence.zeroAlternativePrunes += 1;
-    }
-    return "DEAD_END";
+
+      const slot = slots[position]!, choices: MainChoice[] = [];
+      for (const task of mains) {
+        if (blockUsed.has(task.id) || task.blockKey !== pattern[position]
+          || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
+        if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED","MAIN_CANDIDATE",position)) return "BUDGET_EXHAUSTED";
+        evidence.mainCandidatesEvaluated += 1;
+        const operation = materializeAnchoredOperation(problem, task, slot, blockPlaced, meals);
+        if (!operation) continue;
+        const departureDeadline = latestDepartureStart.get(task.participantId);
+        if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
+        const participant = problem.participants.find(({ id }) => id === task.participantId)!;
+        const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
+        const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start-start)+(end-operation.end))) : 0;
+        choices.push({ task, operation: operation.tasks, feeder: feederByMain.get(task.id)!, participantSlack: slack,
+          firstObligation: operation.start });
+      }
+      choices.sort((a,b)=>a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation||a.task.id.localeCompare(b.task.id));
+      if (choices.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
+      const describe = (choice: MainChoice): ExactMainChoiceDescriptor => Object.freeze({
+        mainTask: readonlyTaskCopy(choice.task), operationTasks:Object.freeze(choice.operation.map(readonlyTaskCopy)),
+        feeder:readonlyTaskCopy(choice.feeder), placedTasks:Object.freeze(blockPlaced.map(readonlyTaskCopy)),
+        meals:Object.freeze(meals.map(meal=>Object.freeze({...meal}))), slot, depth:position,
+        pattern:Object.freeze([...pattern]), participantSlack:choice.participantSlack, firstObligation:choice.firstObligation });
+      const byId=new Map(choices.map(choice=>[choice.task.id,describe(choice)]));
+      const baseline=choices.map(choice=>byId.get(choice.task.id)!);
+      if(options.mainChoiceComparator)choices.sort((a,b)=>options.mainChoiceComparator!(byId.get(a.task.id)!,byId.get(b.task.id)!));
+      options.onMainChoicesRanked?.(Object.freeze([...baseline]),Object.freeze(choices.map(choice=>byId.get(choice.task.id)!)));
+      for(const choice of choices){
+        const descriptor=byId.get(choice.task.id)!; options.onMainChoiceEntered?.(descriptor); descriptors.push(descriptor);
+        const nextPlaced=[...blockPlaced,...choice.operation], nextUsed=new Set(blockUsed).add(choice.task.id);
+        matchingDiagnosticDepth=position;
+        const matching=residualMatching(pattern,slots,composite,meals,nextPlaced,nextUsed,position+1,
+          options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
+          choice.task.id,choice.operation);
+        if(matching.outcome === "BUDGET_EXHAUSTED") return matching.outcome;
+        if(matching.outcome === "DEAD_END") { evidence.residualMatchingPrunes += 1; evidence.backtracks += 1; descriptors.pop(); continue; }
+        const child=assignMains(position+1,nextPlaced,nextUsed,[...cohort,choice],matching.certificate);
+        if(child!=="DEAD_END")return child;
+        descriptors.pop(); evidence.backtracks+=1;
+      }
+      return "DEAD_END";
+    };
+    return assignMains(depth, placed, used, [], certificate);
   };
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,

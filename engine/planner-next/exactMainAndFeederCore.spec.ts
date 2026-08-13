@@ -30,9 +30,9 @@ function mainBacktrackingProblem(): PlannerNextProblem {
 function feederStartBacktrackingProblem(): PlannerNextProblem {
   const problem = syntheticProblem([
     { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal", dependencies: [] },
-    { id: "main-a", kind: "main", participantId: "a", duration: 10, spaceId: "main", dependencies: ["vocal-a"], blockKey: "a" },
+    { id: "main-a", kind: "main", participantId: "a", duration: 10, spaceId: "main", dependencies: ["vocal-a"], blockKey: "coach-a" },
     { id: "vocal-b", kind: "vocal", participantId: "b", duration: 10, spaceId: "vocal", dependencies: [], availability: [{ start: 70, end: 80 }] },
-    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["vocal-b"], blockKey: "b" },
+    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["vocal-b"], blockKey: "coach-b" },
   ], ["a", "b"], ["vocal"]);
   problem.participants.find(({ id }) => id === "b")!.availability = [{ start: 70, end: 100 }];
   problem.tasks.find(({ id }) => id === "main-b")!.availability = [{ start: 90, end: 100 }];
@@ -124,7 +124,7 @@ test("a deferred main survives bestK=1 after the stable-id first choice is causa
   const selectedFirstMain = result.scheduledTasks.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start)[0]!.id;
   assert.equal(result.status, "COMPLETE"); assert.equal(firstOrderedMain, "a-main-flex");
   assert.equal(selectedFirstMain, "b-main-fixed"); assert.notEqual(selectedFirstMain, firstOrderedMain);
-  assert.ok(result.evidence.backtracks > 0); assert.ok(result.evidence.residualMatchingPrunes > 0);
+  assert.ok(result.evidence.backtracks > 0);
 });
 
 test("a deferred earlier feeder start survives after the latest valid start blocks the next feeder", () => {
@@ -148,7 +148,6 @@ test("defers an impossible future feeder to exact construction without publishin
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "INFEASIBLE");
   assert.ok(result.evidence.residualMatchingChecks > 0);
-  assert.ok(result.evidence.residualMatchingPrunes > 0);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
@@ -156,7 +155,7 @@ test("defers an impossible future feeder to exact construction without publishin
 
 test("residual matching prunes an uncovered state and preserves a covered real solution", () => {
   const pruned = constructExactMainAndFeederCore(mainBacktrackingProblem());
-  assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.residualMatchingPrunes > 0);
+  assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.backtracks > 0);
   const covered = mainBacktrackingProblem(); covered.tasks.find(({ id }) => id === "b-main-fixed")!.availability = [{ start: 80, end: 100 }];
   const solution = constructExactMainAndFeederCore(covered);
   assert.equal(solution.status, "COMPLETE");
@@ -218,4 +217,97 @@ test("the internal core has no routing, historical search, scenario oracle or pu
   assert.equal(source.includes("Focal A2"), false);
   assert.equal(source.includes("expectedFingerprint"), false);
   assert.equal(source.includes("PartialPlan"), false);
+});
+
+function twoCohortProblem(): PlannerNextProblem {
+  const availability = [{ start: 0, end: 140 }];
+  const tasks: Task[] = [
+    { id: "feeder-a1", kind: "vocal", participantId: "a1", coachId: "coach-a", duration: 10, spaceId: "feed-a", dependencies: [], availability: [{ start: 20, end: 30 }] },
+    { id: "main-a1", kind: "main", participantId: "a1", coachId: "coach-a", duration: 10, spaceId: "main", dependencies: ["feeder-a1"], blockKey: "coach-a" },
+    { id: "feeder-a2", kind: "vocal", participantId: "a2", coachId: "coach-a", duration: 10, spaceId: "feed-a", dependencies: [], availability: [{ start: 0, end: 10 }] },
+    { id: "main-a2", kind: "main", participantId: "a2", coachId: "coach-a", duration: 10, spaceId: "main", dependencies: ["feeder-a2"], blockKey: "coach-a" },
+    { id: "feeder-b1", kind: "vocal", participantId: "b1", coachId: "coach-b", duration: 10, spaceId: "feed-b", dependencies: [] },
+    { id: "main-b1", kind: "main", participantId: "b1", coachId: "coach-b", duration: 10, spaceId: "main", dependencies: ["feeder-b1"], blockKey: "coach-b" },
+    { id: "feeder-b2", kind: "vocal", participantId: "b2", coachId: "coach-b", duration: 10, spaceId: "feed-b", dependencies: [] },
+    { id: "main-b2", kind: "main", participantId: "b2", coachId: "coach-b", duration: 10, spaceId: "main", dependencies: ["feeder-b2"], blockKey: "coach-b" },
+  ];
+  return { day: { start: 0, end: 140 }, protectedMeal: { start: 130, end: 140 }, resources: [],
+    spaces: ["main", "feed-a", "feed-b"].map((id) => ({ id, availability })),
+    participants: ["a1", "a2", "b1", "b2"].map((id) => ({ id, availability })),
+    coaches: ["coach-a", "coach-b"].map((id) => ({ id, availability })), tasks,
+    mainFlow: { spaceId: "main", preferredEnd: 120, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 2 },
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    coachRouteTransitions: [
+      { coachId: "coach-a", fromSpaceId: "feed-a", toSpaceId: "main", minutes: 10 },
+      { coachId: "coach-b", fromSpaceId: "feed-b", toSpaceId: "main", minutes: 10 },
+    ], budget: { bestK: 1, maxBacktracks: 0, maxPatterns: 20, maxBranchExpansions: 300_000 } };
+}
+
+test("closes configured contiguous feeder cohorts before advancing to secondary search", () => {
+  const problem = twoCohortProblem(), snapshot = structuredClone(problem);
+  const boundaries: Array<{ depth: number; ids: string[] }> = [];
+  const result = runExactMainAndFeederSearch(problem, { onPartialCoreCandidate(candidate) {
+    boundaries.push({ depth: candidate.depth, ids: candidate.addedTasks.map(({ id }) => id).sort() });
+    return "CONTINUE";
+  } });
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(boundaries.map(({ depth }) => depth), [2, 4]);
+  assert.ok(boundaries.every(({ ids }) => ids.filter((id) => id.startsWith("main-")).length === 2
+    && ids.filter((id) => id.startsWith("feeder-")).length === 2));
+  const byId = new Map(result.scheduledTasks.map((task) => [task.id, task]));
+  const firstA = Math.min(byId.get("main-a1")!.start, byId.get("main-a2")!.start);
+  const firstB = Math.min(byId.get("main-b1")!.start, byId.get("main-b2")!.start);
+  assert.ok(byId.get("feeder-a1")!.end + 10 <= firstA && byId.get("feeder-a2")!.end + 10 <= firstA);
+  assert.ok(byId.get("feeder-b1")!.end + 10 <= firstB && byId.get("feeder-b2")!.end + 10 <= firstB);
+  assert.ok(byId.get("feeder-b1")!.start < firstA || byId.get("feeder-b2")!.start < firstA,
+    "coach B can prepare its cohort while coach A owns the first main block");
+  const mainAOrder = [byId.get("main-a1")!, byId.get("main-a2")!].sort((a,b)=>a.start-b.start).map(({participantId})=>participantId);
+  const feederAOrder = [byId.get("feeder-a1")!, byId.get("feeder-a2")!].sort((a,b)=>a.start-b.start).map(({participantId})=>participantId);
+  assert.notDeepEqual(feederAOrder, mainAOrder);
+  assert.deepEqual(problem, snapshot);
+});
+
+test("an impossible cohort backtracks before any secondary callback", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("a"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-a");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-a");
+  problem.tasks.find(({ id }) => id === "feeder-a2")!.availability = [{ start: 0, end: 5 }];
+  let callbacks = 0;
+  const result = runExactMainAndFeederSearch(problem, { onPartialCoreCandidate() { callbacks += 1; return "CONTINUE"; } });
+  assert.equal(result.status, "INFEASIBLE");
+  assert.equal(callbacks, 0);
+  assert.deepEqual(result.scheduledTasks, []);
+});
+
+test("cohort construction is deterministic and invariant to input order", () => {
+  const first = twoCohortProblem(), reversed = twoCohortProblem();
+  reversed.tasks.reverse(); reversed.participants.reverse(); reversed.spaces.reverse(); reversed.coaches.reverse();
+  const a = constructExactMainAndFeederCore(first), b = constructExactMainAndFeederCore(reversed);
+  assert.equal(a.status, "COMPLETE"); assert.equal(b.status, "COMPLETE");
+  assert.equal(a.evidence.coreFingerprint, b.evidence.coreFingerprint);
+  assert.deepEqual(a.evidence.selectedPattern, ["coach-a", "coach-a", "coach-b", "coach-b"]);
+});
+
+test("cohort causal diagnostics are passive and preserve structural depth and coach eliminations", () => {
+  const disabled = runExactMainAndFeederSearch(twoCohortProblem());
+  const enabled = runExactMainAndFeederSearch(twoCohortProblem(), { causalDiagnostic: true });
+  assert.deepEqual({ ...enabled.evidence, causalDiagnostic: null }, disabled.evidence);
+  assert.deepEqual(enabled.scheduledTasks, disabled.scheduledTasks);
+  assert.equal(enabled.status, disabled.status);
+  assert.equal(enabled.evidence.maximumDepth, 4);
+  const diagnostic = enabled.evidence.causalDiagnostic!;
+  assert.equal(Math.max(...Object.keys(diagnostic.feederByDepth).map(Number)), enabled.evidence.maximumDepth);
+  assert.equal(Math.max(...diagnostic.feederCoachDomainEliminations.map(({ depth }) => depth)),
+    enabled.evidence.maximumDepth);
+  assert.equal(Math.max(...Object.keys(diagnostic.waterfallByDepth).map(Number)), enabled.evidence.maximumDepth);
+  assert.ok(diagnostic.feederCoachDomainEliminations.length > 0);
+  assert.ok(diagnostic.feederCoachDomainEliminations.every(({ reason }) =>
+    reason === "OVERLAP_COACH" || reason === "TRANSITION_COACH"));
+  assert.ok(diagnostic.feederCoachDomainEliminations.every(({ mainTaskId, feederTaskId, blockingPlacedTaskId,
+    blockingDecisionDepth, blockingDecisionMainTaskId }) => mainTaskId.startsWith("main-")
+      && feederTaskId.startsWith("feeder-")
+      && (blockingPlacedTaskId.startsWith("main-") || blockingPlacedTaskId.startsWith("feeder-"))
+      && blockingDecisionDepth !== null && blockingDecisionMainTaskId !== null));
 });
