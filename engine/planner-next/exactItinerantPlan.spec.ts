@@ -128,7 +128,7 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   const integrated = constructExactItinerantPlan(input);
   assert.equal(integrated.status, "COMPLETE"); assert.ok(integrated.evidence.standaloneForwardPrunes > 0);
   assert.equal(integrated.evidence.coreLeavesRejectedByStandalone, 0);
-  assert.ok(integrated.evidence.firstStandaloneForwardPruneDepth! < integrated.evidence.coreMaximumDepth);
+  assert.equal(integrated.evidence.firstStandaloneForwardPruneDepth, integrated.evidence.coreMaximumDepth);
   assert.equal(integrated.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
   assert.equal(integrated.evidence.standaloneSearchInvocations, 1);
   assert.notEqual(integrated.scheduledTasks.find(({ id }) => id === "vocal")!.start,
@@ -137,7 +137,7 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
 });
 
-test("the last accumulating core occupation is recorded when it removes a prior witness", () => {
+test("secondary feasibility runs only after the accumulating core cohort is closed", () => {
   const input = problem([auxiliary("standalone", "standalone-person", [{ start: 80, end: 105 }], ["unit"])]);
   const availability = [{ start: 0, end: 120 }];
   input.participants.push({ id: "other", availability }); input.spaces.push({ id: "vocal-other", availability });
@@ -149,7 +149,7 @@ test("the last accumulating core occupation is recorded when it removes a prior 
       spaceId: "main", dependencies: ["vocal-other"], blockKey: "coach", requiredResourceIds: ["unit"] },
   );
   const result = constructExactItinerantPlan(input);
-  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.standaloneForwardWitnessesFound > 0);
+  assert.equal(result.status, "INFEASIBLE"); assert.equal(result.evidence.standaloneForwardWitnessesFound, 0);
   assert.ok((result.evidence.standaloneForwardPrunesByDepth["2"] ?? 0) > 0);
   assert.equal(result.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
   assert.ok(result.evidence.lastStandaloneForwardCausingCoreTaskIds.some((id) => id.startsWith("main")));
