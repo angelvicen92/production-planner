@@ -122,6 +122,9 @@ test("certificate derivation is sibling-isolated, deterministic, order-invariant
       + evidence.residualMatchingAugmentTraversals);
   assert.ok(evidence.residualMatchingIncrementalUpdates > 0);
   assert.ok(evidence.residualMatchingRepairs > 0);
+  assert.equal(evidence.residualMatchingFullBuilds, 1);
+  assert.equal(evidence.residualMatchingRepairFailures, 0);
+  assert.ok(evidence.branchesExplored < parent.budget.maxBranchExpansions);
 });
 
 test("matching budget exhaustion is atomic and every paid unit reaches the shared ledger", () => {

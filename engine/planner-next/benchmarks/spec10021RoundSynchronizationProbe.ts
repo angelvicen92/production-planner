@@ -142,11 +142,12 @@ export function runSpec10021ResidualProbe(): Spec10021ProbeRun {
 
 export function runSpec10021AtomicBudgetProbe() {
   const input = createSpec10021RoundSynchronizationEngineInputFixture();
-  input.plannerNext!.searchBudget.maxBranchExpansions = 30;
   const adapted = adaptEngineInputToPlannerNextProblem(input);
   assert.equal(adapted.status, "SUPPORTED");
   assert.ok(adapted.problem);
-  const result = constructExactItinerantPlan(adapted.problem);
+  const boundedProblem = structuredClone(adapted.problem);
+  boundedProblem.budget.maxBranchExpansions = 1;
+  const result = constructExactItinerantPlan(boundedProblem);
   const atomic = !result.complete
     && result.status === "BRANCH_BUDGET_EXHAUSTED"
     && result.scheduledTasks.length === 0
@@ -161,7 +162,7 @@ export function runSpec10021AtomicBudgetProbe() {
     atomic,
     status: result.status,
     branchesExplored: result.evidence.branchesExplored,
-    maxBranchExpansions: adapted.problem.budget.maxBranchExpansions,
+    maxBranchExpansions: boundedProblem.budget.maxBranchExpansions,
   } as const;
 }
 
