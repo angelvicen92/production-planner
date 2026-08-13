@@ -23,6 +23,7 @@ import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationE
 import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey } from "./technicalChains";
+import { protectedMealBlocksSpace } from "./spaceMeals";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -61,6 +62,8 @@ export interface ExactItinerantPlanEvidence {
   standaloneForwardBlockingTaskCounts: Record<string, number>;
   standaloneForwardPrunesByDepth: Record<string, number>;
   standaloneForwardImpactedTaskChecks: number;
+  standaloneForwardStaticEligibleStarts: number;
+  standaloneForwardStaticEliminatedStarts: number;
   standaloneLeafSearchBranches: number;
   standaloneForwardBranches: number;
   firstStandaloneForwardPruneDepth: number | null;
@@ -141,11 +144,95 @@ export interface ExactItinerantPlanResult {
 
 type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
+export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
+type ClosedStartInterval = { start: number; end: number };
+export interface StandaloneForwardStaticDomain {
+  readonly intervals: ReadonlyArray<Readonly<ClosedStartInterval>>;
+  readonly eligibleStartCount: number;
+  starts(): Generator<number, void, undefined>;
+}
 interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; roundPreparations: ScheduledRoundPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null; operationalMeals: OperationalMealWitness | null }
 
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
 const orderScheduled = (tasks: ScheduledTask[]): ScheduledTask[] =>
   [...tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+
+function intersectStartDomains(left: ClosedStartInterval[], right: ClosedStartInterval[]): ClosedStartInterval[] {
+  const intersections: ClosedStartInterval[] = [];
+  for (const a of left) for (const b of right) {
+    const start = Math.max(a.start, b.start), end = Math.min(a.end, b.end);
+    if (start <= end) intersections.push({ start, end });
+  }
+  return intersections.sort((a, b) => a.start - b.start || a.end - b.end);
+}
+
+function subtractBlockedInterval(domain: ClosedStartInterval[], blocked: { start: number; end: number }, duration: number): ClosedStartInterval[] {
+  const beforeEnd = blocked.start - duration, afterStart = blocked.end;
+  return domain.flatMap((interval) => {
+    const result: ClosedStartInterval[] = [];
+    if (interval.start <= Math.min(interval.end, beforeEnd)) result.push({ start: interval.start, end: Math.min(interval.end, beforeEnd) });
+    if (Math.max(interval.start, afterStart) <= interval.end) result.push({ start: Math.max(interval.start, afterStart), end: interval.end });
+    return result;
+  });
+}
+
+function windowStartDomain(windows: Array<{ start: number; end: number }>, duration: number): ClosedStartInterval[] {
+  return windows.filter(({ start, end }) => start + duration <= end).map(({ start, end }) => ({ start, end: end - duration }));
+}
+
+function mergeStartIntervals(intervals: ClosedStartInterval[]): ClosedStartInterval[] {
+  const merged: ClosedStartInterval[] = [];
+  for (const interval of [...intervals].sort((a, b) => a.start - b.start || a.end - b.end)) {
+    const previous = merged.at(-1);
+    if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+    else merged.push({ ...interval });
+  }
+  return merged;
+}
+
+function firstGridStart(dayStart: number, intervalStart: number): number {
+  return dayStart + Math.max(0, Math.ceil((intervalStart - dayStart) / 5)) * 5;
+}
+
+/** Exact placed-independent interval domain with a lazy projection onto the original day-relative grid. */
+export function standaloneForwardStaticDomain(problem: PlannerNextProblem, task: Task,
+  scheduledSpaceMeals: ScheduledSpaceMeal[] = []): StandaloneForwardStaticDomain {
+  const participant = task.kind === "technical" ? undefined : problem.participants.find(({ id }) => id === task.participantId);
+  const coach = task.kind === "technical" || task.coachId === undefined ? undefined : problem.coaches.find(({ id }) => id === task.coachId);
+  const space = problem.spaces.find(({ id }) => id === task.spaceId);
+  const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
+  const unit = task.itinerantUnitId === undefined ? undefined : problem.itinerantUnits?.find(({ id }) => id === task.itinerantUnitId);
+  if ((task.kind !== "technical" && !participant) || (task.coachId !== undefined && !coach) || !space
+    || resources.some((resource) => !resource) || (task.itinerantUnitId !== undefined && !unit))
+    return { intervals: [], eligibleStartCount: 0, *starts() {} };
+  let domain: ClosedStartInterval[] = [{ start: problem.day.start, end: problem.day.end - task.duration }];
+  const availabilities = [task.availability, participant?.availability, coach?.availability, space.availability,
+    ...resources.map((resource) => resource!.availability), unit?.availability]
+    .filter((windows): windows is Array<{ start: number; end: number }> => windows !== undefined);
+  for (const windows of availabilities) domain = intersectStartDomains(domain, windowStartDomain(windows, task.duration));
+  const blocked = [
+    ...(problem.protectedMeal && protectedMealBlocksSpace(problem, task.spaceId) ? [problem.protectedMeal] : []),
+    ...(problem.itinerantUnitMeals ?? []).filter((meal) => meal.itinerantUnitId === task.itinerantUnitId).map(({ interval }) => interval),
+    ...scheduledSpaceMeals.filter((meal) => meal.spaceId === task.spaceId
+      || resources.some((resource) => resource!.assignedSpaceId === meal.spaceId)),
+  ];
+  for (const interval of blocked) domain = subtractBlockedInterval(domain, interval, task.duration);
+  const intervals = mergeStartIntervals(domain);
+  const eligibleStartCount = intervals.reduce((count, interval) => {
+    const first = firstGridStart(problem.day.start, interval.start);
+    return count + (first <= interval.end ? Math.floor((interval.end - first) / 5) + 1 : 0);
+  }, 0);
+  return {
+    intervals,
+    eligibleStartCount,
+    *starts() {
+      for (const interval of intervals) {
+        const first = firstGridStart(problem.day.start, interval.start);
+        for (let start = first; start <= interval.end; start += 5) yield start;
+      }
+    },
+  };
+}
 
 function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
   const participant = task.kind === "technical" ? undefined : problem.participants.find(({ id }) => id === task.participantId);
@@ -498,6 +585,8 @@ return { outcome, tasks: found, preparations: foundPreparations, roundPreparatio
 export interface ExactItinerantPlanSearchOptions {
   coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted">;
   standaloneCompletionSelection?: StandaloneCompletionSelection;
+  /** Test oracle only; production always uses the exact analytic static domain. */
+  standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -512,6 +601,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
     standaloneForwardImpactedTaskChecks: 0, standaloneLeafSearchBranches: 0, standaloneForwardBranches: 0,
+    standaloneForwardStaticEligibleStarts: 0, standaloneForwardStaticEliminatedStarts: 0,
     firstStandaloneForwardPruneDepth: null, lastStandaloneForwardPruneDepth: null,
     lastStandaloneForwardBlockingTaskId: null, lastStandaloneForwardCausingCoreTaskIds: [],
     lastStandaloneForwardCausingMainTaskId: null, lastStandaloneForwardCausingFeederStart: null,
@@ -556,7 +646,14 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     for (const task of impacted) {
       evidence.standaloneForwardImpactedTaskChecks += 1;
       let witness = false;
-      for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
+      const fullGridCount = Math.max(0, Math.floor((problem.day.end - task.duration - problem.day.start) / 5) + 1);
+      const staticDomain = standaloneForwardStaticDomain(problem, task, candidate.meals);
+      evidence.standaloneForwardStaticEligibleStarts += staticDomain.eligibleStartCount;
+      evidence.standaloneForwardStaticEliminatedStarts += fullGridCount - staticDomain.eligibleStartCount;
+      const starts = options.standaloneForwardStartDomainMode === "FULL_GRID"
+        ? Array.from({ length: fullGridCount }, (_, index) => problem.day.start + index * 5)
+        : staticDomain.starts();
+      for (const start of starts) {
         if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
         evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
         if (canPlaceTask(problem, task, start, candidate.tasks, candidate.meals)) { witness = true; break; }
