@@ -289,3 +289,21 @@ test("cohort construction is deterministic and invariant to input order", () => 
   assert.equal(a.evidence.coreFingerprint, b.evidence.coreFingerprint);
   assert.deepEqual(a.evidence.selectedPattern, ["coach-a", "coach-a", "coach-b", "coach-b"]);
 });
+
+test("cohort causal diagnostics are passive and preserve structural depth and coach eliminations", () => {
+  const disabled = runExactMainAndFeederSearch(twoCohortProblem());
+  const enabled = runExactMainAndFeederSearch(twoCohortProblem(), { causalDiagnostic: true });
+  assert.deepEqual({ ...enabled.evidence, causalDiagnostic: null }, disabled.evidence);
+  assert.deepEqual(enabled.scheduledTasks, disabled.scheduledTasks);
+  assert.equal(enabled.status, disabled.status);
+  assert.equal(enabled.evidence.maximumDepth, 4);
+  const diagnostic = enabled.evidence.causalDiagnostic!;
+  assert.ok(diagnostic.feederCoachDomainEliminations.length > 0);
+  assert.ok(diagnostic.feederCoachDomainEliminations.every(({ reason }) =>
+    reason === "OVERLAP_COACH" || reason === "TRANSITION_COACH"));
+  assert.ok(diagnostic.feederCoachDomainEliminations.every(({ mainTaskId, feederTaskId, blockingPlacedTaskId,
+    blockingDecisionDepth, blockingDecisionMainTaskId }) => mainTaskId.startsWith("main-")
+      && feederTaskId.startsWith("feeder-")
+      && (blockingPlacedTaskId.startsWith("main-") || blockingPlacedTaskId.startsWith("feeder-"))
+      && blockingDecisionDepth !== null && blockingDecisionMainTaskId !== null));
+});

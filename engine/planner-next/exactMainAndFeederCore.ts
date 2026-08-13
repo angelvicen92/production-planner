@@ -417,6 +417,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
     const assignMains = (position: number, blockPlaced: ScheduledTask[], blockUsed: Set<string>,
       cohort: MainChoice[], blockCertificate: ResidualMatchingCertificate | undefined): SearchOutcome => {
+      evidence.maximumDepth = Math.max(evidence.maximumDepth, Math.min(position, runEnd - 1));
       if (position === runEnd) {
         const blockOperations = cohort.flatMap(({ operation }) => operation);
         const scheduleFeeders = (scheduled: ScheduledTask[], remaining: MainChoice[]): SearchOutcome => {
@@ -454,6 +455,23 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }).sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount
             || a.choice.task.id.localeCompare(b.choice.task.id));
           const { choice, domain: startDomain } = ranked[0]!;
+          if (diagnostic) for (const elimination of startDomain.eliminations) {
+            const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations, ...scheduled]);
+            const row: ExactFeederCoachDomainElimination = {
+              depth: position - 1,
+              mainTaskId: choice.task.id,
+              feederTaskId: choice.feeder.id,
+              participantId: choice.task.participantId ?? null,
+              ...elimination,
+              blockingDecisionDepth: prior.depth && prior.depth > 0 ? prior.depth : null,
+              blockingDecisionMainTaskId: prior.mainTaskId,
+            };
+            const key = [row.depth, row.mainTaskId, row.feederTaskId, row.participantId ?? "", row.reason,
+              row.blockingPlacedTaskId, row.blockingDecisionDepth ?? "", row.blockingDecisionMainTaskId ?? ""].join("|");
+            const existing = eliminationByKey.get(key);
+            if (existing) existing.startsEliminated += row.startsEliminated;
+            else { eliminationByKey.set(key, row); diagnostic.feederCoachDomainEliminations.push(row); }
+          }
           const feederRow=diagnostic?(diagnostic.feederByDepth[String(position-1)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
           if(feederRow)feederRow.mainChoicesReachingFeeder++;
           let validStartFound = false;
