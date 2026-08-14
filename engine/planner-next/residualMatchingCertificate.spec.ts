@@ -14,21 +14,50 @@ const scheduled = (overrides: Partial<ScheduledTask> = {}): ScheduledTask => ({
   requiredResourceIds: ["resource-edge"], ...overrides,
 });
 
-test("residual edge invalidation covers every dynamic authority in both dependency directions", () => {
+test("same-space separated intervals are cacheable while real authority overlap invalidates", () => {
+  const problem = mainFlowVocalScenario();
   const edge = scheduled();
-  assert.equal(residualMatchingOperationsMayInteract([edge], [scheduled({ id: "added", participantId: edge.participantId, spaceId: "other", coachId: "other", requiredResourceIds: [] })]), true);
-  assert.equal(residualMatchingOperationsMayInteract([edge], [scheduled({ id: "added", participantId: "other", spaceId: "other", coachId: edge.coachId, requiredResourceIds: [] })]), true);
-  assert.equal(residualMatchingOperationsMayInteract([edge], [scheduled({ id: "added", participantId: "other", spaceId: edge.spaceId, coachId: "other", requiredResourceIds: [] })]), true);
-  assert.equal(residualMatchingOperationsMayInteract([edge], [scheduled({ id: "added", participantId: "other", spaceId: "other", coachId: "other", requiredResourceIds: edge.requiredResourceIds })]), true);
-  assert.equal(residualMatchingOperationsMayInteract([edge], [scheduled({ id: "added", participantId: "other", spaceId: "other", coachId: "other", requiredResourceIds: [], dependencies: [edge.id] })]), true);
-  assert.equal(residualMatchingOperationsMayInteract([{ ...edge, dependencies: ["added"] }], [scheduled({ id: "added", participantId: "other", spaceId: "other", coachId: "other", requiredResourceIds: [] })]), true);
+  const separated = scheduled({ id: "added", start: 30, end: 35 });
+  assert.equal(residualMatchingOperationsMayInteract(problem, [edge], [separated]), false);
+  assert.equal(residualMatchingOperationsMayInteract(problem, [edge], [{ ...separated, start: 23, end: 28 }]), true);
+});
+
+test("participant, coach, and resource transitions invalidate only when the effective margin is insufficient", () => {
+  const problem = mainFlowVocalScenario();
+  problem.participantTransitionMinutes = 10;
+  problem.resourceTransitionMinutes = 10;
+  const edge = scheduled({ coachId: "coach-edge", requiredResourceIds: ["resource-edge"] });
+  const authorities: Array<[string, Partial<ScheduledTask>]> = [
+    ["participant", { participantId: edge.participantId }],
+    ["coach", { coachId: edge.coachId }],
+    ["resource", { requiredResourceIds: edge.requiredResourceIds }],
+  ];
+  for (const [authority, shared] of authorities) {
+    const base = { id: `added-${authority}`, participantId: "other", coachId: "other",
+      spaceId: "other", requiredResourceIds: [], ...shared };
+    assert.equal(residualMatchingOperationsMayInteract(problem, [edge], [scheduled({ ...base, start: 30, end: 35 })]), true, authority);
+    assert.equal(residualMatchingOperationsMayInteract(problem, [edge], [scheduled({ ...base, start: 35, end: 40 })]), false, authority);
+  }
+});
+
+test("dependencies invalidate only when their direction-specific timing can be violated", () => {
+  const problem = mainFlowVocalScenario();
+  const unrelated = { participantId: "other", coachId: "other", spaceId: "other", requiredResourceIds: [] };
+  const candidateAfter = scheduled({ dependencies: ["added"] });
+  assert.equal(residualMatchingOperationsMayInteract(problem, [candidateAfter],
+    [scheduled({ ...unrelated, id: "added", start: 10, end: 15 })]), false);
+  assert.equal(residualMatchingOperationsMayInteract(problem, [candidateAfter],
+    [scheduled({ ...unrelated, id: "added", start: 18, end: 23 })]), true);
+  const addedAfter = scheduled({ ...unrelated, id: "added", start: 30, end: 35, dependencies: ["edge"] });
+  assert.equal(residualMatchingOperationsMayInteract(problem, [scheduled()], [addedAfter]), false);
+  assert.equal(residualMatchingOperationsMayInteract(problem, [scheduled({ end: 32 })], [addedAfter]), true);
 });
 
 test("an unrelated operation is a structurally proven cache hit", () => {
   const edge = scheduled();
   const unrelated = scheduled({ id: "unrelated", participantId: "participant-other", coachId: "coach-other",
     spaceId: "space-other", requiredResourceIds: ["resource-other"] });
-  assert.equal(residualMatchingOperationsMayInteract([edge], [unrelated]), false);
+  assert.equal(residualMatchingOperationsMayInteract(mainFlowVocalScenario(), [edge], [unrelated]), false);
 });
 
 test("incremental certificates have exact full-recompute parity without false pruning", () => {
@@ -64,7 +93,7 @@ test("every invalidation authority preserves exact FULL_RECOMPUTE parity", () =>
     const added = scheduled({ id: "added", participantId: "other-participant", coachId: "other-coach",
       spaceId: "other-space", requiredResourceIds: ["other-resource"] });
     mutate(edge, added);
-    assert.equal(residualMatchingOperationsMayInteract([edge], [added]), true, authority);
+    assert.equal(residualMatchingOperationsMayInteract(mainFlowVocalScenario(), [edge], [added]), true, authority);
 
     const problem = mainFlowVocalScenario();
     const incremental = runExactMainAndFeederSearch(structuredClone(problem));
