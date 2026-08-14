@@ -12,6 +12,37 @@ export interface MainFeederArchitecture {
 const covers = (windows: readonly { start: number; end: number }[] | undefined, start: number, end: number): boolean =>
   windows === undefined || windows.length === 0 || windows.some((window) => window.start <= start && end <= window.end);
 
+interface ProvenCoachRun {
+  start: number;
+  end: number;
+  coachId: string;
+  eligible: Array<{ main: Task; feeder: Task }>;
+}
+
+const availableMinutesBefore = (
+  day: { start: number; end: number },
+  availability: readonly { start: number; end: number }[] | undefined,
+  deadline: number,
+  occupied: readonly { start: number; end: number }[],
+): number => {
+  const windows = availability === undefined || availability.length === 0
+    ? [{ start: day.start, end: day.end }]
+    : availability;
+  const boundaries = [...new Set([
+    day.start, Math.min(day.end, deadline),
+    ...windows.flatMap(({ start, end }) => [Math.max(day.start, start), Math.min(deadline, end)]),
+    ...occupied.flatMap(({ start, end }) => [Math.max(day.start, start), Math.min(deadline, end)]),
+  ])].filter((point) => day.start <= point && point <= deadline).sort((a, b) => a - b);
+  let capacity = 0;
+  for (let index = 1; index < boundaries.length; index += 1) {
+    const start = boundaries[index - 1]!, end = boundaries[index]!;
+    if (start === end || !windows.some((window) => window.start <= start && end <= window.end)
+      || occupied.some((interval) => interval.start < end && start < interval.end)) continue;
+    capacity += end - start;
+  }
+  return capacity;
+};
+
 /**
  * Conservative structural proof for one main/feeder architecture.  Every rejection is a
  * necessary condition of the exact construction; anything not proved impossible passes.
@@ -60,6 +91,7 @@ export function proveMainFeederArchitectureImpossible(
 
   // Only a proven shared coach makes the run serial independently of participant choice.
   // Otherwise parallel feeder work may exist, so capacity remains deliberately unknown.
+  const provenRuns: ProvenCoachRun[] = [];
   for (let start = 0; start < architecture.pattern.length;) {
     let end = start + 1;
     while (end < architecture.pattern.length && architecture.pattern[end] === architecture.pattern[start]) end += 1;
@@ -74,6 +106,7 @@ export function proveMainFeederArchitectureImpossible(
     const provenSharedCoach = eligible.length >= runLength && sharedCoachId !== undefined
       && eligible.every(({ main, feeder }) => main.coachId === sharedCoachId && feeder.coachId === sharedCoachId);
     if (provenSharedCoach) {
+      provenRuns.push({ start, end, coachId: sharedCoachId, eligible });
       const selected = [...eligible].sort((left, right) => left.feeder.duration - right.feeder.duration
         || left.main.id.localeCompare(right.main.id)).slice(0, runLength);
       const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
@@ -85,6 +118,37 @@ export function proveMainFeederArchitectureImpossible(
       if (feederLoad + terminalTransition > priorCapacity) return "TRANSITION_CAPACITY";
     }
     start = end;
+  }
+  // Across separate runs, earlier main work cannot be reused as feeder time. For each coach
+  // prefix, use the globally cheapest distinct eligible feeders: this can only understate the
+  // required load when cohort membership is still open. Likewise, subtract only the shortest
+  // main interval that every compatible assignment must occupy at each earlier position.
+  const runsByCoach = new Map<string, ProvenCoachRun[]>();
+  for (const run of provenRuns)
+    runsByCoach.set(run.coachId, [...(runsByCoach.get(run.coachId) ?? []), run]);
+  for (const [coachId, runs] of runsByCoach) {
+    let requiredPositions = 0;
+    const eligibleByMain = new Map<string, { main: Task; feeder: Task }>();
+    const occupied: Array<{ start: number; end: number }> = [];
+    for (const run of runs) {
+      requiredPositions += run.end - run.start;
+      for (const pair of run.eligible) eligibleByMain.set(pair.main.id, pair);
+      const cheapest = [...eligibleByMain.values()].sort((left, right) =>
+        left.feeder.duration - right.feeder.duration || left.main.id.localeCompare(right.main.id))
+        .slice(0, requiredPositions);
+      if (cheapest.length === requiredPositions) {
+        const minimumLoad = cheapest.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+        const deadline = architecture.slots[run.start]!;
+        const capacity = availableMinutesBefore(problem.day, coachById.get(coachId)?.availability, deadline, occupied);
+        if (minimumLoad > capacity) return "FEEDER_CAPACITY";
+      }
+      for (let position = run.start; position < run.end; position += 1) {
+        const slot = architecture.slots[position]!;
+        const minimumDuration = Math.min(...run.eligible
+          .filter(({ main }) => fits(main, slot)).map(({ main }) => main.duration));
+        if (Number.isFinite(minimumDuration)) occupied.push({ start: slot, end: slot + minimumDuration });
+      }
+    }
   }
   // Every feeder must have at least one legal grid placement before the latest compatible
   // main position. This deliberately ignores all other tasks, so failure is conclusive.
