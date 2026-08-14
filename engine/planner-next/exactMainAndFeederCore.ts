@@ -5,7 +5,7 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { canPlaceTask, diagnoseTaskPlacement, type PlacementRejectionReason } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
@@ -260,14 +260,27 @@ const readonlyTaskCopy = <T extends Task | ScheduledTask>(task: T): Readonly<T> 
 }) as Readonly<T>;
 
 /** Pure conservative invalidation predicate for a previously valid residual edge. */
-export const residualMatchingOperationsMayInteract = (left: readonly ScheduledTask[],
-  right: readonly ScheduledTask[]): boolean => left.some((candidate) => right.some((added) => {
-  const dependency = candidate.dependencies.includes(added.id) || added.dependencies.includes(candidate.id);
+export const residualMatchingOperationsMayInteract = (problem: PlannerNextProblem,
+  left: readonly ScheduledTask[], right: readonly ScheduledTask[]): boolean => left.some((candidate) => right.some((added) => {
+  if (![candidate.start, candidate.end, added.start, added.end].every(Number.isFinite)) return true;
+  if (candidate.dependencies.includes(added.id) && added.end > candidate.start) return true;
+  if (added.dependencies.includes(candidate.id) && candidate.end > added.start) return true;
+
   const participant = candidate.participantId !== undefined && candidate.participantId === added.participantId;
   const coach = candidate.coachId !== undefined && candidate.coachId === added.coachId;
-  const sharedResource = (candidate.requiredResourceIds ?? [])
-    .some((id) => (added.requiredResourceIds ?? []).includes(id));
-  return dependency || participant || coach || candidate.spaceId === added.spaceId || sharedResource;
+  const sharedResources = (candidate.requiredResourceIds ?? [])
+    .filter((id) => (added.requiredResourceIds ?? []).includes(id));
+  const overlap = candidate.start < added.end && added.start < candidate.end;
+  if (overlap) return participant || coach || candidate.spaceId === added.spaceId || sharedResources.length > 0;
+  if (candidate.spaceId === added.spaceId) return false;
+
+  const candidateAfterAdded = added.end <= candidate.start;
+  const gap = candidateAfterAdded ? candidate.start - added.end : added.start - candidate.end;
+  if (participant && gap < problem.participantTransitionMinutes) return true;
+  if (coach && gap < effectiveCoachTransitionMinutes(problem, candidate.coachId!,
+    candidateAfterAdded ? added.spaceId : candidate.spaceId,
+    candidateAfterAdded ? candidate.spaceId : added.spaceId)) return true;
+  return sharedResources.some((id) => gap < effectiveResourceTransitionMinutes(problem, id));
 }));
 
 function latestDepartureStartByParticipant(problem: PlannerNextProblem): ReadonlyMap<string, number> {
@@ -662,7 +675,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const taskEdges: ResidualMatchingEdge[] = [];
         for (const edge of parent.validEdges.get(task.id) ?? []) {
           if (edge.position === consumedPosition || !positionSet.has(edge.position)) continue;
-          if (!residualMatchingOperationsMayInteract(edge.operation, addedTasks)) {
+          if (!residualMatchingOperationsMayInteract(problem, edge.operation, addedTasks)) {
             evidence.residualMatchingEdgeCacheHits += 1;
             taskEdges.push(edge);
             continue;
