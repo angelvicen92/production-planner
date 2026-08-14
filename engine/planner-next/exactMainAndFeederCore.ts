@@ -261,9 +261,14 @@ interface ExactFeederStartUnion {
 export function exactFeederStartDomainUnion(dayStart:number, latestBlockStart:number,
   domains:readonly ExactFeederStartDomain[]):ExactFeederStartUnion {
   const fullGridStartCount=latestBlockStart<dayStart?0:gridCountInInterval(latestBlockStart,{start:dayStart,end:latestBlockStart});
-  const projected=domains.flatMap(domain=>(domain.gridAnchor-latestBlockStart)%5===0?domain.intervals.map(interval=>({
-    start:Math.max(dayStart,interval.start),end:Math.min(latestBlockStart,interval.end),
-  })).filter(interval=>interval.start<=interval.end):[]).sort((a,b)=>a.start-b.start||a.end-b.end);
+  const projected=domains.flatMap(domain=>(domain.gridAnchor-latestBlockStart)%5===0?domain.intervals.flatMap(interval=>{
+    const clippedStart=Math.max(dayStart,interval.start),clippedEnd=Math.min(latestBlockStart,interval.end);
+    const firstGridIndex=Math.max(0,Math.ceil((latestBlockStart-clippedEnd)/5));
+    const lastGridIndex=Math.floor((latestBlockStart-clippedStart)/5);
+    return firstGridIndex<=lastGridIndex?[{
+      start:latestBlockStart-lastGridIndex*5,end:latestBlockStart-firstGridIndex*5,
+    }]:[];
+  }):[]).sort((a,b)=>a.start-b.start||a.end-b.end);
   const intervals:ExactFeederStartInterval[]=[];
   for(const interval of projected){
     const previous=intervals.at(-1);

@@ -139,6 +139,17 @@ test("cohort union skips a huge eliminated region without materializing grid sta
   ]).starts()],[20,15,10,5,0]);
 });
 
+test("cohort union does not bridge a missing grid point between raw temporal intervals", () => {
+  const task=feeder(),input=problem(task);
+  const base=exactFeederStartDomain(input,task,10,[],"FULL_GRID");
+  const domain={...base,intervals:[{start:0,end:1},{start:6,end:10}]};
+  const union=exactFeederStartDomainUnion(0,10,[domain]);
+  assert.deepEqual([...union.starts()],[10,0]);
+  assert.equal(union.fullGridStartCount,3);
+  assert.equal(union.eligibleStartCount,2);
+  assert.equal(union.domainEliminatedStartCount,1);
+});
+
 test("FULL_GRID oracle preserves the first valid start and coach-domain accounting counts only evaluations", () => {
   const make = (): PlannerNextProblem => {
     const vocal: Task = { ...feeder(), availability: [{ start: 0, end: 80 }] };
