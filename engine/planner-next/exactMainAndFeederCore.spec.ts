@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
 import type { PlannerNextProblem, Task } from "./contracts";
@@ -137,7 +138,7 @@ test("constructs the feasible feeder block without branching over individual sta
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
 });
 
-test("defers an impossible future feeder to exact construction without publishing a partial result", () => {
+test("structurally rejects an impossible feeder window without publishing a partial result", () => {
   const problem = syntheticProblem([
     { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },
     { id: "main-a", kind: "main", participantId: "a", duration: 10, spaceId: "main", dependencies: ["vocal-a"], blockKey: "block" },
@@ -147,7 +148,9 @@ test("defers an impossible future feeder to exact construction without publishin
   ], ["a", "b"], ["vocal-a", "vocal-b"]);
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "INFEASIBLE");
-  assert.ok(result.evidence.residualMatchingChecks > 0);
+  assert.equal(result.evidence.architecturesStructurallyRejected, result.evidence.architecturesChecked);
+  assert.ok((result.evidence.structuralRejectionsByReason.RESOURCE_WINDOW ?? 0) > 0);
+  assert.ok(Object.values(result.evidence.feederOrderBranchesByArchitecture).every((count) => count === 0));
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
@@ -300,15 +303,16 @@ test("an analytically impossible cohort cannot perform hidden factorial work", (
   const problem = syntheticProblem(tasks, participantIds, ["feed"]);
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "INFEASIBLE");
-  assert.ok(result.evidence.constructiveFeederStartChecks <= 25);
+  assert.equal(result.evidence.constructiveFeederStartChecks, 0);
+  assert.ok((result.evidence.structuralRejectionsByReason.FEEDER_CAPACITY ?? 0) > 0);
   assert.ok(result.evidence.branchesExplored < 5_040, `unexpected factorial work: ${result.evidence.branchesExplored}`);
   const bounded = structuredClone(problem); bounded.budget.maxBranchExpansions = 10;
   const exhausted = constructExactMainAndFeederCore(bounded);
-  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED");
-  assert.equal(exhausted.evidence.branchesExplored, 10);
+  assert.equal(exhausted.status, "INFEASIBLE");
+  assert.equal(exhausted.evidence.constructiveFeederStartChecks, 0);
 });
 
-test("a high-cardinality feeder order exhausts its ledger without recursive stack growth", () => {
+test("a high-cardinality impossible feeder load is rejected deterministically before order search", () => {
   const participantIds = Array.from({ length: 18 }, (_, index) => `large-${index}`);
   const tasks: Task[] = participantIds.flatMap((participantId, index) => [
     { id: `large-feeder-${index}`, kind: "vocal" as const, participantId, duration: 10,
@@ -322,11 +326,75 @@ test("a high-cardinality feeder order exhausts its ledger without recursive stac
   problem.budget.maxBranchExpansions = 1_000;
   const first = constructExactMainAndFeederCore(problem);
   const second = constructExactMainAndFeederCore(structuredClone(problem));
-  assert.equal(first.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.equal(first.status, "INFEASIBLE");
   assert.deepEqual(second, first);
-  assert.equal(first.evidence.branchesExplored, problem.budget.maxBranchExpansions);
-  assert.deepEqual(first.evidence.reasonCodes, ["FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.equal(first.evidence.constructiveFeederStartChecks, 0);
+  assert.ok((first.evidence.structuralRejectionsByReason.FEEDER_CAPACITY ?? 0) > 0);
   assert.deepEqual(first.scheduledTasks, []);
+});
+
+test("rejects the minimum impossible architecture then admits the next plausible one", () => {
+  const problem = syntheticProblem([
+    { id: "feeder-a", kind: "vocal", participantId: "a", duration: 40, spaceId: "feed", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", duration: 10, spaceId: "main", dependencies: ["feeder-a"], blockKey: "block" },
+    { id: "feeder-b", kind: "vocal", participantId: "b", duration: 40, spaceId: "feed", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["feeder-b"], blockKey: "block" },
+  ], ["a", "b"], ["feed"]);
+  problem.mainFlow.preferredEnd = 60;
+  problem.protectedMeal = undefined;
+  const first = constructExactMainAndFeederCore(problem);
+  const second = constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status, "COMPLETE", first.evidence.reasonCodes.join(","));
+  assert.ok(first.evidence.architecturesStructurallyRejected > 0);
+  assert.ok(first.evidence.firstExactArchitecture?.includes("END:120"));
+  assert.ok((first.evidence.feederOrderBranchesByArchitecture[first.evidence.firstExactArchitecture!] ?? 0) > 0);
+  assert.deepEqual(second, first);
+});
+
+test("same-coach terminal transition rejects an architecture before FEEDER_ORDER", () => {
+  const problem = syntheticProblem([
+    { id: "feeder-a", kind: "vocal", participantId: "a", coachId: "coach", duration: 20,
+      spaceId: "feed", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["feeder-a"], blockKey: "block" },
+    { id: "feeder-b", kind: "vocal", participantId: "b", coachId: "coach", duration: 20,
+      spaceId: "feed", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["feeder-b"], blockKey: "block" },
+  ], ["a", "b"], ["feed"]);
+  problem.mainFlow.preferredEnd = 65;
+  problem.resourceTransitionMinutes = 10;
+  problem.protectedMeal = undefined;
+  const first = constructExactMainAndFeederCore(problem);
+  const second = constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status, "COMPLETE", first.evidence.reasonCodes.join(","));
+  assert.ok((first.evidence.structuralRejectionsByReason.TRANSITION_CAPACITY ?? 0) > 0);
+  const rejected = Object.entries(first.evidence.feederOrderBranchesByArchitecture)
+    .filter(([key]) => key.includes("END:65"));
+  assert.ok(rejected.length > 0 && rejected.every(([, branches]) => branches === 0));
+  assert.ok(first.evidence.firstExactArchitecture?.includes("END:120"));
+  assert.deepEqual(second, first);
+});
+
+test("different coaches preserve possible feeder parallelism without structural pruning", () => {
+  const problem = syntheticProblem([
+    { id: "feeder-a", kind: "vocal", participantId: "a", coachId: "coach-a", duration: 30,
+      spaceId: "feed-a", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", coachId: "coach-a", duration: 10,
+      spaceId: "main", dependencies: ["feeder-a"], blockKey: "block" },
+    { id: "feeder-b", kind: "vocal", participantId: "b", coachId: "coach-b", duration: 30,
+      spaceId: "feed-b", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", coachId: "coach-b", duration: 10,
+      spaceId: "main", dependencies: ["feeder-b"], blockKey: "block" },
+  ], ["a", "b"], ["feed-a", "feed-b"]);
+  problem.coaches = ["coach-a", "coach-b"].map((id) => ({ id, availability: [{ start: 0, end: 120 }] }));
+  problem.mainFlow.preferredEnd = 60;
+  problem.protectedMeal = undefined;
+  const mains = problem.tasks.filter((task) => task.kind === "main");
+  const feeders = new Map(mains.map((main) => [main.id,
+    problem.tasks.find((task) => task.id === main.dependencies[0])!]));
+  assert.equal(proveMainFeederArchitectureImpossible(problem, mains, feeders,
+    { pattern: ["coach", "coach"], slots: [40, 50] }), null);
 });
 
 test("a fixed authorized space meal bridges one feeder operational block", () => {
@@ -354,6 +422,8 @@ test("an uncontracted pause breaks feeder continuity", () => {
   problem.tasks.find(({ id }) => id === "feeder-a1")!.availability = [{ start: 20, end: 30 }];
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "INFEASIBLE");
+  assert.ok(result.evidence.architecturesChecked > result.evidence.architecturesStructurallyRejected,
+    "ambiguous continuity must reach exact search");
   assert.deepEqual(result.scheduledTasks, []);
 });
 

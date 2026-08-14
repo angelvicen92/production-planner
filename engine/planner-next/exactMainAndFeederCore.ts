@@ -3,7 +3,8 @@ import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompa
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
-import { generateMainFlowPatterns } from "./mainFlowPatterns";
+import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible,
+  type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
@@ -43,6 +44,11 @@ export interface ExactMainAndFeederCoreEvidence {
   selectedFeederTaskIds: string[];
   coreFingerprint: string | null;
   reasonCodes: string[];
+  architecturesChecked: number;
+  architecturesStructurallyRejected: number;
+  structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  firstExactArchitecture: string | null;
+  feederOrderBranchesByArchitecture: Record<string, number>;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -295,7 +301,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
-    selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [], causalDiagnostic:null };
+    selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
+    architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
+    firstExactArchitecture: null, feederOrderBranchesByArchitecture: {}, causalDiagnostic:null };
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -339,10 +347,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   if ([...anchoredIds].some((id) => !coreIds.has(id))) return fail("UNSUPPORTED_CORE_SHAPE", ["UNSUPPORTED_NON_MAIN_ANCHORED_OPERATION"], coreIds);
 
   let exhaustionReason = "BRANCH_BUDGET_EXHAUSTED";
+  let currentArchitecture: string | null = null;
   const consumeBranch = (reason: string,category:ExactBranchCategory="OTHER",depth=0): boolean => {
     if (!ledger.consume("CORE")) { exhaustionReason = reason; return false; }
     recordBranch(category,depth);
     evidence.branchesExplored = ledger.coreBranches;
+    if (reason === "FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED" && currentArchitecture)
+      evidence.feederOrderBranchesByArchitecture[currentArchitecture] =
+        (evidence.feederOrderBranchesByArchitecture[currentArchitecture] ?? 0) + 1;
     return true;
   };
   let matchingDiagnosticDepth=0;
@@ -778,8 +790,22 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         for (const composite of positions) {
           if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+          const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
+          evidence.architecturesChecked += 1;
+          const rejection = proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots });
+          if (rejection) {
+            evidence.architecturesStructurallyRejected += 1;
+            evidence.structuralRejectionsByReason[rejection] =
+              (evidence.structuralRejectionsByReason[rejection] ?? 0) + 1;
+            evidence.feederOrderBranchesByArchitecture[architectureKey] = 0;
+            continue;
+          }
+          if (evidence.firstExactArchitecture === null) evidence.firstExactArchitecture = architectureKey;
+          evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
+          currentArchitecture = architectureKey;
           const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
             timeline?.key ?? null);
+          currentArchitecture = null;
           if (result === "BUDGET_EXHAUSTED")
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
           if (result === "FOUND") {

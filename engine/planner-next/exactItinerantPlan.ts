@@ -8,6 +8,7 @@ import {
   type ExactMainAndFeederSearchOptions,
   type ExactCoreCausalDiagnostic,
 } from "./exactMainAndFeederCore";
+import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -89,6 +90,11 @@ export interface ExactItinerantPlanEvidence {
   coreBacktracks: number;
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
+  architecturesChecked: number;
+  architecturesStructurallyRejected: number;
+  structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  firstExactArchitecture: string | null;
+  feederOrderBranchesByArchitecture: Record<string, number>;
   residualMatchingInvocations: number;
   residualMatchingFullBuilds: number;
   residualMatchingIncrementalUpdates: number;
@@ -611,7 +617,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
-    coreMaximumDepth: 0, coreCompleteLeafCount: 0,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0, architecturesChecked:0,
+    architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,
+    feederOrderBranchesByArchitecture:{},
     residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
     residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
@@ -705,6 +713,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
   evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
   evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
+  evidence.architecturesChecked=core.evidence.architecturesChecked;
+  evidence.architecturesStructurallyRejected=core.evidence.architecturesStructurallyRejected;
+  evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};
+  evidence.firstExactArchitecture=core.evidence.firstExactArchitecture;
+  evidence.feederOrderBranchesByArchitecture={...core.evidence.feederOrderBranchesByArchitecture};
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;
