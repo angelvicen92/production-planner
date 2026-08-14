@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { exactFeederStartDomain, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { exactFeederStartDomain, exactFeederStartDomainUnion, isExactFeederStartInDomain,
+  runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { canPlaceTask, diagnoseTaskPlacement } from "./placement";
 import { constructExactItinerantPlan } from "./exactItinerantPlan";
 import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
@@ -112,6 +113,41 @@ test("coach domain jumps analytically over a huge forbidden grid interval", () =
   assert.deepEqual(domain.starts((considered, eliminated) => progress.push([considered, eliminated])).next(),
     { value: 499_980, done: false });
   assert.deepEqual(progress, [[300_005, 300_004]]);
+});
+
+test("domain membership respects closed intervals and the domain grid phase", () => {
+  const task=feeder(),input=problem(task);
+  const domain=exactFeederStartDomain(input,task,92,[blocker(40,50)]);
+  assert.equal(isExactFeederStartInDomain(domain,92),true);
+  assert.equal(isExactFeederStartInDomain(domain,91),false);
+  assert.equal(isExactFeederStartInDomain(domain,42),false);
+  assert.equal(isExactFeederStartInDomain(domain,17),true);
+});
+
+test("cohort union skips a huge eliminated region without materializing grid starts", () => {
+  const task=feeder(),input=problem(task);input.day.end=2_000_100;
+  const latest=2_000_000;
+  const narrow=exactFeederStartDomain(input,task,latest,[blocker(500_000,2_000_000)]);
+  const union=exactFeederStartDomainUnion(0,latest,[narrow]);
+  assert.equal(union.fullGridStartCount,400_001);
+  assert.equal(union.eligibleStartCount,99_997);
+  assert.equal(union.domainEliminatedStartCount,300_004);
+  assert.deepEqual(union.starts().next(),{value:499_980,done:false});
+  assert.deepEqual([...exactFeederStartDomainUnion(0,20,[
+    exactFeederStartDomain(input,task,20,[],"FULL_GRID"),
+    exactFeederStartDomain(input,task,21,[],"FULL_GRID"),
+  ]).starts()],[20,15,10,5,0]);
+});
+
+test("cohort union does not bridge a missing grid point between raw temporal intervals", () => {
+  const task=feeder(),input=problem(task);
+  const base=exactFeederStartDomain(input,task,10,[],"FULL_GRID");
+  const domain={...base,intervals:[{start:0,end:1},{start:6,end:10}]};
+  const union=exactFeederStartDomainUnion(0,10,[domain]);
+  assert.deepEqual([...union.starts()],[10,0]);
+  assert.equal(union.fullGridStartCount,3);
+  assert.equal(union.eligibleStartCount,2);
+  assert.equal(union.domainEliminatedStartCount,1);
 });
 
 test("FULL_GRID oracle preserves the first valid start and coach-domain accounting counts only evaluations", () => {

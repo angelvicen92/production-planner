@@ -133,7 +133,7 @@ test("constructs the feasible feeder block without branching over individual sta
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
-  assert.equal(result.evidence.constructiveFeederStartChecks, 5);
+  assert.equal(result.evidence.constructiveFeederStartChecks, 3);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
 });

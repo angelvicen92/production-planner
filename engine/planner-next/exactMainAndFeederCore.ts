@@ -168,12 +168,20 @@ export interface ExactMainAndFeederSearchOptions {
 
 export interface ExactFeederStartInterval { readonly start: number; readonly end: number }
 export interface ExactFeederStartDomain {
+  readonly gridAnchor: number;
   readonly intervals: readonly ExactFeederStartInterval[];
   readonly fullGridStartCount: number;
   readonly eligibleStartCount: number;
   readonly coachEliminatedStartCount: number;
   readonly eliminations: readonly Readonly<{ reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; startsEliminated:number }>[];
   starts(onProgress?: (considered: number, coachEliminated: number) => void): Generator<number>;
+}
+
+/** Pure negative-domain membership test. Membership only means that the start was
+ * not disproved by this domain; canonical placement remains authoritative. */
+export function isExactFeederStartInDomain(domain: ExactFeederStartDomain, start: number): boolean {
+  if (!Number.isFinite(start) || (domain.gridAnchor - start) % 5 !== 0) return false;
+  return domain.intervals.some((interval) => start >= interval.start && start <= interval.end);
 }
 
 const gridCountInInterval = (latestStart: number, interval: ExactFeederStartInterval): number => {
@@ -188,9 +196,10 @@ const gridCountInClosedRange = (latestStart:number, intervals:readonly ExactFeed
 /** Builds disjoint allowed intervals analytically. Production iteration visits only
  * eligible grid points; FULL_GRID deliberately retains the historical test oracle. */
 export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task, latestStart: number,
-  blockers: readonly ScheduledTask[], mode: "COACH_DOMAIN" | "FULL_GRID" = "COACH_DOMAIN"): ExactFeederStartDomain {
+  blockers: readonly ScheduledTask[], mode: "COACH_DOMAIN" | "FULL_GRID" = "COACH_DOMAIN",
+  gridAnchor=latestStart): ExactFeederStartDomain {
   const fullInterval = { start: problem.day.start, end: latestStart };
-  const fullGridStartCount = latestStart < problem.day.start ? 0 : gridCountInInterval(latestStart, fullInterval);
+  const fullGridStartCount = latestStart < problem.day.start ? 0 : gridCountInInterval(gridAnchor, fullInterval);
   let intervals: ExactFeederStartInterval[] = fullGridStartCount === 0 ? [] : [fullInterval];
   const eliminations:Array<{reason:"OVERLAP_COACH"|"TRANSITION_COACH";blockingPlacedTaskId:string;startsEliminated:number}>=[];
   if (mode === "COACH_DOMAIN" && feeder.coachId !== undefined) {
@@ -200,9 +209,9 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
         problem, feeder.coachId, feeder.spaceId, blocker.spaceId);
       const afterBoundary = blocker.end + effectiveCoachTransitionMinutes(
         problem, feeder.coachId, blocker.spaceId, feeder.spaceId);
-      const transitionBefore=gridCountInClosedRange(latestStart,intervals,beforeBoundary+1,blocker.start-feeder.duration);
-      const overlap=gridCountInClosedRange(latestStart,intervals,blocker.start-feeder.duration+1,blocker.end-1);
-      const transitionAfter=gridCountInClosedRange(latestStart,intervals,blocker.end,afterBoundary-1);
+      const transitionBefore=gridCountInClosedRange(gridAnchor,intervals,beforeBoundary+1,blocker.start-feeder.duration);
+      const overlap=gridCountInClosedRange(gridAnchor,intervals,blocker.start-feeder.duration+1,blocker.end-1);
+      const transitionAfter=gridCountInClosedRange(gridAnchor,intervals,blocker.end,afterBoundary-1);
       if(overlap>0)eliminations.push({reason:"OVERLAP_COACH",blockingPlacedTaskId:blocker.id,startsEliminated:overlap});
       if(transitionBefore+transitionAfter>0)eliminations.push({reason:"TRANSITION_COACH",blockingPlacedTaskId:blocker.id,startsEliminated:transitionBefore+transitionAfter});
       intervals = intervals.flatMap((interval) => {
@@ -213,8 +222,9 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
     }
   }
   intervals.sort((a, b) => a.start - b.start || a.end - b.end);
-  const eligibleStartCount = intervals.reduce((sum, interval) => sum + gridCountInInterval(latestStart, interval), 0);
+  const eligibleStartCount = intervals.reduce((sum, interval) => sum + gridCountInInterval(gridAnchor, interval), 0);
   return {
+    gridAnchor,
     intervals: Object.freeze(intervals.map((interval) => Object.freeze(interval))),
     fullGridStartCount,
     eligibleStartCount,
@@ -224,18 +234,54 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
       let nextUnaccountedGridIndex = 0;
       for (let index = intervals.length - 1; index >= 0; index--) {
         const interval = intervals[index]!;
-        const firstGridIndex = Math.max(0, Math.ceil((latestStart - interval.end) / 5));
-        const lastGridIndex = Math.floor((latestStart - interval.start) / 5);
+        const firstGridIndex = Math.max(0, Math.ceil((gridAnchor - interval.end) / 5));
+        const lastGridIndex = Math.floor((gridAnchor - interval.start) / 5);
         for (let gridIndex = firstGridIndex; gridIndex <= lastGridIndex; gridIndex++) {
           const considered = gridIndex - nextUnaccountedGridIndex + 1;
           onProgress?.(considered, considered - 1);
           nextUnaccountedGridIndex = gridIndex + 1;
-          yield latestStart - 5 * gridIndex;
+          yield gridAnchor - 5 * gridIndex;
         }
       }
       const trailingEliminated = fullGridStartCount - nextUnaccountedGridIndex;
       if (trailingEliminated > 0) onProgress?.(trailingEliminated, trailingEliminated);
     },
+  };
+}
+
+interface ExactFeederStartUnion {
+  readonly fullGridStartCount: number;
+  readonly eligibleStartCount: number;
+  readonly domainEliminatedStartCount: number;
+  starts(): Generator<number>;
+}
+
+/** Projects each feeder domain onto the cohort grid, then merges its intervals.
+ * Storage is proportional to domain intervals, never to the length of the day. */
+export function exactFeederStartDomainUnion(dayStart:number, latestBlockStart:number,
+  domains:readonly ExactFeederStartDomain[]):ExactFeederStartUnion {
+  const fullGridStartCount=latestBlockStart<dayStart?0:gridCountInInterval(latestBlockStart,{start:dayStart,end:latestBlockStart});
+  const projected=domains.flatMap(domain=>(domain.gridAnchor-latestBlockStart)%5===0?domain.intervals.flatMap(interval=>{
+    const clippedStart=Math.max(dayStart,interval.start),clippedEnd=Math.min(latestBlockStart,interval.end);
+    const firstGridIndex=Math.max(0,Math.ceil((latestBlockStart-clippedEnd)/5));
+    const lastGridIndex=Math.floor((latestBlockStart-clippedStart)/5);
+    return firstGridIndex<=lastGridIndex?[{
+      start:latestBlockStart-lastGridIndex*5,end:latestBlockStart-firstGridIndex*5,
+    }]:[];
+  }):[]).sort((a,b)=>a.start-b.start||a.end-b.end);
+  const intervals:ExactFeederStartInterval[]=[];
+  for(const interval of projected){
+    const previous=intervals.at(-1);
+    if(previous&&interval.start<=previous.end+5)intervals[intervals.length-1]={start:previous.start,end:Math.max(previous.end,interval.end)};
+    else intervals.push(interval);
+  }
+  const eligibleStartCount=intervals.reduce((sum,interval)=>sum+gridCountInInterval(latestBlockStart,interval),0);
+  return {fullGridStartCount,eligibleStartCount,domainEliminatedStartCount:fullGridStartCount-eligibleStartCount,
+    *starts(){for(let index=intervals.length-1;index>=0;index--){const interval=intervals[index]!;
+      const first=Math.max(0,Math.ceil((latestBlockStart-interval.end)/5));
+      const last=Math.floor((latestBlockStart-interval.start)/5);
+      for(let gridIndex=first;gridIndex<=last;gridIndex++)yield latestBlockStart-gridIndex*5;
+    }}
   };
 }
 
@@ -451,11 +497,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           && space.mealPolicy.window.end - space.mealPolicy.window.start === space.mealPolicy.duration))
           .map((space) => createScheduledSpaceMeal(space.id, space.mealPolicy!.window.start, space.mealPolicy!.duration));
         const blockMeals = [...meals, ...fixedCohortMeals.filter((meal) => !meals.some(({ id }) => id === meal.id))];
-        const rankedCohort = cohort.map((choice) => {
+        const cohortDeadlines = cohort.map((choice) => {
           const mainStart = Math.min(...choice.operation.map(({ start }) => start));
           const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId, mainStart, mainStart);
+          return {choice,deadline};
+        });
+        const latestBlockStart = Math.max(...cohortDeadlines.map(({ choice, deadline }) => deadline-choice.feeder.duration));
+        const rankedCohort = cohortDeadlines.map(({choice,deadline}) => {
           const domain = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
-            [...blockPlaced, ...blockOperations], options.feederStartDomainMode);
+            [...blockPlaced, ...blockOperations], options.feederStartDomainMode,latestBlockStart);
           return { choice, deadline, domain };
         }).sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount
           || a.choice.task.id.localeCompare(b.choice.task.id));
@@ -472,7 +522,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         }
         const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
         if (feederRow) feederRow.mainChoicesReachingFeeder++;
-        const latestBlockStart = Math.max(...rankedCohort.map(({ choice, deadline }) => deadline-choice.feeder.duration));
+        const blockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain));
+        if(feederRow){feederRow.startsConsidered+=blockStartDomain.fullGridStartCount;
+          feederRow.startsCoachEliminated+=blockStartDomain.domainEliminatedStartCount;}
         let validBlockFound = false;
 
         const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
@@ -501,10 +553,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               return child;
         };
 
-        for (let blockStart=latestBlockStart;blockStart>=problem.day.start;blockStart-=5) {
+        for (const blockStart of blockStartDomain.starts()) {
           if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)) return "BUDGET_EXHAUSTED";
           evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
-          if(feederRow){feederRow.startsConsidered++;feederRow.startsEvaluated++;}
+          if(feederRow)feederRow.startsEvaluated++;
           let completeOrderAtStart=false;
           // Exact transposition: only tails for authorities used by remaining feeders can affect a
           // future placement. Failed equivalent prefixes are not expanded factorially again.
@@ -545,15 +597,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               failedOrderStates.add(frame.stateKey);worklist.pop();if(worklist.length>0)evidence.backtracks++;continue;
             }
             const candidate=frame.remaining[frame.nextIndex++]!;
-            if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)){
-              orderBudgetExhausted=true;break;
-            }
             const previous=frame.scheduled.at(-1);const choice=candidate.choice;
             const transition=previous?.coachId!==undefined&&previous.coachId===choice.feeder.coachId
               ?effectiveCoachTransitionMinutes(problem,previous.coachId,previous.spaceId,choice.feeder.spaceId):0;
             let start=previous?previous.end+transition:blockStart;
             if(previous&&transition===0&&previous.spaceId===choice.feeder.spaceId){const meal=blockMeals.find(item=>item.spaceId===previous.spaceId&&item.start===start);if(meal)start=meal.end;}
             if(start+choice.feeder.duration>candidate.deadline)continue;
+            if(!isExactFeederStartInDomain(candidate.domain,start))continue;
+            if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)){
+              orderBudgetExhausted=true;break;
+            }
             const feeder={...choice.feeder,start,end:start+choice.feeder.duration};
             if(!checkFeederTask(choice,feeder,[...blockPlaced,...blockOperations,...frame.scheduled],blockMeals,runEnd))continue;
             const nextScheduled=[...frame.scheduled,feeder];
