@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { constructExactMainAndFeederCore, deriveActiveOperationalSignature, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -187,6 +187,55 @@ test("causal diagnostics are read-only and reconcile every already-consumed bran
   assert.equal(Object.values(enabled.evidence.causalDiagnostic!.waterfallByDepth).reduce((sum,row)=>sum+row.total,0),enabled.evidence.branchesExplored);
   assert.equal(Object.values(enabled.evidence.causalDiagnostic!.feederByDepth).reduce((sum,row)=>sum+row.startsEvaluated,0),enabled.evidence.constructiveFeederStartChecks);
   assert.ok(enabled.evidence.causalDiagnostic!.feederRejections.some(row=>row.firstRejectionReason==="TASK_AVAILABILITY"));
+  assert.ok(Object.values(enabled.evidence.causalDiagnostic!.mainChoiceEquivalenceByDepthBlock).every(row=>
+    row.mainChoices===Object.entries(row.classSizes).reduce((sum,[size,count])=>sum+Number(size)*count,0)));
+});
+
+test("active operational signatures ignore nominal identity and collection order",()=>{
+  const make=(participantId:string,mainId:string,feederId:string)=>syntheticProblem([
+    {id:feederId,kind:"vocal",participantId,duration:10,spaceId:"vocal-room",dependencies:[]},
+    {id:mainId,kind:"main",participantId,duration:10,spaceId:"main",dependencies:[feederId],blockKey:"block"},
+  ],[participantId],["vocal-room"]);
+  const signature=(problem:PlannerNextProblem)=>{const main=problem.tasks.find(task=>task.kind==="main")!;
+    const feeder=problem.tasks.find(task=>task.kind==="vocal")!;
+    return deriveActiveOperationalSignature(problem,{task:main,feeder,operation:[{...main,start:80,end:90}]});};
+  const first=make("participant-a","main-a","feeder-a"),second=make("participant-z","main-z","feeder-z");
+  second.tasks.reverse();second.spaces.reverse();second.participants.reverse();
+  assert.deepEqual(signature(first),signature(second));
+});
+
+test("active operational signatures distinguish every material current authority",()=>{
+  const base=syntheticProblem([
+    {id:"feeder",kind:"vocal",participantId:"p",duration:10,spaceId:"vocal-room",dependencies:[]},
+    {id:"main",kind:"main",participantId:"p",duration:10,spaceId:"main",dependencies:["feeder"],blockKey:"block"},
+  ],["p"],["vocal-room"]);
+  const dimensions=(problem:PlannerNextProblem,anchored=false)=>{const main=problem.tasks.find(task=>task.id==="main")!;
+    const feeder=problem.tasks.find(task=>task.id==="feeder")!;
+    const operation=[{...main,start:80,end:90},...(anchored?[{...main,id:"anchored",kind:"auxiliary" as const,spaceId:"side",dependencies:[],start:90,end:100}]:[])];
+    return deriveActiveOperationalSignature(problem,{task:main,feeder,operation,departureDeadline:110});};
+  const baseline=dimensions(base);
+  const cases:Array<[string,(problem:PlannerNextProblem)=>void,boolean]>=[
+    ["availabilityDeadline",problem=>{problem.participants[0]!.availability=[{start:5,end:120}];},false],
+    ["hardResources",problem=>{problem.resources.push({id:"band",availability:[{start:0,end:120}],presencePreference:"OFF"});problem.tasks.find(task=>task.id==="main")!.requiredResourceIds=["band"];},false],
+    ["coach",problem=>{problem.coaches.push({id:"other-coach",availability:[{start:0,end:120}]});problem.tasks.find(task=>task.id==="main")!.coachId="other-coach";},false],
+    ["feeder",problem=>{problem.tasks.find(task=>task.id==="feeder")!.availability=[{start:0,end:50}];},false],
+    ["operation",()=>{},true],
+    ["futureParticipant",problem=>{problem.tasks.push({id:"future",kind:"auxiliary",participantId:"p",duration:5,spaceId:"vocal-room",dependencies:[],availability:[{start:100,end:110}]});},false],
+  ];
+  for(const [dimension,mutate,anchored] of cases){const changed=structuredClone(base);if(anchored)changed.spaces.push({id:"side",availability:[{start:0,end:120}]});mutate(changed);
+    assert.notEqual(dimensions(changed,anchored)[dimension as keyof typeof baseline],baseline[dimension as keyof typeof baseline],dimension);}
+});
+
+test("equivalence evidence groups choices without changing branch ledger, fingerprint, ordering or result",()=>{
+  const problem=twoCohortProblem();
+  const baseline=runExactMainAndFeederSearch(structuredClone(problem));
+  const observed:string[][]=[];
+  const diagnostic=runExactMainAndFeederSearch(structuredClone(problem),{causalDiagnostic:true,onMainChoicesRanked:(before,after)=>{
+    assert.deepEqual(after.map(choice=>choice.mainTask.id),before.map(choice=>choice.mainTask.id));observed.push(before.map(choice=>choice.activeOperationalSignature));}});
+  assert.deepEqual({...diagnostic.evidence,causalDiagnostic:null},baseline.evidence);
+  assert.deepEqual(diagnostic.scheduledTasks,baseline.scheduledTasks);
+  assert.equal(diagnostic.evidence.coreFingerprint,baseline.evidence.coreFingerprint);
+  assert.ok(observed.some(signatures=>new Set(signatures).size<signatures.length));
 });
 
 test("a minimal anchored core is adjacent, fed before its first obligation, and hard-valid", () => {

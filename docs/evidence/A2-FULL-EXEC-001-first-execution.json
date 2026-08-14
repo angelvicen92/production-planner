@@ -3460,7 +3460,225 @@
             "blockingDecisionDepth": 6,
             "blockingDecisionMainTaskId": "task:10056"
           }
-        ]
+        ],
+        "mainChoiceEquivalenceByDepthBlock": {
+          "0|plan-resource:4005": {
+            "depth": 0,
+            "blockKey": "plan-resource:4005",
+            "observations": 8,
+            "mainChoices": 56,
+            "equivalenceClassCount": 56,
+            "classSizes": {
+              "1": 56
+            },
+            "singletonCount": 56,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "futureParticipant": 8
+            }
+          },
+          "0|plan-resource:4004": {
+            "depth": 0,
+            "blockKey": "plan-resource:4004",
+            "observations": 14,
+            "mainChoices": 126,
+            "equivalenceClassCount": 126,
+            "classSizes": {
+              "1": 126
+            },
+            "singletonCount": 126,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "futureParticipant": 14
+            }
+          },
+          "1|plan-resource:4004": {
+            "depth": 1,
+            "blockKey": "plan-resource:4004",
+            "observations": 1,
+            "mainChoices": 8,
+            "equivalenceClassCount": 8,
+            "classSizes": {
+              "1": 8
+            },
+            "singletonCount": 8,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "futureParticipant": 1
+            }
+          },
+          "2|plan-resource:4004": {
+            "depth": 2,
+            "blockKey": "plan-resource:4004",
+            "observations": 1,
+            "mainChoices": 7,
+            "equivalenceClassCount": 7,
+            "classSizes": {
+              "1": 7
+            },
+            "singletonCount": 7,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "futureParticipant": 1
+            }
+          },
+          "3|plan-resource:4004": {
+            "depth": 3,
+            "blockKey": "plan-resource:4004",
+            "observations": 1,
+            "mainChoices": 7,
+            "equivalenceClassCount": 7,
+            "classSizes": {
+              "1": 7
+            },
+            "singletonCount": 7,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 1,
+              "operation": 1,
+              "hardResources": 1,
+              "futureParticipant": 1
+            }
+          },
+          "4|plan-resource:4005": {
+            "depth": 4,
+            "blockKey": "plan-resource:4005",
+            "observations": 2,
+            "mainChoices": 16,
+            "equivalenceClassCount": 16,
+            "classSizes": {
+              "1": 16
+            },
+            "singletonCount": 16,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 2,
+              "operation": 2,
+              "hardResources": 2,
+              "availabilityDeadline": 2,
+              "feeder": 2,
+              "futureParticipant": 2
+            }
+          },
+          "5|plan-resource:4004": {
+            "depth": 5,
+            "blockKey": "plan-resource:4004",
+            "observations": 24,
+            "mainChoices": 144,
+            "equivalenceClassCount": 144,
+            "classSizes": {
+              "1": 144
+            },
+            "singletonCount": 144,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 24,
+              "operation": 24,
+              "hardResources": 24,
+              "futureParticipant": 24
+            }
+          },
+          "6|plan-resource:4004": {
+            "depth": 6,
+            "blockKey": "plan-resource:4004",
+            "observations": 143,
+            "mainChoices": 595,
+            "equivalenceClassCount": 595,
+            "classSizes": {
+              "1": 595
+            },
+            "singletonCount": 595,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "futureParticipant": 143
+            }
+          },
+          "7|plan-resource:4004": {
+            "depth": 7,
+            "blockKey": "plan-resource:4004",
+            "observations": 592,
+            "mainChoices": 2845,
+            "equivalenceClassCount": 2845,
+            "classSizes": {
+              "1": 2845
+            },
+            "singletonCount": 2845,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 477,
+              "operation": 477,
+              "hardResources": 477,
+              "futureParticipant": 592
+            }
+          },
+          "8|plan-resource:4004": {
+            "depth": 8,
+            "blockKey": "plan-resource:4004",
+            "observations": 2842,
+            "mainChoices": 11368,
+            "equivalenceClassCount": 11368,
+            "classSizes": {
+              "1": 11368
+            },
+            "singletonCount": 11368,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 2842,
+              "operation": 2842,
+              "hardResources": 2842,
+              "futureParticipant": 2842
+            }
+          },
+          "9|plan-resource:4004": {
+            "depth": 9,
+            "blockKey": "plan-resource:4004",
+            "observations": 9938,
+            "mainChoices": 28386,
+            "equivalenceClassCount": 28386,
+            "classSizes": {
+              "1": 28386
+            },
+            "singletonCount": 28386,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 7098,
+              "operation": 7098,
+              "hardResources": 7098,
+              "futureParticipant": 9938
+            }
+          },
+          "10|plan-resource:4004": {
+            "depth": 10,
+            "blockKey": "plan-resource:4004",
+            "observations": 19808,
+            "mainChoices": 36758,
+            "equivalenceClassCount": 36758,
+            "classSizes": {
+              "1": 36758
+            },
+            "singletonCount": 36758,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {
+              "structure": 8476,
+              "operation": 8476,
+              "hardResources": 8476,
+              "futureParticipant": 16950
+            }
+          },
+          "11|plan-resource:4004": {
+            "depth": 11,
+            "blockKey": "plan-resource:4004",
+            "observations": 33898,
+            "mainChoices": 33898,
+            "equivalenceClassCount": 33898,
+            "classSizes": {
+              "1": 33898
+            },
+            "singletonCount": 33898,
+            "largestClass": 1,
+            "dimensionsBreakingEquivalence": {}
+          }
+        }
       }
     },
     "diagnosticReport": {
@@ -3614,6 +3832,224 @@
           "invalid": 0,
           "mainChoicesReachingFeeder": 33898,
           "mainChoicesWithValidFeeder": 0
+        }
+      },
+      "mainChoiceEquivalenceByDepthBlock": {
+        "0|plan-resource:4005": {
+          "depth": 0,
+          "blockKey": "plan-resource:4005",
+          "observations": 8,
+          "mainChoices": 56,
+          "equivalenceClassCount": 56,
+          "classSizes": {
+            "1": 56
+          },
+          "singletonCount": 56,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "futureParticipant": 8
+          }
+        },
+        "0|plan-resource:4004": {
+          "depth": 0,
+          "blockKey": "plan-resource:4004",
+          "observations": 14,
+          "mainChoices": 126,
+          "equivalenceClassCount": 126,
+          "classSizes": {
+            "1": 126
+          },
+          "singletonCount": 126,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "futureParticipant": 14
+          }
+        },
+        "1|plan-resource:4004": {
+          "depth": 1,
+          "blockKey": "plan-resource:4004",
+          "observations": 1,
+          "mainChoices": 8,
+          "equivalenceClassCount": 8,
+          "classSizes": {
+            "1": 8
+          },
+          "singletonCount": 8,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "futureParticipant": 1
+          }
+        },
+        "2|plan-resource:4004": {
+          "depth": 2,
+          "blockKey": "plan-resource:4004",
+          "observations": 1,
+          "mainChoices": 7,
+          "equivalenceClassCount": 7,
+          "classSizes": {
+            "1": 7
+          },
+          "singletonCount": 7,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "futureParticipant": 1
+          }
+        },
+        "3|plan-resource:4004": {
+          "depth": 3,
+          "blockKey": "plan-resource:4004",
+          "observations": 1,
+          "mainChoices": 7,
+          "equivalenceClassCount": 7,
+          "classSizes": {
+            "1": 7
+          },
+          "singletonCount": 7,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 1,
+            "operation": 1,
+            "hardResources": 1,
+            "futureParticipant": 1
+          }
+        },
+        "4|plan-resource:4005": {
+          "depth": 4,
+          "blockKey": "plan-resource:4005",
+          "observations": 2,
+          "mainChoices": 16,
+          "equivalenceClassCount": 16,
+          "classSizes": {
+            "1": 16
+          },
+          "singletonCount": 16,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 2,
+            "operation": 2,
+            "hardResources": 2,
+            "availabilityDeadline": 2,
+            "feeder": 2,
+            "futureParticipant": 2
+          }
+        },
+        "5|plan-resource:4004": {
+          "depth": 5,
+          "blockKey": "plan-resource:4004",
+          "observations": 24,
+          "mainChoices": 144,
+          "equivalenceClassCount": 144,
+          "classSizes": {
+            "1": 144
+          },
+          "singletonCount": 144,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 24,
+            "operation": 24,
+            "hardResources": 24,
+            "futureParticipant": 24
+          }
+        },
+        "6|plan-resource:4004": {
+          "depth": 6,
+          "blockKey": "plan-resource:4004",
+          "observations": 143,
+          "mainChoices": 595,
+          "equivalenceClassCount": 595,
+          "classSizes": {
+            "1": 595
+          },
+          "singletonCount": 595,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "futureParticipant": 143
+          }
+        },
+        "7|plan-resource:4004": {
+          "depth": 7,
+          "blockKey": "plan-resource:4004",
+          "observations": 592,
+          "mainChoices": 2845,
+          "equivalenceClassCount": 2845,
+          "classSizes": {
+            "1": 2845
+          },
+          "singletonCount": 2845,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 477,
+            "operation": 477,
+            "hardResources": 477,
+            "futureParticipant": 592
+          }
+        },
+        "8|plan-resource:4004": {
+          "depth": 8,
+          "blockKey": "plan-resource:4004",
+          "observations": 2842,
+          "mainChoices": 11368,
+          "equivalenceClassCount": 11368,
+          "classSizes": {
+            "1": 11368
+          },
+          "singletonCount": 11368,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 2842,
+            "operation": 2842,
+            "hardResources": 2842,
+            "futureParticipant": 2842
+          }
+        },
+        "9|plan-resource:4004": {
+          "depth": 9,
+          "blockKey": "plan-resource:4004",
+          "observations": 9938,
+          "mainChoices": 28386,
+          "equivalenceClassCount": 28386,
+          "classSizes": {
+            "1": 28386
+          },
+          "singletonCount": 28386,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 7098,
+            "operation": 7098,
+            "hardResources": 7098,
+            "futureParticipant": 9938
+          }
+        },
+        "10|plan-resource:4004": {
+          "depth": 10,
+          "blockKey": "plan-resource:4004",
+          "observations": 19808,
+          "mainChoices": 36758,
+          "equivalenceClassCount": 36758,
+          "classSizes": {
+            "1": 36758
+          },
+          "singletonCount": 36758,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {
+            "structure": 8476,
+            "operation": 8476,
+            "hardResources": 8476,
+            "futureParticipant": 16950
+          }
+        },
+        "11|plan-resource:4004": {
+          "depth": 11,
+          "blockKey": "plan-resource:4004",
+          "observations": 33898,
+          "mainChoices": 33898,
+          "equivalenceClassCount": 33898,
+          "classSizes": {
+            "1": 33898
+          },
+          "singletonCount": 33898,
+          "largestClass": 1,
+          "dimensionsBreakingEquivalence": {}
         }
       },
       "criticalDepth": 12,

@@ -58,7 +58,9 @@ export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number;
 export interface ExactDepthFeeder { startsConsidered:number; startsCoachEliminated:number; startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
 export interface ExactCriticalFeederRejection { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; startsAttempted:number; firstRejectionReason:PlacementRejectionReason; blockingPlacedTaskId:string|null; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; count:number }
 export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; startsEliminated:number }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[] }
+export type ExactOperationalSignatureDimension = "structure"|"coach"|"operation"|"hardResources"|"availabilityDeadline"|"feeder"|"synchronization"|"futureParticipant";
+export interface ExactMainChoiceEquivalenceEvidence { depth:number; blockKey:string; observations:number; mainChoices:number; equivalenceClassCount:number; classSizes:Record<string,number>; singletonCount:number; largestClass:number; dimensionsBreakingEquivalence:Partial<Record<ExactOperationalSignatureDimension,number>> }
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; mainChoiceEquivalenceByDepthBlock:Record<string,ExactMainChoiceEquivalenceEvidence> }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -108,6 +110,8 @@ export interface ExactMainChoiceDescriptor {
   readonly pattern: readonly string[];
   readonly participantSlack: number;
   readonly firstObligation: number;
+  /** Read-only contextual identity; it is diagnostic and never participates in search. */
+  readonly activeOperationalSignature: string;
 }
 
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
@@ -299,6 +303,56 @@ export function createExactSearchLedger(limit: number): ExactSearchLedger {
 }
 
 const canonical = <T extends { id: string }>(values: readonly T[]): T[] => [...values].sort((a, b) => a.id.localeCompare(b.id));
+const stableValue = (value:unknown):unknown => Array.isArray(value) ? value.map(stableValue)
+  : value && typeof value === "object" ? Object.fromEntries(Object.entries(value as Record<string,unknown>)
+    .filter(([,entry])=>entry!==undefined).sort(([a],[b])=>a.localeCompare(b)).map(([key,entry])=>[key,stableValue(entry)])) : value;
+const stableJson = (value:unknown):string => JSON.stringify(stableValue(value));
+const sortedWindows = (windows:readonly {start:number;end:number}[]|undefined):readonly {start:number;end:number}[] =>
+  [...(windows??[])].sort((a,b)=>a.start-b.start||a.end-b.end).map(({start,end})=>({start,end}));
+const resourceAuthority = (problem:PlannerNextProblem,id:string) => { const resource=problem.resources.find(value=>value.id===id);
+  return {id,availability:sortedWindows(resource?.availability),assignedSpaceId:resource?.assignedSpaceId,
+    transitionMinutes:resource?.transitionMinutes??problem.resourceTransitionMinutes}; };
+const taskShape = (problem:PlannerNextProblem,task:Task|ScheduledTask) => ({kind:task.kind,duration:task.duration,
+  spaceId:task.spaceId,coachId:task.coachId,requiredResources:[...(task.requiredResourceIds??[])].sort().map(id=>resourceAuthority(problem,id)),
+  itinerantUnitId:task.itinerantUnitId,setupFamilyId:task.setupFamilyId,joint:task.jointGroupId!==undefined,
+  availability:sortedWindows(task.availability),...( "start" in task ? {start:task.start,end:task.end}:{} )});
+
+export interface ActiveOperationalSignatureInput { task:Task; operation:readonly ScheduledTask[]; feeder:Task; departureDeadline?:number }
+/** Pure contextual projection of the authorities that the current core/continuation can observe.
+ * Task, participant, feeder, contract and synchronization IDs are deliberately projected away. */
+export function deriveActiveOperationalSignature(problem:PlannerNextProblem,input:ActiveOperationalSignatureInput):
+  Readonly<Record<ExactOperationalSignatureDimension,string>> {
+  const participant=problem.participants.find(value=>value.id===input.task.participantId);
+  const coach=problem.coaches.find(value=>value.id===input.task.coachId);
+  const operationIds=new Set(input.operation.map(({id})=>id)); operationIds.add(input.feeder.id);
+  const participantTasks=problem.tasks.filter(task=>task.participantId===input.task.participantId&&!operationIds.has(task.id))
+    .map(task=>taskShape(problem,task)).sort((a,b)=>stableJson(a).localeCompare(stableJson(b)));
+  const meals=(problem.participantMeals??[]).filter(meal=>meal.participantId===input.task.participantId)
+    .map(({duration,window,status,fixedInterval,dependencies})=>({duration,window,status,fixedInterval,dependencyCount:dependencies?.length??0}))
+    .sort((a,b)=>stableJson(a).localeCompare(stableJson(b)));
+  const synchronized=(problem.roundSynchronizations??[]).flatMap(policy=>policy.lanes.flatMap((lane,laneIndex)=>
+    lane.taskIds.some(id=>operationIds.has(id))?[{laneIndex,spaceId:lane.spaceId,preparationMinutesBetweenRounds:lane.preparationMinutesBetweenRounds,
+      synchronization:policy.synchronization,laneCount:policy.lanes.length}]:[]));
+  const dependencyShape=(id:string):unknown=>{const operationIndex=input.operation.findIndex(task=>task.id===id);
+    if(operationIndex>=0)return {operationIndex};if(id===input.feeder.id)return {feeder:true};
+    const dependency=problem.tasks.find(task=>task.id===id);return dependency?taskShape(problem,dependency):{missing:true};};
+  const dimensions:Record<ExactOperationalSignatureDimension,unknown>={
+    structure:{blockKey:input.task.blockKey,operationLength:input.operation.length},
+    coach:{id:input.task.coachId,availability:sortedWindows(coach?.availability),routes:(problem.coachRouteTransitions??[])
+      .filter(route=>route.coachId===input.task.coachId).map(({fromSpaceId,toSpaceId,minutes})=>({fromSpaceId,toSpaceId,minutes}))
+      .sort((a,b)=>stableJson(a).localeCompare(stableJson(b)))},
+    operation:input.operation.map(task=>({...taskShape(problem,task),dependencies:task.dependencies.map(dependencyShape)})),
+    hardResources:{mainSpace:input.task.spaceId,resources:[...(input.operation.flatMap(task=>task.requiredResourceIds??[]))]
+      .sort().map(id=>resourceAuthority(problem,id)),itinerantUnits:[...new Set(input.operation.map(task=>task.itinerantUnitId).filter(Boolean))].sort()},
+    availabilityDeadline:{day:problem.day,participant:sortedWindows(participant?.availability),departureDeadline:input.departureDeadline},
+    feeder:{...taskShape(problem,input.feeder),dependencies:input.feeder.dependencies.map(dependencyShape),participantAvailability:sortedWindows(participant?.availability),
+      spaceAvailability:sortedWindows(problem.spaces.find(space=>space.id===input.feeder.spaceId)?.availability)},
+    synchronization:synchronized,
+    futureParticipant:{tasks:participantTasks,meals,participantTransitionMinutes:problem.participantTransitionMinutes},
+  };
+  return Object.freeze(Object.fromEntries(Object.entries(dimensions).map(([key,value])=>[key,stableJson(value)])) as Record<ExactOperationalSignatureDimension,string>);
+}
+const operationalSignatureKey = (dimensions:Readonly<Record<ExactOperationalSignatureDimension,string>>):string => stableJson(dimensions);
 const readonlyTaskCopy = <T extends Task | ScheduledTask>(task: T): Readonly<T> => Object.freeze({ ...task,
   dependencies: Object.freeze([...task.dependencies]),
   requiredResourceIds: task.requiredResourceIds === undefined ? undefined : Object.freeze([...task.requiredResourceIds]),
@@ -370,7 +424,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[]}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],mainChoiceEquivalenceByDepthBlock:{}}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
@@ -643,11 +697,29 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
       choices.sort((a,b)=>a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation||a.task.id.localeCompare(b.task.id));
       if (choices.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
+      const dimensionsById=new Map(choices.map(choice=>[choice.task.id,deriveActiveOperationalSignature(problem,{task:choice.task,
+        operation:choice.operation,feeder:choice.feeder,departureDeadline:latestDepartureStart.get(choice.task.participantId)})]));
+      if(diagnostic){
+        const classes=new Map<string,number>();
+        for(const choice of choices){const key=operationalSignatureKey(dimensionsById.get(choice.task.id)!);classes.set(key,(classes.get(key)??0)+1);}
+        const classSizes=[...classes.values()].sort((a,b)=>b-a);
+        const evidenceKey=`${position}|${pattern[position]}`;
+        const row=diagnostic.mainChoiceEquivalenceByDepthBlock[evidenceKey]??={depth:position,blockKey:pattern[position]!,observations:0,
+          mainChoices:0,equivalenceClassCount:0,classSizes:{},singletonCount:0,largestClass:0,dimensionsBreakingEquivalence:{}};
+        row.observations++;row.mainChoices+=choices.length;row.equivalenceClassCount+=classes.size;
+        for(const size of classSizes)row.classSizes[String(size)]=(row.classSizes[String(size)]??0)+1;
+        row.singletonCount+=classSizes.filter(size=>size===1).length;row.largestClass=Math.max(row.largestClass,...classSizes);
+        for(const dimension of Object.keys(dimensionsById.values().next().value??{}) as ExactOperationalSignatureDimension[])
+          if(new Set(choices.map(choice=>dimensionsById.get(choice.task.id)![dimension])).size>1)
+            row.dimensionsBreakingEquivalence[dimension]=(row.dimensionsBreakingEquivalence[dimension]??0)+1;
+        diagnostic.mainChoiceEquivalenceByDepthBlock[evidenceKey]=row;
+      }
       const describe = (choice: MainChoice): ExactMainChoiceDescriptor => Object.freeze({
         mainTask: readonlyTaskCopy(choice.task), operationTasks:Object.freeze(choice.operation.map(readonlyTaskCopy)),
         feeder:readonlyTaskCopy(choice.feeder), placedTasks:Object.freeze(blockPlaced.map(readonlyTaskCopy)),
         meals:Object.freeze(meals.map(meal=>Object.freeze({...meal}))), slot, depth:position,
-        pattern:Object.freeze([...pattern]), participantSlack:choice.participantSlack, firstObligation:choice.firstObligation });
+        pattern:Object.freeze([...pattern]), participantSlack:choice.participantSlack, firstObligation:choice.firstObligation,
+        activeOperationalSignature:operationalSignatureKey(dimensionsById.get(choice.task.id)!) });
       const byId=new Map(choices.map(choice=>[choice.task.id,describe(choice)]));
       const baseline=choices.map(choice=>byId.get(choice.task.id)!);
       if(options.mainChoiceComparator)choices.sort((a,b)=>options.mainChoiceComparator!(byId.get(a.task.id)!,byId.get(b.task.id)!));
