@@ -308,6 +308,27 @@ test("an analytically impossible cohort cannot perform hidden factorial work", (
   assert.equal(exhausted.evidence.branchesExplored, 10);
 });
 
+test("a high-cardinality feeder order exhausts its ledger without recursive stack growth", () => {
+  const participantIds = Array.from({ length: 18 }, (_, index) => `large-${index}`);
+  const tasks: Task[] = participantIds.flatMap((participantId, index) => [
+    { id: `large-feeder-${index}`, kind: "vocal" as const, participantId, duration: 10,
+      spaceId: "large-feed", dependencies: [] },
+    { id: `large-main-${index}`, kind: "main" as const, participantId, duration: 5,
+      spaceId: "main", dependencies: [`large-feeder-${index}`], blockKey: "coach",
+      availability: [{ start: 10 + index * 5, end: 15 + index * 5 }] },
+  ]);
+  const problem = syntheticProblem(tasks, participantIds, ["large-feed"]);
+  problem.mainFlow.preferredEnd = 100;
+  problem.budget.maxBranchExpansions = 1_000;
+  const first = constructExactMainAndFeederCore(problem);
+  const second = constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(second, first);
+  assert.equal(first.evidence.branchesExplored, problem.budget.maxBranchExpansions);
+  assert.deepEqual(first.evidence.reasonCodes, ["FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.deepEqual(first.scheduledTasks, []);
+});
+
 test("a fixed authorized space meal bridges one feeder operational block", () => {
   const problem = twoCohortProblem();
   problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));

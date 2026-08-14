@@ -484,8 +484,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           // Exact transposition: only tails for authorities used by remaining feeders can affect a
           // future placement. Failed equivalent prefixes are not expanded factorially again.
           const failedOrderStates=new Set<string>();
-          const orderAtStart=(scheduled:ScheduledTask[],remaining:typeof rankedCohort):SearchOutcome=>{
-            if(remaining.length===0){completeOrderAtStart=true;return closeBlock(scheduled);}
+          const orderStateKey=(scheduled:ScheduledTask[],remaining:typeof rankedCohort):string=>{
             const tails=new Map<string,ScheduledTask>();
             const futureAuthorities=new Set(remaining.flatMap(({choice:{feeder:task}})=>[
               `space:${task.spaceId}`,...(task.coachId?[`coach:${task.coachId}`]:[]),
@@ -501,30 +500,48 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 &&(tails.get(authority)?.end??-Infinity)<=task.end)tails.set(authority,task);
             }
             const previous=scheduled.at(-1);
-            const stateKey=[remaining.map(({choice})=>choice.task.id).sort().join(","),
+            return [remaining.map(({choice})=>choice.task.id).sort().join(","),
               previous?`${previous.end}:${previous.spaceId}:${previous.coachId??""}`:"",
               ...[...tails].sort(([a],[b])=>a.localeCompare(b)).map(([authority,task])=>`${authority}:${task.end}:${task.spaceId}`)].join("|");
-            if(failedOrderStates.has(stateKey))return "DEAD_END";
-            for(const candidate of remaining){
-              if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd))return "BUDGET_EXHAUSTED";
-              const previous=scheduled.at(-1);const choice=candidate.choice;
-              const transition=previous?.coachId!==undefined&&previous.coachId===choice.feeder.coachId
-                ?effectiveCoachTransitionMinutes(problem,previous.coachId,previous.spaceId,choice.feeder.spaceId):0;
-              let start=previous?previous.end+transition:blockStart;
-              if(previous&&transition===0&&previous.spaceId===choice.feeder.spaceId){const meal=blockMeals.find(item=>item.spaceId===previous.spaceId&&item.start===start);if(meal)start=meal.end;}
-              if(start+choice.feeder.duration>candidate.deadline)continue;
-              const feeder={...choice.feeder,start,end:start+choice.feeder.duration};
-              if(!checkFeederTask(choice,feeder,[...blockPlaced,...blockOperations,...scheduled],blockMeals,runEnd))continue;
-              const child=orderAtStart([...scheduled,feeder],remaining.filter(({choice:item})=>item.task.id!==choice.task.id));
-              if(child!=="DEAD_END")return child;
-              evidence.backtracks++;
-            }
-            failedOrderStates.add(stateKey);
-            return "DEAD_END";
           };
-          const child=orderAtStart([],rankedCohort);
+          interface FeederOrderFrame { scheduled:ScheduledTask[];remaining:typeof rankedCohort;nextIndex:number;stateKey:string|null }
+          const worklist:FeederOrderFrame[]=[{scheduled:[],remaining:rankedCohort,nextIndex:0,stateKey:null}];
+          let child:SearchOutcome="DEAD_END";
+          let orderBudgetExhausted=false;
+          while(worklist.length>0){
+            const frame=worklist.at(-1)!;
+            if(frame.stateKey===null){
+              frame.stateKey=orderStateKey(frame.scheduled,frame.remaining);
+              if(failedOrderStates.has(frame.stateKey)){
+                worklist.pop();if(worklist.length>0)evidence.backtracks++;continue;
+              }
+            }
+            if(frame.nextIndex>=frame.remaining.length){
+              failedOrderStates.add(frame.stateKey);worklist.pop();if(worklist.length>0)evidence.backtracks++;continue;
+            }
+            const candidate=frame.remaining[frame.nextIndex++]!;
+            if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)){
+              orderBudgetExhausted=true;break;
+            }
+            const previous=frame.scheduled.at(-1);const choice=candidate.choice;
+            const transition=previous?.coachId!==undefined&&previous.coachId===choice.feeder.coachId
+              ?effectiveCoachTransitionMinutes(problem,previous.coachId,previous.spaceId,choice.feeder.spaceId):0;
+            let start=previous?previous.end+transition:blockStart;
+            if(previous&&transition===0&&previous.spaceId===choice.feeder.spaceId){const meal=blockMeals.find(item=>item.spaceId===previous.spaceId&&item.start===start);if(meal)start=meal.end;}
+            if(start+choice.feeder.duration>candidate.deadline)continue;
+            const feeder={...choice.feeder,start,end:start+choice.feeder.duration};
+            if(!checkFeederTask(choice,feeder,[...blockPlaced,...blockOperations,...frame.scheduled],blockMeals,runEnd))continue;
+            const nextScheduled=[...frame.scheduled,feeder];
+            const nextRemaining=frame.remaining.filter(({choice:item})=>item.task.id!==choice.task.id);
+            if(nextRemaining.length===0){
+              completeOrderAtStart=true;child=closeBlock(nextScheduled);
+              if(child!=="DEAD_END")return child;
+              evidence.backtracks++;continue;
+            }
+            worklist.push({scheduled:nextScheduled,remaining:nextRemaining,nextIndex:0,stateKey:null});
+          }
           if(feederRow){if(completeOrderAtStart)feederRow.valid++;else feederRow.invalid++;}
-          if(child!=="DEAD_END")return child;
+          if(orderBudgetExhausted)return "BUDGET_EXHAUSTED";
         }
         if(!validBlockFound)evidence.zeroAlternativePrunes++;
         return "DEAD_END";
