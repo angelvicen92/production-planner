@@ -12,7 +12,8 @@ import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes } from "./placement";
+import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
@@ -66,6 +67,14 @@ export interface ExactItinerantPlanEvidence {
   standaloneForwardImpactedTaskChecks: number;
   standaloneForwardStaticEligibleStarts: number;
   standaloneForwardStaticEliminatedStarts: number;
+  standaloneForwardFullGridStarts: number;
+  standaloneForwardDynamicEligibleStarts: number;
+  standaloneForwardDynamicEliminatedStarts: number;
+  standaloneForwardDynamicNonemptyCertificates: number;
+  standaloneForwardOracleChecks: number;
+  standaloneForwardOracleFallbacks: number;
+  standaloneForwardOracleFallbackReasons: Record<string, number>;
+  standaloneForwardAnalyticEmptyDomainPrunes: number;
   standaloneLeafSearchBranches: number;
   standaloneForwardBranches: number;
   firstStandaloneForwardPruneDepth: number | null;
@@ -162,6 +171,7 @@ export interface StandaloneForwardStaticDomain {
   readonly eligibleStartCount: number;
   starts(): Generator<number, void, undefined>;
 }
+export type StandaloneForwardDynamicDomain = StandaloneForwardStaticDomain;
 interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; roundPreparations: ScheduledRoundPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null; operationalMeals: OperationalMealWitness | null }
 
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
@@ -205,6 +215,20 @@ function firstGridStart(dayStart: number, intervalStart: number): number {
   return dayStart + Math.max(0, Math.ceil((intervalStart - dayStart) / 5)) * 5;
 }
 
+function startDomain(problem: PlannerNextProblem, intervals: ClosedStartInterval[]): StandaloneForwardStaticDomain {
+  const normalized = mergeStartIntervals(intervals);
+  const eligibleStartCount = normalized.reduce((count, interval) => {
+    const first = firstGridStart(problem.day.start, interval.start);
+    return count + (first <= interval.end ? Math.floor((interval.end - first) / 5) + 1 : 0);
+  }, 0);
+  return { intervals: normalized, eligibleStartCount, *starts() {
+    for (const interval of normalized) {
+      const first = firstGridStart(problem.day.start, interval.start);
+      for (let start = first; start <= interval.end; start += 5) yield start;
+    }
+  } };
+}
+
 /** Exact placed-independent interval domain with a lazy projection onto the original day-relative grid. */
 export function standaloneForwardStaticDomain(problem: PlannerNextProblem, task: Task,
   scheduledSpaceMeals: ScheduledSpaceMeal[] = []): StandaloneForwardStaticDomain {
@@ -228,21 +252,39 @@ export function standaloneForwardStaticDomain(problem: PlannerNextProblem, task:
       || resources.some((resource) => resource!.assignedSpaceId === meal.spaceId)),
   ];
   for (const interval of blocked) domain = subtractBlockedInterval(domain, interval, task.duration);
-  const intervals = mergeStartIntervals(domain);
-  const eligibleStartCount = intervals.reduce((count, interval) => {
-    const first = firstGridStart(problem.day.start, interval.start);
-    return count + (first <= interval.end ? Math.floor((interval.end - first) / 5) + 1 : 0);
-  }, 0);
-  return {
-    intervals,
-    eligibleStartCount,
-    *starts() {
-      for (const interval of intervals) {
-        const first = firstGridStart(problem.day.start, interval.start);
-        for (let start = first; start <= interval.end; start += 5) yield start;
+  return startDomain(problem, domain);
+}
+
+/** Exact interval projection of every placed-task authority in canonical placement. */
+export function standaloneForwardDynamicDomain(problem: PlannerNextProblem, task: Task,
+  placed: ScheduledTask[], staticDomain = standaloneForwardStaticDomain(problem, task)): StandaloneForwardDynamicDomain {
+  let domain = staticDomain.intervals.map((interval) => ({ ...interval }));
+  for (const other of placed) {
+    if (task.dependencies.includes(other.id))
+      domain = intersectStartDomains(domain, [{ start: other.end, end: Number.POSITIVE_INFINITY }]);
+    if (other.dependencies.includes(task.id))
+      domain = intersectStartDomains(domain, [{ start: Number.NEGATIVE_INFINITY, end: other.start - task.duration }]);
+
+    const sharedParticipant = task.participantId !== undefined && other.participantId === task.participantId;
+    const sharedCoach = task.coachId !== undefined && other.coachId === task.coachId;
+    const sharedResources = (task.requiredResourceIds ?? []).filter((id) => (other.requiredResourceIds ?? []).includes(id));
+    const sharedSpace = task.spaceId === other.spaceId;
+    if (!sharedParticipant && !sharedCoach && !sharedSpace && sharedResources.length === 0) continue;
+
+    let beforeMargin = 0, afterMargin = 0;
+    if (!sharedSpace) {
+      if (sharedParticipant) beforeMargin = afterMargin = problem.participantTransitionMinutes;
+      if (sharedCoach && task.coachId !== undefined) {
+        beforeMargin = Math.max(beforeMargin, effectiveCoachTransitionMinutes(problem, task.coachId, task.spaceId, other.spaceId));
+        afterMargin = Math.max(afterMargin, effectiveCoachTransitionMinutes(problem, task.coachId, other.spaceId, task.spaceId));
       }
-    },
-  };
+      for (const id of sharedResources) beforeMargin = afterMargin = Math.max(beforeMargin, afterMargin,
+        effectiveResourceTransitionMinutes(problem, id));
+    }
+    domain = subtractBlockedInterval(domain,
+      { start: other.start - beforeMargin, end: other.end + afterMargin }, task.duration);
+  }
+  return startDomain(problem, domain);
 }
 
 function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
@@ -281,7 +323,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
   return (aParticipant !== undefined && aParticipant === bParticipant)
     || (aCoach !== undefined && aCoach === bCoach)
     || a.spaceId === b.spaceId
-    || (a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id));
+    || (a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))
+    || a.dependencies.includes(b.id) || b.dependencies.includes(a.id);
 }
 
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
@@ -614,6 +657,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
     standaloneForwardImpactedTaskChecks: 0, standaloneLeafSearchBranches: 0, standaloneForwardBranches: 0,
     standaloneForwardStaticEligibleStarts: 0, standaloneForwardStaticEliminatedStarts: 0,
+    standaloneForwardFullGridStarts: 0, standaloneForwardDynamicEligibleStarts: 0,
+    standaloneForwardDynamicEliminatedStarts: 0, standaloneForwardDynamicNonemptyCertificates: 0,
+    standaloneForwardOracleChecks: 0, standaloneForwardOracleFallbacks: 0,
+    standaloneForwardOracleFallbackReasons: {}, standaloneForwardAnalyticEmptyDomainPrunes: 0,
     firstStandaloneForwardPruneDepth: null, lastStandaloneForwardPruneDepth: null,
     lastStandaloneForwardBlockingTaskId: null, lastStandaloneForwardCausingCoreTaskIds: [],
     lastStandaloneForwardCausingMainTaskId: null, lastStandaloneForwardCausingFeederStart: null,
@@ -665,16 +712,35 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       let witness = false;
       const fullGridCount = Math.max(0, Math.floor((problem.day.end - task.duration - problem.day.start) / 5) + 1);
       const staticDomain = standaloneForwardStaticDomain(problem, task, candidate.meals);
+      evidence.standaloneForwardFullGridStarts += fullGridCount;
       evidence.standaloneForwardStaticEligibleStarts += staticDomain.eligibleStartCount;
       evidence.standaloneForwardStaticEliminatedStarts += fullGridCount - staticDomain.eligibleStartCount;
-      const starts = options.standaloneForwardStartDomainMode === "FULL_GRID"
+      const fullGridMode = options.standaloneForwardStartDomainMode === "FULL_GRID";
+      const dynamicDomain = fullGridMode ? staticDomain
+        : standaloneForwardDynamicDomain(problem, task, candidate.tasks, staticDomain);
+      if (!fullGridMode) {
+        evidence.standaloneForwardDynamicEligibleStarts += dynamicDomain.eligibleStartCount;
+        evidence.standaloneForwardDynamicEliminatedStarts += staticDomain.eligibleStartCount - dynamicDomain.eligibleStartCount;
+        if (dynamicDomain.eligibleStartCount === 0) evidence.standaloneForwardAnalyticEmptyDomainPrunes += 1;
+        else evidence.standaloneForwardDynamicNonemptyCertificates += 1;
+      }
+      const starts = fullGridMode
         ? Array.from({ length: fullGridCount }, (_, index) => problem.day.start + index * 5)
-        : staticDomain.starts();
+        : dynamicDomain.starts();
+      let fallbackRecorded = false;
       for (const start of starts) {
         if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
         if(options.causalDiagnostic)supplemental(candidate.depth).standaloneForward+=1;
         evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
+        evidence.standaloneForwardOracleChecks += 1;
         if (canPlaceTask(problem, task, start, candidate.tasks, candidate.meals)) { witness = true; break; }
+        if (!fullGridMode && !fallbackRecorded) {
+          const diagnosis = diagnoseTaskPlacement(problem, task, start, candidate.tasks, candidate.meals);
+          evidence.standaloneForwardOracleFallbacks += 1;
+          const reason = diagnosis.firstRejectionReason ?? "UNKNOWN";
+          evidence.standaloneForwardOracleFallbackReasons[reason] = (evidence.standaloneForwardOracleFallbackReasons[reason] ?? 0) + 1;
+          fallbackRecorded = true;
+        }
       }
       if (witness) { evidence.standaloneForwardWitnessesFound += 1; continue; }
       evidence.standaloneForwardPrunes += 1;

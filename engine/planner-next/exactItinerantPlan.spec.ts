@@ -4,7 +4,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
-import { standaloneForwardStaticDomain } from "./exactItinerantPlan";
+import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
 import { validatePlan } from "./validate";
 
@@ -248,6 +248,46 @@ test("a large static domain counts analytically and yields only the first reques
   assert.deepEqual(starts.return(), { value: undefined, done: true });
 });
 
+test("dynamic forward domain removes overlap intervals without enumerating a large blocked region", () => {
+  const authorities = [
+    { key: "participant", task: auxiliary("candidate", "shared", [{ start: 0, end: 1_000_000 }]), other: auxiliary("other", "shared", []) },
+    { key: "coach", task: { ...auxiliary("candidate", "candidate", [{ start: 0, end: 1_000_000 }]), coachId: "coach" }, other: { ...auxiliary("other", "other", []), coachId: "coach" } },
+    { key: "space", task: auxiliary("candidate", "candidate", [{ start: 0, end: 1_000_000 }]), other: { ...auxiliary("other", "other", []), spaceId: "space-candidate" } },
+    { key: "resource", task: { ...auxiliary("candidate", "candidate", [{ start: 0, end: 1_000_000 }]), requiredResourceIds: ["unit"] }, other: { ...auxiliary("other", "other", []), requiredResourceIds: ["unit"] } },
+  ];
+  for (const { key, task, other } of authorities) {
+    const input = problem([task]); input.day = { start: 0, end: 1_000_000 }; input.protectedMeal = undefined;
+    for (const authority of [...input.participants, ...input.coaches, ...input.spaces, ...input.resources]) authority.availability = [{ ...input.day }];
+    const placed = { ...other, start: 100, end: 900_000 };
+    const domain = standaloneForwardDynamicDomain(input, task, [placed]);
+    assert.deepEqual(domain.intervals, [{ start: 0, end: 90 }, { start: 900_000, end: 999_990 }], key);
+    assert.equal(domain.eligibleStartCount, 20_018, key);
+    assert.equal([...domain.starts()].every((start) => canPlaceTask(input, task, start, [placed])), true, key);
+  }
+});
+
+test("dynamic transitions, dependencies, grid and inclusive placement boundaries are exact", () => {
+  const task = { ...auxiliary("candidate", "shared", [{ start: 1, end: 101 }], ["unit"]), coachId: "coach" };
+  const input = problem([task]); input.day = { start: 1, end: 101 }; input.protectedMeal = undefined;
+  input.participantTransitionMinutes = 7; input.resources[0]!.transitionMinutes = 9;
+  input.coachRouteTransitions = [
+    { coachId: "coach", fromSpaceId: task.spaceId, toSpaceId: "other-space", minutes: 11 },
+    { coachId: "coach", fromSpaceId: "other-space", toSpaceId: task.spaceId, minutes: 13 },
+  ];
+  input.spaces.push({ id: "other-space", availability: [{ ...input.day }] });
+  const other = { ...auxiliary("other", "shared", [], ["unit"]), coachId: "coach", spaceId: "other-space", start: 41, end: 51 };
+  assert.deepEqual([...standaloneForwardDynamicDomain(input, task, [other]).starts()], [1, 6, 11, 16, 66, 71, 76, 81, 86, 91]);
+  for (let start = 1; start + task.duration <= 101; start += 5)
+    assert.equal([...standaloneForwardDynamicDomain(input, task, [other]).starts()].includes(start), canPlaceTask(input, task, start, [other]), String(start));
+
+  const predecessor = { ...other, id: "predecessor", end: 26, start: 16, participantId: "other", coachId: undefined, requiredResourceIds: [] };
+  const dependent = { ...other, id: "dependent", start: 61, end: 71, participantId: "other", coachId: undefined, requiredResourceIds: [], dependencies: [task.id] };
+  task.dependencies = [predecessor.id];
+  assert.deepEqual([...standaloneForwardDynamicDomain(input, task, [predecessor, dependent]).starts()], [26, 31, 36, 41, 46, 51]);
+  assert.equal(tasksCanAffectEachOther(task, predecessor), true);
+  assert.equal(tasksCanAffectEachOther(task, dependent), true);
+});
+
 test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and deterministic order with exact accounting", () => {
   const create = () => coreLeafContinuationProblem();
   const staticResult = runExactItinerantPlanSearch(create(), { standaloneForwardStartDomainMode: "STATIC_DOMAIN" });
@@ -261,6 +301,10 @@ test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and determi
   assert.equal(staticResult.evidence.standaloneForwardBranches, staticResult.evidence.standaloneForwardStartChecks);
   assert.equal(oracle.evidence.standaloneForwardBranches, oracle.evidence.standaloneForwardStartChecks);
   assert.deepEqual(runExactItinerantPlanSearch(create(), { standaloneForwardStartDomainMode: "STATIC_DOMAIN" }), staticResult);
+  assert.equal(staticResult.evidence.standaloneForwardOracleFallbacks, 0);
+  assert.equal(staticResult.evidence.standaloneForwardOracleChecks, staticResult.evidence.standaloneForwardStartChecks);
+  assert.ok(staticResult.evidence.standaloneForwardDynamicEliminatedStarts > 0);
+  assert.ok(staticResult.evidence.standaloneForwardAnalyticEmptyDomainPrunes > 0);
 });
 
 test("complete quality replaces only a strictly dominating incumbent", () => {
