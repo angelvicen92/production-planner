@@ -127,12 +127,12 @@ test("a deferred main survives bestK=1 after the stable-id first choice is causa
   assert.ok(result.evidence.backtracks > 0);
 });
 
-test("a deferred earlier feeder start survives after the latest valid start blocks the next feeder", () => {
+test("constructs the feasible feeder block without branching over individual starts", () => {
   const result = constructExactMainAndFeederCore(feederStartBacktrackingProblem());
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
-  assert.ok(result.evidence.backtracks > 0);
+  assert.equal(result.evidence.constructiveFeederStartChecks, 5);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
 });
@@ -222,7 +222,7 @@ test("the internal core has no routing, historical search, scenario oracle or pu
 function twoCohortProblem(): PlannerNextProblem {
   const availability = [{ start: 0, end: 140 }];
   const tasks: Task[] = [
-    { id: "feeder-a1", kind: "vocal", participantId: "a1", coachId: "coach-a", duration: 10, spaceId: "feed-a", dependencies: [], availability: [{ start: 20, end: 30 }] },
+    { id: "feeder-a1", kind: "vocal", participantId: "a1", coachId: "coach-a", duration: 10, spaceId: "feed-a", dependencies: [], availability: [{ start: 10, end: 20 }] },
     { id: "main-a1", kind: "main", participantId: "a1", coachId: "coach-a", duration: 10, spaceId: "main", dependencies: ["feeder-a1"], blockKey: "coach-a" },
     { id: "feeder-a2", kind: "vocal", participantId: "a2", coachId: "coach-a", duration: 10, spaceId: "feed-a", dependencies: [], availability: [{ start: 0, end: 10 }] },
     { id: "main-a2", kind: "main", participantId: "a2", coachId: "coach-a", duration: 10, spaceId: "main", dependencies: ["feeder-a2"], blockKey: "coach-a" },
@@ -264,7 +264,121 @@ test("closes configured contiguous feeder cohorts before advancing to secondary 
   const mainAOrder = [byId.get("main-a1")!, byId.get("main-a2")!].sort((a,b)=>a.start-b.start).map(({participantId})=>participantId);
   const feederAOrder = [byId.get("feeder-a1")!, byId.get("feeder-a2")!].sort((a,b)=>a.start-b.start).map(({participantId})=>participantId);
   assert.notDeepEqual(feederAOrder, mainAOrder);
+  const feederA = [byId.get("feeder-a1")!, byId.get("feeder-a2")!].sort((a,b)=>a.start-b.start);
+  const feederB = [byId.get("feeder-b1")!, byId.get("feeder-b2")!].sort((a,b)=>a.start-b.start);
+  assert.equal(feederA[0]!.end, feederA[1]!.start);
+  assert.equal(feederB[0]!.end, feederB[1]!.start);
   assert.deepEqual(problem, snapshot);
+});
+
+test("exact feeder alternatives retain distinct internal orders", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("b"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("b"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-b");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-b");
+  const orders = new Set<string>();
+  const result = runExactMainAndFeederSearch(problem, { onPartialCoreCandidate(candidate) {
+    const order = candidate.addedTasks.filter(({ kind }) => kind === "vocal")
+      .sort((a,b)=>a.start-b.start).map(({ id }) => id).join("|");
+    orders.add(order);
+    return orders.size === 1 ? "REJECT" : "CONTINUE";
+  } });
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(orders.size, 2);
+});
+
+test("an analytically impossible cohort cannot perform hidden factorial work", () => {
+  const participantIds = Array.from({ length: 7 }, (_, index) => `p${index}`);
+  const tasks: Task[] = participantIds.flatMap((participantId, index) => [
+    { id: `feeder-${participantId}`, kind: "vocal" as const, participantId, duration: 20,
+      spaceId: "feed", dependencies: [] },
+    { id: `main-${participantId}`, kind: "main" as const, participantId, duration: 10,
+      spaceId: "main", dependencies: [`feeder-${participantId}`], blockKey: "coach",
+      availability: [{ start: 30 + index * 10, end: 40 + index * 10 }] },
+  ]);
+  const problem = syntheticProblem(tasks, participantIds, ["feed"]);
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "INFEASIBLE");
+  assert.ok(result.evidence.constructiveFeederStartChecks <= 25);
+  assert.ok(result.evidence.branchesExplored < 5_040, `unexpected factorial work: ${result.evidence.branchesExplored}`);
+  const bounded = structuredClone(problem); bounded.budget.maxBranchExpansions = 10;
+  const exhausted = constructExactMainAndFeederCore(bounded);
+  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.equal(exhausted.evidence.branchesExplored, 10);
+});
+
+test("a high-cardinality feeder order exhausts its ledger without recursive stack growth", () => {
+  const participantIds = Array.from({ length: 18 }, (_, index) => `large-${index}`);
+  const tasks: Task[] = participantIds.flatMap((participantId, index) => [
+    { id: `large-feeder-${index}`, kind: "vocal" as const, participantId, duration: 10,
+      spaceId: "large-feed", dependencies: [] },
+    { id: `large-main-${index}`, kind: "main" as const, participantId, duration: 5,
+      spaceId: "main", dependencies: [`large-feeder-${index}`], blockKey: "coach",
+      availability: [{ start: 10 + index * 5, end: 15 + index * 5 }] },
+  ]);
+  const problem = syntheticProblem(tasks, participantIds, ["large-feed"]);
+  problem.mainFlow.preferredEnd = 100;
+  problem.budget.maxBranchExpansions = 1_000;
+  const first = constructExactMainAndFeederCore(problem);
+  const second = constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(second, first);
+  assert.equal(first.evidence.branchesExplored, problem.budget.maxBranchExpansions);
+  assert.deepEqual(first.evidence.reasonCodes, ["FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.deepEqual(first.scheduledTasks, []);
+});
+
+test("a fixed authorized space meal bridges one feeder operational block", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("a"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-a");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-a");
+  problem.tasks.find(({ id }) => id === "feeder-a1")!.availability = [{ start: 20, end: 30 }];
+  problem.spaces.find(({ id }) => id === "feed-a")!.mealPolicy = { window: { start: 10, end: 20 }, duration: 10 };
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  const feeders = result.scheduledTasks.filter(({ kind }) => kind === "vocal").sort((a,b)=>a.start-b.start);
+  assert.deepEqual(feeders.map(({ start, end }) => ({ start, end })), [{ start: 0, end: 10 }, { start: 20, end: 30 }]);
+  assert.deepEqual(result.scheduledSpaceMeals.filter(({ spaceId }) => spaceId === "feed-a")
+    .map(({ start, end }) => ({ start, end })), [{ start: 10, end: 20 }]);
+});
+
+test("an uncontracted pause breaks feeder continuity", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("a"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-a");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-a");
+  problem.tasks.find(({ id }) => id === "feeder-a1")!.availability = [{ start: 20, end: 30 }];
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "INFEASIBLE");
+  assert.deepEqual(result.scheduledTasks, []);
+});
+
+test("a configured coach transition is the only authorized interruption inside a feeder block", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("a"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-a");
+  const first = problem.tasks.find(({ id }) => id === "feeder-a1")!;
+  const second = problem.tasks.find(({ id }) => id === "feeder-a2")!;
+  first.spaceId = "feed-a1"; first.availability = [{ start: 15, end: 25 }];
+  second.spaceId = "feed-a2"; second.availability = [{ start: 0, end: 10 }];
+  problem.spaces.push({ id: "feed-a1", availability: [{ start: 0, end: 140 }] },
+    { id: "feed-a2", availability: [{ start: 0, end: 140 }] });
+  problem.coachRouteTransitions = [
+    { coachId: "coach-a", fromSpaceId: "feed-a1", toSpaceId: "feed-a2", minutes: 5 },
+    { coachId: "coach-a", fromSpaceId: "feed-a2", toSpaceId: "feed-a1", minutes: 5 },
+    { coachId: "coach-a", fromSpaceId: "feed-a1", toSpaceId: "main", minutes: 10 },
+    { coachId: "coach-a", fromSpaceId: "feed-a2", toSpaceId: "main", minutes: 10 },
+  ];
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  const feeders = result.scheduledTasks.filter(({ kind }) => kind === "vocal").sort((a,b)=>a.start-b.start);
+  assert.deepEqual(feeders.map(({ id }) => id), ["feeder-a2", "feeder-a1"]);
+  assert.equal(feeders[1]!.start - feeders[0]!.end, 5);
 });
 
 test("an impossible cohort backtracks before any secondary callback", () => {

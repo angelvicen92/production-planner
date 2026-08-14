@@ -36,7 +36,7 @@ const auxiliary = (id: string, participantId: string, availability: Array<{ star
   spaceId: `space-${id}`, dependencies: [], availability, requiredResourceIds });
 
 function coreLeafContinuationProblem(): PlannerNextProblem {
-  const input = problem([auxiliary("standalone", "core", [{ start: 70, end: 80 }])]);
+  const input = problem([auxiliary("standalone", "core", [{ start: 60, end: 70 }])]);
   const availability = [{ start: 0, end: 120 }];
   input.participants.push({ id: "other", availability });
   input.spaces.push({ id: "vocal-other", availability });
@@ -123,8 +123,7 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   const input = coreLeafContinuationProblem(), snapshot = structuredClone(input);
   const isolated = constructExactMainAndFeederCore(input), standalone = input.tasks.find(({ id }) => id === "standalone")!;
   assert.equal(isolated.status, "COMPLETE");
-  assert.equal(isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start, 70);
-  assert.equal([...Array(3)].some((_, index) => canPlaceTask(input, standalone, 70 + index * 5, isolated.scheduledTasks)), false);
+  assert.equal(canPlaceTask(input, standalone, 60, isolated.scheduledTasks), false);
   const integrated = constructExactItinerantPlan(input);
   assert.equal(integrated.status, "COMPLETE"); assert.ok(integrated.evidence.standaloneForwardPrunes > 0);
   assert.equal(integrated.evidence.coreLeavesRejectedByStandalone, 0);

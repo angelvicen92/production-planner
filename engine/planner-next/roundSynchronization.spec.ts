@@ -302,8 +302,10 @@ test("round synchronization is deterministic under task and eligible-set order c
 });
 
 test("round synchronization exhausts the shared budget atomically", () => {
+  const complete = constructExactItinerantPlan(structuredClone(supportedProblem()));
+  assert.equal(complete.status, "COMPLETE");
   const problem = structuredClone(supportedProblem());
-  problem.budget.maxBranchExpansions = 15;
+  problem.budget.maxBranchExpansions = complete.evidence.coreBranches + 1;
   const result = constructExactItinerantPlan(problem);
   assert.equal(result.status, "BRANCH_BUDGET_EXHAUSTED");
   assert.equal(result.complete, false);

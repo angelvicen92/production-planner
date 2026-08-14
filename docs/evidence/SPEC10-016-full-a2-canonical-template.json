@@ -1375,7 +1375,7 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "ea1cc9a1e24e530a6662ab1d747772f031c8ce59967b73da1e124a60bb28880f"
+    "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
   },
   "flexibleSetupOrderCapabilityProven": true,
   "roundSynchronizationProbe": {
@@ -1401,7 +1401,7 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "beb8ffc50af6971a8e8a6a5b550fc69df2df0a43f897af88e3f2c87f1c578dcc"
+    "fullFingerprint": "b0c761e817ca956dc52132a1a3cd9f2aa27c2c23e290eab310ffd4fe37e0d7ad"
   },
   "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
@@ -1554,7 +1554,7 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "ea1cc9a1e24e530a6662ab1d747772f031c8ce59967b73da1e124a60bb28880f"
+        "fullFingerprint": "b3428ce3a16678427394ab7c4d3a577ea1470ea41144627dea82f4badd5dffc1"
       },
       "flexibleSetupOrderCapabilityProven": true,
       "roundSynchronizationProbe": {
@@ -1580,7 +1580,7 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "beb8ffc50af6971a8e8a6a5b550fc69df2df0a43f897af88e3f2c87f1c578dcc"
+        "fullFingerprint": "b0c761e817ca956dc52132a1a3cd9f2aa27c2c23e290eab310ffd4fe37e0d7ad"
       },
       "roundSynchronizationCapabilityProven": true
     },
