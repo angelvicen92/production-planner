@@ -360,14 +360,24 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const feederMainById=new Map([...feederByMain].map(([mainId,feeder])=>[feeder.id,mainId]));
   const introducedBy=(id:string,placed:ScheduledTask[]):{mainTaskId:string|null;depth:number|null}=>{const direct=mains.some(x=>x.id===id)?id:feederMainById.get(id)??applicableContracts.find(c=>[...c.beforeTaskIds,...c.afterTaskIds].includes(id))?.anchorTaskId??null;if(!direct)return {mainTaskId:null,depth:null};return {mainTaskId:direct,depth:placed.filter(x=>x.kind==="main").findIndex(x=>x.id===direct)+1};};
-  const checkFeederStart = (choice:MainChoice, start: number, placed: ScheduledTask[], meals: ScheduledSpaceMeal[],depth:number): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
+  const checkFeederBlock = (block: readonly { choice: MainChoice; feeder: ScheduledTask }[],
+    placed: ScheduledTask[], meals: ScheduledSpaceMeal[], depth: number): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
     if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",depth)) return "BUDGET_EXHAUSTED";
     evidence.feederCandidatesEvaluated += 1;
     evidence.constructiveFeederStartChecks += 1;
-    const assessed=diagnostic?diagnoseTaskPlacement(problem,choice.feeder,start,[...placed,...choice.operation],meals):null;
-    const valid=assessed?assessed.valid:canPlaceTask(problem,choice.feeder,start,[...placed,...choice.operation],meals);
-    if(!valid&&diagnostic&&assessed?.firstRejectionReason){const blocker=assessed.blockingPlacedTaskId;const prior=blocker?introducedBy(blocker,placed):{mainTaskId:null,depth:null};const key=[depth,choice.task.id,choice.feeder.id,choice.task.participantId??"",assessed.firstRejectionReason,blocker??"",prior.depth??"",prior.mainTaskId??""].join("|");const existing=rejectionByKey.get(key);if(existing){existing.count++;existing.startsAttempted++;}else{const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,startsAttempted:1,firstRejectionReason:assessed.firstRejectionReason,blockingPlacedTaskId:blocker,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId,count:1};rejectionByKey.set(key,row);diagnostic.feederRejections.push(row);}}
-    return valid?"VALID":"INVALID";
+    const blockTasks = block.map(({ feeder }) => feeder);
+    for (const { choice, feeder } of block) {
+      const blockers = [...placed, ...choice.operation, ...blockTasks.filter(({ id }) => id !== feeder.id)];
+      const assessed = diagnostic ? diagnoseTaskPlacement(problem, choice.feeder, feeder.start, blockers, meals) : null;
+      const valid = assessed ? assessed.valid : canPlaceTask(problem, choice.feeder, feeder.start, blockers, meals);
+      if (!valid) {
+        if (diagnostic && assessed?.firstRejectionReason) {
+          const blocker=assessed.blockingPlacedTaskId;const prior=blocker?introducedBy(blocker,placed):{mainTaskId:null,depth:null};const key=[depth,choice.task.id,choice.feeder.id,choice.task.participantId??"",assessed.firstRejectionReason,blocker??"",prior.depth??"",prior.mainTaskId??""].join("|");const existing=rejectionByKey.get(key);if(existing){existing.count++;existing.startsAttempted++;}else{const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,startsAttempted:1,firstRejectionReason:assessed.firstRejectionReason,blockingPlacedTaskId:blocker,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId,count:1};rejectionByKey.set(key,row);diagnostic.feederRejections.push(row);}
+        }
+        return "INVALID";
+      }
+    }
+    return "VALID";
   };
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
@@ -420,80 +430,101 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.maximumDepth = Math.max(evidence.maximumDepth, position);
       if (position === runEnd) {
         const blockOperations = cohort.flatMap(({ operation }) => operation);
-        const scheduleFeeders = (scheduled: ScheduledTask[], remaining: MainChoice[]): SearchOutcome => {
-          if (remaining.length === 0) {
-            const nextPlaced = [...blockPlaced, ...scheduled];
-            matchingDiagnosticDepth=runEnd;
-            const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd,
-              options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
-              cohort.at(-1)!.task.id, scheduled);
-            if (matching.outcome !== "FOUND") {
-              if (matching.outcome === "DEAD_END") { evidence.residualMatchingPrunes += 1; evidence.backtracks += 1; }
-              return matching.outcome;
+        // The exact decision is one operational block: permute its internal order, then move the
+        // whole block on the time grid. Individual feeders never acquire independent idle gaps.
+        const scheduleFeederBlock = (ordered: MainChoice[]): SearchOutcome => {
+          if (ordered.length === cohort.length) {
+            const offsets: number[] = [];
+            for (let index = 0; index < ordered.length; index++) {
+              const previous = ordered[index - 1];
+              const current = ordered[index]!;
+              const transition = previous?.feeder.coachId !== undefined
+                && previous.feeder.coachId === current.feeder.coachId
+                ? effectiveCoachTransitionMinutes(problem, current.feeder.coachId,
+                  previous.feeder.spaceId, current.feeder.spaceId) : 0;
+              offsets.push(index === 0 ? 0 : offsets[index - 1]! + previous!.feeder.duration + transition);
             }
-            const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced,
-              addedTasks: [...blockOperations, ...scheduled], meals, depth: runEnd,
-              mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
-              pattern: [...pattern], timelineKey }) ?? "CONTINUE";
-            if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-            if (partial === "REJECT") { evidence.backtracks += 1; return "DEAD_END"; }
-            if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
-            const child = search(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd, timelineKey,
-              matching.certificate);
-            if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
-            else if (child === "DEAD_END") evidence.backtracks += 1;
-            return child;
+            const latestBlockStart = Math.min(...ordered.map((choice, index) => {
+              const mainStart = Math.min(...choice.operation.map(({ start }) => start));
+              const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId,
+                mainStart, mainStart);
+              return deadline - choice.feeder.duration - offsets[index]!;
+            }));
+            const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+            if (feederRow) feederRow.mainChoicesReachingFeeder++;
+            let validBlockFound = false;
+            for (let blockStart = latestBlockStart; blockStart >= problem.day.start; blockStart -= 5) {
+              if (feederRow) feederRow.startsConsidered++;
+              const block = ordered.map((choice, index) => ({ choice, feeder: { ...choice.feeder,
+                start: blockStart + offsets[index]!, end: blockStart + offsets[index]! + choice.feeder.duration } }));
+              const check = checkFeederBlock(block, [...blockPlaced, ...blockOperations], meals, runEnd);
+              if (check === "BUDGET_EXHAUSTED") return check;
+              if (feederRow) { feederRow.startsEvaluated++; if (check === "VALID") feederRow.valid++; else feederRow.invalid++; }
+              if (check === "INVALID") continue;
+              if (!validBlockFound && feederRow) feederRow.mainChoicesWithValidFeeder++;
+              validBlockFound = true;
+              const scheduled = block.map(({ feeder }) => feeder);
+              const nextPlaced = [...blockPlaced, ...scheduled];
+              matchingDiagnosticDepth=runEnd;
+              const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd,
+                options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
+                cohort.at(-1)!.task.id, scheduled);
+              if (matching.outcome !== "FOUND") {
+                if (matching.outcome === "DEAD_END") { evidence.residualMatchingPrunes += 1; evidence.backtracks += 1; }
+                return matching.outcome;
+              }
+              const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced,
+                addedTasks: [...blockOperations, ...scheduled], meals, depth: runEnd,
+                mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
+                pattern: [...pattern], timelineKey }) ?? "CONTINUE";
+              if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+              if (partial === "REJECT") { evidence.backtracks += 1; return "DEAD_END"; }
+              if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
+              const child = search(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd, timelineKey,
+                matching.certificate);
+              if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
+              else if (child === "DEAD_END") evidence.backtracks += 1;
+              if (child !== "DEAD_END") return child;
+            }
+            if (!validBlockFound) evidence.zeroAlternativePrunes += 1;
+            return "DEAD_END";
           }
-          const firstMainStart = Math.min(...blockOperations.map(({ start }) => start));
+          const remaining = cohort.filter((choice) => !ordered.some(({ task }) => task.id === choice.task.id));
           const ranked = remaining.map((choice) => {
+            const mainStart = Math.min(...choice.operation.map(({ start }) => start));
             const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId,
-              firstMainStart, firstMainStart);
-            const blockers = [...blockPlaced, ...blockOperations, ...scheduled];
+              mainStart, mainStart);
+            const blockers = [...blockPlaced, ...blockOperations];
             const domain = exactFeederStartDomain(problem, choice.feeder,
               deadline - choice.feeder.duration, blockers, options.feederStartDomainMode);
             return { choice, domain };
           }).sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount
             || a.choice.task.id.localeCompare(b.choice.task.id));
-          const { choice, domain: startDomain } = ranked[0]!;
-          if (diagnostic) for (const elimination of startDomain.eliminations) {
-            const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations, ...scheduled]);
-            const row: ExactFeederCoachDomainElimination = {
-              depth: position,
-              mainTaskId: choice.task.id,
-              feederTaskId: choice.feeder.id,
-              participantId: choice.task.participantId ?? null,
-              ...elimination,
-              blockingDecisionDepth: prior.depth && prior.depth > 0 ? prior.depth : null,
-              blockingDecisionMainTaskId: prior.mainTaskId,
-            };
-            const key = [row.depth, row.mainTaskId, row.feederTaskId, row.participantId ?? "", row.reason,
-              row.blockingPlacedTaskId, row.blockingDecisionDepth ?? "", row.blockingDecisionMainTaskId ?? ""].join("|");
-            const existing = eliminationByKey.get(key);
-            if (existing) existing.startsEliminated += row.startsEliminated;
-            else { eliminationByKey.set(key, row); diagnostic.feederCoachDomainEliminations.push(row); }
-          }
-          const feederRow=diagnostic?(diagnostic.feederByDepth[String(position)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
-          if(feederRow)feederRow.mainChoicesReachingFeeder++;
-          let validStartFound = false;
-          const starts = startDomain.starts((considered, eliminated) => {
-            if (feederRow) { feederRow.startsConsidered += considered; feederRow.startsCoachEliminated += eliminated; }
-          });
-          for (const start of starts) {
-            const check = checkFeederStart(choice,start,[...blockPlaced,...blockOperations,...scheduled],meals,position);
-            if (check === "BUDGET_EXHAUSTED") return check;
-            if(feederRow){feederRow.startsEvaluated++;if(check==="VALID")feederRow.valid++;else feederRow.invalid++;}
-            if (check === "INVALID") continue;
-            if (!validStartFound && feederRow) feederRow.mainChoicesWithValidFeeder++;
-            validStartFound = true;
-            const feeder = { ...choice.feeder, start, end: start + choice.feeder.duration };
-            const child = scheduleFeeders([...scheduled, feeder], remaining.filter(({ task }) => task.id !== choice.task.id));
+          for (const { choice, domain: startDomain } of ranked) {
+            if (diagnostic) for (const elimination of startDomain.eliminations) {
+              const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations]);
+              const row: ExactFeederCoachDomainElimination = {
+                depth: position,
+                mainTaskId: choice.task.id,
+                feederTaskId: choice.feeder.id,
+                participantId: choice.task.participantId ?? null,
+                ...elimination,
+                blockingDecisionDepth: prior.depth && prior.depth > 0 ? prior.depth : null,
+                blockingDecisionMainTaskId: prior.mainTaskId,
+              };
+              const key = [row.depth, row.mainTaskId, row.feederTaskId, row.participantId ?? "", row.reason,
+                row.blockingPlacedTaskId, row.blockingDecisionDepth ?? "", row.blockingDecisionMainTaskId ?? ""].join("|");
+              const existing = eliminationByKey.get(key);
+              if (existing) existing.startsEliminated += row.startsEliminated;
+              else { eliminationByKey.set(key, row); diagnostic.feederCoachDomainEliminations.push(row); }
+            }
+            const child = scheduleFeederBlock([...ordered, choice]);
             if (child !== "DEAD_END") return child;
             evidence.backtracks += 1;
           }
-          if (!validStartFound) evidence.zeroAlternativePrunes += 1;
           return "DEAD_END";
         };
-        return scheduleFeeders([], cohort);
+        return scheduleFeederBlock([]);
       }
 
       const slot = slots[position]!, choices: MainChoice[] = [];
