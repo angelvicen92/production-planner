@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
 import type { PlannerNextProblem, Task } from "./contracts";
@@ -348,6 +349,52 @@ test("rejects the minimum impossible architecture then admits the next plausible
   assert.ok(first.evidence.firstExactArchitecture?.includes("END:120"));
   assert.ok((first.evidence.feederOrderBranchesByArchitecture[first.evidence.firstExactArchitecture!] ?? 0) > 0);
   assert.deepEqual(second, first);
+});
+
+test("same-coach terminal transition rejects an architecture before FEEDER_ORDER", () => {
+  const problem = syntheticProblem([
+    { id: "feeder-a", kind: "vocal", participantId: "a", coachId: "coach", duration: 20,
+      spaceId: "feed", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["feeder-a"], blockKey: "block" },
+    { id: "feeder-b", kind: "vocal", participantId: "b", coachId: "coach", duration: 20,
+      spaceId: "feed", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["feeder-b"], blockKey: "block" },
+  ], ["a", "b"], ["feed"]);
+  problem.mainFlow.preferredEnd = 65;
+  problem.resourceTransitionMinutes = 10;
+  problem.protectedMeal = undefined;
+  const first = constructExactMainAndFeederCore(problem);
+  const second = constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status, "COMPLETE", first.evidence.reasonCodes.join(","));
+  assert.ok((first.evidence.structuralRejectionsByReason.TRANSITION_CAPACITY ?? 0) > 0);
+  const rejected = Object.entries(first.evidence.feederOrderBranchesByArchitecture)
+    .filter(([key]) => key.includes("END:65"));
+  assert.ok(rejected.length > 0 && rejected.every(([, branches]) => branches === 0));
+  assert.ok(first.evidence.firstExactArchitecture?.includes("END:120"));
+  assert.deepEqual(second, first);
+});
+
+test("different coaches preserve possible feeder parallelism without structural pruning", () => {
+  const problem = syntheticProblem([
+    { id: "feeder-a", kind: "vocal", participantId: "a", coachId: "coach-a", duration: 30,
+      spaceId: "feed-a", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", coachId: "coach-a", duration: 10,
+      spaceId: "main", dependencies: ["feeder-a"], blockKey: "block" },
+    { id: "feeder-b", kind: "vocal", participantId: "b", coachId: "coach-b", duration: 30,
+      spaceId: "feed-b", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", coachId: "coach-b", duration: 10,
+      spaceId: "main", dependencies: ["feeder-b"], blockKey: "block" },
+  ], ["a", "b"], ["feed-a", "feed-b"]);
+  problem.coaches = ["coach-a", "coach-b"].map((id) => ({ id, availability: [{ start: 0, end: 120 }] }));
+  problem.mainFlow.preferredEnd = 60;
+  problem.protectedMeal = undefined;
+  const mains = problem.tasks.filter((task) => task.kind === "main");
+  const feeders = new Map(mains.map((main) => [main.id,
+    problem.tasks.find((task) => task.id === main.dependencies[0])!]));
+  assert.equal(proveMainFeederArchitectureImpossible(problem, mains, feeders,
+    { pattern: ["coach", "coach"], slots: [40, 50] }), null);
 });
 
 test("a fixed authorized space meal bridges one feeder operational block", () => {

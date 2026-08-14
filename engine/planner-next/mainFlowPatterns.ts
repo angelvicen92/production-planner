@@ -1,6 +1,8 @@
 import type { PlannerNextProblem, Task } from "./contracts";
+import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
-export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW";
+export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
+  | "TRANSITION_CAPACITY";
 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
@@ -56,17 +58,32 @@ export function proveMainFeederArchitectureImpossible(
   for (const main of [...mains].sort((a, b) => a.id.localeCompare(b.id)))
     if (!augment(main, new Set())) return "RESOURCE_WINDOW";
 
-  // Feeders in a configured contiguous run are constructed serially. Even with zero
-  // transitions, their total processing load must fit before the latest main slot in the run.
+  // Only a proven shared coach makes the run serial independently of participant choice.
+  // Otherwise parallel feeder work may exist, so capacity remains deliberately unknown.
   for (let start = 0; start < architecture.pattern.length;) {
     let end = start + 1;
     while (end < architecture.pattern.length && architecture.pattern[end] === architecture.pattern[start]) end += 1;
     const runLength = end - start;
     const cohortMains = mains.filter((main) => main.blockKey === architecture.pattern[start]);
-    const feederLoad = cohortMains.map((main) => feederByMain.get(main.id)?.duration ?? 0)
-      .sort((a, b) => a - b).slice(0, runLength).reduce((sum, duration) => sum + duration, 0);
-    const latestMainStart = Math.max(...architecture.slots.slice(start, end));
-    if (feederLoad > latestMainStart - problem.day.start) return "FEEDER_CAPACITY";
+    const eligible = cohortMains.flatMap((main) => {
+      const feeder = feederByMain.get(main.id);
+      return feeder ? [{ main, feeder }] : [];
+    });
+    const coachIds = new Set(eligible.map(({ main }) => main.coachId));
+    const sharedCoachId = coachIds.size === 1 ? eligible[0]?.main.coachId : undefined;
+    const provenSharedCoach = eligible.length >= runLength && sharedCoachId !== undefined
+      && eligible.every(({ main, feeder }) => main.coachId === sharedCoachId && feeder.coachId === sharedCoachId);
+    if (provenSharedCoach) {
+      const selected = [...eligible].sort((left, right) => left.feeder.duration - right.feeder.duration
+        || left.main.id.localeCompare(right.main.id)).slice(0, runLength);
+      const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+      const firstMainStart = architecture.slots[start]!;
+      const priorCapacity = firstMainStart - problem.day.start;
+      if (feederLoad > priorCapacity) return "FEEDER_CAPACITY";
+      const terminalTransition = Math.min(...eligible.map(({ main, feeder }) =>
+        effectiveCoachTransitionMinutes(problem, sharedCoachId, feeder.spaceId, main.spaceId)));
+      if (feederLoad + terminalTransition > priorCapacity) return "TRANSITION_CAPACITY";
+    }
     start = end;
   }
   // Every feeder must have at least one legal grid placement before the latest compatible
