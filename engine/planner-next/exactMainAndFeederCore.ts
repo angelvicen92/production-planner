@@ -34,6 +34,9 @@ export interface ExactMainAndFeederCoreEvidence {
   residualMatchingPrunes: number;
   residualMatchingRepairs: number;
   residualMatchingRepairFailures: number;
+  mainWitnessChoicesFollowed: number;
+  mainWitnessFallbacks: number;
+  mainCandidatesExploredBeforeCohort: Record<string, number>;
   zeroAlternativePrunes: number;
   backtracks: number;
   maximumDepth: number;
@@ -358,6 +361,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingPositionChecks: 0, residualMatchingAugmentTraversals: 0,
     residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
+    mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0, mainCandidatesExploredBeforeCohort: {},
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
@@ -486,11 +490,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     let runEnd = depth + 1;
     while (runEnd < pattern.length && pattern[runEnd] === pattern[depth]) runEnd += 1;
     const descriptors: ExactMainChoiceDescriptor[] = [];
+    let cohortCandidatesExplored = 0;
 
     const assignMains = (position: number, blockPlaced: ScheduledTask[], blockUsed: Set<string>,
       cohort: MainChoice[], blockCertificate: ResidualMatchingCertificate | undefined): SearchOutcome => {
       evidence.maximumDepth = Math.max(evidence.maximumDepth, position);
       if (position === runEnd) {
+        const exploredKey = String(cohortCandidatesExplored);
+        evidence.mainCandidatesExploredBeforeCohort[exploredKey] =
+          (evidence.mainCandidatesExploredBeforeCohort[exploredKey] ?? 0) + 1;
         const blockOperations = cohort.flatMap(({ operation }) => operation);
         const fixedCohortMeals = canonical(problem.spaces.filter((space) => cohort.some(({ feeder }) => feeder.spaceId === space.id)
           && space.mealPolicy !== undefined
@@ -651,8 +659,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const byId=new Map(choices.map(choice=>[choice.task.id,describe(choice)]));
       const baseline=choices.map(choice=>byId.get(choice.task.id)!);
       if(options.mainChoiceComparator)choices.sort((a,b)=>options.mainChoiceComparator!(byId.get(a.task.id)!,byId.get(b.task.id)!));
+      const witnessTaskId = [...(blockCertificate?.matching ?? [])]
+        .find(([, witnessPosition]) => witnessPosition === position)?.[0];
+      if (witnessTaskId !== undefined) choices.sort((a, b) =>
+        Number(b.task.id === witnessTaskId) - Number(a.task.id === witnessTaskId));
       options.onMainChoicesRanked?.(Object.freeze([...baseline]),Object.freeze(choices.map(choice=>byId.get(choice.task.id)!)));
       for(const choice of choices){
+        cohortCandidatesExplored += 1;
+        if (choice.task.id === witnessTaskId) evidence.mainWitnessChoicesFollowed += 1;
+        else if (witnessTaskId !== undefined) evidence.mainWitnessFallbacks += 1;
         const descriptor=byId.get(choice.task.id)!; options.onMainChoiceEntered?.(descriptor); descriptors.push(descriptor);
         const nextPlaced=[...blockPlaced,...choice.operation], nextUsed=new Set(blockUsed).add(choice.task.id);
         matchingDiagnosticDepth=position;
@@ -667,7 +682,18 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
       return "DEAD_END";
     };
-    return assignMains(depth, placed, used, [], certificate);
+    let initialCertificate = certificate;
+    if (initialCertificate === undefined) {
+      matchingDiagnosticDepth = depth;
+      const matching = residualMatching(pattern, slots, composite, meals, placed, used, depth,
+        undefined, "", []);
+      if (matching.outcome !== "FOUND") {
+        if (matching.outcome === "DEAD_END") evidence.residualMatchingPrunes += 1;
+        return matching.outcome;
+      }
+      initialCertificate = matching.certificate;
+    }
+    return assignMains(depth, placed, used, [], initialCertificate);
   };
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,

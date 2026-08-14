@@ -106,6 +106,9 @@ export interface ExactItinerantPlanEvidence {
   residualMatchingPrunes: number;
   residualMatchingRepairs: number;
   residualMatchingRepairFailures: number;
+  mainWitnessChoicesFollowed: number;
+  mainWitnessFallbacks: number;
+  mainCandidatesExploredBeforeCohort: Record<string, number>;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
   completePlansObserved: number;
   completeIncumbentReplacements: number;
@@ -625,6 +628,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
     residualMatchingAugmentTraversals: 0, residualMatchingBranchesExplored: 0,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
+    mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0, mainCandidatesExploredBeforeCohort: {},
     lastExhaustionPhase: null,
     completePlansObserved: 0, completeIncumbentReplacements: 0, completeSelectionMode,
     completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
@@ -729,6 +733,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.residualMatchingPrunes = core.evidence.residualMatchingPrunes;
   evidence.residualMatchingRepairs = core.evidence.residualMatchingRepairs;
   evidence.residualMatchingRepairFailures = core.evidence.residualMatchingRepairFailures;
+  evidence.mainWitnessChoicesFollowed = core.evidence.mainWitnessChoicesFollowed;
+  evidence.mainWitnessFallbacks = core.evidence.mainWitnessFallbacks;
+  evidence.mainCandidatesExploredBeforeCohort = { ...core.evidence.mainCandidatesExploredBeforeCohort };
   evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
   const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();

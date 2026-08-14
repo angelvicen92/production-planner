@@ -103,7 +103,7 @@ test("every invalidation authority preserves exact FULL_RECOMPUTE parity", () =>
   }
 });
 
-test("crossed task and position removal repairs without assuming the removed vertices were paired", () => {
+test("certificate derivation records crossed removals without assuming that vertices were paired", () => {
   const traces: Array<{ selectedTaskId: string; consumedPosition: number; selectedTaskPreviousPosition: number | null;
     consumedPositionPreviousOwner: string | null; unmatchedBeforeRepair: number }> = [];
   const problem = mainFlowVocalScenario();
@@ -114,10 +114,52 @@ test("crossed task and position removal repairs without assuming the removed ver
   const crossed = traces.find((trace) => trace.selectedTaskPreviousPosition !== trace.consumedPosition
     && trace.consumedPositionPreviousOwner !== trace.selectedTaskId);
   assert.ok(crossed);
-  assert.ok(crossed.unmatchedBeforeRepair > 0);
-  assert.ok(incremental.evidence.residualMatchingRepairs > 0);
   assert.equal(incremental.status, full.status);
   assert.deepEqual(incremental.scheduledTasks, full.scheduledTasks);
+});
+
+test("the complete matching witness orders each run directly instead of nominal identities", () => {
+  const rankings: Array<{ baseline: string[]; ordered: string[] }> = [];
+  const entered: string[] = [];
+  const result = runExactMainAndFeederSearch(mainFlowVocalScenario(), {
+    onMainChoicesRanked: (baseline, ordered) => rankings.push({
+      baseline: baseline.map(({ mainTask }) => mainTask.id),
+      ordered: ordered.map(({ mainTask }) => mainTask.id),
+    }),
+    onMainChoiceEntered: ({ mainTask }) => entered.push(mainTask.id),
+  });
+  assert.equal(result.status, "COMPLETE");
+  assert.ok(rankings.some(({ baseline, ordered }) => baseline[0] !== ordered[0]));
+  assert.deepEqual(entered, rankings.map(({ ordered }) => ordered[0]));
+  assert.equal(result.evidence.mainWitnessChoicesFollowed, entered.length);
+  assert.equal(result.evidence.mainWitnessFallbacks, 0);
+  assert.deepEqual(result.evidence.mainCandidatesExploredBeforeCohort, { "4": 2 });
+});
+
+test("downstream rejection falls back beyond the witness and repairs incrementally", () => {
+  const run = (mode?: "FULL_RECOMPUTE") => {
+    const problem = mainFlowVocalScenario();
+    problem.budget.maxBranchExpansions = 300_000;
+    let firstMainOrder: string | undefined;
+    return runExactMainAndFeederSearch(problem, {
+      residualMatchingMode: mode,
+      onHardValidCoreLeaf: ({ tasks }) => {
+        const mainOrder = tasks.filter(({ kind }) => kind === "main")
+          .sort((a, b) => a.start - b.start).map(({ id }) => id).join(",");
+        firstMainOrder ??= mainOrder;
+        return mainOrder === firstMainOrder ? "REJECT" : "ACCEPT";
+      },
+    });
+  };
+  const incremental = run();
+  const repeated = run();
+  const full = run("FULL_RECOMPUTE");
+  assert.equal(incremental.status, "COMPLETE");
+  assert.ok(incremental.evidence.mainWitnessFallbacks > 0);
+  assert.ok(incremental.evidence.residualMatchingRepairs > 0);
+  assert.deepEqual(repeated, incremental);
+  assert.equal(full.status, incremental.status);
+  assert.deepEqual(full.scheduledTasks, incremental.scheduledTasks);
 });
 
 test("previously invalid edges remain monotonic and are reused without position checks", () => {
@@ -150,7 +192,8 @@ test("certificate derivation is sibling-isolated, deterministic, order-invariant
     evidence.residualMatchingInvocations + evidence.residualMatchingPositionChecks
       + evidence.residualMatchingAugmentTraversals);
   assert.ok(evidence.residualMatchingIncrementalUpdates > 0);
-  assert.ok(evidence.residualMatchingRepairs > 0);
+  assert.equal(evidence.mainWitnessFallbacks, 0);
+  assert.ok(evidence.mainWitnessChoicesFollowed > 0);
   assert.equal(evidence.residualMatchingFullBuilds, 1);
   assert.equal(evidence.residualMatchingRepairFailures, 0);
   assert.ok(evidence.branchesExplored < parent.budget.maxBranchExpansions);
