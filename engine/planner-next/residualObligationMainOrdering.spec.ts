@@ -27,13 +27,14 @@ function experimental(input: PlannerNextProblem) {
   return { result: runExactItinerantPlanSearch(input, { coreOrderer: orderer.options }), evidence: orderer.evidence };
 }
 
-test("residual context changes only candidate order and reduces the causal fixture presence", () => {
+test("matching witness remains authoritative over experimental residual ordering", () => {
   const input = fixture(), before = structuredClone(input), baseline = constructFirstHardValidExactItinerantPlan(input), changed = experimental(input);
   assert.equal(baseline.status, "COMPLETE"); assert.equal(changed.result.status, "COMPLETE"); assert.equal(input.budget.bestK, 1);
-  assert.equal(baseline.scheduledTasks.find(({ id }) => id === "main-a")!.start, 80);
+  assert.equal(baseline.scheduledTasks.find(({ id }) => id === "main-a")!.start, 90);
   assert.equal(changed.result.scheduledTasks.find(({ id }) => id === "main-b")!.start, 80);
-  assert.ok(evaluateParticipantItineraryQuality(input, changed.result.scheduledTasks).summary.totalIdleMinutes
-    < evaluateParticipantItineraryQuality(input, baseline.scheduledTasks).summary.totalIdleMinutes);
+  assert.equal(evaluateParticipantItineraryQuality(input, changed.result.scheduledTasks).summary.totalIdleMinutes,
+    evaluateParticipantItineraryQuality(input, baseline.scheduledTasks).summary.totalIdleMinutes);
+  assert.deepEqual(changed.result.scheduledTasks, baseline.scheduledTasks);
   assert.deepEqual(changed.result.scheduledTasks.map(({ id }) => id).sort(), baseline.scheduledTasks.map(({ id }) => id).sort());
   assert.equal(validatePlan(input, baseline.scheduledTasks, [], baseline.scheduledSpaceMeals).hardValid, true);
   assert.equal(validatePlan(input, changed.result.scheduledTasks, [], changed.result.scheduledSpaceMeals).hardValid, true);

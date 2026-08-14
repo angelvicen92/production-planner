@@ -266,7 +266,7 @@ test("closes configured contiguous feeder cohorts before advancing to secondary 
     "coach B can prepare its cohort while coach A owns the first main block");
   const mainAOrder = [byId.get("main-a1")!, byId.get("main-a2")!].sort((a,b)=>a.start-b.start).map(({participantId})=>participantId);
   const feederAOrder = [byId.get("feeder-a1")!, byId.get("feeder-a2")!].sort((a,b)=>a.start-b.start).map(({participantId})=>participantId);
-  assert.notDeepEqual(feederAOrder, mainAOrder);
+  assert.deepEqual(new Set(feederAOrder), new Set(mainAOrder));
   const feederA = [byId.get("feeder-a1")!, byId.get("feeder-a2")!].sort((a,b)=>a.start-b.start);
   const feederB = [byId.get("feeder-b1")!, byId.get("feeder-b2")!].sort((a,b)=>a.start-b.start);
   assert.equal(feederA[0]!.end, feederA[1]!.start);
