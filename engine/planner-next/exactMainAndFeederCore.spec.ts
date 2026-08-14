@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
+  exactFeederStartDomainUnion, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -138,6 +139,47 @@ test("constructs the feasible feeder block without branching over individual sta
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
 });
 
+test("same-coach prefix capacity rejects individually possible feeders and subtracts prior occupation", () => {
+  const problem=syntheticProblem([],[],[]);
+  const feeder=(id:string,duration:number):Task=>({id,kind:"vocal",duration,spaceId:"main",coachId:"coach",dependencies:[]});
+  const individuallyPossible=[{task:feeder("a",35),deadline:60},{task:feeder("b",35),deadline:60}];
+  assert.equal(deriveFeederCohortRelaxedCertificate(problem,individuallyPossible,[]).prefixCapacityImpossible,true);
+  const prior={...feeder("placed",30),start:0,end:30};
+  const occupied=deriveFeederCohortRelaxedCertificate(problem,[{task:feeder("candidate",40),deadline:60}],[prior]);
+  assert.equal(occupied.prefixCapacityImpossible,true);
+});
+
+test("EDD relaxed bound uses distinct deadline prefixes and is invariant to feeder IDs and input order", () => {
+  const problem=syntheticProblem([],[],[]);
+  const items=[
+    {task:{id:"z",kind:"vocal",duration:20,spaceId:"main",coachId:"coach",dependencies:[]} as Task,deadline:50},
+    {task:{id:"a",kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]} as Task,deadline:90},
+  ];
+  const first=deriveFeederCohortRelaxedCertificate(problem,items,[]);
+  const renamed=deriveFeederCohortRelaxedCertificate(problem,[
+    {...items[1]!,task:{...items[1]!.task,id:"x"}},{...items[0]!,task:{...items[0]!.task,id:"y"}},
+  ],[]);
+  assert.equal(first.latestFeasibleBlockStart,30);
+  assert.equal(renamed.latestFeasibleBlockStart,first.latestFeasibleBlockStart);
+});
+
+test("relaxed certificate ignores transitions and does not reject a feasible cohort", () => {
+  const problem=syntheticProblem([],[],[]);
+  problem.coachRouteTransitions=[{coachId:"coach",fromSpaceId:"main",toSpaceId:"main",minutes:50}];
+  const task=(id:string):Task=>({id,kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]});
+  const certificate=deriveFeederCohortRelaxedCertificate(problem,[{task:task("a"),deadline:60},{task:task("b"),deadline:80}],[]);
+  assert.equal(certificate.prefixCapacityImpossible,false);
+  assert.equal(certificate.latestFeasibleBlockStart,50);
+});
+
+test("cohort bound clips a large block-start region analytically without changing the grid", () => {
+  const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
+  const domain=exactFeederStartDomain(problem,task,100,[],"COACH_DOMAIN",100);
+  const bounded=exactFeederStartDomainUnion(0,100,[domain],20);
+  assert.equal(bounded.eligibleStartCount,5);
+  assert.deepEqual([...bounded.starts()],[20,15,10,5,0]);
+});
+
 test("structurally rejects an impossible feeder window without publishing a partial result", () => {
   const problem = syntheticProblem([
     { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },
@@ -186,6 +228,9 @@ test("causal diagnostics are read-only and reconcile every already-consumed bran
   assert.equal(enabled.status,disabled.status);
   assert.equal(Object.values(enabled.evidence.causalDiagnostic!.waterfallByDepth).reduce((sum,row)=>sum+row.total,0),enabled.evidence.branchesExplored);
   assert.equal(Object.values(enabled.evidence.causalDiagnostic!.feederByDepth).reduce((sum,row)=>sum+row.startsEvaluated,0),enabled.evidence.constructiveFeederStartChecks);
+  assert.equal(Object.values(enabled.evidence.feederOrderBranchesByArchitecture).reduce((sum,count)=>sum+count,0),enabled.evidence.feederOrderBranches);
+  assert.ok(enabled.evidence.feederCohortCapacityChecks>0);
+  assert.equal(enabled.evidence.feederCohortCapacityChecks,enabled.evidence.feederCohortEddChecks);
   assert.ok(enabled.evidence.causalDiagnostic!.feederRejections.some(row=>row.firstRejectionReason==="TASK_AVAILABILITY"));
 });
 

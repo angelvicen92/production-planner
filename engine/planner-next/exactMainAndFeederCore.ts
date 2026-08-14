@@ -52,6 +52,12 @@ export interface ExactMainAndFeederCoreEvidence {
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
   firstExactArchitecture: string | null;
   feederOrderBranchesByArchitecture: Record<string, number>;
+  feederOrderBranches: number;
+  feederCohortCapacityChecks: number;
+  feederCohortPrefixCapacityPrunes: number;
+  feederCohortEddChecks: number;
+  feederCohortEddEmptyPrunes: number;
+  blockStartsEliminatedByCohortBound: number;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -262,10 +268,10 @@ interface ExactFeederStartUnion {
 /** Projects each feeder domain onto the cohort grid, then merges its intervals.
  * Storage is proportional to domain intervals, never to the length of the day. */
 export function exactFeederStartDomainUnion(dayStart:number, latestBlockStart:number,
-  domains:readonly ExactFeederStartDomain[]):ExactFeederStartUnion {
+  domains:readonly ExactFeederStartDomain[], maximumStart=latestBlockStart):ExactFeederStartUnion {
   const fullGridStartCount=latestBlockStart<dayStart?0:gridCountInInterval(latestBlockStart,{start:dayStart,end:latestBlockStart});
   const projected=domains.flatMap(domain=>(domain.gridAnchor-latestBlockStart)%5===0?domain.intervals.flatMap(interval=>{
-    const clippedStart=Math.max(dayStart,interval.start),clippedEnd=Math.min(latestBlockStart,interval.end);
+    const clippedStart=Math.max(dayStart,interval.start),clippedEnd=Math.min(latestBlockStart,maximumStart,interval.end);
     const firstGridIndex=Math.max(0,Math.ceil((latestBlockStart-clippedEnd)/5));
     const lastGridIndex=Math.floor((latestBlockStart-clippedStart)/5);
     return firstGridIndex<=lastGridIndex?[{
@@ -286,6 +292,55 @@ export function exactFeederStartDomainUnion(dayStart:number, latestBlockStart:nu
       for(let gridIndex=first;gridIndex<=last;gridIndex++)yield latestBlockStart-gridIndex*5;
     }}
   };
+}
+
+export interface FeederCohortRelaxedCertificate {
+  readonly applicable: boolean;
+  readonly prefixCapacityImpossible: boolean;
+  readonly latestFeasibleBlockStart: number | null;
+}
+
+/** A negative certificate only: all omitted constraints can only reduce feasibility. */
+export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem,
+  feeders: readonly Readonly<{ task: Task; deadline: number }>[], placed: readonly ScheduledTask[]): FeederCohortRelaxedCertificate {
+  const coachId=feeders[0]?.task.coachId;
+  if(feeders.length===0||coachId===undefined||feeders.some(({task})=>task.coachId!==coachId))
+    return {applicable:false,prefixCapacityImpossible:false,latestFeasibleBlockStart:null};
+  const coach=problem.coaches.find(({id})=>id===coachId);
+  if(!coach)return {applicable:false,prefixCapacityImpossible:false,latestFeasibleBlockStart:null};
+  const merge=(intervals:readonly {start:number;end:number}[])=>{
+    const result:{start:number;end:number}[]=[];
+    for(const interval of [...intervals].filter(({start,end})=>start<end).sort((a,b)=>a.start-b.start||a.end-b.end)){
+      const previous=result.at(-1);
+      if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);
+      else result.push({...interval});
+    }
+    return result;
+  };
+  const occupied=merge(placed.filter(task=>task.coachId===coachId).map(({start,end})=>({start,end})));
+  const capacityBefore=(deadline:number)=>{
+    const available=merge(coach.availability.map(({start,end})=>({start:Math.max(start,problem.day.start),end:Math.min(end,problem.day.end,deadline)})));
+    let capacity=0;
+    for(const window of available){
+      let cursor=window.start;
+      for(const blocker of occupied){
+        if(blocker.end<=cursor||blocker.start>=window.end)continue;
+        capacity+=Math.max(0,Math.min(blocker.start,window.end)-cursor);
+        cursor=Math.max(cursor,Math.min(blocker.end,window.end));
+      }
+      capacity+=Math.max(0,window.end-cursor);
+    }
+    return capacity;
+  };
+  const deadlines=[...new Set(feeders.map(({deadline})=>deadline))].sort((a,b)=>a-b);
+  const prefixCapacityImpossible=deadlines.some(deadline=>
+    feeders.filter(item=>item.deadline<=deadline).reduce((sum,item)=>sum+item.task.duration,0)>capacityBefore(deadline));
+  let cumulative=0,latestFeasibleBlockStart=Infinity;
+  for(const {task,deadline} of [...feeders].sort((a,b)=>a.deadline-b.deadline||a.task.id.localeCompare(b.task.id))){
+    cumulative+=task.duration;
+    latestFeasibleBlockStart=Math.min(latestFeasibleBlockStart,deadline-cumulative);
+  }
+  return {applicable:true,prefixCapacityImpossible,latestFeasibleBlockStart};
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -366,7 +421,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
     architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
-    firstExactArchitecture: null, feederOrderBranchesByArchitecture: {}, causalDiagnostic:null };
+    firstExactArchitecture: null, feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
+    feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
+    feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,causalDiagnostic:null };
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -418,6 +475,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if (reason === "FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED" && currentArchitecture)
       evidence.feederOrderBranchesByArchitecture[currentArchitecture] =
         (evidence.feederOrderBranchesByArchitecture[currentArchitecture] ?? 0) + 1;
+    if(reason==="FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED")evidence.feederOrderBranches++;
     return true;
   };
   let matchingDiagnosticDepth=0;
@@ -530,9 +588,22 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         }
         const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
         if (feederRow) feederRow.mainChoicesReachingFeeder++;
-        const blockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain));
+        const certificate=deriveFeederCohortRelaxedCertificate(problem,
+          rankedCohort.map(({choice,deadline})=>({task:choice.feeder,deadline})),[...blockPlaced,...blockOperations]);
+        if(certificate.applicable){
+          evidence.feederCohortCapacityChecks++;
+          evidence.feederCohortEddChecks++;
+          if(certificate.prefixCapacityImpossible){evidence.feederCohortPrefixCapacityPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
+        }
+        const unboundedBlockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain));
+        const maximumStart=certificate.latestFeasibleBlockStart??latestBlockStart;
+        const blockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain),maximumStart);
+        if(certificate.applicable){
+          evidence.blockStartsEliminatedByCohortBound+=unboundedBlockStartDomain.eligibleStartCount-blockStartDomain.eligibleStartCount;
+          if(blockStartDomain.eligibleStartCount===0){evidence.feederCohortEddEmptyPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
+        }
         if(feederRow){feederRow.startsConsidered+=blockStartDomain.fullGridStartCount;
-          feederRow.startsCoachEliminated+=blockStartDomain.domainEliminatedStartCount;}
+          feederRow.startsCoachEliminated+=unboundedBlockStartDomain.domainEliminatedStartCount;}
         let validBlockFound = false;
 
         const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
