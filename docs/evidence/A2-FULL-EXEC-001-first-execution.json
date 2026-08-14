@@ -530,6 +530,13 @@
       "coreBacktracks": 111236,
       "coreMaximumDepth": 11,
       "coreCompleteLeafCount": 0,
+      "architecturesChecked": 1,
+      "architecturesStructurallyRejected": 0,
+      "structuralRejectionsByReason": {},
+      "firstExactArchitecture": "plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005::END:925::",
+      "feederOrderBranchesByArchitecture": {
+        "plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005::END:925::": 292005
+      },
       "residualMatchingInvocations": 157,
       "residualMatchingFullBuilds": 1,
       "residualMatchingIncrementalUpdates": 156,
