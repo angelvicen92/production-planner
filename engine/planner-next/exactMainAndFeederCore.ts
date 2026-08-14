@@ -7,6 +7,7 @@ import { generateMainFlowPatterns } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
+import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
@@ -360,24 +361,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const feederMainById=new Map([...feederByMain].map(([mainId,feeder])=>[feeder.id,mainId]));
   const introducedBy=(id:string,placed:ScheduledTask[]):{mainTaskId:string|null;depth:number|null}=>{const direct=mains.some(x=>x.id===id)?id:feederMainById.get(id)??applicableContracts.find(c=>[...c.beforeTaskIds,...c.afterTaskIds].includes(id))?.anchorTaskId??null;if(!direct)return {mainTaskId:null,depth:null};return {mainTaskId:direct,depth:placed.filter(x=>x.kind==="main").findIndex(x=>x.id===direct)+1};};
-  const checkFeederBlock = (block: readonly { choice: MainChoice; feeder: ScheduledTask }[],
-    placed: ScheduledTask[], meals: ScheduledSpaceMeal[], depth: number): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
-    if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",depth)) return "BUDGET_EXHAUSTED";
-    evidence.feederCandidatesEvaluated += 1;
-    evidence.constructiveFeederStartChecks += 1;
-    const blockTasks = block.map(({ feeder }) => feeder);
-    for (const { choice, feeder } of block) {
-      const blockers = [...placed, ...choice.operation, ...blockTasks.filter(({ id }) => id !== feeder.id)];
-      const assessed = diagnostic ? diagnoseTaskPlacement(problem, choice.feeder, feeder.start, blockers, meals) : null;
-      const valid = assessed ? assessed.valid : canPlaceTask(problem, choice.feeder, feeder.start, blockers, meals);
-      if (!valid) {
-        if (diagnostic && assessed?.firstRejectionReason) {
-          const blocker=assessed.blockingPlacedTaskId;const prior=blocker?introducedBy(blocker,placed):{mainTaskId:null,depth:null};const key=[depth,choice.task.id,choice.feeder.id,choice.task.participantId??"",assessed.firstRejectionReason,blocker??"",prior.depth??"",prior.mainTaskId??""].join("|");const existing=rejectionByKey.get(key);if(existing){existing.count++;existing.startsAttempted++;}else{const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,startsAttempted:1,firstRejectionReason:assessed.firstRejectionReason,blockingPlacedTaskId:blocker,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId,count:1};rejectionByKey.set(key,row);diagnostic.feederRejections.push(row);}
-        }
-        return "INVALID";
-      }
+  const checkFeederTask = (choice: MainChoice, feeder: ScheduledTask, placed: ScheduledTask[],
+    meals: ScheduledSpaceMeal[], depth: number): boolean => {
+    const assessed = diagnostic ? diagnoseTaskPlacement(problem, choice.feeder, feeder.start, placed, meals) : null;
+    const valid = assessed ? assessed.valid : canPlaceTask(problem, choice.feeder, feeder.start, placed, meals);
+    if (!valid && diagnostic && assessed?.firstRejectionReason) {
+      const blocker=assessed.blockingPlacedTaskId;const prior=blocker?introducedBy(blocker,placed):{mainTaskId:null,depth:null};const key=[depth,choice.task.id,choice.feeder.id,choice.task.participantId??"",assessed.firstRejectionReason,blocker??"",prior.depth??"",prior.mainTaskId??""].join("|");const existing=rejectionByKey.get(key);if(existing){existing.count++;existing.startsAttempted++;}else{const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,startsAttempted:1,firstRejectionReason:assessed.firstRejectionReason,blockingPlacedTaskId:blocker,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId,count:1};rejectionByKey.set(key,row);diagnostic.feederRejections.push(row);}
     }
-    return "VALID";
+    return valid;
   };
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
@@ -430,43 +421,41 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.maximumDepth = Math.max(evidence.maximumDepth, position);
       if (position === runEnd) {
         const blockOperations = cohort.flatMap(({ operation }) => operation);
-        // The exact decision is one operational block: permute its internal order, then move the
-        // whole block on the time grid. Individual feeders never acquire independent idle gaps.
-        const scheduleFeederBlock = (ordered: MainChoice[]): SearchOutcome => {
-          if (ordered.length === cohort.length) {
-            const offsets: number[] = [];
-            for (let index = 0; index < ordered.length; index++) {
-              const previous = ordered[index - 1];
-              const current = ordered[index]!;
-              const transition = previous?.feeder.coachId !== undefined
-                && previous.feeder.coachId === current.feeder.coachId
-                ? effectiveCoachTransitionMinutes(problem, current.feeder.coachId,
-                  previous.feeder.spaceId, current.feeder.spaceId) : 0;
-              offsets.push(index === 0 ? 0 : offsets[index - 1]! + previous!.feeder.duration + transition);
-            }
-            const latestBlockStart = Math.min(...ordered.map((choice, index) => {
-              const mainStart = Math.min(...choice.operation.map(({ start }) => start));
-              const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId,
-                mainStart, mainStart);
-              return deadline - choice.feeder.duration - offsets[index]!;
-            }));
-            const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
-            if (feederRow) feederRow.mainChoicesReachingFeeder++;
-            let validBlockFound = false;
-            for (let blockStart = latestBlockStart; blockStart >= problem.day.start; blockStart -= 5) {
-              if (feederRow) feederRow.startsConsidered++;
-              const block = ordered.map((choice, index) => ({ choice, feeder: { ...choice.feeder,
-                start: blockStart + offsets[index]!, end: blockStart + offsets[index]! + choice.feeder.duration } }));
-              const check = checkFeederBlock(block, [...blockPlaced, ...blockOperations], meals, runEnd);
-              if (check === "BUDGET_EXHAUSTED") return check;
-              if (feederRow) { feederRow.startsEvaluated++; if (check === "VALID") feederRow.valid++; else feederRow.invalid++; }
-              if (check === "INVALID") continue;
+        const fixedCohortMeals = canonical(problem.spaces.filter((space) => cohort.some(({ feeder }) => feeder.spaceId === space.id)
+          && space.mealPolicy !== undefined
+          && space.mealPolicy.window.end - space.mealPolicy.window.start === space.mealPolicy.duration))
+          .map((space) => createScheduledSpaceMeal(space.id, space.mealPolicy!.window.start, space.mealPolicy!.duration));
+        const blockMeals = [...meals, ...fixedCohortMeals.filter((meal) => !meals.some(({ id }) => id === meal.id))];
+        const rankedCohort = cohort.map((choice) => {
+          const mainStart = Math.min(...choice.operation.map(({ start }) => start));
+          const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId, mainStart, mainStart);
+          const domain = exactFeederStartDomain(problem, choice.feeder, deadline - choice.feeder.duration,
+            [...blockPlaced, ...blockOperations], options.feederStartDomainMode);
+          return { choice, deadline, domain };
+        }).sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount
+          || a.choice.task.id.localeCompare(b.choice.task.id));
+        if (diagnostic) for (const { choice, domain } of rankedCohort) for (const elimination of domain.eliminations) {
+          const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations]);
+          const row: ExactFeederCoachDomainElimination = { depth: runEnd, mainTaskId: choice.task.id,
+            feederTaskId: choice.feeder.id, participantId: choice.task.participantId ?? null, ...elimination,
+            blockingDecisionDepth: prior.depth && prior.depth > 0 ? prior.depth : null,
+            blockingDecisionMainTaskId: prior.mainTaskId };
+          const key = [row.depth,row.mainTaskId,row.feederTaskId,row.participantId??"",row.reason,
+            row.blockingPlacedTaskId,row.blockingDecisionDepth??"",row.blockingDecisionMainTaskId??""].join("|");
+          const existing=eliminationByKey.get(key);if(existing)existing.startsEliminated+=row.startsEliminated;
+          else { eliminationByKey.set(key,row); diagnostic.feederCoachDomainEliminations.push(row); }
+        }
+        const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+        if (feederRow) feederRow.mainChoicesReachingFeeder++;
+        const latestBlockStart = Math.max(...rankedCohort.map(({ choice, deadline }) => deadline-choice.feeder.duration));
+        let validBlockFound = false;
+
+        const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
               if (!validBlockFound && feederRow) feederRow.mainChoicesWithValidFeeder++;
               validBlockFound = true;
-              const scheduled = block.map(({ feeder }) => feeder);
               const nextPlaced = [...blockPlaced, ...scheduled];
               matchingDiagnosticDepth=runEnd;
-              const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd,
+              const matching = residualMatching(pattern, slots, composite, blockMeals, nextPlaced, blockUsed, runEnd,
                 options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
                 cohort.at(-1)!.task.id, scheduled);
               if (matching.outcome !== "FOUND") {
@@ -474,57 +463,71 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 return matching.outcome;
               }
               const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced,
-                addedTasks: [...blockOperations, ...scheduled], meals, depth: runEnd,
+                addedTasks: [...blockOperations, ...scheduled], meals: blockMeals, depth: runEnd,
                 mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
                 pattern: [...pattern], timelineKey }) ?? "CONTINUE";
               if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
               if (partial === "REJECT") { evidence.backtracks += 1; return "DEAD_END"; }
               if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
-              const child = search(pattern, slots, composite, meals, nextPlaced, blockUsed, runEnd, timelineKey,
+              const child = search(pattern, slots, composite, blockMeals, nextPlaced, blockUsed, runEnd, timelineKey,
                 matching.certificate);
               if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
               else if (child === "DEAD_END") evidence.backtracks += 1;
-              if (child !== "DEAD_END") return child;
-            }
-            if (!validBlockFound) evidence.zeroAlternativePrunes += 1;
-            return "DEAD_END";
-          }
-          const remaining = cohort.filter((choice) => !ordered.some(({ task }) => task.id === choice.task.id));
-          const ranked = remaining.map((choice) => {
-            const mainStart = Math.min(...choice.operation.map(({ start }) => start));
-            const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId,
-              mainStart, mainStart);
-            const blockers = [...blockPlaced, ...blockOperations];
-            const domain = exactFeederStartDomain(problem, choice.feeder,
-              deadline - choice.feeder.duration, blockers, options.feederStartDomainMode);
-            return { choice, domain };
-          }).sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount
-            || a.choice.task.id.localeCompare(b.choice.task.id));
-          for (const { choice, domain: startDomain } of ranked) {
-            if (diagnostic) for (const elimination of startDomain.eliminations) {
-              const prior = introducedBy(elimination.blockingPlacedTaskId, [...blockPlaced, ...blockOperations]);
-              const row: ExactFeederCoachDomainElimination = {
-                depth: position,
-                mainTaskId: choice.task.id,
-                feederTaskId: choice.feeder.id,
-                participantId: choice.task.participantId ?? null,
-                ...elimination,
-                blockingDecisionDepth: prior.depth && prior.depth > 0 ? prior.depth : null,
-                blockingDecisionMainTaskId: prior.mainTaskId,
-              };
-              const key = [row.depth, row.mainTaskId, row.feederTaskId, row.participantId ?? "", row.reason,
-                row.blockingPlacedTaskId, row.blockingDecisionDepth ?? "", row.blockingDecisionMainTaskId ?? ""].join("|");
-              const existing = eliminationByKey.get(key);
-              if (existing) existing.startsEliminated += row.startsEliminated;
-              else { eliminationByKey.set(key, row); diagnostic.feederCoachDomainEliminations.push(row); }
-            }
-            const child = scheduleFeederBlock([...ordered, choice]);
-            if (child !== "DEAD_END") return child;
-            evidence.backtracks += 1;
-          }
-          return "DEAD_END";
+              return child;
         };
-        return scheduleFeederBlock([]);
+
+        for (let blockStart=latestBlockStart;blockStart>=problem.day.start;blockStart-=5) {
+          if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)) return "BUDGET_EXHAUSTED";
+          evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
+          if(feederRow){feederRow.startsConsidered++;feederRow.startsEvaluated++;}
+          let completeOrderAtStart=false;
+          // Exact transposition: only tails for authorities used by remaining feeders can affect a
+          // future placement. Failed equivalent prefixes are not expanded factorially again.
+          const failedOrderStates=new Set<string>();
+          const orderAtStart=(scheduled:ScheduledTask[],remaining:typeof rankedCohort):SearchOutcome=>{
+            if(remaining.length===0){completeOrderAtStart=true;return closeBlock(scheduled);}
+            const tails=new Map<string,ScheduledTask>();
+            const futureAuthorities=new Set(remaining.flatMap(({choice:{feeder:task}})=>[
+              `space:${task.spaceId}`,...(task.coachId?[`coach:${task.coachId}`]:[]),
+              ...(task.participantId?[`participant:${task.participantId}`]:[]),
+              ...(task.itinerantUnitId?[`itinerant:${task.itinerantUnitId}`]:[]),
+              ...(task.requiredResourceIds??[]).map(id=>`resource:${id}`)]));
+            for(const task of scheduled){
+              const authorities=[`space:${task.spaceId}`,...(task.coachId?[`coach:${task.coachId}`]:[]),
+                ...(task.participantId?[`participant:${task.participantId}`]:[]),
+                ...(task.itinerantUnitId?[`itinerant:${task.itinerantUnitId}`]:[]),
+                ...(task.requiredResourceIds??[]).map(id=>`resource:${id}`)];
+              for(const authority of authorities)if(futureAuthorities.has(authority)
+                &&(tails.get(authority)?.end??-Infinity)<=task.end)tails.set(authority,task);
+            }
+            const previous=scheduled.at(-1);
+            const stateKey=[remaining.map(({choice})=>choice.task.id).sort().join(","),
+              previous?`${previous.end}:${previous.spaceId}:${previous.coachId??""}`:"",
+              ...[...tails].sort(([a],[b])=>a.localeCompare(b)).map(([authority,task])=>`${authority}:${task.end}:${task.spaceId}`)].join("|");
+            if(failedOrderStates.has(stateKey))return "DEAD_END";
+            for(const candidate of remaining){
+              if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd))return "BUDGET_EXHAUSTED";
+              const previous=scheduled.at(-1);const choice=candidate.choice;
+              const transition=previous?.coachId!==undefined&&previous.coachId===choice.feeder.coachId
+                ?effectiveCoachTransitionMinutes(problem,previous.coachId,previous.spaceId,choice.feeder.spaceId):0;
+              let start=previous?previous.end+transition:blockStart;
+              if(previous&&transition===0&&previous.spaceId===choice.feeder.spaceId){const meal=blockMeals.find(item=>item.spaceId===previous.spaceId&&item.start===start);if(meal)start=meal.end;}
+              if(start+choice.feeder.duration>candidate.deadline)continue;
+              const feeder={...choice.feeder,start,end:start+choice.feeder.duration};
+              if(!checkFeederTask(choice,feeder,[...blockPlaced,...blockOperations,...scheduled],blockMeals,runEnd))continue;
+              const child=orderAtStart([...scheduled,feeder],remaining.filter(({choice:item})=>item.task.id!==choice.task.id));
+              if(child!=="DEAD_END")return child;
+              evidence.backtracks++;
+            }
+            failedOrderStates.add(stateKey);
+            return "DEAD_END";
+          };
+          const child=orderAtStart([],rankedCohort);
+          if(feederRow){if(completeOrderAtStart)feederRow.valid++;else feederRow.invalid++;}
+          if(child!=="DEAD_END")return child;
+        }
+        if(!validBlockFound)evidence.zeroAlternativePrunes++;
+        return "DEAD_END";
       }
 
       const slot = slots[position]!, choices: MainChoice[] = [];
