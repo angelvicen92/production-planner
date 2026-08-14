@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { exactFeederStartDomain, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { exactFeederStartDomain, exactFeederStartDomainIncludes, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { canPlaceTask, diagnoseTaskPlacement } from "./placement";
 import { constructExactItinerantPlan } from "./exactItinerantPlan";
 import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
@@ -89,6 +89,9 @@ test("coach domain is lazy, includes operation blockers, preserves grid boundari
   assert.deepEqual(remaining, [...exactFeederStartDomain(input, task, 92, [operationBlocker]).starts()]);
   assert.ok(remaining.every((start) => (92 - start) % 5 === 0 && start >= input.day.start));
   assert.equal(remaining.at(-1), 2);
+  assert.equal(exactFeederStartDomainIncludes(domain, 92), true);
+  assert.equal(exactFeederStartDomainIncludes(domain, 91), false);
+  assert.equal(exactFeederStartDomainIncludes(domain, 42), false);
 });
 
 test("coach domain jumps analytically over a huge forbidden grid interval", () => {

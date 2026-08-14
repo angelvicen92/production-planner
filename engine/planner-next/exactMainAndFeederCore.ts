@@ -55,7 +55,7 @@ export interface ExactMainAndFeederCoreEvidence {
 export type ExactBranchCategory = "MAIN_CANDIDATE" | "FEEDER_START" | "RESIDUAL_MATCHING" | "CONTINUATION"
   | "PARTICIPANT_MEAL" | "STANDALONE_FORWARD" | "OTHER";
 export interface ExactDepthWaterfall { mainCandidate:number; feederStart:number; residualMatching:number; continuation:number; participantMeal:number; standaloneForward:number; other:number; total:number }
-export interface ExactDepthFeeder { startsConsidered:number; startsCoachEliminated:number; startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number }
+export interface ExactDepthFeeder { startsConsidered:number; startsCoachEliminated:number; startsEvaluated:number; valid:number; invalid:number; mainChoicesReachingFeeder:number; mainChoicesWithValidFeeder:number; feederOrderDomainEliminated:number; feederOrderBranchesConsumed:number }
 export interface ExactCriticalFeederRejection { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; startsAttempted:number; firstRejectionReason:PlacementRejectionReason; blockingPlacedTaskId:string|null; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; count:number }
 export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:string; feederTaskId:string; participantId:string|null; reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; blockingDecisionDepth:number|null; blockingDecisionMainTaskId:string|null; startsEliminated:number }
 export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[] }
@@ -169,11 +169,19 @@ export interface ExactMainAndFeederSearchOptions {
 export interface ExactFeederStartInterval { readonly start: number; readonly end: number }
 export interface ExactFeederStartDomain {
   readonly intervals: readonly ExactFeederStartInterval[];
+  readonly latestStart: number;
   readonly fullGridStartCount: number;
   readonly eligibleStartCount: number;
   readonly coachEliminatedStartCount: number;
   readonly eliminations: readonly Readonly<{ reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; startsEliminated:number }>[];
   starts(onProgress?: (considered: number, coachEliminated: number) => void): Generator<number>;
+}
+
+/** Pure negative-proof predicate. A positive result only permits the exact placement
+ * authority to run; it never proves that the feeder can be placed. */
+export function exactFeederStartDomainIncludes(domain: ExactFeederStartDomain, start: number): boolean {
+  if (!Number.isFinite(start) || !Number.isInteger((domain.latestStart - start) / 5)) return false;
+  return domain.intervals.some((interval) => start >= interval.start && start <= interval.end);
 }
 
 const gridCountInInterval = (latestStart: number, interval: ExactFeederStartInterval): number => {
@@ -216,6 +224,7 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
   const eligibleStartCount = intervals.reduce((sum, interval) => sum + gridCountInInterval(latestStart, interval), 0);
   return {
     intervals: Object.freeze(intervals.map((interval) => Object.freeze(interval))),
+    latestStart,
     fullGridStartCount,
     eligibleStartCount,
     coachEliminatedStartCount: fullGridStartCount - eligibleStartCount,
@@ -470,7 +479,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           const existing=eliminationByKey.get(key);if(existing)existing.startsEliminated+=row.startsEliminated;
           else { eliminationByKey.set(key,row); diagnostic.feederCoachDomainEliminations.push(row); }
         }
-        const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0}):null;
+        const feederRow=diagnostic?(diagnostic.feederByDepth[String(runEnd)]??={startsConsidered:0,startsCoachEliminated:0,startsEvaluated:0,valid:0,invalid:0,mainChoicesReachingFeeder:0,mainChoicesWithValidFeeder:0,feederOrderDomainEliminated:0,feederOrderBranchesConsumed:0}):null;
         if (feederRow) feederRow.mainChoicesReachingFeeder++;
         const latestBlockStart = Math.max(...rankedCohort.map(({ choice, deadline }) => deadline-choice.feeder.duration));
         let validBlockFound = false;
@@ -502,9 +511,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         };
 
         for (let blockStart=latestBlockStart;blockStart>=problem.day.start;blockStart-=5) {
+          if(feederRow)feederRow.startsConsidered++;
+          if(!rankedCohort.some(({domain})=>exactFeederStartDomainIncludes(domain,blockStart))){
+            if(feederRow)feederRow.startsCoachEliminated++;
+            continue;
+          }
           if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)) return "BUDGET_EXHAUSTED";
           evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
-          if(feederRow){feederRow.startsConsidered++;feederRow.startsEvaluated++;}
+          if(feederRow)feederRow.startsEvaluated++;
           let completeOrderAtStart=false;
           // Exact transposition: only tails for authorities used by remaining feeders can affect a
           // future placement. Failed equivalent prefixes are not expanded factorially again.
@@ -545,15 +559,20 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               failedOrderStates.add(frame.stateKey);worklist.pop();if(worklist.length>0)evidence.backtracks++;continue;
             }
             const candidate=frame.remaining[frame.nextIndex++]!;
-            if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)){
-              orderBudgetExhausted=true;break;
-            }
             const previous=frame.scheduled.at(-1);const choice=candidate.choice;
             const transition=previous?.coachId!==undefined&&previous.coachId===choice.feeder.coachId
               ?effectiveCoachTransitionMinutes(problem,previous.coachId,previous.spaceId,choice.feeder.spaceId):0;
             let start=previous?previous.end+transition:blockStart;
             if(previous&&transition===0&&previous.spaceId===choice.feeder.spaceId){const meal=blockMeals.find(item=>item.spaceId===previous.spaceId&&item.start===start);if(meal)start=meal.end;}
             if(start+choice.feeder.duration>candidate.deadline)continue;
+            if(!exactFeederStartDomainIncludes(candidate.domain,start)){
+              if(feederRow)feederRow.feederOrderDomainEliminated++;
+              continue;
+            }
+            if(!consumeBranch("FEEDER_ORDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)){
+              orderBudgetExhausted=true;break;
+            }
+            if(feederRow)feederRow.feederOrderBranchesConsumed++;
             const feeder={...choice.feeder,start,end:start+choice.feeder.duration};
             if(!checkFeederTask(choice,feeder,[...blockPlaced,...blockOperations,...frame.scheduled],blockMeals,runEnd))continue;
             const nextScheduled=[...frame.scheduled,feeder];

@@ -129,11 +129,17 @@ test("a deferred main survives bestK=1 after the stable-id first choice is causa
 });
 
 test("constructs the feasible feeder block without branching over individual starts", () => {
-  const result = constructExactMainAndFeederCore(feederStartBacktrackingProblem());
+  const result = runExactMainAndFeederSearch(feederStartBacktrackingProblem(), { causalDiagnostic: true });
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
-  assert.equal(result.evidence.constructiveFeederStartChecks, 5);
+  assert.equal(result.evidence.constructiveFeederStartChecks, 3);
+  const feederRows = Object.values(result.evidence.causalDiagnostic!.feederByDepth);
+  assert.equal(feederRows.reduce((sum, row) => sum + row.startsCoachEliminated, 0), 2);
+  assert.equal(feederRows.reduce((sum, row) => sum + row.startsConsidered, 0),
+    feederRows.reduce((sum, row) => sum + row.startsCoachEliminated + row.startsEvaluated, 0));
+  assert.equal(feederRows.reduce((sum, row) => sum + row.feederOrderBranchesConsumed, 0),
+    Object.values(result.evidence.feederOrderBranchesByArchitecture).reduce((sum, count) => sum + count, 0));
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
 });
