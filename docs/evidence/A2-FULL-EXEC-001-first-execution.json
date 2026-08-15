@@ -774,6 +774,8 @@
       "feederCohortContiguousWindowChecks": 20733,
       "feederCohortContiguousWindowPrunes": 20708,
       "blockStartsEliminatedByContiguousWindowBound": 82907,
+      "contiguousWindowSkippedByTransition": 0,
+      "contiguousWindowSkippedByAuthorizedMeal": 0,
       "residualMatchingInvocations": 66461,
       "residualMatchingFullBuilds": 26,
       "residualMatchingIncrementalUpdates": 66435,

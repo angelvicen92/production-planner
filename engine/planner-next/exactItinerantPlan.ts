@@ -113,6 +113,8 @@ export interface ExactItinerantPlanEvidence {
   feederCohortContiguousWindowChecks: number;
   feederCohortContiguousWindowPrunes: number;
   blockStartsEliminatedByContiguousWindowBound: number;
+  contiguousWindowSkippedByTransition: number;
+  contiguousWindowSkippedByAuthorizedMeal: number;
   residualMatchingInvocations: number;
   residualMatchingFullBuilds: number;
   residualMatchingIncrementalUpdates: number;
@@ -682,6 +684,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
     blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
     feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
+    contiguousWindowSkippedByTransition:0,contiguousWindowSkippedByAuthorizedMeal:0,
     residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
     residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
@@ -809,6 +812,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederCohortContiguousWindowChecks=core.evidence.feederCohortContiguousWindowChecks;
   evidence.feederCohortContiguousWindowPrunes=core.evidence.feederCohortContiguousWindowPrunes;
   evidence.blockStartsEliminatedByContiguousWindowBound=core.evidence.blockStartsEliminatedByContiguousWindowBound;
+  evidence.contiguousWindowSkippedByTransition=core.evidence.contiguousWindowSkippedByTransition;
+  evidence.contiguousWindowSkippedByAuthorizedMeal=core.evidence.contiguousWindowSkippedByAuthorizedMeal;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;

@@ -61,6 +61,8 @@ export interface ExactMainAndFeederCoreEvidence {
   feederCohortContiguousWindowChecks: number;
   feederCohortContiguousWindowPrunes: number;
   blockStartsEliminatedByContiguousWindowBound: number;
+  contiguousWindowSkippedByTransition: number;
+  contiguousWindowSkippedByAuthorizedMeal: number;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -443,7 +445,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
     feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,
     feederCohortContiguousWindowChecks:0,feederCohortContiguousWindowPrunes:0,
-    blockStartsEliminatedByContiguousWindowBound:0,causalDiagnostic:null };
+    blockStartsEliminatedByContiguousWindowBound:0,contiguousWindowSkippedByTransition:0,
+    contiguousWindowSkippedByAuthorizedMeal:0,causalDiagnostic:null };
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -613,7 +616,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(certificate.applicable){
           evidence.feederCohortCapacityChecks++;
           evidence.feederCohortEddChecks++;
-          evidence.feederCohortContiguousWindowChecks++;
           if(certificate.prefixCapacityImpossible){evidence.feederCohortPrefixCapacityPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
         }
         const unboundedBlockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain));
@@ -623,10 +625,20 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           evidence.blockStartsEliminatedByCohortBound+=unboundedBlockStartDomain.eligibleStartCount-eddBlockStartDomain.eligibleStartCount;
           if(eddBlockStartDomain.eligibleStartCount===0){evidence.feederCohortEddEmptyPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
         }
-        const blockStartDomain=certificate.applicable
+        const commonCoachId=rankedCohort[0]?.choice.feeder.coachId;
+        const contiguousSkippedByTransition=certificate.applicable&&commonCoachId!==undefined&&rankedCohort.some((left,leftIndex)=>
+          rankedCohort.some((right,rightIndex)=>leftIndex!==rightIndex&&effectiveCoachTransitionMinutes(problem,commonCoachId,
+            left.choice.feeder.spaceId,right.choice.feeder.spaceId)>0));
+        const feederSpaceIds=new Set(rankedCohort.map(({choice})=>choice.feeder.spaceId));
+        const contiguousSkippedByAuthorizedMeal=certificate.applicable&&blockMeals.some(meal=>feederSpaceIds.has(meal.spaceId));
+        if(contiguousSkippedByTransition)evidence.contiguousWindowSkippedByTransition++;
+        if(contiguousSkippedByAuthorizedMeal)evidence.contiguousWindowSkippedByAuthorizedMeal++;
+        const contiguousApplicable=certificate.applicable&&!contiguousSkippedByTransition&&!contiguousSkippedByAuthorizedMeal;
+        if(contiguousApplicable)evidence.feederCohortContiguousWindowChecks++;
+        const blockStartDomain=contiguousApplicable
           ?exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain),maximumStart,certificate.contiguousBlockStartIntervals)
           :eddBlockStartDomain;
-        if(certificate.applicable){
+        if(contiguousApplicable){
           evidence.blockStartsEliminatedByContiguousWindowBound+=eddBlockStartDomain.eligibleStartCount-blockStartDomain.eligibleStartCount;
           if(blockStartDomain.eligibleStartCount===0){evidence.feederCohortContiguousWindowPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
         }

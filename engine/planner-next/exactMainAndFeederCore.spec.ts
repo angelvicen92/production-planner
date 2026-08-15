@@ -477,6 +477,36 @@ test("different coaches preserve possible feeder parallelism without structural 
     { pattern: ["coach", "coach"], slots: [40, 50] }), null);
 });
 
+function splitTransitionCohort(transitionMinutes:number):PlannerNextProblem {
+  const problem=syntheticProblem([
+    {id:"feeder-a",kind:"vocal",participantId:"a",duration:20,spaceId:"feed-a",dependencies:[],availability:[{start:0,end:20}]},
+    {id:"main-a",kind:"main",participantId:"a",duration:10,spaceId:"main",dependencies:["feeder-a"],blockKey:"block",availability:[{start:80,end:90}]},
+    {id:"feeder-b",kind:"vocal",participantId:"b",duration:20,spaceId:"feed-b",dependencies:[],availability:[{start:40,end:60}]},
+    {id:"main-b",kind:"main",participantId:"b",duration:10,spaceId:"main",dependencies:["feeder-b"],blockKey:"block",availability:[{start:90,end:100}]},
+  ],["a","b"],["feed-a","feed-b"]);
+  problem.coaches[0]!.availability=[{start:0,end:20},{start:40,end:60},{start:80,end:100}];
+  problem.coachRouteTransitions=transitionMinutes>0?[{coachId:"coach",fromSpaceId:"feed-a",toSpaceId:"feed-b",minutes:transitionMinutes}]:[];
+  problem.protectedMeal=undefined;
+  return problem;
+}
+
+test("split coach availability bridged by a positive transition remains exactly searchable",()=>{
+  const result=constructExactMainAndFeederCore(splitTransitionCohort(20));
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.scheduledTasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start).map(({start,end})=>({start,end})),
+    [{start:0,end:20},{start:40,end:60}]);
+  assert.ok(result.evidence.contiguousWindowSkippedByTransition>0);
+  assert.equal(result.evidence.feederCohortContiguousWindowPrunes,0);
+});
+
+test("split coach availability with zero transition is pruned by contiguous window",()=>{
+  const result=constructExactMainAndFeederCore(splitTransitionCohort(0));
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.feederCohortContiguousWindowChecks>0);
+  assert.ok(result.evidence.feederCohortContiguousWindowPrunes>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
+});
+
 test("a fixed authorized space meal bridges one feeder operational block", () => {
   const problem = twoCohortProblem();
   problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));
@@ -491,6 +521,7 @@ test("a fixed authorized space meal bridges one feeder operational block", () =>
   assert.deepEqual(feeders.map(({ start, end }) => ({ start, end })), [{ start: 0, end: 10 }, { start: 20, end: 30 }]);
   assert.deepEqual(result.scheduledSpaceMeals.filter(({ spaceId }) => spaceId === "feed-a")
     .map(({ start, end }) => ({ start, end })), [{ start: 10, end: 20 }]);
+  assert.ok(result.evidence.contiguousWindowSkippedByAuthorizedMeal>0);
 });
 
 test("an uncontracted pause breaks feeder continuity", () => {
