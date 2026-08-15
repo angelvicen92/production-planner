@@ -115,6 +115,11 @@ export interface ExactItinerantPlanEvidence {
   blockStartsEliminatedByContiguousWindowBound: number;
   contiguousWindowSkippedByTransition: number;
   contiguousWindowSkippedByAuthorizedMeal: number;
+  feederRunOptimisticChecks: number;
+  feederRunOptimisticPrunes: number;
+  feederRunOptimisticPrunesByDepth: Record<string, number>;
+  feederRunOptimisticSkippedByTransition: number;
+  feederRunOptimisticSkippedByAuthorizedMeal: number;
   residualMatchingInvocations: number;
   residualMatchingFullBuilds: number;
   residualMatchingIncrementalUpdates: number;
@@ -685,6 +690,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
     feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
     contiguousWindowSkippedByTransition:0,contiguousWindowSkippedByAuthorizedMeal:0,
+    feederRunOptimisticChecks:0,feederRunOptimisticPrunes:0,feederRunOptimisticPrunesByDepth:{},
+    feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
     residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
     residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
@@ -814,6 +821,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.blockStartsEliminatedByContiguousWindowBound=core.evidence.blockStartsEliminatedByContiguousWindowBound;
   evidence.contiguousWindowSkippedByTransition=core.evidence.contiguousWindowSkippedByTransition;
   evidence.contiguousWindowSkippedByAuthorizedMeal=core.evidence.contiguousWindowSkippedByAuthorizedMeal;
+  evidence.feederRunOptimisticChecks=core.evidence.feederRunOptimisticChecks;
+  evidence.feederRunOptimisticPrunes=core.evidence.feederRunOptimisticPrunes;
+  evidence.feederRunOptimisticPrunesByDepth={...core.evidence.feederRunOptimisticPrunesByDepth};
+  evidence.feederRunOptimisticSkippedByTransition=core.evidence.feederRunOptimisticSkippedByTransition;
+  evidence.feederRunOptimisticSkippedByAuthorizedMeal=core.evidence.feederRunOptimisticSkippedByAuthorizedMeal;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;

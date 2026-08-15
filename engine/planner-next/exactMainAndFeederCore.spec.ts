@@ -48,6 +48,8 @@ test("constructs main and direct vocal feeders atomically, deterministically and
   assert.equal(first.scheduledTasks.filter(({ kind }) => kind === "main").length, 8);
   assert.equal(first.scheduledTasks.filter(({ kind }) => kind === "vocal").length, 8);
   assert.equal(first.evidence.coreFingerprint, second.evidence.coreFingerprint);
+  assert.ok(first.evidence.feederRunOptimisticChecks > 0);
+  assert.equal(first.evidence.feederRunOptimisticPrunes, 0);
   assert.equal(first.evidence.matchingFeederStartChecks, 0);
   assert.equal(first.evidence.feederCandidatesEvaluated, first.evidence.constructiveFeederStartChecks);
   assert.deepEqual(problem, snapshot); assert.deepEqual(first.remainingTaskIds, []);
@@ -496,14 +498,18 @@ test("split coach availability bridged by a positive transition remains exactly 
   assert.deepEqual(result.scheduledTasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start).map(({start,end})=>({start,end})),
     [{start:0,end:20},{start:40,end:60}]);
   assert.ok(result.evidence.contiguousWindowSkippedByTransition>0);
+  assert.ok(result.evidence.feederRunOptimisticSkippedByTransition>0);
+  assert.equal(result.evidence.feederRunOptimisticPrunes,0);
   assert.equal(result.evidence.feederCohortContiguousWindowPrunes,0);
 });
 
-test("split coach availability with zero transition is pruned by contiguous window",()=>{
+test("an impossible run is pruned optimistically at entry before matching or feeder search",()=>{
   const result=constructExactMainAndFeederCore(splitTransitionCohort(0));
   assert.equal(result.status,"INFEASIBLE");
-  assert.ok(result.evidence.feederCohortContiguousWindowChecks>0);
-  assert.ok(result.evidence.feederCohortContiguousWindowPrunes>0);
+  assert.ok(result.evidence.feederRunOptimisticChecks>0);
+  assert.ok(result.evidence.feederRunOptimisticPrunes>0);
+  assert.ok((result.evidence.feederRunOptimisticPrunesByDepth["0"]??0)>0);
+  assert.equal(result.evidence.residualMatchingInvocations,0);
   assert.equal(result.evidence.feederOrderBranches,0);
 });
 
@@ -522,6 +528,8 @@ test("a fixed authorized space meal bridges one feeder operational block", () =>
   assert.deepEqual(result.scheduledSpaceMeals.filter(({ spaceId }) => spaceId === "feed-a")
     .map(({ start, end }) => ({ start, end })), [{ start: 10, end: 20 }]);
   assert.ok(result.evidence.contiguousWindowSkippedByAuthorizedMeal>0);
+  assert.ok(result.evidence.feederRunOptimisticSkippedByAuthorizedMeal>0);
+  assert.equal(result.evidence.feederRunOptimisticPrunes,0);
 });
 
 test("an uncontracted pause breaks feeder continuity", () => {
