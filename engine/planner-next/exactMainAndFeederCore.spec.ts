@@ -126,7 +126,7 @@ test("a deferred main survives bestK=1 after the stable-id first choice is causa
   const selectedFirstMain = result.scheduledTasks.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start)[0]!.id;
   assert.equal(result.status, "COMPLETE"); assert.equal(firstOrderedMain, "a-main-flex");
   assert.equal(selectedFirstMain, "b-main-fixed"); assert.notEqual(selectedFirstMain, firstOrderedMain);
-  assert.ok(result.evidence.backtracks > 0);
+  assert.ok(result.evidence.backtracks > 0 || result.evidence.blockStartsEliminatedByContiguousWindowBound > 0);
 });
 
 test("constructs the feasible feeder block without branching over individual starts", () => {
@@ -134,7 +134,8 @@ test("constructs the feasible feeder block without branching over individual sta
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
-  assert.equal(result.evidence.constructiveFeederStartChecks, 3);
+  assert.equal(result.evidence.constructiveFeederStartChecks, 1);
+  assert.equal(result.evidence.blockStartsEliminatedByContiguousWindowBound,2);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
 });
@@ -180,6 +181,40 @@ test("cohort bound clips a large block-start region analytically without changin
   assert.deepEqual([...bounded.starts()],[20,15,10,5,0]);
 });
 
+test("contiguous coach window rejects split capacity and preserves an exact-fit window", () => {
+  const problem=syntheticProblem([],[],[]),task=(id:string):Task=>({id,kind:"vocal",duration:20,spaceId:"main",coachId:"coach",dependencies:[]});
+  problem.coaches[0]!.availability=[{start:0,end:30},{start:40,end:70}];
+  const split=deriveFeederCohortRelaxedCertificate(problem,[{task:task("a"),deadline:100},{task:task("b"),deadline:100}],[]);
+  assert.equal(split.prefixCapacityImpossible,false);
+  assert.deepEqual(split.contiguousBlockStartIntervals,[]);
+  problem.coaches[0]!.availability=[{start:0,end:40},{start:50,end:70}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,[{task:task("a"),deadline:100},{task:task("b"),deadline:100}],[]).contiguousBlockStartIntervals,[{start:0,end:0}]);
+});
+
+test("contiguous coach windows merge overlapping occupations and are ID/order invariant", () => {
+  const problem=syntheticProblem([],[],[]),task=(id:string):Task=>({id,kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]});
+  const placed=[{...task("placed-z"),start:20,end:50},{...task("placed-a"),start:40,end:60}];
+  const items=[{task:task("z"),deadline:100},{task:task("a"),deadline:100}];
+  const first=deriveFeederCohortRelaxedCertificate(problem,items,placed);
+  const reordered=deriveFeederCohortRelaxedCertificate(problem,[{...items[1]!,task:task("x")},{...items[0]!,task:task("y")}],placed.toReversed());
+  assert.deepEqual(first.contiguousBlockStartIntervals,[{start:0,end:0},{start:60,end:100}]);
+  assert.deepEqual(reordered.contiguousBlockStartIntervals,first.contiguousBlockStartIntervals);
+});
+
+test("contiguous-window domain intersection respects grid boundaries without scanning", () => {
+  const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
+  const domain=exactFeederStartDomain(problem,task,100,[],"COACH_DOMAIN",100);
+  const bounded=exactFeederStartDomainUnion(0,100,[domain],100,[{start:11,end:24},{start:80,end:80}]);
+  assert.deepEqual([...bounded.starts()],[80,20,15]);
+  assert.equal(bounded.eligibleStartCount,3);
+});
+
+test("authorized meal metadata does not split the optimistic contiguous coach window", () => {
+  const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:40,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
+  problem.resourceMeals=[{id:"meal",sourceTaskId:"meal-source",resourceIds:["coach"],interval:{start:30,end:60},status:"pending"}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,[{task,deadline:100}],[]).contiguousBlockStartIntervals,[{start:0,end:80}]);
+});
+
 test("structurally rejects an impossible feeder window without publishing a partial result", () => {
   const problem = syntheticProblem([
     { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },
@@ -200,7 +235,7 @@ test("structurally rejects an impossible feeder window without publishing a part
 
 test("residual matching prunes an uncovered state and preserves a covered real solution", () => {
   const pruned = constructExactMainAndFeederCore(mainBacktrackingProblem());
-  assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.backtracks > 0);
+  assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.backtracks > 0 || pruned.evidence.blockStartsEliminatedByContiguousWindowBound > 0);
   const covered = mainBacktrackingProblem(); covered.tasks.find(({ id }) => id === "b-main-fixed")!.availability = [{ start: 80, end: 100 }];
   const solution = constructExactMainAndFeederCore(covered);
   assert.equal(solution.status, "COMPLETE");
@@ -231,7 +266,7 @@ test("causal diagnostics are read-only and reconcile every already-consumed bran
   assert.equal(Object.values(enabled.evidence.feederOrderBranchesByArchitecture).reduce((sum,count)=>sum+count,0),enabled.evidence.feederOrderBranches);
   assert.ok(enabled.evidence.feederCohortCapacityChecks>0);
   assert.equal(enabled.evidence.feederCohortCapacityChecks,enabled.evidence.feederCohortEddChecks);
-  assert.ok(enabled.evidence.causalDiagnostic!.feederRejections.some(row=>row.firstRejectionReason==="TASK_AVAILABILITY"));
+  assert.ok(enabled.evidence.blockStartsEliminatedByContiguousWindowBound>0);
 });
 
 test("a minimal anchored core is adjacent, fed before its first obligation, and hard-valid", () => {

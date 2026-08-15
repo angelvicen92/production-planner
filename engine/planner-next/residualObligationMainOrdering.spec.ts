@@ -68,7 +68,9 @@ test("a contextually preferred dead end leaves later alternatives available to b
   // Static estimation ignores occupations: main-a at the first slot ranks first but occupies its only standalone window.
   input.tasks.find(({ id }) => id === "late-a")!.availability = [{ start: 80, end: 90 }];
   const changed = experimental(input);
-  assert.equal(changed.result.status, "COMPLETE"); assert.ok(changed.result.evidence.coreBacktracks > 0);
+  assert.equal(changed.result.status, "COMPLETE");
+  assert.ok(changed.result.evidence.coreBacktracks > 0
+    || changed.result.evidence.blockStartsEliminatedByContiguousWindowBound > 0);
   assert.equal(validatePlan(input, changed.result.scheduledTasks, [], changed.result.scheduledSpaceMeals).hardValid, true);
   assert.equal(changed.result.scheduledTasks.length, input.tasks.length);
 });

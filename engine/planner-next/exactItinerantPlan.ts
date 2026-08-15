@@ -110,6 +110,9 @@ export interface ExactItinerantPlanEvidence {
   feederCohortEddChecks: number;
   feederCohortEddEmptyPrunes: number;
   blockStartsEliminatedByCohortBound: number;
+  feederCohortContiguousWindowChecks: number;
+  feederCohortContiguousWindowPrunes: number;
+  blockStartsEliminatedByContiguousWindowBound: number;
   residualMatchingInvocations: number;
   residualMatchingFullBuilds: number;
   residualMatchingIncrementalUpdates: number;
@@ -677,7 +680,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederCohortCapacityChecks:0,
     feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
-    blockStartsEliminatedByCohortBound:0,
+    blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
+    feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
     residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
     residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
@@ -802,6 +806,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederCohortEddChecks=core.evidence.feederCohortEddChecks;
   evidence.feederCohortEddEmptyPrunes=core.evidence.feederCohortEddEmptyPrunes;
   evidence.blockStartsEliminatedByCohortBound=core.evidence.blockStartsEliminatedByCohortBound;
+  evidence.feederCohortContiguousWindowChecks=core.evidence.feederCohortContiguousWindowChecks;
+  evidence.feederCohortContiguousWindowPrunes=core.evidence.feederCohortContiguousWindowPrunes;
+  evidence.blockStartsEliminatedByContiguousWindowBound=core.evidence.blockStartsEliminatedByContiguousWindowBound;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;
