@@ -104,6 +104,17 @@ export interface ExactItinerantPlanEvidence {
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
   firstExactArchitecture: string | null;
   feederOrderBranchesByArchitecture: Record<string, number>;
+  feederOrderBranches: number;
+  feederCohortCapacityChecks: number;
+  feederCohortPrefixCapacityPrunes: number;
+  feederCohortEddChecks: number;
+  feederCohortEddEmptyPrunes: number;
+  blockStartsEliminatedByCohortBound: number;
+  feederCohortContiguousWindowChecks: number;
+  feederCohortContiguousWindowPrunes: number;
+  blockStartsEliminatedByContiguousWindowBound: number;
+  contiguousWindowSkippedByTransition: number;
+  contiguousWindowSkippedByAuthorizedMeal: number;
   residualMatchingInvocations: number;
   residualMatchingFullBuilds: number;
   residualMatchingIncrementalUpdates: number;
@@ -669,7 +680,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
     coreMaximumDepth: 0, coreCompleteLeafCount: 0, architecturesChecked:0,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,
-    feederOrderBranchesByArchitecture:{},
+    feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederCohortCapacityChecks:0,
+    feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
+    blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
+    feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
+    contiguousWindowSkippedByTransition:0,contiguousWindowSkippedByAuthorizedMeal:0,
     residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
     residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
@@ -788,6 +803,17 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};
   evidence.firstExactArchitecture=core.evidence.firstExactArchitecture;
   evidence.feederOrderBranchesByArchitecture={...core.evidence.feederOrderBranchesByArchitecture};
+  evidence.feederOrderBranches=core.evidence.feederOrderBranches;
+  evidence.feederCohortCapacityChecks=core.evidence.feederCohortCapacityChecks;
+  evidence.feederCohortPrefixCapacityPrunes=core.evidence.feederCohortPrefixCapacityPrunes;
+  evidence.feederCohortEddChecks=core.evidence.feederCohortEddChecks;
+  evidence.feederCohortEddEmptyPrunes=core.evidence.feederCohortEddEmptyPrunes;
+  evidence.blockStartsEliminatedByCohortBound=core.evidence.blockStartsEliminatedByCohortBound;
+  evidence.feederCohortContiguousWindowChecks=core.evidence.feederCohortContiguousWindowChecks;
+  evidence.feederCohortContiguousWindowPrunes=core.evidence.feederCohortContiguousWindowPrunes;
+  evidence.blockStartsEliminatedByContiguousWindowBound=core.evidence.blockStartsEliminatedByContiguousWindowBound;
+  evidence.contiguousWindowSkippedByTransition=core.evidence.contiguousWindowSkippedByTransition;
+  evidence.contiguousWindowSkippedByAuthorizedMeal=core.evidence.contiguousWindowSkippedByAuthorizedMeal;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;

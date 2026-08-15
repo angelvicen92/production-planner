@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
+  exactFeederStartDomainUnion, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -125,7 +126,7 @@ test("a deferred main survives bestK=1 after the stable-id first choice is causa
   const selectedFirstMain = result.scheduledTasks.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start)[0]!.id;
   assert.equal(result.status, "COMPLETE"); assert.equal(firstOrderedMain, "a-main-flex");
   assert.equal(selectedFirstMain, "b-main-fixed"); assert.notEqual(selectedFirstMain, firstOrderedMain);
-  assert.ok(result.evidence.backtracks > 0);
+  assert.ok(result.evidence.backtracks > 0 || result.evidence.blockStartsEliminatedByContiguousWindowBound > 0);
 });
 
 test("constructs the feasible feeder block without branching over individual starts", () => {
@@ -133,9 +134,85 @@ test("constructs the feasible feeder block without branching over individual sta
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
-  assert.equal(result.evidence.constructiveFeederStartChecks, 3);
+  assert.equal(result.evidence.constructiveFeederStartChecks, 1);
+  assert.equal(result.evidence.blockStartsEliminatedByContiguousWindowBound,2);
   assert.equal(result.evidence.matchingFeederStartChecks, 0);
   assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
+});
+
+test("same-coach prefix capacity rejects individually possible feeders and subtracts prior occupation", () => {
+  const problem=syntheticProblem([],[],[]);
+  const feeder=(id:string,duration:number):Task=>({id,kind:"vocal",duration,spaceId:"main",coachId:"coach",dependencies:[]});
+  const individuallyPossible=[{task:feeder("a",35),deadline:60},{task:feeder("b",35),deadline:60}];
+  assert.equal(deriveFeederCohortRelaxedCertificate(problem,individuallyPossible,[]).prefixCapacityImpossible,true);
+  const prior={...feeder("placed",30),start:0,end:30};
+  const occupied=deriveFeederCohortRelaxedCertificate(problem,[{task:feeder("candidate",40),deadline:60}],[prior]);
+  assert.equal(occupied.prefixCapacityImpossible,true);
+});
+
+test("EDD relaxed bound uses distinct deadline prefixes and is invariant to feeder IDs and input order", () => {
+  const problem=syntheticProblem([],[],[]);
+  const items=[
+    {task:{id:"z",kind:"vocal",duration:20,spaceId:"main",coachId:"coach",dependencies:[]} as Task,deadline:50},
+    {task:{id:"a",kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]} as Task,deadline:90},
+  ];
+  const first=deriveFeederCohortRelaxedCertificate(problem,items,[]);
+  const renamed=deriveFeederCohortRelaxedCertificate(problem,[
+    {...items[1]!,task:{...items[1]!.task,id:"x"}},{...items[0]!,task:{...items[0]!.task,id:"y"}},
+  ],[]);
+  assert.equal(first.latestFeasibleBlockStart,30);
+  assert.equal(renamed.latestFeasibleBlockStart,first.latestFeasibleBlockStart);
+});
+
+test("relaxed certificate ignores transitions and does not reject a feasible cohort", () => {
+  const problem=syntheticProblem([],[],[]);
+  problem.coachRouteTransitions=[{coachId:"coach",fromSpaceId:"main",toSpaceId:"main",minutes:50}];
+  const task=(id:string):Task=>({id,kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]});
+  const certificate=deriveFeederCohortRelaxedCertificate(problem,[{task:task("a"),deadline:60},{task:task("b"),deadline:80}],[]);
+  assert.equal(certificate.prefixCapacityImpossible,false);
+  assert.equal(certificate.latestFeasibleBlockStart,50);
+});
+
+test("cohort bound clips a large block-start region analytically without changing the grid", () => {
+  const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
+  const domain=exactFeederStartDomain(problem,task,100,[],"COACH_DOMAIN",100);
+  const bounded=exactFeederStartDomainUnion(0,100,[domain],20);
+  assert.equal(bounded.eligibleStartCount,5);
+  assert.deepEqual([...bounded.starts()],[20,15,10,5,0]);
+});
+
+test("contiguous coach window rejects split capacity and preserves an exact-fit window", () => {
+  const problem=syntheticProblem([],[],[]),task=(id:string):Task=>({id,kind:"vocal",duration:20,spaceId:"main",coachId:"coach",dependencies:[]});
+  problem.coaches[0]!.availability=[{start:0,end:30},{start:40,end:70}];
+  const split=deriveFeederCohortRelaxedCertificate(problem,[{task:task("a"),deadline:100},{task:task("b"),deadline:100}],[]);
+  assert.equal(split.prefixCapacityImpossible,false);
+  assert.deepEqual(split.contiguousBlockStartIntervals,[]);
+  problem.coaches[0]!.availability=[{start:0,end:40},{start:50,end:70}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,[{task:task("a"),deadline:100},{task:task("b"),deadline:100}],[]).contiguousBlockStartIntervals,[{start:0,end:0}]);
+});
+
+test("contiguous coach windows merge overlapping occupations and are ID/order invariant", () => {
+  const problem=syntheticProblem([],[],[]),task=(id:string):Task=>({id,kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]});
+  const placed=[{...task("placed-z"),start:20,end:50},{...task("placed-a"),start:40,end:60}];
+  const items=[{task:task("z"),deadline:100},{task:task("a"),deadline:100}];
+  const first=deriveFeederCohortRelaxedCertificate(problem,items,placed);
+  const reordered=deriveFeederCohortRelaxedCertificate(problem,[{...items[1]!,task:task("x")},{...items[0]!,task:task("y")}],placed.toReversed());
+  assert.deepEqual(first.contiguousBlockStartIntervals,[{start:0,end:0},{start:60,end:100}]);
+  assert.deepEqual(reordered.contiguousBlockStartIntervals,first.contiguousBlockStartIntervals);
+});
+
+test("contiguous-window domain intersection respects grid boundaries without scanning", () => {
+  const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:10,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
+  const domain=exactFeederStartDomain(problem,task,100,[],"COACH_DOMAIN",100);
+  const bounded=exactFeederStartDomainUnion(0,100,[domain],100,[{start:11,end:24},{start:80,end:80}]);
+  assert.deepEqual([...bounded.starts()],[80,20,15]);
+  assert.equal(bounded.eligibleStartCount,3);
+});
+
+test("authorized meal metadata does not split the optimistic contiguous coach window", () => {
+  const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:40,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
+  problem.resourceMeals=[{id:"meal",sourceTaskId:"meal-source",resourceIds:["coach"],interval:{start:30,end:60},status:"pending"}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,[{task,deadline:100}],[]).contiguousBlockStartIntervals,[{start:0,end:80}]);
 });
 
 test("structurally rejects an impossible feeder window without publishing a partial result", () => {
@@ -158,7 +235,7 @@ test("structurally rejects an impossible feeder window without publishing a part
 
 test("residual matching prunes an uncovered state and preserves a covered real solution", () => {
   const pruned = constructExactMainAndFeederCore(mainBacktrackingProblem());
-  assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.backtracks > 0);
+  assert.equal(pruned.status, "COMPLETE"); assert.ok(pruned.evidence.backtracks > 0 || pruned.evidence.blockStartsEliminatedByContiguousWindowBound > 0);
   const covered = mainBacktrackingProblem(); covered.tasks.find(({ id }) => id === "b-main-fixed")!.availability = [{ start: 80, end: 100 }];
   const solution = constructExactMainAndFeederCore(covered);
   assert.equal(solution.status, "COMPLETE");
@@ -186,7 +263,10 @@ test("causal diagnostics are read-only and reconcile every already-consumed bran
   assert.equal(enabled.status,disabled.status);
   assert.equal(Object.values(enabled.evidence.causalDiagnostic!.waterfallByDepth).reduce((sum,row)=>sum+row.total,0),enabled.evidence.branchesExplored);
   assert.equal(Object.values(enabled.evidence.causalDiagnostic!.feederByDepth).reduce((sum,row)=>sum+row.startsEvaluated,0),enabled.evidence.constructiveFeederStartChecks);
-  assert.ok(enabled.evidence.causalDiagnostic!.feederRejections.some(row=>row.firstRejectionReason==="TASK_AVAILABILITY"));
+  assert.equal(Object.values(enabled.evidence.feederOrderBranchesByArchitecture).reduce((sum,count)=>sum+count,0),enabled.evidence.feederOrderBranches);
+  assert.ok(enabled.evidence.feederCohortCapacityChecks>0);
+  assert.equal(enabled.evidence.feederCohortCapacityChecks,enabled.evidence.feederCohortEddChecks);
+  assert.ok(enabled.evidence.blockStartsEliminatedByContiguousWindowBound>0);
 });
 
 test("a minimal anchored core is adjacent, fed before its first obligation, and hard-valid", () => {
@@ -397,6 +477,36 @@ test("different coaches preserve possible feeder parallelism without structural 
     { pattern: ["coach", "coach"], slots: [40, 50] }), null);
 });
 
+function splitTransitionCohort(transitionMinutes:number):PlannerNextProblem {
+  const problem=syntheticProblem([
+    {id:"feeder-a",kind:"vocal",participantId:"a",duration:20,spaceId:"feed-a",dependencies:[],availability:[{start:0,end:20}]},
+    {id:"main-a",kind:"main",participantId:"a",duration:10,spaceId:"main",dependencies:["feeder-a"],blockKey:"block",availability:[{start:80,end:90}]},
+    {id:"feeder-b",kind:"vocal",participantId:"b",duration:20,spaceId:"feed-b",dependencies:[],availability:[{start:40,end:60}]},
+    {id:"main-b",kind:"main",participantId:"b",duration:10,spaceId:"main",dependencies:["feeder-b"],blockKey:"block",availability:[{start:90,end:100}]},
+  ],["a","b"],["feed-a","feed-b"]);
+  problem.coaches[0]!.availability=[{start:0,end:20},{start:40,end:60},{start:80,end:100}];
+  problem.coachRouteTransitions=transitionMinutes>0?[{coachId:"coach",fromSpaceId:"feed-a",toSpaceId:"feed-b",minutes:transitionMinutes}]:[];
+  problem.protectedMeal=undefined;
+  return problem;
+}
+
+test("split coach availability bridged by a positive transition remains exactly searchable",()=>{
+  const result=constructExactMainAndFeederCore(splitTransitionCohort(20));
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.scheduledTasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start).map(({start,end})=>({start,end})),
+    [{start:0,end:20},{start:40,end:60}]);
+  assert.ok(result.evidence.contiguousWindowSkippedByTransition>0);
+  assert.equal(result.evidence.feederCohortContiguousWindowPrunes,0);
+});
+
+test("split coach availability with zero transition is pruned by contiguous window",()=>{
+  const result=constructExactMainAndFeederCore(splitTransitionCohort(0));
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.feederCohortContiguousWindowChecks>0);
+  assert.ok(result.evidence.feederCohortContiguousWindowPrunes>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
+});
+
 test("a fixed authorized space meal bridges one feeder operational block", () => {
   const problem = twoCohortProblem();
   problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("a"));
@@ -411,6 +521,7 @@ test("a fixed authorized space meal bridges one feeder operational block", () =>
   assert.deepEqual(feeders.map(({ start, end }) => ({ start, end })), [{ start: 0, end: 10 }, { start: 20, end: 30 }]);
   assert.deepEqual(result.scheduledSpaceMeals.filter(({ spaceId }) => spaceId === "feed-a")
     .map(({ start, end }) => ({ start, end })), [{ start: 10, end: 20 }]);
+  assert.ok(result.evidence.contiguousWindowSkippedByAuthorizedMeal>0);
 });
 
 test("an uncontracted pause breaks feeder continuity", () => {
