@@ -646,6 +646,7 @@ test("cohort construction is deterministic and invariant to input order", () => 
   assert.equal(a.status, "COMPLETE"); assert.equal(b.status, "COMPLETE");
   assert.equal(a.evidence.coreFingerprint, b.evidence.coreFingerprint);
   assert.deepEqual(a.evidence.feederRunPrePartialPrunesByDepth,b.evidence.feederRunPrePartialPrunesByDepth);
+  assert.deepEqual(a.evidence.feederRunPreFeederPrunesByDepth,b.evidence.feederRunPreFeederPrunesByDepth);
   assert.deepEqual(a.evidence.selectedPattern, ["coach-a", "coach-a", "coach-b", "coach-b"]);
 });
 
