@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
-  exactFeederStartDomainUnion, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
+  exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
+  subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -215,6 +216,58 @@ test("authorized meal metadata does not split the optimistic contiguous coach wi
   const problem=syntheticProblem([],[],[]),task={id:"f",kind:"vocal",duration:40,spaceId:"main",coachId:"coach",dependencies:[]} as Task;
   problem.resourceMeals=[{id:"meal",sourceTaskId:"meal-source",resourceIds:["coach"],interval:{start:30,end:60},status:"pending"}];
   assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,[{task,deadline:100}],[]).contiguousBlockStartIntervals,[{start:0,end:80}]);
+});
+
+test("shared coach geometry merges overlapping and adjacent availability before measuring a feeder run",()=>{
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.protectedMeal=undefined;
+  const feeders=["a","b"].map(id=>({task:{id,kind:"vocal",duration:25,spaceId:"feed",coachId:"coach",dependencies:[]} as Task,deadline:60}));
+  problem.coaches[0]!.availability=[{start:0,end:30},{start:20,end:50}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,feeders,[]).contiguousBlockStartIntervals,[{start:0,end:0}]);
+  problem.coaches[0]!.availability=[{start:0,end:25},{start:25,end:50}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,feeders,[]).contiguousBlockStartIntervals,[{start:0,end:0}]);
+  problem.coaches[0]!.availability=[{start:0,end:20},{start:30,end:60}];
+  assert.deepEqual(deriveFeederCohortRelaxedCertificate(problem,feeders,[]).contiguousBlockStartIntervals,[]);
+  assert.deepEqual(mergedClippedIntervals([{start:0,end:30},{start:20,end:50}],0,50),[{start:0,end:50}]);
+  assert.deepEqual(mergedClippedIntervals([{start:0,end:25},{start:25,end:50}],0,50),[{start:0,end:50}]);
+  assert.deepEqual(mergedClippedIntervals([{start:0,end:20},{start:30,end:60}],0,50),
+    [{start:0,end:20},{start:30,end:50}]);
+});
+
+test("coach occupations are subtracted after overlapping availability has been merged",()=>{
+  const available=mergedClippedIntervals([{start:0,end:30},{start:20,end:60}],0,60);
+  const occupied=mergedClippedIntervals([{start:15,end:25},{start:20,end:35}],0,60);
+  assert.deepEqual(subtractMergedIntervals(available,occupied),[{start:0,end:15},{start:35,end:60}]);
+});
+
+function prefixDeadlineProblem():PlannerNextProblem{
+  const problem=syntheticProblem([
+    {id:"feeder-a",kind:"vocal",participantId:"a",duration:25,spaceId:"feed",dependencies:[]},
+    {id:"before-b",kind:"auxiliary",participantId:"b",duration:50,spaceId:"side",dependencies:[]},
+    {id:"a-main",kind:"main",participantId:"a",duration:10,spaceId:"main",dependencies:["feeder-a"],blockKey:"block"},
+    {id:"feeder-b",kind:"vocal",participantId:"b",duration:25,spaceId:"feed",dependencies:[]},
+    {id:"b-main",kind:"main",participantId:"b",duration:10,spaceId:"main",dependencies:["feeder-b"],blockKey:"block"},
+  ],["a","b"],["feed","side"]);
+  problem.protectedMeal=undefined;
+  problem.auxiliaryPolicy={participantPresencePreference:"OFF"};
+  problem.anchoredAccompaniments=[{id:"operation-b",anchorTaskId:"b-main",beforeTaskIds:["before-b"],afterTaskIds:[],
+    adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED"}];
+  return problem;
+}
+
+test("a selected main can make the optimistic completion impossible before its residual matching",()=>{
+  const entered:string[]=[],derived:string[]=[],events:string[]=[];
+  const result=runExactMainAndFeederSearch(prefixDeadlineProblem(),{
+    onMainChoiceEntered:choice=>{entered.push(choice.mainTask.id);events.push(`enter:${choice.mainTask.id}`);},
+    onResidualMatchingDerived:trace=>{derived.push(trace.selectedTaskId);events.push(`match:${trace.selectedTaskId}`);},
+  });
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(entered.includes("b-main"));
+  assert.ok((result.evidence.feederRunOptimisticPrunesByDepth["1"]??0)>0);
+  const firstB=events.indexOf("enter:b-main");
+  assert.notEqual(firstB,-1);
+  assert.notEqual(events[firstB+1],"match:b-main");
+  assert.ok(derived.includes("a-main"));
 });
 
 test("structurally rejects an impossible feeder window without publishing a partial result", () => {

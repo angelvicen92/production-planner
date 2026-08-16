@@ -312,6 +312,33 @@ export interface FeederCohortRelaxedCertificate {
   readonly contiguousBlockStartIntervals: readonly ExactFeederStartInterval[];
 }
 
+type ExactInterval = Readonly<{ start:number; end:number }>;
+
+/** Canonical interval geometry shared by the complete-cohort and prefix certificates. */
+export function mergedClippedIntervals(intervals:readonly ExactInterval[], start:number, end:number):ExactInterval[] {
+  const result:{start:number;end:number}[]=[];
+  for(const interval of intervals.map(item=>({start:Math.max(item.start,start),end:Math.min(item.end,end)}))
+    .filter(item=>item.start<item.end).sort((a,b)=>a.start-b.start||a.end-b.end)){
+    const previous=result.at(-1);
+    if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);
+    else result.push({...interval});
+  }
+  return result;
+}
+
+export function subtractMergedIntervals(available:readonly ExactInterval[], occupied:readonly ExactInterval[]):ExactInterval[] {
+  return available.flatMap(window=>{
+    const free:{start:number;end:number}[]=[];let cursor=window.start;
+    for(const blocker of occupied){
+      if(blocker.end<=cursor||blocker.start>=window.end)continue;
+      if(cursor<blocker.start)free.push({start:cursor,end:Math.min(blocker.start,window.end)});
+      cursor=Math.max(cursor,Math.min(blocker.end,window.end));
+    }
+    if(cursor<window.end)free.push({start:cursor,end:window.end});
+    return free;
+  });
+}
+
 /** A negative certificate only: all omitted constraints can only reduce feasibility. */
 export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem,
   feeders: readonly Readonly<{ task: Task; deadline: number }>[], placed: readonly ScheduledTask[]): FeederCohortRelaxedCertificate {
@@ -320,40 +347,12 @@ export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem
     return {applicable:false,prefixCapacityImpossible:false,latestFeasibleBlockStart:null,contiguousBlockStartIntervals:[]};
   const coach=problem.coaches.find(({id})=>id===coachId);
   if(!coach)return {applicable:false,prefixCapacityImpossible:false,latestFeasibleBlockStart:null,contiguousBlockStartIntervals:[]};
-  const merge=(intervals:readonly {start:number;end:number}[])=>{
-    const result:{start:number;end:number}[]=[];
-    for(const interval of [...intervals].filter(({start,end})=>start<end).sort((a,b)=>a.start-b.start||a.end-b.end)){
-      const previous=result.at(-1);
-      if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);
-      else result.push({...interval});
-    }
-    return result;
-  };
-  const occupied=merge(placed.filter(task=>task.coachId===coachId).map(({start,end})=>({start,end})));
-  const available=merge(coach.availability.map(({start,end})=>({start:Math.max(start,problem.day.start),end:Math.min(end,problem.day.end)})));
-  const free=available.flatMap(window=>{
-    const intervals:{start:number;end:number}[]=[];let cursor=window.start;
-    for(const blocker of occupied){
-      if(blocker.end<=cursor||blocker.start>=window.end)continue;
-      if(cursor<blocker.start)intervals.push({start:cursor,end:Math.min(blocker.start,window.end)});
-      cursor=Math.max(cursor,Math.min(blocker.end,window.end));
-    }
-    if(cursor<window.end)intervals.push({start:cursor,end:window.end});
-    return intervals;
-  });
+  const occupied=mergedClippedIntervals(placed.filter(task=>task.coachId===coachId),problem.day.start,problem.day.end);
+  const available=mergedClippedIntervals(coach.availability,problem.day.start,problem.day.end);
+  const free=subtractMergedIntervals(available,occupied);
   const capacityBefore=(deadline:number)=>{
-    const available=merge(coach.availability.map(({start,end})=>({start:Math.max(start,problem.day.start),end:Math.min(end,problem.day.end,deadline)})));
-    let capacity=0;
-    for(const window of available){
-      let cursor=window.start;
-      for(const blocker of occupied){
-        if(blocker.end<=cursor||blocker.start>=window.end)continue;
-        capacity+=Math.max(0,Math.min(blocker.start,window.end)-cursor);
-        cursor=Math.max(cursor,Math.min(blocker.end,window.end));
-      }
-      capacity+=Math.max(0,window.end-cursor);
-    }
-    return capacity;
+    const deadlineAvailable=mergedClippedIntervals(coach.availability,problem.day.start,Math.min(problem.day.end,deadline));
+    return subtractMergedIntervals(deadlineAvailable,occupied).reduce((sum,interval)=>sum+interval.end-interval.start,0);
   };
   const deadlines=[...new Set(feeders.map(({deadline})=>deadline))].sort((a,b)=>a-b);
   const prefixCapacityImpossible=deadlines.some(deadline=>
@@ -614,17 +613,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // Before the first choice, the main anchor is a relaxed (later) deadline. Afterwards the
       // selected operation supplies the exact first obligation. Both choices favor feasibility.
       const deadline=cohort[0]?.firstObligation??slots[depth]!;
-      const occupied=placed.filter(task=>task.coachId===coachId&&task.start<deadline)
-        .map(task=>({start:task.start,end:Math.min(task.end,deadline)})).sort((a,b)=>a.start-b.start||a.end-b.end);
-      const fits=coach.availability.some(window=>{
-        const end=Math.min(window.end,deadline);let cursor=Math.max(window.start,problem.day.start);
-        for(const blocker of occupied){
-          if(blocker.end<=cursor||blocker.start>=end)continue;
-          if(blocker.start-cursor>=minimumCompletionSpan)return true;
-          cursor=Math.max(cursor,blocker.end);
-        }
-        return end-cursor>=minimumCompletionSpan;
-      });
+      const occupied=mergedClippedIntervals(placed.filter(task=>task.coachId===coachId),problem.day.start,deadline);
+      const available=mergedClippedIntervals(coach.availability,problem.day.start,deadline);
+      const fits=subtractMergedIntervals(available,occupied)
+        .some(interval=>interval.end-interval.start>=minimumCompletionSpan);
       if(fits)return false;
       evidence.feederRunOptimisticPrunes++;
       const key=String(position);
