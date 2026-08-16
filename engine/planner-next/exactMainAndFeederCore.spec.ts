@@ -558,12 +558,12 @@ test("split coach availability bridged by a positive transition remains exactly 
   assert.equal(result.evidence.feederCohortContiguousWindowPrunes,0);
 });
 
-test("an impossible run is pruned optimistically at entry before matching or feeder search",()=>{
+test("an impossible contiguous run is rejected structurally before matching or feeder search",()=>{
   const result=constructExactMainAndFeederCore(splitTransitionCohort(0));
   assert.equal(result.status,"INFEASIBLE");
-  assert.ok(result.evidence.feederRunOptimisticChecks>0);
-  assert.ok(result.evidence.feederRunOptimisticPrunes>0);
-  assert.ok((result.evidence.feederRunOptimisticPrunesByDepth["0"]??0)>0);
+  assert.ok((result.evidence.structuralRejectionsByReason.FEEDER_CONTIGUOUS_CAPACITY??0)>0);
+  assert.equal(result.evidence.feederRunOptimisticChecks,0);
+  assert.equal(result.evidence.feederRunOptimisticPrunes,0);
   assert.equal(result.evidence.residualMatchingInvocations,0);
   assert.equal(result.evidence.feederOrderBranches,0);
 });

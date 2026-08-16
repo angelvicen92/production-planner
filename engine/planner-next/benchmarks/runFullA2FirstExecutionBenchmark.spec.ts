@@ -20,6 +20,8 @@ test("Full A2 first executable integration reports an atomic completion count", 
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
         evidence: { branchesExplored:number;coreBranches:number;standaloneBranches:number;
+          coreMaximumDepth:number;coreCompleteLeafCount:number;
+          structuralRejectionsByReason:Record<string,number>;
           standaloneForwardBranches:number;participantMealBranchesExplored:number;
           residualMatchingBranchesExplored:number;feederRunPrePartialChecks:number;feederRunPrePartialPrunes:number;
           feederRunPrePartialPrunesByDepth:Record<string,number>;feederRunPreFeederChecks:number;
@@ -28,7 +30,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
-          criticalRejectionCount: number; recommendation: string | null } };
+          criticalRejectionCount: number; recommendation: string | null; waterfallReconciles:boolean } };
       result: { publishedCanonicalObligations: number; diagnosticScheduledCanonicalObligations: number; targetCanonicalObligations: number; fullHardValidEligible: boolean };
     };
     assert.equal(evidence.canonicalObligationCount, 269);
@@ -39,12 +41,15 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const executionEvidence=evidence.execution!.evidence;
     assert.ok(executionEvidence.feederRunPrePartialChecks>0);
     assert.ok(executionEvidence.feederRunPreFeederChecks>0);
-    assert.ok(executionEvidence.feederRunPreFeederPrunes>0);
-    assert.equal(Object.values(executionEvidence.feederRunPreFeederPrunesByDepth).reduce((sum,count)=>sum+count,0),
-      executionEvidence.feederRunPreFeederPrunes);
+    assert.ok((executionEvidence.structuralRejectionsByReason.FEEDER_CONTIGUOUS_CAPACITY??0)>0);
+    assert.equal(executionEvidence.feederRunPreFeederPrunes,0);
+    assert.deepEqual(executionEvidence.feederRunPreFeederPrunesByDepth,{});
+    assert.ok(executionEvidence.coreMaximumDepth>=14);
     assert.ok(executionEvidence.feederOrderBranches<292524);
+    assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);
+    assert.equal(report.waterfallReconciles,true);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,
       preflightReasonCodes: evidence.preflight.reasonCodes,

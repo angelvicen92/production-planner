@@ -2,7 +2,7 @@ import type { PlannerNextProblem, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
-  | "TRANSITION_CAPACITY";
+  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY";
 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
@@ -19,29 +19,35 @@ interface ProvenCoachRun {
   eligible: Array<{ main: Task; feeder: Task }>;
 }
 
-const availableMinutesBefore = (
+const availableIntervalsBefore = (
   day: { start: number; end: number },
   availability: readonly { start: number; end: number }[] | undefined,
   deadline: number,
   occupied: readonly { start: number; end: number }[],
-): number => {
+): Array<{ start: number; end: number }> => {
   const windows = availability === undefined || availability.length === 0
     ? [{ start: day.start, end: day.end }]
     : availability;
+  const horizonEnd = Math.min(day.end, deadline);
   const boundaries = [...new Set([
-    day.start, Math.min(day.end, deadline),
-    ...windows.flatMap(({ start, end }) => [Math.max(day.start, start), Math.min(deadline, end)]),
-    ...occupied.flatMap(({ start, end }) => [Math.max(day.start, start), Math.min(deadline, end)]),
-  ])].filter((point) => day.start <= point && point <= deadline).sort((a, b) => a - b);
-  let capacity = 0;
+    day.start, horizonEnd,
+    ...windows.flatMap(({ start, end }) => [Math.max(day.start, start), Math.min(horizonEnd, end)]),
+    ...occupied.flatMap(({ start, end }) => [Math.max(day.start, start), Math.min(horizonEnd, end)]),
+  ])].filter((point) => day.start <= point && point <= horizonEnd).sort((a, b) => a - b);
+  const available: Array<{ start: number; end: number }> = [];
   for (let index = 1; index < boundaries.length; index += 1) {
     const start = boundaries[index - 1]!, end = boundaries[index]!;
     if (start === end || !windows.some((window) => window.start <= start && end <= window.end)
       || occupied.some((interval) => interval.start < end && start < interval.end)) continue;
-    capacity += end - start;
+    const previous = available.at(-1);
+    if (previous?.end === start) previous.end = end;
+    else available.push({ start, end });
   }
-  return capacity;
+  return available;
 };
+
+const availableMinutesBefore = (...parameters: Parameters<typeof availableIntervalsBefore>): number =>
+  availableIntervalsBefore(...parameters).reduce((sum, interval) => sum + interval.end - interval.start, 0);
 
 /**
  * Conservative structural proof for one main/feeder architecture.  Every rejection is a
@@ -141,6 +147,27 @@ export function proveMainFeederArchitectureImpossible(
         const deadline = architecture.slots[run.start]!;
         const capacity = availableMinutesBefore(problem.day, coachById.get(coachId)?.availability, deadline, occupied);
         if (minimumLoad > capacity) return "FEEDER_CAPACITY";
+      }
+
+      // A feeder cohort is one uninterrupted block.  This certificate deliberately asks only
+      // whether the optimistic N-shortest block for this run fits in one real coach interval;
+      // it neither assigns participants nor explores possible placements.  Authorities which
+      // can insert work inside that block make the simple continuity premise inapplicable.
+      const runLength = run.end - run.start;
+      const cheapestRun = [...run.eligible].sort((left, right) =>
+        left.feeder.duration - right.feeder.duration || left.main.id.localeCompare(right.main.id))
+        .slice(0, runLength);
+      const feederSpaces = [...new Set(run.eligible.map(({ feeder }) => feeder.spaceId))];
+      const transitionMaySplitBlock = feederSpaces.some((from) => feederSpaces.some((to) =>
+        from !== to && effectiveCoachTransitionMinutes(problem, coachId, from, to) > 0));
+      const authorizedMealMaySplitBlock = problem.spaces.some((space) =>
+        feederSpaces.includes(space.id) && space.mealPolicy !== undefined);
+      if (cheapestRun.length === runLength && !transitionMaySplitBlock && !authorizedMealMaySplitBlock) {
+        const minimumBlock = cheapestRun.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+        const deadline = architecture.slots[run.start]!;
+        const largestGap = Math.max(0, ...availableIntervalsBefore(problem.day,
+          coachById.get(coachId)?.availability, deadline, occupied).map(({ start, end }) => end - start));
+        if (minimumBlock > largestGap) return "FEEDER_CONTIGUOUS_CAPACITY";
       }
       for (let position = run.start; position < run.end; position += 1) {
         const slot = architecture.slots[position]!;
