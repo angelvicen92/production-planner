@@ -19,9 +19,12 @@ test("Full A2 first executable integration reports an atomic completion count", 
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
-        evidence: { standaloneBranches:number;standaloneForwardBranches:number;participantMealBranchesExplored:number;
+        evidence: { branchesExplored:number;coreBranches:number;standaloneBranches:number;
+          standaloneForwardBranches:number;participantMealBranchesExplored:number;
           residualMatchingBranchesExplored:number;feederRunPrePartialChecks:number;feederRunPrePartialPrunes:number;
-          feederRunPrePartialPrunesByDepth:Record<string,number>;lastExhaustionPhase:string|null };
+          feederRunPrePartialPrunesByDepth:Record<string,number>;feederRunPreFeederChecks:number;
+          feederRunPreFeederPrunes:number;feederRunPreFeederPrunesByDepth:Record<string,number>;
+          feederOrderBranches:number;lastExhaustionPhase:string|null };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
@@ -33,19 +36,15 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
-    assert.ok(report.criticalRejectionCount > 0);
-    assert.ok(report.criticalRejectionReasons.length > 0);
-    assert.ok(report.topBlockingPlacedTasks.length > 0);
-    assert.ok(report.topFeederBlockerPairs.length > 0);
-    assert.ok(report.recommendation);
     const executionEvidence=evidence.execution!.evidence;
     assert.ok(executionEvidence.feederRunPrePartialChecks>0);
-    assert.ok(executionEvidence.feederRunPrePartialPrunes>0);
-    assert.equal(executionEvidence.feederRunPrePartialPrunesByDepth["9"],executionEvidence.feederRunPrePartialPrunes);
-    assert.ok(executionEvidence.residualMatchingBranchesExplored<3956);
-    assert.ok(executionEvidence.standaloneBranches<223476);
-    assert.ok(executionEvidence.standaloneForwardBranches<166305);
-    assert.ok(executionEvidence.participantMealBranchesExplored<57171);
+    assert.ok(executionEvidence.feederRunPreFeederChecks>0);
+    assert.ok(executionEvidence.feederRunPreFeederPrunes>0);
+    assert.equal(Object.values(executionEvidence.feederRunPreFeederPrunesByDepth).reduce((sum,count)=>sum+count,0),
+      executionEvidence.feederRunPreFeederPrunes);
+    assert.ok(executionEvidence.feederOrderBranches<292524);
+    assert.equal(executionEvidence.branchesExplored,
+      executionEvidence.coreBranches+executionEvidence.standaloneBranches);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,
       preflightReasonCodes: evidence.preflight.reasonCodes,

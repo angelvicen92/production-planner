@@ -69,6 +69,9 @@ export interface ExactMainAndFeederCoreEvidence {
   feederRunPrePartialChecks: number;
   feederRunPrePartialPrunes: number;
   feederRunPrePartialPrunesByDepth: Record<string, number>;
+  feederRunPreFeederChecks: number;
+  feederRunPreFeederPrunes: number;
+  feederRunPreFeederPrunesByDepth: Record<string, number>;
   feederRunOptimisticSkippedByTransition: number;
   feederRunOptimisticSkippedByAuthorizedMeal: number;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
@@ -456,6 +459,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     contiguousWindowSkippedByAuthorizedMeal:0,feederRunOptimisticChecks:0,
     feederRunOptimisticPrunes:0,feederRunOptimisticPrunesByDepth:{},
     feederRunPrePartialChecks:0,feederRunPrePartialPrunes:0,feederRunPrePartialPrunesByDepth:{},
+    feederRunPreFeederChecks:0,feederRunPreFeederPrunes:0,feederRunPreFeederPrunesByDepth:{},
     feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
     causalDiagnostic:null };
 }
@@ -586,7 +590,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
     const feederRunOptimisticallyImpossible = (runStart:number, explicitRunEnd:number, position:number,
       cohort:readonly MainChoice[], placed:readonly ScheduledTask[], used:ReadonlySet<string>,
-      prePartial=false):boolean => {
+      boundary:"PREFIX"|"PRE_FEEDER"|"PRE_PARTIAL"="PREFIX"):boolean => {
       const remainingNeeded=explicitRunEnd-position;
       const possibleRemaining=mains.filter(task=>!used.has(task.id)&&Array.from({length:remainingNeeded},(_,index)=>position+index)
         .some(candidatePosition=>task.blockKey===pattern[candidatePosition]
@@ -611,7 +615,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const coach=problem.coaches.find(({id})=>id===coachId);
       if(!coach)return false;
       evidence.feederRunOptimisticChecks++;
-      if(prePartial)evidence.feederRunPrePartialChecks++;
+      if(boundary==="PRE_PARTIAL")evidence.feederRunPrePartialChecks++;
+      if(boundary==="PRE_FEEDER")evidence.feederRunPreFeederChecks++;
       const selectedSpan=cohort.reduce((sum,choice)=>sum+choice.feeder.duration,0);
       const optimisticRemainingSpan=possibleRemaining.map(({feeder})=>feeder.duration)
         .sort((a,b)=>a-b).slice(0,remainingNeeded).reduce((sum,duration)=>sum+duration,0);
@@ -627,9 +632,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.feederRunOptimisticPrunes++;
       const key=String(position);
       evidence.feederRunOptimisticPrunesByDepth[key]=(evidence.feederRunOptimisticPrunesByDepth[key]??0)+1;
-      if(prePartial){
+      if(boundary==="PRE_PARTIAL"){
         evidence.feederRunPrePartialPrunes++;
         evidence.feederRunPrePartialPrunesByDepth[key]=(evidence.feederRunPrePartialPrunesByDepth[key]??0)+1;
+      }
+      if(boundary==="PRE_FEEDER"){
+        evidence.feederRunPreFeederPrunes++;
+        evidence.feederRunPreFeederPrunesByDepth[key]=(evidence.feederRunPreFeederPrunesByDepth[key]??0)+1;
       }
       evidence.zeroAlternativePrunes++;
       return true;
@@ -643,6 +652,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         evidence.mainCandidatesExploredBeforeCohort[exploredKey] =
           (evidence.mainCandidatesExploredBeforeCohort[exploredKey] ?? 0) + 1;
         const blockOperations = cohort.flatMap(({ operation }) => operation);
+        // blockPlaced and blockUsed already include every selected main (and anchored operation)
+        // in this just-closed run. Deliberately omit its not-yet-materialized feeders: if the next
+        // run still cannot fit in that relaxed state, no feeder-block materialization can help it.
+        if(runEnd<mains.length){
+          let nextRunEnd=runEnd+1;
+          while(nextRunEnd<pattern.length&&pattern[nextRunEnd]===pattern[runEnd])nextRunEnd+=1;
+          if(feederRunOptimisticallyImpossible(runEnd,nextRunEnd,runEnd,[],blockPlaced,blockUsed,"PRE_FEEDER"))
+            return "DEAD_END";
+        }
         const fixedCohortMeals = canonical(problem.spaces.filter((space) => cohort.some(({ feeder }) => feeder.spaceId === space.id)
           && space.mealPolicy !== undefined
           && space.mealPolicy.window.end - space.mealPolicy.window.start === space.mealPolicy.duration))
@@ -715,7 +733,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               if(runEnd<mains.length){
                 let nextRunEnd=runEnd+1;
                 while(nextRunEnd<pattern.length&&pattern[nextRunEnd]===pattern[runEnd])nextRunEnd+=1;
-                if(feederRunOptimisticallyImpossible(runEnd,nextRunEnd,runEnd,[],nextPlaced,blockUsed,true))
+                if(feederRunOptimisticallyImpossible(runEnd,nextRunEnd,runEnd,[],nextPlaced,blockUsed,"PRE_PARTIAL"))
                   return "DEAD_END";
               }
               matchingDiagnosticDepth=runEnd;
