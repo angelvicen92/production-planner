@@ -63,6 +63,11 @@ export interface ExactMainAndFeederCoreEvidence {
   blockStartsEliminatedByContiguousWindowBound: number;
   contiguousWindowSkippedByTransition: number;
   contiguousWindowSkippedByAuthorizedMeal: number;
+  feederRunOptimisticChecks: number;
+  feederRunOptimisticPrunes: number;
+  feederRunOptimisticPrunesByDepth: Record<string, number>;
+  feederRunOptimisticSkippedByTransition: number;
+  feederRunOptimisticSkippedByAuthorizedMeal: number;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -307,6 +312,33 @@ export interface FeederCohortRelaxedCertificate {
   readonly contiguousBlockStartIntervals: readonly ExactFeederStartInterval[];
 }
 
+type ExactInterval = Readonly<{ start:number; end:number }>;
+
+/** Canonical interval geometry shared by the complete-cohort and prefix certificates. */
+export function mergedClippedIntervals(intervals:readonly ExactInterval[], start:number, end:number):ExactInterval[] {
+  const result:{start:number;end:number}[]=[];
+  for(const interval of intervals.map(item=>({start:Math.max(item.start,start),end:Math.min(item.end,end)}))
+    .filter(item=>item.start<item.end).sort((a,b)=>a.start-b.start||a.end-b.end)){
+    const previous=result.at(-1);
+    if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);
+    else result.push({...interval});
+  }
+  return result;
+}
+
+export function subtractMergedIntervals(available:readonly ExactInterval[], occupied:readonly ExactInterval[]):ExactInterval[] {
+  return available.flatMap(window=>{
+    const free:{start:number;end:number}[]=[];let cursor=window.start;
+    for(const blocker of occupied){
+      if(blocker.end<=cursor||blocker.start>=window.end)continue;
+      if(cursor<blocker.start)free.push({start:cursor,end:Math.min(blocker.start,window.end)});
+      cursor=Math.max(cursor,Math.min(blocker.end,window.end));
+    }
+    if(cursor<window.end)free.push({start:cursor,end:window.end});
+    return free;
+  });
+}
+
 /** A negative certificate only: all omitted constraints can only reduce feasibility. */
 export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem,
   feeders: readonly Readonly<{ task: Task; deadline: number }>[], placed: readonly ScheduledTask[]): FeederCohortRelaxedCertificate {
@@ -315,40 +347,12 @@ export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem
     return {applicable:false,prefixCapacityImpossible:false,latestFeasibleBlockStart:null,contiguousBlockStartIntervals:[]};
   const coach=problem.coaches.find(({id})=>id===coachId);
   if(!coach)return {applicable:false,prefixCapacityImpossible:false,latestFeasibleBlockStart:null,contiguousBlockStartIntervals:[]};
-  const merge=(intervals:readonly {start:number;end:number}[])=>{
-    const result:{start:number;end:number}[]=[];
-    for(const interval of [...intervals].filter(({start,end})=>start<end).sort((a,b)=>a.start-b.start||a.end-b.end)){
-      const previous=result.at(-1);
-      if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);
-      else result.push({...interval});
-    }
-    return result;
-  };
-  const occupied=merge(placed.filter(task=>task.coachId===coachId).map(({start,end})=>({start,end})));
-  const available=merge(coach.availability.map(({start,end})=>({start:Math.max(start,problem.day.start),end:Math.min(end,problem.day.end)})));
-  const free=available.flatMap(window=>{
-    const intervals:{start:number;end:number}[]=[];let cursor=window.start;
-    for(const blocker of occupied){
-      if(blocker.end<=cursor||blocker.start>=window.end)continue;
-      if(cursor<blocker.start)intervals.push({start:cursor,end:Math.min(blocker.start,window.end)});
-      cursor=Math.max(cursor,Math.min(blocker.end,window.end));
-    }
-    if(cursor<window.end)intervals.push({start:cursor,end:window.end});
-    return intervals;
-  });
+  const occupied=mergedClippedIntervals(placed.filter(task=>task.coachId===coachId),problem.day.start,problem.day.end);
+  const available=mergedClippedIntervals(coach.availability,problem.day.start,problem.day.end);
+  const free=subtractMergedIntervals(available,occupied);
   const capacityBefore=(deadline:number)=>{
-    const available=merge(coach.availability.map(({start,end})=>({start:Math.max(start,problem.day.start),end:Math.min(end,problem.day.end,deadline)})));
-    let capacity=0;
-    for(const window of available){
-      let cursor=window.start;
-      for(const blocker of occupied){
-        if(blocker.end<=cursor||blocker.start>=window.end)continue;
-        capacity+=Math.max(0,Math.min(blocker.start,window.end)-cursor);
-        cursor=Math.max(cursor,Math.min(blocker.end,window.end));
-      }
-      capacity+=Math.max(0,window.end-cursor);
-    }
-    return capacity;
+    const deadlineAvailable=mergedClippedIntervals(coach.availability,problem.day.start,Math.min(problem.day.end,deadline));
+    return subtractMergedIntervals(deadlineAvailable,occupied).reduce((sum,interval)=>sum+interval.end-interval.start,0);
   };
   const deadlines=[...new Set(feeders.map(({deadline})=>deadline))].sort((a,b)=>a-b);
   const prefixCapacityImpossible=deadlines.some(deadline=>
@@ -446,7 +450,10 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,
     feederCohortContiguousWindowChecks:0,feederCohortContiguousWindowPrunes:0,
     blockStartsEliminatedByContiguousWindowBound:0,contiguousWindowSkippedByTransition:0,
-    contiguousWindowSkippedByAuthorizedMeal:0,causalDiagnostic:null };
+    contiguousWindowSkippedByAuthorizedMeal:0,feederRunOptimisticChecks:0,
+    feederRunOptimisticPrunes:0,feederRunOptimisticPrunesByDepth:{},
+    feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
+    causalDiagnostic:null };
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -572,6 +579,51 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     while (runEnd < pattern.length && pattern[runEnd] === pattern[depth]) runEnd += 1;
     const descriptors: ExactMainChoiceDescriptor[] = [];
     let cohortCandidatesExplored = 0;
+
+    const feederRunOptimisticallyImpossible = (position:number, cohort:readonly MainChoice[],
+      placed:readonly ScheduledTask[], used:ReadonlySet<string>):boolean => {
+      const remainingNeeded=runEnd-position;
+      const possibleRemaining=mains.filter(task=>!used.has(task.id)&&Array.from({length:remainingNeeded},(_,index)=>position+index)
+        .some(candidatePosition=>task.blockKey===pattern[candidatePosition]
+          &&taskFitsRequiredCompositePosition(task,candidatePosition,requiredBlocks,composite)))
+        .map(task=>({task,feeder:feederByMain.get(task.id)!}));
+      // This union does not assign membership. Its N shortest distinct feeders can only
+      // underestimate the load of every exact completion of the remaining positions.
+      if(possibleRemaining.length<remainingNeeded)return false;
+      const possibleFeeders=[...cohort.map(choice=>choice.feeder),...possibleRemaining.map(({feeder})=>feeder)];
+      const coachId=possibleFeeders[0]?.coachId;
+      if(coachId===undefined||possibleFeeders.some(feeder=>feeder.coachId!==coachId))return false;
+      const possibleSpaces=[...new Set(possibleFeeders.map(feeder=>feeder.spaceId))];
+      if(possibleSpaces.some(from=>possibleSpaces.some(to=>from!==to
+        &&effectiveCoachTransitionMinutes(problem,coachId,from,to)>0))){
+        evidence.feederRunOptimisticSkippedByTransition++;return false;
+      }
+      // At prefix depth membership is intentionally unresolved, so any authorized meal in a
+      // possible feeder space is enough to make strict continuity unproven.
+      if(problem.spaces.some(space=>possibleSpaces.includes(space.id)&&space.mealPolicy!==undefined)){
+        evidence.feederRunOptimisticSkippedByAuthorizedMeal++;return false;
+      }
+      const coach=problem.coaches.find(({id})=>id===coachId);
+      if(!coach)return false;
+      evidence.feederRunOptimisticChecks++;
+      const selectedSpan=cohort.reduce((sum,choice)=>sum+choice.feeder.duration,0);
+      const optimisticRemainingSpan=possibleRemaining.map(({feeder})=>feeder.duration)
+        .sort((a,b)=>a-b).slice(0,remainingNeeded).reduce((sum,duration)=>sum+duration,0);
+      const minimumCompletionSpan=selectedSpan+optimisticRemainingSpan;
+      // Before the first choice, the main anchor is a relaxed (later) deadline. Afterwards the
+      // selected operation supplies the exact first obligation. Both choices favor feasibility.
+      const deadline=cohort[0]?.firstObligation??slots[depth]!;
+      const occupied=mergedClippedIntervals(placed.filter(task=>task.coachId===coachId),problem.day.start,deadline);
+      const available=mergedClippedIntervals(coach.availability,problem.day.start,deadline);
+      const fits=subtractMergedIntervals(available,occupied)
+        .some(interval=>interval.end-interval.start>=minimumCompletionSpan);
+      if(fits)return false;
+      evidence.feederRunOptimisticPrunes++;
+      const key=String(position);
+      evidence.feederRunOptimisticPrunesByDepth[key]=(evidence.feederRunOptimisticPrunesByDepth[key]??0)+1;
+      evidence.zeroAlternativePrunes++;
+      return true;
+    };
 
     const assignMains = (position: number, blockPlaced: ScheduledTask[], blockUsed: Set<string>,
       cohort: MainChoice[], blockCertificate: ResidualMatchingCertificate | undefined): SearchOutcome => {
@@ -781,6 +833,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         else if (witnessTaskId !== undefined) evidence.mainWitnessFallbacks += 1;
         const descriptor=byId.get(choice.task.id)!; options.onMainChoiceEntered?.(descriptor); descriptors.push(descriptor);
         const nextPlaced=[...blockPlaced,...choice.operation], nextUsed=new Set(blockUsed).add(choice.task.id);
+        if(feederRunOptimisticallyImpossible(position+1,[...cohort,choice],nextPlaced,nextUsed)){
+          descriptors.pop();evidence.backtracks+=1;continue;
+        }
         matchingDiagnosticDepth=position;
         const matching=residualMatching(pattern,slots,composite,meals,nextPlaced,nextUsed,position+1,
           options.residualMatchingMode === "FULL_RECOMPUTE" ? undefined : blockCertificate,
@@ -794,6 +849,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       return "DEAD_END";
     };
     let initialCertificate = certificate;
+    if(feederRunOptimisticallyImpossible(depth,[],placed,used))return "DEAD_END";
     if (initialCertificate === undefined) {
       matchingDiagnosticDepth = depth;
       const matching = residualMatching(pattern, slots, composite, meals, placed, used, depth,
