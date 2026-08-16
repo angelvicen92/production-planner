@@ -184,6 +184,9 @@ export interface ExactMainAndFeederSearchOptions {
     invalidatedUnmatchedEdges: number;
     reusedInvalidEdges: number;
     unmatchedBeforeRepair: number;
+    positionChecks: number;
+    cacheHits: number;
+    augmentTraversals: number;
   }>) => void;
   causalDiagnostic?: boolean;
   onBranchConsumed?: (category:ExactBranchCategory,depth:number,count:number)=>void;
@@ -901,9 +904,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number,
     parent: ResidualMatchingCertificate | undefined, selectedTaskId: string,
     addedTasks: readonly ScheduledTask[]): ResidualMatchingResult => {
-    if (!consumeMatchingBranch()) return { outcome: "BUDGET_EXHAUSTED" };
     evidence.residualMatchingChecks += 1;
     evidence.residualMatchingInvocations += 1;
+    let invocationPositionChecks = 0;
+    let invocationCacheHits = 0;
+    let invocationAugmentTraversals = 0;
     const remaining = mains.filter(({ id }) => !used.has(id));
     const remainingIds = remaining.map(({ id }) => id);
     const remainingIdSet = new Set(remainingIds);
@@ -911,10 +916,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const positionSet = new Set(positions);
     const validEdges = new Map<string, ResidualMatchingEdge[]>();
     const invalidPositions = new Map<string, Set<number>>();
+    let derivedTrace: Omit<Parameters<NonNullable<ExactMainAndFeederSearchOptions["onResidualMatchingDerived"]>>[0],
+      "positionChecks" | "cacheHits" | "augmentTraversals"> | undefined;
 
     const evaluate = (task: Task, position: number): ResidualMatchingEdge | null | "BUDGET_EXHAUSTED" => {
       if (!consumeMatchingBranch()) return "BUDGET_EXHAUSTED";
       evidence.residualMatchingPositionChecks += 1;
+      invocationPositionChecks += 1;
       const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
       if (!operation) return null;
       const departureDeadline = latestDepartureStart.get(task.participantId);
@@ -957,6 +965,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (edge.position === consumedPosition || !positionSet.has(edge.position)) continue;
           if (!residualMatchingOperationsMayInteract(problem, edge.operation, addedTasks)) {
             evidence.residualMatchingEdgeCacheHits += 1;
+            invocationCacheHits += 1;
             taskEdges.push(edge);
             continue;
           }
@@ -983,7 +992,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (remainingIdSet.has(taskId) && positionSet.has(position)
             && (validEdges.get(taskId) ?? []).some((edge) => edge.position === position)) retainedTaskIds.add(taskId);
         }
-        options.onResidualMatchingDerived(Object.freeze({
+        derivedTrace = {
           selectedTaskId,
           consumedPosition,
           selectedTaskPreviousPosition: parent.matching.get(selectedTaskId) ?? null,
@@ -993,7 +1002,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           invalidatedUnmatchedEdges,
           reusedInvalidEdges,
           unmatchedBeforeRepair: remainingIds.filter((id) => !retainedTaskIds.has(id)).length,
-        }));
+        };
       }
     }
 
@@ -1012,6 +1021,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if (seen.has(position)) continue;
         if (!consumeMatchingBranch()) return "BUDGET_EXHAUSTED";
         evidence.residualMatchingAugmentTraversals += 1;
+        invocationAugmentTraversals += 1;
         seen.add(position);
         const owner = positionOwner.get(position);
         if (owner === undefined) {
@@ -1042,6 +1052,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const certificate: ResidualMatchingCertificate = {
       taskIds: remainingIds, positions, validEdges, invalidPositions, matching,
     };
+    if (derivedTrace) options.onResidualMatchingDerived!(Object.freeze({ ...derivedTrace,
+      positionChecks: invocationPositionChecks,
+      cacheHits: invocationCacheHits,
+      augmentTraversals: invocationAugmentTraversals,
+    }));
     return { outcome: "FOUND", certificate };
   };
 

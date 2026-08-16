@@ -60,6 +60,60 @@ test("an unrelated operation is a structurally proven cache hit", () => {
   assert.equal(residualMatchingOperationsMayInteract(mainFlowVocalScenario(), [edge], [unrelated]), false);
 });
 
+test("residual matching charges only material position evaluations and augment traversals", () => {
+  const reusableProblem = mainFlowVocalScenario();
+  const before = structuredClone(reusableProblem);
+  const reuseTraces: Array<{ positionChecks: number; cacheHits: number; augmentTraversals: number }> = [];
+  const incremental = runExactMainAndFeederSearch(reusableProblem, {
+    onResidualMatchingDerived: (trace) => reuseTraces.push(trace),
+  });
+  assert.ok(reuseTraces.some(({ positionChecks, cacheHits, augmentTraversals }) =>
+    positionChecks === 0 && cacheHits > 0 && augmentTraversals === 0));
+  assert.equal(incremental.evidence.residualMatchingBranchesExplored,
+    incremental.evidence.residualMatchingPositionChecks
+      + incremental.evidence.residualMatchingAugmentTraversals);
+  assert.ok(incremental.evidence.residualMatchingInvocations > 0);
+  assert.deepEqual(reusableProblem, before);
+
+  const reevaluationProblem = mainFlowVocalScenario();
+  const reevaluationMains = reevaluationProblem.tasks.filter(({ kind }) => kind === "main");
+  reevaluationMains[0]!.dependencies.push(reevaluationMains[1]!.id);
+  const reevaluated = runExactMainAndFeederSearch(reevaluationProblem);
+  assert.ok(reevaluated.evidence.residualMatchingEdgeCacheMisses > 0);
+  assert.ok(reevaluated.evidence.residualMatchingPositionChecks
+    > incremental.evidence.residualMatchingPositionChecks);
+  assert.equal(reevaluated.evidence.residualMatchingBranchesExplored,
+    reevaluated.evidence.residualMatchingPositionChecks
+      + reevaluated.evidence.residualMatchingAugmentTraversals);
+
+  const repairProblem = mainFlowVocalScenario();
+  let firstMainOrder: string | undefined;
+  const repairTraces: Array<{ unmatchedBeforeRepair: number; augmentTraversals: number }> = [];
+  const repaired = runExactMainAndFeederSearch(repairProblem, {
+    onResidualMatchingDerived: (trace) => repairTraces.push(trace),
+    onHardValidCoreLeaf: ({ tasks }) => {
+      const mainOrder = tasks.filter(({ kind }) => kind === "main")
+        .sort((a, b) => a.start - b.start).map(({ id }) => id).join(",");
+      firstMainOrder ??= mainOrder;
+      return mainOrder === firstMainOrder ? "REJECT" : "ACCEPT";
+    },
+  });
+  assert.ok(repairTraces.some(({ unmatchedBeforeRepair, augmentTraversals }) =>
+    unmatchedBeforeRepair > 0 && augmentTraversals > 0));
+  assert.ok(repaired.evidence.residualMatchingRepairs > 0);
+  assert.equal(repaired.evidence.residualMatchingBranchesExplored,
+    repaired.evidence.residualMatchingPositionChecks
+      + repaired.evidence.residualMatchingAugmentTraversals);
+
+  const full = runExactMainAndFeederSearch(structuredClone(before), { residualMatchingMode: "FULL_RECOMPUTE" });
+  assert.equal(full.evidence.residualMatchingFullBuilds, full.evidence.residualMatchingInvocations);
+  assert.equal(full.evidence.residualMatchingBranchesExplored,
+    full.evidence.residualMatchingPositionChecks + full.evidence.residualMatchingAugmentTraversals);
+  assert.equal(full.status, incremental.status);
+  assert.equal(full.complete, incremental.complete);
+  assert.deepEqual(full.scheduledTasks, incremental.scheduledTasks);
+});
+
 test("incremental certificates have exact full-recompute parity without false pruning", () => {
   for (const mutate of [
     (problem: ReturnType<typeof mainFlowVocalScenario>) => problem,
@@ -189,8 +243,7 @@ test("certificate derivation is sibling-isolated, deterministic, order-invariant
   assert.deepEqual(reversedResult.scheduledTasks, firstSibling.scheduledTasks);
   const evidence = firstSibling.evidence;
   assert.equal(evidence.residualMatchingBranchesExplored,
-    evidence.residualMatchingInvocations + evidence.residualMatchingPositionChecks
-      + evidence.residualMatchingAugmentTraversals);
+    evidence.residualMatchingPositionChecks + evidence.residualMatchingAugmentTraversals);
   assert.ok(evidence.residualMatchingIncrementalUpdates > 0);
   assert.equal(evidence.mainWitnessFallbacks, 0);
   assert.ok(evidence.mainWitnessChoicesFollowed > 0);
