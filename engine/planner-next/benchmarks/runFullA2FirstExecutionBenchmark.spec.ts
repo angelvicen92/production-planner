@@ -26,7 +26,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
           residualMatchingBranchesExplored:number;feederRunPrePartialChecks:number;feederRunPrePartialPrunes:number;
           feederRunPrePartialPrunesByDepth:Record<string,number>;feederRunPreFeederChecks:number;
           feederRunPreFeederPrunes:number;feederRunPreFeederPrunesByDepth:Record<string,number>;
-          feederOrderBranches:number;lastExhaustionPhase:string|null };
+          feederOrderBranches:number;feederSlotMatchingChecks:number;feederSlotMatchingPrunes:number;
+          feederSlotMatchingEdgeChecks:number;feederSlotMatchingAugmentTraversals:number;
+          feederSlotMatchingBranchesExplored:number;lastExhaustionPhase:string|null };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
@@ -46,6 +48,10 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.deepEqual(executionEvidence.feederRunPreFeederPrunesByDepth,{});
     assert.ok(executionEvidence.coreMaximumDepth>=14);
     assert.ok(executionEvidence.feederOrderBranches<292524);
+    assert.ok(executionEvidence.feederSlotMatchingChecks>0);
+    assert.ok(executionEvidence.feederSlotMatchingPrunes>0);
+    assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
+      executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals);
     assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);
