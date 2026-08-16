@@ -19,6 +19,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
+        evidence: { standaloneBranches:number;standaloneForwardBranches:number;participantMealBranchesExplored:number;
+          residualMatchingBranchesExplored:number;feederRunPrePartialChecks:number;feederRunPrePartialPrunes:number;
+          feederRunPrePartialPrunesByDepth:Record<string,number>;lastExhaustionPhase:string|null };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
@@ -35,6 +38,14 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(report.topBlockingPlacedTasks.length > 0);
     assert.ok(report.topFeederBlockerPairs.length > 0);
     assert.ok(report.recommendation);
+    const executionEvidence=evidence.execution!.evidence;
+    assert.ok(executionEvidence.feederRunPrePartialChecks>0);
+    assert.ok(executionEvidence.feederRunPrePartialPrunes>0);
+    assert.equal(executionEvidence.feederRunPrePartialPrunesByDepth["9"],executionEvidence.feederRunPrePartialPrunes);
+    assert.ok(executionEvidence.residualMatchingBranchesExplored<3956);
+    assert.ok(executionEvidence.standaloneBranches<223476);
+    assert.ok(executionEvidence.standaloneForwardBranches<166305);
+    assert.ok(executionEvidence.participantMealBranchesExplored<57171);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,
       preflightReasonCodes: evidence.preflight.reasonCodes,

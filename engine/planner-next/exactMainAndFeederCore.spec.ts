@@ -390,6 +390,8 @@ test("closes configured contiguous feeder cohorts before advancing to secondary 
   } });
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.deepEqual(boundaries.map(({ depth }) => depth), [2, 4]);
+  assert.ok(result.evidence.feederRunPrePartialChecks > 0);
+  assert.equal(result.evidence.feederRunPrePartialPrunes, 0);
   assert.ok(boundaries.every(({ ids }) => ids.filter((id) => id.startsWith("main-")).length === 2
     && ids.filter((id) => id.startsWith("feeder-")).length === 2));
   const byId = new Map(result.scheduledTasks.map((task) => [task.id, task]));
@@ -643,6 +645,7 @@ test("cohort construction is deterministic and invariant to input order", () => 
   const a = constructExactMainAndFeederCore(first), b = constructExactMainAndFeederCore(reversed);
   assert.equal(a.status, "COMPLETE"); assert.equal(b.status, "COMPLETE");
   assert.equal(a.evidence.coreFingerprint, b.evidence.coreFingerprint);
+  assert.deepEqual(a.evidence.feederRunPrePartialPrunesByDepth,b.evidence.feederRunPrePartialPrunesByDepth);
   assert.deepEqual(a.evidence.selectedPattern, ["coach-a", "coach-a", "coach-b", "coach-b"]);
 });
 
