@@ -58,6 +58,12 @@ test("split coach availability contributes only its real available prefix capaci
   assert.equal(prove(prefixProblem(15, [{ start: 0, end: 30 }, { start: 40, end: 120 }])), "FEEDER_CAPACITY");
 });
 
+test("rejects a feeder block when total minutes suffice but every coach gap is too short", () => {
+  const fixture = prefixProblem(15, [{ start: 0, end: 20 }, { start: 25, end: 120 }]);
+  assert.equal(20 + 15 >= 2 * 15, true, "the first deadline has sufficient total capacity");
+  assert.equal(prove(fixture), "FEEDER_CONTIGUOUS_CAPACITY");
+});
+
 test("a feasible cumulative architecture is not rejected", () => {
   assert.equal(prove(prefixProblem(10)), null);
 });
@@ -75,4 +81,53 @@ test("participant and task IDs do not affect the cumulative proof", () => {
     [main.id, renamed.problem.tasks.find(({ id }) => id === main.dependencies[0])!]));
   assert.equal(prove(baseline), "FEEDER_CAPACITY");
   assert.equal(prove(renamed), "FEEDER_CAPACITY");
+});
+
+function firstCoachRun(fixture: ReturnType<typeof prefixProblem>): {
+  problem: PlannerNextProblem;
+  mains: Task[];
+  feeders: Map<string, Task>;
+} {
+  const mains = fixture.mains.filter(({ blockKey }) => blockKey === "a").slice(0, 2);
+  const taskIds = new Set(mains.flatMap((main) => [main.id, main.dependencies[0]!]));
+  return { problem: { ...fixture.problem, tasks: fixture.problem.tasks.filter(({ id }) => taskIds.has(id)) },
+    mains, feeders: new Map(mains.map((main) => [main.id, fixture.feeders.get(main.id)!])) };
+}
+
+const twoSlotArchitecture = { pattern: ["a", "a"], slots: [40, 50] } as const;
+
+test("coach transitions make the simple contiguous certificate inapplicable", () => {
+  const fixture = firstCoachRun(prefixProblem(15, [{ start: 0, end: 20 }, { start: 25, end: 120 }]));
+  const secondFeeder = fixture.feeders.get(fixture.mains[1]!.id)!;
+  secondFeeder.spaceId = "feed-coach-a-2";
+  fixture.problem.spaces.push({ id: secondFeeder.spaceId, availability: [{ start: 0, end: 120 }] });
+  fixture.problem.coachRouteTransitions = [{ coachId: "coach-a", fromSpaceId: "feed-coach-a",
+    toSpaceId: secondFeeder.spaceId, minutes: 5 }];
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    twoSlotArchitecture), null);
+});
+
+test("an authorized feeder-space meal makes the simple contiguous certificate inapplicable", () => {
+  const fixture = firstCoachRun(prefixProblem(15, [{ start: 0, end: 20 }, { start: 25, end: 120 }]));
+  fixture.problem.spaces.find(({ id }) => id === "feed-coach-a")!.mealPolicy = {
+    window: { start: 15, end: 35 }, duration: 5,
+  };
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    twoSlotArchitecture), null);
+});
+
+test("contiguous proof is invariant to task input order and renamed IDs", () => {
+  const baseline = prefixProblem(15, [{ start: 0, end: 20 }, { start: 25, end: 120 }]);
+  const renamed = structuredClone(baseline.problem);
+  for (const task of renamed.tasks) {
+    task.id = `renamed-${task.id}`;
+    task.dependencies = task.dependencies.map((id) => `renamed-${id}`);
+  }
+  renamed.tasks.reverse();
+  const mains = renamed.tasks.filter(({ kind }) => kind === "main");
+  const feeders = new Map(mains.map((main) =>
+    [main.id, renamed.tasks.find(({ id }) => id === main.dependencies[0])!]));
+  assert.equal(prove(baseline), "FEEDER_CONTIGUOUS_CAPACITY");
+  assert.equal(proveMainFeederArchitectureImpossible(renamed, mains, feeders, architecture),
+    "FEEDER_CONTIGUOUS_CAPACITY");
 });
