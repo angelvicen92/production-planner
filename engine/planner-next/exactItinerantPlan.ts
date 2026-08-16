@@ -118,6 +118,9 @@ export interface ExactItinerantPlanEvidence {
   feederRunOptimisticChecks: number;
   feederRunOptimisticPrunes: number;
   feederRunOptimisticPrunesByDepth: Record<string, number>;
+  feederRunPrePartialChecks: number;
+  feederRunPrePartialPrunes: number;
+  feederRunPrePartialPrunesByDepth: Record<string, number>;
   feederRunOptimisticSkippedByTransition: number;
   feederRunOptimisticSkippedByAuthorizedMeal: number;
   residualMatchingInvocations: number;
@@ -691,6 +694,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
     contiguousWindowSkippedByTransition:0,contiguousWindowSkippedByAuthorizedMeal:0,
     feederRunOptimisticChecks:0,feederRunOptimisticPrunes:0,feederRunOptimisticPrunesByDepth:{},
+    feederRunPrePartialChecks:0,feederRunPrePartialPrunes:0,feederRunPrePartialPrunesByDepth:{},
     feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
     residualMatchingInvocations: 0, residualMatchingFullBuilds: 0,
     residualMatchingIncrementalUpdates: 0, residualMatchingEdgeCacheHits: 0,
@@ -824,6 +828,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederRunOptimisticChecks=core.evidence.feederRunOptimisticChecks;
   evidence.feederRunOptimisticPrunes=core.evidence.feederRunOptimisticPrunes;
   evidence.feederRunOptimisticPrunesByDepth={...core.evidence.feederRunOptimisticPrunesByDepth};
+  evidence.feederRunPrePartialChecks=core.evidence.feederRunPrePartialChecks;
+  evidence.feederRunPrePartialPrunes=core.evidence.feederRunPrePartialPrunes;
+  evidence.feederRunPrePartialPrunesByDepth={...core.evidence.feederRunPrePartialPrunesByDepth};
   evidence.feederRunOptimisticSkippedByTransition=core.evidence.feederRunOptimisticSkippedByTransition;
   evidence.feederRunOptimisticSkippedByAuthorizedMeal=core.evidence.feederRunOptimisticSkippedByAuthorizedMeal;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
