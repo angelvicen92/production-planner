@@ -42,6 +42,99 @@ function feederStartBacktrackingProblem(): PlannerNextProblem {
   return problem;
 }
 
+function fixedFeederSlotProblem(kind:"HALL_DEFICIT"|"PERFECT", rename=(id:string)=>id):PlannerNextProblem {
+  const participantIds=["a","b","c"].map(rename);
+  const tasks:Task[]=participantIds.flatMap((participantId,index)=>[
+    {id:rename(`feeder-${["a","b","c"][index]}`),kind:"vocal",participantId,coachId:"coach",duration:10,
+      spaceId:"feed",dependencies:[],availability:kind==="HALL_DEFICIT"?[{start:40,end:60}]
+        :[{start:40+index*10,end:50+index*10}]},
+    {id:rename(`main-${["a","b","c"][index]}`),kind:"main",participantId,coachId:"coach",duration:10,
+      spaceId:"main",dependencies:[rename(`feeder-${["a","b","c"][index]}`)],blockKey:"coach",
+      availability:[{start:80+index*10,end:90+index*10}]},
+  ]);
+  const problem=syntheticProblem(tasks,participantIds,["feed"]);
+  problem.protectedMeal=undefined;
+  problem.mainFlow.preferredEnd=110;
+  return problem;
+}
+
+const assertFeederSlotAccounting=(result:ReturnType<typeof constructExactMainAndFeederCore>):void=>{
+  assert.equal(result.evidence.feederSlotMatchingBranchesExplored,
+    result.evidence.feederSlotMatchingEdgeChecks+result.evidence.feederSlotMatchingAugmentTraversals);
+};
+
+test("feeder-slot Hall deficit prunes before FEEDER_ORDER",()=>{
+  const result=constructExactMainAndFeederCore(fixedFeederSlotProblem("HALL_DEFICIT"));
+  assert.equal(result.status,"INFEASIBLE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.feederSlotMatchingChecks>0);
+  assert.ok(result.evidence.feederSlotMatchingPrunes>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
+  assertFeederSlotAccounting(result);
+});
+
+test("a perfect feeder-slot matching preserves the historical exact search",()=>{
+  const result=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.feederSlotMatchingChecks>result.evidence.feederSlotMatchingPrunes);
+  assert.ok(result.evidence.feederOrderBranches>0);
+  assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
+  assertFeederSlotAccounting(result);
+});
+
+test("an authorized block meal makes feeder-slot matching abstain",()=>{
+  const problem=fixedFeederSlotProblem("PERFECT");
+  problem.spaces.find(({id})=>id==="feed")!.mealPolicy={window:{start:70,end:80},duration:10};
+  const result=constructExactMainAndFeederCore(problem);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.evidence.feederSlotMatchingChecks,0);
+  assert.ok(result.evidence.feederOrderBranches>0);
+  assertFeederSlotAccounting(result);
+});
+
+test("omitted inter-feeder interaction remains an optimistic relaxation",()=>{
+  const problem=fixedFeederSlotProblem("PERFECT");
+  problem.tasks.find(({id})=>id==="feeder-b")!.dependencies=["feeder-a"];
+  const result=constructExactMainAndFeederCore(problem);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.feederSlotMatchingChecks>0);
+  assert.ok(result.evidence.feederOrderBranches>0,"the optimistic certificate must leave the interaction to exact placement");
+  assertFeederSlotAccounting(result);
+});
+
+test("feeder-slot matching is invariant to IDs and input order",()=>{
+  const baseline=constructExactMainAndFeederCore(fixedFeederSlotProblem("HALL_DEFICIT"));
+  const renamed=fixedFeederSlotProblem("HALL_DEFICIT",id=>`renamed-${id}`);
+  renamed.tasks.reverse();renamed.participants.reverse();renamed.spaces.reverse();
+  const permuted=constructExactMainAndFeederCore(renamed);
+  assert.equal(permuted.status,baseline.status);
+  assert.deepEqual({checks:permuted.evidence.feederSlotMatchingChecks,prunes:permuted.evidence.feederSlotMatchingPrunes,
+    edges:permuted.evidence.feederSlotMatchingEdgeChecks,augments:permuted.evidence.feederSlotMatchingAugmentTraversals,
+    order:permuted.evidence.feederOrderBranches},{checks:baseline.evidence.feederSlotMatchingChecks,
+    prunes:baseline.evidence.feederSlotMatchingPrunes,edges:baseline.evidence.feederSlotMatchingEdgeChecks,
+    augments:baseline.evidence.feederSlotMatchingAugmentTraversals,order:baseline.evidence.feederOrderBranches});
+  assertFeederSlotAccounting(permuted);
+});
+
+test("feeder-slot matching exhausts the shared budget without hidden branches",()=>{
+  const complete=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
+  const findExhaustion=(phase:"EDGE"|"AUGMENT")=>{
+    for(let budget=1;budget<complete.evidence.branchesExplored;budget++){
+      const problem=fixedFeederSlotProblem("PERFECT");problem.budget.maxBranchExpansions=budget;
+      const result=constructExactMainAndFeederCore(problem);
+      if(result.status==="BRANCH_BUDGET_EXHAUSTED"&&(phase==="EDGE"
+        ?result.evidence.feederSlotMatchingEdgeChecks>0&&result.evidence.feederSlotMatchingAugmentTraversals===0
+        :result.evidence.feederSlotMatchingAugmentTraversals>0))return result;
+    }
+    assert.fail(`no ${phase} exhaustion boundary found`);
+  };
+  for(const result of [findExhaustion("EDGE"),findExhaustion("AUGMENT")]){
+    assert.deepEqual(result.evidence.reasonCodes,["FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED"]);
+    assert.ok(result.evidence.feederSlotMatchingBranchesExplored<=result.evidence.branchesExplored);
+    assertFeederSlotAccounting(result);
+    assert.deepEqual(result.scheduledTasks,[]);
+  }
+});
+
 test("constructs main and direct vocal feeders atomically, deterministically and immutably", () => {
   const problem = mainFlowVocalScenario(), snapshot = structuredClone(problem);
   const first = constructExactMainAndFeederCore(problem), second = constructExactMainAndFeederCore(mainFlowVocalScenario());
