@@ -53,6 +53,11 @@ export interface ExactMainAndFeederCoreEvidence {
   firstExactArchitecture: string | null;
   feederOrderBranchesByArchitecture: Record<string, number>;
   feederOrderBranches: number;
+  feederSlotMatchingChecks: number;
+  feederSlotMatchingPrunes: number;
+  feederSlotMatchingEdgeChecks: number;
+  feederSlotMatchingAugmentTraversals: number;
+  feederSlotMatchingBranchesExplored: number;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -455,6 +460,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
     architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
     firstExactArchitecture: null, feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
+    feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
+    feederSlotMatchingAugmentTraversals:0,feederSlotMatchingBranchesExplored:0,
     feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
     feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,
     feederCohortContiguousWindowChecks:0,feederCohortContiguousWindowPrunes:0,
@@ -729,6 +736,66 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           feederRow.startsCoachEliminated+=unboundedBlockStartDomain.domainEliminatedStartCount;}
         let validBlockFound = false;
 
+        /** Hall certificate for a fixed contiguous feeder run. Inter-feeder placement is
+         * deliberately omitted, so the graph is an optimistic relaxation: failure to cover
+         * every feeder is a sound negative proof, while success leaves FEEDER_ORDER unchanged. */
+        const feederSlotCertificate = (blockStart:number):"PERFECT"|"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED" => {
+          const first=rankedCohort[0];
+          if(!first)return "NOT_APPLICABLE";
+          const duration=first.choice.feeder.duration;
+          const spaceId=first.choice.feeder.spaceId;
+          if(rankedCohort.some(({choice})=>choice.feeder.duration!==duration||choice.feeder.spaceId!==spaceId))
+            return "NOT_APPLICABLE";
+          if(blockMeals.some(meal=>meal.spaceId===spaceId))return "NOT_APPLICABLE";
+          for(const left of rankedCohort)for(const right of rankedCohort){
+            const coachId=left.choice.feeder.coachId;
+            if(coachId!==undefined&&coachId===right.choice.feeder.coachId
+              &&effectiveCoachTransitionMinutes(problem,coachId,left.choice.feeder.spaceId,right.choice.feeder.spaceId)!==0)
+              return "NOT_APPLICABLE";
+          }
+          evidence.feederSlotMatchingChecks++;
+          const edges=new Map<string,number[]>();
+          const fixedPlaced=[...blockPlaced,...blockOperations];
+          for(const candidate of rankedCohort){
+            const candidateEdges:number[]=[];
+            for(let ordinal=0;ordinal<rankedCohort.length;ordinal++){
+              if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
+                return "BUDGET_EXHAUSTED";
+              evidence.feederSlotMatchingBranchesExplored++;
+              evidence.feederSlotMatchingEdgeChecks++;
+              const start=blockStart+ordinal*duration;
+              if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
+              if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
+            }
+            edges.set(candidate.choice.feeder.id,candidateEdges);
+          }
+          const owner=new Map<number,string>();
+          const augment=(feederId:string,seen:Set<number>):"MATCHED"|"UNMATCHED"|"BUDGET_EXHAUSTED"=>{
+            for(const ordinal of edges.get(feederId)??[]){
+              if(seen.has(ordinal))continue;
+              if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
+                return "BUDGET_EXHAUSTED";
+              evidence.feederSlotMatchingBranchesExplored++;
+              evidence.feederSlotMatchingAugmentTraversals++;
+              seen.add(ordinal);
+              const previous=owner.get(ordinal);
+              if(previous===undefined){owner.set(ordinal,feederId);return "MATCHED";}
+              const displaced=augment(previous,seen);
+              if(displaced==="BUDGET_EXHAUSTED")return displaced;
+              if(displaced==="MATCHED"){
+                owner.set(ordinal,feederId);return "MATCHED";
+              }
+            }
+            return "UNMATCHED";
+          };
+          for(const {choice} of rankedCohort){
+            const result=augment(choice.feeder.id,new Set());
+            if(result==="BUDGET_EXHAUSTED")return result;
+            if(result==="UNMATCHED")return "NO_PERFECT_MATCH";
+          }
+          return "PERFECT";
+        };
+
         const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
               if (!validBlockFound && feederRow) feederRow.mainChoicesWithValidFeeder++;
               validBlockFound = true;
@@ -765,6 +832,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)) return "BUDGET_EXHAUSTED";
           evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
           if(feederRow)feederRow.startsEvaluated++;
+          const feederSlotMatching=feederSlotCertificate(blockStart);
+          if(feederSlotMatching==="BUDGET_EXHAUSTED")return feederSlotMatching;
+          if(feederSlotMatching==="NO_PERFECT_MATCH"){
+            evidence.feederSlotMatchingPrunes++;evidence.zeroAlternativePrunes++;continue;
+          }
           let completeOrderAtStart=false;
           // Exact transposition: only tails for authorities used by remaining feeders can affect a
           // future placement. Failed equivalent prefixes are not expanded factorially again.
