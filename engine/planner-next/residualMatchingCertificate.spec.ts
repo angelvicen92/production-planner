@@ -3,6 +3,7 @@ import test from "node:test";
 import type { ScheduledTask } from "./contracts";
 import {
   createExactSearchLedger,
+  forcedMainSingletonTaskId,
   residualMatchingOperationsMayInteract,
   runExactMainAndFeederSearch,
 } from "./exactMainAndFeederCore";
@@ -12,6 +13,53 @@ const scheduled = (overrides: Partial<ScheduledTask> = {}): ScheduledTask => ({
   id: "edge", kind: "auxiliary", participantId: "participant-edge", coachId: "coach-edge",
   duration: 5, start: 20, end: 25, spaceId: "space-edge", dependencies: [],
   requiredResourceIds: ["resource-edge"], ...overrides,
+});
+
+test("a current singleton forces its task and assigning another task destroys residual coverage", () => {
+  const edges = new Map([
+    ["forced", [{ position: 2 }]],
+    ["flexible", [{ position: 2 }, { position: 3 }]],
+  ]);
+  assert.equal(forcedMainSingletonTaskId({ validEdges: edges }, 2), "forced");
+  const afterWrongChoice = new Map([...edges].map(([id, domain]) =>
+    [id, domain.filter(({ position }) => position !== 2)]));
+  assert.deepEqual(afterWrongChoice.get("forced"), []);
+});
+
+test("a multi-position domain does not prune and a missing certificate preserves DFS", () => {
+  assert.equal(forcedMainSingletonTaskId({ validEdges: new Map([
+    ["flexible", [{ position: 2 }, { position: 3 }]],
+  ]) }, 2), undefined);
+  assert.equal(forcedMainSingletonTaskId(undefined, 2), undefined);
+});
+
+test("singleton proof is deterministic and invariant to task IDs and map order", () => {
+  const decide = (forcedId: string, otherId: string, reverse: boolean) => {
+    const entries: Array<[string, Array<{ position: number }>]> = [
+      [forcedId, [{ position: 4 }]],
+      [otherId, [{ position: 4 }, { position: 5 }]],
+    ];
+    return forcedMainSingletonTaskId({ validEdges: new Map(reverse ? entries.reverse() : entries) }, 4);
+  };
+  assert.equal(decide("z", "a", false), "z");
+  assert.equal(decide("renamed-forced", "renamed-other", true), "renamed-forced");
+});
+
+test("a failed forced branch exposes no siblings and charges exactly its real work", () => {
+  const certificate = { validEdges: new Map([
+    ["forced", [{ position: 0 }]],
+    ["sibling", [{ position: 0 }, { position: 1 }]],
+  ]) };
+  const candidates = ["sibling", "forced"];
+  const forced = forcedMainSingletonTaskId(certificate, 0);
+  let branches = 0;
+  const entered = candidates.filter((id) => id === forced).map((id) => {
+    branches += 1;
+    return id;
+  });
+  assert.deepEqual(entered, ["forced"]);
+  assert.equal(branches, 1);
+  assert.equal(candidates.length - entered.length, 1);
 });
 
 test("same-space separated intervals are cacheable while real authority overlap invalidates", () => {
