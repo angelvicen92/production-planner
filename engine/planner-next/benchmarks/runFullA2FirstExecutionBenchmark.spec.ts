@@ -54,7 +54,8 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.feederSlotAnalyticChecks>0);
     assert.ok(executionEvidence.feederSlotAnalyticPrunes>0);
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
-      executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals);
+      executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
+        +executionEvidence.feederMatchingWitnessRepairs);
     assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);

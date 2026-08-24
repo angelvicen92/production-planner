@@ -151,6 +151,8 @@ export interface ExactItinerantPlanEvidence {
   mainRunWitnessRepairs: number;
   mainRunEquivalentOrdersCollapsed: number;
   feederMatchingWitnessMaterializations: number;
+  feederMatchingWitnessRepairs: number;
+  feederMatchingEquivalentOrdersCollapsed: number;
   feederOrderFallbacks: number;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
@@ -727,7 +729,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
-    feederMatchingWitnessMaterializations:0,feederOrderFallbacks:0,
+    feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
+    feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -890,6 +893,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.mainRunWitnessRepairs=core.evidence.mainRunWitnessRepairs;
   evidence.mainRunEquivalentOrdersCollapsed=core.evidence.mainRunEquivalentOrdersCollapsed;
   evidence.feederMatchingWitnessMaterializations=core.evidence.feederMatchingWitnessMaterializations;
+  evidence.feederMatchingWitnessRepairs=core.evidence.feederMatchingWitnessRepairs;
+  evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
   evidence.forcedMainSingletonChoices = core.evidence.forcedMainSingletonChoices;

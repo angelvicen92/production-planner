@@ -79,7 +79,8 @@ function largeWitnessRunProblem(size:8|11):PlannerNextProblem {
 
 const assertFeederSlotAccounting=(result:ReturnType<typeof constructExactMainAndFeederCore>):void=>{
   assert.equal(result.evidence.feederSlotMatchingBranchesExplored,
-    result.evidence.feederSlotMatchingEdgeChecks+result.evidence.feederSlotMatchingAugmentTraversals);
+    result.evidence.feederSlotMatchingEdgeChecks+result.evidence.feederSlotMatchingAugmentTraversals
+      +result.evidence.feederMatchingWitnessRepairs);
 };
 
 test("feeder-slot Hall deficit prunes before FEEDER_ORDER",()=>{
@@ -128,12 +129,31 @@ for(const size of [8,11] as const)test(`a ${size}-task run materializes main and
   const first=constructExactMainAndFeederCore(problem),second=constructExactMainAndFeederCore(structuredClone(problem));
   assert.equal(first.status,"COMPLETE",first.evidence.reasonCodes.join(","));
   assert.ok(first.evidence.mainRunWitnessAttempts>0);
-  assert.ok(first.evidence.mainRunEquivalentOrdersCollapsed>=size-1);
+  assert.ok(first.evidence.mainRunEquivalentOrdersCollapsed>=size-2);
   assert.ok(first.evidence.feederMatchingWitnessMaterializations>0);
   assert.equal(first.evidence.feederOrderBranches,0);
   assert.ok(first.evidence.branchesExplored<size*size*4,`unexpected factorial-equivalent work: ${first.evidence.branchesExplored}`);
   assert.deepEqual(problem,before);assert.deepEqual(second,first);
   assert.equal(validatePlan(problem,first.scheduledTasks,[],first.scheduledSpaceMeals).hardValid,true);
+});
+
+test("main assignment classes are contextual and invariant to task and participant renaming",()=>{
+  const interchangeable=largeWitnessRunProblem(8);
+  for(const task of interchangeable.tasks.filter(task=>task.kind==="main"))task.availability=undefined;
+  const uniform=constructExactMainAndFeederCore(interchangeable);
+  const restricted=largeWitnessRunProblem(8);
+  restricted.tasks.find(task=>task.kind==="vocal")!.availability=[{start:0,end:5}];
+  const distinguished=constructExactMainAndFeederCore(restricted);
+  assert.ok(uniform.evidence.mainRunEquivalentOrdersCollapsed
+    > distinguished.evidence.mainRunEquivalentOrdersCollapsed,
+  "main/feeder availability must split structural assignment classes");
+  const renamed=structuredClone(interchangeable),rename=(id:string)=>`renamed-${id}`;
+  for(const participant of renamed.participants)participant.id=rename(participant.id);
+  for(const task of renamed.tasks){task.id=rename(task.id);if(task.participantId)task.participantId=rename(task.participantId);
+    task.dependencies=task.dependencies.map(rename);}
+  const renamedResult=constructExactMainAndFeederCore(renamed);
+  assert.equal(renamedResult.evidence.mainRunEquivalentOrdersCollapsed,
+    uniform.evidence.mainRunEquivalentOrdersCollapsed);
 });
 
 test("small exhaustive oracle agrees with the residual witness under restricted availability",()=>{
@@ -595,6 +615,8 @@ test("exact feeder alternatives retain distinct internal orders", () => {
   } });
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.equal(orders.size, 2);
+  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
 });
 
 test("an analytically impossible cohort cannot perform hidden factorial work", () => {
