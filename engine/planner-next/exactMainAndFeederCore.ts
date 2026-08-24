@@ -36,6 +36,10 @@ export interface ExactMainAndFeederCoreEvidence {
   residualMatchingRepairFailures: number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
+  forcedMainSingletonChecks: number;
+  forcedMainSingletonChoices: number;
+  forcedMainSiblingAlternativesEliminated: number;
+  forcedMainSingletonDeadEnds: number;
   mainCandidatesExploredBeforeCohort: Record<string, number>;
   zeroAlternativePrunes: number;
   backtracks: number;
@@ -127,6 +131,19 @@ interface ResidualMatchingCertificate {
 interface ResidualMatchingResult {
   readonly outcome: SearchOutcome;
   readonly certificate?: ResidualMatchingCertificate;
+}
+
+/** Returns the task whose current residual domain proves that it must occupy `position`.
+ * The graph already applies static pattern/composite/availability/departure authorities and
+ * canonical placement against the current occupations. Descendants only add occupations and
+ * consume vertices; incremental derivation rechecks interacting edges, so it can delete an
+ * edge but cannot introduce a position absent from this certificate. */
+export function forcedMainSingletonTaskId(certificate: Readonly<{
+  validEdges: ReadonlyMap<string, readonly Readonly<{ position: number }>[]>
+}> | undefined, position: number): string | undefined {
+  if (certificate === undefined) return undefined;
+  return [...certificate.validEdges]
+    .find(([, edges]) => edges.length === 1 && edges[0]?.position === position)?.[0];
 }
 
 /** Immutable, derived view exposed only to experimental candidate-ordering code. */
@@ -488,7 +505,10 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingPositionChecks: 0, residualMatchingAugmentTraversals: 0,
     residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
-    mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0, mainCandidatesExploredBeforeCohort: {},
+    mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
+    forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
+    forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
+    mainCandidatesExploredBeforeCohort: {},
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
@@ -949,9 +969,18 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
 
       const slot = slots[position]!, choices: MainChoice[] = [];
+      evidence.forcedMainSingletonChecks += 1;
+      const forcedTaskId = forcedMainSingletonTaskId(blockCertificate, position);
+      if (forcedTaskId !== undefined) {
+        evidence.forcedMainSingletonChoices += 1;
+        evidence.forcedMainSiblingAlternativesEliminated += mains.filter((task) =>
+          !blockUsed.has(task.id) && task.id !== forcedTaskId && task.blockKey === pattern[position]
+          && taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)).length;
+      }
       for (const task of mains) {
         if (blockUsed.has(task.id) || task.blockKey !== pattern[position]
-          || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
+          || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)
+          || (forcedTaskId !== undefined && task.id !== forcedTaskId)) continue;
         if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED","MAIN_CANDIDATE",position)) return "BUDGET_EXHAUSTED";
         evidence.mainCandidatesEvaluated += 1;
         const operation = materializeAnchoredOperation(problem, task, slot, blockPlaced, meals);
@@ -965,7 +994,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           firstObligation: operation.start });
       }
       choices.sort((a,b)=>a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation||a.task.id.localeCompare(b.task.id));
-      if (choices.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
+      if (choices.length === 0) {
+        evidence.zeroAlternativePrunes += 1;
+        if (forcedTaskId !== undefined) evidence.forcedMainSingletonDeadEnds += 1;
+        return "DEAD_END";
+      }
       const describe = (choice: MainChoice): ExactMainChoiceDescriptor => Object.freeze({
         mainTask: readonlyTaskCopy(choice.task), operationTasks:Object.freeze(choice.operation.map(readonlyTaskCopy)),
         feeder:readonlyTaskCopy(choice.feeder), placedTasks:Object.freeze(blockPlaced.map(readonlyTaskCopy)),
@@ -998,6 +1031,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(child!=="DEAD_END")return child;
         descriptors.pop(); evidence.backtracks+=1;
       }
+      if (forcedTaskId !== undefined) evidence.forcedMainSingletonDeadEnds += 1;
       return "DEAD_END";
     };
     let initialCertificate = certificate;

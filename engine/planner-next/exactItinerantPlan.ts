@@ -147,6 +147,10 @@ export interface ExactItinerantPlanEvidence {
   residualMatchingRepairFailures: number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
+  forcedMainSingletonChecks: number;
+  forcedMainSingletonChoices: number;
+  forcedMainSiblingAlternativesEliminated: number;
+  forcedMainSingletonDeadEnds: number;
   mainCandidatesExploredBeforeCohort: Record<string, number>;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
   completePlansObserved: number;
@@ -716,7 +720,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingEdgeCacheMisses: 0, residualMatchingPositionChecks: 0,
     residualMatchingAugmentTraversals: 0, residualMatchingBranchesExplored: 0,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
-    mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0, mainCandidatesExploredBeforeCohort: {},
+    mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
+    forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
+    forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
+    mainCandidatesExploredBeforeCohort: {},
     lastExhaustionPhase: null,
     completePlansObserved: 0, completeIncumbentReplacements: 0, completeSelectionMode,
     completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
@@ -872,6 +879,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.residualMatchingRepairFailures = core.evidence.residualMatchingRepairFailures;
   evidence.mainWitnessChoicesFollowed = core.evidence.mainWitnessChoicesFollowed;
   evidence.mainWitnessFallbacks = core.evidence.mainWitnessFallbacks;
+  evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
+  evidence.forcedMainSingletonChoices = core.evidence.forcedMainSingletonChoices;
+  evidence.forcedMainSiblingAlternativesEliminated = core.evidence.forcedMainSiblingAlternativesEliminated;
+  evidence.forcedMainSingletonDeadEnds = core.evidence.forcedMainSingletonDeadEnds;
   evidence.mainCandidatesExploredBeforeCohort = { ...core.evidence.mainCandidatesExploredBeforeCohort };
   evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
   const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
