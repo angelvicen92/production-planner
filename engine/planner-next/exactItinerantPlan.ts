@@ -77,6 +77,10 @@ export interface ExactItinerantPlanEvidence {
   standaloneForwardOracleFallbacks: number;
   standaloneForwardOracleFallbackReasons: Record<string, number>;
   standaloneForwardAnalyticEmptyDomainPrunes: number;
+  standaloneForwardWitnessCacheHits: number;
+  standaloneForwardWitnessCacheMisses: number;
+  standaloneForwardWitnessCacheEntries: number;
+  standaloneForwardWitnessBranchesAvoided: number;
   standaloneLeafSearchBranches: number;
   standaloneForwardBranches: number;
   firstStandaloneForwardPruneDepth: number | null;
@@ -717,6 +721,8 @@ export interface ExactItinerantPlanSearchOptions {
   standaloneCompletionSelection?: StandaloneCompletionSelection;
   /** Test oracle only; production always uses the exact analytic static domain. */
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
+  /** Test oracle only; production memoizes positive block-closed witnesses locally. */
+  standaloneForwardWitnessMemoization?: boolean;
   causalDiagnostic?: boolean;
 }
 
@@ -737,6 +743,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneForwardDynamicEliminatedStarts: 0, standaloneForwardDynamicNonemptyCertificates: 0,
     standaloneForwardOracleChecks: 0, standaloneForwardOracleFallbacks: 0,
     standaloneForwardOracleFallbackReasons: {}, standaloneForwardAnalyticEmptyDomainPrunes: 0,
+    standaloneForwardWitnessCacheHits: 0, standaloneForwardWitnessCacheMisses: 0,
+    standaloneForwardWitnessCacheEntries: 0, standaloneForwardWitnessBranchesAvoided: 0,
     firstStandaloneForwardPruneDepth: null, lastStandaloneForwardPruneDepth: null,
     lastStandaloneForwardBlockingTaskId: null, lastStandaloneForwardCausingCoreTaskIds: [],
     lastStandaloneForwardCausingMainTaskId: null, lastStandaloneForwardCausingFeederStart: null,
@@ -798,6 +806,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
+  const standaloneForwardWitnessCache=new Map<string,number>();
   const recordFutureAssessment=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
     staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):void=>{
     if(!options.causalDiagnostic)return;
@@ -860,12 +869,26 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         if (dynamicDomain.eligibleStartCount === 0) evidence.standaloneForwardAnalyticEmptyDomainPrunes += 1;
         else evidence.standaloneForwardDynamicNonemptyCertificates += 1;
       }
+      const memoizationEnabled=options.standaloneForwardWitnessMemoization!==false;
+      const authoritySignature=dynamicDomain.eligibleStartCount>0&&memoizationEnabled
+        ?standaloneForwardAuthoritySignature(problem,task,candidate.tasks,candidate.meals,staticDomain,
+          options.standaloneForwardStartDomainMode??"STATIC_DOMAIN")
+        :null;
+      const witnessCacheKey=authoritySignature===null?null:`${candidate.depth}|${task.id}|${authoritySignature}`;
+      const cachedOracleBranches=witnessCacheKey===null?undefined:standaloneForwardWitnessCache.get(witnessCacheKey);
+      if(cachedOracleBranches!==undefined){
+        witness=true;
+        evidence.standaloneForwardWitnessCacheHits+=1;
+        evidence.standaloneForwardWitnessBranchesAvoided+=cachedOracleBranches;
+      }else if(witnessCacheKey!==null)evidence.standaloneForwardWitnessCacheMisses+=1;
       const starts = fullGridMode
         ? Array.from({ length: fullGridCount }, (_, index) => problem.day.start + index * 5)
         : dynamicDomain.starts();
       let fallbackRecorded = false;
-      for (const start of starts) {
+      let oracleBranches=0;
+      for (const start of witness?[]:starts) {
         if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
+        oracleBranches+=1;
         if(options.causalDiagnostic)supplemental(candidate.depth).standaloneForward+=1;
         evidence.standaloneForwardBranches += 1; evidence.standaloneForwardStartChecks += 1;
         evidence.standaloneForwardOracleChecks += 1;
@@ -877,6 +900,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
           evidence.standaloneForwardOracleFallbackReasons[reason] = (evidence.standaloneForwardOracleFallbackReasons[reason] ?? 0) + 1;
           fallbackRecorded = true;
         }
+      }
+      if(witness&&witnessCacheKey!==null&&cachedOracleBranches===undefined){
+        standaloneForwardWitnessCache.set(witnessCacheKey,oracleBranches);
+        evidence.standaloneForwardWitnessCacheEntries=standaloneForwardWitnessCache.size;
       }
       recordFutureAssessment(candidate,task,staticDomain,dynamicDomain,witness);
       if (witness) { evidence.standaloneForwardWitnessesFound += 1; continue; }
