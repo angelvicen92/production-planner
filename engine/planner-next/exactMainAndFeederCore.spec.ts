@@ -58,9 +58,29 @@ function fixedFeederSlotProblem(kind:"HALL_DEFICIT"|"PERFECT", rename=(id:string
   return problem;
 }
 
+function largeWitnessRunProblem(size:8|11):PlannerNextProblem {
+  const participantIds=Array.from({length:size},(_,index)=>`large-${size}-${index}`);
+  const tasks:Task[]=participantIds.flatMap((participantId,index)=>[
+    {id:`feeder-${participantId}`,kind:"vocal",participantId,coachId:"coach",duration:5,
+      spaceId:"feed",dependencies:[]},
+    {id:`main-${participantId}`,kind:"main",participantId,coachId:"coach",duration:5,
+      spaceId:"main",dependencies:[`feeder-${participantId}`],blockKey:"coach",
+      ...(index===size-1?{availability:[{start:120+(size-1)*5,end:125+(size-1)*5}]}:{})},
+  ]);
+  const problem=syntheticProblem(tasks,participantIds,["feed"]);
+  const availability=[{start:0,end:240}];
+  problem.day={start:0,end:240};problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=120+size*5;
+  problem.budget.maxBranchExpansions=300_000;
+  for(const participant of problem.participants)participant.availability=availability;
+  for(const coach of problem.coaches)coach.availability=availability;
+  for(const space of problem.spaces)space.availability=availability;
+  return problem;
+}
+
 const assertFeederSlotAccounting=(result:ReturnType<typeof constructExactMainAndFeederCore>):void=>{
   assert.equal(result.evidence.feederSlotMatchingBranchesExplored,
-    result.evidence.feederSlotMatchingEdgeChecks+result.evidence.feederSlotMatchingAugmentTraversals);
+    result.evidence.feederSlotMatchingEdgeChecks+result.evidence.feederSlotMatchingAugmentTraversals
+      +result.evidence.feederMatchingWitnessRepairs);
 };
 
 test("feeder-slot Hall deficit prunes before FEEDER_ORDER",()=>{
@@ -94,13 +114,64 @@ test("analytic feeder-slot certificate proves only an interval-domain deficit",(
   ]),"NOT_APPLICABLE","disconnected ordinal domains abstain");
 });
 
-test("a perfect feeder-slot matching preserves the historical exact search",()=>{
+test("a perfect feeder-slot matching materializes its witness without FEEDER_ORDER",()=>{
   const result=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.feederSlotMatchingChecks>result.evidence.feederSlotMatchingPrunes);
-  assert.ok(result.evidence.feederOrderBranches>0);
+  assert.ok(result.evidence.feederMatchingWitnessMaterializations>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
+});
+
+for(const size of [8,11] as const)test(`a ${size}-task run materializes main and feeder witnesses without factorial DFS`,()=>{
+  const problem=largeWitnessRunProblem(size),before=structuredClone(problem);
+  const first=constructExactMainAndFeederCore(problem),second=constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status,"COMPLETE",first.evidence.reasonCodes.join(","));
+  assert.ok(first.evidence.mainRunWitnessAttempts>0);
+  assert.ok(first.evidence.mainRunEquivalentOrdersCollapsed>=size-2);
+  assert.ok(first.evidence.feederMatchingWitnessMaterializations>0);
+  assert.equal(first.evidence.feederOrderBranches,0);
+  assert.ok(first.evidence.branchesExplored<size*size*4,`unexpected factorial-equivalent work: ${first.evidence.branchesExplored}`);
+  assert.deepEqual(problem,before);assert.deepEqual(second,first);
+  assert.equal(validatePlan(problem,first.scheduledTasks,[],first.scheduledSpaceMeals).hardValid,true);
+});
+
+test("main assignment classes are contextual and invariant to task and participant renaming",()=>{
+  const interchangeable=largeWitnessRunProblem(8);
+  for(const task of interchangeable.tasks.filter(task=>task.kind==="main"))task.availability=undefined;
+  const uniform=constructExactMainAndFeederCore(interchangeable);
+  const restricted=largeWitnessRunProblem(8);
+  restricted.tasks.find(task=>task.kind==="vocal")!.availability=[{start:0,end:5}];
+  const distinguished=constructExactMainAndFeederCore(restricted);
+  assert.ok(uniform.evidence.mainRunEquivalentOrdersCollapsed
+    > distinguished.evidence.mainRunEquivalentOrdersCollapsed,
+  "main/feeder availability must split structural assignment classes");
+  const renamed=structuredClone(interchangeable),rename=(id:string)=>`renamed-${id}`;
+  for(const participant of renamed.participants)participant.id=rename(participant.id);
+  for(const task of renamed.tasks){task.id=rename(task.id);if(task.participantId)task.participantId=rename(task.participantId);
+    task.dependencies=task.dependencies.map(rename);}
+  const renamedResult=constructExactMainAndFeederCore(renamed);
+  assert.equal(renamedResult.evidence.mainRunEquivalentOrdersCollapsed,
+    uniform.evidence.mainRunEquivalentOrdersCollapsed);
+});
+
+test("small exhaustive oracle agrees with the residual witness under restricted availability",()=>{
+  const problem=fixedFeederSlotProblem("PERFECT");
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  mains[0]!.availability=undefined;mains[2]!.availability=[{start:80,end:90}];
+  const permutations=(values:Task[]):Task[][]=>values.length===0?[[]]:values.flatMap((value,index)=>
+    permutations([...values.slice(0,index),...values.slice(index+1)]).map(rest=>[value,...rest]));
+  const starts=[80,90,100];
+  const oracle=permutations(mains).filter(order=>order.every((task,index)=>
+    task.availability?.some(window=>window.start<=starts[index]!&&starts[index]!+task.duration<=window.end)??true))
+    .map(order=>order.map(task=>task.id).join("|"));
+  const result=constructExactMainAndFeederCore(problem);
+  assert.ok(oracle.length>0);assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  const actual=result.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start)
+    .map(task=>task.id).join("|");
+  assert.ok(oracle.includes(actual),`${actual} disappeared from exhaustive oracle`);
+  assert.ok(result.evidence.mainRunWitnessAttempts>0);
 });
 
 test("an authorized block meal makes feeder-slot matching abstain",()=>{
@@ -113,13 +184,14 @@ test("an authorized block meal makes feeder-slot matching abstain",()=>{
   assertFeederSlotAccounting(result);
 });
 
-test("omitted inter-feeder interaction remains an optimistic relaxation",()=>{
+test("an inter-feeder dependency falls back to exact order",()=>{
   const problem=fixedFeederSlotProblem("PERFECT");
   problem.tasks.find(({id})=>id==="feeder-b")!.dependencies=["feeder-a"];
   const result=constructExactMainAndFeederCore(problem);
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.feederSlotMatchingChecks>0);
-  assert.ok(result.evidence.feederOrderBranches>0,"the optimistic certificate must leave the interaction to exact placement");
+  assert.equal(result.evidence.feederSlotMatchingChecks,0);
+  assert.ok(result.evidence.feederOrderFallbacks>0);
+  assert.ok(result.evidence.feederOrderBranches>0,"the dependency must remain an exact placement authority");
   assertFeederSlotAccounting(result);
 });
 
@@ -380,7 +452,7 @@ test("a selected main can make the optimistic completion impossible before its r
   });
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(entered.includes("b-main"));
-  assert.ok((result.evidence.feederRunOptimisticPrunesByDepth["1"]??0)>0);
+  assert.ok(result.evidence.mainRunWitnessAttempts>0);
   const firstB=events.indexOf("enter:b-main");
   assert.notEqual(firstB,-1);
   assert.notEqual(events[firstB+1],"match:b-main");
@@ -543,6 +615,26 @@ test("exact feeder alternatives retain distinct internal orders", () => {
   } });
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.equal(orders.size, 2);
+  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
+});
+
+test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{
+  const problem=twoCohortProblem();
+  problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+  problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
+  problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+  problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");
+  const orders=new Set<string>();
+  const result=runExactMainAndFeederSearch(problem,{onHardValidCoreLeaf(candidate){
+    const order=candidate.tasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start)
+      .map(({id})=>id).join("|");
+    orders.add(order);return orders.size===1?"REJECT":"ACCEPT";
+  }});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(orders.size,2);
+  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
 });
 
 test("an analytically impossible cohort cannot perform hidden factorial work", () => {
@@ -601,7 +693,7 @@ test("rejects the minimum impossible architecture then admits the next plausible
   assert.equal(first.status, "COMPLETE", first.evidence.reasonCodes.join(","));
   assert.ok(first.evidence.architecturesStructurallyRejected > 0);
   assert.ok(first.evidence.firstExactArchitecture?.includes("END:120"));
-  assert.ok((first.evidence.feederOrderBranchesByArchitecture[first.evidence.firstExactArchitecture!] ?? 0) > 0);
+  assert.ok(first.evidence.feederMatchingWitnessMaterializations > 0);
   assert.deepEqual(second, first);
 });
 

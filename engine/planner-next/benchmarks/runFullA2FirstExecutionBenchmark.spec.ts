@@ -48,13 +48,20 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.equal(executionEvidence.feederRunPreFeederPrunes,0);
     assert.deepEqual(executionEvidence.feederRunPreFeederPrunesByDepth,{});
     assert.ok(executionEvidence.coreMaximumDepth>=14);
+    assert.ok(executionEvidence.deepestCoreDepthReached>0
+      &&executionEvidence.deepestCoreDepthReached<=executionEvidence.coreMaximumDepth);
+    assert.ok(executionEvidence.deepestPartialScheduledTaskCount>0);
+    assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
+    assert.ok(executionEvidence.deepestPartialCoreTasksRemaining>0);
+    assert.match(executionEvidence.deepestPartialFrontierFingerprint,/^[a-f0-9]{64}$/);
     assert.ok(executionEvidence.feederOrderBranches<292524);
     assert.ok(executionEvidence.feederSlotMatchingChecks>0);
     assert.ok(executionEvidence.feederSlotMatchingPrunes>0);
     assert.ok(executionEvidence.feederSlotAnalyticChecks>0);
     assert.ok(executionEvidence.feederSlotAnalyticPrunes>0);
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
-      executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals);
+      executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
+        +executionEvidence.feederMatchingWitnessRepairs);
     assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);

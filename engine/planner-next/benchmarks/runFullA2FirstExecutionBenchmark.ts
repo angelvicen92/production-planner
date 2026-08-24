@@ -14,6 +14,10 @@ import { EXPECTED_COACH_BY_PARTICIPANT } from "./focal-a2/full-day/manifest";
 
 const PLAN_ID = 27001;
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
+const branchBudgetOverride = process.env.PLANNER_NEXT_FULL_A2_BRANCH_BUDGET;
+const branchBudget = branchBudgetOverride === undefined ? 300_000 : Number(branchBudgetOverride);
+if (!Number.isSafeInteger(branchBudget) || branchBudget <= 0)
+  throw new Error("INVALID_PLANNER_NEXT_FULL_A2_BRANCH_BUDGET");
 
 function writeStable(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
@@ -96,7 +100,7 @@ input.resourceItemComponents = {};
 input.groupingZoneIds = [];
 input.plannerNext = {
   searchPolicy: "EXACT_CONSTRUCTIVE",
-  searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 300000 },
+  searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
   timeGridMinutes: 5,
   participantTransitionMinutes: 0,
   resourceTransitionMinutes: 0,

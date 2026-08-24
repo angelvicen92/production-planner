@@ -99,6 +99,14 @@ export interface ExactItinerantPlanEvidence {
   coreBacktracks: number;
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
+  /** Deepest block-closed, hard-valid partial frontier observed; unlike coreMaximumDepth,
+   * this never counts an open main run whose feeder cohort has not closed. */
+  deepestCoreDepthReached: number;
+  deepestPartialScheduledTaskCount: number;
+  deepestPartialMainRunsClosed: number;
+  deepestPartialFeederRunsClosed: number;
+  deepestPartialCoreTasksRemaining: number;
+  deepestPartialFrontierFingerprint: string | null;
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
@@ -147,6 +155,13 @@ export interface ExactItinerantPlanEvidence {
   residualMatchingRepairFailures: number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
+  mainRunWitnessAttempts: number;
+  mainRunWitnessRepairs: number;
+  mainRunEquivalentOrdersCollapsed: number;
+  feederMatchingWitnessMaterializations: number;
+  feederMatchingWitnessRepairs: number;
+  feederMatchingEquivalentOrdersCollapsed: number;
+  feederOrderFallbacks: number;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
   forcedMainSiblingAlternativesEliminated: number;
@@ -701,7 +716,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
-    coreMaximumDepth: 0, coreCompleteLeafCount: 0, architecturesChecked:0,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0,deepestCoreDepthReached:0,
+    deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
+    deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
@@ -721,6 +738,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingAugmentTraversals: 0, residualMatchingBranchesExplored: 0,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
+    mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
+    feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
+    feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -751,6 +771,25 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
+    const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
+    const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
+      ||(candidate.depth===evidence.deepestCoreDepthReached
+        &&(candidate.tasks.length>evidence.deepestPartialScheduledTaskCount
+          ||(candidate.tasks.length===evidence.deepestPartialScheduledTaskCount
+            &&(evidence.deepestPartialFrontierFingerprint===null
+              ||frontierFingerprint<evidence.deepestPartialFrontierFingerprint))));
+    if(shouldRecord){
+      let closedRuns=0;
+      for(let index=0;index<candidate.depth;index++)
+        if(index===0||candidate.pattern[index]!==candidate.pattern[index-1])closedRuns++;
+      evidence.deepestCoreDepthReached=candidate.depth;
+      evidence.deepestPartialScheduledTaskCount=candidate.tasks.length;
+      evidence.deepestPartialMainRunsClosed=closedRuns;
+      evidence.deepestPartialFeederRunsClosed=closedRuns;
+      const scheduledIds=new Set(candidate.tasks.map(({id})=>id));
+      evidence.deepestPartialCoreTasksRemaining=[...staticCoreIds].filter(id=>!scheduledIds.has(id)).length;
+      evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
+    }
     if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>{const ok=ledger.consume("STANDALONE",count);if(ok&&options.causalDiagnostic)supplemental(candidate.depth).participantMeal+=count;return ok;}};const mealProbe=assessParticipantMealFutureFeasibility(problem,candidate.tasks,mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")?"BUDGET_EXHAUSTED":"REJECT";}}
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
@@ -879,6 +918,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.residualMatchingRepairFailures = core.evidence.residualMatchingRepairFailures;
   evidence.mainWitnessChoicesFollowed = core.evidence.mainWitnessChoicesFollowed;
   evidence.mainWitnessFallbacks = core.evidence.mainWitnessFallbacks;
+  evidence.mainRunWitnessAttempts=core.evidence.mainRunWitnessAttempts;
+  evidence.mainRunWitnessRepairs=core.evidence.mainRunWitnessRepairs;
+  evidence.mainRunEquivalentOrdersCollapsed=core.evidence.mainRunEquivalentOrdersCollapsed;
+  evidence.feederMatchingWitnessMaterializations=core.evidence.feederMatchingWitnessMaterializations;
+  evidence.feederMatchingWitnessRepairs=core.evidence.feederMatchingWitnessRepairs;
+  evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
+  evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
   evidence.forcedMainSingletonChoices = core.evidence.forcedMainSingletonChoices;
   evidence.forcedMainSiblingAlternativesEliminated = core.evidence.forcedMainSiblingAlternativesEliminated;

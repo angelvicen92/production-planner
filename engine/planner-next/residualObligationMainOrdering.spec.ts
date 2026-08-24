@@ -38,7 +38,7 @@ test("matching witness remains authoritative over experimental residual ordering
   assert.deepEqual(changed.result.scheduledTasks.map(({ id }) => id).sort(), baseline.scheduledTasks.map(({ id }) => id).sort());
   assert.equal(validatePlan(input, baseline.scheduledTasks, [], baseline.scheduledSpaceMeals).hardValid, true);
   assert.equal(validatePlan(input, changed.result.scheduledTasks, [], changed.result.scheduledSpaceMeals).hardValid, true);
-  assert.ok(changed.evidence.firstCandidateChangedCount > 0); assert.ok(changed.evidence.candidatesRanked >= 3);
+  assert.equal(changed.evidence.firstCandidateChangedCount,0); assert.ok(changed.evidence.candidatesRanked >= 3);
   assert.deepEqual(input, before);
 });
 
