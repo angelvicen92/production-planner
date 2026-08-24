@@ -94,14 +94,14 @@ export function Layout({ children }: LayoutProps) {
   const { role } = useUserRole(Boolean(user));
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Plans", href: plansHref, icon: CalendarDays },
-    { name: "Timeline", href: "/timeline", icon: GanttChartSquare },
-    { name: "Call Sheet", href: "/call-sheet", icon: FileText },
+    { name: "Centro de control", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Planes", href: plansHref, icon: CalendarDays },
+    { name: "Cronograma", href: "/timeline", icon: GanttChartSquare },
+    { name: "Hoja del día", href: "/call-sheet", icon: FileText },
     { name: "Mi Día", href: "/my-day", icon: ClipboardList },
     { name: "War Room", href: "/war-room", icon: ShieldAlert },
     { name: "Control Room", href: "/control-room", icon: Monitor },
-    ...(role === "admin" ? [{ name: "Settings", href: "/settings", icon: Settings }] : []),
+    ...(role === "admin" ? [{ name: "Configuración", href: "/settings", icon: Settings }] : []),
   ];
 
   const shouldOverlayDesktop = isSidebarCollapsed && !isSidebarPinned && isSidebarHovered;
@@ -114,7 +114,14 @@ export function Layout({ children }: LayoutProps) {
         <div className="font-bold text-xl text-primary">OptiPlan</div>
         <div className="flex items-center gap-2">
           <HealthIndicator />
-          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Cerrar menú principal" : "Abrir menú principal"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="main-navigation"
+          >
             {isMobileMenuOpen ? <X /> : <Menu />}
           </Button>
         </div>
@@ -123,6 +130,7 @@ export function Layout({ children }: LayoutProps) {
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
         <aside
+          id="main-navigation"
           onMouseEnter={() => {
             if (isSidebarCollapsed && !isSidebarPinned) {
               clearHoverOpenTimeout();
@@ -191,16 +199,20 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Nav */}
-          <nav className={cn("flex-1 px-4 space-y-1", effectiveCollapsed ? "lg:px-2" : "")}>
+          <nav aria-label="Navegación principal" className={cn("flex-1 overflow-y-auto px-4 pb-4 space-y-1", effectiveCollapsed ? "lg:px-2" : "")}>
             {navigation.map((item) => {
-              const isPlansItem = item.name === "Plans";
+              const isPlansItem = item.name === "Planes";
               const isActive = isPlansItem
                 ? location.startsWith("/plans")
-                : location === item.href ||
-                  (item.href !== "/" && location.startsWith(item.href));
+                : location === item.href || location.startsWith(`${item.href}/`);
 
               return (
-                <Link key={item.name} href={item.href}>
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
+                >
                   <div
                     className={cn(
                       "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors cursor-pointer group",
@@ -251,7 +263,7 @@ export function Layout({ children }: LayoutProps) {
                 onClick={() => signOut()}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                Cerrar sesión
               </Button>
             ) : (
               <Button
@@ -259,7 +271,8 @@ export function Layout({ children }: LayoutProps) {
                 size="icon"
                 className="w-full justify-center text-muted-foreground hover:text-foreground"
                 onClick={() => signOut()}
-                title="Sign Out"
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -267,6 +280,14 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </aside>
 
+        {isMobileMenuOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-background/60 lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Cerrar menú principal"
+          />
+        ) : null}
 
         {shouldOverlayDesktop ? <div className="hidden lg:block fixed inset-0 z-40 bg-background/40" /> : null}
 
