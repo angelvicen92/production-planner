@@ -10,6 +10,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
   const child = spawnSync(process.execPath, ["--import", "tsx", "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts"], {
     encoding: "utf8",
     env: process.env,
+    maxBuffer: 64 * 1024 * 1024,
   });
   try {
     assert.equal(child.status, 0, child.stderr || child.stdout);
@@ -23,6 +24,8 @@ test("Full A2 first executable integration reports an atomic completion count", 
           coreMaximumDepth:number;coreCompleteLeafCount:number;
           structuralRejectionsByReason:Record<string,number>;
           standaloneForwardBranches:number;participantMealBranchesExplored:number;
+          standaloneForwardWitnessCacheHits:number;standaloneForwardWitnessCacheMisses:number;
+          standaloneForwardWitnessCacheEntries:number;standaloneForwardWitnessBranchesAvoided:number;
           residualMatchingBranchesExplored:number;feederRunPrePartialChecks:number;feederRunPrePartialPrunes:number;
           feederRunPrePartialPrunesByDepth:Record<string,number>;feederRunPreFeederChecks:number;
           feederRunPreFeederPrunes:number;feederRunPreFeederPrunesByDepth:Record<string,number>;
@@ -65,6 +68,12 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);
+    assert.ok(executionEvidence.standaloneForwardWitnessCacheHits>0);
+    assert.ok(executionEvidence.standaloneForwardWitnessCacheMisses>0);
+    assert.ok(executionEvidence.standaloneForwardWitnessCacheEntries>0
+      &&executionEvidence.standaloneForwardWitnessCacheEntries<=executionEvidence.standaloneForwardWitnessCacheMisses);
+    assert.ok(executionEvidence.standaloneForwardWitnessBranchesAvoided
+      >=executionEvidence.standaloneForwardWitnessCacheHits);
     assert.equal(report.waterfallReconciles,true);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,
