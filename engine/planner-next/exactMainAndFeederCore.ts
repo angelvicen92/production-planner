@@ -914,7 +914,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               const child = search(pattern, slots, composite, blockMeals, nextPlaced, blockUsed, runEnd, timelineKey,
                 matching.certificate);
               if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
-              else if (child === "DEAD_END") evidence.backtracks += 1;
+              else if (child === "DEAD_END") {
+                // A later hard authority may observe which participant occupied each
+                // feeder ordinal. Repair the ordinal matching rather than treating a
+                // recursively rejected witness as invariant across the cohort.
+                feederOrderAuthorityObserved=true;
+                evidence.backtracks += 1;
+              }
               return child;
         };
 

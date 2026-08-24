@@ -619,6 +619,24 @@ test("exact feeder alternatives retain distinct internal orders", () => {
   assert.equal(result.evidence.feederOrderBranches,0);
 });
 
+test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{
+  const problem=twoCohortProblem();
+  problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+  problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
+  problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+  problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");
+  const orders=new Set<string>();
+  const result=runExactMainAndFeederSearch(problem,{onHardValidCoreLeaf(candidate){
+    const order=candidate.tasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start)
+      .map(({id})=>id).join("|");
+    orders.add(order);return orders.size===1?"REJECT":"ACCEPT";
+  }});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(orders.size,2);
+  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
+});
+
 test("an analytically impossible cohort cannot perform hidden factorial work", () => {
   const participantIds = Array.from({ length: 7 }, (_, index) => `p${index}`);
   const tasks: Task[] = participantIds.flatMap((participantId, index) => [

@@ -233,7 +233,7 @@ test("the complete matching witness orders each run directly instead of nominal 
   assert.deepEqual(result.evidence.mainCandidatesExploredBeforeCohort, { "4": 2 });
 });
 
-test("downstream rejection changes cohort witnesses without historical permutation fallback", () => {
+test("opaque downstream rejection exhaustively repairs matching within the ledger", () => {
   const run = (mode?: "FULL_RECOMPUTE") => {
     const problem = mainFlowVocalScenario();
     problem.budget.maxBranchExpansions = 300_000;
@@ -251,9 +251,14 @@ test("downstream rejection changes cohort witnesses without historical permutati
   const incremental = run();
   const repeated = run();
   const full = run("FULL_RECOMPUTE");
-  assert.equal(incremental.status, "COMPLETE");
+  // The continuation is intentionally opaque: the core cannot prove that its
+  // rejection is invariant under feeder ordinals, so it must spend the bounded
+  // ledger on matching repairs rather than prune the cohort as equivalent.
+  assert.equal(incremental.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.equal(incremental.evidence.branchesExplored, 300_000);
   assert.equal(incremental.evidence.mainWitnessFallbacks, 0);
-  assert.ok(incremental.evidence.mainRunWitnessAttempts > 1);
+  assert.ok(incremental.evidence.feederMatchingWitnessRepairs > 0);
+  assert.equal(incremental.evidence.feederOrderBranches, 0);
   assert.deepEqual(repeated, incremental);
   assert.equal(full.status, incremental.status);
   assert.deepEqual(full.scheduledTasks, incremental.scheduledTasks);
