@@ -5,6 +5,7 @@ import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
+import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
 import { validatePlan } from "./validate";
 
@@ -288,6 +289,23 @@ test("dynamic transitions, dependencies, grid and inclusive placement boundaries
   assert.equal(tasksCanAffectEachOther(task, dependent), true);
 });
 
+test("future authority signatures include only material, canonical placement authorities",()=>{
+  const task={...auxiliary("candidate","shared",[{start:0,end:100}], ["unit"]),coachId:"coach"};
+  const input=problem([task]);input.protectedMeal=undefined;
+  const relevant={...auxiliary("relevant","shared",[]),coachId:"coach",requiredResourceIds:["unit"],start:30,end:40};
+  const irrelevant={...auxiliary("irrelevant","other",[]),spaceId:"unrelated",start:50,end:60};
+  input.spaces.push({id:"unrelated",availability:[{start:0,end:120}]});
+  const signature=(placed:any[]=[],meals:ScheduledSpaceMeal[]=[],source=input)=>standaloneForwardAuthoritySignature(source,task,placed,meals,
+    standaloneForwardStaticDomain(source,task,meals),"STATIC_DOMAIN");
+  assert.equal(signature([relevant,irrelevant]),signature([irrelevant,relevant]));
+  assert.equal(signature([relevant,irrelevant]),signature([relevant]));
+  assert.notEqual(signature([]),signature([relevant]));
+  const transition=structuredClone(input);transition.participantTransitionMinutes=5;
+  assert.notEqual(signature([relevant]),signature([relevant],[],transition));
+  const meal={id:"meal",kind:"space-meal" as const,spaceId:task.spaceId,entryIndex:1,duration:10,start:70,end:80};
+  assert.notEqual(signature([relevant]),signature([relevant],[meal]));
+});
+
 test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and deterministic order with exact accounting", () => {
   const create = () => coreLeafContinuationProblem();
   const staticResult = runExactItinerantPlanSearch(create(), { standaloneForwardStartDomainMode: "STATIC_DOMAIN" });
@@ -305,6 +323,31 @@ test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and determi
   assert.equal(staticResult.evidence.standaloneForwardOracleChecks, staticResult.evidence.standaloneForwardStartChecks);
   assert.ok(staticResult.evidence.standaloneForwardDynamicEliminatedStarts > 0);
   assert.ok(staticResult.evidence.standaloneForwardAnalyticEmptyDomainPrunes > 0);
+});
+
+test("block-closed future diagnostics are neutral, deterministic, and authority-sensitive", () => {
+  const create=()=>coreLeafContinuationProblem();
+  const disabled=runExactItinerantPlanSearch(create());
+  const enabled=runExactItinerantPlanSearch(create(),{causalDiagnostic:true});
+  assert.deepEqual({...enabled.evidence,causalDiagnostic:null},disabled.evidence);
+  assert.equal(enabled.status,disabled.status);assert.deepEqual(enabled.scheduledTasks,disabled.scheduledTasks);
+  assert.equal(enabled.evidence.fullFingerprint,disabled.evidence.fullFingerprint);
+  const diagnostic=enabled.evidence.causalDiagnostic!.futureFeasibility;
+  assert.ok(diagnostic.totalEvaluations>0);assert.equal(diagnostic.totalEvaluations,
+    diagnostic.uniqueAuthorityStates+diagnostic.repeatedEvaluations);
+  assert.equal(diagnostic.authorityResultCollisions,0);assert.deepEqual(diagnostic.collisions,[]);
+  assert.equal(enabled.evidence.branchesExplored,disabled.evidence.branchesExplored);
+  assert.equal(enabled.evidence.coreBranches,disabled.evidence.coreBranches);
+  assert.equal(enabled.evidence.standaloneBranches,disabled.evidence.standaloneBranches);
+  assert.equal(enabled.evidence.coreMaximumDepth,disabled.evidence.coreMaximumDepth);
+  assert.equal(enabled.evidence.coreCompleteLeafCount,disabled.evidence.coreCompleteLeafCount);
+  assert.equal(enabled.evidence.coreBacktracks,disabled.evidence.coreBacktracks);
+  const reversed=create();reversed.tasks.reverse();reversed.spaces.reverse();reversed.resources.reverse();reversed.participants.reverse();
+  assert.deepEqual(runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility,diagnostic);
+
+  const changed=create();changed.participantTransitionMinutes=5;
+  const changedRows=runExactItinerantPlanSearch(changed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility.assessments;
+  assert.notDeepEqual(changedRows.map(row=>row.authoritySignature),diagnostic.assessments.map(row=>row.authoritySignature));
 });
 
 test("complete quality replaces only a strictly dominating incumbent", () => {
