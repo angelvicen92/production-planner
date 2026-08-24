@@ -58,6 +58,25 @@ function fixedFeederSlotProblem(kind:"HALL_DEFICIT"|"PERFECT", rename=(id:string
   return problem;
 }
 
+function largeWitnessRunProblem(size:8|11):PlannerNextProblem {
+  const participantIds=Array.from({length:size},(_,index)=>`large-${size}-${index}`);
+  const tasks:Task[]=participantIds.flatMap((participantId,index)=>[
+    {id:`feeder-${participantId}`,kind:"vocal",participantId,coachId:"coach",duration:5,
+      spaceId:"feed",dependencies:[]},
+    {id:`main-${participantId}`,kind:"main",participantId,coachId:"coach",duration:5,
+      spaceId:"main",dependencies:[`feeder-${participantId}`],blockKey:"coach",
+      ...(index===size-1?{availability:[{start:120+(size-1)*5,end:125+(size-1)*5}]}:{})},
+  ]);
+  const problem=syntheticProblem(tasks,participantIds,["feed"]);
+  const availability=[{start:0,end:240}];
+  problem.day={start:0,end:240};problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=120+size*5;
+  problem.budget.maxBranchExpansions=300_000;
+  for(const participant of problem.participants)participant.availability=availability;
+  for(const coach of problem.coaches)coach.availability=availability;
+  for(const space of problem.spaces)space.availability=availability;
+  return problem;
+}
+
 const assertFeederSlotAccounting=(result:ReturnType<typeof constructExactMainAndFeederCore>):void=>{
   assert.equal(result.evidence.feederSlotMatchingBranchesExplored,
     result.evidence.feederSlotMatchingEdgeChecks+result.evidence.feederSlotMatchingAugmentTraversals);
@@ -102,6 +121,37 @@ test("a perfect feeder-slot matching materializes its witness without FEEDER_ORD
   assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
+});
+
+for(const size of [8,11] as const)test(`a ${size}-task run materializes main and feeder witnesses without factorial DFS`,()=>{
+  const problem=largeWitnessRunProblem(size),before=structuredClone(problem);
+  const first=constructExactMainAndFeederCore(problem),second=constructExactMainAndFeederCore(structuredClone(problem));
+  assert.equal(first.status,"COMPLETE",first.evidence.reasonCodes.join(","));
+  assert.ok(first.evidence.mainRunWitnessAttempts>0);
+  assert.ok(first.evidence.mainRunEquivalentOrdersCollapsed>=size-1);
+  assert.ok(first.evidence.feederMatchingWitnessMaterializations>0);
+  assert.equal(first.evidence.feederOrderBranches,0);
+  assert.ok(first.evidence.branchesExplored<size*size*4,`unexpected factorial-equivalent work: ${first.evidence.branchesExplored}`);
+  assert.deepEqual(problem,before);assert.deepEqual(second,first);
+  assert.equal(validatePlan(problem,first.scheduledTasks,[],first.scheduledSpaceMeals).hardValid,true);
+});
+
+test("small exhaustive oracle agrees with the residual witness under restricted availability",()=>{
+  const problem=fixedFeederSlotProblem("PERFECT");
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  mains[0]!.availability=undefined;mains[2]!.availability=[{start:80,end:90}];
+  const permutations=(values:Task[]):Task[][]=>values.length===0?[[]]:values.flatMap((value,index)=>
+    permutations([...values.slice(0,index),...values.slice(index+1)]).map(rest=>[value,...rest]));
+  const starts=[80,90,100];
+  const oracle=permutations(mains).filter(order=>order.every((task,index)=>
+    task.availability?.some(window=>window.start<=starts[index]!&&starts[index]!+task.duration<=window.end)??true))
+    .map(order=>order.map(task=>task.id).join("|"));
+  const result=constructExactMainAndFeederCore(problem);
+  assert.ok(oracle.length>0);assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  const actual=result.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start)
+    .map(task=>task.id).join("|");
+  assert.ok(oracle.includes(actual),`${actual} disappeared from exhaustive oracle`);
+  assert.ok(result.evidence.mainRunWitnessAttempts>0);
 });
 
 test("an authorized block meal makes feeder-slot matching abstain",()=>{

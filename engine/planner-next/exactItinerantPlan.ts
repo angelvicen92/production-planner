@@ -147,6 +147,11 @@ export interface ExactItinerantPlanEvidence {
   residualMatchingRepairFailures: number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
+  mainRunWitnessAttempts: number;
+  mainRunWitnessRepairs: number;
+  mainRunEquivalentOrdersCollapsed: number;
+  feederMatchingWitnessMaterializations: number;
+  feederOrderFallbacks: number;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
   forcedMainSiblingAlternativesEliminated: number;
@@ -721,6 +726,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingAugmentTraversals: 0, residualMatchingBranchesExplored: 0,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
+    mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
+    feederMatchingWitnessMaterializations:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -879,6 +886,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.residualMatchingRepairFailures = core.evidence.residualMatchingRepairFailures;
   evidence.mainWitnessChoicesFollowed = core.evidence.mainWitnessChoicesFollowed;
   evidence.mainWitnessFallbacks = core.evidence.mainWitnessFallbacks;
+  evidence.mainRunWitnessAttempts=core.evidence.mainRunWitnessAttempts;
+  evidence.mainRunWitnessRepairs=core.evidence.mainRunWitnessRepairs;
+  evidence.mainRunEquivalentOrdersCollapsed=core.evidence.mainRunEquivalentOrdersCollapsed;
+  evidence.feederMatchingWitnessMaterializations=core.evidence.feederMatchingWitnessMaterializations;
+  evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
   evidence.forcedMainSingletonChoices = core.evidence.forcedMainSingletonChoices;
   evidence.forcedMainSiblingAlternativesEliminated = core.evidence.forcedMainSiblingAlternativesEliminated;
