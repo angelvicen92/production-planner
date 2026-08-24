@@ -105,6 +105,9 @@ export interface ExactItinerantPlanEvidence {
   firstExactArchitecture: string | null;
   feederOrderBranchesByArchitecture: Record<string, number>;
   feederOrderBranches: number;
+  feederSlotAnalyticChecks: number;
+  feederSlotAnalyticPrunes: number;
+  feederSlotAnalyticAbstentions: number;
   feederSlotMatchingChecks: number;
   feederSlotMatchingPrunes: number;
   feederSlotMatchingEdgeChecks: number;
@@ -696,7 +699,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
     coreMaximumDepth: 0, coreCompleteLeafCount: 0, architecturesChecked:0,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,
-    feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotMatchingChecks:0,
+    feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
+    feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
     feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,feederSlotMatchingAugmentTraversals:0,
     feederSlotMatchingBranchesExplored:0,feederCohortCapacityChecks:0,
     feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
@@ -847,6 +851,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederRunPreFeederPrunesByDepth={...core.evidence.feederRunPreFeederPrunesByDepth};
   evidence.feederRunOptimisticSkippedByTransition=core.evidence.feederRunOptimisticSkippedByTransition;
   evidence.feederRunOptimisticSkippedByAuthorizedMeal=core.evidence.feederRunOptimisticSkippedByAuthorizedMeal;
+  evidence.feederSlotAnalyticChecks=core.evidence.feederSlotAnalyticChecks;
+  evidence.feederSlotAnalyticPrunes=core.evidence.feederSlotAnalyticPrunes;
+  evidence.feederSlotAnalyticAbstentions=core.evidence.feederSlotAnalyticAbstentions;
   evidence.feederSlotMatchingChecks=core.evidence.feederSlotMatchingChecks;
   evidence.feederSlotMatchingPrunes=core.evidence.feederSlotMatchingPrunes;
   evidence.feederSlotMatchingEdgeChecks=core.evidence.feederSlotMatchingEdgeChecks;

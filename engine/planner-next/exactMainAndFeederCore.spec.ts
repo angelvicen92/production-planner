@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
-  exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
+  exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
   subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
@@ -66,10 +66,32 @@ const assertFeederSlotAccounting=(result:ReturnType<typeof constructExactMainAnd
 test("feeder-slot Hall deficit prunes before FEEDER_ORDER",()=>{
   const result=constructExactMainAndFeederCore(fixedFeederSlotProblem("HALL_DEFICIT"));
   assert.equal(result.status,"INFEASIBLE",result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.feederSlotMatchingChecks>0);
+  assert.ok(result.evidence.feederSlotAnalyticChecks>0);
+  assert.ok(result.evidence.feederSlotMatchingChecks>0,"task availability is deliberately left to canonical Hall matching");
   assert.ok(result.evidence.feederSlotMatchingPrunes>0);
   assert.equal(result.evidence.feederOrderBranches,0);
   assertFeederSlotAccounting(result);
+});
+
+test("analytic feeder-slot certificate proves only an interval-domain deficit",()=>{
+  const domain=(intervals:ReadonlyArray<{start:number;end:number}>)=>({gridAnchor:0,intervals,
+    fullGridStartCount:0,eligibleStartCount:0,coachEliminatedStartCount:0,eliminations:[],
+    *starts(){/* pure certificate fixture */}});
+  assert.equal(exactFeederSlotAnalyticCertificate(0,10,3,[
+    {deadline:30,domain:domain([{start:0,end:10}])},
+    {deadline:30,domain:domain([{start:0,end:10}])},
+    {deadline:30,domain:domain([{start:0,end:10}])},
+  ]),"NO_PERFECT_MATCH");
+  assert.equal(exactFeederSlotAnalyticCertificate(0,10,3,[
+    {deadline:10,domain:domain([{start:0,end:0}])},
+    {deadline:20,domain:domain([{start:10,end:10}])},
+    {deadline:30,domain:domain([{start:20,end:20}])},
+  ]),"NOT_PROVEN","a perfect geometry must fall through rather than be accepted");
+  assert.equal(exactFeederSlotAnalyticCertificate(0,10,3,[
+    {deadline:30,domain:domain([{start:0,end:0},{start:20,end:20}])},
+    {deadline:30,domain:domain([{start:0,end:20}])},
+    {deadline:30,domain:domain([{start:0,end:20}])},
+  ]),"NOT_APPLICABLE","disconnected ordinal domains abstain");
 });
 
 test("a perfect feeder-slot matching preserves the historical exact search",()=>{
@@ -108,8 +130,10 @@ test("feeder-slot matching is invariant to IDs and input order",()=>{
   const permuted=constructExactMainAndFeederCore(renamed);
   assert.equal(permuted.status,baseline.status);
   assert.deepEqual({checks:permuted.evidence.feederSlotMatchingChecks,prunes:permuted.evidence.feederSlotMatchingPrunes,
+    analyticChecks:permuted.evidence.feederSlotAnalyticChecks,analyticPrunes:permuted.evidence.feederSlotAnalyticPrunes,
     edges:permuted.evidence.feederSlotMatchingEdgeChecks,augments:permuted.evidence.feederSlotMatchingAugmentTraversals,
     order:permuted.evidence.feederOrderBranches},{checks:baseline.evidence.feederSlotMatchingChecks,
+    analyticChecks:baseline.evidence.feederSlotAnalyticChecks,analyticPrunes:baseline.evidence.feederSlotAnalyticPrunes,
     prunes:baseline.evidence.feederSlotMatchingPrunes,edges:baseline.evidence.feederSlotMatchingEdgeChecks,
     augments:baseline.evidence.feederSlotMatchingAugmentTraversals,order:baseline.evidence.feederOrderBranches});
   assertFeederSlotAccounting(permuted);
