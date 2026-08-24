@@ -53,6 +53,9 @@ export interface ExactMainAndFeederCoreEvidence {
   firstExactArchitecture: string | null;
   feederOrderBranchesByArchitecture: Record<string, number>;
   feederOrderBranches: number;
+  feederSlotAnalyticChecks: number;
+  feederSlotAnalyticPrunes: number;
+  feederSlotAnalyticAbstentions: number;
   feederSlotMatchingChecks: number;
   feederSlotMatchingPrunes: number;
   feederSlotMatchingEdgeChecks: number;
@@ -208,6 +211,37 @@ export interface ExactFeederStartDomain {
   readonly coachEliminatedStartCount: number;
   readonly eliminations: readonly Readonly<{ reason:"OVERLAP_COACH"|"TRANSITION_COACH"; blockingPlacedTaskId:string; startsEliminated:number }>[];
   starts(onProgress?: (considered: number, coachEliminated: number) => void): Generator<number>;
+}
+
+export type ExactFeederSlotAnalyticCertificate = "NO_PERFECT_MATCH" | "NOT_PROVEN" | "NOT_APPLICABLE";
+
+/** Negative certificate using only deadlines and feeder-domain interval geometry.
+ * NOT_PROVEN never establishes feasibility; the exact checks remain authoritative. */
+export function exactFeederSlotAnalyticCertificate(blockStart:number,duration:number,slotCount:number,
+  candidates:readonly Readonly<{deadline:number;domain:ExactFeederStartDomain}>[]):ExactFeederSlotAnalyticCertificate {
+  if(!Number.isFinite(blockStart)||!Number.isFinite(duration)||duration<=0||!Number.isInteger(slotCount)
+    ||slotCount<0||candidates.length!==slotCount)return "NOT_APPLICABLE";
+  const ranges:Array<{low:number;high:number}>=[];
+  for(const {deadline,domain} of candidates){
+    if(!Number.isFinite(deadline)||(domain.gridAnchor-blockStart)%5!==0||duration%5!==0)return "NOT_APPLICABLE";
+    const clipped=domain.intervals.flatMap(interval=>{
+      const low=Math.max(0,Math.ceil((interval.start-blockStart)/duration));
+      const high=Math.min(slotCount-1,Math.floor((Math.min(interval.end,deadline-duration)-blockStart)/duration));
+      return low<=high?[{low,high}]:[];
+    });
+    if(clipped.length!==1)return clipped.length===0?"NO_PERFECT_MATCH":"NOT_APPLICABLE";
+    ranges.push(clipped[0]!);
+  }
+  ranges.sort((left,right)=>left.low-right.low||left.high-right.high);
+  const available:number[]=[];
+  let rangeIndex=0;
+  for(let ordinal=0;ordinal<slotCount;ordinal++){
+    while(rangeIndex<ranges.length&&ranges[rangeIndex]!.low<=ordinal)available.push(ranges[rangeIndex++]!.high);
+    available.sort((left,right)=>left-right);
+    if(available.length===0||available[0]!<ordinal)return "NO_PERFECT_MATCH";
+    available.shift();
+  }
+  return "NOT_PROVEN";
 }
 
 /** Pure negative-domain membership test. Membership only means that the start was
@@ -460,6 +494,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
     architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
     firstExactArchitecture: null, feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
+    feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
     feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
     feederSlotMatchingAugmentTraversals:0,feederSlotMatchingBranchesExplored:0,
     feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
@@ -753,6 +788,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               &&effectiveCoachTransitionMinutes(problem,coachId,left.choice.feeder.spaceId,right.choice.feeder.spaceId)!==0)
               return "NOT_APPLICABLE";
           }
+          evidence.feederSlotAnalyticChecks++;
+          const analytic=exactFeederSlotAnalyticCertificate(blockStart,duration,rankedCohort.length,
+            rankedCohort.map(({deadline,domain})=>({deadline,domain})));
+          if(analytic==="NO_PERFECT_MATCH"){
+            evidence.feederSlotAnalyticPrunes++;
+            return "NO_PERFECT_MATCH";
+          }
+          if(analytic==="NOT_APPLICABLE")evidence.feederSlotAnalyticAbstentions++;
           evidence.feederSlotMatchingChecks++;
           const edges=new Map<string,number[]>();
           const fixedPlaced=[...blockPlaced,...blockOperations];
