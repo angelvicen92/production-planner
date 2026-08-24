@@ -1,4 +1,5 @@
 import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledOperationalMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import { createHash } from "node:crypto";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import {
   createExactSearchLedger,
@@ -7,6 +8,7 @@ import {
   type ExactSearchLedger,
   type ExactMainAndFeederSearchOptions,
   type ExactCoreCausalDiagnostic,
+  type ExactFutureFeasibilityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
@@ -258,6 +260,25 @@ function mergeStartIntervals(intervals: ClosedStartInterval[]): ClosedStartInter
     else merged.push({ ...interval });
   }
   return merged;
+}
+
+const causalHash=(value:unknown):string=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const canonicalIntervals=(intervals:ReadonlyArray<Readonly<ClosedStartInterval>>)=>intervals.map(({start,end})=>({start,end}));
+
+/** Complete projection of the authorities read by the block-closed standalone placement check. */
+function standaloneForwardAuthoritySignature(problem:PlannerNextProblem,task:Task,placed:ScheduledTask[],meals:ScheduledSpaceMeal[],staticDomain:StandaloneForwardStaticDomain):string{
+  const resourceIds=[...(task.requiredResourceIds??[])].sort();
+  const relevant=placed.filter(other=>tasksCanAffectEachOther(task,other)).sort(byId).map(other=>({
+    id:other.id,start:other.start,end:other.end,spaceId:other.spaceId,participantId:other.participantId??null,
+    coachId:other.coachId??null,requiredResourceIds:[...(other.requiredResourceIds??[])].sort(),dependencies:[...other.dependencies].sort(),kind:other.kind,
+  }));
+  return causalHash({task:{id:task.id,kind:task.kind,duration:task.duration,spaceId:task.spaceId,
+    participantId:task.participantId??null,coachId:task.coachId??null,itinerantUnitId:task.itinerantUnitId??null,
+    requiredResourceIds:resourceIds,dependencies:[...task.dependencies].sort(),availability:task.availability},
+    staticDomain:canonicalIntervals(staticDomain.intervals),participantTransitionMinutes:problem.participantTransitionMinutes,
+    resourceTransitions:resourceIds.map(id=>[id,effectiveResourceTransitionMinutes(problem,id)]),
+    coachTransitions:(problem.coachRouteTransitions??[]).filter(x=>x.coachId===task.coachId).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    occupations:relevant,meals:meals.filter(meal=>meal.spaceId===task.spaceId||problem.resources.some(resource=>resourceIds.includes(resource.id)&&resource.assignedSpaceId===meal.spaceId)).sort(byId)});
 }
 
 function firstGridStart(dayStart: number, intervalStart: number): number {
@@ -770,6 +791,27 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }
   const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
+  const futureAssessments=new Map<string,ExactFutureFeasibilityCausalAssessment>();
+  const recordFutureAssessment=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
+    staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):void=>{
+    if(!options.causalDiagnostic)return;
+    const authoritySignature=standaloneForwardAuthoritySignature(problem,task,candidate.tasks,candidate.meals,staticDomain);
+    const blockers=dynamicDomain.eligibleStartCount===0?candidate.tasks.filter(other=>tasksCanAffectEachOther(task,other)).map(({id})=>id).sort():[];
+    const mains=candidate.tasks.filter(({kind})=>kind==="main");
+    const contracts=problem.anchoredAccompaniments??[];
+    const blockerDepth=(id:string):number|null=>{const blocker=candidate.tasks.find(task=>task.id===id);if(!blocker)return null;
+      const mainId=blocker.kind==="main"?blocker.id:mains.find(main=>main.participantId===blocker.participantId)?.id
+        ??contracts.find(contract=>[...contract.beforeTaskIds,...contract.afterTaskIds].includes(id))?.anchorTaskId;
+      const index=mains.findIndex(main=>main.id===mainId);return index<0?null:index+1;};
+    const depths=blockers.map(blockerDepth).filter((depth):depth is number=>depth!==null).sort((a,b)=>a-b);
+    const certified=blockers.length>0&&depths.length===blockers.length?Math.max(...depths):null;
+    const result={domain:canonicalIntervals(dynamicDomain.intervals),eligibleStartCount:dynamicDomain.eligibleStartCount,
+      empty:!witness,blockers,certifiedBackjumpTargetDepth:certified};
+    const resultSignature=causalHash(result),key=`${candidate.depth}|${task.id}|${authoritySignature}|${resultSignature}`;
+    const existing=futureAssessments.get(key);if(existing){existing.occurrences++;return;}
+    futureAssessments.set(key,{depth:candidate.depth,taskId:task.id,authoritySignature,resultSignature,domainEmpty:!witness,
+      eligibleStartCount:dynamicDomain.eligibleStartCount,blockers,ancestralDecisionDepths:[...new Set(depths)],certifiedBackjumpTargetDepth:certified,occurrences:1});
+  };
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
@@ -829,6 +871,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
           fallbackRecorded = true;
         }
       }
+      recordFutureAssessment(candidate,task,staticDomain,dynamicDomain,witness);
       if (witness) { evidence.standaloneForwardWitnessesFound += 1; continue; }
       evidence.standaloneForwardPrunes += 1;
       evidence.standaloneForwardBlockingTaskCounts[task.id] = (evidence.standaloneForwardBlockingTaskCounts[task.id] ?? 0) + 1;
@@ -864,6 +907,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
+  if(evidence.causalDiagnostic){const summary=evidence.causalDiagnostic.futureFeasibility;summary.assessments=[...futureAssessments.values()].sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature)||a.resultSignature.localeCompare(b.resultSignature));
+    for(const row of summary.assessments){summary.totalEvaluations+=row.occurrences;summary.uniqueAuthorityStates+=1;summary.repeatedEvaluations+=row.occurrences-1;
+      const depth=String(row.depth);summary.evaluationsByDepth[depth]=(summary.evaluationsByDepth[depth]??0)+row.occurrences;if(row.occurrences>1)summary.repeatedByDepth[depth]=(summary.repeatedByDepth[depth]??0)+row.occurrences-1;
+      if(row.domainEmpty){summary.negativeEvaluations+=row.occurrences;summary.repeatedNegativeEvaluations+=row.occurrences-1;summary.negativeByDepth[depth]=(summary.negativeByDepth[depth]??0)+row.occurrences;if(row.certifiedBackjumpTargetDepth!==null)summary.rejectsWithCertifiedBackjumpTarget+=row.occurrences;}}}
   if(evidence.causalDiagnostic)for(const [depth,extra] of Object.entries(supplementalByDepth)){const row=evidence.causalDiagnostic.waterfallByDepth[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};row.participantMeal+=extra.participantMeal;row.standaloneForward+=extra.standaloneForward;row.total+=extra.participantMeal+extra.standaloneForward;evidence.causalDiagnostic.waterfallByDepth[depth]=row;}
   evidence.branchesExplored = ledger.branchesExplored; evidence.coreBranches = ledger.coreBranches;
   evidence.standaloneBranches = ledger.standaloneBranches; evidence.lastExhaustionPhase = ledger.lastExhaustionPhase;

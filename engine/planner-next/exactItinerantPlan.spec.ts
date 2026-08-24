@@ -307,6 +307,24 @@ test("FULL_GRID oracle and STATIC_DOMAIN preserve witnesses, pruning and determi
   assert.ok(staticResult.evidence.standaloneForwardAnalyticEmptyDomainPrunes > 0);
 });
 
+test("block-closed future diagnostics are neutral, deterministic, and authority-sensitive", () => {
+  const create=()=>coreLeafContinuationProblem();
+  const disabled=runExactItinerantPlanSearch(create());
+  const enabled=runExactItinerantPlanSearch(create(),{causalDiagnostic:true});
+  assert.deepEqual({...enabled.evidence,causalDiagnostic:null},disabled.evidence);
+  assert.equal(enabled.status,disabled.status);assert.deepEqual(enabled.scheduledTasks,disabled.scheduledTasks);
+  assert.equal(enabled.evidence.fullFingerprint,disabled.evidence.fullFingerprint);
+  const diagnostic=enabled.evidence.causalDiagnostic!.futureFeasibility;
+  assert.ok(diagnostic.totalEvaluations>0);assert.equal(diagnostic.totalEvaluations,
+    diagnostic.uniqueAuthorityStates+diagnostic.repeatedEvaluations);
+  const reversed=create();reversed.tasks.reverse();reversed.spaces.reverse();reversed.resources.reverse();reversed.participants.reverse();
+  assert.deepEqual(runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility,diagnostic);
+
+  const changed=create();changed.participantTransitionMinutes=5;
+  const changedRows=runExactItinerantPlanSearch(changed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility.assessments;
+  assert.notDeepEqual(changedRows.map(row=>row.authoritySignature),diagnostic.assessments.map(row=>row.authoritySignature));
+});
+
 test("complete quality replaces only a strictly dominating incumbent", () => {
   const incumbent = { maximumParticipantIdleMinutes: 20, maximumSingleGapMinutes: 15, totalIdleMinutes: 30,
     totalGapCount: 2, totalSpaceChangeCount: 4 };
