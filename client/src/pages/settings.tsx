@@ -43,6 +43,9 @@ import {
   Settings as SettingsIcon,
   ClipboardList,
   Users,
+  Boxes,
+  LayoutTemplate,
+  MapPinned,
   ChevronsDown,
   ChevronsUp,
 } from "lucide-react";
@@ -104,38 +107,40 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
         </div>
 
-        <Tabs defaultValue="general" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              {t("settings.tabs.general")}
-            </TabsTrigger>
-
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              {t("settings.tabs.templates")}
-            </TabsTrigger>
-
-            <TabsTrigger value="spaces" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              {t("settings.tabs.spaces")}
-            </TabsTrigger>
-
-            <TabsTrigger value="resources" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              {t("settings.tabs.resources")}
-            </TabsTrigger>
-            <TabsTrigger value="staff" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              {t("settings.tabs.staff")}
-            </TabsTrigger>
-            {isAdmin ? (
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Usuarios
+        <Tabs defaultValue="general" className="min-w-0 space-y-4">
+          <div className="overflow-x-auto pb-1">
+            <TabsList className="w-max min-w-full justify-start">
+              <TabsTrigger value="general" className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                {t("settings.tabs.general")}
               </TabsTrigger>
-            ) : null}
-          </TabsList>
+
+              <TabsTrigger value="templates" className="flex items-center gap-2">
+                <LayoutTemplate className="h-4 w-4" />
+                {t("settings.tabs.templates")}
+              </TabsTrigger>
+
+              <TabsTrigger value="spaces" className="flex items-center gap-2">
+                <MapPinned className="h-4 w-4" />
+                {t("settings.tabs.spaces")}
+              </TabsTrigger>
+
+              <TabsTrigger value="resources" className="flex items-center gap-2">
+                <Boxes className="h-4 w-4" />
+                {t("settings.tabs.resources")}
+              </TabsTrigger>
+              <TabsTrigger value="staff" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                {t("settings.tabs.staff")}
+              </TabsTrigger>
+              {isAdmin ? (
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Usuarios
+                </TabsTrigger>
+              ) : null}
+            </TabsList>
+          </div>
           <TabsContent value="general" className="space-y-4">
             <GeneralProgramSettings />
             <GeneralOptimizerSettings />
