@@ -569,6 +569,12 @@
       "coreBacktracks": 4030,
       "coreMaximumDepth": 14,
       "coreCompleteLeafCount": 0,
+      "deepestCoreDepthReached": 8,
+      "deepestPartialScheduledTaskCount": 20,
+      "deepestPartialMainRunsClosed": 2,
+      "deepestPartialFeederRunsClosed": 2,
+      "deepestPartialCoreTasksRemaining": 24,
+      "deepestPartialFrontierFingerprint": "000ae4fcc756e67d70fc8a70bfcaadbaeb221f1144a024bb9708bef23df40a95",
       "architecturesChecked": 310,
       "architecturesStructurallyRejected": 245,
       "structuralRejectionsByReason": {
