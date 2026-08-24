@@ -94,11 +94,12 @@ test("analytic feeder-slot certificate proves only an interval-domain deficit",(
   ]),"NOT_APPLICABLE","disconnected ordinal domains abstain");
 });
 
-test("a perfect feeder-slot matching preserves the historical exact search",()=>{
+test("a perfect feeder-slot matching materializes its witness without FEEDER_ORDER",()=>{
   const result=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.feederSlotMatchingChecks>result.evidence.feederSlotMatchingPrunes);
-  assert.ok(result.evidence.feederOrderBranches>0);
+  assert.ok(result.evidence.feederMatchingWitnessMaterializations>0);
+  assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
 });
@@ -113,13 +114,14 @@ test("an authorized block meal makes feeder-slot matching abstain",()=>{
   assertFeederSlotAccounting(result);
 });
 
-test("omitted inter-feeder interaction remains an optimistic relaxation",()=>{
+test("an inter-feeder dependency falls back to exact order",()=>{
   const problem=fixedFeederSlotProblem("PERFECT");
   problem.tasks.find(({id})=>id==="feeder-b")!.dependencies=["feeder-a"];
   const result=constructExactMainAndFeederCore(problem);
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.feederSlotMatchingChecks>0);
-  assert.ok(result.evidence.feederOrderBranches>0,"the optimistic certificate must leave the interaction to exact placement");
+  assert.equal(result.evidence.feederSlotMatchingChecks,0);
+  assert.ok(result.evidence.feederOrderFallbacks>0);
+  assert.ok(result.evidence.feederOrderBranches>0,"the dependency must remain an exact placement authority");
   assertFeederSlotAccounting(result);
 });
 
@@ -380,7 +382,7 @@ test("a selected main can make the optimistic completion impossible before its r
   });
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(entered.includes("b-main"));
-  assert.ok((result.evidence.feederRunOptimisticPrunesByDepth["1"]??0)>0);
+  assert.ok(result.evidence.mainRunWitnessAttempts>0);
   const firstB=events.indexOf("enter:b-main");
   assert.notEqual(firstB,-1);
   assert.notEqual(events[firstB+1],"match:b-main");
@@ -601,7 +603,7 @@ test("rejects the minimum impossible architecture then admits the next plausible
   assert.equal(first.status, "COMPLETE", first.evidence.reasonCodes.join(","));
   assert.ok(first.evidence.architecturesStructurallyRejected > 0);
   assert.ok(first.evidence.firstExactArchitecture?.includes("END:120"));
-  assert.ok((first.evidence.feederOrderBranchesByArchitecture[first.evidence.firstExactArchitecture!] ?? 0) > 0);
+  assert.ok(first.evidence.feederMatchingWitnessMaterializations > 0);
   assert.deepEqual(second, first);
 });
 

@@ -36,6 +36,11 @@ export interface ExactMainAndFeederCoreEvidence {
   residualMatchingRepairFailures: number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
+  mainRunWitnessAttempts: number;
+  mainRunWitnessRepairs: number;
+  mainRunEquivalentOrdersCollapsed: number;
+  feederMatchingWitnessMaterializations: number;
+  feederOrderFallbacks: number;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
   forcedMainSiblingAlternativesEliminated: number;
@@ -506,6 +511,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
+    mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
+    feederMatchingWitnessMaterializations:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -794,26 +801,33 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         /** Hall certificate for a fixed contiguous feeder run. Inter-feeder placement is
          * deliberately omitted, so the graph is an optimistic relaxation: failure to cover
          * every feeder is a sound negative proof, while success leaves FEEDER_ORDER unchanged. */
-        const feederSlotCertificate = (blockStart:number):"PERFECT"|"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED" => {
+        type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>}
+          | {outcome:"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED"};
+        const feederSlotCertificate = (blockStart:number):FeederSlotCertificate => {
           const first=rankedCohort[0];
-          if(!first)return "NOT_APPLICABLE";
+          if(!first)return {outcome:"NOT_APPLICABLE"};
           const duration=first.choice.feeder.duration;
           const spaceId=first.choice.feeder.spaceId;
           if(rankedCohort.some(({choice})=>choice.feeder.duration!==duration||choice.feeder.spaceId!==spaceId))
-            return "NOT_APPLICABLE";
-          if(blockMeals.some(meal=>meal.spaceId===spaceId))return "NOT_APPLICABLE";
+            return {outcome:"NOT_APPLICABLE"};
+          if(blockMeals.some(meal=>meal.spaceId===spaceId))return {outcome:"NOT_APPLICABLE"};
+          const feederIds=new Set(rankedCohort.map(({choice})=>choice.feeder.id));
+          if(rankedCohort.some(({choice})=>choice.feeder.dependencies.some(id=>feederIds.has(id))))
+            return {outcome:"NOT_APPLICABLE"};
           for(const left of rankedCohort)for(const right of rankedCohort){
             const coachId=left.choice.feeder.coachId;
             if(coachId!==undefined&&coachId===right.choice.feeder.coachId
               &&effectiveCoachTransitionMinutes(problem,coachId,left.choice.feeder.spaceId,right.choice.feeder.spaceId)!==0)
-              return "NOT_APPLICABLE";
+              return {outcome:"NOT_APPLICABLE"};
           }
+          if(rankedCohort.some(({choice})=>(choice.feeder.requiredResourceIds??[]).some(resourceId=>
+            effectiveResourceTransitionMinutes(problem,resourceId)!==0)))return {outcome:"NOT_APPLICABLE"};
           evidence.feederSlotAnalyticChecks++;
           const analytic=exactFeederSlotAnalyticCertificate(blockStart,duration,rankedCohort.length,
             rankedCohort.map(({deadline,domain})=>({deadline,domain})));
           if(analytic==="NO_PERFECT_MATCH"){
             evidence.feederSlotAnalyticPrunes++;
-            return "NO_PERFECT_MATCH";
+            return {outcome:"NO_PERFECT_MATCH"};
           }
           if(analytic==="NOT_APPLICABLE")evidence.feederSlotAnalyticAbstentions++;
           evidence.feederSlotMatchingChecks++;
@@ -823,7 +837,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             const candidateEdges:number[]=[];
             for(let ordinal=0;ordinal<rankedCohort.length;ordinal++){
               if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
-                return "BUDGET_EXHAUSTED";
+                return {outcome:"BUDGET_EXHAUSTED"};
               evidence.feederSlotMatchingBranchesExplored++;
               evidence.feederSlotMatchingEdgeChecks++;
               const start=blockStart+ordinal*duration;
@@ -853,10 +867,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           };
           for(const {choice} of rankedCohort){
             const result=augment(choice.feeder.id,new Set());
-            if(result==="BUDGET_EXHAUSTED")return result;
-            if(result==="UNMATCHED")return "NO_PERFECT_MATCH";
+            if(result==="BUDGET_EXHAUSTED")return {outcome:result};
+            if(result==="UNMATCHED")return {outcome:"NO_PERFECT_MATCH"};
           }
-          return "PERFECT";
+          return {outcome:"PERFECT",matching:new Map([...owner].map(([ordinal,feederId])=>[feederId,ordinal]))};
         };
 
         const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
@@ -896,10 +910,34 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
           if(feederRow)feederRow.startsEvaluated++;
           const feederSlotMatching=feederSlotCertificate(blockStart);
-          if(feederSlotMatching==="BUDGET_EXHAUSTED")return feederSlotMatching;
-          if(feederSlotMatching==="NO_PERFECT_MATCH"){
+          if(feederSlotMatching.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+          if(feederSlotMatching.outcome==="NO_PERFECT_MATCH"){
             evidence.feederSlotMatchingPrunes++;evidence.zeroAlternativePrunes++;continue;
           }
+          if(feederSlotMatching.outcome==="PERFECT"&&rankedCohort.length<=3){
+            const byFeederId=new Map(rankedCohort.map(candidate=>[candidate.choice.feeder.id,candidate]));
+            const scheduled=[...feederSlotMatching.matching].sort((left,right)=>left[1]-right[1]).map(([feederId,ordinal])=>{
+              const feeder=byFeederId.get(feederId)!.choice.feeder;
+              const start=blockStart+ordinal*feeder.duration;
+              return {...feeder,start,end:start+feeder.duration};
+            });
+            let jointlyValid=true;
+            for(let index=0;index<scheduled.length;index++){
+              const feeder=scheduled[index]!;
+              const candidate=byFeederId.get(feeder.id)!;
+              if(!checkFeederTask(candidate.choice,feeder,[...blockPlaced,...blockOperations,...scheduled.slice(0,index)],blockMeals,runEnd)){
+                jointlyValid=false;break;
+              }
+            }
+            if(jointlyValid){
+              evidence.feederMatchingWitnessMaterializations++;
+              if(feederRow)feederRow.valid++;
+              const child=closeBlock(scheduled);
+              if(child!=="DEAD_END")return child;
+              evidence.backtracks++;
+            }
+          }
+          evidence.feederOrderFallbacks++;
           let completeOrderAtStart=false;
           // Exact transposition: only tails for authorities used by remaining feeders can affect a
           // future placement. Failed equivalent prefixes are not expanded factorially again.
@@ -1046,7 +1084,113 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
       initialCertificate = matching.certificate;
     }
-    return assignMains(depth, placed, used, [], initialCertificate);
+    // Keep high-cardinality cohorts on the established exact path: the bounded local
+    // witness solver is intended to remove small factorial order dimensions, while a
+    // large run can make downstream cohort membership the dominant authority.
+    if(runEnd-depth>2){evidence.mainWitnessFallbacks++;return assignMains(depth,placed,used,[],initialCertificate);}
+    // A run is an assignment problem first.  Enumerating position -> task here used to
+    // rediscover every nominal permutation even when none of the resulting operations
+    // shared a hard authority.  Repair only edges that are causally implicated by a
+    // joint-placement conflict (or by a different cohort being required downstream).
+    const forbiddenQueue:ReadonlySet<string>[]=[new Set()];
+    const seenForbidden=new Set<string>();
+    const seenEquivalentCohorts=new Set<string>();
+    const edgeKey=(taskId:string,position:number)=>`${taskId}@${position}`;
+    const enqueueForbidden=(base:ReadonlySet<string>,key:string):void=>{
+      const next=new Set(base).add(key);const canonicalKey=[...next].sort().join("|");
+      if(!seenForbidden.has(canonicalKey)){seenForbidden.add(canonicalKey);forbiddenQueue.push(next);}
+    };
+    while(forbiddenQueue.length>0){
+      const forbidden=forbiddenQueue.shift()!;
+      const descriptorBase=descriptors.length;
+      evidence.mainRunWitnessAttempts++;
+      const matching=new Map<string,number>(),owner=new Map<number,string>();
+      const augment=(taskId:string,seen:Set<number>):boolean=>{
+        const preferred=initialCertificate!.matching.get(taskId);
+        const edges=[...(initialCertificate!.validEdges.get(taskId)??[])].sort((left,right)=>
+          Number(right.position===preferred)-Number(left.position===preferred)||left.position-right.position);
+        for(const edge of edges){
+          if(forbidden.has(edgeKey(taskId,edge.position))||seen.has(edge.position))continue;
+          seen.add(edge.position);const previous=owner.get(edge.position);
+          if(previous===undefined||augment(previous,seen)){
+            owner.set(edge.position,taskId);matching.set(taskId,edge.position);return true;
+          }
+        }
+        return false;
+      };
+      let perfect=true;
+      for(const taskId of initialCertificate.taskIds)if(!matching.has(taskId)&&!augment(taskId,new Set())){perfect=false;break;}
+      if(!perfect)continue;
+      const runAssignments=[...matching].filter(([,position])=>depth<=position&&position<runEnd)
+        .sort((left,right)=>left[1]-right[1]);
+      const assignedEdges=runAssignments.map(([taskId,position])=>({taskId,position,
+        operation:(initialCertificate!.validEdges.get(taskId)??[]).find(edge=>edge.position===position)!.operation}));
+      const orderMaterial=assignedEdges.some((left,leftIndex)=>assignedEdges.some((right,rightIndex)=>leftIndex<rightIndex
+        &&residualMatchingOperationsMayInteract(problem,left.operation,right.operation)));
+      const cohortKey=orderMaterial?runAssignments.map(([taskId,position])=>edgeKey(taskId,position)).join(",")
+        :runAssignments.map(([taskId])=>taskId).sort().join(",");
+      if(seenEquivalentCohorts.has(cohortKey)){
+        evidence.mainRunEquivalentOrdersCollapsed++;
+        continue;
+      }
+      seenEquivalentCohorts.add(cohortKey);
+      const witnessCohort:MainChoice[]=[];const witnessPlaced=[...placed];const witnessUsed=new Set(used);
+      let conflict:[string,number,string,number]|undefined;
+      for(const [taskId,position] of runAssignments){
+        const task=mains.find(candidate=>candidate.id===taskId)!;
+        const edge=(initialCertificate.validEdges.get(taskId)??[]).find(candidate=>candidate.position===position)!;
+        const previous=witnessCohort.find(choice=>residualMatchingOperationsMayInteract(problem,choice.operation,edge.operation));
+        if(previous){
+          const operationValid=edge.operation.every((scheduled,index)=>canPlaceTask(problem,scheduled,scheduled.start,
+            [...witnessPlaced,...edge.operation.slice(0,index)],meals));
+          if(!operationValid){
+            const previousPosition=matching.get(previous.task.id)!;
+            conflict=[taskId,position,previous.task.id,previousPosition];break;
+          }
+        }
+        const participant=problem.participants.find(({id})=>id===task.participantId)!;
+        const containing=participant.availability.filter(({start,end})=>start<=edge.operation[0]!.start
+          &&Math.max(...edge.operation.map(item=>item.end))<=end);
+        const slack=containing.length?Math.min(...containing.map(({start,end})=>(edge.operation[0]!.start-start)
+          +(end-Math.max(...edge.operation.map(item=>item.end))))):0;
+        witnessCohort.push({task,operation:[...edge.operation],feeder:feederByMain.get(task.id)!,participantSlack:slack,
+          firstObligation:Math.min(...edge.operation.map(item=>item.start))});
+        const choice=witnessCohort.at(-1)!;
+        const descriptor:ExactMainChoiceDescriptor=Object.freeze({mainTask:readonlyTaskCopy(task),
+          operationTasks:Object.freeze(choice.operation.map(readonlyTaskCopy)),feeder:readonlyTaskCopy(choice.feeder),
+          placedTasks:Object.freeze(witnessPlaced.map(readonlyTaskCopy)),meals:Object.freeze(meals.map(meal=>Object.freeze({...meal}))),
+          slot:slots[position]!,depth:position,pattern:Object.freeze([...pattern]),participantSlack:slack,
+          firstObligation:choice.firstObligation});
+        descriptors.push(descriptor);options.onMainChoiceEntered?.(descriptor);
+        witnessPlaced.push(...edge.operation);witnessUsed.add(task.id);
+      }
+      if(conflict){
+        descriptors.length=descriptorBase;
+        evidence.mainRunWitnessRepairs++;
+        enqueueForbidden(forbidden,edgeKey(conflict[0],conflict[1]));
+        enqueueForbidden(forbidden,edgeKey(conflict[2],conflict[3]));
+        continue;
+      }
+      cohortCandidatesExplored+=witnessCohort.length;
+      evidence.mainRunEquivalentOrdersCollapsed+=Math.max(0,witnessCohort.length-1);
+      matchingDiagnosticDepth=runEnd;
+      const residual=residualMatching(pattern,slots,composite,meals,witnessPlaced,witnessUsed,runEnd,
+        undefined,"",witnessCohort.flatMap(choice=>choice.operation));
+      if(residual.outcome==="BUDGET_EXHAUSTED")return residual.outcome;
+      if(residual.outcome==="FOUND"){
+        const child=assignMains(runEnd,witnessPlaced,witnessUsed,witnessCohort,residual.certificate);
+        if(child!=="DEAD_END")return child;
+      }
+      descriptors.length=descriptorBase;
+      // A feeder failure can require different run membership, an authority not encoded
+      // by this matching. Delegate that case to the exact completeness fallback below.
+      break;
+    }
+    // Authorities outside the residual graph (notably feeder/cohort feasibility and
+    // continuation callbacks) may distinguish membership.  The historical exact path
+    // remains the completeness fallback after all causally distinct witnesses fail.
+    evidence.mainWitnessFallbacks++;
+    return assignMains(depth,placed,used,[],initialCertificate);
   };
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
