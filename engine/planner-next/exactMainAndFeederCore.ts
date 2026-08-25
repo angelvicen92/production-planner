@@ -1518,6 +1518,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
       const departureEnds = [...latestDepartureStart.values()];
+      const historicalEnds = [...new Set([
+        problem.mainFlow.preferredEnd,
+        ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+          .sort((left, right) => left - right),
+        ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+        ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+          .sort((left, right) => right - left),
+      ])];
       let candidateEnds = timeline
         ? [problem.mainFlow.preferredEnd]
         : [...new Set([
@@ -1585,24 +1593,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
             .sort((left, right) => right - left),
         ])];
-      if (!timeline && problem.mainFlow.preferredEnd - pattern.length * duration >= problem.day.start) {
-        candidateEnds = [...new Set([
-          problem.mainFlow.preferredEnd,
-          ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
-            .sort((left, right) => left - right),
-          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-          ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
-            .sort((left, right) => right - left),
-        ])];
-      } else if (!timeline) {
-        const historicalEnds = [...new Set([
-          problem.mainFlow.preferredEnd,
-          ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
-            .sort((left, right) => left - right),
-          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-          ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
-            .sort((left, right) => right - left),
-        ])];
+      if (!timeline) {
         const historicalSet = new Set(historicalEnds);
         candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
       }

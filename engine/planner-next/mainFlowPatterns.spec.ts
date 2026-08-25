@@ -213,3 +213,18 @@ test("structural matching preserves both legal styling/vocal orders without fixi
   assert.equal(proveMainFeederArchitectureImpossible(afterVocal.problem, afterVocal.mains,
     afterVocal.feeders, twoSlotArchitecture), null);
 });
+
+test("prerequisite closure is an event proof and does not scan the temporal grid", () => {
+  const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 5, end: 1_020 }]);
+  fixture.problem.day.end = 1_020;
+  for (const authority of [...fixture.problem.spaces, ...fixture.problem.participants, ...fixture.problem.coaches])
+    authority.availability = [{ start: 0, end: 1_020 }];
+  let availabilityReads = 0;
+  for (const styling of fixture.problem.tasks.filter(({ id }) => id.startsWith("styling-"))) {
+    Object.defineProperty(styling, "availability", { enumerable: true, configurable: true,
+      get: () => { availabilityReads += 1; return [{ start: 5, end: 1_020 }]; } });
+  }
+  const late = { pattern: ["a", "a"], slots: [1_000, 1_010] } as const;
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders, late), null);
+  assert.ok(availabilityReads <= 4, `analytic closure read availability ${availabilityReads} times`);
+});

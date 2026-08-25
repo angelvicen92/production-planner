@@ -673,7 +673,7 @@ test("an analytically impossible cohort cannot perform hidden factorial work", (
   assert.ok(result.evidence.branchesExplored < 5_040, `unexpected factorial work: ${result.evidence.branchesExplored}`);
   const bounded = structuredClone(problem); bounded.budget.maxBranchExpansions = 10;
   const exhausted = constructExactMainAndFeederCore(bounded);
-  assert.equal(exhausted.status, "INFEASIBLE");
+  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED");
   assert.equal(exhausted.evidence.constructiveFeederStartChecks, 0);
 });
 

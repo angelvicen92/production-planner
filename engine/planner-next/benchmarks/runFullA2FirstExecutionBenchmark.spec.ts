@@ -21,7 +21,10 @@ test("Full A2 first executable integration reports an atomic completion count", 
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
         evidence: { branchesExplored:number;coreBranches:number;standaloneBranches:number;
-          coreMaximumDepth:number;coreCompleteLeafCount:number;
+          coreMaximumDepth:number;coreCompleteLeafCount:number;deepestCoreDepthReached:number;
+          deepestPartialScheduledTaskCount:number;deepestPartialMainRunsClosed:number;
+          deepestPartialFeederRunsClosed:number;deepestPartialCoreTasksRemaining:number;
+          firstFeedableRunSizes:number[];
           structuralRejectionsByReason:Record<string,number>;
           standaloneForwardBranches:number;participantMealBranchesExplored:number;
           standaloneForwardWitnessCacheHits:number;standaloneForwardWitnessCacheMisses:number;
@@ -45,32 +48,26 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
     const executionEvidence=evidence.execution!.evidence;
-    assert.ok((executionEvidence.structuralRejectionsByReason.FEEDER_CONTIGUOUS_CAPACITY??0)>0);
-    assert.ok((executionEvidence.structuralRejectionsByReason.FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY??0)>0);
-    assert.equal(executionEvidence.feederRunPrePartialChecks,0);
-    assert.equal(executionEvidence.feederRunPreFeederChecks,0);
-    assert.equal(executionEvidence.feederRunPreFeederPrunes,0);
-    assert.deepEqual(executionEvidence.feederRunPreFeederPrunesByDepth,{});
-    assert.equal(executionEvidence.coreMaximumDepth,0);
-    assert.equal(executionEvidence.deepestCoreDepthReached,0);
-    assert.equal(executionEvidence.deepestPartialScheduledTaskCount,0);
+    assert.ok(Object.values(executionEvidence.structuralRejectionsByReason).some((count)=>count>0));
+    assert.ok(executionEvidence.feederRunPrePartialChecks>0);
+    assert.ok(executionEvidence.coreMaximumDepth>0);
+    assert.ok(executionEvidence.deepestCoreDepthReached>0);
+    assert.ok(executionEvidence.deepestPartialScheduledTaskCount>0);
+    assert.ok(executionEvidence.deepestPartialMainRunsClosed>0);
+    assert.ok(executionEvidence.firstFeedableRunSizes.length>0);
+    assert.ok(executionEvidence.firstFeedableRunSizes.every((size)=>Number.isInteger(size)&&size>0));
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
-    assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
-    assert.equal(executionEvidence.feederOrderBranches,0);
-    assert.equal(executionEvidence.feederSlotMatchingChecks,0);
-    assert.equal(executionEvidence.feederSlotMatchingPrunes,0);
-    assert.equal(executionEvidence.feederSlotAnalyticChecks,0);
-    assert.equal(executionEvidence.feederSlotAnalyticPrunes,0);
+    assert.ok(executionEvidence.deepestPartialCoreTasksRemaining>0);
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);
     assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);
-    assert.equal(executionEvidence.standaloneForwardWitnessCacheHits,0);
-    assert.equal(executionEvidence.standaloneForwardWitnessCacheMisses,0);
-    assert.equal(executionEvidence.standaloneForwardWitnessCacheEntries,0);
-    assert.equal(executionEvidence.standaloneForwardWitnessBranchesAvoided,0);
+    assert.equal(executionEvidence.standaloneForwardWitnessCacheEntries,
+      executionEvidence.standaloneForwardWitnessCacheMisses);
+    assert.equal(executionEvidence.standaloneForwardWitnessBranchesAvoided,
+      executionEvidence.standaloneForwardWitnessCacheHits);
     assert.equal(report.waterfallReconciles,true);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,

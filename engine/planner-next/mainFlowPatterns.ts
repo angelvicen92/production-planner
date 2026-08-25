@@ -1,6 +1,5 @@
 import type { PlannerNextProblem, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
-import { canPlaceTask } from "./placement";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
   | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY"
@@ -84,14 +83,9 @@ export function proveMainFeederArchitectureImpossible(
       && (task.requiredResourceIds ?? []).every((id) => covers(resourceById.get(id)?.availability, start, end));
   };
 
-  /*
-   * Prove an optimistic participant feeder closure for an edge of the architecture
-   * matching.  The closure is deliberately local to the participant: shared-space
-   * and shared-resource coexistence remains the responsibility of the exact search.
-   * Unlike a duration sum, this preserves both legal orders of independent ancestors
-   * (notably entry styling and vocal) and observes their real windows and the terminal
-   * coach transition.  No selected start escapes this proof.
-   */
+  // Analytic, continuous-time relaxation of one participant's prerequisite closure.
+  // It performs no grid scan and chooses no order between independent ancestors.
+  // Omitted coexistence constraints only enlarge domains, so rejection remains sound.
   const closureCache = new Map<string, boolean>();
   const participantClosureFits = (main: Task, mainStart: number): boolean => {
     const cacheKey = `${main.id}@${mainStart}`;
@@ -106,34 +100,52 @@ export function proveMainFeederArchitectureImpossible(
       for (const dependency of task.dependencies) collect(dependency);
     };
     for (const dependency of main.dependencies) collect(dependency);
-    if (main.dependencies.some((id) => !ancestors.has(id))) {
-      closureCache.set(cacheKey, false);
-      return false;
-    }
-    const fixedMain = { ...main, start: mainStart, end: mainStart + main.duration };
-    const pending = [...ancestors.values()];
-    const scheduled: Array<Task & { start: number; end: number }> = [];
-    const search = (): boolean => {
-      if (scheduled.length === pending.length) return true;
-      const scheduledIds = new Set(scheduled.map(({ id }) => id));
-      const ready = pending.filter(({ id, dependencies }) => !scheduledIds.has(id)
-        && dependencies.every((dependency) => !ancestors.has(dependency) || scheduledIds.has(dependency)))
-        .sort((left, right) => left.id.localeCompare(right.id));
-      for (const task of ready) {
-        for (let start = problem.day.start; start + task.duration <= mainStart; start += 5) {
-          if (!canPlaceTask(problem, task, start, [fixedMain, ...scheduled], [])) continue;
-          scheduled.push({ ...task, start, end: start + task.duration });
-          if (search()) return true;
-          scheduled.pop();
-          // With only this participant's obligations present, delaying the same
-          // topological choice cannot create capacity before a fixed main.  Other
-          // legal orders are still explored by the outer loop.
-          break;
-        }
+    // Unknown/non-participant ancestors require an exact authority: abstain.
+    if (main.dependencies.some((id) => !ancestors.has(id))) return true;
+    const intersect = (left: readonly { start:number;end:number }[], right: readonly { start:number;end:number }[]) =>
+      left.flatMap((a) => right.flatMap((b) => {
+        const start = Math.max(a.start, b.start), end = Math.min(a.end, b.end);
+        return start < end ? [{ start, end }] : [];
+      }));
+    const domain = (task: Task, deadline: number): Array<{start:number;end:number}> => {
+      let windows = [{ start: problem.day.start, end: Math.min(problem.day.end, deadline) }];
+      const authorities = [task.availability,
+        participantById.get(task.participantId ?? "")?.availability,
+        spaceById.get(task.spaceId)?.availability,
+        task.coachId === undefined ? undefined : coachById.get(task.coachId)?.availability,
+        ...(task.requiredResourceIds ?? []).map((id) => resourceById.get(id)?.availability)];
+      for (const authority of authorities) {
+        if (authority === undefined || authority.length === 0) continue;
+        windows = intersect(windows, authority);
       }
-      return false;
+      return windows.filter(({ start, end }) => start + task.duration <= end);
     };
-    const result = search();
+    const completion = new Map<string, number>();
+    const unresolved = new Set(ancestors.keys());
+    while (unresolved.size > 0) {
+      let progressed = false;
+      for (const id of [...unresolved].sort()) {
+        const task = ancestors.get(id)!;
+        const localDependencies = task.dependencies.filter((dependency) => ancestors.has(dependency));
+        if (localDependencies.some((dependency) => !completion.has(dependency))) continue;
+        const earliest = Math.max(problem.day.start,
+          ...localDependencies.map((dependency) => completion.get(dependency)!));
+        const transition = task.id === feederByMain.get(main.id)?.id && task.coachId !== undefined
+          ? effectiveCoachTransitionMinutes(problem, task.coachId, task.spaceId, main.spaceId) : 0;
+        const deadline = mainStart - transition;
+        const firstEnd = Math.min(...domain(task, deadline)
+          .map(({ start, end }) => Math.max(start, earliest) + task.duration <= end
+            ? Math.max(start, earliest) + task.duration : Infinity));
+        if (!Number.isFinite(firstEnd)) { closureCache.set(cacheKey, false); return false; }
+        completion.set(id, firstEnd); unresolved.delete(id); progressed = true;
+      }
+      // Cycles/unsupported closure shapes are left to exact search.
+      if (!progressed) return true;
+    }
+    const participantWindows = participantById.get(main.participantId ?? "")?.availability;
+    const capacity = (participantWindows?.length ? participantWindows : [problem.day])
+      .reduce((sum, window) => sum + Math.max(0, Math.min(window.end, mainStart) - Math.max(window.start, problem.day.start)), 0);
+    const result = [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) <= capacity;
     closureCache.set(cacheKey, result);
     return result;
   };
@@ -160,9 +172,15 @@ export function proveMainFeederArchitectureImpossible(
         main.blockKey === architecture.pattern[position] && fits(main, slot));
       const feeder = feederByMain.get(main.id);
       const hasFeederEdge = feeder !== undefined && architecture.slots.some((slot, position) =>
-        main.blockKey === architecture.pattern[position] && Array.from({ length: Math.max(0,
-          Math.floor((slot - feeder.duration - problem.day.start) / 5) + 1) }, (_, index) =>
-          problem.day.start + index * 5).some((start) => fits(feeder, start)));
+        main.blockKey === architecture.pattern[position] && [...new Set([
+          problem.day.start,
+          ...(feeder.availability ?? []).map(({ start }) => start),
+          ...(participantById.get(feeder.participantId ?? "")?.availability ?? []).map(({ start }) => start),
+          ...(spaceById.get(feeder.spaceId)?.availability ?? []).map(({ start }) => start),
+          ...(coachById.get(feeder.coachId ?? "")?.availability ?? []).map(({ start }) => start),
+          ...(feeder.requiredResourceIds ?? []).flatMap((id) =>
+            (resourceById.get(id)?.availability ?? []).map(({ start }) => start)),
+        ])].some((start) => start + feeder.duration <= slot && fits(feeder, start)));
       return hasMainOnlyEdge && hasFeederEdge ? "PREREQUISITE_WINDOW" : "RESOURCE_WINDOW";
     }
 
