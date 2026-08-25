@@ -2,7 +2,7 @@ import type { PlannerNextProblem, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
-  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY";
+  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY";
 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
@@ -17,6 +17,11 @@ interface ProvenCoachRun {
   end: number;
   coachId: string;
   eligible: Array<{ main: Task; feeder: Task }>;
+}
+
+interface ContiguousFeederPlacement {
+  duration: number;
+  starts: Array<{ start: number; end: number }>;
 }
 
 const availableIntervalsBefore = (
@@ -136,6 +141,7 @@ export function proveMainFeederArchitectureImpossible(
     let requiredPositions = 0;
     const eligibleByMain = new Map<string, { main: Task; feeder: Task }>();
     const occupied: Array<{ start: number; end: number }> = [];
+    const contiguousPlacements: ContiguousFeederPlacement[] = [];
     for (const run of runs) {
       requiredPositions += run.end - run.start;
       for (const pair of run.eligible) eligibleByMain.set(pair.main.id, pair);
@@ -164,10 +170,28 @@ export function proveMainFeederArchitectureImpossible(
         feederSpaces.includes(space.id) && space.mealPolicy !== undefined);
       if (cheapestRun.length === runLength && !transitionMaySplitBlock && !authorizedMealMaySplitBlock) {
         const minimumBlock = cheapestRun.reduce((sum, { feeder }) => sum + feeder.duration, 0);
-        const deadline = architecture.slots[run.start]!;
-        const largestGap = Math.max(0, ...availableIntervalsBefore(problem.day,
-          coachById.get(coachId)?.availability, deadline, occupied).map(({ start, end }) => end - start));
+        const terminalTransition = Math.min(...run.eligible.map(({ main, feeder }) =>
+          effectiveCoachTransitionMinutes(problem, coachId, feeder.spaceId, main.spaceId)));
+        const deadline = architecture.slots[run.start]! - terminalTransition;
+        const intervals = availableIntervalsBefore(problem.day,
+          coachById.get(coachId)?.availability, deadline, occupied);
+        const largestGap = Math.max(0, ...intervals.map(({ start, end }) => end - start));
         if (minimumBlock > largestGap) return "FEEDER_CONTIGUOUS_CAPACITY";
+
+        // Each range contains every optimistic start for this run's uninterrupted block.
+        // Comparing its earliest and latest starts with every prior run admits either order;
+        // rejection is therefore limited to pairs whose relaxed placements must overlap.
+        const placement = { duration: minimumBlock, starts: intervals
+          .filter(({ start, end }) => end - start >= minimumBlock)
+          .map(({ start, end }) => ({ start, end: end - minimumBlock })) };
+        for (const prior of contiguousPlacements) {
+          const priorBefore = Math.min(...prior.starts.map(({ start }) => start)) + prior.duration
+            <= Math.max(...placement.starts.map(({ end }) => end));
+          const currentBefore = Math.min(...placement.starts.map(({ start }) => start)) + placement.duration
+            <= Math.max(...prior.starts.map(({ end }) => end));
+          if (!priorBefore && !currentBefore) return "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY";
+        }
+        contiguousPlacements.push(placement);
       }
       for (let position = run.start; position < run.end; position += 1) {
         const slot = architecture.slots[position]!;

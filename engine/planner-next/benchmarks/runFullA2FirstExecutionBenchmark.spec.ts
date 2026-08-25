@@ -45,35 +45,32 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
     const executionEvidence=evidence.execution!.evidence;
-    assert.ok(executionEvidence.feederRunPrePartialChecks>0);
-    assert.ok(executionEvidence.feederRunPreFeederChecks>0);
     assert.ok((executionEvidence.structuralRejectionsByReason.FEEDER_CONTIGUOUS_CAPACITY??0)>0);
+    assert.ok((executionEvidence.structuralRejectionsByReason.FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY??0)>0);
+    assert.equal(executionEvidence.feederRunPrePartialChecks,0);
+    assert.equal(executionEvidence.feederRunPreFeederChecks,0);
     assert.equal(executionEvidence.feederRunPreFeederPrunes,0);
     assert.deepEqual(executionEvidence.feederRunPreFeederPrunesByDepth,{});
-    assert.ok(executionEvidence.coreMaximumDepth>=14);
-    assert.ok(executionEvidence.deepestCoreDepthReached>0
-      &&executionEvidence.deepestCoreDepthReached<=executionEvidence.coreMaximumDepth);
-    assert.ok(executionEvidence.deepestPartialScheduledTaskCount>0);
+    assert.equal(executionEvidence.coreMaximumDepth,0);
+    assert.equal(executionEvidence.deepestCoreDepthReached,0);
+    assert.equal(executionEvidence.deepestPartialScheduledTaskCount,0);
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
-    assert.ok(executionEvidence.deepestPartialCoreTasksRemaining>0);
-    assert.match(executionEvidence.deepestPartialFrontierFingerprint,/^[a-f0-9]{64}$/);
-    assert.ok(executionEvidence.feederOrderBranches<292524);
-    assert.ok(executionEvidence.feederSlotMatchingChecks>0);
-    assert.ok(executionEvidence.feederSlotMatchingPrunes>0);
-    assert.ok(executionEvidence.feederSlotAnalyticChecks>0);
-    assert.ok(executionEvidence.feederSlotAnalyticPrunes>0);
+    assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
+    assert.equal(executionEvidence.feederOrderBranches,0);
+    assert.equal(executionEvidence.feederSlotMatchingChecks,0);
+    assert.equal(executionEvidence.feederSlotMatchingPrunes,0);
+    assert.equal(executionEvidence.feederSlotAnalyticChecks,0);
+    assert.equal(executionEvidence.feederSlotAnalyticPrunes,0);
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);
     assert.ok(executionEvidence.branchesExplored>0 && executionEvidence.branchesExplored<=300000);
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);
-    assert.ok(executionEvidence.standaloneForwardWitnessCacheHits>0);
-    assert.ok(executionEvidence.standaloneForwardWitnessCacheMisses>0);
-    assert.ok(executionEvidence.standaloneForwardWitnessCacheEntries>0
-      &&executionEvidence.standaloneForwardWitnessCacheEntries<=executionEvidence.standaloneForwardWitnessCacheMisses);
-    assert.ok(executionEvidence.standaloneForwardWitnessBranchesAvoided
-      >=executionEvidence.standaloneForwardWitnessCacheHits);
+    assert.equal(executionEvidence.standaloneForwardWitnessCacheHits,0);
+    assert.equal(executionEvidence.standaloneForwardWitnessCacheMisses,0);
+    assert.equal(executionEvidence.standaloneForwardWitnessCacheEntries,0);
+    assert.equal(executionEvidence.standaloneForwardWitnessBranchesAvoided,0);
     assert.equal(report.waterfallReconciles,true);
     console.log("FULL_A2_EXEC_RESULT", JSON.stringify({
       preflightStatus: evidence.preflight.status,

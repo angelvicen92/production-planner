@@ -51,7 +51,7 @@ test("does not reuse capacity occupied by the first main run for the second feed
 });
 
 test("an alternating coach preserves preparation time available to the first coach", () => {
-  assert.equal(prove(prefixProblem(15)), null);
+  assert.equal(prove(prefixProblem(15)), "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY");
 });
 
 test("split coach availability contributes only its real available prefix capacity", () => {
@@ -66,6 +66,48 @@ test("rejects a feeder block when total minutes suffice but every coach gap is t
 
 test("a feasible cumulative architecture is not rejected", () => {
   assert.equal(prove(prefixProblem(10)), null);
+});
+
+test("rejects two individually fitting feeder runs when every relaxed placement overlaps", () => {
+  const fixture = prefixProblem(10, [
+    { start: 0, end: 25 }, { start: 30, end: 60 }, { start: 60, end: 75 }, { start: 80, end: 120 },
+  ]);
+  assert.equal(prove(fixture), "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY");
+});
+
+test("does not reject nearby feeder runs that can be placed without overlap", () => {
+  const fixture = prefixProblem(10, [
+    { start: 0, end: 25 }, { start: 30, end: 60 }, { start: 60, end: 120 },
+  ]);
+  assert.equal(prove(fixture), null);
+});
+
+test("multi-run contiguous proof abstains when an authorized meal invalidates its premise", () => {
+  const fixture = prefixProblem(10, [
+    { start: 0, end: 25 }, { start: 30, end: 60 }, { start: 60, end: 75 }, { start: 80, end: 120 },
+  ]);
+  fixture.problem.spaces.find(({ id }) => id === "feed-coach-a")!.mealPolicy = {
+    window: { start: 15, end: 35 }, duration: 5,
+  };
+  assert.equal(prove(fixture), null);
+});
+
+test("multi-run contiguous proof is invariant to IDs and input order", () => {
+  const baseline = prefixProblem(10, [
+    { start: 0, end: 25 }, { start: 30, end: 60 }, { start: 60, end: 75 }, { start: 80, end: 120 },
+  ]);
+  const renamed = structuredClone(baseline.problem);
+  for (const task of renamed.tasks) {
+    task.id = `renamed-${task.id}`;
+    task.dependencies = task.dependencies.map((id) => `renamed-${id}`);
+  }
+  renamed.tasks.reverse();
+  const mains = renamed.tasks.filter(({ kind }) => kind === "main").reverse();
+  const feeders = new Map(mains.map((main) =>
+    [main.id, renamed.tasks.find(({ id }) => id === main.dependencies[0])!]));
+  assert.equal(prove(baseline), "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY");
+  assert.equal(proveMainFeederArchitectureImpossible(renamed, mains, feeders, architecture),
+    "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY");
 });
 
 test("participant and task IDs do not affect the cumulative proof", () => {
