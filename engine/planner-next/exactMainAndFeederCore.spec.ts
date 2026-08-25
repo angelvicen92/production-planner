@@ -619,6 +619,25 @@ test("exact feeder alternatives retain distinct internal orders", () => {
   assert.equal(result.evidence.feederOrderBranches,0);
 });
 
+test("a certified continuation backjump reopens its causal main decision without repairing feeder order", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("b"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("b"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-b");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-b");
+  const mainOrders = new Set<string>();
+  const result = runExactMainAndFeederSearch(problem, { onPartialCoreCandidate(candidate) {
+    mainOrders.add(candidate.tasks.filter(({ kind }) => kind === "main").sort((a,b)=>a.start-b.start)
+      .map(({ id }) => id).join("|"));
+    return { outcome:"CERTIFIED_BACKJUMP", targetDepth:1 };
+  } });
+  assert.equal(result.status, "INFEASIBLE");
+  assert.ok(mainOrders.size > 0);
+  assert.ok(result.evidence.mainRunWitnessRepairs > 0, "the target main assignment must be materially reopened");
+  assert.equal(result.evidence.feederMatchingWitnessRepairs, 0);
+  assert.deepEqual(result.scheduledTasks, []);
+});
+
 test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{
   const problem=twoCohortProblem();
   problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));

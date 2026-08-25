@@ -807,19 +807,21 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
   const standaloneForwardWitnessCache=new Map<string,number>();
-  const recordFutureAssessment=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
-    staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):void=>{
-    if(!options.causalDiagnostic)return;
-    const authoritySignature=standaloneForwardAuthoritySignature(problem,task,candidate.tasks,candidate.meals,staticDomain,options.standaloneForwardStartDomainMode??"STATIC_DOMAIN");
-    const blockers=dynamicDomain.eligibleStartCount===0?candidate.tasks.filter(other=>tasksCanAffectEachOther(task,other)).map(({id})=>id).sort():[];
+  const certifyFutureBackjump=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
+    staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):number|null=>{
+    const blockers=staticDomain.eligibleStartCount>0&&dynamicDomain.eligibleStartCount===0
+      ?candidate.tasks.filter(other=>tasksCanAffectEachOther(task,other)).map(({id})=>id).sort():[];
     const mains=candidate.tasks.filter(({kind})=>kind==="main");
     const contracts=problem.anchoredAccompaniments??[];
     const blockerDepth=(id:string):number|null=>{const blocker=candidate.tasks.find(task=>task.id===id);if(!blocker)return null;
-      const mainId=blocker.kind==="main"?blocker.id:mains.find(main=>main.participantId===blocker.participantId)?.id
+      const mainId=blocker.kind==="main"?blocker.id:mains.find(main=>main.dependencies.includes(id))?.id
         ??contracts.find(contract=>[...contract.beforeTaskIds,...contract.afterTaskIds].includes(id))?.anchorTaskId;
       const index=mains.findIndex(main=>main.id===mainId);return index<0?null:index+1;};
     const depths=blockers.map(blockerDepth).filter((depth):depth is number=>depth!==null).sort((a,b)=>a-b);
-    const certified=blockers.length>0&&depths.length===blockers.length?Math.max(...depths):null;
+    const target=blockers.length>0&&depths.length===blockers.length?Math.max(...depths):null;
+    const certified=target!==null&&target<candidate.depth?target:null;
+    if(!options.causalDiagnostic)return certified;
+    const authoritySignature=standaloneForwardAuthoritySignature(problem,task,candidate.tasks,candidate.meals,staticDomain,options.standaloneForwardStartDomainMode??"STATIC_DOMAIN");
     const result={domain:canonicalIntervals(dynamicDomain.intervals),eligibleStartCount:dynamicDomain.eligibleStartCount,
       empty:!witness,blockers,certifiedBackjumpTargetDepth:certified};
     const resultSignature=causalHash(result),key=`${candidate.depth}|${task.id}|${authoritySignature}`;
@@ -827,6 +829,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const existing=state.rows.get(resultSignature);if(existing)existing.occurrences++;else state.rows.set(resultSignature,{depth:candidate.depth,taskId:task.id,authoritySignature,resultSignature,domainEmpty:!witness,
       eligibleStartCount:dynamicDomain.eligibleStartCount,blockers,ancestralDecisionDepths:[...new Set(depths)],certifiedBackjumpTargetDepth:certified,occurrences:1});
     futureAssessments.set(key,state);
+    return certified;
   };
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
@@ -905,7 +908,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         standaloneForwardWitnessCache.set(witnessCacheKey,oracleBranches);
         evidence.standaloneForwardWitnessCacheEntries=standaloneForwardWitnessCache.size;
       }
-      recordFutureAssessment(candidate,task,staticDomain,dynamicDomain,witness);
+      const certifiedBackjumpTargetDepth=certifyFutureBackjump(candidate,task,staticDomain,dynamicDomain,witness);
       if (witness) { evidence.standaloneForwardWitnessesFound += 1; continue; }
       evidence.standaloneForwardPrunes += 1;
       evidence.standaloneForwardBlockingTaskCounts[task.id] = (evidence.standaloneForwardBlockingTaskCounts[task.id] ?? 0) + 1;
@@ -917,7 +920,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.lastStandaloneForwardCausingCoreTaskIds = candidate.addedTasks.map(({ id }) => id).sort();
       evidence.lastStandaloneForwardCausingMainTaskId = candidate.mainTaskId;
       evidence.lastStandaloneForwardCausingFeederStart = candidate.feederStart;
-      return "REJECT";
+      return certifiedBackjumpTargetDepth===null?"REJECT":{outcome:"CERTIFIED_BACKJUMP",targetDepth:certifiedBackjumpTargetDepth};
     }
     return "CONTINUE";
   }, onHardValidCoreLeaf(candidate) {
