@@ -49,6 +49,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(report);
     const executionEvidence=evidence.execution!.evidence;
     assert.ok(Object.values(executionEvidence.structuralRejectionsByReason).some((count)=>count>0));
+    assert.ok((executionEvidence.structuralRejectionsByReason.FEEDER_PREREQUISITE_PREFIX_CAPACITY??0)>0);
     assert.ok(executionEvidence.feederRunPrePartialChecks>0);
     assert.ok(executionEvidence.coreMaximumDepth>0);
     assert.ok(executionEvidence.deepestCoreDepthReached>0);

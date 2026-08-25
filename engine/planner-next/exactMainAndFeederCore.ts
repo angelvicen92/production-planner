@@ -3,7 +3,7 @@ import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompa
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
-import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible,
+import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
@@ -1559,10 +1559,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               || left.main.id.localeCompare(right.main.id)).slice(0, runEnd - runStart);
             if (selected.length !== runEnd - runStart) return [];
             const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+            const prerequisiteLeadIn = Math.min(...candidates.map(({ feeder }) =>
+              optimisticPrerequisiteLeadInMinutes(problem, feeder)));
             const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
               : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
-            const firstMainStart = problem.day.start + feederLoad + terminalTransition;
-            return [firstMainStart + (pattern.length - runStart) * duration];
+            const withoutLeadIn = problem.day.start + feederLoad + terminalTransition
+              + (pattern.length - runStart) * duration;
+            return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
           }),
           ...[...new Set(pattern)].flatMap((blockKey) => {
             const runStarts = pattern.flatMap((key, index) => key === blockKey
@@ -1578,13 +1581,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               required += runEnd - runStart;
               const selected = eligible.slice(0, required);
               const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+              const prerequisiteLeadIn = Math.min(...eligible.map(({ feeder }) =>
+                optimisticPrerequisiteLeadInMinutes(problem, feeder)));
               const earlierMainLoad = pattern.slice(0, runStart).filter((key) => key === blockKey).length * duration;
               const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
                 : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
-              return problem.day.start + feederLoad + earlierMainLoad + terminalTransition
+              const withoutLeadIn = problem.day.start + feederLoad + earlierMainLoad + terminalTransition
                 + (pattern.length - runStart) * duration;
+              return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
             });
-          }),
+          }).flat(),
           ...departureEnds
             .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
             .sort((left, right) => left - right),

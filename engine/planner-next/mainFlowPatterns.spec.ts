@@ -228,3 +228,48 @@ test("prerequisite closure is an event proof and does not scan the temporal grid
   assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders, late), null);
   assert.ok(availabilityReads <= 4, `analytic closure read availability ${availabilityReads} times`);
 });
+
+function feederPrefixFixture(firstMainStart: number) {
+  const fixture = firstCoachRun(prefixProblem(10));
+  for (const main of fixture.mains) {
+    const feeder = fixture.feeders.get(main.id)!;
+    const predecessor: Task = { id: `pre-${main.participantId}`, kind: "auxiliary",
+      participantId: main.participantId!, duration: 5, spaceId: "pre", dependencies: [] };
+    feeder.dependencies = [predecessor.id];
+    fixture.problem.tasks.push(predecessor);
+  }
+  fixture.problem.spaces.push({ id: "pre", availability: [{ start: 0, end: 120 }] });
+  return { ...fixture, architecture: { pattern: ["a", "a"], slots: [firstMainStart, firstMainStart + 10] } };
+}
+
+test("rejects a continuous feeder block whose first ordinal has no prerequisite lead-in", () => {
+  const fixture = feederPrefixFixture(20);
+  assert.equal(2 * 10, fixture.architecture.slots[0], "the isolated feeder block fills prior capacity exactly");
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    fixture.architecture), "FEEDER_PREREQUISITE_PREFIX_CAPACITY");
+});
+
+test("five real lead-in minutes make the neighboring feeder pipeline structurally possible", () => {
+  const fixture = feederPrefixFixture(25);
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    fixture.architecture), null);
+});
+
+test("feeder ordinal matching remains independent from main order and invariant to IDs/input order", () => {
+  const fixture = feederPrefixFixture(25);
+  fixture.mains[0]!.availability = [{ start: 35, end: 45 }];
+  fixture.mains[1]!.availability = [{ start: 25, end: 35 }];
+  fixture.feeders.get(fixture.mains[0]!.id)!.availability = [{ start: 5, end: 15 }];
+  fixture.feeders.get(fixture.mains[1]!.id)!.availability = [{ start: 15, end: 25 }];
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    fixture.architecture), null);
+  const renamed = structuredClone(fixture.problem);
+  for (const task of renamed.tasks) {
+    task.id = `x-${task.id}`; task.dependencies = task.dependencies.map((id) => `x-${id}`);
+  }
+  renamed.tasks.reverse();
+  const mains = renamed.tasks.filter(({ kind }) => kind === "main").reverse();
+  const feeders = new Map(mains.map((main) => [main.id,
+    renamed.tasks.find((task) => task.kind === "vocal" && task.participantId === main.participantId)!]));
+  assert.equal(proveMainFeederArchitectureImpossible(renamed, mains, feeders, fixture.architecture), null);
+});

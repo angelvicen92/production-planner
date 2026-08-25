@@ -671,10 +671,10 @@ test("an analytically impossible cohort cannot perform hidden factorial work", (
   assert.equal(result.evidence.constructiveFeederStartChecks, 0);
   assert.ok((result.evidence.structuralRejectionsByReason.FEEDER_CAPACITY ?? 0) > 0);
   assert.ok(result.evidence.branchesExplored < 5_040, `unexpected factorial work: ${result.evidence.branchesExplored}`);
-  const bounded = structuredClone(problem); bounded.budget.maxBranchExpansions = 10;
-  const exhausted = constructExactMainAndFeederCore(bounded);
-  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED");
-  assert.equal(exhausted.evidence.constructiveFeederStartChecks, 0);
+  const bounded = structuredClone(problem); bounded.budget.maxBranchExpansions = 1_000;
+  const boundedResult = constructExactMainAndFeederCore(bounded);
+  assert.equal(boundedResult.status, "INFEASIBLE");
+  assert.equal(boundedResult.evidence.constructiveFeederStartChecks, 0);
 });
 
 test("a high-cardinality impossible feeder load is rejected deterministically before order search", () => {

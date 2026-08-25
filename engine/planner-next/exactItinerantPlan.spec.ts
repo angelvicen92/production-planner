@@ -156,6 +156,27 @@ test("derived feeder endpoints preserve a solution after historical endpoints fa
   assert.ok(result.evidence.architecturesChecked > 1, "historical endpoints must retain priority");
 });
 
+test("secondary feasibility runs only after the accumulating core cohort is closed", () => {
+  const blocking = { ...auxiliary("standalone-blocker", "standalone-person", [{ start: 0, end: 120 }], ["unit"]),
+    duration: 120 };
+  const input = problem([blocking]);
+  const availability = [{ start: 0, end: 120 }];
+  input.participants.push({ id: "other", availability }); input.spaces.push({ id: "vocal-other", availability });
+  input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
+  input.tasks.push(
+    { id: "vocal-other", kind: "vocal", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "vocal-other", dependencies: [] },
+    { id: "main-other", kind: "main", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["vocal-other"], blockKey: "coach", requiredResourceIds: ["unit"] },
+  );
+  const result = constructExactItinerantPlan(input);
+  assert.equal(result.status, "INFEASIBLE"); assert.equal(result.evidence.standaloneForwardWitnessesFound, 0);
+  assert.ok((result.evidence.standaloneForwardPrunesByDepth["2"] ?? 0) > 0);
+  assert.equal(result.evidence.lastStandaloneForwardBlockingTaskId, "standalone-blocker");
+  assert.ok(result.evidence.lastStandaloneForwardCausingCoreTaskIds.some((id) => id.startsWith("main")));
+  assert.deepEqual(result.scheduledTasks, []);
+});
+
 test("a current feeder blocker is repaired locally instead of producing an unsound causal backjump", () => {
   const input = problem([auxiliary("standalone-a", "a", [{ start:60, end:70 }])]);
   const availability=[{start:0,end:120}];
