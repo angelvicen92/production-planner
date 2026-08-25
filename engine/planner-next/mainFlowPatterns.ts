@@ -1,8 +1,10 @@
 import type { PlannerNextProblem, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
+import { canPlaceTask } from "./placement";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
-  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY";
+  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY"
+  | "PREREQUISITE_WINDOW";
 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
@@ -82,12 +84,67 @@ export function proveMainFeederArchitectureImpossible(
       && (task.requiredResourceIds ?? []).every((id) => covers(resourceById.get(id)?.availability, start, end));
   };
 
+  /*
+   * Prove an optimistic participant feeder closure for an edge of the architecture
+   * matching.  The closure is deliberately local to the participant: shared-space
+   * and shared-resource coexistence remains the responsibility of the exact search.
+   * Unlike a duration sum, this preserves both legal orders of independent ancestors
+   * (notably entry styling and vocal) and observes their real windows and the terminal
+   * coach transition.  No selected start escapes this proof.
+   */
+  const closureCache = new Map<string, boolean>();
+  const participantClosureFits = (main: Task, mainStart: number): boolean => {
+    const cacheKey = `${main.id}@${mainStart}`;
+    const cached = closureCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+    const byId = new Map(problem.tasks.map((task) => [task.id, task]));
+    const ancestors = new Map<string, Task>();
+    const collect = (id: string): void => {
+      const task = byId.get(id);
+      if (!task || task.participantId !== main.participantId || ancestors.has(id)) return;
+      ancestors.set(id, task);
+      for (const dependency of task.dependencies) collect(dependency);
+    };
+    for (const dependency of main.dependencies) collect(dependency);
+    if (main.dependencies.some((id) => !ancestors.has(id))) {
+      closureCache.set(cacheKey, false);
+      return false;
+    }
+    const fixedMain = { ...main, start: mainStart, end: mainStart + main.duration };
+    const pending = [...ancestors.values()];
+    const scheduled: Array<Task & { start: number; end: number }> = [];
+    const search = (): boolean => {
+      if (scheduled.length === pending.length) return true;
+      const scheduledIds = new Set(scheduled.map(({ id }) => id));
+      const ready = pending.filter(({ id, dependencies }) => !scheduledIds.has(id)
+        && dependencies.every((dependency) => !ancestors.has(dependency) || scheduledIds.has(dependency)))
+        .sort((left, right) => left.id.localeCompare(right.id));
+      for (const task of ready) {
+        for (let start = problem.day.start; start + task.duration <= mainStart; start += 5) {
+          if (!canPlaceTask(problem, task, start, [fixedMain, ...scheduled], [])) continue;
+          scheduled.push({ ...task, start, end: start + task.duration });
+          if (search()) return true;
+          scheduled.pop();
+          // With only this participant's obligations present, delaying the same
+          // topological choice cannot create capacity before a fixed main.  Other
+          // legal orders are still explored by the outer loop.
+          break;
+        }
+      }
+      return false;
+    };
+    const result = search();
+    closureCache.set(cacheKey, result);
+    return result;
+  };
+
   // A bipartite cover is necessary: each main must own a distinct compatible architecture slot.
   const owner = new Map<number, string>();
   const augment = (task: Task, seen: Set<number>): boolean => {
     for (let position = 0; position < architecture.slots.length; position += 1) {
       if (seen.has(position) || task.blockKey !== architecture.pattern[position]
-        || !fits(task, architecture.slots[position]!)) continue;
+        || !fits(task, architecture.slots[position]!)
+        || !participantClosureFits(task, architecture.slots[position]!)) continue;
       seen.add(position);
       const previous = owner.get(position);
       if (previous === undefined || augment(mains.find(({ id }) => id === previous)!, seen)) {
@@ -98,7 +155,16 @@ export function proveMainFeederArchitectureImpossible(
     return false;
   };
   for (const main of [...mains].sort((a, b) => a.id.localeCompare(b.id)))
-    if (!augment(main, new Set())) return "RESOURCE_WINDOW";
+    if (!augment(main, new Set())) {
+      const hasMainOnlyEdge = architecture.slots.some((slot, position) =>
+        main.blockKey === architecture.pattern[position] && fits(main, slot));
+      const feeder = feederByMain.get(main.id);
+      const hasFeederEdge = feeder !== undefined && architecture.slots.some((slot, position) =>
+        main.blockKey === architecture.pattern[position] && Array.from({ length: Math.max(0,
+          Math.floor((slot - feeder.duration - problem.day.start) / 5) + 1) }, (_, index) =>
+          problem.day.start + index * 5).some((start) => fits(feeder, start)));
+      return hasMainOnlyEdge && hasFeederEdge ? "PREREQUISITE_WINDOW" : "RESOURCE_WINDOW";
+    }
 
   // Only a proven shared coach makes the run serial independently of participant choice.
   // Otherwise parallel feeder work may exist, so capacity remains deliberately unknown.

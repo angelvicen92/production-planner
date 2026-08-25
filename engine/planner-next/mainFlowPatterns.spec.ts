@@ -173,3 +173,43 @@ test("contiguous proof is invariant to task input order and renamed IDs", () => 
   assert.equal(proveMainFeederArchitectureImpossible(renamed, mains, feeders, architecture),
     "FEEDER_CONTIGUOUS_CAPACITY");
 });
+
+function withEntryClosure(fixture: ReturnType<typeof firstCoachRun>, stylingAvailability: {start:number;end:number}[]) {
+  for (const main of fixture.mains) {
+    const participantId = main.participantId!;
+    const arrival: Task = { id: `arrival-${participantId}`, kind: "auxiliary", participantId,
+      duration: 5, spaceId: "arrival", dependencies: [] };
+    const styling: Task = { id: `styling-${participantId}`, kind: "auxiliary", participantId,
+      duration: 10, spaceId: "styling", availability: stylingAvailability, dependencies: [arrival.id] };
+    const feeder = fixture.feeders.get(main.id)!;
+    feeder.dependencies = [arrival.id];
+    main.dependencies = [feeder.id, styling.id];
+    fixture.problem.tasks.push(arrival, styling);
+  }
+  fixture.problem.spaces.push(
+    { id: "arrival", availability: [{ start: 0, end: 120 }] },
+    { id: "styling", availability: [{ start: 0, end: 120 }] },
+  );
+  fixture.problem.transportPolicy = { arrival: { taskIds: fixture.mains.map((main) => `arrival-${main.participantId}`),
+    minimumGroupSize: 1, maximumGroupSize: 2, minGapMinutes: 0, groupingWeight: 0 },
+  departure: { taskIds: [], minimumGroupSize: 1, maximumGroupSize: 2, minGapMinutes: 0, groupingWeight: 0 } };
+  return fixture;
+}
+
+test("structural matching rejects a cohort position whose IN, styling and vocal closure cannot finish", () => {
+  const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 35, end: 55 }]);
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    twoSlotArchitecture), "PREREQUISITE_WINDOW");
+});
+
+test("structural matching preserves both legal styling/vocal orders without fixing cohort order", () => {
+  const beforeVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 5, end: 20 }]);
+  const afterVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 20, end: 40 }]);
+  assert.equal(proveMainFeederArchitectureImpossible(beforeVocal.problem, beforeVocal.mains,
+    beforeVocal.feeders, twoSlotArchitecture), null);
+  assert.equal(proveMainFeederArchitectureImpossible(afterVocal.problem, afterVocal.mains,
+    afterVocal.feeders, twoSlotArchitecture), null);
+  afterVocal.problem.tasks.reverse(); afterVocal.mains.reverse();
+  assert.equal(proveMainFeederArchitectureImpossible(afterVocal.problem, afterVocal.mains,
+    afterVocal.feeders, twoSlotArchitecture), null);
+});
