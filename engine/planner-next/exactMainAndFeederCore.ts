@@ -170,10 +170,11 @@ export interface ExactMainChoiceDescriptor {
   readonly firstObligation: number;
 }
 
-type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
+interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number }
+type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 
 export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED";
-export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED";
+export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 export interface ExactSearchLedger {
   limit: number;
   branchesExplored: number;
@@ -912,11 +913,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
                 pattern: [...pattern], timelineKey }) ?? "CONTINUE";
               if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+              if (typeof partial === "object") return partial;
               if (partial === "REJECT") { feederOrderAuthorityObserved=true;evidence.backtracks += 1; return "DEAD_END"; }
               if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
               const child = search(pattern, slots, composite, blockMeals, nextPlaced, blockUsed, runEnd, timelineKey,
                 matching.certificate);
               if (child === "FOUND") for (const descriptor of descriptors) options.onMainChoiceAccepted?.(descriptor);
+              else if (typeof child === "object") return child;
               else if (child === "DEAD_END") {
                 // A later hard authority may observe which participant occupied each
                 // feeder ordinal. Repair the ordinal matching rather than treating a
@@ -1137,7 +1140,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(matching.outcome === "BUDGET_EXHAUSTED") return matching.outcome;
         if(matching.outcome === "DEAD_END") { evidence.residualMatchingPrunes += 1; evidence.backtracks += 1; descriptors.pop(); continue; }
         const child=assignMains(position+1,nextPlaced,nextUsed,[...cohort,choice],matching.certificate);
-        if(child!=="DEAD_END")return child;
+        if(typeof child === "object") {
+          if(child.targetDepth !== position + 1)return child;
+        } else if(child!=="DEAD_END")return child;
         descriptors.pop(); evidence.backtracks+=1;
       }
       if (forcedTaskId !== undefined) evidence.forcedMainSingletonDeadEnds += 1;
@@ -1316,6 +1321,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(residual.outcome==="BUDGET_EXHAUSTED")return residual.outcome;
       if(residual.outcome==="FOUND"){
         const child=assignMains(runEnd,witnessPlaced,witnessUsed,witnessCohort,residual.certificate);
+        if(typeof child === "object") {
+          if(child.targetDepth<=depth)return child;
+          const target=runAssignments.find(([,position])=>position===child.targetDepth-1);
+          descriptors.length=descriptorBase;
+          if(target){evidence.mainRunWitnessRepairs++;enqueueForbidden(forbidden,edgeKey(target[0],target[1]));}
+          continue;
+        }
         if(child!=="DEAD_END")return child;
       }
       descriptors.length=descriptorBase;

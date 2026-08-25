@@ -156,6 +156,37 @@ test("secondary feasibility runs only after the accumulating core cohort is clos
   assert.deepEqual(result.scheduledTasks, []);
 });
 
+test("a current feeder blocker is repaired locally instead of producing an unsound causal backjump", () => {
+  const input = problem([auxiliary("standalone-a", "a", [{ start:60, end:70 }])]);
+  const availability=[{start:0,end:120}];
+  input.participants=input.participants.filter(({id})=>id!=="core"&&id!=="a"&&id!=="b");
+  input.participants.push({id:"a",availability},{id:"b",availability});
+  input.spaces=input.spaces.filter(({id})=>id!=="vocal");
+  input.spaces.push({id:"feed",availability});
+  input.tasks=input.tasks.filter(({id})=>id!=="main"&&id!=="vocal");
+  input.tasks.push(
+    {id:"feeder-a",kind:"vocal",participantId:"a",coachId:"coach",duration:10,spaceId:"feed",dependencies:[]},
+    {id:"b-main-a",kind:"main",participantId:"a",coachId:"coach",duration:10,spaceId:"main",
+      dependencies:["feeder-a"],blockKey:"coach",availability:[{start:80,end:90}]},
+    {id:"feeder-b",kind:"vocal",participantId:"b",coachId:"coach",duration:10,spaceId:"feed",dependencies:[]},
+    {id:"a-main-b",kind:"main",participantId:"b",coachId:"coach",duration:10,spaceId:"main",
+      dependencies:["feeder-b"],blockKey:"coach",availability:[{start:90,end:100}]},
+  );
+  input.mainFlow.preferredEnd=100;
+  const result=runExactItinerantPlanSearch(input,{causalDiagnostic:true});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="feeder-b")!.start,60);
+  assert.equal(result.scheduledTasks.find(({id})=>id==="feeder-a")!.start,70);
+  assert.equal(result.scheduledTasks.find(({id})=>id==="standalone-a")!.start,60);
+  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
+  const rejected=result.evidence.causalDiagnostic!.futureFeasibility.assessments
+    .find(row=>row.taskId==="standalone-a"&&row.domainEmpty);
+  assert.equal(rejected?.certifiedBackjumpTargetDepth,null);
+  assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
+  assert.deepEqual(runExactItinerantPlanSearch(structuredClone(input)),
+    {...result,evidence:{...result.evidence,causalDiagnostic:null}});
+});
+
 test("zero alternatives are infeasible and failures publish no partial core", () => {
   const input = problem([auxiliary("impossible", "a", [{ start: 0, end: 5 }])]);
   const result = constructExactItinerantPlan(input);
