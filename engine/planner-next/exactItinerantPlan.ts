@@ -811,14 +811,21 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):number|null=>{
     const blockers=staticDomain.eligibleStartCount>0&&dynamicDomain.eligibleStartCount===0
       ?candidate.tasks.filter(other=>tasksCanAffectEachOther(task,other)).map(({id})=>id).sort():[];
+    const locallyReconfigurableFeederIds=new Set(candidate.addedTasks
+      .filter(({kind})=>kind==="vocal").map(({id})=>id));
+    const ancestralTasks=candidate.tasks.filter(({id})=>!locallyReconfigurableFeederIds.has(id));
+    const feederIndependentEmpty=blockers.length>0
+      &&standaloneForwardDynamicDomain(problem,task,ancestralTasks,staticDomain).eligibleStartCount===0;
+    const attributableBlockers=feederIndependentEmpty
+      ?ancestralTasks.filter(other=>tasksCanAffectEachOther(task,other)).map(({id})=>id).sort():[];
     const mains=candidate.tasks.filter(({kind})=>kind==="main");
     const contracts=problem.anchoredAccompaniments??[];
     const blockerDepth=(id:string):number|null=>{const blocker=candidate.tasks.find(task=>task.id===id);if(!blocker)return null;
       const mainId=blocker.kind==="main"?blocker.id:mains.find(main=>main.dependencies.includes(id))?.id
         ??contracts.find(contract=>[...contract.beforeTaskIds,...contract.afterTaskIds].includes(id))?.anchorTaskId;
       const index=mains.findIndex(main=>main.id===mainId);return index<0?null:index+1;};
-    const depths=blockers.map(blockerDepth).filter((depth):depth is number=>depth!==null).sort((a,b)=>a-b);
-    const target=blockers.length>0&&depths.length===blockers.length?Math.max(...depths):null;
+    const depths=attributableBlockers.map(blockerDepth).filter((depth):depth is number=>depth!==null).sort((a,b)=>a-b);
+    const target=attributableBlockers.length>0&&depths.length===attributableBlockers.length?Math.max(...depths):null;
     const certified=target!==null&&target<candidate.depth?target:null;
     if(!options.causalDiagnostic)return certified;
     const authoritySignature=standaloneForwardAuthoritySignature(problem,task,candidate.tasks,candidate.meals,staticDomain,options.standaloneForwardStartDomainMode??"STATIC_DOMAIN");
