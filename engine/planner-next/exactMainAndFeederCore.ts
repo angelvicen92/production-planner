@@ -105,7 +105,16 @@ export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:st
 export interface ExactFutureFeasibilityCausalAssessment { depth:number; taskId:string; authoritySignature:string; resultSignature:string; domainEmpty:boolean; eligibleStartCount:number; blockers:string[]; ancestralDecisionDepths:number[]; certifiedBackjumpTargetDepth:number|null; occurrences:number }
 export interface ExactFutureFeasibilityAuthorityCollision { depth:number; taskId:string; authoritySignature:string; resultSignatures:string[] }
 export interface ExactFutureFeasibilityCausalSummary { totalEvaluations:number; uniqueAuthorityStates:number; repeatedEvaluations:number; authorityResultCollisions:number; negativeEvaluations:number; repeatedNegativeEvaluations:number; rejectsWithCertifiedBackjumpTarget:number; evaluationsByDepth:Record<string,number>; repeatedByDepth:Record<string,number>; negativeByDepth:Record<string,number>; assessments:ExactFutureFeasibilityCausalAssessment[]; collisions:ExactFutureFeasibilityAuthorityCollision[] }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; futureFeasibility:ExactFutureFeasibilityCausalSummary }
+export interface ExactFailingFeederFrontier {
+  depth:number; pattern:string[]; timelineKey:string|null; fingerprint:string;
+  placedTasks:ScheduledTask[]; currentRun:{blockKey:string;coachId:string|null;mainTaskIds:string[];participantIds:string[]};
+  feeders:Array<{taskId:string;mainTaskId:string;participantId:string|null;duration:number;deadline:number;
+    domainBeforeDynamic:{gridAnchor:number;fullGridStartCount:number};remainingDomain:{eligibleStartCount:number;intervals:ExactFeederStartInterval[]};
+    blockers:Array<{reason:"OVERLAP_COACH"|"TRANSITION_COACH";blockingPlacedTaskId:string;blockingDecisionDepth:number|null;blockingDecisionMainTaskId:string|null;startsEliminated:number}>}>;
+  mainChoicesReachingClosure:number;mainChoicesWithValidFeeder:number;
+  feederSlotCertificate:FeederCohortRelaxedCertificate;
+}
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; deepestFailingFeederFrontier:ExactFailingFeederFrontier|null; futureFeasibility:ExactFutureFeasibilityCausalSummary }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -548,7 +557,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]}}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],deepestFailingFeederFrontier:null,futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]}}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
@@ -772,17 +781,38 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if (feederRow) feederRow.mainChoicesReachingFeeder++;
         const certificate=deriveFeederCohortRelaxedCertificate(problem,
           rankedCohort.map(({choice,deadline})=>({task:choice.feeder,deadline})),[...blockPlaced,...blockOperations]);
+        const recordFailingFeederFrontier=():void=>{
+          if(!diagnostic)return;
+          const previous=diagnostic.deepestFailingFeederFrontier;
+          if(previous&&runEnd<previous.depth)return;
+          const placedTasks=[...blockPlaced,...blockOperations].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+          const candidateFingerprint=[pattern.join(","),timelineKey??"",...placedTasks.map(task=>`${task.id}@${task.start}-${task.end}`),
+            ...rankedCohort.map(({choice})=>choice.feeder.id)].join("|");
+          if(previous&&runEnd===previous.depth&&candidateFingerprint>=previous.fingerprint)return;
+          const candidate:ExactFailingFeederFrontier={depth:runEnd,pattern:[...pattern],timelineKey,
+            fingerprint:candidateFingerprint,
+            placedTasks,currentRun:{blockKey:pattern[depth]!,coachId:rankedCohort[0]?.choice.feeder.coachId??null,
+              mainTaskIds:cohort.map(({task})=>task.id),participantIds:cohort.map(({task})=>task.participantId!).filter(Boolean)},
+            feeders:rankedCohort.map(({choice,deadline,domain})=>({taskId:choice.feeder.id,mainTaskId:choice.task.id,
+              participantId:choice.task.participantId??null,duration:choice.feeder.duration,deadline,
+              domainBeforeDynamic:{gridAnchor:domain.gridAnchor,fullGridStartCount:domain.fullGridStartCount},
+              remainingDomain:{eligibleStartCount:domain.eligibleStartCount,intervals:domain.intervals.map(interval=>({...interval}))},
+              blockers:domain.eliminations.map(elimination=>{const prior=introducedBy(elimination.blockingPlacedTaskId,placedTasks);return {...elimination,
+                blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId};})})),
+            mainChoicesReachingClosure:cohortCandidatesExplored,mainChoicesWithValidFeeder:0,feederSlotCertificate:certificate};
+          diagnostic.deepestFailingFeederFrontier=candidate;
+        };
         if(certificate.applicable){
           evidence.feederCohortCapacityChecks++;
           evidence.feederCohortEddChecks++;
-          if(certificate.prefixCapacityImpossible){evidence.feederCohortPrefixCapacityPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
+          if(certificate.prefixCapacityImpossible){recordFailingFeederFrontier();evidence.feederCohortPrefixCapacityPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
         }
         const unboundedBlockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain));
         const maximumStart=certificate.latestFeasibleBlockStart??latestBlockStart;
         const eddBlockStartDomain=exactFeederStartDomainUnion(problem.day.start,latestBlockStart,rankedCohort.map(({domain})=>domain),maximumStart);
         if(certificate.applicable){
           evidence.blockStartsEliminatedByCohortBound+=unboundedBlockStartDomain.eligibleStartCount-eddBlockStartDomain.eligibleStartCount;
-          if(eddBlockStartDomain.eligibleStartCount===0){evidence.feederCohortEddEmptyPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
+          if(eddBlockStartDomain.eligibleStartCount===0){recordFailingFeederFrontier();evidence.feederCohortEddEmptyPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
         }
         const commonCoachId=rankedCohort[0]?.choice.feeder.coachId;
         const contiguousSkippedByTransition=certificate.applicable&&commonCoachId!==undefined&&rankedCohort.some((left,leftIndex)=>
@@ -799,7 +829,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           :eddBlockStartDomain;
         if(contiguousApplicable){
           evidence.blockStartsEliminatedByContiguousWindowBound+=eddBlockStartDomain.eligibleStartCount-blockStartDomain.eligibleStartCount;
-          if(blockStartDomain.eligibleStartCount===0){evidence.feederCohortContiguousWindowPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
+          if(blockStartDomain.eligibleStartCount===0){recordFailingFeederFrontier();evidence.feederCohortContiguousWindowPrunes++;evidence.zeroAlternativePrunes++;return "DEAD_END";}
         }
         if(feederRow){feederRow.startsConsidered+=blockStartDomain.fullGridStartCount;
           feederRow.startsCoachEliminated+=unboundedBlockStartDomain.domainEliminatedStartCount;}
@@ -1076,7 +1106,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if(feederRow){if(completeOrderAtStart)feederRow.valid++;else feederRow.invalid++;}
           if(orderBudgetExhausted)return "BUDGET_EXHAUSTED";
         }
-        if(!validBlockFound)evidence.zeroAlternativePrunes++;
+        if(!validBlockFound){recordFailingFeederFrontier();evidence.zeroAlternativePrunes++;}
         return "DEAD_END";
       }
 

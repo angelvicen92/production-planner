@@ -14,6 +14,8 @@ import { EXPECTED_COACH_BY_PARTICIPANT } from "./focal-a2/full-day/manifest";
 
 const PLAN_ID = 27001;
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
+const STRUCTURAL_TRACE_PATH = "docs/evidence/A2-FULL-EXEC-002-structural-frontier-trace.json";
+const SOURCE_MAIN_SHA = "da8f594165d906f19bdd1120156b7894c60803ef";
 const branchBudgetOverride = process.env.PLANNER_NEXT_FULL_A2_BRANCH_BUDGET;
 const branchBudget = branchBudgetOverride === undefined ? 300_000 : Number(branchBudgetOverride);
 if (!Number.isSafeInteger(branchBudget) || branchBudget <= 0)
@@ -36,6 +38,20 @@ const itinerantUnitId = new Map(expansion.itinerantUnits.map((unit, index) => [u
 const taskId = new Map(expansion.tasks.map((task, index) => [task.id, 10001 + index] as const));
 const templateId = new Map([...new Set(expansion.tasks.map((task) => task.type))].sort().map((type, index) => [type, 20001 + index] as const));
 const zoneId = new Map(expansion.spaces.map((space, index) => [space.id, 6001 + index] as const));
+const invert = (values:Map<string,number>,...prefixes:string[]):Map<string,string> => new Map([...values].flatMap(([canonical,numeric])=>prefixes.map(prefix=>[`${prefix}:${numeric}`,canonical] as const)));
+const canonicalTaskByInternal=invert(taskId,"task");
+const canonicalParticipantByInternal=invert(participantId,"participant");
+const canonicalSpaceByInternal=invert(spaceId,"space","plan-space");
+const canonicalResourceByInternal=invert(resourceId,"resource","plan-resource");
+const expandedTaskById=new Map(expansion.tasks.map(task=>[task.id,task]));
+const readableTask=(task:{id:string;participantId?:string|null;coachId?:string|null;spaceId:string;start:number;end:number;kind:string})=>{
+  const canonicalTaskId=canonicalTaskByInternal.get(task.id)??null;
+  const source=canonicalTaskId?expandedTaskById.get(canonicalTaskId):undefined;
+  return {internalId:task.id,canonicalA2Id:canonicalTaskId,type:source?.type??null,
+    participant:task.participantId?canonicalParticipantByInternal.get(task.participantId)??task.participantId:null,
+    coach:task.coachId?canonicalResourceByInternal.get(task.coachId)??task.coachId:null,
+    space:canonicalSpaceByInternal.get(task.spaceId)??task.spaceId,start:task.start,end:task.end,kind:task.kind};
+};
 
 const tasks: TaskInput[] = expansion.tasks.map((task) => {
   const participant = task.participantId ? participantId.get(task.participantId)! : null;
@@ -224,6 +240,31 @@ const diagnosticReport = diagnostic ? {
   recommendation,
 } : null;
 
+const closed=exactResult?.evidence.deepestClosedFrontier??null;
+const failing=diagnostic?.deepestFailingFeederFrontier??null;
+const readableId=(id:string|null):string|null=>id===null?null:canonicalTaskByInternal.get(id)??id;
+const readableClosed=closed?{depth:closed.depth,pattern:closed.pattern,timelineKey:closed.timelineKey,
+  tasks:closed.tasks.map(readableTask),addedTasks:closed.addedTasks.map(readableTask),runs:closed.runs.map(run=>({
+    ...run,coach:run.coachId?canonicalResourceByInternal.get(run.coachId)??run.coachId:null,
+    mains:run.mainTaskIds.map(id=>canonicalTaskByInternal.get(id)??id),feeders:run.feederTaskIds.map(id=>canonicalTaskByInternal.get(id)??id),
+  }))}:null;
+const readableFailing=failing?{...failing,placedTasks:failing.placedTasks.map(readableTask),currentRun:{...failing.currentRun,
+  coach:failing.currentRun.coachId?canonicalResourceByInternal.get(failing.currentRun.coachId)??failing.currentRun.coachId:null,
+  mainTaskIds:failing.currentRun.mainTaskIds.map(id=>canonicalTaskByInternal.get(id)??id),
+  participantIds:failing.currentRun.participantIds.map(id=>canonicalParticipantByInternal.get(id)??id)},feeders:failing.feeders.map(feeder=>({
+    ...feeder,taskId:readableId(feeder.taskId),mainTaskId:readableId(feeder.mainTaskId),
+    participantId:feeder.participantId?canonicalParticipantByInternal.get(feeder.participantId)??feeder.participantId:null,
+    blockers:feeder.blockers.map(blocker=>({...blocker,blockingPlacedTaskId:readableId(blocker.blockingPlacedTaskId),
+      blockingDecisionMainTaskId:readableId(blocker.blockingDecisionMainTaskId)}))}))}:null;
+const blockerSummary=failing?Object.entries(failing.feeders.flatMap(feeder=>feeder.blockers).reduce<Record<string,{count:number;startsEliminated:number}>>((summary,blocker)=>{
+  const key=`${blocker.reason}|${readableId(blocker.blockingPlacedTaskId)}`;const row=summary[key]??={count:0,startsEliminated:0};row.count++;row.startsEliminated+=blocker.startsEliminated;summary[key]=row;return summary;
+},{})).map(([key,value])=>{const [reason,blockingPlacedTaskId]=key.split("|");return {reason,blockingPlacedTaskId,...value};})
+  .sort((a,b)=>b.startsEliminated-a.startsEliminated||a.blockingPlacedTaskId.localeCompare(b.blockingPlacedTaskId)):[];
+const structuralTrace={evidenceId:"A2-FULL-EXEC-002-structural-frontier-trace",sourceMainSha:SOURCE_MAIN_SHA,branchBudget,
+  execution:{status:exactResult?.status??null,complete:exactResult?.complete??false,branchesExplored:exactResult?.evidence.branchesExplored??0,
+    coreMaximumDepth:exactResult?.evidence.coreMaximumDepth??0,resultFingerprint:exactResult?.evidence.fullFingerprint??null},
+  deepestClosedFrontier:readableClosed,deepestFailingFeederFrontier:readableFailing,causalBlockerSummary:blockerSummary};
+
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
   canonicalObligationCount: expansion.tasks.length,
@@ -270,4 +311,5 @@ const evidence = {
 };
 
 writeStable(EVIDENCE_PATH, evidence);
+writeStable(STRUCTURAL_TRACE_PATH,structuralTrace);
 console.log(JSON.stringify(evidence));

@@ -1,0 +1,1457 @@
+{
+  "evidenceId": "A2-FULL-EXEC-002-structural-frontier-trace",
+  "sourceMainSha": "da8f594165d906f19bdd1120156b7894c60803ef",
+  "branchBudget": 300000,
+  "execution": {
+    "status": "BRANCH_BUDGET_EXHAUSTED",
+    "complete": false,
+    "branchesExplored": 300000,
+    "coreMaximumDepth": 14,
+    "resultFingerprint": null
+  },
+  "deepestClosedFrontier": {
+    "depth": 8,
+    "pattern": [
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004"
+    ],
+    "timelineKey": null,
+    "tasks": [
+      {
+        "internalId": "task:10108",
+        "canonicalA2Id": "C08.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C08",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 545,
+        "end": 560,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10138",
+        "canonicalA2Id": "C10.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C10",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 560,
+        "end": 575,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10063",
+        "canonicalA2Id": "C05.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C05",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 575,
+        "end": 590,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10210",
+        "canonicalA2Id": "C15.prueba_vocal_lucia",
+        "type": "PRUEBA_VOCAL_LUCIA",
+        "participant": "C15",
+        "coach": "coach-lucia",
+        "space": "caracola-lucia",
+        "start": 580,
+        "end": 595,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10249",
+        "canonicalA2Id": "C18.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C18",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 590,
+        "end": 605,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10197",
+        "canonicalA2Id": "C14.prueba_vocal_lucia",
+        "type": "PRUEBA_VOCAL_LUCIA",
+        "participant": "C14",
+        "coach": "coach-lucia",
+        "space": "caracola-lucia",
+        "start": 595,
+        "end": 610,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10236",
+        "canonicalA2Id": "C17.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C17",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 605,
+        "end": 620,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10262",
+        "canonicalA2Id": "C19.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C19",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 620,
+        "end": 635,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10203",
+        "canonicalA2Id": "C15.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C15",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 640,
+        "end": 655,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10190",
+        "canonicalA2Id": "C14.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C14",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 655,
+        "end": 670,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10256",
+        "canonicalA2Id": "C19.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C19",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 670,
+        "end": 685,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10131",
+        "canonicalA2Id": "C10.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C10",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 685,
+        "end": 700,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10243",
+        "canonicalA2Id": "C18.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C18",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 700,
+        "end": 715,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10109",
+        "canonicalA2Id": "C08.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C08",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 715,
+        "end": 730,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10229",
+        "canonicalA2Id": "C17.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C17",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 715,
+        "end": 730,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10064",
+        "canonicalA2Id": "C05.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C05",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 730,
+        "end": 745,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10102",
+        "canonicalA2Id": "C08.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C08",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 730,
+        "end": 745,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10056",
+        "canonicalA2Id": "C05.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C05",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 745,
+        "end": 760,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10110",
+        "canonicalA2Id": "C08.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C08",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 745,
+        "end": 760,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10065",
+        "canonicalA2Id": "C05.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C05",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 760,
+        "end": 775,
+        "kind": "auxiliary"
+      }
+    ],
+    "addedTasks": [
+      {
+        "internalId": "task:10108",
+        "canonicalA2Id": "C08.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C08",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 545,
+        "end": 560,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10138",
+        "canonicalA2Id": "C10.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C10",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 560,
+        "end": 575,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10063",
+        "canonicalA2Id": "C05.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C05",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 575,
+        "end": 590,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10249",
+        "canonicalA2Id": "C18.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C18",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 590,
+        "end": 605,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10236",
+        "canonicalA2Id": "C17.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C17",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 605,
+        "end": 620,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10262",
+        "canonicalA2Id": "C19.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C19",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 620,
+        "end": 635,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10256",
+        "canonicalA2Id": "C19.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C19",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 670,
+        "end": 685,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10131",
+        "canonicalA2Id": "C10.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C10",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 685,
+        "end": 700,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10243",
+        "canonicalA2Id": "C18.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C18",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 700,
+        "end": 715,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10109",
+        "canonicalA2Id": "C08.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C08",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 715,
+        "end": 730,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10229",
+        "canonicalA2Id": "C17.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C17",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 715,
+        "end": 730,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10064",
+        "canonicalA2Id": "C05.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C05",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 730,
+        "end": 745,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10102",
+        "canonicalA2Id": "C08.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C08",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 730,
+        "end": 745,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10056",
+        "canonicalA2Id": "C05.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C05",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 745,
+        "end": 760,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10110",
+        "canonicalA2Id": "C08.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C08",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 745,
+        "end": 760,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10065",
+        "canonicalA2Id": "C05.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C05",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 760,
+        "end": 775,
+        "kind": "auxiliary"
+      }
+    ],
+    "runs": [
+      {
+        "blockKey": "plan-resource:4005",
+        "coachId": "plan-resource:4005",
+        "mainTaskIds": [
+          "task:10203",
+          "task:10190"
+        ],
+        "feederTaskIds": [
+          "task:10210",
+          "task:10197"
+        ],
+        "start": 580,
+        "end": 670,
+        "coach": "coach-lucia",
+        "mains": [
+          "C15.ensayo_estudio_7",
+          "C14.ensayo_estudio_7"
+        ],
+        "feeders": [
+          "C15.prueba_vocal_lucia",
+          "C14.prueba_vocal_lucia"
+        ]
+      },
+      {
+        "blockKey": "plan-resource:4004",
+        "coachId": "plan-resource:4004",
+        "mainTaskIds": [
+          "task:10256",
+          "task:10131",
+          "task:10243",
+          "task:10229",
+          "task:10102",
+          "task:10056"
+        ],
+        "feederTaskIds": [
+          "task:10108",
+          "task:10138",
+          "task:10063",
+          "task:10249",
+          "task:10236",
+          "task:10262"
+        ],
+        "start": 545,
+        "end": 760,
+        "coach": "coach-jose-maria",
+        "mains": [
+          "C19.ensayo_estudio_7",
+          "C10.ensayo_estudio_7",
+          "C18.ensayo_estudio_7",
+          "C17.ensayo_estudio_7",
+          "C08.ensayo_estudio_7",
+          "C05.ensayo_estudio_7"
+        ],
+        "feeders": [
+          "C08.prueba_vocal_jose_maria",
+          "C10.prueba_vocal_jose_maria",
+          "C05.prueba_vocal_jose_maria",
+          "C18.prueba_vocal_jose_maria",
+          "C17.prueba_vocal_jose_maria",
+          "C19.prueba_vocal_jose_maria"
+        ]
+      }
+    ]
+  },
+  "deepestFailingFeederFrontier": {
+    "depth": 14,
+    "pattern": [
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4005",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004",
+      "plan-resource:4004"
+    ],
+    "timelineKey": null,
+    "fingerprint": "plan-resource:4005,plan-resource:4005,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004||task:10063@545-560|task:10108@560-575|task:10138@575-590|task:10210@580-595|task:10236@590-605|task:10197@595-610|task:10249@605-620|task:10262@620-635|task:10203@640-655|task:10190@655-670|task:10256@670-685|task:10131@685-700|task:10243@700-715|task:10109@715-730|task:10229@715-730|task:10064@730-745|task:10102@730-745|task:10056@745-760|task:10110@745-760|task:10065@760-775|task:10175@760-775|task:10175@760-775|task:10161@775-790|task:10161@775-790|task:10010@790-805|task:10010@790-805|task:10043@790-805|task:10043@790-805|task:10002@805-820|task:10002@805-820|task:10011@820-835|task:10011@820-835|task:10031@820-835|task:10031@820-835|task:10017@835-850|task:10017@835-850|task:10009|task:10024|task:10037|task:10050|task:10168|task:10183",
+    "placedTasks": [
+      {
+        "internalId": "task:10063",
+        "canonicalA2Id": "C05.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C05",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 545,
+        "end": 560,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10108",
+        "canonicalA2Id": "C08.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C08",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 560,
+        "end": 575,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10138",
+        "canonicalA2Id": "C10.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C10",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 575,
+        "end": 590,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10210",
+        "canonicalA2Id": "C15.prueba_vocal_lucia",
+        "type": "PRUEBA_VOCAL_LUCIA",
+        "participant": "C15",
+        "coach": "coach-lucia",
+        "space": "caracola-lucia",
+        "start": 580,
+        "end": 595,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10236",
+        "canonicalA2Id": "C17.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C17",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 590,
+        "end": 605,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10197",
+        "canonicalA2Id": "C14.prueba_vocal_lucia",
+        "type": "PRUEBA_VOCAL_LUCIA",
+        "participant": "C14",
+        "coach": "coach-lucia",
+        "space": "caracola-lucia",
+        "start": 595,
+        "end": 610,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10249",
+        "canonicalA2Id": "C18.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C18",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 605,
+        "end": 620,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10262",
+        "canonicalA2Id": "C19.prueba_vocal_jose_maria",
+        "type": "PRUEBA_VOCAL_JOSE_MARIA",
+        "participant": "C19",
+        "coach": "coach-jose-maria",
+        "space": "caracola-jose-maria",
+        "start": 620,
+        "end": 635,
+        "kind": "vocal"
+      },
+      {
+        "internalId": "task:10203",
+        "canonicalA2Id": "C15.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C15",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 640,
+        "end": 655,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10190",
+        "canonicalA2Id": "C14.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C14",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 655,
+        "end": 670,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10256",
+        "canonicalA2Id": "C19.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C19",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 670,
+        "end": 685,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10131",
+        "canonicalA2Id": "C10.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C10",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 685,
+        "end": 700,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10243",
+        "canonicalA2Id": "C18.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C18",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 700,
+        "end": 715,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10109",
+        "canonicalA2Id": "C08.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C08",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 715,
+        "end": 730,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10229",
+        "canonicalA2Id": "C17.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C17",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 715,
+        "end": 730,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10064",
+        "canonicalA2Id": "C05.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C05",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 730,
+        "end": 745,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10102",
+        "canonicalA2Id": "C08.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C08",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 730,
+        "end": 745,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10056",
+        "canonicalA2Id": "C05.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C05",
+        "coach": "coach-jose-maria",
+        "space": "estudio-7",
+        "start": 745,
+        "end": 760,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10110",
+        "canonicalA2Id": "C08.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C08",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 745,
+        "end": 760,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10065",
+        "canonicalA2Id": "C05.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C05",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 760,
+        "end": 775,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10175",
+        "canonicalA2Id": "C13.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C13",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 760,
+        "end": 775,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10175",
+        "canonicalA2Id": "C13.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C13",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 760,
+        "end": 775,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10161",
+        "canonicalA2Id": "C12.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C12",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 775,
+        "end": 790,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10161",
+        "canonicalA2Id": "C12.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C12",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 775,
+        "end": 790,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10010",
+        "canonicalA2Id": "C01.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C01",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 790,
+        "end": 805,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10010",
+        "canonicalA2Id": "C01.reality_plato_antes",
+        "type": "REALITY_PLATO_ANTES",
+        "participant": "C01",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 790,
+        "end": 805,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10043",
+        "canonicalA2Id": "C04.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C04",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 790,
+        "end": 805,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10043",
+        "canonicalA2Id": "C04.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C04",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 790,
+        "end": 805,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10002",
+        "canonicalA2Id": "C01.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C01",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 805,
+        "end": 820,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10002",
+        "canonicalA2Id": "C01.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C01",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 805,
+        "end": 820,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10011",
+        "canonicalA2Id": "C01.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C01",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 820,
+        "end": 835,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10011",
+        "canonicalA2Id": "C01.reality_plato_despues",
+        "type": "REALITY_PLATO_DESPUES",
+        "participant": "C01",
+        "coach": null,
+        "space": "reality-plato",
+        "start": 820,
+        "end": 835,
+        "kind": "auxiliary"
+      },
+      {
+        "internalId": "task:10031",
+        "canonicalA2Id": "C03.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C03",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 820,
+        "end": 835,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10031",
+        "canonicalA2Id": "C03.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C03",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 820,
+        "end": 835,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10017",
+        "canonicalA2Id": "C02.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C02",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 835,
+        "end": 850,
+        "kind": "main"
+      },
+      {
+        "internalId": "task:10017",
+        "canonicalA2Id": "C02.ensayo_estudio_7",
+        "type": "ENSAYO_ESTUDIO_7",
+        "participant": "C02",
+        "coach": "coach-lucia",
+        "space": "estudio-7",
+        "start": 835,
+        "end": 850,
+        "kind": "main"
+      }
+    ],
+    "currentRun": {
+      "blockKey": "plan-resource:4005",
+      "coachId": "plan-resource:4005",
+      "mainTaskIds": [
+        "C13.ensayo_estudio_7",
+        "C12.ensayo_estudio_7",
+        "C04.ensayo_estudio_7",
+        "C01.ensayo_estudio_7",
+        "C03.ensayo_estudio_7",
+        "C02.ensayo_estudio_7"
+      ],
+      "participantIds": [
+        "C13",
+        "C12",
+        "C04",
+        "C01",
+        "C03",
+        "C02"
+      ],
+      "coach": "coach-lucia"
+    },
+    "feeders": [
+      {
+        "taskId": "C01.prueba_vocal_lucia",
+        "mainTaskId": "C01.ensayo_estudio_7",
+        "participantId": "C01",
+        "duration": 15,
+        "deadline": 760,
+        "domainBeforeDynamic": {
+          "gridAnchor": 790,
+          "fullGridStartCount": 42
+        },
+        "remainingDomain": {
+          "eligibleStartCount": 16,
+          "intervals": [
+            {
+              "start": 540,
+              "end": 565
+            },
+            {
+              "start": 670,
+              "end": 715
+            }
+          ]
+        },
+        "blockers": [
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          }
+        ]
+      },
+      {
+        "taskId": "C02.prueba_vocal_lucia",
+        "mainTaskId": "C02.ensayo_estudio_7",
+        "participantId": "C02",
+        "duration": 15,
+        "deadline": 805,
+        "domainBeforeDynamic": {
+          "gridAnchor": 790,
+          "fullGridStartCount": 51
+        },
+        "remainingDomain": {
+          "eligibleStartCount": 16,
+          "intervals": [
+            {
+              "start": 540,
+              "end": 565
+            },
+            {
+              "start": 670,
+              "end": 715
+            }
+          ]
+        },
+        "blockers": [
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C12.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 11,
+            "blockingDecisionMainTaskId": "C12.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C04.ensayo_estudio_7",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 13,
+            "blockingDecisionMainTaskId": "C04.ensayo_estudio_7"
+          }
+        ]
+      },
+      {
+        "taskId": "C03.prueba_vocal_lucia",
+        "mainTaskId": "C03.ensayo_estudio_7",
+        "participantId": "C03",
+        "duration": 15,
+        "deadline": 790,
+        "domainBeforeDynamic": {
+          "gridAnchor": 790,
+          "fullGridStartCount": 48
+        },
+        "remainingDomain": {
+          "eligibleStartCount": 16,
+          "intervals": [
+            {
+              "start": 540,
+              "end": 565
+            },
+            {
+              "start": 670,
+              "end": 715
+            }
+          ]
+        },
+        "blockers": [
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C12.ensayo_estudio_7",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 11,
+            "blockingDecisionMainTaskId": "C12.ensayo_estudio_7"
+          }
+        ]
+      },
+      {
+        "taskId": "C04.prueba_vocal_lucia",
+        "mainTaskId": "C04.ensayo_estudio_7",
+        "participantId": "C04",
+        "duration": 15,
+        "deadline": 760,
+        "domainBeforeDynamic": {
+          "gridAnchor": 790,
+          "fullGridStartCount": 42
+        },
+        "remainingDomain": {
+          "eligibleStartCount": 16,
+          "intervals": [
+            {
+              "start": 540,
+              "end": 565
+            },
+            {
+              "start": 670,
+              "end": 715
+            }
+          ]
+        },
+        "blockers": [
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          }
+        ]
+      },
+      {
+        "taskId": "C12.prueba_vocal_lucia",
+        "mainTaskId": "C12.ensayo_estudio_7",
+        "participantId": "C12",
+        "duration": 15,
+        "deadline": 745,
+        "domainBeforeDynamic": {
+          "gridAnchor": 790,
+          "fullGridStartCount": 39
+        },
+        "remainingDomain": {
+          "eligibleStartCount": 16,
+          "intervals": [
+            {
+              "start": 540,
+              "end": 565
+            },
+            {
+              "start": 670,
+              "end": 715
+            }
+          ]
+        },
+        "blockers": [
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 9,
+            "blockingDecisionMainTaskId": "C13.ensayo_estudio_7"
+          }
+        ]
+      },
+      {
+        "taskId": "C13.prueba_vocal_lucia",
+        "mainTaskId": "C13.ensayo_estudio_7",
+        "participantId": "C13",
+        "duration": 15,
+        "deadline": 730,
+        "domainBeforeDynamic": {
+          "gridAnchor": 790,
+          "fullGridStartCount": 36
+        },
+        "remainingDomain": {
+          "eligibleStartCount": 16,
+          "intervals": [
+            {
+              "start": 540,
+              "end": 565
+            },
+            {
+              "start": 670,
+              "end": 715
+            }
+          ]
+        },
+        "blockers": [
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+            "startsEliminated": 6,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+            "startsEliminated": 5,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "C15.ensayo_estudio_7"
+          },
+          {
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 2,
+            "blockingDecisionMainTaskId": "C14.ensayo_estudio_7"
+          }
+        ]
+      }
+    ],
+    "mainChoicesReachingClosure": 6,
+    "mainChoicesWithValidFeeder": 0,
+    "feederSlotCertificate": {
+      "applicable": true,
+      "prefixCapacityImpossible": false,
+      "latestFeasibleBlockStart": 700,
+      "contiguousBlockStartIntervals": [
+        {
+          "start": 670,
+          "end": 670
+        },
+        {
+          "start": 850,
+          "end": 1170
+        }
+      ]
+    }
+  },
+  "causalBlockerSummary": [
+    {
+      "reason": "TRANSITION_COACH",
+      "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+      "count": 6,
+      "startsEliminated": 36
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C15.ensayo_estudio_7",
+      "count": 6,
+      "startsEliminated": 30
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C15.prueba_vocal_lucia",
+      "count": 6,
+      "startsEliminated": 30
+    },
+    {
+      "reason": "TRANSITION_COACH",
+      "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+      "count": 5,
+      "startsEliminated": 27
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C14.ensayo_estudio_7",
+      "count": 6,
+      "startsEliminated": 18
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C13.ensayo_estudio_7",
+      "count": 2,
+      "startsEliminated": 10
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C14.prueba_vocal_lucia",
+      "count": 6,
+      "startsEliminated": 6
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C12.ensayo_estudio_7",
+      "count": 2,
+      "startsEliminated": 4
+    },
+    {
+      "reason": "OVERLAP_COACH",
+      "blockingPlacedTaskId": "C04.ensayo_estudio_7",
+      "count": 1,
+      "startsEliminated": 1
+    }
+  ]
+}

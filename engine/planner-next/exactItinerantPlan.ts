@@ -113,6 +113,10 @@ export interface ExactItinerantPlanEvidence {
   deepestPartialFeederRunsClosed: number;
   deepestPartialCoreTasksRemaining: number;
   deepestPartialFrontierFingerprint: string | null;
+  deepestClosedFrontier: {
+    depth:number;pattern:string[];timelineKey:string|null;tasks:ScheduledTask[];addedTasks:ScheduledTask[];
+    runs:Array<{blockKey:string;coachId:string|null;mainTaskIds:string[];feederTaskIds:string[];start:number;end:number}>;
+  } | null;
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
@@ -753,7 +757,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
     coreMaximumDepth: 0, coreCompleteLeafCount: 0,deepestCoreDepthReached:0,
     deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
-    deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
+    deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,deepestClosedFrontier:null,architecturesChecked:0,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
@@ -857,6 +861,18 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       const scheduledIds=new Set(candidate.tasks.map(({id})=>id));
       evidence.deepestPartialCoreTasksRemaining=[...staticCoreIds].filter(id=>!scheduledIds.has(id)).length;
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
+      const tasks=[...candidate.tasks].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      const runs:Array<{blockKey:string;coachId:string|null;mainTaskIds:string[];feederTaskIds:string[];start:number;end:number}>=[];
+      let runStart=0;
+      while(runStart<candidate.depth){let runEnd=runStart+1;while(runEnd<candidate.depth&&candidate.pattern[runEnd]===candidate.pattern[runStart])runEnd++;
+        const mainTaskIds=tasks.filter(task=>task.kind==="main"&&candidate.pattern[runStart]===problem.tasks.find(source=>source.id===task.id)?.blockKey).map(({id})=>id);
+        const participants=new Set(mainTaskIds.map(id=>problem.tasks.find(task=>task.id===id)?.participantId));
+        const feederTaskIds=tasks.filter(task=>task.kind==="vocal"&&participants.has(problem.tasks.find(source=>source.id===task.id)?.participantId)).map(({id})=>id);
+        const members=tasks.filter(task=>mainTaskIds.includes(task.id)||feederTaskIds.includes(task.id));
+        runs.push({blockKey:candidate.pattern[runStart]!,coachId:members.find(task=>task.kind==="vocal")?.coachId??null,
+          mainTaskIds,feederTaskIds,start:Math.min(...members.map(({start})=>start)),end:Math.max(...members.map(({end})=>end))});runStart=runEnd;}
+      evidence.deepestClosedFrontier={depth:candidate.depth,pattern:[...candidate.pattern],timelineKey:candidate.timelineKey,tasks,
+        addedTasks:[...candidate.addedTasks].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)),runs};
     }
     if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>{const ok=ledger.consume("STANDALONE",count);if(ok&&options.causalDiagnostic)supplemental(candidate.depth).participantMeal+=count;return ok;}};const mealProbe=assessParticipantMealFutureFeasibility(problem,candidate.tasks,mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")?"BUDGET_EXHAUSTED":"REJECT";}}
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));

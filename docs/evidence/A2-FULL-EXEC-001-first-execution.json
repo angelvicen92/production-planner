@@ -574,6 +574,629 @@
       "deepestPartialFeederRunsClosed": 2,
       "deepestPartialCoreTasksRemaining": 24,
       "deepestPartialFrontierFingerprint": "0001f0775b3602740f07dd391b6ed036229f2bed9fe49393ea357ff6e516be60",
+      "deepestClosedFrontier": {
+        "depth": 8,
+        "pattern": [
+          "plan-resource:4005",
+          "plan-resource:4005",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4005",
+          "plan-resource:4005",
+          "plan-resource:4005",
+          "plan-resource:4005",
+          "plan-resource:4005",
+          "plan-resource:4005",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004",
+          "plan-resource:4004"
+        ],
+        "timelineKey": null,
+        "tasks": [
+          {
+            "id": "task:10108",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10105"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:208",
+            "coachId": "plan-resource:4004",
+            "start": 545,
+            "end": 560
+          },
+          {
+            "id": "task:10138",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10135"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:210",
+            "coachId": "plan-resource:4004",
+            "start": 560,
+            "end": 575
+          },
+          {
+            "id": "task:10063",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10060"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:205",
+            "coachId": "plan-resource:4004",
+            "start": 575,
+            "end": 590
+          },
+          {
+            "id": "task:10210",
+            "duration": 15,
+            "spaceId": "space:3003",
+            "dependencies": [
+              "task:10207"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:215",
+            "coachId": "plan-resource:4005",
+            "start": 580,
+            "end": 595
+          },
+          {
+            "id": "task:10249",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10246"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:218",
+            "coachId": "plan-resource:4004",
+            "start": 590,
+            "end": 605
+          },
+          {
+            "id": "task:10197",
+            "duration": 15,
+            "spaceId": "space:3003",
+            "dependencies": [
+              "task:10194"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:214",
+            "coachId": "plan-resource:4005",
+            "start": 595,
+            "end": 610
+          },
+          {
+            "id": "task:10236",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10233"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:217",
+            "coachId": "plan-resource:4004",
+            "start": 605,
+            "end": 620
+          },
+          {
+            "id": "task:10262",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10259"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:219",
+            "coachId": "plan-resource:4004",
+            "start": 620,
+            "end": 635
+          },
+          {
+            "id": "task:10203",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10204",
+              "task:10210"
+            ],
+            "kind": "main",
+            "participantId": "participant:215",
+            "coachId": "plan-resource:4005",
+            "blockKey": "plan-resource:4005",
+            "start": 640,
+            "end": 655
+          },
+          {
+            "id": "task:10190",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10191",
+              "task:10197"
+            ],
+            "kind": "main",
+            "participantId": "participant:214",
+            "coachId": "plan-resource:4005",
+            "blockKey": "plan-resource:4005",
+            "start": 655,
+            "end": 670
+          },
+          {
+            "id": "task:10256",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10257",
+              "task:10262"
+            ],
+            "kind": "main",
+            "participantId": "participant:219",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 670,
+            "end": 685
+          },
+          {
+            "id": "task:10131",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10132",
+              "task:10138"
+            ],
+            "kind": "main",
+            "participantId": "participant:210",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 685,
+            "end": 700
+          },
+          {
+            "id": "task:10243",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10244",
+              "task:10249"
+            ],
+            "kind": "main",
+            "participantId": "participant:218",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 700,
+            "end": 715
+          },
+          {
+            "id": "task:10109",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10103"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "itinerantUnitId": "itinerant-team:5001",
+            "kind": "auxiliary",
+            "participantId": "participant:208",
+            "start": 715,
+            "end": 730
+          },
+          {
+            "id": "task:10229",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10230",
+              "task:10236"
+            ],
+            "kind": "main",
+            "participantId": "participant:217",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 715,
+            "end": 730
+          },
+          {
+            "id": "task:10064",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10057"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "itinerantUnitId": "itinerant-team:5002",
+            "kind": "auxiliary",
+            "participantId": "participant:205",
+            "start": 730,
+            "end": 745
+          },
+          {
+            "id": "task:10102",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10103",
+              "task:10108",
+              "task:10109"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "itinerantUnitId": "itinerant-team:5001",
+            "kind": "main",
+            "participantId": "participant:208",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 730,
+            "end": 745
+          },
+          {
+            "id": "task:10056",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10057",
+              "task:10063",
+              "task:10064"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "itinerantUnitId": "itinerant-team:5002",
+            "kind": "main",
+            "participantId": "participant:205",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 745,
+            "end": 760
+          },
+          {
+            "id": "task:10110",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10102",
+              "task:10103"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "itinerantUnitId": "itinerant-team:5001",
+            "kind": "auxiliary",
+            "participantId": "participant:208",
+            "start": 745,
+            "end": 760
+          },
+          {
+            "id": "task:10065",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10056",
+              "task:10057"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "itinerantUnitId": "itinerant-team:5002",
+            "kind": "auxiliary",
+            "participantId": "participant:205",
+            "start": 760,
+            "end": 775
+          }
+        ],
+        "addedTasks": [
+          {
+            "id": "task:10108",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10105"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:208",
+            "coachId": "plan-resource:4004",
+            "start": 545,
+            "end": 560
+          },
+          {
+            "id": "task:10138",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10135"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:210",
+            "coachId": "plan-resource:4004",
+            "start": 560,
+            "end": 575
+          },
+          {
+            "id": "task:10063",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10060"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:205",
+            "coachId": "plan-resource:4004",
+            "start": 575,
+            "end": 590
+          },
+          {
+            "id": "task:10249",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10246"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:218",
+            "coachId": "plan-resource:4004",
+            "start": 590,
+            "end": 605
+          },
+          {
+            "id": "task:10236",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10233"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:217",
+            "coachId": "plan-resource:4004",
+            "start": 605,
+            "end": 620
+          },
+          {
+            "id": "task:10262",
+            "duration": 15,
+            "spaceId": "space:3002",
+            "dependencies": [
+              "task:10259"
+            ],
+            "kind": "vocal",
+            "participantId": "participant:219",
+            "coachId": "plan-resource:4004",
+            "start": 620,
+            "end": 635
+          },
+          {
+            "id": "task:10256",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10257",
+              "task:10262"
+            ],
+            "kind": "main",
+            "participantId": "participant:219",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 670,
+            "end": 685
+          },
+          {
+            "id": "task:10131",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10132",
+              "task:10138"
+            ],
+            "kind": "main",
+            "participantId": "participant:210",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 685,
+            "end": 700
+          },
+          {
+            "id": "task:10243",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10244",
+              "task:10249"
+            ],
+            "kind": "main",
+            "participantId": "participant:218",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 700,
+            "end": 715
+          },
+          {
+            "id": "task:10109",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10103"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "itinerantUnitId": "itinerant-team:5001",
+            "kind": "auxiliary",
+            "participantId": "participant:208",
+            "start": 715,
+            "end": 730
+          },
+          {
+            "id": "task:10229",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10230",
+              "task:10236"
+            ],
+            "kind": "main",
+            "participantId": "participant:217",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 715,
+            "end": 730
+          },
+          {
+            "id": "task:10064",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10057"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "itinerantUnitId": "itinerant-team:5002",
+            "kind": "auxiliary",
+            "participantId": "participant:205",
+            "start": 730,
+            "end": 745
+          },
+          {
+            "id": "task:10102",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10103",
+              "task:10108",
+              "task:10109"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "itinerantUnitId": "itinerant-team:5001",
+            "kind": "main",
+            "participantId": "participant:208",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 730,
+            "end": 745
+          },
+          {
+            "id": "task:10056",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10057",
+              "task:10063",
+              "task:10064"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "itinerantUnitId": "itinerant-team:5002",
+            "kind": "main",
+            "participantId": "participant:205",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 745,
+            "end": 760
+          },
+          {
+            "id": "task:10110",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10102",
+              "task:10103"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "itinerantUnitId": "itinerant-team:5001",
+            "kind": "auxiliary",
+            "participantId": "participant:208",
+            "start": 745,
+            "end": 760
+          },
+          {
+            "id": "task:10065",
+            "duration": 15,
+            "spaceId": "space:3017",
+            "dependencies": [
+              "task:10056",
+              "task:10057"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "itinerantUnitId": "itinerant-team:5002",
+            "kind": "auxiliary",
+            "participantId": "participant:205",
+            "start": 760,
+            "end": 775
+          }
+        ],
+        "runs": [
+          {
+            "blockKey": "plan-resource:4005",
+            "coachId": "plan-resource:4005",
+            "mainTaskIds": [
+              "task:10203",
+              "task:10190"
+            ],
+            "feederTaskIds": [
+              "task:10210",
+              "task:10197"
+            ],
+            "start": 580,
+            "end": 670
+          },
+          {
+            "blockKey": "plan-resource:4004",
+            "coachId": "plan-resource:4004",
+            "mainTaskIds": [
+              "task:10256",
+              "task:10131",
+              "task:10243",
+              "task:10229",
+              "task:10102",
+              "task:10056"
+            ],
+            "feederTaskIds": [
+              "task:10108",
+              "task:10138",
+              "task:10063",
+              "task:10249",
+              "task:10236",
+              "task:10262"
+            ],
+            "start": 545,
+            "end": 760
+          }
+        ]
+      },
       "architecturesChecked": 310,
       "architecturesStructurallyRejected": 245,
       "structuralRejectionsByReason": {
@@ -1644,6 +2267,1077 @@
             "blockingDecisionMainTaskId": "task:10256"
           }
         ],
+        "deepestFailingFeederFrontier": {
+          "depth": 14,
+          "pattern": [
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004"
+          ],
+          "timelineKey": null,
+          "fingerprint": "plan-resource:4005,plan-resource:4005,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4005,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004,plan-resource:4004||task:10063@545-560|task:10108@560-575|task:10138@575-590|task:10210@580-595|task:10236@590-605|task:10197@595-610|task:10249@605-620|task:10262@620-635|task:10203@640-655|task:10190@655-670|task:10256@670-685|task:10131@685-700|task:10243@700-715|task:10109@715-730|task:10229@715-730|task:10064@730-745|task:10102@730-745|task:10056@745-760|task:10110@745-760|task:10065@760-775|task:10175@760-775|task:10175@760-775|task:10161@775-790|task:10161@775-790|task:10010@790-805|task:10010@790-805|task:10043@790-805|task:10043@790-805|task:10002@805-820|task:10002@805-820|task:10011@820-835|task:10011@820-835|task:10031@820-835|task:10031@820-835|task:10017@835-850|task:10017@835-850|task:10009|task:10024|task:10037|task:10050|task:10168|task:10183",
+          "placedTasks": [
+            {
+              "id": "task:10063",
+              "duration": 15,
+              "spaceId": "space:3002",
+              "dependencies": [
+                "task:10060"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:205",
+              "coachId": "plan-resource:4004",
+              "start": 545,
+              "end": 560
+            },
+            {
+              "id": "task:10108",
+              "duration": 15,
+              "spaceId": "space:3002",
+              "dependencies": [
+                "task:10105"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:208",
+              "coachId": "plan-resource:4004",
+              "start": 560,
+              "end": 575
+            },
+            {
+              "id": "task:10138",
+              "duration": 15,
+              "spaceId": "space:3002",
+              "dependencies": [
+                "task:10135"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:210",
+              "coachId": "plan-resource:4004",
+              "start": 575,
+              "end": 590
+            },
+            {
+              "id": "task:10210",
+              "duration": 15,
+              "spaceId": "space:3003",
+              "dependencies": [
+                "task:10207"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:215",
+              "coachId": "plan-resource:4005",
+              "start": 580,
+              "end": 595
+            },
+            {
+              "id": "task:10236",
+              "duration": 15,
+              "spaceId": "space:3002",
+              "dependencies": [
+                "task:10233"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:217",
+              "coachId": "plan-resource:4004",
+              "start": 590,
+              "end": 605
+            },
+            {
+              "id": "task:10197",
+              "duration": 15,
+              "spaceId": "space:3003",
+              "dependencies": [
+                "task:10194"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:214",
+              "coachId": "plan-resource:4005",
+              "start": 595,
+              "end": 610
+            },
+            {
+              "id": "task:10249",
+              "duration": 15,
+              "spaceId": "space:3002",
+              "dependencies": [
+                "task:10246"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:218",
+              "coachId": "plan-resource:4004",
+              "start": 605,
+              "end": 620
+            },
+            {
+              "id": "task:10262",
+              "duration": 15,
+              "spaceId": "space:3002",
+              "dependencies": [
+                "task:10259"
+              ],
+              "kind": "vocal",
+              "participantId": "participant:219",
+              "coachId": "plan-resource:4004",
+              "start": 620,
+              "end": 635
+            },
+            {
+              "id": "task:10203",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10204",
+                "task:10210"
+              ],
+              "kind": "main",
+              "participantId": "participant:215",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 640,
+              "end": 655
+            },
+            {
+              "id": "task:10190",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10191",
+                "task:10197"
+              ],
+              "kind": "main",
+              "participantId": "participant:214",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 655,
+              "end": 670
+            },
+            {
+              "id": "task:10256",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10257",
+                "task:10262"
+              ],
+              "kind": "main",
+              "participantId": "participant:219",
+              "coachId": "plan-resource:4004",
+              "blockKey": "plan-resource:4004",
+              "start": 670,
+              "end": 685
+            },
+            {
+              "id": "task:10131",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10132",
+                "task:10138"
+              ],
+              "kind": "main",
+              "participantId": "participant:210",
+              "coachId": "plan-resource:4004",
+              "blockKey": "plan-resource:4004",
+              "start": 685,
+              "end": 700
+            },
+            {
+              "id": "task:10243",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10244",
+                "task:10249"
+              ],
+              "kind": "main",
+              "participantId": "participant:218",
+              "coachId": "plan-resource:4004",
+              "blockKey": "plan-resource:4004",
+              "start": 700,
+              "end": 715
+            },
+            {
+              "id": "task:10109",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10103"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "auxiliary",
+              "participantId": "participant:208",
+              "start": 715,
+              "end": 730
+            },
+            {
+              "id": "task:10229",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10230",
+                "task:10236"
+              ],
+              "kind": "main",
+              "participantId": "participant:217",
+              "coachId": "plan-resource:4004",
+              "blockKey": "plan-resource:4004",
+              "start": 715,
+              "end": 730
+            },
+            {
+              "id": "task:10064",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10057"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4003",
+                "plan-resource:4008"
+              ],
+              "itinerantUnitId": "itinerant-team:5002",
+              "kind": "auxiliary",
+              "participantId": "participant:205",
+              "start": 730,
+              "end": 745
+            },
+            {
+              "id": "task:10102",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10103",
+                "task:10108",
+                "task:10109"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "main",
+              "participantId": "participant:208",
+              "coachId": "plan-resource:4004",
+              "blockKey": "plan-resource:4004",
+              "start": 730,
+              "end": 745
+            },
+            {
+              "id": "task:10056",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10057",
+                "task:10063",
+                "task:10064"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4003",
+                "plan-resource:4008"
+              ],
+              "itinerantUnitId": "itinerant-team:5002",
+              "kind": "main",
+              "participantId": "participant:205",
+              "coachId": "plan-resource:4004",
+              "blockKey": "plan-resource:4004",
+              "start": 745,
+              "end": 760
+            },
+            {
+              "id": "task:10110",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10102",
+                "task:10103"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "auxiliary",
+              "participantId": "participant:208",
+              "start": 745,
+              "end": 760
+            },
+            {
+              "id": "task:10065",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10056",
+                "task:10057"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4003",
+                "plan-resource:4008"
+              ],
+              "itinerantUnitId": "itinerant-team:5002",
+              "kind": "auxiliary",
+              "participantId": "participant:205",
+              "start": 760,
+              "end": 775
+            },
+            {
+              "id": "task:10175",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10176",
+                "task:10183"
+              ],
+              "kind": "main",
+              "participantId": "participant:213",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 760,
+              "end": 775
+            },
+            {
+              "id": "task:10175",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10176",
+                "task:10183"
+              ],
+              "kind": "main",
+              "participantId": "participant:213",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 760,
+              "end": 775
+            },
+            {
+              "id": "task:10161",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10162",
+                "task:10168"
+              ],
+              "kind": "main",
+              "participantId": "participant:212",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 775,
+              "end": 790
+            },
+            {
+              "id": "task:10161",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10162",
+                "task:10168"
+              ],
+              "kind": "main",
+              "participantId": "participant:212",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 775,
+              "end": 790
+            },
+            {
+              "id": "task:10010",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10003"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "auxiliary",
+              "participantId": "participant:201",
+              "start": 790,
+              "end": 805
+            },
+            {
+              "id": "task:10010",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10003"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "auxiliary",
+              "participantId": "participant:201",
+              "start": 790,
+              "end": 805
+            },
+            {
+              "id": "task:10043",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10044",
+                "task:10050"
+              ],
+              "kind": "main",
+              "participantId": "participant:204",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 790,
+              "end": 805
+            },
+            {
+              "id": "task:10043",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10044",
+                "task:10050"
+              ],
+              "kind": "main",
+              "participantId": "participant:204",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 790,
+              "end": 805
+            },
+            {
+              "id": "task:10002",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10003",
+                "task:10009",
+                "task:10010"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "main",
+              "participantId": "participant:201",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 805,
+              "end": 820
+            },
+            {
+              "id": "task:10002",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10003",
+                "task:10009",
+                "task:10010"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "main",
+              "participantId": "participant:201",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 805,
+              "end": 820
+            },
+            {
+              "id": "task:10011",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10002",
+                "task:10003"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "auxiliary",
+              "participantId": "participant:201",
+              "start": 820,
+              "end": 835
+            },
+            {
+              "id": "task:10011",
+              "duration": 15,
+              "spaceId": "space:3017",
+              "dependencies": [
+                "task:10002",
+                "task:10003"
+              ],
+              "requiredResourceIds": [
+                "plan-resource:4002",
+                "plan-resource:4007"
+              ],
+              "itinerantUnitId": "itinerant-team:5001",
+              "kind": "auxiliary",
+              "participantId": "participant:201",
+              "start": 820,
+              "end": 835
+            },
+            {
+              "id": "task:10031",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10032",
+                "task:10037"
+              ],
+              "kind": "main",
+              "participantId": "participant:203",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 820,
+              "end": 835
+            },
+            {
+              "id": "task:10031",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10032",
+                "task:10037"
+              ],
+              "kind": "main",
+              "participantId": "participant:203",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 820,
+              "end": 835
+            },
+            {
+              "id": "task:10017",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10018",
+                "task:10024"
+              ],
+              "kind": "main",
+              "participantId": "participant:202",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 835,
+              "end": 850
+            },
+            {
+              "id": "task:10017",
+              "duration": 15,
+              "spaceId": "space:3004",
+              "dependencies": [
+                "task:10018",
+                "task:10024"
+              ],
+              "kind": "main",
+              "participantId": "participant:202",
+              "coachId": "plan-resource:4005",
+              "blockKey": "plan-resource:4005",
+              "start": 835,
+              "end": 850
+            }
+          ],
+          "currentRun": {
+            "blockKey": "plan-resource:4005",
+            "coachId": "plan-resource:4005",
+            "mainTaskIds": [
+              "task:10175",
+              "task:10161",
+              "task:10043",
+              "task:10002",
+              "task:10031",
+              "task:10017"
+            ],
+            "participantIds": [
+              "participant:213",
+              "participant:212",
+              "participant:204",
+              "participant:201",
+              "participant:203",
+              "participant:202"
+            ]
+          },
+          "feeders": [
+            {
+              "taskId": "task:10009",
+              "mainTaskId": "task:10002",
+              "participantId": "participant:201",
+              "duration": 15,
+              "deadline": 760,
+              "domainBeforeDynamic": {
+                "gridAnchor": 790,
+                "fullGridStartCount": 42
+              },
+              "remainingDomain": {
+                "eligibleStartCount": 16,
+                "intervals": [
+                  {
+                    "start": 540,
+                    "end": 565
+                  },
+                  {
+                    "start": 670,
+                    "end": 715
+                  }
+                ]
+              },
+              "blockers": [
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10190",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10210",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10197",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                }
+              ]
+            },
+            {
+              "taskId": "task:10024",
+              "mainTaskId": "task:10017",
+              "participantId": "participant:202",
+              "duration": 15,
+              "deadline": 805,
+              "domainBeforeDynamic": {
+                "gridAnchor": 790,
+                "fullGridStartCount": 51
+              },
+              "remainingDomain": {
+                "eligibleStartCount": 16,
+                "intervals": [
+                  {
+                    "start": 540,
+                    "end": 565
+                  },
+                  {
+                    "start": 670,
+                    "end": 715
+                  }
+                ]
+              },
+              "blockers": [
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10190",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10210",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10197",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10161",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 11,
+                  "blockingDecisionMainTaskId": "task:10161"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10043",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 13,
+                  "blockingDecisionMainTaskId": "task:10043"
+                }
+              ]
+            },
+            {
+              "taskId": "task:10037",
+              "mainTaskId": "task:10031",
+              "participantId": "participant:203",
+              "duration": 15,
+              "deadline": 790,
+              "domainBeforeDynamic": {
+                "gridAnchor": 790,
+                "fullGridStartCount": 48
+              },
+              "remainingDomain": {
+                "eligibleStartCount": 16,
+                "intervals": [
+                  {
+                    "start": 540,
+                    "end": 565
+                  },
+                  {
+                    "start": 670,
+                    "end": 715
+                  }
+                ]
+              },
+              "blockers": [
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10190",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10210",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10197",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10161",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 11,
+                  "blockingDecisionMainTaskId": "task:10161"
+                }
+              ]
+            },
+            {
+              "taskId": "task:10050",
+              "mainTaskId": "task:10043",
+              "participantId": "participant:204",
+              "duration": 15,
+              "deadline": 760,
+              "domainBeforeDynamic": {
+                "gridAnchor": 790,
+                "fullGridStartCount": 42
+              },
+              "remainingDomain": {
+                "eligibleStartCount": 16,
+                "intervals": [
+                  {
+                    "start": 540,
+                    "end": 565
+                  },
+                  {
+                    "start": 670,
+                    "end": 715
+                  }
+                ]
+              },
+              "blockers": [
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10190",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10210",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10197",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                }
+              ]
+            },
+            {
+              "taskId": "task:10168",
+              "mainTaskId": "task:10161",
+              "participantId": "participant:212",
+              "duration": 15,
+              "deadline": 745,
+              "domainBeforeDynamic": {
+                "gridAnchor": 790,
+                "fullGridStartCount": 39
+              },
+              "remainingDomain": {
+                "eligibleStartCount": 16,
+                "intervals": [
+                  {
+                    "start": 540,
+                    "end": 565
+                  },
+                  {
+                    "start": 670,
+                    "end": 715
+                  }
+                ]
+              },
+              "blockers": [
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10190",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10210",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10197",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10175",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 9,
+                  "blockingDecisionMainTaskId": "task:10175"
+                }
+              ]
+            },
+            {
+              "taskId": "task:10183",
+              "mainTaskId": "task:10175",
+              "participantId": "participant:213",
+              "duration": 15,
+              "deadline": 730,
+              "domainBeforeDynamic": {
+                "gridAnchor": 790,
+                "fullGridStartCount": 36
+              },
+              "remainingDomain": {
+                "eligibleStartCount": 16,
+                "intervals": [
+                  {
+                    "start": 540,
+                    "end": 565
+                  },
+                  {
+                    "start": 670,
+                    "end": 715
+                  }
+                ]
+              },
+              "blockers": [
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "TRANSITION_COACH",
+                  "blockingPlacedTaskId": "task:10203",
+                  "startsEliminated": 6,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10190",
+                  "startsEliminated": 3,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10210",
+                  "startsEliminated": 5,
+                  "blockingDecisionDepth": 1,
+                  "blockingDecisionMainTaskId": "task:10203"
+                },
+                {
+                  "reason": "OVERLAP_COACH",
+                  "blockingPlacedTaskId": "task:10197",
+                  "startsEliminated": 1,
+                  "blockingDecisionDepth": 2,
+                  "blockingDecisionMainTaskId": "task:10190"
+                }
+              ]
+            }
+          ],
+          "mainChoicesReachingClosure": 6,
+          "mainChoicesWithValidFeeder": 0,
+          "feederSlotCertificate": {
+            "applicable": true,
+            "prefixCapacityImpossible": false,
+            "latestFeasibleBlockStart": 700,
+            "contiguousBlockStartIntervals": [
+              {
+                "start": 670,
+                "end": 670
+              },
+              {
+                "start": 850,
+                "end": 1170
+              }
+            ]
+          }
+        },
         "futureFeasibility": {
           "totalEvaluations": 98910,
           "uniqueAuthorityStates": 1412,
