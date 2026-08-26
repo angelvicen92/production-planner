@@ -19,14 +19,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Full A2 once
-        run: npm run benchmark:planner-next:a2-full-template | tee /tmp/full-a2.txt
+      - name: Full A2 exact execution once
+        run: node --import tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts | tee /tmp/full-a2-exec.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr742-full-a2
+          name: pr742-full-a2-exec
           path: |
-            /tmp/full-a2.txt
-            docs/evidence/SPEC10-016-full-a2-canonical-template.json
+            /tmp/full-a2-exec.txt
             docs/evidence/A2-FULL-EXEC-001-first-execution.json
-            docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
