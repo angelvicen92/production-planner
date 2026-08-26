@@ -62,6 +62,9 @@ export interface ExactItinerantPlanEvidence {
   technicalChainActiveFrontierPeak:number;
   technicalChainAlternativesDeferred:number;
   technicalChainAlternativesRevisited:number;
+  technicalChainDeferredQueuePeak:number;
+  technicalChainDeferredPushes:number;
+  technicalChainDeferredPops:number;
   standaloneStartChecks: number;
   standaloneTaskSelections: number;
   standaloneZeroAlternativePrunes: number;
@@ -548,7 +551,7 @@ const searchAtomicItems = (
   }
   const explorer=createTechnicalChainExplorer(problem,item.tasks,[...coreTasks,...placed],
     Math.max(0,ledger.limit-ledger.branchesExplored),technicalChainStartDomainMode,coreMeals);
-  let accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0};
+  let accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0};
   const accountExplorer=()=>{
     const diagnostics=explorer.diagnostics;
     const consumedDelta=explorer.consumed-accounted.consumed;
@@ -561,9 +564,13 @@ const searchAtomicItems = (
     evidence.technicalChainAlternativesDeferred+=diagnostics.alternativesDeferred-accounted.deferred;
     evidence.technicalChainAlternativesRevisited+=diagnostics.alternativesRevisited-accounted.revisited;
     evidence.technicalChainActiveFrontierPeak=Math.max(evidence.technicalChainActiveFrontierPeak,diagnostics.activeFrontierPeak);
+    evidence.technicalChainDeferredQueuePeak=Math.max(evidence.technicalChainDeferredQueuePeak,diagnostics.deferredQueuePeak);
+    evidence.technicalChainDeferredPushes+=diagnostics.deferredPushes-accounted.pushes;
+    evidence.technicalChainDeferredPops+=diagnostics.deferredPops-accounted.pops;
     accounted={consumed:explorer.consumed,full:diagnostics.fullGridStarts,eligible:diagnostics.analyticEligibleStarts,
       eliminated:diagnostics.analyticallyEliminatedStarts,complete:diagnostics.completeCandidatesYielded,
-      deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited};
+      deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited,
+      pushes:diagnostics.deferredPushes,pops:diagnostics.deferredPops};
     return true;
   };
   while(true){
@@ -698,6 +705,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainAnalyticallyEliminatedStarts:0,technicalChainStartsEvaluated:0,
     technicalChainCompleteCandidates:0,technicalChainActiveFrontierPeak:0,
     technicalChainAlternativesDeferred:0,technicalChainAlternativesRevisited:0,
+    technicalChainDeferredQueuePeak:0,technicalChainDeferredPushes:0,technicalChainDeferredPops:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
