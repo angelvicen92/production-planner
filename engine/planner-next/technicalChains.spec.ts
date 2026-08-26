@@ -3,6 +3,7 @@ import test from "node:test";
 import { preflight } from "./validate";
 import { createTechnicalChainExplorer, generateTechnicalChainCandidates, getTechnicalChains, orderedTechnicalChainMembers, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { technicalChainScenario } from "./scenarios/technicalChainScenario";
+import { canPlaceTask } from "./placement";
 
 test("derives a linear chain exclusively from dependencies regardless of physical order",()=>{const p=technicalChainScenario(),chain=getTechnicalChains([...p.tasks].reverse())[0]!;assert.deepEqual(orderedTechnicalChainMembers(chain).map(t=>t.id),["technical-chain-positioning","technical-chain-camera-test"]);});
 test("detects cycles, fan-in and fan-out",()=>{const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;const cycle=structuredClone(members);cycle[0]!.dependencies=[cycle[1]!.id];assert.equal(technicalChainHasCycle(cycle),true);const fanIn=structuredClone(members);fanIn[1]!.dependencies=[fanIn[0]!.id,"technical-camera-positioning"];assert.equal(technicalChainHasBranching(fanIn),true);const fanOut=[...members,{...members[1]!,id:"other"}];assert.equal(technicalChainHasBranching(fanOut),true);});
@@ -77,6 +78,21 @@ test("incremental deferred queue preserves the global-sort oracle order and bran
  assert.equal(heap.diagnostics.deferredPops,oracle.diagnostics.deferredPops);
  assert.equal(heap.diagnostics.deferredGlobalSorts,0);
  assert.ok(oracle.diagnostics.deferredGlobalSorts>0);
+});
+
+test("prepared authority preserves #744 candidates, order, branches, and hard validity",()=>{
+ const create=()=>{const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.budget.bestK=1;return p};
+ const run=(authority:"PREPARED_AUTHORITY"|"CAN_PLACE_ORACLE")=>{const p=create(),chain=getTechnicalChains(p.tasks)[0]!;
+   const fixed={...chain[0]!,id:"fixed-resource",start:525,end:535,spaceId:"technical-chain-room-b",dependencies:[]};
+   const meal={id:"scheduled-meal",kind:"space-meal" as const,spaceId:"technical-chain-room-b",entryIndex:0,duration:5,start:565,end:570};
+   const explorer=createTechnicalChainExplorer(p,chain,[fixed],10_000,"ANALYTIC_DOMAIN",[meal],"INCREMENTAL_HEAP",true,authority);
+   const candidates=[];for(let candidate;(candidate=explorer.nextCandidate());)candidates.push(candidate);
+   assert.ok(candidates.every(candidate=>candidate.tasks.every(task=>canPlaceTask(p,task,task.start,[fixed,...candidate.tasks.filter(other=>other.id!==task.id)],[meal]))));
+   return {candidates:candidates.map(candidate=>candidate.tasks.map(({id,start,end,spaceId})=>({id,start,end,spaceId}))),consumed:explorer.consumed,diagnostics:explorer.diagnostics};};
+ const prepared=run("PREPARED_AUTHORITY"),oracle=run("CAN_PLACE_ORACLE");
+ assert.deepEqual(prepared.candidates,oracle.candidates);assert.equal(prepared.consumed,oracle.consumed);
+ assert.equal(prepared.diagnostics.preparedAuthorityBuilds,2);assert.ok(prepared.diagnostics.preparedAuthorityHits>0);
+ assert.ok(prepared.diagnostics.fixedPlacedScansAvoided>0);assert.equal(oracle.diagnostics.preparedAuthorityBuilds,0);
 });
 
 test("ranking is invariant to equivalent task IDs and input order",()=>{

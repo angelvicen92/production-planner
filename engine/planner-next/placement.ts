@@ -60,6 +60,13 @@ export interface ExactTaskStartDomain {
   starts(): Generator<number, void, undefined>;
 }
 
+/** A fixed-placement certificate that composes the canonical interval authority with branch-local tasks. */
+export interface PreparedTaskPlacementAuthority {
+  readonly baseDomain: ExactTaskStartDomain;
+  domain(additionalPlaced:ScheduledTask[]):ExactTaskStartDomain;
+  accepts(start:number,domain:ExactTaskStartDomain):boolean;
+}
+
 export type ExactStartInterval = { start: number; end: number };
 export const intersectExactStartIntervals=(left:ExactStartInterval[],right:ExactStartInterval[]):ExactStartInterval[]=>left.flatMap(a=>right.flatMap(b=>{
   const start=Math.max(a.start,b.start),end=Math.min(a.end,b.end);return start<=end?[{start,end}]:[];
@@ -124,6 +131,16 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
 /** Exact interval projection of every hard authority used by canPlaceTask. It never scans the time grid. */
 export function exactTaskStartDomain(problem:PlannerNextProblem,task:Task,placed:ScheduledTask[],scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):ExactTaskStartDomain {
   return exactTaskDynamicStartDomain(problem,task,placed,exactTaskStaticStartDomain(problem,task,scheduledSpaceMeals));
+}
+
+/** Prepares all static and fixed-placement hard authorities once without enumerating starts. */
+export function prepareTaskPlacementAuthority(problem:PlannerNextProblem,task:Task,fixedPlaced:ScheduledTask[],scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):PreparedTaskPlacementAuthority {
+  const baseDomain=exactTaskDynamicStartDomain(problem,task,fixedPlaced,exactTaskStaticStartDomain(problem,task,scheduledSpaceMeals));
+  return {
+    baseDomain,
+    domain(additionalPlaced){return exactTaskDynamicStartDomain(problem,task,additionalPlaced,baseDomain)},
+    accepts(start,domain){return domain.intervals.some(interval=>start>=interval.start&&start<=interval.end)},
+  };
 }
 
 /** Read-only projection of the same ordered authorities used by canPlaceTask. */
