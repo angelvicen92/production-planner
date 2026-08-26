@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { jointAuxiliaryTasksScenario } from "./scenarios/jointAuxiliaryTasksScenario";
-import { canPlaceJointGroup, jointGroupMembers, jointGroupStarts, synchronizedJointTasks } from "./jointTasks";
+import { canPlaceJointGroup, jointGroupMembers, jointGroupStarts, scheduleJointGroup, synchronizedJointTasks } from "./jointTasks";
+import { canPlaceTask } from "./placement";
 import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { preflight, validatePlan } from "./validate";
 
@@ -48,9 +49,16 @@ test("SPEC10-017 allows dependent joint groups and rejects internal dependencies
  );
  const group=jointGroupMembers(p.tasks,"shared-operation-2"), snapshot=structuredClone(p);
  assert.equal(preflight(p).length,0);
- assert.equal(canPlaceJointGroup(p,group,570,[]),false);
- assert.equal(canPlaceJointGroup(p,group,580,[{...p.tasks.find(t=>t.id==="pre-a")!,start:570,end:580}]),false);
- assert.equal(canPlaceJointGroup(p,group,590,[{...p.tasks.find(t=>t.id==="pre-a")!,start:570,end:580},{...p.tasks.find(t=>t.id==="pre-z")!,start:570,end:580}]),true);
+ // Search may anchor the dependent joint operation first; temporal precedence is enforced
+ // when either endpoint is later materialized, not by requiring predecessor search order.
+ assert.equal(canPlaceJointGroup(p,group,590,[]),true);
+ const scheduledGroup=scheduleJointGroup(group,590);
+ const preA=p.tasks.find(t=>t.id==="pre-a")!, preZ=p.tasks.find(t=>t.id==="pre-z")!;
+ assert.equal(canPlaceTask(p,preA,570,scheduledGroup),true);
+ const scheduledPreA={...preA,start:570,end:580};
+ assert.equal(canPlaceTask(p,preZ,580,[...scheduledGroup,scheduledPreA]),true);
+ assert.equal(canPlaceTask(p,preA,585,scheduledGroup),false);
+ assert.equal(canPlaceJointGroup(p,group,590,[scheduledPreA]),true);
  assert.deepEqual(p,snapshot);
  const internal=structuredClone(p); internal.tasks.find(t=>t.id==="post-a")!.dependencies=["post-z"];
  assert.ok(preflight(internal).includes("JOINT_GROUP_INTERNAL_DEPENDENCY_UNSUPPORTED"));
