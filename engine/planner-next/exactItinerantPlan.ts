@@ -27,7 +27,7 @@ import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
-import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey } from "./technicalChains";
+import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { protectedMealBlocksSpace } from "./spaceMeals";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
@@ -54,6 +54,13 @@ export interface ExactItinerantPlanEvidence {
   jointGroupAnalyticEligibleStarts: number;
   jointGroupAnalyticallyEliminatedStarts: number;
   jointGroupStartsEvaluated: number;
+  technicalChainFullGridStarts:number;
+  technicalChainAnalyticEligibleStarts:number;
+  technicalChainAnalyticallyEliminatedStarts:number;
+  technicalChainStartsEvaluated:number;
+  technicalChainCompleteCandidates:number;
+  technicalChainAlternativesDeferred:number;
+  technicalChainAlternativesRevisited:number;
   standaloneStartChecks: number;
   standaloneTaskSelections: number;
   standaloneZeroAlternativePrunes: number;
@@ -429,7 +436,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
-  selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode): StandaloneSearchResult {
+  selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
+  technicalChainStartDomainMode:TechnicalChainStartDomainMode): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -638,11 +646,18 @@ const searchAtomicItems = (
     problem,
     item.tasks,
     [...coreTasks, ...placed],
-    Math.max(0, ledger.limit - ledger.branchesExplored),
+    Math.max(0, ledger.limit - ledger.branchesExplored), "SEARCH", 1, technicalChainStartDomainMode, coreMeals,
   );
+  evidence.technicalChainFullGridStarts+=generated.diagnostics.fullGridStarts;
+  evidence.technicalChainAnalyticEligibleStarts+=generated.diagnostics.analyticEligibleStarts;
+  evidence.technicalChainAnalyticallyEliminatedStarts+=generated.diagnostics.analyticallyEliminatedStarts;
+  evidence.technicalChainStartsEvaluated+=generated.diagnostics.startsEvaluated;
+  evidence.technicalChainCompleteCandidates+=generated.diagnostics.completeCandidatesGenerated;
+  evidence.technicalChainAlternativesDeferred+=generated.diagnostics.alternativesDeferred;
   if (generated.consumed > 0 && !ledger.consume("STANDALONE", generated.consumed)) return "BUDGET_EXHAUSTED";
   if (generated.exhausted) return "BUDGET_EXHAUSTED";
-  for (const candidate of generated.candidates) {
+  for (const [candidateIndex,candidate] of generated.candidates.entries()) {
+    if(candidateIndex>=problem.budget.bestK)evidence.technicalChainAlternativesRevisited+=1;
     const child = searchAtomicItems(index + 1, [...placed, ...candidate.tasks],
       [...selectionOrder, ...candidate.tasks.map(({ id }) => id)]);
     if (child !== "DEAD_END") return child;
@@ -752,6 +767,8 @@ export interface ExactItinerantPlanSearchOptions {
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
   /** Test oracle only; production intersects exact member domains before projecting grid starts. */
   jointGroupStartDomainMode?: JointGroupStartDomainMode;
+  /** Test oracle only; production removes exact technical-chain impossibility regions analytically. */
+  technicalChainStartDomainMode?:TechnicalChainStartDomainMode;
   /** Test oracle only; production memoizes positive block-closed witnesses locally. */
   standaloneForwardWitnessMemoization?: boolean;
   causalDiagnostic?: boolean;
@@ -765,6 +782,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
     jointGroupAnalyticallyEliminatedStarts: 0, jointGroupStartsEvaluated: 0,
+    technicalChainFullGridStarts:0,technicalChainAnalyticEligibleStarts:0,
+    technicalChainAnalyticallyEliminatedStarts:0,technicalChainStartsEvaluated:0,
+    technicalChainCompleteCandidates:0,technicalChainAlternativesDeferred:0,technicalChainAlternativesRevisited:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
@@ -967,7 +987,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     evidence.coreCompleteLeavesEvaluated += 1;
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
-      completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN");
+      completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN");
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}

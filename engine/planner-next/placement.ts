@@ -1,6 +1,6 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { contains, overlaps } from "./time";
-import { occupationAvoidsProtectedMeal } from "./spaceMeals";
+import { occupationAvoidsProtectedMeal, protectedMealBlocksSpace } from "./spaceMeals";
 import { taskFitsAvailability } from "./taskAvailability";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
@@ -53,6 +53,67 @@ export type PlacementRejectionReason = "DAY_BOUNDS" | "TASK_AVAILABILITY" | "ITI
   | "TRANSITION_REQUIRED_RESOURCE" | "MISSING_AUTHORITY";
 
 export interface PlacementDiagnostic { valid: boolean; firstRejectionReason: PlacementRejectionReason | null; blockingPlacedTaskId: string | null }
+
+export interface ExactTaskStartDomain {
+  readonly intervals: ReadonlyArray<Readonly<{ start: number; end: number }>>;
+  readonly eligibleStartCount: number;
+  starts(): Generator<number, void, undefined>;
+}
+
+type StartInterval = { start: number; end: number };
+const intersectStartIntervals=(left:StartInterval[],right:StartInterval[]):StartInterval[]=>left.flatMap(a=>right.flatMap(b=>{
+  const start=Math.max(a.start,b.start),end=Math.min(a.end,b.end);return start<=end?[{start,end}]:[];
+})).sort((a,b)=>a.start-b.start||a.end-b.end);
+const windowStartIntervals=(windows:ReadonlyArray<Readonly<StartInterval>>,duration:number):StartInterval[]=>windows
+  .filter(({start,end})=>start+duration<=end).map(({start,end})=>({start,end:end-duration}));
+const subtractOccupation=(domain:StartInterval[],blocked:StartInterval,duration:number):StartInterval[]=>domain.flatMap(interval=>{
+  const result:StartInterval[]=[];const beforeEnd=blocked.start-duration,afterStart=blocked.end;
+  if(interval.start<=Math.min(interval.end,beforeEnd))result.push({start:interval.start,end:Math.min(interval.end,beforeEnd)});
+  if(Math.max(interval.start,afterStart)<=interval.end)result.push({start:Math.max(interval.start,afterStart),end:interval.end});
+  return result;
+});
+const exactStartDomain=(problem:PlannerNextProblem,intervals:StartInterval[]):ExactTaskStartDomain=>{
+  const merged:StartInterval[]=[];
+  for(const interval of [...intervals].sort((a,b)=>a.start-b.start||a.end-b.end)){const previous=merged.at(-1);if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);else merged.push({...interval});}
+  const first=(start:number)=>problem.day.start+Math.max(0,Math.ceil((start-problem.day.start)/5))*5;
+  const eligibleStartCount=merged.reduce((sum,interval)=>{const value=first(interval.start);return sum+(value<=interval.end?Math.floor((interval.end-value)/5)+1:0)},0);
+  return {intervals:merged,eligibleStartCount,*starts(){for(const interval of merged)for(let start=first(interval.start);start<=interval.end;start+=5)yield start;}};
+};
+
+/** Exact interval projection of every hard authority used by canPlaceTask. It never scans the time grid. */
+export function exactTaskStartDomain(problem:PlannerNextProblem,task:Task,placed:ScheduledTask[],scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):ExactTaskStartDomain {
+  const participant=task.kind==="technical"?undefined:problem.participants.find(({id})=>id===task.participantId);
+  const coach=task.coachId===undefined?undefined:problem.coaches.find(({id})=>id===task.coachId);
+  const space=problem.spaces.find(({id})=>id===task.spaceId);
+  const resources=(task.requiredResourceIds??[]).map(id=>problem.resources.find(resource=>resource.id===id));
+  const unit=task.itinerantUnitId===undefined?undefined:problem.itinerantUnits?.find(({id})=>id===task.itinerantUnitId);
+  if((task.kind!=="technical"&&!participant)||!space||(task.coachId!==undefined&&!coach)||resources.some(resource=>!resource)||(task.itinerantUnitId!==undefined&&!unit))return exactStartDomain(problem,[]);
+  let domain:StartInterval[]=[{start:problem.day.start,end:problem.day.end-task.duration}];
+  const authorities=[task.availability,participant?.availability,coach?.availability,space.availability,...resources.map(resource=>resource!.availability),unit?.availability]
+    .filter((windows):windows is Array<{start:number;end:number}>=>windows!==undefined);
+  for(const windows of authorities)domain=intersectStartIntervals(domain,windowStartIntervals(windows,task.duration));
+  const blocked=[...(problem.protectedMeal&&protectedMealBlocksSpace(problem,task.spaceId)?[problem.protectedMeal]:[]),
+    ...(problem.itinerantUnitMeals??[]).filter(meal=>meal.itinerantUnitId===task.itinerantUnitId).map(({interval})=>interval),
+    ...scheduledSpaceMeals.filter(meal=>meal.spaceId===task.spaceId||resources.some(resource=>resource!.assignedSpaceId===meal.spaceId))];
+  for(const interval of blocked)domain=subtractOccupation(domain,interval,task.duration);
+  for(const other of placed){
+    if(task.dependencies.includes(other.id))domain=intersectStartIntervals(domain,[{start:other.end,end:Number.POSITIVE_INFINITY}]);
+    if(other.dependencies.includes(task.id))domain=intersectStartIntervals(domain,[{start:Number.NEGATIVE_INFINITY,end:other.start-task.duration}]);
+    const sharedParticipant=task.participantId!==undefined&&other.participantId===task.participantId;
+    const sharedCoach=task.coachId!==undefined&&other.coachId===task.coachId;
+    const sharedResources=(task.requiredResourceIds??[]).filter(id=>(other.requiredResourceIds??[]).includes(id));
+    const sharedSpace=task.spaceId===other.spaceId;
+    if(!sharedParticipant&&!sharedCoach&&!sharedSpace&&sharedResources.length===0)continue;
+    let before=0,after=0;
+    if(!sharedSpace){
+      if(sharedParticipant)before=after=problem.participantTransitionMinutes;
+      if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
+      for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
+    }
+    domain=subtractOccupation(domain,{start:other.start-before,end:other.end+after},task.duration);
+  }
+  return exactStartDomain(problem,domain);
+}
 
 /** Read-only projection of the same ordered authorities used by canPlaceTask. */
 export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[], scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): PlacementDiagnostic {

@@ -133,6 +133,22 @@ test("EXACT_CONSTRUCTIVE schedules a technical dependency chain atomically", () 
   assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
 });
 
+test("bestK=1 revisits a worse technical-chain alternative when the preferred partial blocks completion",()=>{
+  const fixed={...auxiliary("fixed","fixed",[{start:0,end:10}]),spaceId:"technical-a"};
+  const input=problem([
+    {id:"technical-a",kind:"technical",duration:10,spaceId:"technical-a",dependencies:[],requiredResourceIds:["unit"],availability:[{start:0,end:40}]},
+    {id:"technical-b",kind:"technical",duration:10,spaceId:"technical-b",dependencies:["technical-a"],requiredResourceIds:["unit"],availability:[{start:0,end:40}]},
+    fixed,
+  ]);
+  const result=runExactItinerantPlanSearch(input);
+  assert.equal(result.status,"COMPLETE");
+  assert.equal(result.scheduledTasks.find(({id})=>id==="fixed")?.start,0);
+  assert.ok(result.scheduledTasks.find(({id})=>id==="technical-a")!.start>=10);
+  assert.ok(result.evidence.technicalChainAlternativesDeferred>0);
+  assert.ok(result.evidence.technicalChainAlternativesRevisited>0);
+  assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
+});
+
 test("shared resources never overlap and the narrower task is selected first", () => {
   const input = problem([
     auxiliary("flexible", "a", [{ start: 0, end: 60 }], ["unit"]),
