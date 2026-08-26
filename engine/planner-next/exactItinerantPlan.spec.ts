@@ -6,7 +6,7 @@ import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
 import { validatePlan } from "./validate";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
@@ -131,6 +131,37 @@ test("EXACT_CONSTRUCTIVE schedules a technical dependency chain atomically", () 
   assert.equal(result.status, "COMPLETE");
   assert.ok(first.end <= second.start);
   assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
+});
+
+test("bestK=1 revisits a worse technical-chain alternative when the preferred partial blocks completion",()=>{
+  const fixed={...auxiliary("fixed","fixed",[{start:0,end:10}]),spaceId:"technical-a"};
+  const input=problem([
+    {id:"technical-a",kind:"technical",duration:10,spaceId:"technical-a",dependencies:[],requiredResourceIds:["unit"],availability:[{start:0,end:40}]},
+    {id:"technical-b",kind:"technical",duration:10,spaceId:"technical-b",dependencies:["technical-a"],requiredResourceIds:["unit"],availability:[{start:0,end:40}]},
+    fixed,
+  ]);
+  const result=runExactItinerantPlanSearch(input);
+  assert.equal(result.status,"COMPLETE");
+  assert.equal(result.scheduledTasks.find(({id})=>id==="fixed")?.start,0);
+  assert.ok(result.scheduledTasks.find(({id})=>id==="technical-a")!.start>=10);
+  assert.ok(result.evidence.technicalChainAlternativesDeferred>0);
+  assert.ok(result.evidence.technicalChainAlternativesRevisited>0);
+  assert.equal(result.evidence.technicalChainActiveFrontierPeak,1);
+  assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
+});
+
+test("standalone forward domains delegate to the canonical placement domain authority",()=>{
+  const input=problem([auxiliary("shared-domain","a",[{start:20,end:80}],["unit"])]);
+  const task=input.tasks.find(({id})=>id==="shared-domain")!;
+  const placed=[{...auxiliary("blocker","b",[]),spaceId:task.spaceId,start:35,end:50}];
+  const canonicalStatic=exactTaskStaticStartDomain(input,task);
+  const standaloneStatic=standaloneForwardStaticDomain(input,task);
+  assert.deepEqual(standaloneStatic.intervals,canonicalStatic.intervals);
+  assert.deepEqual([...standaloneStatic.starts()],[...canonicalStatic.starts()]);
+  const canonicalDynamic=exactTaskDynamicStartDomain(input,task,placed,canonicalStatic);
+  const standaloneDynamic=standaloneForwardDynamicDomain(input,task,placed,standaloneStatic);
+  assert.deepEqual(standaloneDynamic.intervals,canonicalDynamic.intervals);
+  assert.deepEqual([...standaloneDynamic.starts()],[...canonicalDynamic.starts()]);
 });
 
 test("shared resources never overlap and the narrower task is selected first", () => {
