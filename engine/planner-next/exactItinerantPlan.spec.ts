@@ -3,7 +3,7 @@ import test from "node:test";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
@@ -73,6 +73,51 @@ test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => 
   assert.equal(members.length, 2);
   assert.equal(members[0]!.start, members[1]!.start);
   assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
+});
+
+test("joint DFS intersects exact member domains instead of branching across the full day", () => {
+  const create = () => problem([
+    { ...auxiliary("joint-a", "a", [{ start: 20, end: 40 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+    { ...auxiliary("joint-b", "b", [{ start: 20, end: 40 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+  ]);
+  const analytic = runExactItinerantPlanSearch(create());
+  const oracle = runExactItinerantPlanSearch(create(), { jointGroupStartDomainMode: "FULL_GRID" });
+  assert.equal(analytic.status, oracle.status);
+  assert.equal(analytic.evidence.fullFingerprint, oracle.evidence.fullFingerprint);
+  assert.deepEqual(analytic.evidence.selectedStandaloneStarts, oracle.evidence.selectedStandaloneStarts);
+  assert.equal(analytic.evidence.jointGroupFullGridStarts, oracle.evidence.jointGroupFullGridStarts);
+  assert.ok(analytic.evidence.jointGroupAnalyticallyEliminatedStarts > 0);
+  assert.ok(analytic.evidence.jointGroupStartsEvaluated > 0);
+  assert.ok(analytic.evidence.jointGroupStartsEvaluated <= analytic.evidence.jointGroupAnalyticEligibleStarts);
+  assert.ok(analytic.evidence.jointGroupStartsEvaluated < oracle.evidence.jointGroupStartsEvaluated);
+  assert.ok(oracle.evidence.jointGroupStartsEvaluated <= oracle.evidence.jointGroupFullGridStarts);
+  assert.equal(analytic.evidence.standaloneBranches + analytic.evidence.coreBranches, analytic.evidence.branchesExplored);
+});
+
+test("joint common domain analytically applies participant, space, resource, dependency, and empty intersections", () => {
+  const input = problem([
+    { ...auxiliary("joint-a", "a", [{ start: 0, end: 100 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+    { ...auxiliary("joint-b", "b", [{ start: 20, end: 80 }], ["unit"]), spaceId: "joint", jointGroupId: "group", dependencies: ["pre"] },
+    auxiliary("pre", "pre", [{ start: 0, end: 120 }]),
+  ]);
+  const members = input.tasks.filter(({ jointGroupId }) => jointGroupId === "group");
+  // An unmaterialized predecessor does not constrain a domain merely because the joint is selected first.
+  assert.deepEqual([...standaloneJointGroupStartDomain(input, members, []).starts()], [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]);
+  const blocker = (id: string, start: number, end: number, fields: Partial<Task>) =>
+    ({ ...auxiliary(id, "other", []), ...fields, start, end });
+  const placed = [
+    blocker("participant-block", 20, 30, { participantId: "a", spaceId: "other-a" }),
+    blocker("space-block", 35, 45, { spaceId: "joint", participantId: "other-space" }),
+    blocker("resource-block", 50, 60, { requiredResourceIds: ["unit"], spaceId: "other-resource" }),
+    { ...input.tasks.find(({ id }) => id === "pre")!, start: 60, end: 70 },
+  ];
+  input.spaces.push({ id: "other-a", availability: [{ start: 0, end: 120 }] },
+    { id: "other-resource", availability: [{ start: 0, end: 120 }] });
+  assert.deepEqual([...standaloneJointGroupStartDomain(input, members, placed).starts()], [70]);
+  const reversed = structuredClone(input); reversed.tasks.reverse(); reversed.participants.reverse(); reversed.spaces.reverse();
+  assert.deepEqual([...standaloneJointGroupStartDomain(reversed, [...members].reverse(), [...placed].reverse()).starts()], [70]);
+  placed.push(blocker("empty", 70, 80, { spaceId: "joint", participantId: "empty" }));
+  assert.equal(standaloneJointGroupStartDomain(input, members, placed).eligibleStartCount, 0);
 });
 
 test("EXACT_CONSTRUCTIVE schedules a technical dependency chain atomically", () => {
