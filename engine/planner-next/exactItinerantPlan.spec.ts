@@ -58,6 +58,8 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(input, before); assert.deepEqual(result.remainingTaskIds, []);
   assert.equal(result.evidence.standaloneForwardImpactedTaskChecks, 0);
+  assert.deepEqual(result.evidence.firstFeedableRunSizes, core.evidence.firstFeedableRunSizes);
+  assert.deepEqual(result.evidence.firstFeedableRunSizes, [1]);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
@@ -137,8 +139,27 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
 });
 
-test("secondary feasibility runs only after the accumulating core cohort is closed", () => {
+test("derived feeder endpoints preserve a solution after historical endpoints fail", () => {
   const input = problem([auxiliary("standalone", "standalone-person", [{ start: 80, end: 105 }], ["unit"])]);
+  const availability = [{ start: 0, end: 120 }];
+  input.participants.push({ id: "other", availability }); input.spaces.push({ id: "vocal-other", availability });
+  input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
+  input.tasks.push(
+    { id: "vocal-other", kind: "vocal", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "vocal-other", dependencies: [] },
+    { id: "main-other", kind: "main", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["vocal-other"], blockKey: "coach", requiredResourceIds: ["unit"] },
+  );
+  const result = constructExactItinerantPlan(input);
+  assert.equal(result.status, "COMPLETE");
+  assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
+  assert.ok(result.evidence.architecturesChecked > 1, "historical endpoints must retain priority");
+});
+
+test("secondary feasibility runs only after the accumulating core cohort is closed", () => {
+  const blocking = { ...auxiliary("standalone-blocker", "standalone-person", [{ start: 0, end: 120 }], ["unit"]),
+    duration: 120 };
+  const input = problem([blocking]);
   const availability = [{ start: 0, end: 120 }];
   input.participants.push({ id: "other", availability }); input.spaces.push({ id: "vocal-other", availability });
   input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
@@ -151,7 +172,7 @@ test("secondary feasibility runs only after the accumulating core cohort is clos
   const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "INFEASIBLE"); assert.equal(result.evidence.standaloneForwardWitnessesFound, 0);
   assert.ok((result.evidence.standaloneForwardPrunesByDepth["2"] ?? 0) > 0);
-  assert.equal(result.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
+  assert.equal(result.evidence.lastStandaloneForwardBlockingTaskId, "standalone-blocker");
   assert.ok(result.evidence.lastStandaloneForwardCausingCoreTaskIds.some((id) => id.startsWith("main")));
   assert.deepEqual(result.scheduledTasks, []);
 });

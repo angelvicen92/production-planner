@@ -173,3 +173,103 @@ test("contiguous proof is invariant to task input order and renamed IDs", () => 
   assert.equal(proveMainFeederArchitectureImpossible(renamed, mains, feeders, architecture),
     "FEEDER_CONTIGUOUS_CAPACITY");
 });
+
+function withEntryClosure(fixture: ReturnType<typeof firstCoachRun>, stylingAvailability: {start:number;end:number}[]) {
+  for (const main of fixture.mains) {
+    const participantId = main.participantId!;
+    const arrival: Task = { id: `arrival-${participantId}`, kind: "auxiliary", participantId,
+      duration: 5, spaceId: "arrival", dependencies: [] };
+    const styling: Task = { id: `styling-${participantId}`, kind: "auxiliary", participantId,
+      duration: 10, spaceId: "styling", availability: stylingAvailability, dependencies: [arrival.id] };
+    const feeder = fixture.feeders.get(main.id)!;
+    feeder.dependencies = [arrival.id];
+    main.dependencies = [feeder.id, styling.id];
+    fixture.problem.tasks.push(arrival, styling);
+  }
+  fixture.problem.spaces.push(
+    { id: "arrival", availability: [{ start: 0, end: 120 }] },
+    { id: "styling", availability: [{ start: 0, end: 120 }] },
+  );
+  fixture.problem.transportPolicy = { arrival: { taskIds: fixture.mains.map((main) => `arrival-${main.participantId}`),
+    minimumGroupSize: 1, maximumGroupSize: 2, minGapMinutes: 0, groupingWeight: 0 },
+  departure: { taskIds: [], minimumGroupSize: 1, maximumGroupSize: 2, minGapMinutes: 0, groupingWeight: 0 } };
+  return fixture;
+}
+
+test("structural matching rejects a cohort position whose IN, styling and vocal closure cannot finish", () => {
+  const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 35, end: 55 }]);
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    twoSlotArchitecture), "PREREQUISITE_WINDOW");
+});
+
+test("structural matching preserves both legal styling/vocal orders without fixing cohort order", () => {
+  const beforeVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 5, end: 20 }]);
+  const afterVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 20, end: 40 }]);
+  assert.equal(proveMainFeederArchitectureImpossible(beforeVocal.problem, beforeVocal.mains,
+    beforeVocal.feeders, twoSlotArchitecture), null);
+  assert.equal(proveMainFeederArchitectureImpossible(afterVocal.problem, afterVocal.mains,
+    afterVocal.feeders, twoSlotArchitecture), null);
+  afterVocal.problem.tasks.reverse(); afterVocal.mains.reverse();
+  assert.equal(proveMainFeederArchitectureImpossible(afterVocal.problem, afterVocal.mains,
+    afterVocal.feeders, twoSlotArchitecture), null);
+});
+
+test("prerequisite closure is an event proof and does not scan the temporal grid", () => {
+  const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 5, end: 1_020 }]);
+  fixture.problem.day.end = 1_020;
+  for (const authority of [...fixture.problem.spaces, ...fixture.problem.participants, ...fixture.problem.coaches])
+    authority.availability = [{ start: 0, end: 1_020 }];
+  let availabilityReads = 0;
+  for (const styling of fixture.problem.tasks.filter(({ id }) => id.startsWith("styling-"))) {
+    Object.defineProperty(styling, "availability", { enumerable: true, configurable: true,
+      get: () => { availabilityReads += 1; return [{ start: 5, end: 1_020 }]; } });
+  }
+  const late = { pattern: ["a", "a"], slots: [1_000, 1_010] } as const;
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders, late), null);
+  assert.ok(availabilityReads <= 4, `analytic closure read availability ${availabilityReads} times`);
+});
+
+function feederPrefixFixture(firstMainStart: number) {
+  const fixture = firstCoachRun(prefixProblem(10));
+  for (const main of fixture.mains) {
+    const feeder = fixture.feeders.get(main.id)!;
+    const predecessor: Task = { id: `pre-${main.participantId}`, kind: "auxiliary",
+      participantId: main.participantId!, duration: 5, spaceId: "pre", dependencies: [] };
+    feeder.dependencies = [predecessor.id];
+    fixture.problem.tasks.push(predecessor);
+  }
+  fixture.problem.spaces.push({ id: "pre", availability: [{ start: 0, end: 120 }] });
+  return { ...fixture, architecture: { pattern: ["a", "a"], slots: [firstMainStart, firstMainStart + 10] } };
+}
+
+test("rejects a continuous feeder block whose first ordinal has no prerequisite lead-in", () => {
+  const fixture = feederPrefixFixture(20);
+  assert.equal(2 * 10, fixture.architecture.slots[0], "the isolated feeder block fills prior capacity exactly");
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    fixture.architecture), "FEEDER_PREREQUISITE_PREFIX_CAPACITY");
+});
+
+test("five real lead-in minutes make the neighboring feeder pipeline structurally possible", () => {
+  const fixture = feederPrefixFixture(25);
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    fixture.architecture), null);
+});
+
+test("feeder ordinal matching remains independent from main order and invariant to IDs/input order", () => {
+  const fixture = feederPrefixFixture(25);
+  fixture.mains[0]!.availability = [{ start: 35, end: 45 }];
+  fixture.mains[1]!.availability = [{ start: 25, end: 35 }];
+  fixture.feeders.get(fixture.mains[0]!.id)!.availability = [{ start: 5, end: 15 }];
+  fixture.feeders.get(fixture.mains[1]!.id)!.availability = [{ start: 15, end: 25 }];
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    fixture.architecture), null);
+  const renamed = structuredClone(fixture.problem);
+  for (const task of renamed.tasks) {
+    task.id = `x-${task.id}`; task.dependencies = task.dependencies.map((id) => `x-${id}`);
+  }
+  renamed.tasks.reverse();
+  const mains = renamed.tasks.filter(({ kind }) => kind === "main").reverse();
+  const feeders = new Map(mains.map((main) => [main.id,
+    renamed.tasks.find((task) => task.kind === "vocal" && task.participantId === main.participantId)!]));
+  assert.equal(proveMainFeederArchitectureImpossible(renamed, mains, feeders, fixture.architecture), null);
+});

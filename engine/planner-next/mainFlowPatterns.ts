@@ -2,11 +2,27 @@ import type { PlannerNextProblem, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
-  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY";
+  | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY"
+  | "PREREQUISITE_WINDOW" | "FEEDER_PREREQUISITE_PREFIX_CAPACITY";
 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
   slots: readonly number[];
+}
+
+/** Optimistic participant-serial load which must precede a target task. */
+export function optimisticPrerequisiteLeadInMinutes(problem: PlannerNextProblem, target: Task): number {
+  const byId = new Map(problem.tasks.map((task) => [task.id, task]));
+  const ancestors = new Map<string, Task>();
+  const collect = (id: string): void => {
+    const task = byId.get(id);
+    if (!task || task.participantId !== target.participantId || ancestors.has(id)) return;
+    ancestors.set(id, task);
+    for (const dependency of task.dependencies) collect(dependency);
+  };
+  for (const dependency of target.dependencies) collect(dependency);
+  return target.dependencies.some((id) => !ancestors.has(id)) ? 0
+    : [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0);
 }
 
 const covers = (windows: readonly { start: number; end: number }[] | undefined, start: number, end: number): boolean =>
@@ -72,6 +88,7 @@ export function proveMainFeederArchitectureImpossible(
   const resourceById = new Map(problem.resources.map((resource) => [resource.id, resource]));
   const participantById = new Map(problem.participants.map((participant) => [participant.id, participant]));
   const coachById = new Map(problem.coaches.map((coach) => [coach.id, coach]));
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const fits = (task: Task, start: number): boolean => {
     const end = start + task.duration;
     return problem.day.start <= start && end <= problem.day.end
@@ -82,12 +99,82 @@ export function proveMainFeederArchitectureImpossible(
       && (task.requiredResourceIds ?? []).every((id) => covers(resourceById.get(id)?.availability, start, end));
   };
 
+  // Analytic, continuous-time relaxation of one participant's prerequisite closure.
+  // It performs no grid scan and chooses no order between independent ancestors.
+  // Omitted coexistence constraints only enlarge domains, so rejection remains sound.
+  const closureCache = new Map<string, boolean>();
+  const prerequisiteClosureFits = (target: Task, targetStart: number, terminalMain?: Task): boolean => {
+    const cacheKey = `${target.id}@${targetStart}->${terminalMain?.id ?? ""}`;
+    const cached = closureCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+    const ancestors = new Map<string, Task>();
+    const collect = (id: string): void => {
+      const task = taskById.get(id);
+      if (!task || task.participantId !== target.participantId || ancestors.has(id)) return;
+      ancestors.set(id, task);
+      for (const dependency of task.dependencies) collect(dependency);
+    };
+    for (const dependency of target.dependencies) collect(dependency);
+    // Unknown/non-participant ancestors require an exact authority: abstain.
+    if (target.dependencies.some((id) => !ancestors.has(id))) return true;
+    const intersect = (left: readonly { start:number;end:number }[], right: readonly { start:number;end:number }[]) =>
+      left.flatMap((a) => right.flatMap((b) => {
+        const start = Math.max(a.start, b.start), end = Math.min(a.end, b.end);
+        return start < end ? [{ start, end }] : [];
+      }));
+    const domain = (task: Task, deadline: number): Array<{start:number;end:number}> => {
+      let windows = [{ start: problem.day.start, end: Math.min(problem.day.end, deadline) }];
+      const authorities = [task.availability,
+        participantById.get(task.participantId ?? "")?.availability,
+        spaceById.get(task.spaceId)?.availability,
+        task.coachId === undefined ? undefined : coachById.get(task.coachId)?.availability,
+        ...(task.requiredResourceIds ?? []).map((id) => resourceById.get(id)?.availability)];
+      for (const authority of authorities) {
+        if (authority === undefined || authority.length === 0) continue;
+        windows = intersect(windows, authority);
+      }
+      return windows.filter(({ start, end }) => start + task.duration <= end);
+    };
+    const completion = new Map<string, number>();
+    const unresolved = new Set(ancestors.keys());
+    while (unresolved.size > 0) {
+      let progressed = false;
+      for (const id of [...unresolved].sort()) {
+        const task = ancestors.get(id)!;
+        const localDependencies = task.dependencies.filter((dependency) => ancestors.has(dependency));
+        if (localDependencies.some((dependency) => !completion.has(dependency))) continue;
+        const earliest = Math.max(problem.day.start,
+          ...localDependencies.map((dependency) => completion.get(dependency)!));
+        const transition = terminalMain !== undefined && task.id === feederByMain.get(terminalMain.id)?.id
+          && task.coachId !== undefined
+          ? effectiveCoachTransitionMinutes(problem, task.coachId, task.spaceId, terminalMain.spaceId) : 0;
+        const deadline = targetStart - transition;
+        const firstEnd = Math.min(...domain(task, deadline)
+          .map(({ start, end }) => Math.max(start, earliest) + task.duration <= end
+            ? Math.max(start, earliest) + task.duration : Infinity));
+        if (!Number.isFinite(firstEnd)) { closureCache.set(cacheKey, false); return false; }
+        completion.set(id, firstEnd); unresolved.delete(id); progressed = true;
+      }
+      // Cycles/unsupported closure shapes are left to exact search.
+      if (!progressed) return true;
+    }
+    const participantWindows = participantById.get(target.participantId ?? "")?.availability;
+    const capacity = (participantWindows?.length ? participantWindows : [problem.day])
+      .reduce((sum, window) => sum + Math.max(0, Math.min(window.end, targetStart) - Math.max(window.start, problem.day.start)), 0);
+    const result = [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) <= capacity;
+    closureCache.set(cacheKey, result);
+    return result;
+  };
+  const participantClosureFits = (main: Task, mainStart: number): boolean =>
+    prerequisiteClosureFits(main, mainStart, main);
+
   // A bipartite cover is necessary: each main must own a distinct compatible architecture slot.
   const owner = new Map<number, string>();
   const augment = (task: Task, seen: Set<number>): boolean => {
     for (let position = 0; position < architecture.slots.length; position += 1) {
       if (seen.has(position) || task.blockKey !== architecture.pattern[position]
-        || !fits(task, architecture.slots[position]!)) continue;
+        || !fits(task, architecture.slots[position]!)
+        || !participantClosureFits(task, architecture.slots[position]!)) continue;
       seen.add(position);
       const previous = owner.get(position);
       if (previous === undefined || augment(mains.find(({ id }) => id === previous)!, seen)) {
@@ -98,7 +185,22 @@ export function proveMainFeederArchitectureImpossible(
     return false;
   };
   for (const main of [...mains].sort((a, b) => a.id.localeCompare(b.id)))
-    if (!augment(main, new Set())) return "RESOURCE_WINDOW";
+    if (!augment(main, new Set())) {
+      const hasMainOnlyEdge = architecture.slots.some((slot, position) =>
+        main.blockKey === architecture.pattern[position] && fits(main, slot));
+      const feeder = feederByMain.get(main.id);
+      const hasFeederEdge = feeder !== undefined && architecture.slots.some((slot, position) =>
+        main.blockKey === architecture.pattern[position] && [...new Set([
+          problem.day.start,
+          ...(feeder.availability ?? []).map(({ start }) => start),
+          ...(participantById.get(feeder.participantId ?? "")?.availability ?? []).map(({ start }) => start),
+          ...(spaceById.get(feeder.spaceId)?.availability ?? []).map(({ start }) => start),
+          ...(coachById.get(feeder.coachId ?? "")?.availability ?? []).map(({ start }) => start),
+          ...(feeder.requiredResourceIds ?? []).flatMap((id) =>
+            (resourceById.get(id)?.availability ?? []).map(({ start }) => start)),
+        ])].some((start) => start + feeder.duration <= slot && fits(feeder, start)));
+      return hasMainOnlyEdge && hasFeederEdge ? "PREREQUISITE_WINDOW" : "RESOURCE_WINDOW";
+    }
 
   // Only a proven shared coach makes the run serial independently of participant choice.
   // Otherwise parallel feeder work may exist, so capacity remains deliberately unknown.
@@ -127,6 +229,74 @@ export function proveMainFeederArchitectureImpossible(
       const terminalTransition = Math.min(...eligible.map(({ main, feeder }) =>
         effectiveCoachTransitionMinutes(problem, sharedCoachId, feeder.spaceId, main.spaceId)));
       if (feederLoad + terminalTransition > priorCapacity) return "TRANSITION_CAPACITY";
+
+      // Couple feeder prerequisites to every ordinal of one relaxed continuous block.
+      // This certificate applies only when ordinal geometry is identity-independent;
+      // other shapes abstain and remain governed by exact ledgered search.
+      const feederDurations = [...new Set(eligible.map(({ feeder }) => feeder.duration))];
+      const feederSpaces = [...new Set(eligible.map(({ feeder }) => feeder.spaceId))];
+      const hasFeederPrerequisites = eligible.some(({ feeder }) =>
+        optimisticPrerequisiteLeadInMinutes(problem, feeder) > 0);
+      const authorizedMealMaySplitBlock = problem.spaces.some((space) =>
+        feederSpaces.includes(space.id) && space.mealPolicy !== undefined);
+      if (hasFeederPrerequisites && feederDurations.length === 1 && feederSpaces.length === 1
+        && !authorizedMealMaySplitBlock) {
+        const feederDuration = feederDurations[0]!, blockDuration = feederDuration * runLength;
+        const deadline = firstMainStart - terminalTransition;
+        const coachWindows = coachById.get(sharedCoachId)?.availability;
+        const spaceWindows = spaceById.get(feederSpaces[0]!)?.availability;
+        const base = coachWindows?.length ? coachWindows : [problem.day];
+        const room = spaceWindows?.length ? spaceWindows : [problem.day];
+        const ranges = base.flatMap((coachWindow) => room.flatMap((spaceWindow) => {
+          const start = Math.max(problem.day.start, coachWindow.start, spaceWindow.start);
+          const end = Math.min(deadline, problem.day.end, coachWindow.end, spaceWindow.end) - blockDuration;
+          return start <= end ? [{ start, end }] : [];
+        }));
+        const authorityWindows = (task: Task) => [task.availability,
+          participantById.get(task.participantId ?? "")?.availability,
+          spaceById.get(task.spaceId)?.availability,
+          task.coachId === undefined ? undefined : coachById.get(task.coachId)?.availability,
+          ...(task.requiredResourceIds ?? []).map((id) => resourceById.get(id)?.availability)]
+          .flatMap((windows) => windows ?? []);
+        let prefixMatchingExists = false;
+        for (const range of ranges) {
+          const events = new Set<number>([range.start, range.end]);
+          for (let ordinal = 0; ordinal < runLength; ordinal += 1) {
+            for (const { feeder } of eligible) for (const window of authorityWindows(feeder)) {
+              events.add(window.start - ordinal * feederDuration);
+              events.add(window.end - feederDuration - ordinal * feederDuration);
+            }
+          }
+          for (const blockStart of [...events].filter((start) => range.start <= start && start <= range.end)
+            .sort((left, right) => left - right)) {
+            const owner = new Map<number, string>();
+            const augmentOrdinal = (pair: { main: Task; feeder: Task }, seen: Set<number>): boolean => {
+              for (let ordinal = 0; ordinal < runLength; ordinal += 1) {
+                if (seen.has(ordinal)) continue;
+                const start = blockStart + ordinal * feederDuration;
+                if (start + feederDuration
+                    + effectiveCoachTransitionMinutes(problem, sharedCoachId, pair.feeder.spaceId, pair.main.spaceId)
+                    > firstMainStart
+                  || !fits(pair.feeder, start) || !prerequisiteClosureFits(pair.feeder, start)) continue;
+                seen.add(ordinal);
+                const previous = owner.get(ordinal);
+                const previousPair = previous === undefined ? undefined
+                  : eligible.find(({ main }) => main.id === previous);
+                if (previousPair === undefined || augmentOrdinal(previousPair, seen)) {
+                  owner.set(ordinal, pair.main.id); return true;
+                }
+              }
+              return false;
+            };
+            const candidates = [...eligible].sort((left, right) => left.main.id.localeCompare(right.main.id));
+            let matched = 0;
+            for (const pair of candidates) if (augmentOrdinal(pair, new Set())) matched += 1;
+            if (matched >= runLength) { prefixMatchingExists = true; break; }
+          }
+          if (prefixMatchingExists) break;
+        }
+        if (ranges.length > 0 && !prefixMatchingExists) return "FEEDER_PREREQUISITE_PREFIX_CAPACITY";
+      }
     }
     start = end;
   }
