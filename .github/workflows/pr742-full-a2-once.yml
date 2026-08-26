@@ -1,0 +1,32 @@
+name: PR 742 Full A2 Once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  full-a2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Full A2 once
+        run: npm run benchmark:planner-next:a2-full-template | tee /tmp/full-a2.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr742-full-a2
+          path: |
+            /tmp/full-a2.txt
+            docs/evidence/SPEC10-016-full-a2-canonical-template.json
+            docs/evidence/A2-FULL-EXEC-001-first-execution.json
+            docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
