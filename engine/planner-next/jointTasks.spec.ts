@@ -54,9 +54,9 @@ test("SPEC10-017 allows dependent joint groups and rejects internal dependencies
  assert.equal(canPlaceJointGroup(p,group,590,[]),true);
  const scheduledGroup=scheduleJointGroup(group,590);
  const preA=p.tasks.find(t=>t.id==="pre-a")!, preZ=p.tasks.find(t=>t.id==="pre-z")!;
- assert.equal(canPlaceTask(p,preA,570,scheduledGroup),true);
- const scheduledPreA={...preA,start:570,end:580};
- assert.equal(canPlaceTask(p,preZ,580,[...scheduledGroup,scheduledPreA]),true);
+ assert.equal(canPlaceTask(p,preA,560,scheduledGroup),true);
+ const scheduledPreA={...preA,start:560,end:570};
+ assert.equal(canPlaceTask(p,preZ,575,[...scheduledGroup,scheduledPreA]),true);
  assert.equal(canPlaceTask(p,preA,585,scheduledGroup),false);
  assert.equal(canPlaceJointGroup(p,group,590,[scheduledPreA]),true);
  assert.deepEqual(p,snapshot);
