@@ -1,10 +1,12 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import { performance } from "node:perf_hooks";
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
 
 export type TechnicalChainMode = "SEARCH" | "PROBE";
 export type TechnicalChainCandidate = { tasks: ScheduledTask[]; cost: number; rootTaskId: string; start: number; end: number };
 export type TechnicalChainStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
+export type TechnicalChainDeferredQueueMode = "INCREMENTAL_HEAP" | "GLOBAL_SORT_ORACLE";
 export type TechnicalChainCandidateResult = { candidates: TechnicalChainCandidate[]; consumed: number; exhausted: boolean; diagnostics: TechnicalChainDiagnostics };
 export const getTechnicalTasks = (tasks: Task[]) => tasks.filter((t): t is Extract<Task,{kind:"technical"}> => t.kind === "technical");
 export function buildTechnicalPrerequisiteMap(tasks: Task[]): Map<string,string[]> { return new Map(getTechnicalTasks(tasks).map(t=>[t.id,Array.isArray(t.dependencies)?[...t.dependencies]:[]])); }
@@ -34,6 +36,12 @@ export interface TechnicalChainDiagnostics {
   startsEvaluated: number;
   alternativesDeferred: number;
   alternativesRevisited: number;
+  deferredQueuePeak: number;
+  deferredPushes: number;
+  deferredPops: number;
+  deferredGlobalSorts: number;
+  deferredMaintenanceMs: number;
+  startEvaluationMs: number;
 }
 
 export interface TechnicalChainExplorer {
@@ -43,39 +51,90 @@ export interface TechnicalChainExplorer {
   nextCandidate(): TechnicalChainCandidate | null;
 }
 
-type Partial = { tasks: ScheduledTask[]; cost: number };
+type Partial = { tasks: ScheduledTask[]; cost: number; rankKey: string };
 const comparePartial=(left:Partial,right:Partial)=>left.cost-right.cost
   ||right.tasks.length-left.tasks.length
-  ||technicalChainSignature(left.tasks).localeCompare(technicalChainSignature(right.tasks));
+  ||left.rankKey.localeCompare(right.rankKey);
+const partialRankKey=(tasks:ScheduledTask[])=>tasks.map(task=>
+  `${task.start}-${task.end}:${task.spaceId}:${[...(task.requiredResourceIds??[])].sort().join(",")}`).join("|");
+const partial=(tasks:ScheduledTask[],cost:number):Partial=>({tasks,cost,rankKey:partialRankKey(tasks)});
+
+class PartialPriorityQueue {
+  private readonly values:Partial[]=[];
+  get size(){return this.values.length}
+  push(value:Partial){
+    this.values.push(value);
+    let child=this.values.length-1;
+    while(child>0){
+      const parent=Math.floor((child-1)/2);
+      if(comparePartial(this.values[parent]!,value)<=0)break;
+      this.values[child]=this.values[parent]!;child=parent;
+    }
+    this.values[child]=value;
+  }
+  pushBatch(values:Partial[]){for(const value of values)this.push(value)}
+  pop():Partial|undefined{
+    const first=this.values[0],last=this.values.pop();
+    if(!first||!last||this.values.length===0)return first;
+    let parent=0;
+    while(true){
+      const left=parent*2+1;if(left>=this.values.length)break;
+      const right=left+1;
+      const child=right<this.values.length&&comparePartial(this.values[right]!,this.values[left]!)<0?right:left;
+      if(comparePartial(last,this.values[child]!)<=0)break;
+      this.values[parent]=this.values[child]!;parent=child;
+    }
+    this.values[parent]=last;
+    return first;
+  }
+}
+
+class SortedPartialQueue {
+  private values:Partial[]=[];
+  constructor(private readonly onSort:()=>void){}
+  get size(){return this.values.length}
+  pushBatch(values:Partial[]){if(!values.length)return;this.values=[...this.values,...values].sort(comparePartial);this.onSort()}
+  pop(){return this.values.shift()}
+}
 
 /** Local resumable exact explorer. Deferred partials retain their descendants unexpanded until reopened. */
 export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],
   allowance:number,startDomainMode:TechnicalChainStartDomainMode="ANALYTIC_DOMAIN",
-  scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):TechnicalChainExplorer {
+  scheduledSpaceMeals:ScheduledSpaceMeal[]=[],deferredQueueMode:TechnicalChainDeferredQueueMode="INCREMENTAL_HEAP",
+  measureTimings=false):TechnicalChainExplorer {
   const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];
   const diagnostics:TechnicalChainDiagnostics={startsExplored:0,expansions:0,completeCandidatesGenerated:0,
     completeCandidatesYielded:0,maximumPartialStatesPerDepth:0,activeFrontierPeak:root&&ordered.length>=2?1:0,
     fullGridStarts:0,analyticEligibleStarts:0,analyticallyEliminatedStarts:0,startsEvaluated:0,
-    alternativesDeferred:0,alternativesRevisited:0};
+    alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
+    deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0};
   let consumed=0,budgetExhausted=false;
-  let active:Partial[]=root&&ordered.length>=2?[{tasks:[],cost:0}]:[];
-  let deferred:Partial[]=[];
+  let active:Partial[]=root&&ordered.length>=2?[partial([],0)]:[];
+  const deferred=deferredQueueMode==="GLOBAL_SORT_ORACLE"
+    ?new SortedPartialQueue(()=>{diagnostics.deferredGlobalSorts+=1})
+    :new PartialPriorityQueue();
   const refreshEliminated=()=>{diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts};
   const refill=()=>{
-    if(active.length||!deferred.length)return;
-    active=deferred.splice(0,Math.min(problem.budget.bestK,deferred.length));
+    if(active.length||!deferred.size)return;
+    const started=measureTimings?performance.now():0;
+    active=[];
+    while(active.length<problem.budget.bestK&&deferred.size){active.push(deferred.pop()!);diagnostics.deferredPops+=1;}
     diagnostics.alternativesRevisited+=active.length;
     diagnostics.activeFrontierPeak=Math.max(diagnostics.activeFrontierPeak,active.length);
+    if(measureTimings)diagnostics.deferredMaintenanceMs+=performance.now()-started;
   };
   const enqueue=(children:Partial[])=>{
+    const started=measureTimings?performance.now():0;
     const ranked=[...children].sort(comparePartial);
     const displaced=active;
     active=ranked.slice(0,problem.budget.bestK);
     const newlyDeferred=[...displaced,...ranked.slice(problem.budget.bestK)];
     diagnostics.alternativesDeferred+=newlyDeferred.length;
-    deferred=[...deferred,...newlyDeferred].sort(comparePartial);
+    deferred.pushBatch(newlyDeferred);diagnostics.deferredPushes+=newlyDeferred.length;
+    diagnostics.deferredQueuePeak=Math.max(diagnostics.deferredQueuePeak,deferred.size);
     diagnostics.activeFrontierPeak=Math.max(diagnostics.activeFrontierPeak,active.length);
     diagnostics.maximumPartialStatesPerDepth=Math.max(diagnostics.maximumPartialStatesPerDepth,active.length);
+    if(measureTimings)diagnostics.deferredMaintenanceMs+=performance.now()-started;
   };
   const explorer:TechnicalChainExplorer={
     get consumed(){return consumed},get exhausted(){return budgetExhausted},diagnostics,
@@ -91,6 +150,7 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
           return {tasks:state.tasks,cost:state.cost,rootTaskId:root!.id,start:state.tasks[0]!.start,end:last.end};
         }
         const task=ordered[state.tasks.length]!,depth=state.tasks.length;
+        const evaluationStarted=measureTimings?performance.now():0;
         const earliest=state.tasks.at(-1)?.end??problem.day.start;
         const prior=[...placed,...state.tasks];
         const logical=Math.max(0,Math.floor((problem.day.end-task.duration-earliest)/5)+1);
@@ -111,8 +171,9 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
             const resource=problem.resources.find(item=>item.id===id);
             return sum+resourcePresenceIncrement(id,prior,scheduled)*presencePreferenceWeight(resource?.presencePreference??"OFF");
           },0);
-          children.push({tasks:[...state.tasks,scheduled],cost:state.cost+incremental});
+          children.push(partial([...state.tasks,scheduled],state.cost+incremental));
         }
+        if(measureTimings)diagnostics.startEvaluationMs+=performance.now()-evaluationStarted;
         enqueue(children);
       }
     },
@@ -127,12 +188,13 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
   const diagnostics=():TechnicalChainDiagnostics=>({startsExplored,expansions:consumed,
     completeCandidatesGenerated:complete.length,completeCandidatesYielded:complete.length,
     maximumPartialStatesPerDepth:max,activeFrontierPeak:max,fullGridStarts:consumed,analyticEligibleStarts:consumed,
-    analyticallyEliminatedStarts:0,startsEvaluated:consumed,alternativesDeferred:0,alternativesRevisited:0});
+    analyticallyEliminatedStarts:0,startsEvaluated:consumed,alternativesDeferred:0,alternativesRevisited:0,
+    deferredQueuePeak:0,deferredPushes:0,deferredPops:0,deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0});
   const finish=(exhausted:boolean):TechnicalChainCandidateResult=>({candidates:complete
     .sort((a,b)=>a.cost-b.cost||technicalChainSignature(a.tasks).localeCompare(technicalChainSignature(b.tasks)))
     .slice(0,mode==="SEARCH"?problem.budget.bestK:complete.length),consumed,exhausted,diagnostics:diagnostics()});
   if(!root||ordered.length<2)return finish(false);
-  let states:Partial[]=[{tasks:[],cost:0}];
+  let states:Partial[]=[partial([],0)];
   for(let depth=0;depth<ordered.length;depth++){
     const task=ordered[depth]!,last=depth===ordered.length-1,next:Partial[]=[];
     for(const state of states){
@@ -144,7 +206,7 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
         if(!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
         const scheduled={...task,start,end:start+task.duration};
         const incremental=[...new Set(task.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(item=>item.id===id);return sum+resourcePresenceIncrement(id,prior,scheduled)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0);
-        const candidate={tasks:[...state.tasks,scheduled],cost:state.cost+incremental};
+        const candidate=partial([...state.tasks,scheduled],state.cost+incremental);
         if(last){complete.push({tasks:candidate.tasks,cost:candidate.cost,rootTaskId:root.id,start:candidate.tasks[0]!.start,end:scheduled.end});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
         else next.push(candidate);
       }

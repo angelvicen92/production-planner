@@ -64,3 +64,43 @@ test("negative PROBE abstains on budget exhaustion before deferred alternatives 
  assert.deepEqual(result.candidates,[]);
  assert.equal(result.diagnostics.startsEvaluated,1);
 });
+
+test("incremental deferred queue preserves the global-sort oracle order and branch accounting",()=>{
+ const create=()=>{const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.budget.bestK=1;return p};
+ const heapProblem=create(),heapChain=getTechnicalChains(heapProblem.tasks)[0]!;
+ const heap=createTechnicalChainExplorer(heapProblem,heapChain,[],10_000,"ANALYTIC_DOMAIN",[],"INCREMENTAL_HEAP");
+ const oracleProblem=create(),oracle=createTechnicalChainExplorer(oracleProblem,getTechnicalChains(oracleProblem.tasks)[0]!,[],10_000,"ANALYTIC_DOMAIN",[],"GLOBAL_SORT_ORACLE");
+ const collect=(explorer:ReturnType<typeof createTechnicalChainExplorer>)=>{const out=[];for(let candidate;(candidate=explorer.nextCandidate());)out.push(candidate.tasks.map(({start,end,spaceId})=>({start,end,spaceId})));return out};
+ assert.deepEqual(collect(heap),collect(oracle));
+ assert.equal(heap.consumed,oracle.consumed);
+ assert.equal(heap.diagnostics.deferredPushes,oracle.diagnostics.deferredPushes);
+ assert.equal(heap.diagnostics.deferredPops,oracle.diagnostics.deferredPops);
+ assert.equal(heap.diagnostics.deferredGlobalSorts,0);
+ assert.ok(oracle.diagnostics.deferredGlobalSorts>0);
+});
+
+test("ranking is invariant to equivalent task IDs and input order",()=>{
+ const run=(renamed:boolean)=>{const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.budget.bestK=1;
+   const chain=getTechnicalChains(p.tasks)[0]!;
+   if(renamed){chain[0]!.id="z-root";chain[1]!.id="a-child";chain[1]!.dependencies=["z-root"]}
+   const result=generateTechnicalChainCandidates(p,[...chain].reverse(),[],10_000);
+   return result.candidates.map(candidate=>candidate.tasks.map(({start,end,spaceId})=>({start,end,spaceId}))) };
+ assert.deepEqual(run(false),run(true));
+});
+
+test("large deferred queue uses incremental operations, retains every alternative, and respects bestK",()=>{
+ const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.budget.bestK=1;p.day={start:0,end:10_050};
+ const chain=getTechnicalChains(p.tasks)[0]!;for(const task of chain)task.duration=5;
+ const resource=p.resources.find(({id})=>id==="technical-chain-unit")!;resource.availability=[{start:0,end:10_050}];resource.presencePreference="OFF";
+ for(const space of p.spaces.filter(({id})=>id.startsWith("technical-chain-room-")))space.availability=[{start:0,end:10_050}];
+ const explorer=createTechnicalChainExplorer(p,chain,[],20_000);
+ let recovered=0;while(recovered<1_500&&explorer.nextCandidate())recovered+=1;
+ assert.equal(recovered,1_500);
+ assert.ok(explorer.diagnostics.deferredQueuePeak>3_000);
+ assert.ok(explorer.diagnostics.deferredPushes>3_000);
+ assert.ok(explorer.diagnostics.deferredPops>=1_499);
+ assert.equal(explorer.diagnostics.alternativesDeferred,explorer.diagnostics.deferredPushes);
+ assert.equal(explorer.diagnostics.alternativesRevisited,explorer.diagnostics.deferredPops);
+ assert.equal(explorer.diagnostics.deferredGlobalSorts,0);
+ assert.equal(explorer.diagnostics.activeFrontierPeak,1);
+});

@@ -147,6 +147,9 @@ test("bestK=1 revisits a worse technical-chain alternative when the preferred pa
   assert.ok(result.evidence.technicalChainAlternativesDeferred>0);
   assert.ok(result.evidence.technicalChainAlternativesRevisited>0);
   assert.equal(result.evidence.technicalChainActiveFrontierPeak,1);
+  assert.ok(result.evidence.technicalChainDeferredQueuePeak>0);
+  assert.equal(result.evidence.technicalChainDeferredPushes,result.evidence.technicalChainAlternativesDeferred);
+  assert.equal(result.evidence.technicalChainDeferredPops,result.evidence.technicalChainAlternativesRevisited);
   assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
 });
 
