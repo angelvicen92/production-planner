@@ -27,7 +27,10 @@ export function synchronizedJointTasks(a: ScheduledTask,b: ScheduledTask): boole
 export function scheduleJointGroup(tasks: Task[],start:number): ScheduledTask[] { return [...tasks].sort((a,b)=>a.id.localeCompare(b.id)).map(t=>({...t,start,end:start+t.duration})); }
 export function canPlaceJointGroup(problem: PlannerNextProblem,tasks: Task[],start:number,placed:ScheduledTask[]): boolean {
   if (!structurallyCompatibleJointGroup(tasks)) return false;
-  return tasks.every(task=>task.dependencies.every(id=>{const dep=placed.find(other=>other.id===id);return dep!==undefined&&dep.end<=start;}) && canPlaceTask(problem,task,start,placed));
+  // Search order is not temporal order. `canPlaceTask` enforces precedence against whichever
+  // endpoint is already scheduled, so an unscheduled predecessor must not make a joint anchor
+  // impossible merely because this search phase happens to visit the joint work item first.
+  return tasks.every(task=>canPlaceTask(problem,task,start,placed));
 }
 export function jointGroupStarts(problem:PlannerNextProblem,tasks:Task[],placed:ScheduledTask[],limit=Number.POSITIVE_INFINITY):number[]{
   const starts:number[]=[]; const duration=tasks[0]?.duration ?? 0;
