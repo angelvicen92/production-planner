@@ -50,6 +50,10 @@ export interface ExactItinerantPlanEvidence {
   branchesExplored: number;
   coreBranches: number;
   standaloneBranches: number;
+  jointGroupFullGridStarts: number;
+  jointGroupAnalyticEligibleStarts: number;
+  jointGroupAnalyticallyEliminatedStarts: number;
+  jointGroupStartsEvaluated: number;
   standaloneStartChecks: number;
   standaloneTaskSelections: number;
   standaloneZeroAlternativePrunes: number;
@@ -221,6 +225,7 @@ export interface ExactItinerantPlanResult {
 type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
+export type JointGroupStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
 export interface StandaloneForwardStaticDomain {
   readonly intervals: ReadonlyArray<Readonly<ClosedStartInterval>>;
@@ -368,6 +373,20 @@ export function standaloneForwardDynamicDomain(problem: PlannerNextProblem, task
   return startDomain(problem, domain);
 }
 
+/** Exact common start domain for synchronized members against all materialized authorities. */
+export function standaloneJointGroupStartDomain(problem: PlannerNextProblem, tasks: Task[],
+  placed: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): StandaloneForwardDynamicDomain {
+  if (tasks.length === 0) return startDomain(problem, []);
+  let common = standaloneForwardDynamicDomain(problem, tasks[0]!, placed,
+    standaloneForwardStaticDomain(problem, tasks[0]!, scheduledSpaceMeals)).intervals.map((interval) => ({ ...interval }));
+  for (const task of tasks.slice(1)) {
+    const member = standaloneForwardDynamicDomain(problem, task, placed,
+      standaloneForwardStaticDomain(problem, task, scheduledSpaceMeals));
+    common = intersectStartDomains(common, member.intervals.map((interval) => ({ ...interval })));
+  }
+  return startDomain(problem, common);
+}
+
 function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
   const participant = task.kind === "technical" ? undefined : problem.participants.find(({ id }) => id === task.participantId);
   const space = problem.spaces.find(({ id }) => id === task.spaceId);
@@ -410,7 +429,7 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
-  selection: StandaloneCompletionSelection): StandaloneSearchResult {
+  selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -593,9 +612,18 @@ const searchAtomicItems = (
   const item = atomicItems[index]!;
   if (item.kind === "joint") {
     const duration = item.tasks[0]?.duration ?? 0;
-    for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) {
+    const fullGridCount = Math.max(0, Math.floor((problem.day.end - duration - problem.day.start) / 5) + 1);
+    const analyticDomain = standaloneJointGroupStartDomain(problem, item.tasks, [...coreTasks, ...placed], coreMeals);
+    const starts = jointGroupStartDomainMode === "FULL_GRID"
+      ? (function* () { for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) yield start; })()
+      : analyticDomain.starts();
+    evidence.jointGroupFullGridStarts += fullGridCount;
+    evidence.jointGroupAnalyticEligibleStarts += analyticDomain.eligibleStartCount;
+    evidence.jointGroupAnalyticallyEliminatedStarts += fullGridCount - analyticDomain.eligibleStartCount;
+    for (const start of starts) {
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
       evidence.standaloneBranches += 1;
+      evidence.jointGroupStartsEvaluated += 1;
       if (!canPlaceJointGroup(problem, item.tasks, start, [...coreTasks, ...placed])) continue;
       const scheduled = scheduleJointGroup(item.tasks, start);
       const child = searchAtomicItems(index + 1, [...placed, ...scheduled], [...selectionOrder, ...scheduled.map(({ id }) => id)]);
@@ -722,6 +750,8 @@ export interface ExactItinerantPlanSearchOptions {
   standaloneCompletionSelection?: StandaloneCompletionSelection;
   /** Test oracle only; production always uses the exact analytic static domain. */
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
+  /** Test oracle only; production intersects exact member domains before projecting grid starts. */
+  jointGroupStartDomainMode?: JointGroupStartDomainMode;
   /** Test oracle only; production memoizes positive block-closed witnesses locally. */
   standaloneForwardWitnessMemoization?: boolean;
   causalDiagnostic?: boolean;
@@ -733,6 +763,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
+    jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
+    jointGroupAnalyticallyEliminatedStarts: 0, jointGroupStartsEvaluated: 0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
@@ -935,7 +967,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     evidence.coreCompleteLeavesEvaluated += 1;
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
-      completeSelectionMode);
+      completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN");
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
