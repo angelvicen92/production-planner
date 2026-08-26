@@ -6,7 +6,7 @@ import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
 import { validatePlan } from "./validate";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
@@ -146,7 +146,22 @@ test("bestK=1 revisits a worse technical-chain alternative when the preferred pa
   assert.ok(result.scheduledTasks.find(({id})=>id==="technical-a")!.start>=10);
   assert.ok(result.evidence.technicalChainAlternativesDeferred>0);
   assert.ok(result.evidence.technicalChainAlternativesRevisited>0);
+  assert.equal(result.evidence.technicalChainActiveFrontierPeak,1);
   assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
+});
+
+test("standalone forward domains delegate to the canonical placement domain authority",()=>{
+  const input=problem([auxiliary("shared-domain","a",[{start:20,end:80}],["unit"])]);
+  const task=input.tasks.find(({id})=>id==="shared-domain")!;
+  const placed=[{...auxiliary("blocker","b",[]),spaceId:task.spaceId,start:35,end:50}];
+  const canonicalStatic=exactTaskStaticStartDomain(input,task);
+  const standaloneStatic=standaloneForwardStaticDomain(input,task);
+  assert.deepEqual(standaloneStatic.intervals,canonicalStatic.intervals);
+  assert.deepEqual([...standaloneStatic.starts()],[...canonicalStatic.starts()]);
+  const canonicalDynamic=exactTaskDynamicStartDomain(input,task,placed,canonicalStatic);
+  const standaloneDynamic=standaloneForwardDynamicDomain(input,task,placed,standaloneStatic);
+  assert.deepEqual(standaloneDynamic.intervals,canonicalDynamic.intervals);
+  assert.deepEqual([...standaloneDynamic.starts()],[...canonicalDynamic.starts()]);
 });
 
 test("shared resources never overlap and the narrower task is selected first", () => {

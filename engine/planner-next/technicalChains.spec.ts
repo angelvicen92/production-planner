@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { preflight } from "./validate";
-import { generateTechnicalChainCandidates, getTechnicalChains, orderedTechnicalChainMembers, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
+import { createTechnicalChainExplorer, generateTechnicalChainCandidates, getTechnicalChains, orderedTechnicalChainMembers, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { technicalChainScenario } from "./scenarios/technicalChainScenario";
 
 test("derives a linear chain exclusively from dependencies regardless of physical order",()=>{const p=technicalChainScenario(),chain=getTechnicalChains([...p.tasks].reverse())[0]!;assert.deepEqual(orderedTechnicalChainMembers(chain).map(t=>t.id),["technical-chain-positioning","technical-chain-camera-test"]);});
@@ -39,4 +39,28 @@ test("analytic technical domains apply materialized dependencies and resource tr
  assert.equal(empty.diagnostics.analyticEligibleStarts,0);
  assert.equal(empty.diagnostics.startsEvaluated,0);
  assert.deepEqual(empty.candidates,[]);
+});
+
+test("bestK is an active frontier and deferred partials remain unexpanded until requested",()=>{
+ const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.budget.bestK=1;
+ const explorer=createTechnicalChainExplorer(p,getTechnicalChains(p.tasks)[0]!,[],10_000);
+ const first=explorer.nextCandidate();
+ assert.ok(first);
+ assert.equal(explorer.diagnostics.activeFrontierPeak,1);
+ assert.ok(explorer.diagnostics.alternativesDeferred>0);
+ assert.equal(explorer.diagnostics.alternativesRevisited,0);
+ const evaluatedBeforeReopen=explorer.diagnostics.startsEvaluated;
+ const second=explorer.nextCandidate();
+ assert.ok(second);
+ assert.ok(explorer.diagnostics.alternativesRevisited>0);
+ assert.ok(explorer.diagnostics.startsEvaluated>evaluatedBeforeReopen);
+ assert.equal(explorer.diagnostics.activeFrontierPeak,1);
+});
+
+test("negative PROBE abstains on budget exhaustion before deferred alternatives are exhausted",()=>{
+ const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.budget.bestK=1;
+ const result=generateTechnicalChainCandidates(p,getTechnicalChains(p.tasks)[0]!,[],1,"PROBE",1);
+ assert.equal(result.exhausted,true);
+ assert.deepEqual(result.candidates,[]);
+ assert.equal(result.diagnostics.startsEvaluated,1);
 });

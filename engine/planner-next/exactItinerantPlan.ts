@@ -14,7 +14,8 @@ import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
+  exactTaskDynamicStartDomain, exactTaskStaticStartDomain, intersectExactStartIntervals } from "./placement";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
@@ -27,8 +28,7 @@ import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
-import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
-import { protectedMealBlocksSpace } from "./spaceMeals";
+import { createTechnicalChainExplorer, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -59,6 +59,7 @@ export interface ExactItinerantPlanEvidence {
   technicalChainAnalyticallyEliminatedStarts:number;
   technicalChainStartsEvaluated:number;
   technicalChainCompleteCandidates:number;
+  technicalChainActiveFrontierPeak:number;
   technicalChainAlternativesDeferred:number;
   technicalChainAlternativesRevisited:number;
   standaloneStartChecks: number;
@@ -246,39 +247,6 @@ const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompar
 const orderScheduled = (tasks: ScheduledTask[]): ScheduledTask[] =>
   [...tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
 
-function intersectStartDomains(left: ClosedStartInterval[], right: ClosedStartInterval[]): ClosedStartInterval[] {
-  const intersections: ClosedStartInterval[] = [];
-  for (const a of left) for (const b of right) {
-    const start = Math.max(a.start, b.start), end = Math.min(a.end, b.end);
-    if (start <= end) intersections.push({ start, end });
-  }
-  return intersections.sort((a, b) => a.start - b.start || a.end - b.end);
-}
-
-function subtractBlockedInterval(domain: ClosedStartInterval[], blocked: { start: number; end: number }, duration: number): ClosedStartInterval[] {
-  const beforeEnd = blocked.start - duration, afterStart = blocked.end;
-  return domain.flatMap((interval) => {
-    const result: ClosedStartInterval[] = [];
-    if (interval.start <= Math.min(interval.end, beforeEnd)) result.push({ start: interval.start, end: Math.min(interval.end, beforeEnd) });
-    if (Math.max(interval.start, afterStart) <= interval.end) result.push({ start: Math.max(interval.start, afterStart), end: interval.end });
-    return result;
-  });
-}
-
-function windowStartDomain(windows: Array<{ start: number; end: number }>, duration: number): ClosedStartInterval[] {
-  return windows.filter(({ start, end }) => start + duration <= end).map(({ start, end }) => ({ start, end: end - duration }));
-}
-
-function mergeStartIntervals(intervals: ClosedStartInterval[]): ClosedStartInterval[] {
-  const merged: ClosedStartInterval[] = [];
-  for (const interval of [...intervals].sort((a, b) => a.start - b.start || a.end - b.end)) {
-    const previous = merged.at(-1);
-    if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
-    else merged.push({ ...interval });
-  }
-  return merged;
-}
-
 const causalHash=(value:unknown):string=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const canonicalIntervals=(intervals:ReadonlyArray<Readonly<ClosedStartInterval>>)=>intervals.map(({start,end})=>({start,end}));
 
@@ -304,94 +272,30 @@ export function standaloneForwardAuthoritySignature(problem:PlannerNextProblem,t
     occupations:relevant,meals:meals.filter(meal=>meal.spaceId===task.spaceId||problem.resources.some(resource=>resourceIds.includes(resource.id)&&resource.assignedSpaceId===meal.spaceId)).sort(byId)});
 }
 
-function firstGridStart(dayStart: number, intervalStart: number): number {
-  return dayStart + Math.max(0, Math.ceil((intervalStart - dayStart) / 5)) * 5;
-}
-
-function startDomain(problem: PlannerNextProblem, intervals: ClosedStartInterval[]): StandaloneForwardStaticDomain {
-  const normalized = mergeStartIntervals(intervals);
-  const eligibleStartCount = normalized.reduce((count, interval) => {
-    const first = firstGridStart(problem.day.start, interval.start);
-    return count + (first <= interval.end ? Math.floor((interval.end - first) / 5) + 1 : 0);
-  }, 0);
-  return { intervals: normalized, eligibleStartCount, *starts() {
-    for (const interval of normalized) {
-      const first = firstGridStart(problem.day.start, interval.start);
-      for (let start = first; start <= interval.end; start += 5) yield start;
-    }
-  } };
-}
-
 /** Exact placed-independent interval domain with a lazy projection onto the original day-relative grid. */
 export function standaloneForwardStaticDomain(problem: PlannerNextProblem, task: Task,
   scheduledSpaceMeals: ScheduledSpaceMeal[] = []): StandaloneForwardStaticDomain {
-  const participant = task.kind === "technical" ? undefined : problem.participants.find(({ id }) => id === task.participantId);
-  const coach = task.kind === "technical" || task.coachId === undefined ? undefined : problem.coaches.find(({ id }) => id === task.coachId);
-  const space = problem.spaces.find(({ id }) => id === task.spaceId);
-  const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
-  const unit = task.itinerantUnitId === undefined ? undefined : problem.itinerantUnits?.find(({ id }) => id === task.itinerantUnitId);
-  if ((task.kind !== "technical" && !participant) || (task.coachId !== undefined && !coach) || !space
-    || resources.some((resource) => !resource) || (task.itinerantUnitId !== undefined && !unit))
-    return { intervals: [], eligibleStartCount: 0, *starts() {} };
-  let domain: ClosedStartInterval[] = [{ start: problem.day.start, end: problem.day.end - task.duration }];
-  const availabilities = [task.availability, participant?.availability, coach?.availability, space.availability,
-    ...resources.map((resource) => resource!.availability), unit?.availability]
-    .filter((windows): windows is Array<{ start: number; end: number }> => windows !== undefined);
-  for (const windows of availabilities) domain = intersectStartDomains(domain, windowStartDomain(windows, task.duration));
-  const blocked = [
-    ...(problem.protectedMeal && protectedMealBlocksSpace(problem, task.spaceId) ? [problem.protectedMeal] : []),
-    ...(problem.itinerantUnitMeals ?? []).filter((meal) => meal.itinerantUnitId === task.itinerantUnitId).map(({ interval }) => interval),
-    ...scheduledSpaceMeals.filter((meal) => meal.spaceId === task.spaceId
-      || resources.some((resource) => resource!.assignedSpaceId === meal.spaceId)),
-  ];
-  for (const interval of blocked) domain = subtractBlockedInterval(domain, interval, task.duration);
-  return startDomain(problem, domain);
+  return exactTaskStaticStartDomain(problem, task, scheduledSpaceMeals);
 }
 
 /** Exact interval projection of every placed-task authority in canonical placement. */
 export function standaloneForwardDynamicDomain(problem: PlannerNextProblem, task: Task,
   placed: ScheduledTask[], staticDomain = standaloneForwardStaticDomain(problem, task)): StandaloneForwardDynamicDomain {
-  let domain = staticDomain.intervals.map((interval) => ({ ...interval }));
-  for (const other of placed) {
-    if (task.dependencies.includes(other.id))
-      domain = intersectStartDomains(domain, [{ start: other.end, end: Number.POSITIVE_INFINITY }]);
-    if (other.dependencies.includes(task.id))
-      domain = intersectStartDomains(domain, [{ start: Number.NEGATIVE_INFINITY, end: other.start - task.duration }]);
-
-    const sharedParticipant = task.participantId !== undefined && other.participantId === task.participantId;
-    const sharedCoach = task.coachId !== undefined && other.coachId === task.coachId;
-    const sharedResources = (task.requiredResourceIds ?? []).filter((id) => (other.requiredResourceIds ?? []).includes(id));
-    const sharedSpace = task.spaceId === other.spaceId;
-    if (!sharedParticipant && !sharedCoach && !sharedSpace && sharedResources.length === 0) continue;
-
-    let beforeMargin = 0, afterMargin = 0;
-    if (!sharedSpace) {
-      if (sharedParticipant) beforeMargin = afterMargin = problem.participantTransitionMinutes;
-      if (sharedCoach && task.coachId !== undefined) {
-        beforeMargin = Math.max(beforeMargin, effectiveCoachTransitionMinutes(problem, task.coachId, task.spaceId, other.spaceId));
-        afterMargin = Math.max(afterMargin, effectiveCoachTransitionMinutes(problem, task.coachId, other.spaceId, task.spaceId));
-      }
-      for (const id of sharedResources) beforeMargin = afterMargin = Math.max(beforeMargin, afterMargin,
-        effectiveResourceTransitionMinutes(problem, id));
-    }
-    domain = subtractBlockedInterval(domain,
-      { start: other.start - beforeMargin, end: other.end + afterMargin }, task.duration);
-  }
-  return startDomain(problem, domain);
+  return exactTaskDynamicStartDomain(problem, task, placed, staticDomain);
 }
 
 /** Exact common start domain for synchronized members against all materialized authorities. */
 export function standaloneJointGroupStartDomain(problem: PlannerNextProblem, tasks: Task[],
   placed: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): StandaloneForwardDynamicDomain {
-  if (tasks.length === 0) return startDomain(problem, []);
+  if (tasks.length === 0) return exactStartDomainFromIntervals(problem, []);
   let common = standaloneForwardDynamicDomain(problem, tasks[0]!, placed,
     standaloneForwardStaticDomain(problem, tasks[0]!, scheduledSpaceMeals)).intervals.map((interval) => ({ ...interval }));
   for (const task of tasks.slice(1)) {
     const member = standaloneForwardDynamicDomain(problem, task, placed,
       standaloneForwardStaticDomain(problem, task, scheduledSpaceMeals));
-    common = intersectStartDomains(common, member.intervals.map((interval) => ({ ...interval })));
+    common = intersectExactStartIntervals(common, member.intervals.map((interval) => ({ ...interval })));
   }
-  return startDomain(problem, common);
+  return exactStartDomainFromIntervals(problem, common);
 }
 
 function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
@@ -642,22 +546,30 @@ const searchAtomicItems = (
       evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
     return "DEAD_END";
   }
-  const generated = generateTechnicalChainCandidates(
-    problem,
-    item.tasks,
-    [...coreTasks, ...placed],
-    Math.max(0, ledger.limit - ledger.branchesExplored), "SEARCH", 1, technicalChainStartDomainMode, coreMeals,
-  );
-  evidence.technicalChainFullGridStarts+=generated.diagnostics.fullGridStarts;
-  evidence.technicalChainAnalyticEligibleStarts+=generated.diagnostics.analyticEligibleStarts;
-  evidence.technicalChainAnalyticallyEliminatedStarts+=generated.diagnostics.analyticallyEliminatedStarts;
-  evidence.technicalChainStartsEvaluated+=generated.diagnostics.startsEvaluated;
-  evidence.technicalChainCompleteCandidates+=generated.diagnostics.completeCandidatesGenerated;
-  evidence.technicalChainAlternativesDeferred+=generated.diagnostics.alternativesDeferred;
-  if (generated.consumed > 0 && !ledger.consume("STANDALONE", generated.consumed)) return "BUDGET_EXHAUSTED";
-  if (generated.exhausted) return "BUDGET_EXHAUSTED";
-  for (const [candidateIndex,candidate] of generated.candidates.entries()) {
-    if(candidateIndex>=problem.budget.bestK)evidence.technicalChainAlternativesRevisited+=1;
+  const explorer=createTechnicalChainExplorer(problem,item.tasks,[...coreTasks,...placed],
+    Math.max(0,ledger.limit-ledger.branchesExplored),technicalChainStartDomainMode,coreMeals);
+  let accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0};
+  const accountExplorer=()=>{
+    const diagnostics=explorer.diagnostics;
+    const consumedDelta=explorer.consumed-accounted.consumed;
+    if(consumedDelta>0&&!ledger.consume("STANDALONE",consumedDelta))return false;
+    evidence.technicalChainFullGridStarts+=diagnostics.fullGridStarts-accounted.full;
+    evidence.technicalChainAnalyticEligibleStarts+=diagnostics.analyticEligibleStarts-accounted.eligible;
+    evidence.technicalChainAnalyticallyEliminatedStarts+=diagnostics.analyticallyEliminatedStarts-accounted.eliminated;
+    evidence.technicalChainStartsEvaluated+=diagnostics.startsEvaluated-accounted.consumed;
+    evidence.technicalChainCompleteCandidates+=diagnostics.completeCandidatesYielded-accounted.complete;
+    evidence.technicalChainAlternativesDeferred+=diagnostics.alternativesDeferred-accounted.deferred;
+    evidence.technicalChainAlternativesRevisited+=diagnostics.alternativesRevisited-accounted.revisited;
+    evidence.technicalChainActiveFrontierPeak=Math.max(evidence.technicalChainActiveFrontierPeak,diagnostics.activeFrontierPeak);
+    accounted={consumed:explorer.consumed,full:diagnostics.fullGridStarts,eligible:diagnostics.analyticEligibleStarts,
+      eliminated:diagnostics.analyticallyEliminatedStarts,complete:diagnostics.completeCandidatesYielded,
+      deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited};
+    return true;
+  };
+  while(true){
+    const candidate=explorer.nextCandidate();
+    if(!accountExplorer()||explorer.exhausted)return "BUDGET_EXHAUSTED";
+    if(!candidate)break;
     const child = searchAtomicItems(index + 1, [...placed, ...candidate.tasks],
       [...selectionOrder, ...candidate.tasks.map(({ id }) => id)]);
     if (child !== "DEAD_END") return child;
@@ -784,7 +696,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     jointGroupAnalyticallyEliminatedStarts: 0, jointGroupStartsEvaluated: 0,
     technicalChainFullGridStarts:0,technicalChainAnalyticEligibleStarts:0,
     technicalChainAnalyticallyEliminatedStarts:0,technicalChainStartsEvaluated:0,
-    technicalChainCompleteCandidates:0,technicalChainAlternativesDeferred:0,technicalChainAlternativesRevisited:0,
+    technicalChainCompleteCandidates:0,technicalChainActiveFrontierPeak:0,
+    technicalChainAlternativesDeferred:0,technicalChainAlternativesRevisited:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
