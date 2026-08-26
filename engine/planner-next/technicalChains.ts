@@ -1,12 +1,13 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { performance } from "node:perf_hooks";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { canPlaceTask, exactTaskStartDomain, prepareTaskPlacementAuthority } from "./placement";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
 
 export type TechnicalChainMode = "SEARCH" | "PROBE";
 export type TechnicalChainCandidate = { tasks: ScheduledTask[]; cost: number; rootTaskId: string; start: number; end: number };
 export type TechnicalChainStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 export type TechnicalChainDeferredQueueMode = "INCREMENTAL_HEAP" | "GLOBAL_SORT_ORACLE";
+export type TechnicalChainPlacementAuthorityMode = "PREPARED_AUTHORITY" | "CAN_PLACE_ORACLE";
 export type TechnicalChainCandidateResult = { candidates: TechnicalChainCandidate[]; consumed: number; exhausted: boolean; diagnostics: TechnicalChainDiagnostics };
 export const getTechnicalTasks = (tasks: Task[]) => tasks.filter((t): t is Extract<Task,{kind:"technical"}> => t.kind === "technical");
 export function buildTechnicalPrerequisiteMap(tasks: Task[]): Map<string,string[]> { return new Map(getTechnicalTasks(tasks).map(t=>[t.id,Array.isArray(t.dependencies)?[...t.dependencies]:[]])); }
@@ -42,6 +43,11 @@ export interface TechnicalChainDiagnostics {
   deferredGlobalSorts: number;
   deferredMaintenanceMs: number;
   startEvaluationMs: number;
+  preparedAuthorityBuilds:number;
+  preparedAuthorityHits:number;
+  fixedPlacedScansAvoided:number;
+  domainBuildMs:number;
+  finalPlacementCheckMs:number;
 }
 
 export interface TechnicalChainExplorer {
@@ -101,13 +107,17 @@ class SortedPartialQueue {
 export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],
   allowance:number,startDomainMode:TechnicalChainStartDomainMode="ANALYTIC_DOMAIN",
   scheduledSpaceMeals:ScheduledSpaceMeal[]=[],deferredQueueMode:TechnicalChainDeferredQueueMode="INCREMENTAL_HEAP",
-  measureTimings=false):TechnicalChainExplorer {
+  measureTimings=false,placementAuthorityMode:TechnicalChainPlacementAuthorityMode="PREPARED_AUTHORITY"):TechnicalChainExplorer {
   const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];
+  const preparedAuthorities=placementAuthorityMode==="PREPARED_AUTHORITY"
+    ?ordered.map(task=>prepareTaskPlacementAuthority(problem,task,placed,scheduledSpaceMeals)):[];
   const diagnostics:TechnicalChainDiagnostics={startsExplored:0,expansions:0,completeCandidatesGenerated:0,
     completeCandidatesYielded:0,maximumPartialStatesPerDepth:0,activeFrontierPeak:root&&ordered.length>=2?1:0,
     fullGridStarts:0,analyticEligibleStarts:0,analyticallyEliminatedStarts:0,startsEvaluated:0,
     alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
-    deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0};
+    deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,
+    preparedAuthorityBuilds:preparedAuthorities.length,preparedAuthorityHits:0,fixedPlacedScansAvoided:0,
+    domainBuildMs:0,finalPlacementCheckMs:0};
   let consumed=0,budgetExhausted=false;
   let active:Partial[]=root&&ordered.length>=2?[partial([],0)]:[];
   const deferred=deferredQueueMode==="GLOBAL_SORT_ORACLE"
@@ -154,7 +164,11 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
         const earliest=state.tasks.at(-1)?.end??problem.day.start;
         const prior=[...placed,...state.tasks];
         const logical=Math.max(0,Math.floor((problem.day.end-task.duration-earliest)/5)+1);
-        const domain=exactTaskStartDomain(problem,task,prior,scheduledSpaceMeals);
+        const domainStarted=measureTimings?performance.now():0;
+        const authority=preparedAuthorities[depth];
+        const domain=authority?authority.domain(state.tasks):exactTaskStartDomain(problem,task,prior,scheduledSpaceMeals);
+        if(authority){diagnostics.preparedAuthorityHits+=1;diagnostics.fixedPlacedScansAvoided+=placed.length;}
+        if(measureTimings)diagnostics.domainBuildMs+=performance.now()-domainStarted;
         diagnostics.fullGridStarts+=logical;
         diagnostics.analyticEligibleStarts+=domain.eligibleStartCount;
         refreshEliminated();
@@ -165,7 +179,11 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
           if(depth===0)diagnostics.startsExplored+=1;
           if(consumed>=allowance){budgetExhausted=true;return null;}
           consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
-          if(!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
+          const checkStarted=measureTimings?performance.now():0;
+          const accepted=authority?authority.accepts(start,domain):canPlaceTask(problem,task,start,prior,scheduledSpaceMeals);
+          if(authority)diagnostics.fixedPlacedScansAvoided+=placed.length;
+          if(measureTimings)diagnostics.finalPlacementCheckMs+=performance.now()-checkStarted;
+          if(!accepted)continue;
           const scheduled={...task,start,end:start+task.duration};
           const incremental=[...new Set(task.requiredResourceIds??[])].reduce((sum,id)=>{
             const resource=problem.resources.find(item=>item.id===id);
@@ -189,7 +207,8 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
     completeCandidatesGenerated:complete.length,completeCandidatesYielded:complete.length,
     maximumPartialStatesPerDepth:max,activeFrontierPeak:max,fullGridStarts:consumed,analyticEligibleStarts:consumed,
     analyticallyEliminatedStarts:0,startsEvaluated:consumed,alternativesDeferred:0,alternativesRevisited:0,
-    deferredQueuePeak:0,deferredPushes:0,deferredPops:0,deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0});
+    deferredQueuePeak:0,deferredPushes:0,deferredPops:0,deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,
+    preparedAuthorityBuilds:0,preparedAuthorityHits:0,fixedPlacedScansAvoided:0,domainBuildMs:0,finalPlacementCheckMs:0});
   const finish=(exhausted:boolean):TechnicalChainCandidateResult=>({candidates:complete
     .sort((a,b)=>a.cost-b.cost||technicalChainSignature(a.tasks).localeCompare(technicalChainSignature(b.tasks)))
     .slice(0,mode==="SEARCH"?problem.budget.bestK:complete.length),consumed,exhausted,diagnostics:diagnostics()});

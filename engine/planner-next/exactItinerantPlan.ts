@@ -58,6 +58,11 @@ export interface ExactItinerantPlanEvidence {
   technicalChainAnalyticEligibleStarts:number;
   technicalChainAnalyticallyEliminatedStarts:number;
   technicalChainStartsEvaluated:number;
+  technicalChainPreparedAuthorityBuilds:number;
+  technicalChainPreparedAuthorityHits:number;
+  technicalChainFixedPlacedScansAvoided:number;
+  technicalChainDomainBuildMs:number;
+  technicalChainFinalPlacementCheckMs:number;
   technicalChainCompleteCandidates:number;
   technicalChainActiveFrontierPeak:number;
   technicalChainAlternativesDeferred:number;
@@ -550,8 +555,9 @@ const searchAtomicItems = (
     return "DEAD_END";
   }
   const explorer=createTechnicalChainExplorer(problem,item.tasks,[...coreTasks,...placed],
-    Math.max(0,ledger.limit-ledger.branchesExplored),technicalChainStartDomainMode,coreMeals);
-  let accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0};
+    Math.max(0,ledger.limit-ledger.branchesExplored),technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",true);
+  let accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,
+    builds:0,hits:0,scans:0,domainMs:0,checkMs:0};
   const accountExplorer=()=>{
     const diagnostics=explorer.diagnostics;
     const consumedDelta=explorer.consumed-accounted.consumed;
@@ -560,6 +566,11 @@ const searchAtomicItems = (
     evidence.technicalChainAnalyticEligibleStarts+=diagnostics.analyticEligibleStarts-accounted.eligible;
     evidence.technicalChainAnalyticallyEliminatedStarts+=diagnostics.analyticallyEliminatedStarts-accounted.eliminated;
     evidence.technicalChainStartsEvaluated+=diagnostics.startsEvaluated-accounted.consumed;
+    evidence.technicalChainPreparedAuthorityBuilds+=diagnostics.preparedAuthorityBuilds-accounted.builds;
+    evidence.technicalChainPreparedAuthorityHits+=diagnostics.preparedAuthorityHits-accounted.hits;
+    evidence.technicalChainFixedPlacedScansAvoided+=diagnostics.fixedPlacedScansAvoided-accounted.scans;
+    evidence.technicalChainDomainBuildMs+=diagnostics.domainBuildMs-accounted.domainMs;
+    evidence.technicalChainFinalPlacementCheckMs+=diagnostics.finalPlacementCheckMs-accounted.checkMs;
     evidence.technicalChainCompleteCandidates+=diagnostics.completeCandidatesYielded-accounted.complete;
     evidence.technicalChainAlternativesDeferred+=diagnostics.alternativesDeferred-accounted.deferred;
     evidence.technicalChainAlternativesRevisited+=diagnostics.alternativesRevisited-accounted.revisited;
@@ -570,7 +581,9 @@ const searchAtomicItems = (
     accounted={consumed:explorer.consumed,full:diagnostics.fullGridStarts,eligible:diagnostics.analyticEligibleStarts,
       eliminated:diagnostics.analyticallyEliminatedStarts,complete:diagnostics.completeCandidatesYielded,
       deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited,
-      pushes:diagnostics.deferredPushes,pops:diagnostics.deferredPops};
+      pushes:diagnostics.deferredPushes,pops:diagnostics.deferredPops,builds:diagnostics.preparedAuthorityBuilds,
+      hits:diagnostics.preparedAuthorityHits,scans:diagnostics.fixedPlacedScansAvoided,
+      domainMs:diagnostics.domainBuildMs,checkMs:diagnostics.finalPlacementCheckMs};
     return true;
   };
   while(true){
@@ -703,6 +716,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     jointGroupAnalyticallyEliminatedStarts: 0, jointGroupStartsEvaluated: 0,
     technicalChainFullGridStarts:0,technicalChainAnalyticEligibleStarts:0,
     technicalChainAnalyticallyEliminatedStarts:0,technicalChainStartsEvaluated:0,
+    technicalChainPreparedAuthorityBuilds:0,technicalChainPreparedAuthorityHits:0,
+    technicalChainFixedPlacedScansAvoided:0,technicalChainDomainBuildMs:0,technicalChainFinalPlacementCheckMs:0,
     technicalChainCompleteCandidates:0,technicalChainActiveFrontierPeak:0,
     technicalChainAlternativesDeferred:0,technicalChainAlternativesRevisited:0,
     technicalChainDeferredQueuePeak:0,technicalChainDeferredPushes:0,technicalChainDeferredPops:0,
