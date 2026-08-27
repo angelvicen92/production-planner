@@ -57,7 +57,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "a00c3a96a3bec8d6904be3fb3a5ba58903e52131abb0cc17599260ab83e389d6"
+    "problemFingerprint": "d2bca56dc63c3c39f9425728f84349b39478b9549adb5efddae53d1f264195c0"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -278,10 +278,10 @@
       "branchesExplored": 300000,
       "coreBranches": 13056,
       "standaloneBranches": 286944,
-      "standaloneStartChecks": 0,
+      "standaloneStartChecks": 285991,
       "jointGroupFullGridStarts": 287,
-      "jointGroupAnalyticEligibleStarts": 175,
-      "jointGroupAnalyticallyEliminatedStarts": 112,
+      "jointGroupAnalyticEligibleStarts": 201,
+      "jointGroupAnalyticallyEliminatedStarts": 86,
       "jointGroupStartsEvaluated": 2,
       "technicalChainFullGridStarts": 236,
       "technicalChainAnalyticEligibleStarts": 209,
@@ -289,9 +289,9 @@
       "technicalChainStartsEvaluated": 209,
       "technicalChainPreparedAuthorityBuilds": 3,
       "technicalChainPreparedAuthorityHits": 3,
-      "technicalChainFixedPlacedScansAvoided": 14204,
-      "technicalChainDomainBuildMs": 0.12776300000041374,
-      "technicalChainFinalPlacementCheckMs": 1.2452650000068388,
+      "technicalChainFixedPlacedScansAvoided": 10176,
+      "technicalChainDomainBuildMs": 0.13882700000249315,
+      "technicalChainFinalPlacementCheckMs": 3.0578240000049846,
       "technicalChainCompleteCandidates": 1,
       "technicalChainActiveFrontierPeak": 5,
       "technicalChainAlternativesDeferred": 202,
@@ -300,14 +300,17 @@
       "technicalChainDeferredPushes": 202,
       "technicalChainDeferredPops": 0,
       "standaloneTaskSelections": 0,
-      "standaloneZeroAlternativePrunes": 0,
-      "standaloneBacktracks": 0,
-      "standaloneMaximumDepth": 0,
+      "standaloneZeroAlternativePrunes": 61,
+      "standaloneBacktracks": 61,
+      "standaloneMaximumDepth": 43,
       "standaloneCompleteLeafCount": 0,
       "coreCompleteLeavesEvaluated": 1,
       "coreLeavesRejectedByStandalone": 0,
       "standaloneSearchInvocations": 1,
-      "standaloneBlockingTaskCounts": {},
+      "standaloneBlockingTaskCounts": {
+        "task:10019": 2,
+        "task:10073": 59
+      },
       "standaloneForwardChecks": 3,
       "standaloneForwardStartChecks": 182,
       "standaloneForwardWitnessesFound": 220,
@@ -315,7 +318,7 @@
       "standaloneForwardBlockingTaskCounts": {},
       "standaloneForwardPrunesByDepth": {},
       "standaloneForwardImpactedTaskChecks": 220,
-      "standaloneLeafSearchBranches": 0,
+      "standaloneLeafSearchBranches": 285991,
       "standaloneForwardBranches": 182,
       "standaloneForwardStaticEligibleStarts": 23329,
       "standaloneForwardStaticEliminatedStarts": 8105,
@@ -738,26 +741,47 @@
       "selectedCompleteFingerprint": null,
       "firstCompleteQuality": null,
       "selectedCompleteQuality": null,
-      "setupBlockBranchesExplored": 286475,
+      "setupBlockBranchesExplored": 502,
       "setupBlockSearchInvocations": 1,
-      "setupBlockStartsExplored": 1,
-      "setupBlockCompleteCandidateCount": 83196,
-      "setupBlockBudgetExhaustions": 1,
+      "setupBlockStartsExplored": 144,
+      "setupBlockCompleteCandidateCount": 190,
+      "setupBlockBudgetExhaustions": 0,
+      "setupBlockMatchingAttempts": 502,
+      "setupBlockMatchingSuccesses": 404,
+      "setupBlockPermutationBranchesAvoided": 3030,
       "setupFamilyOrderCandidateCountsBySpaceId": {
         "space:3009": {
-          "setup-family:3009:estrellas>setup-family:3009:sillon": 83196
+          "setup-family:3009:estrellas>setup-family:3009:sillon": 95,
+          "setup-family:3009:sillon>setup-family:3009:estrellas": 95
         }
       },
       "selectedSetupFamilySequenceBySpaceId": {},
       "selectedSetupPreparationIds": [],
       "roundSynchronizationSearchInvocations": 1,
       "roundSynchronizationStartCandidates": 1,
-      "roundSynchronizationAssignmentBranches": 19,
-      "roundSynchronizationAssignmentChecks": 1480,
+      "roundSynchronizationAssignmentBranches": 1,
+      "roundSynchronizationAssignmentChecks": 361,
       "roundSynchronizationCompleteAssignments": 1,
       "roundSynchronizationBacktracks": 0,
       "roundSynchronizationZeroAlternativePrunes": 0,
       "selectedRoundPreparationIds": [],
+      "totalesMacroCandidates": 1,
+      "totalesMatchingAttempts": 1,
+      "totalesMatchingSuccesses": 1,
+      "totalesAssignmentBranchesAvoided": 18,
+      "criticalResourceBranches": 2,
+      "criticalResourceMacroCandidates": 2,
+      "criticalResourceAssignments": 4,
+      "macroUnitsSelected": 2,
+      "macroSelectionOrder": [
+        "CRITICAL:joint:joint-group:joint.alfombra-roja.C06-C10",
+        "SYNCHRONIZED:round-synchronization:a2-totales-rounds"
+      ],
+      "macroSelectionReason": [
+        "structured hard-coupled operation before broader domains",
+        "MRV macro-domain with synchronized long slots"
+      ],
+      "macroDomainSizes": {},
       "participantMealBranchesExplored": 57,
       "participantMealFutureFeasibilityChecks": 3,
       "participantMealFutureInfeasibleBranches": 0,
@@ -774,8 +798,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 284,
-            "total": 976
+            "other": 286989,
+            "total": 287681
           },
           "6": {
             "mainCandidate": 0,
@@ -4186,8 +4210,8 @@
           "continuation": 0,
           "participantMeal": 0,
           "standaloneForward": 0,
-          "other": 284,
-          "total": 976
+          "other": 286989,
+          "total": 287681
         },
         "6": {
           "mainCandidate": 0,
@@ -4230,7 +4254,7 @@
           "total": 118
         }
       },
-      "waterfallReconciles": false,
+      "waterfallReconciles": true,
       "feederByDepth": {
         "6": {
           "startsConsidered": 29,

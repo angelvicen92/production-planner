@@ -15,6 +15,7 @@ import {
 } from "./spaceMeals";
 import { overlaps } from "./time";
 import { roundPreparationId } from "./roundSynchronization";
+import { findCanonicalPerfectMatching } from "./macroScheduling";
 
 export type ExactRoundSynchronizationOutcome =
   | "FOUND"
@@ -28,6 +29,9 @@ export interface ExactRoundSynchronizationEvidence {
   completeAssignments: number;
   backtracks: number;
   zeroAlternativePrunes: number;
+  matchingAttempts: number;
+  matchingSuccesses: number;
+  assignmentBranchesAvoided: number;
 }
 
 export interface ExactRoundSynchronizationCandidate {
@@ -192,6 +196,9 @@ export function exploreExactRoundSynchronizationPolicy(
     completeAssignments: 0,
     backtracks: 0,
     zeroAlternativePrunes: 0,
+    matchingAttempts: 0,
+    matchingSuccesses: 0,
+    assignmentBranchesAvoided: 0,
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
@@ -213,68 +220,47 @@ export function exploreExactRoundSynchronizationPolicy(
     );
     if (!shape) continue;
 
-    const assignedBySlot = new Map<string, ScheduledTask>();
-    const usedTaskIds = new Set<string>();
-    const selectionOrder: string[] = [];
     const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
-
-    const assign = (): ExactRoundSynchronizationOutcome => {
-      if (assignedBySlot.size === shape.slots.length) {
-        evidence.completeAssignments += 1;
-        return continuation({
-          tasks: [...assignedBySlot.values()].sort((left, right) =>
-            left.start - right.start || byId(left, right)),
-          preparations: [...shape.preparations],
-          selectionOrder: [...selectionOrder],
-        });
-      }
-
-      const openSlots = shape.slots.filter((slot) => !assignedBySlot.has(slotKey(slot)));
-      const ranked = openSlots.map((slot) => {
-        const placed = [...baseTasks, ...assignedBySlot.values()];
-        const choices = laneTasks[slot.laneIndex]!
-          .filter((task) => !usedTaskIds.has(task.id))
-          .map((task) => {
-            evidence.assignmentChecks += 1;
-            if (!canPlaceTask(problem, task, slot.start, placed, meals)) return null;
-            const scored = scoreAuxiliaryTask(problem, task, slot.start, placed);
-            return { task, scheduled: scored.scheduled, cost: scored.cost };
-          })
-          .filter((choice): choice is NonNullable<typeof choice> => choice !== null)
-          .sort((left, right) =>
-            left.cost - right.cost || left.task.id.localeCompare(right.task.id, "en"));
-        return { slot, choices };
-      }).sort((left, right) =>
-        left.choices.length - right.choices.length
-        || left.slot.start - right.slot.start
-        || left.slot.laneIndex - right.slot.laneIndex
-        || left.slot.roundIndex - right.slot.roundIndex);
-
-      const selected = ranked[0]!;
-      if (selected.choices.length === 0) {
-        evidence.zeroAlternativePrunes += 1;
-        return "DEAD_END";
-      }
-
-      for (const choice of selected.choices) {
-        if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
-        evidence.assignmentBranches += 1;
-        const key = slotKey(selected.slot);
-        assignedBySlot.set(key, choice.scheduled);
-        usedTaskIds.add(choice.task.id);
-        selectionOrder.push(choice.task.id);
-        const outcome = assign();
-        if (outcome !== "DEAD_END") return outcome;
-        selectionOrder.pop();
-        usedTaskIds.delete(choice.task.id);
-        assignedBySlot.delete(key);
-        evidence.backtracks += 1;
-      }
-      return "DEAD_END";
-    };
-
-    const outcome = assign();
+    if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
+    evidence.assignmentBranches += 1;
+    evidence.matchingAttempts += 1;
+    const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
+    const allTasks = laneTasks.flat();
+    const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
+    const matching = findCanonicalPerfectMatching(
+      [...slotById.keys()],
+      allTasks.map(({ id }) => id),
+      (taskId, key) => {
+        evidence.assignmentChecks += 1;
+        const task = taskByMatchingId.get(taskId)!;
+        const slot = slotById.get(key)!;
+        return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
+          && canPlaceTask(problem, task, slot.start, baseTasks, meals);
+      },
+    );
+    if (!matching) {
+      evidence.zeroAlternativePrunes += 1;
+      continue;
+    }
+    const scheduled = [...matching].map(([key, taskId]) => {
+      const slot = slotById.get(key)!;
+      return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
+    });
+    if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
+      [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) {
+      evidence.zeroAlternativePrunes += 1;
+      continue;
+    }
+    evidence.matchingSuccesses += 1;
+    evidence.assignmentBranchesAvoided += Math.max(0, allTasks.length - 1);
+    evidence.completeAssignments += 1;
+    const outcome = continuation({
+      tasks: scheduled.sort((left, right) => left.start - right.start || byId(left, right)),
+      preparations: [...shape.preparations],
+      selectionOrder: scheduled.map(({ id }) => id),
+    });
     if (outcome !== "DEAD_END") return { outcome, evidence };
+    evidence.backtracks += 1;
   }
 
   return { outcome: "DEAD_END", evidence };

@@ -208,6 +208,9 @@ export interface ExactItinerantPlanEvidence {
   setupBlockStartsExplored: number;
   setupBlockCompleteCandidateCount: number;
   setupBlockBudgetExhaustions: number;
+  setupBlockMatchingAttempts: number;
+  setupBlockMatchingSuccesses: number;
+  setupBlockPermutationBranchesAvoided: number;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -218,6 +221,17 @@ export interface ExactItinerantPlanEvidence {
   roundSynchronizationCompleteAssignments: number;
   roundSynchronizationBacktracks: number;
   roundSynchronizationZeroAlternativePrunes: number;
+  totalesMacroCandidates: number;
+  totalesMatchingAttempts: number;
+  totalesMatchingSuccesses: number;
+  totalesAssignmentBranchesAvoided: number;
+  criticalResourceBranches: number;
+  criticalResourceMacroCandidates: number;
+  criticalResourceAssignments: number;
+  macroUnitsSelected: number;
+  macroSelectionOrder: string[];
+  macroSelectionReason: string[];
+  macroDomainSizes: Record<string, number>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
   causalDiagnostic:ExactCoreCausalDiagnostic|null;
@@ -471,6 +485,9 @@ const searchSetup = (
   evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
   evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
   evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
+  evidence.setupBlockMatchingAttempts += generated.evidence.matchingAttempts;
+  evidence.setupBlockMatchingSuccesses += generated.evidence.matchingSuccesses;
+  evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
   mergeSetupOrderCounts(group.spaceId, generated.evidence.familyOrderCandidateCounts);
   if (generated.outcome === "BUDGET_EXHAUSTED") {
     evidence.setupBlockBudgetExhaustions += 1;
@@ -510,6 +527,10 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.roundSynchronizationCompleteAssignments += delta.completeAssignments;
   evidence.roundSynchronizationBacktracks += delta.backtracks;
   evidence.roundSynchronizationZeroAlternativePrunes += delta.zeroAlternativePrunes;
+  evidence.totalesMacroCandidates += delta.startCandidates;
+  evidence.totalesMatchingAttempts += delta.matchingAttempts;
+  evidence.totalesMatchingSuccesses += delta.matchingSuccesses;
+  evidence.totalesAssignmentBranchesAvoided += delta.assignmentBranchesAvoided;
 };
 
 const dynamicTransportIds = transportTaskIds(problem);
@@ -534,8 +555,13 @@ const searchAtomicItems = (
   placed: ScheduledTask[],
   selectionOrder: string[],
 ): StandaloneOutcome => {
-  if (index >= atomicItems.length) return searchSetup(0, placed, [], placed.length, selectionOrder);
+  if (index >= atomicItems.length) return searchRounds(0, placed, [], selectionOrder);
   const item = atomicItems[index]!;
+  if (index === 0) {
+    evidence.macroUnitsSelected += 1;
+    evidence.macroSelectionOrder.push(`CRITICAL:${item.key}`);
+    evidence.macroSelectionReason.push("structured hard-coupled operation before broader domains");
+  }
   if (item.kind === "joint") {
     const duration = item.tasks[0]?.duration ?? 0;
     const fullGridCount = Math.max(0, Math.floor((problem.day.end - duration - problem.day.start) / 5) + 1);
@@ -550,8 +576,11 @@ const searchAtomicItems = (
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
       evidence.standaloneBranches += 1;
       evidence.jointGroupStartsEvaluated += 1;
+      evidence.criticalResourceBranches += 1;
       if (!canPlaceJointGroup(problem, item.tasks, start, [...coreTasks, ...placed])) continue;
       const scheduled = scheduleJointGroup(item.tasks, start);
+      evidence.criticalResourceMacroCandidates += 1;
+      evidence.criticalResourceAssignments += scheduled.length;
       const child = searchAtomicItems(index + 1, [...placed, ...scheduled], [...selectionOrder, ...scheduled.map(({ id }) => id)]);
       if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
@@ -614,9 +643,12 @@ const searchRounds = (
 ): StandaloneOutcome => {
   if (index >= roundPolicies.length) {
     activeRoundPreparations = [...roundPreparations];
-    return searchAtomicItems(0, placed, selectionOrder);
+    return searchSetup(0, placed, [], placed.length, selectionOrder);
   }
   const policy = roundPolicies[index]!;
+  evidence.macroUnitsSelected += 1;
+  evidence.macroSelectionOrder.push(`SYNCHRONIZED:${policy.id}`);
+  evidence.macroSelectionReason.push("MRV macro-domain with synchronized long slots");
   evidence.roundSynchronizationSearchInvocations += 1;
   const explored = exploreExactRoundSynchronizationPolicy(
     problem,
@@ -637,7 +669,7 @@ const searchRounds = (
   return explored.outcome;
 };
 
-const searchOutcome = searchRounds(0, [], [], []);
+const searchOutcome = searchAtomicItems(0, [], []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
 }
@@ -725,12 +757,16 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     firstCompleteQuality: null, selectedCompleteQuality: null,
     setupBlockBranchesExplored: 0, setupBlockSearchInvocations: 0, setupBlockStartsExplored: 0,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
+    setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockPermutationBranchesAvoided: 0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],
     roundSynchronizationSearchInvocations: 0, roundSynchronizationStartCandidates: 0,
     roundSynchronizationAssignmentBranches: 0, roundSynchronizationAssignmentChecks: 0,
     roundSynchronizationCompleteAssignments: 0, roundSynchronizationBacktracks: 0,
     roundSynchronizationZeroAlternativePrunes: 0, selectedRoundPreparationIds: [],
+    totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
+    criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
+    macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
@@ -908,6 +944,17 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   if(evidence.causalDiagnostic)for(const [depth,extra] of Object.entries(supplementalByDepth)){const row=evidence.causalDiagnostic.waterfallByDepth[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};row.participantMeal+=extra.participantMeal;row.standaloneForward+=extra.standaloneForward;row.total+=extra.participantMeal+extra.standaloneForward;evidence.causalDiagnostic.waterfallByDepth[depth]=row;}
   evidence.branchesExplored = ledger.branchesExplored; evidence.coreBranches = ledger.coreBranches;
   evidence.standaloneBranches = ledger.standaloneBranches; evidence.lastExhaustionPhase = ledger.lastExhaustionPhase;
+  if (evidence.causalDiagnostic) {
+    const accounted = Object.values(evidence.causalDiagnostic.waterfallByDepth).reduce((sum, row) => sum + row.total, 0);
+    const unclassifiedStandalone = Math.max(0, ledger.branchesExplored - accounted);
+    if (unclassifiedStandalone > 0) {
+      const row = evidence.causalDiagnostic.waterfallByDepth["0"]
+        ?? { mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0 };
+      row.other += unclassifiedStandalone;
+      row.total += unclassifiedStandalone;
+      evidence.causalDiagnostic.waterfallByDepth["0"] = row;
+    }
+  }
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
   evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
   evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
