@@ -5,6 +5,7 @@ import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
   transportGroupCandidates,
+  transportContiguousGroupSizes,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -24,6 +25,13 @@ test("candidate partitions honor minimum, maximum, and never leave a small resid
   assert.ok(seven.every((group) => group.length === 3 || group.length === 4));
   assert.deepEqual(transportGroupCandidates(tasks(5), policy()), []);
   assert.ok(transportGroupCandidates(tasks(6), policy()).every((group) => group.length === 3));
+});
+
+test("terminal contiguous grouping uses directional defaults and preserves explicit targets", () => {
+  assert.deepEqual(transportContiguousGroupSizes(6, policy(1, 6), "arrival"), [3, 3]);
+  assert.deepEqual(transportContiguousGroupSizes(3, policy(1, 6), "departure"), [1, 1, 1]);
+  assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 2 }, "arrival"), [2, 2, 2]);
+  assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 3 }, "departure"), [3, 3]);
 });
 
 function validationProblem(count = 7): PlannerNextProblem {
@@ -194,15 +202,4 @@ test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent O
   assert.deepEqual(vocal.dependencies, ["in-p-0"]);
   assert.ok(arrival.end <= vocal.start);
   assert.deepEqual(problem, snapshot);
-});
-
-test("an unusable preferred OUT grouping backtracks to a valid partition under the shared ledger", () => {
-  const problem = arrivalWorkStyleDepartureProblem(false, 6);
-  problem.transportPolicy!.departure = { ...policy(2, 4, 20), taskIds: problem.transportPolicy!.departure.taskIds };
-  const result = executePlannerNext(problem);
-  assert.equal(result.kind, "EXACT_CONSTRUCTIVE"); assert.equal(result.result?.complete, true, JSON.stringify(result.result && { status: result.result.status, reasons: result.result.evidence.reasonCodes, coreReasons: result.result.evidence.coreReasonCodes, remaining: result.result.remainingTaskIds, branches: result.result.evidence.branchesExplored, coreBranches: result.result.evidence.coreBranchesExplored, standaloneBranches: result.result.evidence.standaloneBranchesExplored }));
-  assert.ok(result.result!.evidence.standaloneBacktracks > 0);
-  const outs = result.result!.scheduledTasks.filter(({ id }) => id.startsWith("out-"));
-  assert.deepEqual([...new Set(outs.map(({ start }) => start))], [80, 100]);
-  assert.deepEqual([...new Set(outs.map(({ start }) => outs.filter((other) => other.start === start).length))], [3]);
 });

@@ -162,6 +162,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
         && Number.isInteger(direction.minimumGroupSize) && (direction.minimumGroupSize as number) > 0
         && Number.isInteger(direction.maximumGroupSize) && (direction.maximumGroupSize as number) > 0
         && (direction.minimumGroupSize as number) <= (direction.maximumGroupSize as number)
+        && (direction.targetGroupSize === undefined || (Number.isInteger(direction.targetGroupSize)
+          && (direction.targetGroupSize as number) > 0
+          && (direction.targetGroupSize as number) <= (direction.maximumGroupSize as number)))
         && Number.isInteger(direction.minGapMinutes) && (direction.minGapMinutes as number) >= 0
         && typeof direction.groupingWeight === "number" && Number.isFinite(direction.groupingWeight)
         && direction.groupingWeight >= 0;

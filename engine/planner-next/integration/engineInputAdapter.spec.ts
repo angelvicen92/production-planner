@@ -81,8 +81,8 @@ test("transport adapter projects min/max policy from explicit operational roles 
   const before = clone(input);
   const result = supported(input);
   assert.deepEqual(result.problem.transportPolicy, {
-    arrival: { taskIds: [`task:${input.tasks[0]!.id}`], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 0, groupingWeight: 0 },
-    departure: { taskIds: [`task:${input.tasks[1]!.id}`], minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 0 },
+    arrival: { taskIds: [`task:${input.tasks[0]!.id}`], targetGroupSize: 3, minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 0, groupingWeight: 0 },
+    departure: { taskIds: [`task:${input.tasks[1]!.id}`], targetGroupSize: 3, minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 0 },
   });
   assert.equal(preflightPlannerNextProblem(result.problem).includes("INVALID_TRANSPORT_POLICY"), false);
   assert.deepEqual(input, before);

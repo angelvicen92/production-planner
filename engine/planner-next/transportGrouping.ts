@@ -57,6 +57,84 @@ export function scheduleTransportGroup(tasks: readonly Task[], start: number): S
   return [...tasks].sort(byId).map((task) => ({ ...task, start, end: start + task.duration }));
 }
 
+export function transportContiguousGroupSizes(
+  count: number,
+  policy: Readonly<TransportGroupingPolicy>,
+  direction: TransportDirection,
+): number[] | null {
+  const target = policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1);
+  const sizes: number[] = [];
+  let remaining = count;
+  while (remaining > 0) {
+    const candidates = Array.from({ length: policy.maximumGroupSize - policy.minimumGroupSize + 1 },
+      (_, index) => policy.minimumGroupSize + index)
+      .filter((size) => size <= remaining
+        && canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
+      .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || left - right);
+    const size = candidates[0];
+    if (size === undefined) return null;
+    sizes.push(size);
+    remaining -= size;
+  }
+  return sizes;
+}
+
+/**
+ * Deterministic terminal logistics. Membership is fixed by participant boundary order and
+ * contiguous slicing; only the canonical latest-IN/earliest-OUT starts are considered.
+ */
+export function materializeTerminalTransport(
+  problem: PlannerNextProblem,
+  substantive: readonly ScheduledTask[],
+  participantMeals: readonly ScheduledParticipantMeal[] = [],
+): ScheduledTask[] | null {
+  if (!problem.transportPolicy) return [];
+  const transportIds = transportTaskIds(problem);
+  const obligationsFor = (participantId: string) => [
+    ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
+    ...participantMeals.filter((meal) => meal.participantId === participantId),
+  ];
+  const placed: ScheduledTask[] = [];
+  for (const direction of ["arrival", "departure"] as const) {
+    const policy = problem.transportPolicy[direction];
+    const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)
+      .sort((left, right) => {
+        const leftObligations = obligationsFor(left.participantId!);
+        const rightObligations = obligationsFor(right.participantId!);
+        const boundary = direction === "arrival"
+          ? (values: typeof leftObligations) => values.length ? Math.min(...values.map(({ start }) => start)) : problem.day.end
+          : (values: typeof leftObligations) => values.length ? Math.max(...values.map(({ end }) => end)) : problem.day.start;
+        return boundary(leftObligations) - boundary(rightObligations)
+          || left.participantId!.localeCompare(right.participantId!) || left.id.localeCompare(right.id);
+      });
+    const sizes = transportContiguousGroupSizes(tasks.length, policy, direction);
+    if (!sizes) return null;
+    let offset = 0;
+    const starts: number[] = [];
+    for (const size of sizes) {
+      const group = tasks.slice(offset, offset + size);
+      offset += size;
+      const boundary = direction === "arrival"
+        ? Math.min(...group.map((task) => {
+          const obligations = obligationsFor(task.participantId!);
+          return obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end;
+        }))
+        : Math.max(...group.map((task) => {
+          const obligations = obligationsFor(task.participantId!);
+          return obligations.length ? Math.max(...obligations.map(({ end }) => end)) : problem.day.start;
+        }));
+      const candidates = transportGroupStarts(problem, group, [...substantive, ...placed], starts, policy)
+        .filter((start) => direction === "arrival" ? start + group[0]!.duration <= boundary : start >= boundary)
+        .sort((left, right) => direction === "arrival" ? right - left : left - right);
+      const start = candidates[0];
+      if (start === undefined) return null;
+      placed.push(...scheduleTransportGroup(group, start));
+      starts.push(start);
+    }
+  }
+  return placed;
+}
+
 export function canPlaceTransportGroup(
   problem: PlannerNextProblem,
   tasks: readonly Task[],

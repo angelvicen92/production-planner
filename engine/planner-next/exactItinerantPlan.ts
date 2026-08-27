@@ -26,7 +26,7 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
+import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 
@@ -362,18 +362,24 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
     if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
-    const candidate = orderScheduled([...coreTasks, ...placed]);
-    const expected = [...problem.tasks].sort(byId).map(({ id }) => id), actual = [...candidate].sort(byId).map(({ id }) => id);
-    const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
+    const substantive = orderScheduled([...coreTasks, ...placed]);
+    const expected = [...problem.tasks].sort(byId).map(({ id }) => id);
+    const expectedSubstantive = problem.tasks.filter(({ id }) => !transportTaskIds(problem).has(id)).sort(byId).map(({ id }) => id);
+    const actualSubstantive = [...substantive].sort(byId).map(({ id }) => id);
+    const exactSubstantive = actualSubstantive.length === expectedSubstantive.length && actualSubstantive.every((id, index) => id === expectedSubstantive[index]);
     const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-    const mealWitness=exact?assessParticipantMealFutureFeasibility(problem,candidate,mealBudget,"MATERIALIZE"):null;
+    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE"):null;
     if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
     const operationalMealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-    const operationalMealWitness=exact?assessOperationalMealFutureFeasibility(problem,candidate,operationalMealBudget,"MATERIALIZE"):null;
+    const operationalMealWitness=exactSubstantive?assessOperationalMealFutureFeasibility(problem,substantive,operationalMealBudget,"MATERIALIZE"):null;
     if(operationalMealWitness?.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
-    if (exact && mealWitness?.complete && operationalMealWitness?.complete && validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness.scheduled]).hardValid) {
+    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled) : null;
+    const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
+    const actual = [...candidate].sort(byId).map(({ id }) => id);
+    const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
+    if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness.scheduled]).hardValid) {
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
         maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
@@ -631,62 +637,7 @@ const searchRounds = (
   return explored.outcome;
 };
 
-const searchTransportGroups = (
-  direction: "arrival" | "departure",
-  remaining: Task[],
-  placed: ScheduledTask[],
-  groupStarts: number[],
-  selectionOrder: string[],
-  continuation: (placed: ScheduledTask[], selectionOrder: string[]) => StandaloneOutcome,
-): StandaloneOutcome => {
-  if (!problem.transportPolicy || remaining.length === 0) return continuation(placed, selectionOrder);
-  const policy = problem.transportPolicy![direction];
-  const candidates = transportGroupCandidates(remaining, policy);
-  if (candidates.length === 0) return "DEAD_END";
-  for (const group of candidates) {
-    const starts = transportGroupStarts(problem, group, [...coreTasks, ...placed], groupStarts, policy);
-    if (starts.length === 0) evidence.standaloneBacktracks += 1;
-    for (const start of starts) {
-      if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
-      evidence.standaloneBranches += 1;
-      const scheduled = scheduleTransportGroup(group, start);
-      const memberIds = new Set(group.map(({ id }) => id));
-      const child = searchTransportGroups(
-        direction,
-        remaining.filter(({ id }) => !memberIds.has(id)),
-        [...placed, ...scheduled],
-        [...groupStarts, start],
-        [...selectionOrder, ...group.map(({ id }) => id)],
-        continuation,
-      );
-      if (child !== "DEAD_END") return child;
-      evidence.standaloneBacktracks += 1;
-    }
-  }
-  return "DEAD_END";
-};
-const departureTasks = problem.transportPolicy
-  ? problem.tasks.filter((task) => problem.transportPolicy!.departure.taskIds.includes(task.id)).sort(byId)
-  : [];
-completeAfterOrdinary = (placed, preparations, roundPreparations, selectionOrder) => searchTransportGroups(
-  "departure",
-  departureTasks,
-  placed,
-  [],
-  selectionOrder,
-  (withDeparture, finalOrder) => completeLeaf(withDeparture, preparations, roundPreparations, finalOrder),
-);
-const arrivalTasks = problem.transportPolicy
-  ? problem.tasks.filter((task) => problem.transportPolicy!.arrival.taskIds.includes(task.id)).sort(byId)
-  : [];
-const searchOutcome = searchTransportGroups(
-  "arrival",
-  arrivalTasks,
-  [],
-  [],
-  [],
-  (withArrival, arrivalOrder) => searchRounds(0, withArrival, [], arrivalOrder),
-);
+const searchOutcome = searchRounds(0, [], [], []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
 }
@@ -867,6 +818,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         evidence.standaloneForwardDynamicEliminatedStarts += staticDomain.eligibleStartCount - dynamicDomain.eligibleStartCount;
         if (dynamicDomain.eligibleStartCount === 0) evidence.standaloneForwardAnalyticEmptyDomainPrunes += 1;
         else evidence.standaloneForwardDynamicNonemptyCertificates += 1;
+      }
+      // Transport is terminally materialized. Its exact non-empty dynamic interval is the cheap,
+      // sound room certificate during core construction; do not spend the constructive frontier
+      // enumerating starts that cannot yet determine its final contiguous group.
+      if (transportTaskIds(problem).has(task.id) && !fullGridMode && dynamicDomain.eligibleStartCount > 0) {
+        evidence.standaloneForwardWitnessesFound += 1;
+        continue;
       }
       const memoizationEnabled=options.standaloneForwardWitnessMemoization!==false;
       const authoritySignature=dynamicDomain.eligibleStartCount>0&&memoizationEnabled
