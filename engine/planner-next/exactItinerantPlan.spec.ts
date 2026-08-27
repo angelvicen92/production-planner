@@ -60,6 +60,10 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.equal(result.evidence.standaloneForwardImpactedTaskChecks, 0);
   assert.deepEqual(result.evidence.firstFeedableRunSizes, core.evidence.firstFeedableRunSizes);
   assert.deepEqual(result.evidence.firstFeedableRunSizes, [1]);
+  assert.ok(result.evidence.ordinaryMRVSelections > 0);
+  assert.ok(result.evidence.ordinaryExactStartChecks < 2 * 23,
+    "only the selected task domain is checked exactly, not every task over the full grid");
+  assert.ok(result.evidence.ordinaryAnalyticDomainBuilds >= 2);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {

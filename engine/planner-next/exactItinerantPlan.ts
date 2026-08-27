@@ -29,6 +29,7 @@ import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationE
 import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
+import { selectMostConstrainedUnit } from "./macroScheduling";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -232,6 +233,18 @@ export interface ExactItinerantPlanEvidence {
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
   macroDomainSizes: Record<string, number>;
+  macroSelectionSteps: Array<{ selected: string; reason: string; candidates: Array<{ id: string; kind: string; domainSize: number; hardResourceAvailabilityMinutes: number }> }>;
+  ordinaryDomainQueries: number;
+  ordinaryAnalyticDomainBuilds: number;
+  ordinaryAnalyticEligibleStarts: number;
+  ordinaryExactStartEnumerations: number;
+  ordinaryExactStartChecks: number;
+  ordinaryDomainCacheHits: number;
+  ordinaryDomainCacheMisses: number;
+  ordinaryDomainRecomputations: number;
+  ordinaryMRVSelections: number;
+  ordinaryBranchesExplored: number;
+  standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
   causalDiagnostic:ExactCoreCausalDiagnostic|null;
@@ -368,6 +381,15 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
+  const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
+  const recordBlockingTask = (task: Task): void => {
+    evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
+    evidence.standaloneBlockingTaskDetails[task.id] ??= {
+      taskId: task.id, participantId: task.participantId ?? null, spaceId: task.spaceId,
+      duration: task.duration, requiredResourceIds: [...(task.requiredResourceIds ?? [])].sort(),
+      setupFamilyId: task.setupFamilyId ?? null, kind: task.kind,
+    };
+  };
   const consumeLeafBranch = (): boolean => {
     if (!ledger.consume("STANDALONE")) return false;
     evidence.standaloneLeafSearchBranches += 1;
@@ -418,19 +440,28 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder);
     }
     const alternatives: Positions[] = [];
+    const allPlaced = [...coreTasks, ...placed];
     for (const task of [...remaining].sort(byId)) {
-      const starts: number[] = [];
-      for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
-        if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
-        evidence.standaloneStartChecks += 1;
-        if (canPlaceTask(problem, task, start, [...coreTasks, ...placed], coreMeals)) starts.push(start);
+      evidence.ordinaryDomainQueries += 1;
+      const staticDomain = standaloneForwardStaticDomain(problem, task, coreMeals);
+      const signature = standaloneForwardAuthoritySignature(problem, task, allPlaced, coreMeals, staticDomain, "STATIC_DOMAIN");
+      let domain = ordinaryDomainCache.get(signature);
+      if (domain) evidence.ordinaryDomainCacheHits += 1;
+      else {
+        evidence.ordinaryDomainCacheMisses += 1;
+        evidence.ordinaryAnalyticDomainBuilds += 1;
+        evidence.ordinaryDomainRecomputations += 1;
+        domain = standaloneForwardDynamicDomain(problem, task, allPlaced, staticDomain);
+        if (ordinaryDomainCache.size >= 2048) ordinaryDomainCache.delete(ordinaryDomainCache.keys().next().value!);
+        ordinaryDomainCache.set(signature, domain);
       }
-      if (starts.length === 0) {
+      evidence.ordinaryAnalyticEligibleStarts += domain.eligibleStartCount;
+      if (domain.eligibleStartCount === 0) {
         evidence.standaloneZeroAlternativePrunes += 1;
-        evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
+        recordBlockingTask(task);
         return "DEAD_END";
       }
-      alternatives.push({ task, starts, effectiveDeadline: effectiveDeadline(problem, task) });
+      alternatives.push({ task, starts: [...domain.starts()], effectiveDeadline: effectiveDeadline(problem, task) });
     }
     alternatives.sort((a, b) => a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
       || b.task.duration - a.task.duration
@@ -438,10 +469,24 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       || a.task.id.localeCompare(b.task.id));
     const choice = alternatives[0]!;
     evidence.standaloneTaskSelections += 1;
-    const orderedStarts = choice.starts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
-      [...coreTasks, ...placed])).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
+    evidence.ordinaryMRVSelections += 1;
+    evidence.ordinaryExactStartEnumerations += 1;
+    const feasibleStarts = choice.starts.filter((start) => {
+      evidence.ordinaryExactStartChecks += 1;
+      evidence.standaloneStartChecks += 1;
+      return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals);
+    });
+    if (feasibleStarts.length === 0) {
+      evidence.standaloneZeroAlternativePrunes += 1;
+      recordBlockingTask(choice.task);
+      return "DEAD_END";
+    }
+    const orderedStarts = feasibleStarts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
+      allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
         || a.scheduled.id.localeCompare(b.scheduled.id));
     for (const { scheduled } of orderedStarts) {
+      if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+      evidence.ordinaryBranchesExplored += 1;
       if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);if(mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
@@ -544,7 +589,30 @@ const technicalItems = getTechnicalChains(pending).map((tasks) => ({
   kind: "technical" as const,
   tasks,
 }));
-const atomicItems = [...jointItems, ...technicalItems].sort((left, right) => left.key.localeCompare(right.key));
+const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+// A task is resource-critical by canonical contract, not by its display/type name.
+const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
+  && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
+  && !dynamicTransportIds.has(task.id)).map((task) => ({ key: `resource:${task.id}`, kind: "resource" as const, tasks: [task] }));
+const unorderedAtomicItems = [...jointItems, ...technicalItems, ...resourceItems];
+const atomicConstrainedness = (item: typeof unorderedAtomicItems[number]) => {
+  const domains = item.tasks.map((task) => standaloneForwardDynamicDomain(problem, task, coreTasks,
+    standaloneForwardStaticDomain(problem, task, coreMeals)).eligibleStartCount);
+  const resourceIds = [...new Set(item.tasks.flatMap((task) => task.requiredResourceIds ?? []))];
+  const availability = resourceIds.flatMap((id) => problem.resources.find((resource) => resource.id === id)?.availability ?? [])
+    .reduce((sum, interval) => sum + interval.end - interval.start, 0);
+  return { ...item, id: item.key, domainSize: Math.min(...domains), hardResourceAvailabilityMinutes: availability,
+    exclusiveResourceCount: resourceIds.length, synchronizedSlotCount: item.kind === "joint" ? item.tasks.length : 0,
+    totalDuration: item.tasks.reduce((sum, task) => sum + task.duration, 0), affectedTaskCount: item.tasks.length };
+};
+const atomicItems: typeof unorderedAtomicItems = [];
+const unordered = unorderedAtomicItems.map(atomicConstrainedness);
+while (unordered.length > 0) {
+  const selected = selectMostConstrainedUnit(unordered)!;
+  atomicItems.push(selected);
+  unordered.splice(unordered.findIndex(({ id }) => id === selected.id), 1);
+  evidence.macroDomainSizes[selected.id] = selected.domainSize;
+}
 const atomicTaskIds = new Set(atomicItems.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id) && !dynamicTransportIds.has(id) && !atomicTaskIds.has(id));
 const originalOrdinary = ordinaryPending.splice(0, ordinaryPending.length, ...pendingWithoutRounds.filter(({ id }) => !setupTaskIds.has(id)).sort(byId));
@@ -562,10 +630,13 @@ const searchAtomicItems = (
     evidence.macroSelectionOrder.push(`CRITICAL:${item.key}`);
     evidence.macroSelectionReason.push("structured hard-coupled operation before broader domains");
   }
-  if (item.kind === "joint") {
+  if (item.kind === "joint" || item.kind === "resource") {
     const duration = item.tasks[0]?.duration ?? 0;
     const fullGridCount = Math.max(0, Math.floor((problem.day.end - duration - problem.day.start) / 5) + 1);
-    const analyticDomain = standaloneJointGroupStartDomain(problem, item.tasks, [...coreTasks, ...placed], coreMeals);
+    const analyticDomain = item.kind === "joint"
+      ? standaloneJointGroupStartDomain(problem, item.tasks, [...coreTasks, ...placed], coreMeals)
+      : standaloneForwardDynamicDomain(problem, item.tasks[0]!, [...coreTasks, ...placed],
+        standaloneForwardStaticDomain(problem, item.tasks[0]!, coreMeals));
     const starts = jointGroupStartDomainMode === "FULL_GRID"
       ? (function* () { for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) yield start; })()
       : analyticDomain.starts();
@@ -577,8 +648,10 @@ const searchAtomicItems = (
       evidence.standaloneBranches += 1;
       evidence.jointGroupStartsEvaluated += 1;
       evidence.criticalResourceBranches += 1;
-      if (!canPlaceJointGroup(problem, item.tasks, start, [...coreTasks, ...placed])) continue;
-      const scheduled = scheduleJointGroup(item.tasks, start);
+      if (item.kind === "joint" && !canPlaceJointGroup(problem, item.tasks, start, [...coreTasks, ...placed])) continue;
+      if (item.kind === "resource" && !canPlaceTask(problem, item.tasks[0]!, start, [...coreTasks, ...placed], coreMeals)) continue;
+      const scheduled = item.kind === "joint" ? scheduleJointGroup(item.tasks, start)
+        : [scoreAuxiliaryTask(problem, item.tasks[0]!, start, [...coreTasks, ...placed]).scheduled];
       evidence.criticalResourceMacroCandidates += 1;
       evidence.criticalResourceAssignments += scheduled.length;
       const child = searchAtomicItems(index + 1, [...placed, ...scheduled], [...selectionOrder, ...scheduled.map(({ id }) => id)]);
@@ -766,7 +839,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     roundSynchronizationZeroAlternativePrunes: 0, selectedRoundPreparationIds: [],
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
-    macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},
+    macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],
+    ordinaryDomainQueries:0,ordinaryAnalyticDomainBuilds:0,ordinaryAnalyticEligibleStarts:0,
+    ordinaryExactStartEnumerations:0,ordinaryExactStartChecks:0,ordinaryDomainCacheHits:0,
+    ordinaryDomainCacheMisses:0,ordinaryDomainRecomputations:0,ordinaryMRVSelections:0,ordinaryBranchesExplored:0,
+    standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
