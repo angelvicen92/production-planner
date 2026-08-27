@@ -29,9 +29,20 @@ test("candidate partitions honor minimum, maximum, and never leave a small resid
 
 test("terminal contiguous grouping uses directional defaults and preserves explicit targets", () => {
   assert.deepEqual(transportContiguousGroupSizes(6, policy(1, 6), "arrival"), [3, 3]);
+  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 3, 1]);
+  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 3, 2]);
+  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 3, 1]);
   assert.deepEqual(transportContiguousGroupSizes(3, policy(1, 6), "departure"), [1, 1, 1]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 2 }, "arrival"), [2, 2, 2]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 3 }, "departure"), [3, 3]);
+});
+
+test("terminal validation permits a final group below the legacy compatibility minimum", () => {
+  const problem = validationProblem(7);
+  const [a, b, c, d, e, f, g] = problem.tasks;
+  const groups = [a, b, c].map((task) => scheduled(task!, 600))
+    .concat([d, e, f].map((task) => scheduled(task!, 620)), [scheduled(g!, 640)]);
+  assert.equal(validateTransportGrouping(problem, groups).violationCount, 0);
 });
 
 function validationProblem(count = 7): PlannerNextProblem {
@@ -149,8 +160,8 @@ function arrivalWorkStyleDepartureProblem(reverse = false, departureCount = 2): 
     budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 100_000 },
     auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
     transportPolicy: {
-      arrival: { ...policy(2, Math.max(2, departureCount), 0), taskIds: people.map((id) => `in-${id}`) },
-      departure: { ...policy(2, departureCount === 2 ? 2 : 4, 20), taskIds: people.map((id) => `out-${id}`) },
+      arrival: { ...policy(1, Math.max(2, departureCount), 0), targetGroupSize: 2, taskIds: people.map((id) => `in-${id}`) },
+      departure: { ...policy(1, departureCount === 2 ? 2 : 4, 20), targetGroupSize: 2, taskIds: people.map((id) => `out-${id}`) },
     },
   };
   if (reverse) {

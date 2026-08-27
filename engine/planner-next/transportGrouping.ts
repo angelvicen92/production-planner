@@ -62,17 +62,12 @@ export function transportContiguousGroupSizes(
   policy: Readonly<TransportGroupingPolicy>,
   direction: TransportDirection,
 ): number[] | null {
-  const target = policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1);
+  if (count < 0 || !Number.isInteger(count)) return null;
+  const target = Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize);
   const sizes: number[] = [];
   let remaining = count;
   while (remaining > 0) {
-    const candidates = Array.from({ length: policy.maximumGroupSize - policy.minimumGroupSize + 1 },
-      (_, index) => policy.minimumGroupSize + index)
-      .filter((size) => size <= remaining
-        && canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
-      .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || left - right);
-    const size = candidates[0];
-    if (size === undefined) return null;
+    const size = Math.min(target, remaining);
     sizes.push(size);
     remaining -= size;
   }
@@ -220,8 +215,7 @@ export function validateTransportGrouping(
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    if (groups.some((group) => group.length < policy.minimumGroupSize
-      || group.length > policy.maximumGroupSize
+    if (groups.some((group) => group.length === 0 || group.length > policy.maximumGroupSize
       || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) violationCount += 1;
     for (let index = 1; index < groups.length; index += 1) {
       if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;

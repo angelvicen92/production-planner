@@ -57,7 +57,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "0e7e3e7ac72b67fa94203ae408e6edb3f4e4feb0042fefd59d80e09b5c49a9c3"
+    "problemFingerprint": "a00c3a96a3bec8d6904be3fb3a5ba58903e52131abb0cc17599260ab83e389d6"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -290,8 +290,8 @@
       "technicalChainPreparedAuthorityBuilds": 3,
       "technicalChainPreparedAuthorityHits": 3,
       "technicalChainFixedPlacedScansAvoided": 14204,
-      "technicalChainDomainBuildMs": 0.26544400000057067,
-      "technicalChainFinalPlacementCheckMs": 0.38374499999918044,
+      "technicalChainDomainBuildMs": 0.12776300000041374,
+      "technicalChainFinalPlacementCheckMs": 1.2452650000068388,
       "technicalChainCompleteCandidates": 1,
       "technicalChainActiveFrontierPeak": 5,
       "technicalChainAlternativesDeferred": 202,

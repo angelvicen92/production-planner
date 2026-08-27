@@ -287,14 +287,14 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     ...(input.transportSettings ? { transportPolicy: {
       arrival: {
         taskIds: activeTasks.filter((task) => task.operationalRole === "transport_arrival").map((task) => canonical("task", task.id)),
-        targetGroupSize: input.transportSettings.arrivalTargetGroupSize ?? undefined,
-        minimumGroupSize: input.arrivalGroupingTarget!, maximumGroupSize: input.vanCapacity!,
+        targetGroupSize: input.arrivalGroupingTarget ?? input.transportSettings.arrivalTargetGroupSize ?? undefined,
+        minimumGroupSize: 1, maximumGroupSize: input.vanCapacity!,
         minGapMinutes: input.arrivalMinGapMinutes!, groupingWeight: input.transportSettings.groupingWeight!,
       },
       departure: {
         taskIds: activeTasks.filter((task) => task.operationalRole === "transport_departure").map((task) => canonical("task", task.id)),
-        targetGroupSize: input.transportSettings.departureTargetGroupSize ?? undefined,
-        minimumGroupSize: input.departureGroupingTarget!, maximumGroupSize: input.vanCapacity!,
+        targetGroupSize: input.departureGroupingTarget ?? input.transportSettings.departureTargetGroupSize ?? undefined,
+        minimumGroupSize: 1, maximumGroupSize: input.vanCapacity!,
         minGapMinutes: input.departureMinGapMinutes!, groupingWeight: input.transportSettings.groupingWeight!,
       },
     } } : {}),

@@ -75,12 +75,12 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   const input = createSupportedEngineInputAdapterFixture();
   input.tasks[0]!.operationalRole = "transport_arrival";
   input.tasks[1]!.operationalRole = "transport_departure";
-  input.arrivalGroupingTarget = policy.arrival.minimumGroupSize;
-  input.departureGroupingTarget = policy.departure.minimumGroupSize;
+  input.arrivalGroupingTarget = policy.arrival.targetGroupSize;
+  input.departureGroupingTarget = policy.departure.targetGroupSize;
   input.arrivalMinGapMinutes = policy.arrival.minGapMinutes;
   input.departureMinGapMinutes = policy.departure.minGapMinutes;
   input.vanCapacity = policy.arrival.maximumGroupSize;
-  input.transportSettings = { arrivalTargetGroupSize: policy.arrival.minimumGroupSize, departureTargetGroupSize: policy.departure.minimumGroupSize, arrivalMinGapMinutes: policy.arrival.minGapMinutes, departureMinGapMinutes: policy.departure.minGapMinutes, vanCapacity: policy.arrival.maximumGroupSize, groupingWeight: policy.arrival.groupingWeight, source: "engine-buildInput-optimizer-transport" };
+  input.transportSettings = { arrivalTargetGroupSize: policy.arrival.targetGroupSize, departureTargetGroupSize: policy.departure.targetGroupSize, arrivalMinGapMinutes: policy.arrival.minGapMinutes, departureMinGapMinutes: policy.departure.minGapMinutes, vanCapacity: policy.arrival.maximumGroupSize, groupingWeight: policy.arrival.groupingWeight, source: "engine-buildInput-optimizer-transport" };
   const snapshot = structuredClone(input);
   const preflight = preflightEngineInputForPlannerNext(input);
   const adapted = adaptEngineInputToPlannerNextProblem(input);
@@ -94,13 +94,12 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   const plannerNextContractPresent = projected !== undefined;
   const arrival = projected?.arrival as Record<string, unknown> | undefined;
   const departure = projected?.departure as Record<string, unknown> | undefined;
-  const minimumPreserved = arrival?.minimumGroupSize === 3 && departure?.minimumGroupSize === 3;
+  const targetPreserved = arrival?.targetGroupSize === 3 && departure?.targetGroupSize === 1;
   const minGapPreserved = arrival?.minGapMinutes === 35 && departure?.minGapMinutes === 20;
   const maximumPreserved = arrival?.maximumGroupSize === 6 && departure?.maximumGroupSize === 6;
   const groupingWeightPreserved = arrival?.groupingWeight === 3 && departure?.groupingWeight === 3;
-  const noSeparateTargetSemantic = [arrival, departure].every((direction) => direction !== undefined
-    && !("groupingTarget" in direction) && !("targetGroupSize" in direction)
-    && !("minParticipantsPerGroup" in direction));
+  const separateTargetSemantic = [arrival, departure].every((direction) => direction !== undefined
+    && direction.minimumGroupSize === 1 && "targetGroupSize" in direction);
   const invalidInputs = [
     (() => { const value = structuredClone(input); delete value.departureMinGapMinutes; return value; })(),
     (() => { const value = structuredClone(input); value.transportSettings!.arrivalTargetGroupSize = 4; return value; })(),
@@ -111,14 +110,14 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   const capabilities = adapted.status === "SUPPORTED" ? detectPlannerCapabilities(adapted.problem) : [];
   const resolution = exactProblem ? resolvePlannerSearchPolicy(exactProblem) : null;
   return {
-    sourceConfigurationPresent: policy.arrival.minimumGroupSize === 3 && policy.arrival.maximumGroupSize === 6 && policy.arrival.minGapMinutes === 35 && policy.arrival.groupingWeight === 3 && policy.departure.minimumGroupSize === 3 && policy.departure.maximumGroupSize === 6 && policy.departure.minGapMinutes === 20 && policy.departure.groupingWeight === 3,
+    sourceConfigurationPresent: policy.arrival.targetGroupSize === 3 && policy.arrival.maximumGroupSize === 6 && policy.arrival.minGapMinutes === 35 && policy.arrival.groupingWeight === 3 && policy.departure.targetGroupSize === 1 && policy.departure.maximumGroupSize === 6 && policy.departure.minGapMinutes === 20 && policy.departure.groupingWeight === 3,
     engineInputContractPresent,
     transportSettingsSourcePresent: input.transportSettings?.source === "engine-buildInput-optimizer-transport",
     engineInputPreflightSupported: preflight.status === "SUPPORTED",
     rejectsInvalidContracts: invalidInputs.every((value) => preflightEngineInputForPlannerNext(value).reasonCodes.includes("UNSUPPORTED_TRANSPORT_CONTRACT")),
     adapterProjectsTransportPolicy: adapted.status === "SUPPORTED" && projected !== undefined,
-    plannerNextContractPresent, minimumPreserved, maximumPreserved, minGapPreserved, groupingWeightPreserved,
-    noSeparateTargetSemantic,
+    plannerNextContractPresent, targetPreserved, maximumPreserved, minGapPreserved, groupingWeightPreserved,
+    separateTargetSemantic,
     capabilityDetected: capabilities.includes("TRANSPORT_GROUPING"),
     capabilitySupportedByExact: resolution?.supportedCapabilities.includes("TRANSPORT_GROUPING") === true,
     executionAcceptedByExact: execution?.kind === "EXACT_CONSTRUCTIVE",
@@ -745,9 +744,9 @@ export function analyzeCanonicalFullA2Representability(
     && transportPolicyProbe.engineInputContractPresent && transportPolicyProbe.transportSettingsSourcePresent
     && transportPolicyProbe.engineInputPreflightSupported && transportPolicyProbe.rejectsInvalidContracts
     && transportPolicyProbe.adapterProjectsTransportPolicy && transportPolicyProbe.plannerNextContractPresent
-    && transportPolicyProbe.minimumPreserved && transportPolicyProbe.maximumPreserved
+    && transportPolicyProbe.targetPreserved && transportPolicyProbe.maximumPreserved
     && transportPolicyProbe.minGapPreserved && transportPolicyProbe.groupingWeightPreserved
-    && transportPolicyProbe.noSeparateTargetSemantic && transportPolicyProbe.capabilityDetected
+    && transportPolicyProbe.separateTargetSemantic && transportPolicyProbe.capabilityDetected
     && transportPolicyProbe.capabilitySupportedByExact && transportPolicyProbe.executionAcceptedByExact
     && transportPolicyProbe.deterministic && transportPolicyProbe.orderInvariant && transportPolicyProbe.inputImmutable;
   if (!transportRepresentationProven) implementationBlockers.push(blocker({

@@ -443,9 +443,9 @@ export interface EngineInput {
 
   arrivalTaskTemplateName?: string;
   departureTaskTemplateName?: string;
-  /** Legacy name: the value is minimumGroupSize, never a separate soft target. */
+  /** Legacy product name for the preferred arrival group size. */
   arrivalGroupingTarget?: number;
-  /** Legacy name: the value is minimumGroupSize, never a separate soft target. */
+  /** Legacy product name for the preferred departure group size. */
   departureGroupingTarget?: number;
   arrivalMinGapMinutes?: number;
   departureMinGapMinutes?: number;
@@ -459,9 +459,9 @@ export interface EngineInput {
     departureTemplateId?: number | string | null;
     arrivalTemplateName?: string | null;
     departureTemplateName?: string | null;
-    /** Legacy name: alias of arrival minimumGroupSize, not a soft target. */
+    /** Alias of the preferred arrival group size. */
     arrivalTargetGroupSize?: number | null;
-    /** Legacy name: alias of departure minimumGroupSize, not a soft target. */
+    /** Alias of the preferred departure group size. */
     departureTargetGroupSize?: number | null;
     arrivalMinGapMinutes?: number | null;
     departureMinGapMinutes?: number | null;

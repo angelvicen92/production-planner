@@ -19,8 +19,8 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
     return [id, Object.freeze({ start: "09:00" as const, end: index === 0 ? "15:30" as const : "18:40" as const })];
   }))),
   transportPolicy: Object.freeze({
-    arrival: Object.freeze({ minimumGroupSize: 3 as const, maximumGroupSize: 6 as const, minGapMinutes: 35 as const, groupingWeight: 3 as const }),
-    departure: Object.freeze({ minimumGroupSize: 3 as const, maximumGroupSize: 6 as const, minGapMinutes: 20 as const, groupingWeight: 3 as const }),
+    arrival: Object.freeze({ targetGroupSize: 3 as const, maximumGroupSize: 6 as const, minGapMinutes: 35 as const, groupingWeight: 3 as const }),
+    departure: Object.freeze({ targetGroupSize: 1 as const, maximumGroupSize: 6 as const, minGapMinutes: 20 as const, groupingWeight: 3 as const }),
   }),
   meals: Object.freeze({
     effectiveWindow: Object.freeze({ start: "13:00" as const, end: "16:30" as const }),

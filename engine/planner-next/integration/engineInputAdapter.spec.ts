@@ -69,7 +69,7 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
   assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
 });
 
-test("transport adapter projects min/max policy from explicit operational roles only", () => {
+test("transport adapter projects target separately from the compatibility floor", () => {
   const input = createSupportedEngineInputAdapterFixture();
   input.tasks[0]!.operationalRole = "transport_arrival";
   input.tasks[1]!.operationalRole = "transport_departure";
@@ -81,8 +81,8 @@ test("transport adapter projects min/max policy from explicit operational roles 
   const before = clone(input);
   const result = supported(input);
   assert.deepEqual(result.problem.transportPolicy, {
-    arrival: { taskIds: [`task:${input.tasks[0]!.id}`], targetGroupSize: 3, minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 0, groupingWeight: 0 },
-    departure: { taskIds: [`task:${input.tasks[1]!.id}`], targetGroupSize: 3, minimumGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 0 },
+    arrival: { taskIds: [`task:${input.tasks[0]!.id}`], targetGroupSize: 3, minimumGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 0, groupingWeight: 0 },
+    departure: { taskIds: [`task:${input.tasks[1]!.id}`], targetGroupSize: 3, minimumGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 0 },
   });
   assert.equal(preflightPlannerNextProblem(result.problem).includes("INVALID_TRANSPORT_POLICY"), false);
   assert.deepEqual(input, before);

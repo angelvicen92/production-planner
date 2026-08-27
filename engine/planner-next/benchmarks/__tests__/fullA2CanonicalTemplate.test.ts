@@ -100,15 +100,14 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.rules.setup.preparationMinutesBetweenFamilies = 5; }, "SETUP_RULES", "SETUP_PREPARATION_CHANGED");
   assertInvariantFails((e) => { e.rules.totalesSynchronization.synchronizedRounds = false; }, "TOTALES_RULES", "TOTALES_SYNCHRONIZATION_LOST");
   assertInvariantFails((e) => { e.rules.coachTransition.minutes = 15; }, "COACH_TRANSITION_RULE", "COACH_TRANSITION_RULE_CHANGED");
-  assertInvariantFails((e) => { e.rules.inTransport.minParticipantsPerGroup = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
+  assertInvariantFails((e) => { e.rules.inTransport.targetGroupSize = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C01.end = "15:31"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C02.end = "18:39"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 30; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.groupingTarget = 4; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minParticipantsPerGroup = 1; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.targetGroupSize = 4; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minGapMinutes = 25; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.vanCapacity = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.vanCapacity = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.maximumGroupSize = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.maximumGroupSize = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.defaultDurationMinutes = 70; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.realityDurationMinutes = 45; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.effectiveWindow.start = "13:05"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
@@ -136,8 +135,8 @@ test("representability separates source configuration, implementation blockers a
   const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
   const analysis = analyzeCanonicalFullA2Representability(expansion);
   let callCount = 0;
-  const gate = runRepresentabilityGate(analysis, () => { callCount += 1; throw new Error("executor must not be called"); });
-  assert.equal(analysis.status, "BLOCKED");
+  const gate = runRepresentabilityGate(analysis, () => { callCount += 1; return { engineInputBuilt: true, preflightCalled: true, adapterCalled: true, executePlannerNextCalled: true }; });
+  assert.equal(analysis.status, "FULLY_REPRESENTABLE");
   assert.deepEqual(expansion.requiredCreationInputs, []);
   assert.deepEqual(analysis.requiredCreationInputs, []);
   assert.equal(analysis.jointGroupProbe.executed, true);
@@ -185,28 +184,30 @@ test("representability separates source configuration, implementation blockers a
   assert.ok(!analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED"));
   assert.equal(analysis.adapterProbe.projectedGlobalResourceTransitionMinutes, 5);
   assert.equal(analysis.adapterProbe.supportsSpecificCoachRouteTransition, true);
-  assert.equal(analysis.implementationBlockers.length, 3);
-  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(analysis.implementationBlockers.length, 0);
+  assert.equal(analysis.nextImplementationBlocker, null);
   assert.equal(analysis.participantAvailabilityProbe.lossless, true);
   assert.equal(analysis.participantAvailabilityProbe.sourceConfigurationPresent, true);
   assert.equal(analysis.transportPolicyProbe.transportSettingsSourcePresent, true);
-  assert.equal(analysis.transportPolicyProbe.adapterProjectsTransportPolicy, false);
+  assert.equal(analysis.transportPolicyProbe.adapterProjectsTransportPolicy, true);
+  assert.equal(analysis.transportPolicyProbe.targetPreserved, true);
+  assert.equal(analysis.transportPolicyProbe.separateTargetSemantic, true);
   assert.equal(analysis.scopedMealPolicyProbe.assignedMealResourceHasOwnSpace, true);
   assert.equal(analysis.scopedMealPolicyProbe.ownSpaceControlPlaceableWithoutMeal, true);
   assert.equal(analysis.scopedMealPolicyProbe.ownSpacePlaceableWithMeal, false);
   assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksOwnSpace, true);
   assert.equal(analysis.scopedMealPolicyProbe.crossSpaceControlPlaceableWithoutMeal, true);
-  assert.equal(analysis.scopedMealPolicyProbe.crossSpacePlaceableWithMeal, true);
-  assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksAssignedResourcesAcrossOtherSpaces, false);
+  assert.equal(analysis.scopedMealPolicyProbe.crossSpacePlaceableWithMeal, false);
+  assert.equal(analysis.scopedMealPolicyProbe.spaceMealBlocksAssignedResourcesAcrossOtherSpaces, true);
   assert.equal(analysis.scopedMealPolicyProbe.validationControlHardValid, true);
-  assert.equal(analysis.scopedMealPolicyProbe.validationWithMealHardValid, true);
-  assert.equal(analysis.scopedMealPolicyProbe.validatorRejectsAssignedResourceWorkDuringMeal, false);
+  assert.equal(analysis.scopedMealPolicyProbe.validationWithMealHardValid, false);
+  assert.equal(analysis.scopedMealPolicyProbe.validatorRejectsAssignedResourceWorkDuringMeal, true);
   assert.equal(analysis.scopedMealPolicyProbe.fixedRealityMealSupported, true);
   assert.equal(analysis.scopedMealPolicyProbe.fixedRealityMealHasInterval, true);
   assert.equal(analysis.scopedMealPolicyProbe.fixedRealityMealHasFlexibleWindowContract, false);
-  assert.equal(analysis.scopedMealPolicyProbe.recompositionAliasMealCount, 3);
-  assert.equal(analysis.scopedMealPolicyProbe.flexibleRealityResourceMealRepresentable, false);
-  assert.equal(analysis.scopedMealPolicyProbe.recompositionDoesNotDuplicateMeal, false);
+  assert.equal(analysis.scopedMealPolicyProbe.recompositionAliasMealCount, 1);
+  assert.equal(analysis.scopedMealPolicyProbe.flexibleRealityResourceMealRepresentable, true);
+  assert.equal(analysis.scopedMealPolicyProbe.recompositionDoesNotDuplicateMeal, true);
 
   const failedRoundAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: analysis.adapterProbe,
@@ -220,7 +221,7 @@ test("representability separates source configuration, implementation blockers a
   });
   assert.equal(failedRoundAnalysis.roundSynchronizationCapabilityProven, false);
   assert.ok(failedRoundAnalysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
-  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(failedRoundAnalysis.nextImplementationBlocker?.code, "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED");
 
   const failedRouteAnalysis = analyzeCanonicalFullA2Representability(expansion, {
     adapterProbe: {
@@ -233,7 +234,7 @@ test("representability separates source configuration, implementation blockers a
     setupPolicyProbe: analysis.setupPolicyProbe,
   });
   assert.ok(failedRouteAnalysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
-  assert.equal(failedRouteAnalysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(failedRouteAnalysis.nextImplementationBlocker?.code, "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS");
 
   const failedSetupAnalysis = analyzeCanonicalFullA2Representability(
     expansion,
@@ -260,7 +261,7 @@ test("representability separates source configuration, implementation blockers a
 
   assert.equal(
     failedSetupAnalysis.nextImplementationBlocker?.code,
-    "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+    "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
   );
 
   const failedFlexibleAnalysis =
@@ -289,16 +290,16 @@ test("representability separates source configuration, implementation blockers a
   );
   assert.equal(
     failedFlexibleAnalysis.nextImplementationBlocker?.code,
-    "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED",
+    "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
   );
 
-  assert.equal(gate.status, "REJECTED_BLOCKED");
-  assert.equal(gate.executorCallCount, 0);
-  assert.equal(callCount, 0);
-  assert.equal(gate.engineInputBuilt, false);
-  assert.equal(gate.preflightCalled, false);
-  assert.equal(gate.adapterCalled, false);
-  assert.equal(gate.executePlannerNextCalled, false);
+  assert.equal(gate.status, "EXECUTED");
+  assert.equal(gate.executorCallCount, 1);
+  assert.equal(callCount, 1);
+  assert.equal(gate.engineInputBuilt, true);
+  assert.equal(gate.preflightCalled, true);
+  assert.equal(gate.adapterCalled, true);
+  assert.equal(gate.executePlannerNextCalled, true);
 });
 
 test("representability keeps dependent joint group blocker when the connected probe fails", () => {
@@ -326,14 +327,14 @@ test("representability keeps dependent joint group blocker when the connected pr
   const analysis = analyzeCanonicalFullA2Representability(expansion, { jointGroupProbe: failingProbe });
   assert.equal(analysis.jointGroupCapabilityProven, false);
   assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED"));
-  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_TRANSPORT_POLICY_UNSUPPORTED");
+  assert.equal(analysis.nextImplementationBlocker?.code, "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED");
 });
 
 test("generated artifacts are reproducible against current expansion", () => {
   const evidence = JSON.parse(readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json", "utf8"));
   assert.equal(evidence.totalTaskCount, 269);
   assert.equal(evidence.expansionFingerprint, canonicalFingerprint(expandCanonicalFullA2Template(createCanonicalFullA2Template())));
-  assert.equal(evidence.representabilityGate.executorCallCount, 0);
+  assert.equal(evidence.representabilityGate.executorCallCount, 1);
   assert.equal(evidence.noEngineInputPartial, true);
   assert.equal(evidence.itinerantUnits.length, 3);
   assert.equal(evidence.unitIdNotHardResource, true);
