@@ -164,15 +164,15 @@ input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailabilit
   itinerantTeamId: itinerantUnitId.get(canonicalId)!,
   windows: [{ start: availability.start, end: availability.end }],
 }));
-input.arrivalGroupingTarget = config.transportPolicy.arrival.minimumGroupSize;
-input.departureGroupingTarget = config.transportPolicy.departure.minimumGroupSize;
+input.arrivalGroupingTarget = config.transportPolicy.arrival.targetGroupSize;
+input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;
 input.arrivalMinGapMinutes = config.transportPolicy.arrival.minGapMinutes;
 input.departureMinGapMinutes = config.transportPolicy.departure.minGapMinutes;
 input.vanCapacity = config.transportPolicy.arrival.maximumGroupSize;
 input.transportVanCapacity = config.transportPolicy.arrival.maximumGroupSize;
 input.transportSettings = {
-  arrivalTargetGroupSize: config.transportPolicy.arrival.minimumGroupSize,
-  departureTargetGroupSize: config.transportPolicy.departure.minimumGroupSize,
+  arrivalTargetGroupSize: config.transportPolicy.arrival.targetGroupSize,
+  departureTargetGroupSize: config.transportPolicy.departure.targetGroupSize,
   arrivalMinGapMinutes: config.transportPolicy.arrival.minGapMinutes,
   departureMinGapMinutes: config.transportPolicy.departure.minGapMinutes,
   vanCapacity: config.transportPolicy.arrival.maximumGroupSize,

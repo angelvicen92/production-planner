@@ -2843,3 +2843,7 @@ Se cierran los tres source inputs pendientes y se materializan disponibilidades 
 ### A2-FULL-010 — política min/max de transporte en Planner Next
 
 Los nombres legacy `arrivalGroupingTarget` y `departureGroupingTarget` se interpretan exclusivamente como `minimumGroupSize`; `vanCapacity` se proyecta como `maximumGroupSize`. El preflight de EngineInput acepta sólo contratos completos, coherentes y con mínimo no mayor que el máximo, mientras el preflight canónico valida estructura, referencias y separación de taskIds entre direcciones. El adapter construye `PlannerNextProblem.transportPolicy` identificando IN/OUT únicamente mediante `operationalRole` explícito. La capability `TRANSPORT_GROUPING` se detecta, pero ninguna search policy la soporta todavía: `executePlannerNext` responde fail-closed con `POLICY_REJECTED` y `SEARCH_POLICY_CAPABILITY_UNSUPPORTED`. Full A2 permanece `VALID` y `BLOCKED`, ahora en `PLANNER_NEXT_TRANSPORT_GROUPING_UNSUPPORTED`, seguido por los blockers de comidas existentes; cualquier regresión de representación restaura el blocker de EngineInput.
+
+### A2-FULL-011 — target de transporte desacoplado del mínimo · 2026-08-27 08:47 UTC
+
+Planner Next interpreta `arrivalGroupingTarget` y `departureGroupingTarget` exclusivamente como tamaños objetivo: los grupos terminales son contiguos, respetan capacidad y admiten residuos menores (`[3,3,1]`, `[3,3,2]`) sin convertir el target en una restricción hard mínima. IN/OUT permanecen fuera de la búsqueda sustantiva temprana.

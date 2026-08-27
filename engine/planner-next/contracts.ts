@@ -155,6 +155,9 @@ export interface PlannerNextProblem {
 
 export interface TransportGroupingPolicy {
   taskIds: string[];
+  /** Preferred deterministic contiguous group size. When absent, direction defaults apply. */
+  targetGroupSize?: number;
+  /** @deprecated Compatibility field only; transport has no independent hard minimum. */
   minimumGroupSize: number;
   maximumGroupSize: number;
   minGapMinutes: Minute;

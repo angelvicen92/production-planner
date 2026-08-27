@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "8c7570f18accc14ee01efbc6072361fec34d1a3ad865bd3063c263e4c691acf5",
-  "expansionFingerprint": "69bdf1c25ef122147290950e2cfac3c17e6232adf93a14558ab17b7accc0473c",
+  "manifestFingerprint": "19b3cfe2692c9b98f2c0494e7fecaeb0d49e9a987becbe0b35c61b18ba21a707",
+  "expansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1191,13 +1191,13 @@
     },
     "transportPolicy": {
       "arrival": {
-        "minimumGroupSize": 3,
+        "targetGroupSize": 3,
         "maximumGroupSize": 6,
         "minGapMinutes": 35,
         "groupingWeight": 3
       },
       "departure": {
-        "minimumGroupSize": 3,
+        "targetGroupSize": 1,
         "maximumGroupSize": 6,
         "minGapMinutes": 20,
         "groupingWeight": 3
@@ -1254,11 +1254,11 @@
     "rejectsInvalidContracts": true,
     "adapterProjectsTransportPolicy": true,
     "plannerNextContractPresent": true,
-    "minimumPreserved": true,
+    "targetPreserved": true,
     "maximumPreserved": true,
     "minGapPreserved": true,
     "groupingWeightPreserved": true,
-    "noSeparateTargetSemantic": true,
+    "separateTargetSemantic": true,
     "capabilityDetected": true,
     "capabilitySupportedByExact": true,
     "executionAcceptedByExact": true,
@@ -1433,11 +1433,11 @@
         "rejectsInvalidContracts": true,
         "adapterProjectsTransportPolicy": true,
         "plannerNextContractPresent": true,
-        "minimumPreserved": true,
+        "targetPreserved": true,
         "maximumPreserved": true,
         "minGapPreserved": true,
         "groupingWeightPreserved": true,
-        "noSeparateTargetSemantic": true,
+        "separateTargetSemantic": true,
         "capabilityDetected": true,
         "capabilitySupportedByExact": true,
         "executionAcceptedByExact": true,
@@ -1597,7 +1597,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "69bdf1c25ef122147290950e2cfac3c17e6232adf93a14558ab17b7accc0473c",
+    "shuffledExpansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
     "matches": true
   },
   "inputImmutable": {
