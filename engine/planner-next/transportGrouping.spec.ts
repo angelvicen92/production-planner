@@ -228,7 +228,7 @@ test("lazy analytic transport explorer preserves the legacy logical group/start 
   };
   const legacy=run("LEGACY_COMBINATIONS_FULL_GRID"),analytic=run("EXACT_LAZY_ANALYTIC");
   assert.deepEqual(analytic.rows,legacy.rows);assert.equal(analytic.result,"COMPLETE");
-  assert.equal(analytic.branches,analytic.evidence.transportGroupMembershipCandidatesEvaluated+analytic.evidence.transportGroupStartsEvaluated);
+  assert.equal(analytic.branches,analytic.evidence.transportGroupMembershipPartialsExpanded+analytic.evidence.transportGroupStartsEvaluated);
   assert.ok(analytic.evidence.transportGroupAnalyticallyEliminatedStarts>0);
 });
 
@@ -237,7 +237,8 @@ test("a huge impossible temporal intersection prunes descendants without sweepin
   const evidence=emptyTransportGroupingExplorerEvidence();let branches=0;
   exploreTransportGroups(explorerProblem(members),members,[],[],policy(3,3),()=>{branches+=1;return true;},evidence,()=>"CONTINUE");
   assert.equal(evidence.transportGroupStartsEvaluated,0);assert.equal(evidence.transportGroupMembershipCandidatesEvaluated,0);
-  assert.ok(evidence.transportGroupMembershipDomainPrunes>0);assert.equal(branches,0);
+  assert.ok(evidence.transportGroupMembershipDomainPrunes>0);
+  assert.equal(branches,evidence.transportGroupMembershipPartialsExpanded);
 });
 
 test("an impossible residual count is pruned before any complete combination",()=>{
@@ -253,4 +254,23 @@ test("analytic minGap removes exactly the forbidden starts",()=>{
     (_group,start)=>{starts.push(start);return "CONTINUE";});
   assert.deepEqual(starts,[0,5,10,30]);
   assert.equal(evidence.transportGroupFullGridStarts,evidence.transportGroupAnalyticEligibleStarts+evidence.transportGroupAnalyticallyEliminatedStarts);
+});
+
+test("membership construction exhausts atomically before evaluating the next extension",()=>{
+  const members=tasks(3),evidence=emptyTransportGroupingExplorerEvidence();let branches=0;
+  const result=exploreTransportGroups(explorerProblem(members,40),members,[],[],policy(3,3),()=>branches++<1,evidence,()=>"CONTINUE");
+  assert.equal(result,"BUDGET_EXHAUSTED");assert.equal(branches,2);
+  assert.equal(evidence.transportGroupMembershipPartialsExpanded,1);
+  assert.equal(evidence.transportGroupMembershipCandidatesEvaluated,0);
+  assert.equal(evidence.transportGroupStartsEvaluated,0);
+});
+
+test("start evaluation exhausts atomically without double-charging completed membership",()=>{
+  const members=tasks(2),evidence=emptyTransportGroupingExplorerEvidence();let attempts=0,consumed=0;
+  const result=exploreTransportGroups(explorerProblem(members,40),members,[],[],policy(2,2),()=>{attempts+=1;if(consumed===2)return false;consumed+=1;return true;},evidence,()=>"CONTINUE");
+  assert.equal(result,"BUDGET_EXHAUSTED");assert.equal(attempts,3);assert.equal(consumed,2);
+  assert.equal(evidence.transportGroupMembershipPartialsExpanded,1);
+  assert.equal(evidence.transportGroupMembershipCandidatesEvaluated,1);
+  assert.equal(evidence.transportGroupStartsEvaluated,1);
+  assert.equal(consumed,evidence.transportGroupMembershipPartialsExpanded+evidence.transportGroupStartsEvaluated);
 });

@@ -117,8 +117,8 @@ export function transportGroupStarts(
   return starts;
 }
 
-/** Lazy exact membership/start explorer. Complete memberships and surviving grid starts are
- * charged at the point at which they become material search alternatives. */
+/** Lazy exact membership/start explorer. Every evaluated membership extension and surviving
+ * grid start is charged at the point at which it becomes material search work. */
 export function exploreTransportGroups(
   problem:PlannerNextProblem,tasks:readonly Task[],placed:readonly ScheduledTask[],previousGroupStarts:readonly number[],
   policy:Readonly<TransportGroupingPolicy>,consume:()=>boolean,evidence:TransportGroupingExplorerEvidence,
@@ -133,8 +133,6 @@ export function exploreTransportGroups(
   if(policy.groupingWeight>0)sizes.sort((a,b)=>b-a);
   const memberDomain=(task:Task):ExactStartInterval[]=>exactTaskStartDomain(problem,task,[...placed]).intervals.map(x=>({...x}));
   const evaluate=(group:Task[],domain:ExactStartInterval[]):"COMPLETE"|"STOP"|"BUDGET_EXHAUSTED"=>{
-    if(!consume())return "BUDGET_EXHAUSTED";
-    evidence.transportGroupMembershipCandidatesEvaluated+=1;
     evidence.transportGroupFullGridStarts+=fullGrid;
     const starts=mode==="LEGACY_COMBINATIONS_FULL_GRID"
       ? Array.from({length:fullGrid},(_,i)=>problem.day.start+i*5)
@@ -153,7 +151,11 @@ export function exploreTransportGroups(
     return "COMPLETE";
   };
   if(mode==="LEGACY_COMBINATIONS_FULL_GRID"){
-    for(const group of transportGroupCandidates(ordered,policy)){const result=evaluate(group,[{start:problem.day.start,end:problem.day.end-duration}]);if(result!=="COMPLETE")return result;}
+    for(const group of transportGroupCandidates(ordered,policy)){
+      if(!consume())return "BUDGET_EXHAUSTED";
+      evidence.transportGroupMembershipCandidatesEvaluated+=1;
+      const result=evaluate(group,[{start:problem.day.start,end:problem.day.end-duration}]);if(result!=="COMPLETE")return result;
+    }
     return "COMPLETE";
   }
   for(const size of sizes){
@@ -163,9 +165,11 @@ export function exploreTransportGroups(
       if(group.length===size)return evaluate(group,domain);
       const need=size-group.length;
       for(let index=next;index<=ordered.length-need;index+=1){
+        if(!consume())return "BUDGET_EXHAUSTED";
         evidence.transportGroupMembershipPartialsExpanded+=1;
         const task=ordered[index]!,intersection=intersectExactStartIntervals(domain,memberDomain(task));
         if(intersection.length===0){evidence.transportGroupMembershipDomainPrunes+=1;continue;}
+        if(group.length+1===size)evidence.transportGroupMembershipCandidatesEvaluated+=1;
         const result=walk(index+1,[...group,task],intersection);if(result!=="COMPLETE")return result;
       }
       return "COMPLETE";
