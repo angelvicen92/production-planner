@@ -26,7 +26,7 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { scheduleTransportGroup, transportGroupCandidates, transportGroupStarts, transportTaskIds } from "./transportGrouping";
+import { emptyTransportGroupingExplorerEvidence, exploreTransportGroups, scheduleTransportGroup, transportTaskIds, type TransportDirection, type TransportGroupingExplorerEvidence, type TransportGroupingExplorerMode } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 
@@ -50,6 +50,7 @@ export interface ExactItinerantPlanEvidence {
   branchesExplored: number;
   coreBranches: number;
   standaloneBranches: number;
+  transportGrouping: Record<TransportDirection,TransportGroupingExplorerEvidence>;
   jointGroupFullGridStarts: number;
   jointGroupAnalyticEligibleStarts: number;
   jointGroupAnalyticallyEliminatedStarts: number;
@@ -349,7 +350,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
-  technicalChainStartDomainMode:TechnicalChainStartDomainMode): StandaloneSearchResult {
+  technicalChainStartDomainMode:TechnicalChainStartDomainMode,
+  transportGroupingExplorerMode:TransportGroupingExplorerMode): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -641,14 +643,9 @@ const searchTransportGroups = (
 ): StandaloneOutcome => {
   if (!problem.transportPolicy || remaining.length === 0) return continuation(placed, selectionOrder);
   const policy = problem.transportPolicy![direction];
-  const candidates = transportGroupCandidates(remaining, policy);
-  if (candidates.length === 0) return "DEAD_END";
-  for (const group of candidates) {
-    const starts = transportGroupStarts(problem, group, [...coreTasks, ...placed], groupStarts, policy);
-    if (starts.length === 0) evidence.standaloneBacktracks += 1;
-    for (const start of starts) {
-      if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
-      evidence.standaloneBranches += 1;
+  let outcome:StandaloneOutcome="DEAD_END";
+  const explored=exploreTransportGroups(problem,remaining,[...coreTasks,...placed],groupStarts,policy,
+    ()=>ledger.consume("STANDALONE"),evidence.transportGrouping[direction],(group,start)=>{
       const scheduled = scheduleTransportGroup(group, start);
       const memberIds = new Set(group.map(({ id }) => id));
       const child = searchTransportGroups(
@@ -659,11 +656,12 @@ const searchTransportGroups = (
         [...selectionOrder, ...group.map(({ id }) => id)],
         continuation,
       );
-      if (child !== "DEAD_END") return child;
+      if (child !== "DEAD_END") {outcome=child;return "STOP";}
       evidence.standaloneBacktracks += 1;
-    }
-  }
-  return "DEAD_END";
+      return "CONTINUE";
+    },transportGroupingExplorerMode);
+  if(explored==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+  return outcome;
 };
 const departureTasks = problem.transportPolicy
   ? problem.tasks.filter((task) => problem.transportPolicy!.departure.taskIds.includes(task.id)).sort(byId)
@@ -701,6 +699,8 @@ export interface ExactItinerantPlanSearchOptions {
   jointGroupStartDomainMode?: JointGroupStartDomainMode;
   /** Test oracle only; production removes exact technical-chain impossibility regions analytically. */
   technicalChainStartDomainMode?:TechnicalChainStartDomainMode;
+  /** Test oracle only; production is lazy membership plus analytic interval domains. */
+  transportGroupingExplorerMode?:TransportGroupingExplorerMode;
   /** Test oracle only; production memoizes positive block-closed witnesses locally. */
   standaloneForwardWitnessMemoization?: boolean;
   causalDiagnostic?: boolean;
@@ -712,6 +712,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
+    transportGrouping:{arrival:emptyTransportGroupingExplorerEvidence(),departure:emptyTransportGroupingExplorerEvidence()},
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
     jointGroupAnalyticallyEliminatedStarts: 0, jointGroupStartsEvaluated: 0,
     technicalChainFullGridStarts:0,technicalChainAnalyticEligibleStarts:0,
@@ -924,7 +925,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN");
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",
+      options.transportGroupingExplorerMode??"EXACT_LAZY_ANALYTIC");
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}

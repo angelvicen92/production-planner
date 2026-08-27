@@ -1,7 +1,30 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, exactStartDomainFromIntervals, exactTaskStartDomain, intersectExactStartIntervals, type ExactStartInterval } from "./placement";
 
 export type TransportDirection = "arrival" | "departure";
+export type TransportGroupingExplorerMode = "LEGACY_COMBINATIONS_FULL_GRID" | "EXACT_LAZY_ANALYTIC";
+
+export interface TransportGroupingExplorerEvidence {
+  transportGroupMembershipPartialsExpanded: number;
+  transportGroupMembershipCandidatesEvaluated: number;
+  transportGroupMembershipDomainPrunes: number;
+  transportGroupResidualCapacityPrunes: number;
+  transportGroupFullGridStarts: number;
+  transportGroupAnalyticEligibleStarts: number;
+  transportGroupAnalyticallyEliminatedStarts: number;
+  transportGroupStartsEvaluated: number;
+  transportGroupCompleteGroupsYielded: number;
+  transportGroupBacktracks: number;
+  transportGroupMaximumDepth: number;
+}
+
+export const emptyTransportGroupingExplorerEvidence=():TransportGroupingExplorerEvidence=>({
+  transportGroupMembershipPartialsExpanded:0,transportGroupMembershipCandidatesEvaluated:0,
+  transportGroupMembershipDomainPrunes:0,transportGroupResidualCapacityPrunes:0,
+  transportGroupFullGridStarts:0,transportGroupAnalyticEligibleStarts:0,
+  transportGroupAnalyticallyEliminatedStarts:0,transportGroupStartsEvaluated:0,
+  transportGroupCompleteGroupsYielded:0,transportGroupBacktracks:0,transportGroupMaximumDepth:0,
+});
 
 const byId = (left: Task, right: Task): number => left.id.localeCompare(right.id);
 
@@ -92,6 +115,66 @@ export function transportGroupStarts(
     if (canPlaceTransportGroup(problem, tasks, start, placed, previousGroupStarts, policy)) starts.push(start);
   }
   return starts;
+}
+
+/** Lazy exact membership/start explorer. Complete memberships and surviving grid starts are
+ * charged at the point at which they become material search alternatives. */
+export function exploreTransportGroups(
+  problem:PlannerNextProblem,tasks:readonly Task[],placed:readonly ScheduledTask[],previousGroupStarts:readonly number[],
+  policy:Readonly<TransportGroupingPolicy>,consume:()=>boolean,evidence:TransportGroupingExplorerEvidence,
+  visit:(group:readonly Task[],start:number)=>"CONTINUE"|"STOP",
+  mode:TransportGroupingExplorerMode="EXACT_LAZY_ANALYTIC",
+):"COMPLETE"|"STOP"|"BUDGET_EXHAUSTED" {
+  const ordered=[...tasks].sort(byId),first=ordered[0];
+  if(!first)return "COMPLETE";
+  const duration=first.duration;
+  const fullGrid=Math.max(0,Math.floor((problem.day.end-duration-problem.day.start)/5)+1);
+  const sizes=Array.from({length:Math.max(0,Math.min(policy.maximumGroupSize,ordered.length)-policy.minimumGroupSize+1)},(_,i)=>policy.minimumGroupSize+i);
+  if(policy.groupingWeight>0)sizes.sort((a,b)=>b-a);
+  const memberDomain=(task:Task):ExactStartInterval[]=>exactTaskStartDomain(problem,task,[...placed]).intervals.map(x=>({...x}));
+  const evaluate=(group:Task[],domain:ExactStartInterval[]):"COMPLETE"|"STOP"|"BUDGET_EXHAUSTED"=>{
+    if(!consume())return "BUDGET_EXHAUSTED";
+    evidence.transportGroupMembershipCandidatesEvaluated+=1;
+    evidence.transportGroupFullGridStarts+=fullGrid;
+    const starts=mode==="LEGACY_COMBINATIONS_FULL_GRID"
+      ? Array.from({length:fullGrid},(_,i)=>problem.day.start+i*5)
+      : [...exactStartDomainFromIntervals(problem,domain).starts()].filter(start=>previousGroupStarts.every(other=>Math.abs(start-other)>=policy.minGapMinutes));
+    evidence.transportGroupAnalyticEligibleStarts+=starts.length;
+    evidence.transportGroupAnalyticallyEliminatedStarts+=fullGrid-starts.length;
+    let yielded=false;
+    for(const start of starts){
+      if(!consume())return "BUDGET_EXHAUSTED";
+      evidence.transportGroupStartsEvaluated+=1;
+      if(!canPlaceTransportGroup(problem,group,start,placed,previousGroupStarts,policy))continue;
+      yielded=true;evidence.transportGroupCompleteGroupsYielded+=1;
+      if(visit(group,start)==="STOP")return "STOP";
+    }
+    if(!yielded)evidence.transportGroupBacktracks+=1;
+    return "COMPLETE";
+  };
+  if(mode==="LEGACY_COMBINATIONS_FULL_GRID"){
+    for(const group of transportGroupCandidates(ordered,policy)){const result=evaluate(group,[{start:problem.day.start,end:problem.day.end-duration}]);if(result!=="COMPLETE")return result;}
+    return "COMPLETE";
+  }
+  for(const size of sizes){
+    if(!canPartitionTransportCount(ordered.length-size,policy.minimumGroupSize,policy.maximumGroupSize)){evidence.transportGroupResidualCapacityPrunes+=1;continue;}
+    const walk=(next:number,group:Task[],domain:ExactStartInterval[]):"COMPLETE"|"STOP"|"BUDGET_EXHAUSTED"=>{
+      evidence.transportGroupMaximumDepth=Math.max(evidence.transportGroupMaximumDepth,group.length);
+      if(group.length===size)return evaluate(group,domain);
+      const need=size-group.length;
+      for(let index=next;index<=ordered.length-need;index+=1){
+        evidence.transportGroupMembershipPartialsExpanded+=1;
+        const task=ordered[index]!,intersection=intersectExactStartIntervals(domain,memberDomain(task));
+        if(intersection.length===0){evidence.transportGroupMembershipDomainPrunes+=1;continue;}
+        const result=walk(index+1,[...group,task],intersection);if(result!=="COMPLETE")return result;
+      }
+      return "COMPLETE";
+    };
+    const initial=memberDomain(first);
+    if(initial.length===0){evidence.transportGroupMembershipDomainPrunes+=1;continue;}
+    const result=walk(1,[first],initial);if(result!=="COMPLETE")return result;
+  }
+  return "COMPLETE";
 }
 
 export interface TransportValidation {

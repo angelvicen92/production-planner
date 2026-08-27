@@ -4,6 +4,8 @@ import type { PlannerNextProblem, ScheduledTask, Task, TransportGroupingPolicy }
 import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
+  emptyTransportGroupingExplorerEvidence,
+  exploreTransportGroups,
   transportGroupCandidates,
   validateTransportGrouping,
 } from "./transportGrouping";
@@ -205,4 +207,50 @@ test("an unusable preferred OUT grouping backtracks to a valid partition under t
   const outs = result.result!.scheduledTasks.filter(({ id }) => id.startsWith("out-"));
   assert.deepEqual([...new Set(outs.map(({ start }) => start))], [80, 100]);
   assert.deepEqual([...new Set(outs.map(({ start }) => outs.filter((other) => other.start === start).length))], [3]);
+});
+
+function explorerProblem(memberTasks:Task[],end=100_000):PlannerNextProblem {
+  const window=[{start:0,end}];
+  return {...mainFlowVocalScenario(),day:{start:0,end},protectedMeal:undefined,
+    participants:memberTasks.map(task=>({id:task.participantId!,availability:window})),
+    spaces:memberTasks.map(task=>({id:task.spaceId,availability:window})),resources:[],tasks:memberTasks,
+    participantTransitionMinutes:0,resourceTransitionMinutes:0};
+}
+
+test("lazy analytic transport explorer preserves the legacy logical group/start order",()=>{
+  const members=tasks(4).map((task,index)=>({...task,availability:[{start:index===3?20:0,end:index===3?30:10}]}));
+  const problem=explorerProblem(members,40),p=policy(2,2,10);
+  const run=(mode:"LEGACY_COMBINATIONS_FULL_GRID"|"EXACT_LAZY_ANALYTIC")=>{
+    const evidence=emptyTransportGroupingExplorerEvidence(),rows:string[]=[];let branches=0;
+    const result=exploreTransportGroups(problem,members,[],[],p,()=>{branches+=1;return true;},evidence,
+      (group,start)=>{rows.push(`${group.map(x=>x.id).join(",")}@${start}`);return "CONTINUE";},mode);
+    return {result,rows,evidence,branches};
+  };
+  const legacy=run("LEGACY_COMBINATIONS_FULL_GRID"),analytic=run("EXACT_LAZY_ANALYTIC");
+  assert.deepEqual(analytic.rows,legacy.rows);assert.equal(analytic.result,"COMPLETE");
+  assert.equal(analytic.branches,analytic.evidence.transportGroupMembershipCandidatesEvaluated+analytic.evidence.transportGroupStartsEvaluated);
+  assert.ok(analytic.evidence.transportGroupAnalyticallyEliminatedStarts>0);
+});
+
+test("a huge impossible temporal intersection prunes descendants without sweeping its grid",()=>{
+  const members=tasks(3).map((task,index)=>({...task,availability:[{start:index===0?0:50_000,end:index===0?10:50_010}]}));
+  const evidence=emptyTransportGroupingExplorerEvidence();let branches=0;
+  exploreTransportGroups(explorerProblem(members),members,[],[],policy(3,3),()=>{branches+=1;return true;},evidence,()=>"CONTINUE");
+  assert.equal(evidence.transportGroupStartsEvaluated,0);assert.equal(evidence.transportGroupMembershipCandidatesEvaluated,0);
+  assert.ok(evidence.transportGroupMembershipDomainPrunes>0);assert.equal(branches,0);
+});
+
+test("an impossible residual count is pruned before any complete combination",()=>{
+  const members=tasks(5),evidence=emptyTransportGroupingExplorerEvidence();
+  exploreTransportGroups(explorerProblem(members,100),members,[],[],policy(3,4),()=>true,evidence,()=>"CONTINUE");
+  assert.equal(evidence.transportGroupMembershipCandidatesEvaluated,0);
+  assert.ok(evidence.transportGroupResidualCapacityPrunes>0);
+});
+
+test("analytic minGap removes exactly the forbidden starts",()=>{
+  const members=tasks(2),evidence=emptyTransportGroupingExplorerEvidence(),starts:number[]=[];
+  exploreTransportGroups(explorerProblem(members,40),members,[],[20],policy(2,2,10),()=>true,evidence,
+    (_group,start)=>{starts.push(start);return "CONTINUE";});
+  assert.deepEqual(starts,[0,5,10,30]);
+  assert.equal(evidence.transportGroupFullGridStarts,evidence.transportGroupAnalyticEligibleStarts+evidence.transportGroupAnalyticallyEliminatedStarts);
 });
