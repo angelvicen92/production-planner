@@ -2867,3 +2867,7 @@ MRV compara ahora alternativas estructurales hard-valid de macrocolocación: cad
 ### A2-FULL-016 — Proyección explícita y dominio contiguo de cadena técnica · 2026-08-28 09:40 UTC
 
 EngineInput proyecta losslessly la policy de cadena técnica hasta Planner Next: adyacencia y continuidad de recursos son contratos explícitos, y el dominio cuenta starts raíz de macrocolocaciones contiguas. Las cadenas legacy sin policy conservan precedencia flexible, sin reglas hard inferidas desde dependencies o nombres.
+
+### A2-FULL-017 — Forward checking de prerrequisitos hard pendientes durante macro search · 2026-08-28 12:55 UTC
+
+Cada macro candidate conserva la factibilidad exacta de sus prerrequisitos pendientes antes de continuar: primero descarta dominios individuales vacíos y, para conjuntos conflictivos pequeños, busca un witness conjunto mediante las autoridades canónicas. El probe no reserva starts ni modifica `placed`, no consume branch budget, no añade reglas hard y adelanta el pruning antes de Setup y ordinary.

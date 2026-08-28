@@ -278,11 +278,11 @@
       "branchesExplored": 300000,
       "coreBranches": 13056,
       "standaloneBranches": 286944,
-      "standaloneStartChecks": 0,
-      "jointGroupFullGridStarts": 5262,
-      "jointGroupAnalyticEligibleStarts": 2251,
-      "jointGroupAnalyticallyEliminatedStarts": 3011,
-      "jointGroupStartsEvaluated": 608,
+      "standaloneStartChecks": 12751,
+      "jointGroupFullGridStarts": 4261,
+      "jointGroupAnalyticEligibleStarts": 1712,
+      "jointGroupAnalyticallyEliminatedStarts": 2549,
+      "jointGroupStartsEvaluated": 121,
       "technicalChainFullGridStarts": 1,
       "technicalChainAnalyticEligibleStarts": 1,
       "technicalChainAnalyticallyEliminatedStarts": 0,
@@ -306,34 +306,35 @@
       "technicalChainRootStartsConsidered": 1,
       "technicalChainRootStartsFeasible": 1,
       "technicalChainBranchesExplored": 1,
-      "standaloneTaskSelections": 0,
-      "standaloneZeroAlternativePrunes": 107348,
-      "standaloneBacktracks": 107926,
-      "standaloneMaximumDepth": 71,
+      "standaloneTaskSelections": 12751,
+      "standaloneZeroAlternativePrunes": 12681,
+      "standaloneBacktracks": 26013,
+      "standaloneMaximumDepth": 72,
       "standaloneCompleteLeafCount": 0,
       "coreCompleteLeavesEvaluated": 1,
       "coreLeavesRejectedByStandalone": 0,
       "standaloneSearchInvocations": 1,
       "standaloneBlockingTaskCounts": {
-        "task:10003": 107348,
-        "task:10020": 571,
-        "task:10026": 571,
-        "task:10059": 571,
-        "task:10066": 571,
-        "task:10075": 571,
-        "task:10091": 571,
-        "task:10097": 571,
-        "task:10119": 571,
-        "task:10126": 571,
-        "task:10134": 571,
-        "task:10141": 571,
-        "task:10156": 571,
-        "task:10178": 571,
-        "task:10185": 571,
-        "task:10212": 571,
-        "task:10232": 571,
-        "task:10251": 571,
-        "task:10242": 7
+        "task:10019": 142,
+        "task:10073": 12469,
+        "task:10018": 70,
+        "task:10020": 70,
+        "task:10026": 70,
+        "task:10059": 70,
+        "task:10066": 70,
+        "task:10075": 70,
+        "task:10091": 70,
+        "task:10097": 70,
+        "task:10119": 70,
+        "task:10126": 70,
+        "task:10134": 70,
+        "task:10141": 70,
+        "task:10156": 70,
+        "task:10178": 70,
+        "task:10185": 70,
+        "task:10212": 70,
+        "task:10232": 70,
+        "task:10251": 70
       },
       "standaloneForwardChecks": 3,
       "standaloneForwardStartChecks": 182,
@@ -342,7 +343,7 @@
       "standaloneForwardBlockingTaskCounts": {},
       "standaloneForwardPrunesByDepth": {},
       "standaloneForwardImpactedTaskChecks": 220,
-      "standaloneLeafSearchBranches": 0,
+      "standaloneLeafSearchBranches": 12751,
       "standaloneForwardBranches": 182,
       "standaloneForwardStaticEligibleStarts": 23329,
       "standaloneForwardStaticEliminatedStarts": 8105,
@@ -584,7 +585,7 @@
         "BRANCH_BUDGET_EXHAUSTED"
       ],
       "reasonCodes": [
-        "STANDALONE_BRANCH_BUDGET_EXHAUSTED"
+        "CORE_BRANCH_BUDGET_EXHAUSTED"
       ],
       "coreBacktracks": 0,
       "coreMaximumDepth": 19,
@@ -765,37 +766,37 @@
       "selectedCompleteFingerprint": null,
       "firstCompleteQuality": null,
       "selectedCompleteQuality": null,
-      "setupBlockBranchesExplored": 286095,
-      "setupBlockSearchInvocations": 572,
-      "setupBlockStartsExplored": 82231,
-      "setupBlockCompleteCandidateCount": 107360,
-      "setupBlockBudgetExhaustions": 1,
-      "setupBlockMatchingAttempts": 286095,
-      "setupBlockMatchingSuccesses": 228995,
-      "setupBlockPermutationBranchesAvoided": 1717748,
+      "setupBlockBranchesExplored": 35571,
+      "setupBlockSearchInvocations": 71,
+      "setupBlockStartsExplored": 10224,
+      "setupBlockCompleteCandidateCount": 13348,
+      "setupBlockBudgetExhaustions": 0,
+      "setupBlockMatchingAttempts": 35571,
+      "setupBlockMatchingSuccesses": 28471,
+      "setupBlockPermutationBranchesAvoided": 213497,
       "setupFamilyOrderCandidateCountsBySpaceId": {
         "space:3009": {
-          "setup-family:3009:estrellas>setup-family:3009:sillon": 53680,
-          "setup-family:3009:sillon>setup-family:3009:estrellas": 53680
+          "setup-family:3009:estrellas>setup-family:3009:sillon": 6674,
+          "setup-family:3009:sillon>setup-family:3009:estrellas": 6674
         }
       },
       "selectedSetupFamilySequenceBySpaceId": {},
       "selectedSetupPreparationIds": [],
       "roundSynchronizationSearchInvocations": 1,
-      "roundSynchronizationStartCandidates": 1,
-      "roundSynchronizationAssignmentBranches": 1,
-      "roundSynchronizationAssignmentChecks": 361,
-      "roundSynchronizationCompleteAssignments": 1,
-      "roundSynchronizationBacktracks": 0,
+      "roundSynchronizationStartCandidates": 3,
+      "roundSynchronizationAssignmentBranches": 3,
+      "roundSynchronizationAssignmentChecks": 1083,
+      "roundSynchronizationCompleteAssignments": 3,
+      "roundSynchronizationBacktracks": 2,
       "roundSynchronizationZeroAlternativePrunes": 0,
       "selectedRoundPreparationIds": [],
-      "totalesMacroCandidates": 1,
-      "totalesMatchingAttempts": 1,
-      "totalesMatchingSuccesses": 1,
-      "totalesAssignmentBranchesAvoided": 18,
-      "criticalResourceBranches": 608,
-      "criticalResourceMacroCandidates": 608,
-      "criticalResourceAssignments": 610,
+      "totalesMacroCandidates": 3,
+      "totalesMatchingAttempts": 3,
+      "totalesMatchingSuccesses": 3,
+      "totalesAssignmentBranchesAvoided": 54,
+      "criticalResourceBranches": 121,
+      "criticalResourceMacroCandidates": 121,
+      "criticalResourceAssignments": 125,
       "macroUnitsSelected": 33,
       "macroSelectionOrder": [
         "RESOURCE_TASK:resource:task:10263",
@@ -819,14 +820,14 @@
         "RESOURCE_TASK:resource:task:10160",
         "RESOURCE_TASK:resource:task:10055",
         "RESOURCE_TASK:resource:task:10042",
+        "RESOURCE_TASK:resource:task:10228",
         "RESOURCE_TASK:resource:task:10101",
         "RESOURCE_TASK:resource:task:10016",
         "RESOURCE_TASK:resource:task:10030",
         "RESOURCE_TASK:resource:task:10087",
-        "RESOURCE_TASK:resource:task:10202",
-        "RESOURCE_TASK:resource:task:10228",
         "RESOURCE_TASK:resource:task:10174",
         "RESOURCE_TASK:resource:task:10189",
+        "RESOURCE_TASK:resource:task:10202",
         "RESOURCE_TASK:resource:task:10217",
         "RESOURCE_TASK:resource:task:10255",
         "RESOURCE_TASK:resource:task:10242",
@@ -878,28 +879,28 @@
         "resource:task:10041": 4,
         "resource:task:10173": 1,
         "round:round-synchronization:a2-totales-rounds": 48,
-        "resource:task:10001": 56,
-        "joint:joint-group:joint.alfombra-roja.C06-C10": 68,
+        "resource:task:10001": 57,
+        "joint:joint-group:joint.alfombra-roja.C06-C10": 72,
         "technical-chain:task:10268": 74,
-        "joint:joint-group:joint.totales-post.C06-C10": 80,
-        "resource:task:10071": 90,
-        "resource:task:10115": 88,
-        "resource:task:10130": 86,
-        "resource:task:10146": 84,
-        "resource:task:10160": 82,
-        "resource:task:10055": 81,
-        "resource:task:10042": 82,
-        "resource:task:10101": 81,
-        "resource:task:10016": 81,
-        "resource:task:10030": 79,
-        "resource:task:10087": 80,
-        "resource:task:10202": 78,
-        "resource:task:10228": 76,
-        "resource:task:10174": 78,
-        "resource:task:10189": 80,
-        "resource:task:10217": 78,
-        "resource:task:10255": 78,
-        "resource:task:10242": 76,
+        "joint:joint-group:joint.totales-post.C06-C10": 81,
+        "resource:task:10071": 89,
+        "resource:task:10115": 87,
+        "resource:task:10130": 85,
+        "resource:task:10146": 83,
+        "resource:task:10160": 81,
+        "resource:task:10055": 80,
+        "resource:task:10042": 79,
+        "resource:task:10228": 78,
+        "resource:task:10101": 78,
+        "resource:task:10016": 78,
+        "resource:task:10030": 76,
+        "resource:task:10087": 81,
+        "resource:task:10174": 79,
+        "resource:task:10189": 81,
+        "resource:task:10202": 79,
+        "resource:task:10217": 79,
+        "resource:task:10255": 77,
+        "resource:task:10242": 77,
         "setup:space:3009": 188
       },
       "macroSelectionSteps": [
@@ -3860,7 +3861,7 @@
             {
               "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
               "kind": "JOINT",
-              "domainSize": 68,
+              "domainSize": 72,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -3870,7 +3871,7 @@
             {
               "id": "joint:joint-group:joint.totales-post.C06-C10",
               "kind": "JOINT",
-              "domainSize": 83,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -3880,7 +3881,7 @@
             {
               "id": "resource:task:10001",
               "kind": "RESOURCE_TASK",
-              "domainSize": 56,
+              "domainSize": 57,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -3910,7 +3911,7 @@
             {
               "id": "resource:task:10042",
               "kind": "RESOURCE_TASK",
-              "domainSize": 97,
+              "domainSize": 96,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4020,7 +4021,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 100,
+              "domainSize": 101,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4030,7 +4031,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 101,
+              "domainSize": 100,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4040,7 +4041,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4070,14 +4071,14 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             },
             {
               "id": "technical-chain:task:10268",
@@ -4098,7 +4099,7 @@
             {
               "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
               "kind": "JOINT",
-              "domainSize": 68,
+              "domainSize": 72,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4108,7 +4109,7 @@
             {
               "id": "joint:joint-group:joint.totales-post.C06-C10",
               "kind": "JOINT",
-              "domainSize": 83,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4118,7 +4119,7 @@
             {
               "id": "resource:task:10016",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4128,7 +4129,7 @@
             {
               "id": "resource:task:10030",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4138,7 +4139,7 @@
             {
               "id": "resource:task:10042",
               "kind": "RESOURCE_TASK",
-              "domainSize": 95,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4148,7 +4149,7 @@
             {
               "id": "resource:task:10055",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4158,7 +4159,7 @@
             {
               "id": "resource:task:10071",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4168,7 +4169,7 @@
             {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4178,7 +4179,7 @@
             {
               "id": "resource:task:10101",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4188,7 +4189,7 @@
             {
               "id": "resource:task:10115",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4198,7 +4199,7 @@
             {
               "id": "resource:task:10130",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4208,7 +4209,7 @@
             {
               "id": "resource:task:10146",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4218,7 +4219,7 @@
             {
               "id": "resource:task:10160",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4228,7 +4229,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 96,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4238,7 +4239,7 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4258,7 +4259,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 101,
+              "domainSize": 100,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4268,7 +4269,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4298,14 +4299,14 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             },
             {
               "id": "technical-chain:task:10268",
@@ -4326,7 +4327,7 @@
             {
               "id": "joint:joint-group:joint.totales-post.C06-C10",
               "kind": "JOINT",
-              "domainSize": 81,
+              "domainSize": 82,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4336,7 +4337,7 @@
             {
               "id": "resource:task:10016",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4346,7 +4347,7 @@
             {
               "id": "resource:task:10030",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4356,7 +4357,7 @@
             {
               "id": "resource:task:10042",
               "kind": "RESOURCE_TASK",
-              "domainSize": 95,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4366,7 +4367,7 @@
             {
               "id": "resource:task:10055",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4376,7 +4377,7 @@
             {
               "id": "resource:task:10071",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4386,7 +4387,7 @@
             {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4396,7 +4397,7 @@
             {
               "id": "resource:task:10101",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4406,7 +4407,7 @@
             {
               "id": "resource:task:10115",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4416,7 +4417,7 @@
             {
               "id": "resource:task:10130",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4426,7 +4427,7 @@
             {
               "id": "resource:task:10146",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4436,7 +4437,7 @@
             {
               "id": "resource:task:10160",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4446,7 +4447,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 96,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4456,7 +4457,7 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4476,7 +4477,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 101,
+              "domainSize": 100,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4486,7 +4487,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4516,14 +4517,14 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             },
             {
               "id": "technical-chain:task:10268",
@@ -4544,7 +4545,7 @@
             {
               "id": "joint:joint-group:joint.totales-post.C06-C10",
               "kind": "JOINT",
-              "domainSize": 80,
+              "domainSize": 81,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4554,7 +4555,7 @@
             {
               "id": "resource:task:10016",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -4563,542 +4564,6 @@
             },
             {
               "id": "resource:task:10030",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10042",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10055",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10071",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10101",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10115",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10130",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10146",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10160",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10202",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 101,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10242",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10255",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "setup:space:3009",
-              "kind": "SETUP_GROUP",
-              "domainSize": 190,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 85,
-              "affectedTaskCount": 17,
-              "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
-            }
-          ]
-        },
-        {
-          "selected": "resource:task:10071",
-          "reason": "minimum-macro-domain",
-          "candidates": [
-            {
-              "id": "resource:task:10016",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10030",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10042",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10055",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10071",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 90,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10101",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10115",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10130",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 90,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10146",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10160",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10202",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 101,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10242",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10255",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "setup:space:3009",
-              "kind": "SETUP_GROUP",
-              "domainSize": 190,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 85,
-              "affectedTaskCount": 17,
-              "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
-            }
-          ]
-        },
-        {
-          "selected": "resource:task:10115",
-          "reason": "minimum-macro-domain",
-          "candidates": [
-            {
-              "id": "resource:task:10016",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10030",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10042",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10055",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 89,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10101",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 89,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10115",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 88,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10130",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 88,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10146",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 88,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10160",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 88,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10202",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 95,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 101,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
               "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
@@ -5108,57 +4573,9 @@
               "affectedTaskCount": 1
             },
             {
-              "id": "resource:task:10255",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 93,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "setup:space:3009",
-              "kind": "SETUP_GROUP",
-              "domainSize": 190,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 85,
-              "affectedTaskCount": 17,
-              "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
-            }
-          ]
-        },
-        {
-          "selected": "resource:task:10130",
-          "reason": "minimum-macro-domain",
-          "candidates": [
-            {
-              "id": "resource:task:10016",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 93,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10030",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 93,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
               "id": "resource:task:10042",
               "kind": "RESOURCE_TASK",
-              "domainSize": 90,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5168,7 +4585,7 @@
             {
               "id": "resource:task:10055",
               "kind": "RESOURCE_TASK",
-              "domainSize": 87,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5176,57 +4593,7 @@
               "affectedTaskCount": 1
             },
             {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 93,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10101",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 87,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10130",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 86,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10146",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 86,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10160",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 86,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
+              "id": "resource:task:10071",
               "kind": "RESOURCE_TASK",
               "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
@@ -5236,9 +4603,79 @@
               "affectedTaskCount": 1
             },
             {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 93,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5248,7 +4685,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 93,
+              "domainSize": 98,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5268,7 +4705,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5278,7 +4715,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 97,
+              "domainSize": 98,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5288,7 +4725,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 94,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5298,25 +4735,25 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             }
           ]
         },
         {
-          "selected": "resource:task:10146",
+          "selected": "resource:task:10071",
           "reason": "minimum-macro-domain",
           "candidates": [
             {
               "id": "resource:task:10016",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5326,7 +4763,393 @@
             {
               "id": "resource:task:10030",
               "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
               "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 188,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 188
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10115",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 95,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 188,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 188
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10130",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5346,7 +5169,7 @@
             {
               "id": "resource:task:10055",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5356,7 +5179,7 @@
             {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5365,6 +5188,16 @@
             },
             {
               "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10130",
               "kind": "RESOURCE_TASK",
               "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
@@ -5376,7 +5209,7 @@
             {
               "id": "resource:task:10146",
               "kind": "RESOURCE_TASK",
-              "domainSize": 84,
+              "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5386,7 +5219,7 @@
             {
               "id": "resource:task:10160",
               "kind": "RESOURCE_TASK",
-              "domainSize": 84,
+              "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5396,7 +5229,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 90,
+              "domainSize": 95,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5406,7 +5239,175 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 92,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 99,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 188,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 188
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10146",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5426,7 +5427,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 99,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5436,7 +5437,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 94,
+              "domainSize": 87,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5446,7 +5447,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 95,
+              "domainSize": 94,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5456,7 +5457,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5466,14 +5467,14 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             }
           ]
         },
@@ -5484,7 +5485,7 @@
             {
               "id": "resource:task:10016",
               "kind": "RESOURCE_TASK",
-              "domainSize": 89,
+              "domainSize": 88,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5494,165 +5495,7 @@
             {
               "id": "resource:task:10030",
               "kind": "RESOURCE_TASK",
-              "domainSize": 89,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10042",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 86,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10055",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 83,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 89,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10101",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 83,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10160",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 82,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 90,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 89,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10202",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 89,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 98,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 93,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10242",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 93,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10255",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "setup:space:3009",
-              "kind": "SETUP_GROUP",
-              "domainSize": 190,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 85,
-              "affectedTaskCount": 17,
-              "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
-            }
-          ]
-        },
-        {
-          "selected": "resource:task:10055",
-          "reason": "minimum-macro-domain",
-          "candidates": [
-            {
-              "id": "resource:task:10016",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 87,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10030",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 87,
+              "domainSize": 88,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5672,7 +5515,7 @@
             {
               "id": "resource:task:10055",
               "kind": "RESOURCE_TASK",
-              "domainSize": 81,
+              "domainSize": 82,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5682,7 +5525,7 @@
             {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
-              "domainSize": 87,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5692,7 +5535,17 @@
             {
               "id": "resource:task:10101",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5702,7 +5555,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 90,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5712,7 +5565,7 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 87,
+              "domainSize": 88,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5722,7 +5575,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 88,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5732,7 +5585,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 98,
+              "domainSize": 99,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5742,7 +5595,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5752,7 +5605,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 92,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5762,7 +5615,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 92,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5772,25 +5625,25 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             }
           ]
         },
         {
-          "selected": "resource:task:10042",
+          "selected": "resource:task:10055",
           "reason": "minimum-macro-domain",
           "candidates": [
             {
               "id": "resource:task:10016",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5800,7 +5653,7 @@
             {
               "id": "resource:task:10030",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5818,9 +5671,19 @@
               "affectedTaskCount": 1
             },
             {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
+              "domainSize": 93,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5830,7 +5693,7 @@
             {
               "id": "resource:task:10101",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 83,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5840,7 +5703,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 88,
+              "domainSize": 89,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5850,7 +5713,7 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5860,7 +5723,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 88,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5870,7 +5733,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 96,
+              "domainSize": 97,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5880,7 +5743,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 89,
+              "domainSize": 83,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5890,7 +5753,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 91,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -5910,19 +5773,19 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             }
           ]
         },
         {
-          "selected": "resource:task:10101",
+          "selected": "resource:task:10042",
           "reason": "minimum-macro-domain",
           "candidates": [
             {
@@ -5946,233 +5809,7 @@
               "affectedTaskCount": 1
             },
             {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 83,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10101",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 81,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 86,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 85,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10202",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 87,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 94,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 87,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10242",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10255",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 88,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "setup:space:3009",
-              "kind": "SETUP_GROUP",
-              "domainSize": 190,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 85,
-              "affectedTaskCount": 17,
-              "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
-            }
-          ]
-        },
-        {
-          "selected": "resource:task:10016",
-          "reason": "minimum-macro-domain",
-          "candidates": [
-            {
-              "id": "resource:task:10016",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 81,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10030",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 81,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10087",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 81,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10174",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 85,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 85,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10202",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 85,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 92,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 85,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10242",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 91,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10255",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 86,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "setup:space:3009",
-              "kind": "SETUP_GROUP",
-              "domainSize": 190,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 85,
-              "affectedTaskCount": 17,
-              "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
-            }
-          ]
-        },
-        {
-          "selected": "resource:task:10030",
-          "reason": "minimum-macro-domain",
-          "candidates": [
-            {
-              "id": "resource:task:10030",
+              "id": "resource:task:10042",
               "kind": "RESOURCE_TASK",
               "domainSize": 79,
               "domainMeasure": "hard-valid-top-level-macro-placements",
@@ -6184,6 +5821,16 @@
             {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
               "domainSize": 80,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
@@ -6194,7 +5841,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
+              "domainSize": 89,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6214,7 +5861,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 83,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6224,7 +5871,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 90,
+              "domainSize": 94,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6234,7 +5881,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 83,
+              "domainSize": 80,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6254,7 +5901,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 84,
+              "domainSize": 87,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6264,25 +5911,55 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             }
           ]
         },
         {
-          "selected": "resource:task:10087",
+          "selected": "resource:task:10228",
           "reason": "minimum-macro-domain",
           "candidates": [
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
             {
               "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
-              "domainSize": 80,
+              "domainSize": 88,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6292,7 +5969,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 84,
+              "domainSize": 87,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6312,7 +5989,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 81,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6322,7 +5999,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 88,
+              "domainSize": 92,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6332,7 +6009,7 @@
             {
               "id": "resource:task:10228",
               "kind": "RESOURCE_TASK",
-              "domainSize": 81,
+              "domainSize": 78,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6342,7 +6019,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 88,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6352,7 +6029,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6362,25 +6039,65 @@
             {
               "id": "setup:space:3009",
               "kind": "SETUP_GROUP",
-              "domainSize": 190,
+              "domainSize": 188,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
               "totalDuration": 85,
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
-              "matchingFeasibleCandidateCount": 190
+              "matchingFeasibleCandidateCount": 188
             }
           ]
         },
         {
-          "selected": "resource:task:10202",
+          "selected": "resource:task:10101",
           "reason": "minimum-macro-domain",
           "candidates": [
             {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 78,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 81,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6390,7 +6107,7 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 84,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6400,7 +6117,7 @@
             {
               "id": "resource:task:10202",
               "kind": "RESOURCE_TASK",
-              "domainSize": 78,
+              "domainSize": 90,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6410,17 +6127,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 85,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10228",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 78,
+              "domainSize": 91,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6430,7 +6137,115 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 87,
+              "domainSize": 90,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 188,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 188
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10016",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 78,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 78,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6462,13 +6277,13 @@
           ]
         },
         {
-          "selected": "resource:task:10228",
+          "selected": "resource:task:10030",
           "reason": "minimum-macro-domain",
           "candidates": [
             {
-              "id": "resource:task:10174",
+              "id": "resource:task:10030",
               "kind": "RESOURCE_TASK",
-              "domainSize": 79,
+              "domainSize": 76,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6476,17 +6291,7 @@
               "affectedTaskCount": 1
             },
             {
-              "id": "resource:task:10189",
-              "kind": "RESOURCE_TASK",
-              "domainSize": 82,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 720,
-              "totalDuration": 10,
-              "affectedTaskCount": 1
-            },
-            {
-              "id": "resource:task:10217",
+              "id": "resource:task:10087",
               "kind": "RESOURCE_TASK",
               "domainSize": 83,
               "domainMeasure": "hard-valid-top-level-macro-placements",
@@ -6496,9 +6301,127 @@
               "affectedTaskCount": 1
             },
             {
-              "id": "resource:task:10228",
+              "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 76,
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 188,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 188
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10087",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6546,7 +6469,7 @@
             {
               "id": "resource:task:10174",
               "kind": "RESOURCE_TASK",
-              "domainSize": 78,
+              "domainSize": 79,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6556,7 +6479,17 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 83,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6566,7 +6499,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 83,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6576,7 +6509,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 84,
+              "domainSize": 85,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6614,7 +6547,17 @@
             {
               "id": "resource:task:10189",
               "kind": "RESOURCE_TASK",
-              "domainSize": 80,
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6624,7 +6567,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 80,
+              "domainSize": 81,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6634,7 +6577,65 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 84,
+              "domainSize": 85,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 188,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 188
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10202",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6672,7 +6673,7 @@
             {
               "id": "resource:task:10217",
               "kind": "RESOURCE_TASK",
-              "domainSize": 78,
+              "domainSize": 79,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6682,7 +6683,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 82,
+              "domainSize": 81,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6692,7 +6693,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 81,
+              "domainSize": 80,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6720,7 +6721,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 79,
+              "domainSize": 78,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6730,7 +6731,7 @@
             {
               "id": "resource:task:10255",
               "kind": "RESOURCE_TASK",
-              "domainSize": 78,
+              "domainSize": 77,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6758,7 +6759,7 @@
             {
               "id": "resource:task:10242",
               "kind": "RESOURCE_TASK",
-              "domainSize": 76,
+              "domainSize": 77,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 720,
@@ -6798,20 +6799,133 @@
           ]
         }
       ],
-      "ordinaryDomainQueries": 107348,
-      "ordinaryAnalyticDomainBuilds": 1,
-      "ordinaryAnalyticEligibleStarts": 0,
-      "ordinaryExactStartEnumerations": 0,
-      "ordinaryExactStartChecks": 0,
-      "ordinaryDomainCacheHits": 107347,
-      "ordinaryDomainCacheMisses": 1,
-      "ordinaryDomainRecomputations": 1,
-      "ordinaryMRVSelections": 0,
-      "ordinaryBranchesExplored": 0,
+      "macroPendingPrerequisiteForwardChecks": 13298,
+      "macroPendingPrerequisiteTasksChecked": 567878,
+      "macroPendingPrerequisiteIndividualDomainChecks": 565300,
+      "macroPendingPrerequisiteJointChecks": 103,
+      "macroPendingPrerequisiteCacheHits": 0,
+      "macroPendingPrerequisiteCacheMisses": 13298,
+      "macroPendingPrerequisitePrunes": 303,
+      "macroPendingPrerequisiteIndividualZeroDomainPrunes": 303,
+      "macroPendingPrerequisiteJointInfeasiblePrunes": 0,
+      "macroPendingPrerequisiteWitnesses": 105,
+      "macroPendingPrerequisiteChecksByDepth": {
+        "0": 1,
+        "1": 1,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1,
+        "6": 1,
+        "7": 1,
+        "8": 1,
+        "9": 3,
+        "10": 3,
+        "11": 3,
+        "12": 1,
+        "13": 1,
+        "14": 2,
+        "15": 2,
+        "16": 2,
+        "17": 2,
+        "18": 2,
+        "19": 2,
+        "20": 2,
+        "21": 2,
+        "22": 2,
+        "23": 2,
+        "24": 2,
+        "25": 2,
+        "26": 2,
+        "27": 2,
+        "28": 2,
+        "29": 2,
+        "30": 1,
+        "31": 72,
+        "32": 13173
+      },
+      "macroPendingPrerequisiteBlockingTaskCounts": {
+        "task:10219": 3,
+        "task:10003": 2,
+        "task:10073": 3,
+        "task:10117": 1,
+        "task:10132": 1,
+        "task:10148": 1,
+        "task:10162": 1,
+        "task:10057": 1,
+        "task:10044": 1,
+        "task:10230": 71,
+        "task:10103": 1,
+        "task:10018": 1,
+        "task:10032": 1,
+        "task:10089": 1,
+        "task:10176": 71,
+        "task:10191": 1,
+        "task:10204": 71,
+        "task:10244": 71
+      },
+      "macroPendingPrerequisiteCausingMacroUnitCounts": {
+        "round:round-synchronization:a2-totales-rounds": 2,
+        "resource:task:10001": 2,
+        "joint:joint-group:joint.alfombra-roja.C06-C10": 2,
+        "resource:task:10071": 1,
+        "resource:task:10115": 1,
+        "resource:task:10130": 1,
+        "resource:task:10146": 1,
+        "resource:task:10160": 1,
+        "resource:task:10055": 1,
+        "resource:task:10042": 1,
+        "resource:task:10228": 1,
+        "resource:task:10101": 1,
+        "resource:task:10016": 1,
+        "resource:task:10030": 1,
+        "resource:task:10087": 1,
+        "resource:task:10174": 1,
+        "resource:task:10189": 1,
+        "resource:task:10202": 1,
+        "resource:task:10217": 1,
+        "resource:task:10242": 1,
+        "setup:space:3009": 280
+      },
+      "macroPendingPrerequisiteFirstPrune": {
+        "causingMacroUnitId": "round:round-synchronization:a2-totales-rounds",
+        "blockingTaskId": "task:10219",
+        "macroDepth": 9,
+        "deadline": 540,
+        "failure": "INDIVIDUAL_ZERO_DOMAIN"
+      },
+      "ordinaryDomainQueries": 1550128,
+      "ordinaryAnalyticDomainBuilds": 543541,
+      "ordinaryAnalyticEligibleStarts": 101607947,
+      "ordinaryExactStartEnumerations": 12751,
+      "ordinaryExactStartChecks": 12751,
+      "ordinaryDomainCacheHits": 1006587,
+      "ordinaryDomainCacheMisses": 543541,
+      "ordinaryDomainRecomputations": 543541,
+      "ordinaryMRVSelections": 12751,
+      "ordinaryBranchesExplored": 12751,
       "standaloneBlockingTaskDetails": {
-        "task:10003": {
-          "taskId": "task:10003",
-          "participantId": "participant:201",
+        "task:10019": {
+          "taskId": "task:10019",
+          "participantId": "participant:202",
+          "spaceId": "space:3018",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": null,
+          "kind": "auxiliary"
+        },
+        "task:10073": {
+          "taskId": "task:10073",
+          "participantId": "participant:206",
+          "spaceId": "space:3018",
+          "duration": 10,
+          "requiredResourceIds": [],
+          "setupFamilyId": null,
+          "kind": "auxiliary"
+        },
+        "task:10018": {
+          "taskId": "task:10018",
+          "participantId": "participant:202",
           "spaceId": "space:3018",
           "duration": 10,
           "requiredResourceIds": [],
@@ -6970,23 +7084,14 @@
           "requiredResourceIds": [],
           "setupFamilyId": "setup-family:3009:sillon",
           "kind": "auxiliary"
-        },
-        "task:10242": {
-          "taskId": "task:10242",
-          "participantId": "participant:218",
-          "spaceId": "space:3008",
-          "duration": 10,
-          "requiredResourceIds": [
-            "plan-resource:4001"
-          ],
-          "setupFamilyId": null,
-          "kind": "auxiliary"
         }
       },
-      "participantMealBranchesExplored": 57,
-      "participantMealFutureFeasibilityChecks": 3,
-      "participantMealFutureInfeasibleBranches": 0,
-      "participantMealBlockingTaskIds": [],
+      "participantMealBranchesExplored": 238315,
+      "participantMealFutureFeasibilityChecks": 12754,
+      "participantMealFutureInfeasibleBranches": 212,
+      "participantMealBlockingTaskIds": [
+        "task:10142"
+      ],
       "participantMealAcceptedWitnessFingerprint": null,
       "participantMealFinalSelectionOrder": [],
       "participantMealAttemptedSelectionTrace": [],
