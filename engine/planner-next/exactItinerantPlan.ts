@@ -26,7 +26,7 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
+import { materializeTerminalTransport, transportTaskIds, type ArrivalFutureFeasibilityCache } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
@@ -253,6 +253,14 @@ export interface ExactItinerantPlanEvidence {
   ordinaryDomainRecomputations: number;
   ordinaryMRVSelections: number;
   ordinaryBranchesExplored: number;
+  ordinaryPendingForwardChecks:number;ordinaryPendingForwardTasksChecked:number;ordinaryPendingForwardIndividualChecks:number;
+  ordinaryPendingForwardJointChecks:number;ordinaryPendingForwardPrunes:number;ordinaryPendingForwardZeroDomainPrunes:number;
+  ordinaryPendingForwardJointInfeasiblePrunes:number;ordinaryPendingForwardWitnesses:number;ordinaryPendingForwardCacheHits:number;
+  ordinaryPendingForwardCacheMisses:number;ordinaryPendingForwardBlockingTaskCounts:Record<string,number>;
+  ordinaryPendingForwardPrunesByDepth:Record<string,number>;ordinaryPendingForwardCausingTaskCounts:Record<string,number>;
+  arrivalFutureFeasibilityChecks:number;arrivalFutureFeasibilityCacheHits:number;arrivalFutureFeasibilityCacheMisses:number;
+  arrivalFutureFeasibilityWitnesses:number;arrivalFutureFeasibilityInfeasible:number;arrivalFutureFeasibilityGroupsChecked:number;
+  arrivalFutureFeasibilityStartsChecked:number;arrivalFutureFeasibilityBlockingParticipantCounts:Record<string,number>;
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
@@ -393,6 +401,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
+  const ordinaryPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
+  const arrivalFutureFeasibilityCache:ArrivalFutureFeasibilityCache=new Map();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
@@ -499,6 +509,21 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     for (const { scheduled } of orderedStarts) {
       if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
       evidence.ordinaryBranchesExplored += 1;
+      const checked=checkMacroPendingPrerequisites(problem,remaining.filter(({id})=>id!==choice.task.id),allPlaced,[scheduled],coreMeals,ordinaryPendingPrerequisiteCache,arrivalFutureFeasibilityCache);
+      evidence.ordinaryPendingForwardChecks+=1;evidence.ordinaryPendingForwardTasksChecked+=checked.tasksChecked;
+      evidence.ordinaryPendingForwardIndividualChecks+=checked.individualDomainChecks;evidence.ordinaryPendingForwardJointChecks+=checked.jointChecks;
+      evidence.ordinaryPendingForwardWitnesses+=checked.witnesses;
+      if(checked.cacheHit)evidence.ordinaryPendingForwardCacheHits+=1;else evidence.ordinaryPendingForwardCacheMisses+=1;
+      evidence.arrivalFutureFeasibilityChecks+=checked.arrivalChecks;evidence.arrivalFutureFeasibilityCacheHits+=checked.arrivalCacheHits;
+      evidence.arrivalFutureFeasibilityCacheMisses+=checked.arrivalChecks-checked.arrivalCacheHits;
+      evidence.arrivalFutureFeasibilityWitnesses+=checked.arrivalWitnesses;evidence.arrivalFutureFeasibilityInfeasible+=checked.arrivalInfeasible;
+      evidence.arrivalFutureFeasibilityGroupsChecked+=checked.arrivalGroupsChecked;evidence.arrivalFutureFeasibilityStartsChecked+=checked.arrivalStartsChecked;
+      for(const id of checked.arrivalBlockingParticipantIds)evidence.arrivalFutureFeasibilityBlockingParticipantCounts[id]=(evidence.arrivalFutureFeasibilityBlockingParticipantCounts[id]??0)+1;
+      if(!checked.feasible){evidence.ordinaryPendingForwardPrunes+=1;evidence.ordinaryPendingForwardPrunesByDepth[String(depth)]=(evidence.ordinaryPendingForwardPrunesByDepth[String(depth)]??0)+1;
+        evidence.ordinaryPendingForwardCausingTaskCounts[choice.task.id]=(evidence.ordinaryPendingForwardCausingTaskCounts[choice.task.id]??0)+1;
+        if(checked.blockingTaskId)evidence.ordinaryPendingForwardBlockingTaskCounts[checked.blockingTaskId]=(evidence.ordinaryPendingForwardBlockingTaskCounts[checked.blockingTaskId]??0)+1;
+        if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.ordinaryPendingForwardZeroDomainPrunes+=1;else evidence.ordinaryPendingForwardJointInfeasiblePrunes+=1;
+        evidence.standaloneBacktracks+=1;continue;}
       if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);if(mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
@@ -832,6 +857,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryDomainQueries:0,ordinaryAnalyticDomainBuilds:0,ordinaryAnalyticEligibleStarts:0,
     ordinaryExactStartEnumerations:0,ordinaryExactStartChecks:0,ordinaryDomainCacheHits:0,
     ordinaryDomainCacheMisses:0,ordinaryDomainRecomputations:0,ordinaryMRVSelections:0,ordinaryBranchesExplored:0,
+    ordinaryPendingForwardChecks:0,ordinaryPendingForwardTasksChecked:0,ordinaryPendingForwardIndividualChecks:0,
+    ordinaryPendingForwardJointChecks:0,ordinaryPendingForwardPrunes:0,ordinaryPendingForwardZeroDomainPrunes:0,
+    ordinaryPendingForwardJointInfeasiblePrunes:0,ordinaryPendingForwardWitnesses:0,ordinaryPendingForwardCacheHits:0,
+    ordinaryPendingForwardCacheMisses:0,ordinaryPendingForwardBlockingTaskCounts:{},ordinaryPendingForwardPrunesByDepth:{},ordinaryPendingForwardCausingTaskCounts:{},
+    arrivalFutureFeasibilityChecks:0,arrivalFutureFeasibilityCacheHits:0,arrivalFutureFeasibilityCacheMisses:0,
+    arrivalFutureFeasibilityWitnesses:0,arrivalFutureFeasibilityInfeasible:0,arrivalFutureFeasibilityGroupsChecked:0,
+    arrivalFutureFeasibilityStartsChecked:0,arrivalFutureFeasibilityBlockingParticipantCounts:{},
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };

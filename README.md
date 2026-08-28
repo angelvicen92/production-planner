@@ -2871,3 +2871,7 @@ EngineInput proyecta losslessly la policy de cadena técnica hasta Planner Next:
 ### A2-FULL-017 — Forward checking de prerrequisitos hard pendientes durante macro search · 2026-08-28 12:55 UTC
 
 Cada macro candidate conserva la factibilidad exacta de sus prerrequisitos pendientes antes de continuar: primero descarta dominios individuales vacíos y, para conjuntos conflictivos pequeños, busca un witness conjunto mediante las autoridades canónicas. El probe no reserva starts ni modifica `placed`, no consume branch budget, no añade reglas hard y adelanta el pruning antes de Setup y ordinary.
+
+### A2-FULL-018 — Forward checking ordinary y factibilidad futura de transporte IN · 2026-08-28 19:42 UTC
+
+Cada ordinary placement reutiliza la authority de factibilidad de prerrequisitos para descartar inmediatamente dominios vacíos y conjuntos conflictivos sin witness. IN continúa excluido de ordinary search: un probe read-only reutiliza la agrupación contigua, límites y `minGapMinutes` de transporte para certificar conjuntamente una llegada y el start potencial de su obligación dependiente. Los witnesses no se reservan ni se materializan, y no cambian las reglas de agrupación ni se crean nuevas precedencias hard.

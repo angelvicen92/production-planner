@@ -21,3 +21,14 @@ test("transitive prerequisite chains are checked jointly before the placed desce
 
 test("unrelated impossible ordinary work is not checked and results are order invariant",()=>{const prerequisite=task("required",10,[],[{start:20,end:30}]),successor=task("successor",10,[prerequisite.id]),unrelated=task("unrelated",10,[],[]),trigger=scheduled(task("trigger",5),70,{participantId:"other",spaceId:"other"});const p=problem([prerequisite,successor,unrelated]);const placed=[scheduled(successor,50)];const forward=checkMacroPendingPrerequisites(p,[prerequisite,unrelated],placed,[trigger]),reversed=checkMacroPendingPrerequisites({...p,tasks:[...p.tasks].reverse()},[unrelated,prerequisite],placed,[trigger]);assert.equal(forward.feasible,true);assert.deepEqual(reversed,forward);
 });
+
+test("pending prerequisite feasibility combines a dynamic arrival with each possible ordinary start",()=>{
+ const transport=task("transport",5);transport.availability=[{start:0,end:5}];
+ const prerequisite=task("prerequisite",10,[transport.id],[{start:0,end:10},{start:10,end:20}]);
+ const successor=task("successor",10,[prerequisite.id]);const trigger=task("trigger",5);const p=problem([transport,prerequisite,successor,trigger]);
+ p.transportPolicy={arrival:{taskIds:[transport.id],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:0,groupingWeight:0},departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:0,groupingWeight:0}};
+ const result=checkMacroPendingPrerequisites(p,[prerequisite],[scheduled(successor,30)],[scheduled(trigger,40)]);
+ assert.equal(result.feasible,true);assert.ok(result.arrivalChecks>=2);assert.ok(result.arrivalInfeasible>=1);assert.ok(result.arrivalWitnesses>=1);
+ prerequisite.availability=[{start:0,end:10}];const impossible=checkMacroPendingPrerequisites(p,[prerequisite],[scheduled(successor,30)],[scheduled(trigger,40)]);
+ assert.equal(impossible.feasible,false);assert.equal(impossible.arrivalInfeasible,1);
+});

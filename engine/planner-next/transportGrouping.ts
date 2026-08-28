@@ -1,7 +1,19 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
 import { canPlaceTask } from "./placement";
+import { createHash } from "node:crypto";
 
 export type TransportDirection = "arrival" | "departure";
+
+export interface ArrivalFutureFeasibilityResult {
+  feasible: boolean;
+  conclusive: boolean;
+  cacheHit: boolean;
+  groupsChecked: number;
+  startsChecked: number;
+  witnessFingerprint: string | null;
+  blockingParticipantIds: string[];
+}
+export type ArrivalFutureFeasibilityCache = Map<string, Omit<ArrivalFutureFeasibilityResult, "cacheHit">>;
 
 const byId = (left: Task, right: Task): number => left.id.localeCompare(right.id);
 
@@ -165,6 +177,57 @@ export function transportGroupStarts(
     if (canPlaceTransportGroup(problem, tasks, start, placed, previousGroupStarts, policy)) starts.push(start);
   }
   return starts;
+}
+
+/**
+ * Read-only probe of the canonical arrival materializer. It never returns a
+ * negative certificate while a participant boundary is unknown: a later
+ * substantive placement could reorder the canonical contiguous groups.
+ */
+export function assessArrivalTransportFutureFeasibility(
+  problem: PlannerNextProblem,
+  substantive: readonly ScheduledTask[],
+  cache?: ArrivalFutureFeasibilityCache,
+): ArrivalFutureFeasibilityResult {
+  const policy = problem.transportPolicy?.arrival;
+  if (!policy || policy.taskIds.length === 0) return { feasible: true, conclusive: true, cacheHit: false, groupsChecked: 0, startsChecked: 0, witnessFingerprint: null, blockingParticipantIds: [] };
+  const transportIds = transportTaskIds(problem);
+  const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)).filter((task): task is Task => task !== undefined);
+  const boundaryFor = (participantId: string): number | undefined => {
+    const obligations = substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id));
+    return obligations.length ? Math.min(...obligations.map(({ start }) => start)) : undefined;
+  };
+  const unknown = tasks.map((task) => task.participantId!).filter((id) => boundaryFor(id) === undefined).sort();
+  if (unknown.length) return { feasible: true, conclusive: false, cacheHit: false, groupsChecked: 0, startsChecked: 0, witnessFingerprint: null, blockingParticipantIds: [] };
+  const ordered = [...tasks].sort((left, right) => boundaryFor(left.participantId!)! - boundaryFor(right.participantId!)!
+    || left.participantId!.localeCompare(right.participantId!) || left.id.localeCompare(right.id));
+  const key = createHash("sha256").update(JSON.stringify({
+    policy: { ...policy, taskIds: [...policy.taskIds].sort() },
+    tasks: ordered.map((task) => ({ id: task.id, participantId: task.participantId, duration: task.duration, boundary: boundaryFor(task.participantId!), availability: task.availability ?? [] })),
+    placed: [...substantive].sort((a, b) => a.id.localeCompare(b.id)).map(({ id, start, end, participantId, spaceId, coachId, requiredResourceIds }) => ({ id, start, end, participantId, spaceId, coachId, requiredResourceIds: [...(requiredResourceIds ?? [])].sort() })),
+    day: problem.day,
+  })).digest("hex");
+  const cached = cache?.get(key); if (cached) return { ...cached, cacheHit: true };
+  const sizes = transportContiguousGroupSizes(ordered.length, policy, "arrival");
+  let groupsChecked = 0, startsChecked = 0, offset = 0;
+  const placed: ScheduledTask[] = [], starts: number[] = [];
+  if (sizes) for (const size of sizes) {
+    const group = ordered.slice(offset, offset + size); offset += size; groupsChecked += 1;
+    const boundary = Math.min(...group.map((task) => boundaryFor(task.participantId!)!));
+    const candidates = transportGroupStarts(problem, group, [...substantive, ...placed], starts, policy)
+      .filter((start) => start + group[0]!.duration <= boundary).sort((a, b) => b - a);
+    startsChecked += candidates.length;
+    const start = candidates[0];
+    if (start === undefined) {
+      const result = { feasible: false, conclusive: true, groupsChecked, startsChecked, witnessFingerprint: null,
+        blockingParticipantIds: group.map((task) => task.participantId!).sort() };
+      cache?.set(key, result); return { ...result, cacheHit: false };
+    }
+    placed.push(...scheduleTransportGroup(group, start)); starts.push(start);
+  }
+  const witnessFingerprint = createHash("sha256").update(JSON.stringify(placed.map(({ id, start, end }) => ({ id, start, end })))).digest("hex");
+  const result = { feasible: sizes !== null, conclusive: true, groupsChecked, startsChecked, witnessFingerprint, blockingParticipantIds: [] as string[] };
+  cache?.set(key, result); return { ...result, cacheHit: false };
 }
 
 export interface TransportValidation {

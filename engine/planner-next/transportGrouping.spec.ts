@@ -6,6 +6,7 @@ import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
   transportGroupCandidates,
   transportContiguousGroupSizes,
+  assessArrivalTransportFutureFeasibility,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -13,6 +14,32 @@ import { validatePlan } from "./validate";
 
 const policy = (minimumGroupSize = 3, maximumGroupSize = 4, minGapMinutes = 20): TransportGroupingPolicy => ({
   taskIds: [], minimumGroupSize, maximumGroupSize, minGapMinutes, groupingWeight: 3,
+});
+
+function arrivalProbeProblem(count=1,minGapMinutes=0):PlannerNextProblem {
+  const participants=Array.from({length:count},(_,index)=>({id:`person-${index}`,availability:[{start:0,end:100}]}));
+  const arrivals=participants.map((participant,index):Task=>({id:`transport-${index}`,kind:"auxiliary",participantId:participant.id,duration:5,spaceId:"vehicle",dependencies:[],availability:[{start:0,end:100}]}));
+  const obligations=participants.map((participant,index):Task=>({id:`obligation-${index}`,kind:"auxiliary",participantId:participant.id,duration:10,spaceId:`room-${index}`,dependencies:[arrivals[index]!.id]}));
+  return {day:{start:0,end:100},spaces:[{id:"vehicle",availability:[{start:0,end:100}]},...participants.map((_,index)=>({id:`room-${index}`,availability:[{start:0,end:100}]}))],resources:[],participants,coaches:[],tasks:[...arrivals,...obligations],mainFlow:{spaceId:"vehicle",preferredEnd:100,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:1,maxPatterns:1,maxBranchExpansions:1000},transportPolicy:{arrival:{taskIds:arrivals.map(({id})=>id),minimumGroupSize:3,maximumGroupSize:3,targetGroupSize:3,minGapMinutes,groupingWeight:0},departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:0,groupingWeight:0}}};
+}
+
+test("arrival future probe jointly certifies transport before a substantive obligation without reserving it",()=>{
+  const problem=arrivalProbeProblem(),obligation=problem.tasks.find(({id})=>id==="obligation-0")!;
+  const substantive=[scheduled(obligation,10)],snapshot=structuredClone(substantive);
+  const result=assessArrivalTransportFutureFeasibility(problem,substantive);
+  assert.equal(result.feasible,true);assert.ok(result.witnessFingerprint);assert.deepEqual(substantive,snapshot);
+  assert.equal(assessArrivalTransportFutureFeasibility(problem,[scheduled(obligation,0)]).feasible,false);
+  assert.equal([0,10].some(start=>assessArrivalTransportFutureFeasibility(problem,[scheduled(obligation,start)]).feasible),true);
+});
+
+test("arrival probe preserves residual contiguous groups, min gap, cache, and input-order determinism",()=>{
+  const problem=arrivalProbeProblem(7,20);const substantive=problem.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,60));
+  const cache=new Map();const first=assessArrivalTransportFutureFeasibility(problem,substantive,cache),cached=assessArrivalTransportFutureFeasibility(problem,substantive,cache);
+  assert.equal(first.feasible,true);assert.equal(first.groupsChecked,3);assert.equal(cached.cacheHit,true);
+  const reversed={...problem,tasks:[...problem.tasks].reverse(),participants:[...problem.participants].reverse(),transportPolicy:{...problem.transportPolicy!,arrival:{...problem.transportPolicy!.arrival,taskIds:[...problem.transportPolicy!.arrival.taskIds].reverse()}}};
+  assert.equal(assessArrivalTransportFutureFeasibility(reversed,[...substantive].reverse()).witnessFingerprint,first.witnessFingerprint);
+  const impossible=arrivalProbeProblem(7,50);const early=impossible.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,30));
+  assert.equal(assessArrivalTransportFutureFeasibility(impossible,early).feasible,false);
 });
 const tasks = (count: number): Task[] => Array.from({ length: count }, (_, index) => ({
   id: `transport-${String(index).padStart(2, "0")}`, kind: "auxiliary", participantId: `p-${index}`,
