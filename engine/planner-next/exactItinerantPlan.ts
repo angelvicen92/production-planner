@@ -382,6 +382,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
+  const macroDomainCache = new Map<string, number>();
+  const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
     evidence.standaloneBlockingTaskDetails[task.id] ??= {
@@ -500,62 +502,11 @@ const setupGroups = setupSpaceIds.map((spaceId) => ({
   spaceId,
   tasks: pending.filter((task) => task.spaceId === spaceId && task.setupFamilyId !== undefined).sort(byId),
 }));
-const setupTaskIds = new Set(setupGroups.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
-const ordinaryPending = pending.filter(({ id }) => !setupTaskIds.has(id)).sort(byId);
 const mergeSetupOrderCounts = (spaceId: string, counts: Record<string, number>): void => {
   const merged = { ...(evidence.setupFamilyOrderCandidateCountsBySpaceId[spaceId] ?? {}) };
   for (const [key, count] of Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)))
     merged[key] = (merged[key] ?? 0) + count;
   evidence.setupFamilyOrderCandidateCountsBySpaceId[spaceId] = merged;
-};
-let activeRoundPreparations: ScheduledRoundPreparation[] = [];
-const searchSetup = (
-  index: number,
-  placed: ScheduledTask[],
-  preparations: ScheduledSetupPreparation[],
-  depth: number,
-  selectionOrder: string[],
-): StandaloneOutcome => {
-  if (index >= setupGroups.length) return search(ordinaryPending, placed, preparations, activeRoundPreparations, depth, selectionOrder);
-  const group = setupGroups[index]!;
-  evidence.setupBlockSearchInvocations += 1;
-  const generated = generateExactSetupBlockCandidates(
-    problem,
-    group.tasks,
-    [...coreTasks, ...placed],
-    preparations,
-    coreMeals,
-    ledger,
-  );
-  evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
-  evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
-  evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
-  evidence.setupBlockMatchingAttempts += generated.evidence.matchingAttempts;
-  evidence.setupBlockMatchingSuccesses += generated.evidence.matchingSuccesses;
-  evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
-  mergeSetupOrderCounts(group.spaceId, generated.evidence.familyOrderCandidateCounts);
-  if (generated.outcome === "BUDGET_EXHAUSTED") {
-    evidence.setupBlockBudgetExhaustions += 1;
-    return "BUDGET_EXHAUSTED";
-  }
-  if (generated.candidates.length === 0) {
-    evidence.standaloneZeroAlternativePrunes += 1;
-    for (const task of group.tasks)
-      evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
-    return "DEAD_END";
-  }
-  for (const candidate of generated.candidates) {
-    const child = searchSetup(
-      index + 1,
-      [...placed, ...candidate.tasks],
-      [...preparations, ...candidate.preparations],
-      depth + candidate.tasks.length,
-      [...selectionOrder, ...candidate.tasks.map(({ id }) => id)],
-    );
-    if (child !== "DEAD_END") return child;
-    evidence.standaloneBacktracks += 1;
-  }
-  return "DEAD_END";
 };
 const synchronizedTaskIds = roundSynchronizationTaskIds(problem);
 const roundPolicies = [...(problem.roundSynchronizations ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -564,7 +515,6 @@ const roundPendingIds = new Set(pending.filter((task) => roundTaskIds.has(task.i
 if (roundPendingIds.size !== roundTaskIds.size || [...synchronizedTaskIds].some((id) => !roundTaskIds.has(id))) {
   return { outcome: "DEAD_END", tasks: null, preparations: [], roundPreparations: [], selectionOrder: [], participantMeals: null, operationalMeals: null };
 }
-
 const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.roundSynchronizationStartCandidates += delta.startCandidates;
   evidence.roundSynchronizationAssignmentBranches += delta.assignmentBranches;
@@ -577,172 +527,165 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.totalesMatchingSuccesses += delta.matchingSuccesses;
   evidence.totalesAssignmentBranchesAvoided += delta.assignmentBranchesAvoided;
 };
-
 const dynamicTransportIds = transportTaskIds(problem);
-const jointItems = jointGroupIds(pending).map((id) => ({
-  key: jointWorkItemKey(id),
-  kind: "joint" as const,
-  tasks: jointGroupMembers(pending, id),
-}));
-const technicalItems = getTechnicalChains(pending).map((tasks) => ({
-  key: technicalChainWorkItemKey(tasks[0]!.id),
-  kind: "technical" as const,
-  tasks,
-}));
+const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
+const technicalItems = getTechnicalChains(pending).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
-// A task is resource-critical by canonical contract, not by its display/type name.
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
-  && !dynamicTransportIds.has(task.id)).map((task) => ({ key: `resource:${task.id}`, kind: "resource" as const, tasks: [task] }));
-const unorderedAtomicItems = [...jointItems, ...technicalItems, ...resourceItems];
-const atomicConstrainedness = (item: typeof unorderedAtomicItems[number]) => {
-  const domains = item.tasks.map((task) => standaloneForwardDynamicDomain(problem, task, coreTasks,
-    standaloneForwardStaticDomain(problem, task, coreMeals)).eligibleStartCount);
-  const resourceIds = [...new Set(item.tasks.flatMap((task) => task.requiredResourceIds ?? []))];
-  const availability = resourceIds.flatMap((id) => problem.resources.find((resource) => resource.id === id)?.availability ?? [])
+  && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
+const roundItems = roundPolicies.map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
+  tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
+const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
+type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
+  | typeof roundItems[number] | typeof setupItems[number];
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
+  .sort((left, right) => left.id.localeCompare(right.id));
+const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
+const resourceAvailabilityMinutes = (tasks: readonly Task[]): number => {
+  const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();
+  if (ids.length === 0) return problem.day.end - problem.day.start;
+  return ids.flatMap((id) => problem.resources.find((resource) => resource.id === id)?.availability ?? [])
     .reduce((sum, interval) => sum + interval.end - interval.start, 0);
-  return { ...item, id: item.key, domainSize: Math.min(...domains), hardResourceAvailabilityMinutes: availability,
-    exclusiveResourceCount: resourceIds.length, synchronizedSlotCount: item.kind === "joint" ? item.tasks.length : 0,
-    totalDuration: item.tasks.reduce((sum, task) => sum + task.duration, 0), affectedTaskCount: item.tasks.length };
 };
-const atomicItems: typeof unorderedAtomicItems = [];
-const unordered = unorderedAtomicItems.map(atomicConstrainedness);
-while (unordered.length > 0) {
-  const selected = selectMostConstrainedUnit(unordered)!;
-  atomicItems.push(selected);
-  unordered.splice(unordered.findIndex(({ id }) => id === selected.id), 1);
+const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[]) => {
+  const allPlaced = [...coreTasks, ...placed];
+  const taskDomains = unit.tasks.map((task) => {
+    let staticDomain=staticMacroDomains.get(task.id);
+    if(!staticDomain){staticDomain=standaloneForwardStaticDomain(problem,task,coreMeals);staticMacroDomains.set(task.id,staticDomain);}
+    const signature=standaloneForwardAuthoritySignature(problem,task,allPlaced,coreMeals,staticDomain,"STATIC_DOMAIN");
+    const cached=macroDomainCache.get(signature);if(cached!==undefined)return cached;
+    const count=standaloneForwardDynamicDomain(problem,task,allPlaced,staticDomain).eligibleStartCount;
+    if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);
+    macroDomainCache.set(signature,count);return count;
+  });
+  // This is an exact per-member dynamic-domain bound. It is used only for ordering;
+  // selected-unit generation remains authoritative and is the only source of zero-domain pruning.
+  const domainSize = Math.min(...taskDomains);
+  const resourceIds = [...new Set(unit.tasks.flatMap((task) => task.requiredResourceIds ?? []))];
+  const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
+    ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
+    : unit.kind === "JOINT" ? unit.tasks.length : 0;
+  return { unit, id: unit.id, domainSize, hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
+    exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
+    totalDuration: unit.tasks.reduce((sum, task) => sum + task.duration, 0), affectedTaskCount: unit.tasks.length };
+};
+const selectionReason = (selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): string => {
+  const peers = candidates.filter(({ id }) => id !== selected.id);
+  if (peers.some((item) => item.domainSize !== selected.domainSize)) return "minimum-domain";
+  if (peers.some((item) => item.hardResourceAvailabilityMinutes !== selected.hardResourceAvailabilityMinutes)) return "resource-availability-tiebreak";
+  if (peers.some((item) => item.exclusiveResourceCount !== selected.exclusiveResourceCount)) return "exclusive-resource-tiebreak";
+  if (peers.some((item) => item.synchronizedSlotCount !== selected.synchronizedSlotCount)) return "synchronization-tiebreak";
+  if (peers.some((item) => item.totalDuration !== selected.totalDuration)) return "duration-tiebreak";
+  return "canonical-id-tiebreak";
+};
+const recordMacroDecision = (depth: number, selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): void => {
   evidence.macroDomainSizes[selected.id] = selected.domainSize;
-}
-const atomicTaskIds = new Set(atomicItems.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
-const pendingWithoutRounds = pending.filter(({ id }) => !roundTaskIds.has(id) && !dynamicTransportIds.has(id) && !atomicTaskIds.has(id));
-const originalOrdinary = ordinaryPending.splice(0, ordinaryPending.length, ...pendingWithoutRounds.filter(({ id }) => !setupTaskIds.has(id)).sort(byId));
-void originalOrdinary;
-
-const searchAtomicItems = (
-  index: number,
-  placed: ScheduledTask[],
-  selectionOrder: string[],
-): StandaloneOutcome => {
-  if (index >= atomicItems.length) return searchRounds(0, placed, [], selectionOrder);
-  const item = atomicItems[index]!;
-  if (index === 0) {
-    evidence.macroUnitsSelected += 1;
-    evidence.macroSelectionOrder.push(`CRITICAL:${item.key}`);
-    evidence.macroSelectionReason.push("structured hard-coupled operation before broader domains");
-  }
-  if (item.kind === "joint" || item.kind === "resource") {
-    const duration = item.tasks[0]?.duration ?? 0;
+  if (evidence.macroSelectionSteps.length > depth) return;
+  const reason = selectionReason(selected, candidates);
+  evidence.macroUnitsSelected += 1;
+  evidence.macroSelectionOrder.push(`${selected.unit.kind}:${selected.id}`);
+  evidence.macroSelectionReason.push(reason);
+  evidence.macroSelectionSteps.push({ selected: selected.id, reason, candidates: candidates.map((candidate) => ({
+    id: candidate.id, kind: candidate.unit.kind, domainSize: candidate.domainSize,
+    hardResourceAvailabilityMinutes: candidate.hardResourceAvailabilityMinutes,
+  })).sort((left, right) => left.id.localeCompare(right.id)) });
+};
+const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalChainExplorer>, accounted: {
+  consumed:number;full:number;eligible:number;eliminated:number;complete:number;deferred:number;revisited:number;pushes:number;pops:number;builds:number;hits:number;scans:number;domainMs:number;checkMs:number;
+}): boolean => {
+  const diagnostics=explorer.diagnostics;
+  const consumedDelta=explorer.consumed-accounted.consumed;
+  if(consumedDelta>0&&!ledger.consume("STANDALONE",consumedDelta))return false;
+  evidence.technicalChainFullGridStarts+=diagnostics.fullGridStarts-accounted.full;
+  evidence.technicalChainAnalyticEligibleStarts+=diagnostics.analyticEligibleStarts-accounted.eligible;
+  evidence.technicalChainAnalyticallyEliminatedStarts+=diagnostics.analyticallyEliminatedStarts-accounted.eliminated;
+  evidence.technicalChainStartsEvaluated+=diagnostics.startsEvaluated-accounted.consumed;
+  evidence.technicalChainPreparedAuthorityBuilds+=diagnostics.preparedAuthorityBuilds-accounted.builds;
+  evidence.technicalChainPreparedAuthorityHits+=diagnostics.preparedAuthorityHits-accounted.hits;
+  evidence.technicalChainFixedPlacedScansAvoided+=diagnostics.fixedPlacedScansAvoided-accounted.scans;
+  evidence.technicalChainDomainBuildMs+=diagnostics.domainBuildMs-accounted.domainMs;
+  evidence.technicalChainFinalPlacementCheckMs+=diagnostics.finalPlacementCheckMs-accounted.checkMs;
+  evidence.technicalChainCompleteCandidates+=diagnostics.completeCandidatesYielded-accounted.complete;
+  evidence.technicalChainAlternativesDeferred+=diagnostics.alternativesDeferred-accounted.deferred;
+  evidence.technicalChainAlternativesRevisited+=diagnostics.alternativesRevisited-accounted.revisited;
+  evidence.technicalChainActiveFrontierPeak=Math.max(evidence.technicalChainActiveFrontierPeak,diagnostics.activeFrontierPeak);
+  evidence.technicalChainDeferredQueuePeak=Math.max(evidence.technicalChainDeferredQueuePeak,diagnostics.deferredQueuePeak);
+  evidence.technicalChainDeferredPushes+=diagnostics.deferredPushes-accounted.pushes;
+  evidence.technicalChainDeferredPops+=diagnostics.deferredPops-accounted.pops;
+  Object.assign(accounted,{consumed:explorer.consumed,full:diagnostics.fullGridStarts,eligible:diagnostics.analyticEligibleStarts,
+    eliminated:diagnostics.analyticallyEliminatedStarts,complete:diagnostics.completeCandidatesYielded,
+    deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited,pushes:diagnostics.deferredPushes,
+    pops:diagnostics.deferredPops,builds:diagnostics.preparedAuthorityBuilds,hits:diagnostics.preparedAuthorityHits,
+    scans:diagnostics.fixedPlacedScansAvoided,domainMs:diagnostics.domainBuildMs,checkMs:diagnostics.finalPlacementCheckMs});
+  return true;
+};
+const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
+  roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
+  if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder);
+  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed));
+  const selected = selectMostConstrainedUnit(constrained)!;
+  recordMacroDecision(depth, selected, constrained);
+  const unit = selected.unit;
+  const rest = remainingUnits.filter(({ id }) => id !== unit.id);
+  const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome =>
+    searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,
+      [...selectionOrder, ...tasks.map(({ id }) => id)]);
+  if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
+    const duration = unit.tasks[0]!.duration;
     const fullGridCount = Math.max(0, Math.floor((problem.day.end - duration - problem.day.start) / 5) + 1);
-    const analyticDomain = item.kind === "joint"
-      ? standaloneJointGroupStartDomain(problem, item.tasks, [...coreTasks, ...placed], coreMeals)
-      : standaloneForwardDynamicDomain(problem, item.tasks[0]!, [...coreTasks, ...placed],
-        standaloneForwardStaticDomain(problem, item.tasks[0]!, coreMeals));
-    const starts = jointGroupStartDomainMode === "FULL_GRID"
-      ? (function* () { for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) yield start; })()
-      : analyticDomain.starts();
+    const domain = unit.kind === "JOINT" ? standaloneJointGroupStartDomain(problem, unit.tasks, [...coreTasks, ...placed], coreMeals)
+      : standaloneForwardDynamicDomain(problem, unit.tasks[0]!, [...coreTasks, ...placed], standaloneForwardStaticDomain(problem, unit.tasks[0]!, coreMeals));
     evidence.jointGroupFullGridStarts += fullGridCount;
-    evidence.jointGroupAnalyticEligibleStarts += analyticDomain.eligibleStartCount;
-    evidence.jointGroupAnalyticallyEliminatedStarts += fullGridCount - analyticDomain.eligibleStartCount;
+    evidence.jointGroupAnalyticEligibleStarts += domain.eligibleStartCount;
+    evidence.jointGroupAnalyticallyEliminatedStarts += fullGridCount-domain.eligibleStartCount;
+    const starts = unit.kind === "JOINT" && jointGroupStartDomainMode === "FULL_GRID"
+      ? (function* () { for (let start=problem.day.start;start+duration<=problem.day.end;start+=5) yield start; })()
+      : domain.starts();
     for (const start of starts) {
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
-      evidence.standaloneBranches += 1;
-      evidence.jointGroupStartsEvaluated += 1;
-      evidence.criticalResourceBranches += 1;
-      if (item.kind === "joint" && !canPlaceJointGroup(problem, item.tasks, start, [...coreTasks, ...placed])) continue;
-      if (item.kind === "resource" && !canPlaceTask(problem, item.tasks[0]!, start, [...coreTasks, ...placed], coreMeals)) continue;
-      const scheduled = item.kind === "joint" ? scheduleJointGroup(item.tasks, start)
-        : [scoreAuxiliaryTask(problem, item.tasks[0]!, start, [...coreTasks, ...placed]).scheduled];
-      evidence.criticalResourceMacroCandidates += 1;
-      evidence.criticalResourceAssignments += scheduled.length;
-      const child = searchAtomicItems(index + 1, [...placed, ...scheduled], [...selectionOrder, ...scheduled.map(({ id }) => id)]);
-      if (child !== "DEAD_END") return child;
-      evidence.standaloneBacktracks += 1;
+      evidence.jointGroupStartsEvaluated += 1; evidence.criticalResourceBranches += 1;
+      if (unit.kind === "JOINT" && !canPlaceJointGroup(problem, unit.tasks, start, [...coreTasks, ...placed])) continue;
+      if (unit.kind === "RESOURCE_TASK" && !canPlaceTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed], coreMeals)) continue;
+      const scheduled = unit.kind === "JOINT" ? scheduleJointGroup(unit.tasks, start)
+        : [scoreAuxiliaryTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed]).scheduled];
+      evidence.criticalResourceMacroCandidates += 1; evidence.criticalResourceAssignments += scheduled.length;
+      const child = recurse(scheduled); if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
     }
-    for (const task of item.tasks)
-      evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
-    return "DEAD_END";
+  } else if (unit.kind === "SETUP_GROUP") {
+    evidence.setupBlockSearchInvocations += 1;
+    const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
+    evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
+    evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
+    evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
+    evidence.setupBlockMatchingAttempts += generated.evidence.matchingAttempts;
+    evidence.setupBlockMatchingSuccesses += generated.evidence.matchingSuccesses;
+    evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
+    mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
+    if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
+    for (const candidate of generated.candidates) {
+      const child = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
+      if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
+    }
+  } else if (unit.kind === "ROUND_SYNCHRONIZATION") {
+    evidence.roundSynchronizationSearchInvocations += 1;
+    const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
+      roundPreparations, coreMeals, ledger, (candidate) => recurse(candidate.tasks, preparations,
+        [...roundPreparations, ...candidate.preparations]));
+    mergeRoundEvidence(explored.evidence);
+    return explored.outcome;
+  } else {
+    const explorer=createTechnicalChainExplorer(problem,unit.tasks,[...coreTasks,...placed],Math.max(0,ledger.limit-ledger.branchesExplored),
+      technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",true);
+    const accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,builds:0,hits:0,scans:0,domainMs:0,checkMs:0};
+    while(true){const candidate=explorer.nextCandidate();if(!mergeTechnicalDiagnostics(explorer,accounted)||explorer.exhausted)return "BUDGET_EXHAUSTED";
+      if(!candidate)break;const child=recurse(candidate.tasks);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
   }
-  const explorer=createTechnicalChainExplorer(problem,item.tasks,[...coreTasks,...placed],
-    Math.max(0,ledger.limit-ledger.branchesExplored),technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",true);
-  let accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,
-    builds:0,hits:0,scans:0,domainMs:0,checkMs:0};
-  const accountExplorer=()=>{
-    const diagnostics=explorer.diagnostics;
-    const consumedDelta=explorer.consumed-accounted.consumed;
-    if(consumedDelta>0&&!ledger.consume("STANDALONE",consumedDelta))return false;
-    evidence.technicalChainFullGridStarts+=diagnostics.fullGridStarts-accounted.full;
-    evidence.technicalChainAnalyticEligibleStarts+=diagnostics.analyticEligibleStarts-accounted.eligible;
-    evidence.technicalChainAnalyticallyEliminatedStarts+=diagnostics.analyticallyEliminatedStarts-accounted.eliminated;
-    evidence.technicalChainStartsEvaluated+=diagnostics.startsEvaluated-accounted.consumed;
-    evidence.technicalChainPreparedAuthorityBuilds+=diagnostics.preparedAuthorityBuilds-accounted.builds;
-    evidence.technicalChainPreparedAuthorityHits+=diagnostics.preparedAuthorityHits-accounted.hits;
-    evidence.technicalChainFixedPlacedScansAvoided+=diagnostics.fixedPlacedScansAvoided-accounted.scans;
-    evidence.technicalChainDomainBuildMs+=diagnostics.domainBuildMs-accounted.domainMs;
-    evidence.technicalChainFinalPlacementCheckMs+=diagnostics.finalPlacementCheckMs-accounted.checkMs;
-    evidence.technicalChainCompleteCandidates+=diagnostics.completeCandidatesYielded-accounted.complete;
-    evidence.technicalChainAlternativesDeferred+=diagnostics.alternativesDeferred-accounted.deferred;
-    evidence.technicalChainAlternativesRevisited+=diagnostics.alternativesRevisited-accounted.revisited;
-    evidence.technicalChainActiveFrontierPeak=Math.max(evidence.technicalChainActiveFrontierPeak,diagnostics.activeFrontierPeak);
-    evidence.technicalChainDeferredQueuePeak=Math.max(evidence.technicalChainDeferredQueuePeak,diagnostics.deferredQueuePeak);
-    evidence.technicalChainDeferredPushes+=diagnostics.deferredPushes-accounted.pushes;
-    evidence.technicalChainDeferredPops+=diagnostics.deferredPops-accounted.pops;
-    accounted={consumed:explorer.consumed,full:diagnostics.fullGridStarts,eligible:diagnostics.analyticEligibleStarts,
-      eliminated:diagnostics.analyticallyEliminatedStarts,complete:diagnostics.completeCandidatesYielded,
-      deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited,
-      pushes:diagnostics.deferredPushes,pops:diagnostics.deferredPops,builds:diagnostics.preparedAuthorityBuilds,
-      hits:diagnostics.preparedAuthorityHits,scans:diagnostics.fixedPlacedScansAvoided,
-      domainMs:diagnostics.domainBuildMs,checkMs:diagnostics.finalPlacementCheckMs};
-    return true;
-  };
-  while(true){
-    const candidate=explorer.nextCandidate();
-    if(!accountExplorer()||explorer.exhausted)return "BUDGET_EXHAUSTED";
-    if(!candidate)break;
-    const child = searchAtomicItems(index + 1, [...placed, ...candidate.tasks],
-      [...selectionOrder, ...candidate.tasks.map(({ id }) => id)]);
-    if (child !== "DEAD_END") return child;
-    evidence.standaloneBacktracks += 1;
-  }
-  for (const task of item.tasks)
-    evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
+  for (const task of unit.tasks) recordBlockingTask(task);
   return "DEAD_END";
 };
-
-const searchRounds = (
-  index: number,
-  placed: ScheduledTask[],
-  roundPreparations: ScheduledRoundPreparation[],
-  selectionOrder: string[],
-): StandaloneOutcome => {
-  if (index >= roundPolicies.length) {
-    activeRoundPreparations = [...roundPreparations];
-    return searchSetup(0, placed, [], placed.length, selectionOrder);
-  }
-  const policy = roundPolicies[index]!;
-  evidence.macroUnitsSelected += 1;
-  evidence.macroSelectionOrder.push(`SYNCHRONIZED:${policy.id}`);
-  evidence.macroSelectionReason.push("MRV macro-domain with synchronized long slots");
-  evidence.roundSynchronizationSearchInvocations += 1;
-  const explored = exploreExactRoundSynchronizationPolicy(
-    problem,
-    policy,
-    [...coreTasks, ...placed],
-    [],
-    roundPreparations,
-    coreMeals,
-    ledger,
-    (candidate) => searchRounds(
-      index + 1,
-      [...placed, ...candidate.tasks],
-      [...roundPreparations, ...candidate.preparations],
-      [...selectionOrder, ...candidate.selectionOrder],
-    ),
-  );
-  mergeRoundEvidence(explored.evidence);
-  return explored.outcome;
-};
-
-const searchOutcome = searchAtomicItems(0, [], []);
+const searchOutcome = searchMacroUnits(macroUnits, [], [], [], 0, []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
 }

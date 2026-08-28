@@ -36,6 +36,54 @@ const auxiliary = (id: string, participantId: string, availability: Array<{ star
   requiredResourceIds: string[] = []): Task => ({ id, kind: "auxiliary", participantId, duration: 10,
   spaceId: `space-${id}`, dependencies: [], availability, requiredResourceIds });
 
+function macroCompetitionProblem(options: { setup?: [number, number]; rounds?: [number, number]; resource?: [number, number]; dynamic?: boolean }): PlannerNextProblem {
+  const extra: Task[] = [];
+  const input = problem(extra);
+  input.protectedMeal = undefined;
+  const addParticipant = (id: string) => input.participants.push({ id, availability: [{ start: 0, end: 120 }] });
+  if (options.setup) {
+    input.spaces.push({ id: "setup", availability: [{ start: 0, end: 120 }], secondaryContinuity: "REQUIRED", setupPolicy: { familyOrder: ["family"], reentry: "FORBIDDEN" } });
+    addParticipant("setup-person"); addParticipant("setup-person-2");
+    input.tasks.push(
+      { ...auxiliary("setup-task", "setup-person", [{ start: options.setup[0], end: options.setup[1] }]), duration: 5, spaceId: "setup", setupFamilyId: "family" },
+      { ...auxiliary("setup-task-2", "setup-person-2", [{ start: options.setup[0], end: options.setup[1] }]), duration: 5, spaceId: "setup", setupFamilyId: "family" },
+    );
+  }
+  if (options.rounds) {
+    input.spaces.push({ id: "lane-a", availability: [{ start: 0, end: 120 }] }, { id: "lane-b", availability: [{ start: 0, end: 120 }] });
+    addParticipant("round-a"); addParticipant("round-b");
+    input.tasks.push(
+      { ...auxiliary("round-a", "round-a", [{ start: options.rounds[0], end: options.rounds[1] }]), spaceId: "lane-a" },
+      { ...auxiliary("round-b", "round-b", [{ start: options.rounds[0], end: options.rounds[1] }]), spaceId: "lane-b" },
+    );
+    input.roundSynchronizations = [{ id: "rounds", synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE", lanes: [
+      { spaceId: "lane-a", taskIds: ["round-a"], preparationMinutesBetweenRounds: 0 },
+      { spaceId: "lane-b", taskIds: ["round-b"], preparationMinutesBetweenRounds: 0 },
+    ] }];
+  }
+  if (options.resource) {
+    input.resources.push({ id: "scarce", availability: [{ start: 0, end: 120 }], presencePreference: "OFF", transitionMinutes: 0 });
+    addParticipant("resource-person");
+    input.spaces.push({ id: "space-resource-task", availability: [{ start: 0, end: 120 }] });
+    input.tasks.push(auxiliary("resource-task", "resource-person", [{ start: options.resource[0], end: options.resource[1] }], ["scarce"]));
+  }
+  if (options.dynamic) {
+    input.resources.push({ id: "dynamic", availability: [{ start: 0, end: 120 }], presencePreference: "OFF", transitionMinutes: 0 });
+    addParticipant("dynamic-a"); addParticipant("dynamic-b"); addParticipant("dynamic-c");
+    input.spaces.push(
+      { id: "space-dynamic-a", availability: [{ start: 0, end: 120 }] },
+      { id: "space-dynamic-b", availability: [{ start: 0, end: 120 }] },
+      { id: "space-dynamic-c", availability: [{ start: 0, end: 120 }] },
+    );
+    input.tasks.push(
+      { ...auxiliary("dynamic-a", "dynamic-a", [{ start: 20, end: 30 }], ["dynamic"]), duration: 10 },
+      { ...auxiliary("dynamic-b", "dynamic-b", [{ start: 40, end: 70 }], ["unit"]), duration: 10 },
+      { ...auxiliary("dynamic-c", "dynamic-c", [{ start: 20, end: 50 }], ["dynamic"]), duration: 10 },
+    );
+  }
+  return input;
+}
+
 function coreLeafContinuationProblem(): PlannerNextProblem {
   const input = problem([auxiliary("standalone", "core", [{ start: 60, end: 70 }])]);
   const availability = [{ start: 0, end: 120 }];
@@ -64,6 +112,36 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.ok(result.evidence.ordinaryExactStartChecks < 2 * 23,
     "only the selected task domain is checked exactly, not every task over the full grid");
   assert.ok(result.evidence.ordinaryAnalyticDomainBuilds >= 2);
+});
+
+test("global macro MRV lets setup beat a broader synchronized round unit", () => {
+  const result = constructExactItinerantPlan(macroCompetitionProblem({ setup: [60, 70], rounds: [20, 100] }));
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^SETUP_GROUP:/);
+  assert.ok(result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "ROUND_SYNCHRONIZATION"));
+});
+
+test("global macro MRV lets narrow rounds beat a flexible explicit-resource task", () => {
+  const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] }));
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
+});
+
+test("global macro MRV lets a scarce resource task beat broader rounds", () => {
+  const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [20, 100], resource: [60, 70] }));
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:/);
+});
+
+test("macro constrainedness is recalculated after each placement", () => {
+  const result = constructExactItinerantPlan(macroCompetitionProblem({ dynamic: true }));
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.macroSelectionOrder.slice(0, 2), [
+    "RESOURCE_TASK:resource:dynamic-a",
+    "RESOURCE_TASK:resource:dynamic-c",
+  ]);
+  assert.ok(result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-c")!.domainSize
+    < result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-b")!.domainSize);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
