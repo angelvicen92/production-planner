@@ -43,6 +43,12 @@ export interface ExactSetupBlockGenerationResult {
   evidence: ExactSetupBlockGenerationEvidence;
 }
 
+export interface ExactSetupMacroDomain {
+  domainSize: number;
+  structuralCandidateCount: number;
+  matchingFeasibleCandidateCount: number;
+}
+
 const byId = <T extends { id: string }>(left: T, right: T): number =>
   left.id.localeCompare(right.id);
 
@@ -69,6 +75,7 @@ export function generateExactSetupBlockCandidates(
   preparations: ScheduledSetupPreparation[],
   meals: ScheduledSpaceMeal[],
   ledger: ExactSearchLedger,
+  countOnly = false,
 ): ExactSetupBlockGenerationResult {
   const ordered = [...tasks].sort(byId);
   const spaceId = ordered[0]?.spaceId;
@@ -99,7 +106,7 @@ export function generateExactSetupBlockCandidates(
         branchesExplored,
         startsExplored,
         maximumDepth,
-        completeCandidateCount: complete.length,
+        completeCandidateCount: Object.values(familyOrderCandidateCounts).reduce((sum, count) => sum + count, 0),
         familyOrderCandidateCounts: { ...familyOrderCandidateCounts },
         matchingAttempts,
         matchingSuccesses,
@@ -131,7 +138,7 @@ export function generateExactSetupBlockCandidates(
         preparations: partialPreparations,
         cost,
       };
-      complete.push(candidate);
+      if (!countOnly) complete.push(candidate);
       const key = setupFamilySequence(partialTasks).join(">");
       familyOrderCandidateCounts[key] =
         (familyOrderCandidateCounts[key] ?? 0) + 1;
@@ -243,4 +250,22 @@ export function generateExactSetupBlockCandidates(
     if (exhausted) return finish("BUDGET_EXHAUSTED");
   }
   return finish("COMPLETE");
+}
+
+/** Exact count-only projection of the canonical setup generator; it consumes no search-tree budget. */
+export function probeExactSetupMacroDomain(
+  problem: PlannerNextProblem,
+  tasks: Task[],
+  placed: ScheduledTask[],
+  preparations: ScheduledSetupPreparation[],
+  meals: ScheduledSpaceMeal[],
+): ExactSetupMacroDomain {
+  const ledger: ExactSearchLedger = {
+    limit: Number.POSITIVE_INFINITY, branchesExplored: 0, coreBranches: 0,
+    standaloneBranches: 0, lastExhaustionPhase: null, consume: () => true,
+  };
+  const result = generateExactSetupBlockCandidates(problem, tasks, placed, preparations, meals, ledger, true);
+  return { domainSize: result.evidence.completeCandidateCount,
+    structuralCandidateCount: result.evidence.startsExplored,
+    matchingFeasibleCandidateCount: result.evidence.completeCandidateCount };
 }

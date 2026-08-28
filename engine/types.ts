@@ -241,6 +241,14 @@ export interface EngineInputRoundSynchronizationInput {
   synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
 }
 
+export interface EngineInputTechnicalChainInput {
+  id: string;
+  orderedTaskIds: number[];
+  adjacency: "REQUIRED";
+  resourceContinuity: "REQUIRED";
+  requiredResourceIds: number[];
+}
+
 export interface EngineInputCoachRouteTransitionInput {
   coachPlanResourceItemId: number;
   fromSpaceId: number;
@@ -285,6 +293,8 @@ export interface EngineInput {
   setupPolicies?: EngineInputSetupPolicyInput[];
   /** Explicit dynamic round synchronization across independent spaces. */
   roundSynchronizations?: EngineInputRoundSynchronizationInput[];
+  /** Explicit ordered technical operation; dependencies alone remain precedence-only. */
+  technicalChains?: EngineInputTechnicalChainInput[];
   /** Directional hard travel time for one concrete coach between two spaces. */
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
   /** Flexible operational meals scoped by physical resources/spaces. */

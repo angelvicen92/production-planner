@@ -45,6 +45,12 @@ export interface ExactRoundSynchronizationSearchResult {
   evidence: ExactRoundSynchronizationEvidence;
 }
 
+export interface ExactRoundSynchronizationMacroDomain {
+  domainSize: number;
+  structuralCandidateCount: number;
+  matchingFeasibleCandidateCount: number;
+}
+
 interface Slot {
   laneIndex: number;
   roundIndex: number;
@@ -173,6 +179,45 @@ function buildSlots(
       left.start - right.start || left.laneIndex - right.laneIndex || left.roundIndex - right.roundIndex),
     preparations: preparations.sort(byId),
   };
+}
+
+function materializeMatchingCandidate(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
+  firstStart: number, baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[],
+  existingRoundPreparations: ScheduledRoundPreparation[], meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationCandidate | null {
+  const shape = buildSlots(problem, policy, firstStart, baseTasks, setupPreparations, existingRoundPreparations, meals);
+  if (!shape) return null;
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const laneTasks = policy.lanes.map((lane) => lane.taskIds.map((id) => taskById.get(id))
+    .filter((task): task is Task => Boolean(task)).sort(byId));
+  if (laneTasks.some((tasks, index) => tasks.length !== policy.lanes[index]!.taskIds.length)) return null;
+  const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
+  const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
+  const allTasks = laneTasks.flat(), taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
+  const matching = findCanonicalPerfectMatching([...slotById.keys()], allTasks.map(({ id }) => id), (taskId, key) => {
+    const task = taskByMatchingId.get(taskId)!, slot = slotById.get(key)!;
+    return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId) && canPlaceTask(problem, task, slot.start, baseTasks, meals);
+  });
+  if (!matching) return null;
+  const scheduled = [...matching].map(([key, taskId]) => {
+    const slot = slotById.get(key)!;
+    return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
+  });
+  if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
+    [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) return null;
+  scheduled.sort((left, right) => left.start - right.start || byId(left, right));
+  return { tasks: scheduled, preparations: [...shape.preparations], selectionOrder: scheduled.map(({ id }) => id) };
+}
+
+/** Counts hard-valid synchronized temporal shapes without consuming the shared search ledger. */
+export function probeExactRoundSynchronizationMacroDomain(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
+  baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[], existingRoundPreparations: ScheduledRoundPreparation[],
+  meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationMacroDomain {
+  let structuralCandidateCount = 0, matchingFeasibleCandidateCount = 0;
+  for (let start = problem.day.start; start < problem.day.end; start += 5) {
+    if (buildSlots(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals)) structuralCandidateCount += 1;
+    if (materializeMatchingCandidate(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals)) matchingFeasibleCandidateCount += 1;
+  }
+  return { domainSize: matchingFeasibleCandidateCount, structuralCandidateCount, matchingFeasibleCandidateCount };
 }
 
 /**

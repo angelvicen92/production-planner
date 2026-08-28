@@ -1,11 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { preflight } from "./validate";
-import { createTechnicalChainExplorer, generateTechnicalChainCandidates, getTechnicalChains, orderedTechnicalChainMembers, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
+import { createTechnicalChainExplorer, generateTechnicalChainCandidates, getTechnicalChains, orderedTechnicalChainMembers, probeExactTechnicalChainMacroDomain, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
+import { validatePlan } from "./validate";
 import { technicalChainScenario } from "./scenarios/technicalChainScenario";
 import { canPlaceTask } from "./placement";
 
 test("derives a linear chain exclusively from dependencies regardless of physical order",()=>{const p=technicalChainScenario(),chain=getTechnicalChains([...p.tasks].reverse())[0]!;assert.deepEqual(orderedTechnicalChainMembers(chain).map(t=>t.id),["technical-chain-positioning","technical-chain-camera-test"]);});
+test("explicit adjacency uses root starts and shares candidates between probe and search",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;
+ p.day={start:0,end:50};for(const task of chain)task.duration=task.id.endsWith("positioning")?20:15;
+ for(const resource of p.resources){resource.availability=[{start:0,end:50}];resource.transitionMinutes=0;}for(const space of p.spaces){space.availability=[{start:0,end:50}];space.secondaryContinuity=undefined;space.setupPolicy=undefined;}
+ p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];
+ const domain=probeExactTechnicalChainMacroDomain(p,chain,[]),explorer=createTechnicalChainExplorer(p,chain,[],100);
+ const candidates=[];for(let candidate;(candidate=explorer.nextCandidate());)candidates.push(candidate);
+ assert.equal(domain,4);assert.equal(candidates.length,domain);assert.deepEqual(candidates[0]!.tasks.map(({start,end})=>[start,end]),[[0,20],[20,35]]);
+ const gap=candidates[0]!.tasks.map(task=>({...task}));gap[1]!.start+=5;gap[1]!.end+=5;
+ const chainProblem={...p,tasks:chain};assert.equal(validatePlan(chainProblem,candidates[0]!.tasks).hardValid,true);assert.equal(validatePlan(chainProblem,gap).hardValid,false);
+});
+test("technical dependencies remain precedence-only without an explicit policy",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!,result=generateTechnicalChainCandidates(p,chain,[],1000);assert.ok(result.candidates.some(candidate=>candidate.tasks[1]!.start>candidate.tasks[0]!.end));});
+test("explicit resource continuity rejects a member missing the declared resource",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];chain[1]!.requiredResourceIds=[];assert.equal(probeExactTechnicalChainMacroDomain(p,chain,[]),0);});
 test("detects cycles, fan-in and fan-out",()=>{const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;const cycle=structuredClone(members);cycle[0]!.dependencies=[cycle[1]!.id];assert.equal(technicalChainHasCycle(cycle),true);const fanIn=structuredClone(members);fanIn[1]!.dependencies=[fanIn[0]!.id,"technical-camera-positioning"];assert.equal(technicalChainHasBranching(fanIn),true);const fanOut=[...members,{...members[1]!,id:"other"}];assert.equal(technicalChainHasBranching(fanOut),true);});
 test("preflight rejects invalid technical dependencies deterministically",()=>{const unknown=technicalChainScenario();unknown.tasks.find(t=>t.id==="technical-chain-camera-test")!.dependencies=["missing"];assert.ok(preflight(unknown).includes("TECHNICAL_DEPENDENCY_UNSUPPORTED"));const own=technicalChainScenario();own.tasks.find(t=>t.id==="technical-chain-camera-test")!.dependencies=["technical-chain-camera-test"];assert.ok(preflight(own).includes("TECHNICAL_CHAIN_CYCLE"));});
 test("generates only the two complete candidates and minimizes resource presence",()=>{const p=technicalChainScenario(),snapshot=structuredClone(p),chain=getTechnicalChains(p.tasks)[0]!,result=generateTechnicalChainCandidates(p,chain,[],1000);assert.equal(result.exhausted,false);assert.equal(result.candidates.length,2);assert.ok(result.candidates.every(c=>c.tasks.length===2));assert.deepEqual(result.candidates[0]!.tasks.map(t=>[t.start,t.end]),[[545,565],[570,585]]);assert.equal(JSON.stringify(p),JSON.stringify(snapshot));});
