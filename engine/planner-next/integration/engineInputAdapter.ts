@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { EngineInput, TimeWindow } from "../../types";
-import type { AnchoredAccompaniment, PlannerNextProblem, RoundSynchronizationPolicy, Task, Window } from "../contracts";
+import type { AnchoredAccompaniment, PlannerNextProblem, RoundSynchronizationPolicy, Task, TechnicalChainPolicy, Window } from "../contracts";
 import { preflight as preflightPlannerNextProblem } from "../validate";
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
@@ -88,6 +88,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     ...(problem.itinerantUnitMeals ? { itinerantUnitMeals: sorted(problem.itinerantUnitMeals, entry=>entry.id) } : {}),
     ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
     ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
+    ...(problem.technicalChains ? { technicalChains: sorted(problem.technicalChains,(entry)=>entry.id).map(entry=>({...entry,orderedTaskIds:[...entry.orderedTaskIds],requiredResourceIds:[...entry.requiredResourceIds].sort(compare)})) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
     ...(problem.transportPolicy ? { transportPolicy: {
       arrival: { ...problem.transportPolicy.arrival, taskIds: [...problem.transportPolicy.arrival.taskIds].sort(compare) },
@@ -122,6 +123,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const config = input.plannerNext!;
   const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
   const sourceRoundSynchronizations = input.roundSynchronizations ?? [];
+  const sourceTechnicalChains = input.technicalChains ?? [];
   const linkedBreakIds=new Set(input.tasks.filter(task=>isFlexibleParticipantMealTask(input,task)&&task.breakId!=null).map(task=>String(task.breakId)));
   const participantMeals = resolveParticipantScopedMeals({ ...input, actualMeal: input.actualMeal&&linkedBreakIds.has(String(input.actualMeal.id))?undefined:input.actualMeal, protectedBreaks: input.protectedBreaks?.filter(entry=>!linkedBreakIds.has(String(entry.id))) });
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
@@ -246,6 +248,11 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
           preparationMinutesBetweenRounds: lane.preparationMinutesBetweenRounds,
         })),
     })).sort((left, right) => compare(left.id, right.id));
+  const technicalChains:TechnicalChainPolicy[]=sourceTechnicalChains.map(policy=>({
+    id:canonical("technical-chain",policy.id),orderedTaskIds:policy.orderedTaskIds.map(id=>canonical("task",id)),
+    adjacency:policy.adjacency,resourceContinuity:policy.resourceContinuity,
+    requiredResourceIds:policy.requiredResourceIds.map(id=>canonical("plan-resource",id)).sort(compare),
+  })).sort((a,b)=>compare(a.id,b.id));
 
   const anchoredAccompaniments: AnchoredAccompaniment[] | undefined = input.anchoredAccompaniments?.map((entry) => ({
     id: canonical("anchored-operation", String(entry.id)),
@@ -276,6 +283,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     resourceTransitionMinutes: config.resourceTransitionMinutes,
     ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
     ...(roundSynchronizations.length ? { roundSynchronizations } : {}),
+    ...(technicalChains.length ? { technicalChains } : {}),
     budget: { ...config.searchBudget },
     searchPolicy: config.searchPolicy,
     ...(flexibleParticipantMeals.obligations.length ? { participantMeals: flexibleParticipantMeals.obligations, participantMealCapacity: { maxSimultaneous: input.contestantMealMaxSimultaneous! } } : {}),

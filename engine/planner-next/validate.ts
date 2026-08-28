@@ -306,6 +306,15 @@ export function preflight(problem: PlannerNextProblem): string[] {
   }
   if (technicalChainHasBranching(tasks)) reasons.add("TECHNICAL_CHAIN_BRANCHING_UNSUPPORTED");
   if (technicalChainHasCycle(tasks)) reasons.add("TECHNICAL_CHAIN_CYCLE");
+  const technicalOwners=new Map<string,string>();
+  for(const policy of problem.technicalChains??[]){
+    let invalid=!policy.id||policy.orderedTaskIds.length<2||new Set(policy.orderedTaskIds).size!==policy.orderedTaskIds.length
+      ||policy.adjacency!=="REQUIRED"||policy.resourceContinuity!=="REQUIRED"||new Set(policy.requiredResourceIds).size!==policy.requiredResourceIds.length
+      ||policy.orderedTaskIds.some(id=>problem.tasks.find(task=>task.id===id)?.kind!=="technical")
+      ||policy.requiredResourceIds.some(id=>!problem.resources.some(resource=>resource.id===id));
+    for(const id of policy.orderedTaskIds){const owner=technicalOwners.get(id);if(owner&&owner!==policy.id)invalid=true;else technicalOwners.set(id,policy.id);}
+    if(invalid)reasons.add("INVALID_TECHNICAL_CHAIN_POLICY");
+  }
   for(const id of jointGroupIds(tasks)) {
     const members=jointGroupMembers(tasks,id); const first=members[0];
     if(members.length<2) reasons.add("JOINT_GROUP_TOO_SMALL");
@@ -584,7 +593,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const scheduledCountById=new Map<string,number>();
   for(const task of scheduled)scheduledCountById.set(task.id,(scheduledCountById.get(task.id)??0)+1);
   const invalidTechnicalChainRootIds=new Set<string>();
-  for(const chain of getTechnicalChains(problem.tasks)) {
+  for(const chain of getTechnicalChains(problem.tasks,problem.technicalChains)) {
     const rootTaskId=chain[0]?.id;if(!rootTaskId)continue;let invalid=false;
     const memberIds=new Set(chain.map(task=>task.id));
     for(let i=0;i<chain.length;i++){
@@ -596,8 +605,12 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
         const predecessor=scheduledById.get(prior.id);
         if(!predecessor||!actual)invalid=true;
         else if(predecessor.end>actual.start)invalid=true;
+        const policy=problem.technicalChains?.find(candidate=>candidate.orderedTaskIds.length===chain.length&&candidate.orderedTaskIds.every((id,index)=>id===chain[index]?.id));
+        if(policy?.adjacency==="REQUIRED"&&predecessor&&actual&&predecessor.end!==actual.start)invalid=true;
       }
     }
+    const policy=problem.technicalChains?.find(candidate=>candidate.orderedTaskIds.length===chain.length&&candidate.orderedTaskIds.every((id,index)=>id===chain[index]?.id));
+    if(policy?.resourceContinuity==="REQUIRED"&&chain.some(task=>policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))))invalid=true;
     for(const actual of scheduled.filter(task=>task.kind==="technical"&&!memberIds.has(task.id))){
       const dependencies=Array.isArray(actual.dependencies)?actual.dependencies:[];
       if(dependencies.some(id=>memberIds.has(id))||chain.some(member=>member.dependencies.includes(actual.id)))invalid=true;

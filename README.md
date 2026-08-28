@@ -2863,3 +2863,7 @@ Planner Next sustituye las fases macro rígidas por una frontera recursiva comú
 ### A2-FULL-015 — Dominios macro comparables para MRV global · 2026-08-28 08:24 UTC
 
 MRV compara ahora alternativas estructurales hard-valid de macrocolocación: cada unidad compuesta usa el dominio común o completo que realmente exploraría su generador, en vez del menor dominio individual de uno de sus miembros. El cambio conserva las autoridades y matchings exactos existentes y no introduce nuevas reglas hard.
+
+### A2-FULL-016 — Proyección explícita y dominio contiguo de cadena técnica · 2026-08-28 09:40 UTC
+
+EngineInput proyecta losslessly la policy de cadena técnica hasta Planner Next: adyacencia y continuidad de recursos son contratos explícitos, y el dominio cuenta starts raíz de macrocolocaciones contiguas. Las cadenas legacy sin policy conservan precedencia flexible, sin reglas hard inferidas desde dependencies o nombres.

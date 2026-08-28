@@ -27,7 +27,7 @@ export function saturatedResourceWindowBlockKey(resourceIds: string[], window: W
 /** Derives exact-fit, shared-resource cohorts exclusively from the effective problem. */
 export function deriveSaturatedResourceWindowBlocks(problem: PlannerNextProblem, pending: Task[], placed: ScheduledTask[]): SaturatedResourceWindowBlock[] {
   const placedIds = new Set(placed.map(({ id }) => id));
-  const technicalChainIds = new Set(getTechnicalChains(problem.tasks).flat().map(({ id }) => id));
+  const technicalChainIds = new Set(getTechnicalChains(problem.tasks,problem.technicalChains).flat().map(({ id }) => id));
   const accompanimentIds = new Set((problem.anchoredAccompaniments ?? []).flatMap((item) => [...item.beforeTaskIds, ...item.afterTaskIds]));
   const resourceById = new Map(problem.resources.map((resource) => [resource.id, resource]));
   const groups = new Map<string, Task[]>();

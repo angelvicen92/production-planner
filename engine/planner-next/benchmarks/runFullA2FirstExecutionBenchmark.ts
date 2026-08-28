@@ -138,6 +138,10 @@ input.roundSynchronizations = [{
     preparationMinutesBetweenRounds: expansion.rules.totalesSynchronization.microphoneChangeMinutesBetweenRounds,
   })),
 }];
+input.technicalChains=expansion.technicalChains.map(chain=>({
+  id:chain.id,orderedTaskIds:chain.orderedTaskIds.map(id=>taskId.get(id)!),adjacency:chain.adjacency,
+  resourceContinuity:chain.resourceContinuity,requiredResourceIds:chain.requiredResourceIds.map(id=>resourceId.get(id)!),
+}));
 input.coachRouteTransitions = [
   ["coach-lucia", "caracola-lucia"],
   ["coach-jose-maria", "caracola-jose-maria"],

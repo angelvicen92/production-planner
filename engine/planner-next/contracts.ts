@@ -47,6 +47,14 @@ export interface RoundSynchronizationPolicy {
   synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE";
 }
 
+export interface TechnicalChainPolicy {
+  id: string;
+  orderedTaskIds: string[];
+  adjacency: "REQUIRED";
+  resourceContinuity: "REQUIRED";
+  requiredResourceIds: string[];
+}
+
 export interface CoachRouteTransition {
   coachId: string;
   fromSpaceId: string;
@@ -138,6 +146,7 @@ export interface PlannerNextProblem {
   resourceTransitionMinutes: number;
   coachRouteTransitions?: CoachRouteTransition[];
   roundSynchronizations?: RoundSynchronizationPolicy[];
+  technicalChains?: TechnicalChainPolicy[];
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
   anchoredAccompaniments?: AnchoredAccompaniment[];

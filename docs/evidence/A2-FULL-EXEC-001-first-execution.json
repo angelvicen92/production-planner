@@ -57,7 +57,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "d2bca56dc63c3c39f9425728f84349b39478b9549adb5efddae53d1f264195c0"
+    "problemFingerprint": "dc9ccbc0498a7393e3b51d95bd819de9e99865516252ac5343758c34b043b3df"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -279,39 +279,61 @@
       "coreBranches": 13056,
       "standaloneBranches": 286944,
       "standaloneStartChecks": 0,
-      "jointGroupFullGridStarts": 4261,
-      "jointGroupAnalyticEligibleStarts": 1718,
-      "jointGroupAnalyticallyEliminatedStarts": 2543,
-      "jointGroupStartsEvaluated": 30,
-      "technicalChainFullGridStarts": 398821,
-      "technicalChainAnalyticEligibleStarts": 286186,
-      "technicalChainAnalyticallyEliminatedStarts": 112635,
-      "technicalChainStartsEvaluated": 286173,
-      "technicalChainPreparedAuthorityBuilds": 9,
-      "technicalChainPreparedAuthorityHits": 9867,
-      "technicalChainFixedPlacedScansAvoided": 33156480,
-      "technicalChainDomainBuildMs": 122.12387399993895,
-      "technicalChainFinalPlacementCheckMs": 31.392627000735956,
-      "technicalChainCompleteCandidates": 276256,
-      "technicalChainActiveFrontierPeak": 5,
-      "technicalChainAlternativesDeferred": 262922,
-      "technicalChainAlternativesRevisited": 262879,
-      "technicalChainDeferredQueuePeak": 173,
-      "technicalChainDeferredPushes": 262922,
-      "technicalChainDeferredPops": 262879,
+      "jointGroupFullGridStarts": 5262,
+      "jointGroupAnalyticEligibleStarts": 2251,
+      "jointGroupAnalyticallyEliminatedStarts": 3011,
+      "jointGroupStartsEvaluated": 608,
+      "technicalChainFullGridStarts": 1,
+      "technicalChainAnalyticEligibleStarts": 1,
+      "technicalChainAnalyticallyEliminatedStarts": 0,
+      "technicalChainStartsEvaluated": 1,
+      "technicalChainPreparedAuthorityBuilds": 0,
+      "technicalChainPreparedAuthorityHits": 0,
+      "technicalChainFixedPlacedScansAvoided": 0,
+      "technicalChainDomainBuildMs": 0,
+      "technicalChainFinalPlacementCheckMs": 0,
+      "technicalChainCompleteCandidates": 1,
+      "technicalChainActiveFrontierPeak": 1,
+      "technicalChainAlternativesDeferred": 0,
+      "technicalChainAlternativesRevisited": 0,
+      "technicalChainDeferredQueuePeak": 0,
+      "technicalChainDeferredPushes": 0,
+      "technicalChainDeferredPops": 0,
+      "technicalChainMacroDomainQueries": 13,
+      "technicalChainMacroDomainCandidates": 1156,
+      "technicalChainMacroDomainCacheHits": 2,
+      "technicalChainMacroDomainCacheMisses": 11,
+      "technicalChainRootStartsConsidered": 1,
+      "technicalChainRootStartsFeasible": 1,
+      "technicalChainBranchesExplored": 1,
       "standaloneTaskSelections": 0,
-      "standaloneZeroAlternativePrunes": 276256,
-      "standaloneBacktracks": 276258,
+      "standaloneZeroAlternativePrunes": 107348,
+      "standaloneBacktracks": 107926,
       "standaloneMaximumDepth": 71,
       "standaloneCompleteLeafCount": 0,
       "coreCompleteLeavesEvaluated": 1,
       "coreLeavesRejectedByStandalone": 0,
       "standaloneSearchInvocations": 1,
       "standaloneBlockingTaskCounts": {
-        "task:10003": 276256,
-        "task:10268": 2,
-        "task:10267": 2,
-        "task:10269": 2
+        "task:10003": 107348,
+        "task:10020": 571,
+        "task:10026": 571,
+        "task:10059": 571,
+        "task:10066": 571,
+        "task:10075": 571,
+        "task:10091": 571,
+        "task:10097": 571,
+        "task:10119": 571,
+        "task:10126": 571,
+        "task:10134": 571,
+        "task:10141": 571,
+        "task:10156": 571,
+        "task:10178": 571,
+        "task:10185": 571,
+        "task:10212": 571,
+        "task:10232": 571,
+        "task:10251": 571,
+        "task:10242": 7
       },
       "standaloneForwardChecks": 3,
       "standaloneForwardStartChecks": 182,
@@ -743,18 +765,18 @@
       "selectedCompleteFingerprint": null,
       "firstCompleteQuality": null,
       "selectedCompleteQuality": null,
-      "setupBlockBranchesExplored": 501,
-      "setupBlockSearchInvocations": 1,
-      "setupBlockStartsExplored": 144,
-      "setupBlockCompleteCandidateCount": 188,
-      "setupBlockBudgetExhaustions": 0,
-      "setupBlockMatchingAttempts": 501,
-      "setupBlockMatchingSuccesses": 401,
-      "setupBlockPermutationBranchesAvoided": 3008,
+      "setupBlockBranchesExplored": 286095,
+      "setupBlockSearchInvocations": 572,
+      "setupBlockStartsExplored": 82231,
+      "setupBlockCompleteCandidateCount": 107360,
+      "setupBlockBudgetExhaustions": 1,
+      "setupBlockMatchingAttempts": 286095,
+      "setupBlockMatchingSuccesses": 228995,
+      "setupBlockPermutationBranchesAvoided": 1717748,
       "setupFamilyOrderCandidateCountsBySpaceId": {
         "space:3009": {
-          "setup-family:3009:estrellas>setup-family:3009:sillon": 94,
-          "setup-family:3009:sillon>setup-family:3009:estrellas": 94
+          "setup-family:3009:estrellas>setup-family:3009:sillon": 53680,
+          "setup-family:3009:sillon>setup-family:3009:estrellas": 53680
         }
       },
       "selectedSetupFamilySequenceBySpaceId": {},
@@ -771,9 +793,9 @@
       "totalesMatchingAttempts": 1,
       "totalesMatchingSuccesses": 1,
       "totalesAssignmentBranchesAvoided": 18,
-      "criticalResourceBranches": 30,
-      "criticalResourceMacroCandidates": 30,
-      "criticalResourceAssignments": 32,
+      "criticalResourceBranches": 608,
+      "criticalResourceMacroCandidates": 608,
+      "criticalResourceAssignments": 610,
       "macroUnitsSelected": 33,
       "macroSelectionOrder": [
         "RESOURCE_TASK:resource:task:10263",
@@ -788,6 +810,7 @@
         "ROUND_SYNCHRONIZATION:round:round-synchronization:a2-totales-rounds",
         "RESOURCE_TASK:resource:task:10001",
         "JOINT:joint:joint-group:joint.alfombra-roja.C06-C10",
+        "TECHNICAL_CHAIN:technical-chain:task:10268",
         "JOINT:joint:joint-group:joint.totales-post.C06-C10",
         "RESOURCE_TASK:resource:task:10071",
         "RESOURCE_TASK:resource:task:10115",
@@ -807,8 +830,7 @@
         "RESOURCE_TASK:resource:task:10217",
         "RESOURCE_TASK:resource:task:10255",
         "RESOURCE_TASK:resource:task:10242",
-        "SETUP_GROUP:setup:space:3009",
-        "TECHNICAL_CHAIN:technical-chain:task:10268"
+        "SETUP_GROUP:setup:space:3009"
       ],
       "macroSelectionReason": [
         "minimum-macro-domain",
@@ -858,7 +880,8 @@
         "round:round-synchronization:a2-totales-rounds": 48,
         "resource:task:10001": 56,
         "joint:joint-group:joint.alfombra-roja.C06-C10": 68,
-        "joint:joint-group:joint.totales-post.C06-C10": 81,
+        "technical-chain:task:10268": 74,
+        "joint:joint-group:joint.totales-post.C06-C10": 80,
         "resource:task:10071": 90,
         "resource:task:10115": 88,
         "resource:task:10130": 86,
@@ -877,8 +900,7 @@
         "resource:task:10217": 78,
         "resource:task:10255": 78,
         "resource:task:10242": 76,
-        "setup:space:3009": 188,
-        "technical-chain:task:10268": 95345
+        "setup:space:3009": 188
       },
       "macroSelectionSteps": [
         {
@@ -1212,7 +1234,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 259157,
+              "domainSize": 110,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -1542,7 +1564,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 218781,
+              "domainSize": 104,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -1862,7 +1884,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 211356,
+              "domainSize": 104,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -2172,7 +2194,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 211356,
+              "domainSize": 104,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -2472,7 +2494,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 205361,
+              "domainSize": 103,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -2762,7 +2784,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 169115,
+              "domainSize": 92,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -3042,7 +3064,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 141321,
+              "domainSize": 86,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -3312,7 +3334,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 116803,
+              "domainSize": 80,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -3572,7 +3594,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 105705,
+              "domainSize": 77,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -3822,7 +3844,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
+              "domainSize": 74,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -4060,7 +4082,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
+              "domainSize": 74,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -4288,7 +4310,7 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
+              "domainSize": 74,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
@@ -4298,7 +4320,7 @@
           ]
         },
         {
-          "selected": "joint:joint-group:joint.totales-post.C06-C10",
+          "selected": "technical-chain:task:10268",
           "reason": "minimum-macro-domain",
           "candidates": [
             {
@@ -4506,12 +4528,220 @@
             {
               "id": "technical-chain:task:10268",
               "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
+              "domainSize": 74,
               "domainMeasure": "hard-valid-top-level-macro-placements",
               "domainExact": true,
               "hardResourceAvailabilityMinutes": 2880,
               "totalDuration": 30,
               "affectedTaskCount": 3
+            }
+          ]
+        },
+        {
+          "selected": "joint:joint-group:joint.totales-post.C06-C10",
+          "reason": "minimum-macro-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 80,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 2
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 95,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 190,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 190
             }
           ]
         },
@@ -4710,16 +4940,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -4908,16 +5128,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -5096,16 +5306,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -5274,16 +5474,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -5442,16 +5632,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -5600,16 +5780,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -5748,16 +5918,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -5886,16 +6046,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6014,16 +6164,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6132,16 +6272,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6240,16 +6370,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 190
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6338,16 +6458,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6426,16 +6536,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6504,16 +6604,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6572,16 +6662,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6630,16 +6710,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6678,16 +6748,6 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
@@ -6716,22 +6776,12 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         },
         {
           "selected": "setup:space:3009",
-          "reason": "minimum-macro-domain",
+          "reason": "canonical-id-tiebreak",
           "candidates": [
             {
               "id": "setup:space:3009",
@@ -6744,42 +6794,16 @@
               "affectedTaskCount": 17,
               "structuralCandidateCount": 144,
               "matchingFeasibleCandidateCount": 188
-            },
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
-            }
-          ]
-        },
-        {
-          "selected": "technical-chain:task:10268",
-          "reason": "canonical-id-tiebreak",
-          "candidates": [
-            {
-              "id": "technical-chain:task:10268",
-              "kind": "TECHNICAL_CHAIN",
-              "domainSize": 95345,
-              "domainMeasure": "hard-valid-top-level-macro-placements",
-              "domainExact": true,
-              "hardResourceAvailabilityMinutes": 2880,
-              "totalDuration": 30,
-              "affectedTaskCount": 3
             }
           ]
         }
       ],
-      "ordinaryDomainQueries": 276256,
+      "ordinaryDomainQueries": 107348,
       "ordinaryAnalyticDomainBuilds": 1,
       "ordinaryAnalyticEligibleStarts": 0,
       "ordinaryExactStartEnumerations": 0,
       "ordinaryExactStartChecks": 0,
-      "ordinaryDomainCacheHits": 276255,
+      "ordinaryDomainCacheHits": 107347,
       "ordinaryDomainCacheMisses": 1,
       "ordinaryDomainRecomputations": 1,
       "ordinaryMRVSelections": 0,
@@ -6794,47 +6818,169 @@
           "setupFamilyId": null,
           "kind": "auxiliary"
         },
-        "task:10268": {
-          "taskId": "task:10268",
-          "participantId": null,
-          "spaceId": "space:3012",
-          "duration": 20,
-          "requiredResourceIds": [
-            "plan-resource:4002",
-            "plan-resource:4003",
-            "plan-resource:4006",
-            "plan-resource:4007"
-          ],
-          "setupFamilyId": null,
-          "kind": "technical"
-        },
-        "task:10267": {
-          "taskId": "task:10267",
-          "participantId": null,
-          "spaceId": "space:3019",
+        "task:10020": {
+          "taskId": "task:10020",
+          "participantId": "participant:202",
+          "spaceId": "space:3009",
           "duration": 5,
-          "requiredResourceIds": [
-            "plan-resource:4002",
-            "plan-resource:4003",
-            "plan-resource:4006",
-            "plan-resource:4007"
-          ],
-          "setupFamilyId": null,
-          "kind": "technical"
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
         },
-        "task:10269": {
-          "taskId": "task:10269",
-          "participantId": null,
-          "spaceId": "space:3022",
+        "task:10026": {
+          "taskId": "task:10026",
+          "participantId": "participant:202",
+          "spaceId": "space:3009",
           "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10059": {
+          "taskId": "task:10059",
+          "participantId": "participant:205",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10066": {
+          "taskId": "task:10066",
+          "participantId": "participant:205",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10075": {
+          "taskId": "task:10075",
+          "participantId": "participant:206",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10091": {
+          "taskId": "task:10091",
+          "participantId": "participant:207",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10097": {
+          "taskId": "task:10097",
+          "participantId": "participant:207",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10119": {
+          "taskId": "task:10119",
+          "participantId": "participant:209",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10126": {
+          "taskId": "task:10126",
+          "participantId": "participant:209",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10134": {
+          "taskId": "task:10134",
+          "participantId": "participant:210",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10141": {
+          "taskId": "task:10141",
+          "participantId": "participant:210",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10156": {
+          "taskId": "task:10156",
+          "participantId": "participant:211",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10178": {
+          "taskId": "task:10178",
+          "participantId": "participant:213",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10185": {
+          "taskId": "task:10185",
+          "participantId": "participant:213",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10212": {
+          "taskId": "task:10212",
+          "participantId": "participant:215",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10232": {
+          "taskId": "task:10232",
+          "participantId": "participant:217",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10251": {
+          "taskId": "task:10251",
+          "participantId": "participant:218",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10242": {
+          "taskId": "task:10242",
+          "participantId": "participant:218",
+          "spaceId": "space:3008",
+          "duration": 10,
           "requiredResourceIds": [
-            "plan-resource:4002",
-            "plan-resource:4003",
-            "plan-resource:4006",
-            "plan-resource:4007"
+            "plan-resource:4001"
           ],
           "setupFamilyId": null,
-          "kind": "technical"
+          "kind": "auxiliary"
         }
       },
       "participantMealBranchesExplored": 57,

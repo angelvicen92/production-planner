@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, TechnicalChainPolicy } from "./contracts";
 import { performance } from "node:perf_hooks";
 import { canPlaceTask, exactTaskStartDomain, prepareTaskPlacementAuthority } from "./placement";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
@@ -18,7 +18,10 @@ export function orderedTechnicalChainMembers(tasks:Task[]):Task[] { const p=buil
 export const technicalChainRoot=(tasks:Task[])=>orderedTechnicalChainMembers(tasks)[0];
 export const technicalChainRootTaskId=(tasks:Task[])=>technicalChainRoot(tasks)?.id;
 export const technicalChainWorkItemKey=(rootTaskId:string)=>`technical-chain:${rootTaskId}`;
-export function getTechnicalChains(tasks:Task[]):Task[][] { const tech=getTechnicalTasks(tasks),dep=buildTechnicalDependentMap(tech),byId=new Map(tech.map(t=>[t.id,t]));const roots=tech.filter(t=>t.dependencies.length===0&&(dep.get(t.id)?.length??0)>0).sort((a,b)=>a.id.localeCompare(b.id));return roots.map(r=>{const out:Task[]=[];let x:Task|undefined=r;while(x){out.push(x);const n=dep.get(x.id)?.[0];x=n?byId.get(n):undefined;}return out;}); }
+export function getTechnicalChains(tasks:Task[],policies:readonly TechnicalChainPolicy[]=[]):Task[][] { const tech=getTechnicalTasks(tasks),byId=new Map(tech.map(t=>[t.id,t]));
+  const explicit=[...policies].sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>policy.orderedTaskIds.map(id=>byId.get(id)).filter((task):task is Task=>Boolean(task))).filter(chain=>chain.length>=2);
+  const owned=new Set(explicit.flatMap(chain=>chain.map(task=>task.id))),dep=buildTechnicalDependentMap(tech),roots=tech.filter(t=>!owned.has(t.id)&&t.dependencies.length===0&&(dep.get(t.id)?.length??0)>0).sort((a,b)=>a.id.localeCompare(b.id));
+  return [...explicit,...roots.map(r=>{const out:Task[]=[];let x:Task|undefined=r;while(x&&!owned.has(x.id)){out.push(x);const n=dep.get(x.id)?.[0];x=n?byId.get(n):undefined;}return out;}).filter(chain=>chain.length>=2)]; }
 export function technicalChainForTask(tasks:Task[],id:string):Task[]|undefined{return getTechnicalChains(tasks).find(c=>c.some(t=>t.id===id));}
 export const isTechnicalChainMember=(tasks:Task[],id:string)=>technicalChainForTask(tasks,id)!==undefined;
 export const technicalChainResourceIds=(tasks:Task[])=>[...new Set(tasks.flatMap(t=>t.requiredResourceIds??[]))].sort();
@@ -55,6 +58,38 @@ export interface TechnicalChainExplorer {
   readonly exhausted: boolean;
   readonly diagnostics: TechnicalChainDiagnostics;
   nextCandidate(): TechnicalChainCandidate | null;
+}
+
+const explicitPolicyFor=(problem:PlannerNextProblem,tasks:Task[]):TechnicalChainPolicy|undefined=>{
+  const ids=tasks.map(task=>task.id);
+  return problem.technicalChains?.find(policy=>policy.orderedTaskIds.length===ids.length&&policy.orderedTaskIds.every((id,index)=>id===ids[index]));
+};
+
+function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,ordered:Task[],policy:TechnicalChainPolicy,
+  placed:ScheduledTask[],allowance:number,meals:ScheduledSpaceMeal[]):TechnicalChainExplorer{
+  const diagnostics:TechnicalChainDiagnostics={startsExplored:0,expansions:0,completeCandidatesGenerated:0,completeCandidatesYielded:0,
+    maximumPartialStatesPerDepth:0,activeFrontierPeak:1,fullGridStarts:0,analyticEligibleStarts:0,analyticallyEliminatedStarts:0,
+    startsEvaluated:0,alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
+    deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,preparedAuthorityBuilds:0,preparedAuthorityHits:0,
+    fixedPlacedScansAvoided:0,domainBuildMs:0,finalPlacementCheckMs:0};
+  const duration=technicalChainProductiveDuration(ordered);let nextStart=problem.day.start,consumed=0,exhausted=false;
+  return {get consumed(){return consumed},get exhausted(){return exhausted},diagnostics,nextCandidate(){
+    while(nextStart+duration<=problem.day.end){const rootStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.fullGridStarts+=1;
+      if(consumed>=allowance){exhausted=true;return null;}consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
+      let cursor=rootStart,cost=0;const scheduled:ScheduledTask[]=[];
+      for(const task of ordered){
+        if(policy.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))){scheduled.length=0;break;}
+        if(!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals)){scheduled.length=0;break;}
+        const item={...task,start:cursor,end:cursor+task.duration};scheduled.push(item);cursor=item.end;
+        cost+=[...new Set(task.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,[...placed,...scheduled.slice(0,-1)],item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);
+      }
+      if(scheduled.length!==ordered.length)continue;
+      diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;
+      diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;
+      return {tasks:scheduled,cost,rootTaskId:ordered[0]!.id,start:rootStart,end:cursor};
+    }
+    diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;return null;
+  }};
 }
 
 type Partial = { tasks: ScheduledTask[]; cost: number; rankKey: string };
@@ -108,7 +143,8 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
   allowance:number,startDomainMode:TechnicalChainStartDomainMode="ANALYTIC_DOMAIN",
   scheduledSpaceMeals:ScheduledSpaceMeal[]=[],deferredQueueMode:TechnicalChainDeferredQueueMode="INCREMENTAL_HEAP",
   measureTimings=false,placementAuthorityMode:TechnicalChainPlacementAuthorityMode="PREPARED_AUTHORITY"):TechnicalChainExplorer {
-  const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];
+  const policy=explicitPolicyFor(problem,chainTasks),ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];
+  if(policy?.adjacency==="REQUIRED")return createContiguousTechnicalChainExplorer(problem,ordered,policy,placed,allowance,scheduledSpaceMeals);
   const preparedAuthorities=placementAuthorityMode==="PREPARED_AUTHORITY"
     ?ordered.map(task=>prepareTaskPlacementAuthority(problem,task,placed,scheduledSpaceMeals)):[];
   const diagnostics:TechnicalChainDiagnostics={startsExplored:0,expansions:0,completeCandidatesGenerated:0,

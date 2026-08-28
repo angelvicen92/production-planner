@@ -71,6 +71,8 @@ export interface ExactItinerantPlanEvidence {
   technicalChainDeferredQueuePeak:number;
   technicalChainDeferredPushes:number;
   technicalChainDeferredPops:number;
+  technicalChainMacroDomainQueries:number;technicalChainMacroDomainCandidates:number;technicalChainMacroDomainCacheHits:number;technicalChainMacroDomainCacheMisses:number;
+  technicalChainRootStartsConsidered:number;technicalChainRootStartsFeasible:number;technicalChainBranchesExplored:number;
   standaloneStartChecks: number;
   standaloneTaskSelections: number;
   standaloneZeroAlternativePrunes: number;
@@ -345,7 +347,7 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
 function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
   const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
   void coreIds;
-  const technicalChainIds = new Set(getTechnicalChains(pending).flat().map(({ id }) => id));
+  const technicalChainIds = new Set(getTechnicalChains(pending,problem.technicalChains).flat().map(({ id }) => id));
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined;
@@ -529,7 +531,7 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
 };
 const dynamicTransportIds = transportTaskIds(problem);
 const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
-const technicalItems = getTechnicalChains(pending).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
+const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
@@ -563,6 +565,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   const authoritySignatures=unit.tasks.map((task)=>{let staticDomain=staticMacroDomains.get(task.id);if(!staticDomain){staticDomain=standaloneForwardStaticDomain(problem,task,coreMeals);staticMacroDomains.set(task.id,staticDomain);}return standaloneForwardAuthoritySignature(problem,task,allPlaced,coreMeals,staticDomain,"STATIC_DOMAIN");}).sort();
   const macroSignature=causalHash({id:unit.id,authoritySignatures,preparations:[...preparations].sort(byId),roundPreparations:[...roundPreparations].sort(byId)});
   let measure=macroDomainCache.get(macroSignature);
+  if(unit.kind==="TECHNICAL_CHAIN"){evidence.technicalChainMacroDomainQueries+=1;if(measure)evidence.technicalChainMacroDomainCacheHits+=1;else evidence.technicalChainMacroDomainCacheMisses+=1;}
   if(!measure){
     if(unit.kind==="RESOURCE_TASK")measure={domainSize:taskDomain(unit.tasks[0]!)};
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
@@ -571,6 +574,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
     else measure={domainSize:probeExactTechnicalChainMacroDomain(problem,unit.tasks,allPlaced,technicalChainStartDomainMode,coreMeals)};
     if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);macroDomainCache.set(macroSignature,measure);
   }
+  if(unit.kind==="TECHNICAL_CHAIN")evidence.technicalChainMacroDomainCandidates+=measure.domainSize;
   const resourceIds = [...new Set(unit.tasks.flatMap((task) => task.requiredResourceIds ?? []))];
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
@@ -607,7 +611,7 @@ const recordMacroDecision = (depth: number, selected: ReturnType<typeof macroCon
   })).sort((left, right) => left.id.localeCompare(right.id)) });
 };
 const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalChainExplorer>, accounted: {
-  consumed:number;full:number;eligible:number;eliminated:number;complete:number;deferred:number;revisited:number;pushes:number;pops:number;builds:number;hits:number;scans:number;domainMs:number;checkMs:number;
+  consumed:number;full:number;eligible:number;eliminated:number;complete:number;deferred:number;revisited:number;pushes:number;pops:number;builds:number;hits:number;scans:number;domainMs:number;checkMs:number;rootStarts:number;
 }): boolean => {
   const diagnostics=explorer.diagnostics;
   const consumedDelta=explorer.consumed-accounted.consumed;
@@ -628,11 +632,14 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
   evidence.technicalChainDeferredQueuePeak=Math.max(evidence.technicalChainDeferredQueuePeak,diagnostics.deferredQueuePeak);
   evidence.technicalChainDeferredPushes+=diagnostics.deferredPushes-accounted.pushes;
   evidence.technicalChainDeferredPops+=diagnostics.deferredPops-accounted.pops;
+  evidence.technicalChainRootStartsConsidered+=diagnostics.startsExplored-accounted.rootStarts;
+  evidence.technicalChainRootStartsFeasible+=diagnostics.completeCandidatesYielded-accounted.complete;
+  evidence.technicalChainBranchesExplored+=consumedDelta;
   Object.assign(accounted,{consumed:explorer.consumed,full:diagnostics.fullGridStarts,eligible:diagnostics.analyticEligibleStarts,
     eliminated:diagnostics.analyticallyEliminatedStarts,complete:diagnostics.completeCandidatesYielded,
     deferred:diagnostics.alternativesDeferred,revisited:diagnostics.alternativesRevisited,pushes:diagnostics.deferredPushes,
     pops:diagnostics.deferredPops,builds:diagnostics.preparedAuthorityBuilds,hits:diagnostics.preparedAuthorityHits,
-    scans:diagnostics.fixedPlacedScansAvoided,domainMs:diagnostics.domainBuildMs,checkMs:diagnostics.finalPlacementCheckMs});
+    scans:diagnostics.fixedPlacedScansAvoided,domainMs:diagnostics.domainBuildMs,checkMs:diagnostics.finalPlacementCheckMs,rootStarts:diagnostics.startsExplored});
   return true;
 };
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
@@ -691,8 +698,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     return explored.outcome;
   } else {
     const explorer=createTechnicalChainExplorer(problem,unit.tasks,[...coreTasks,...placed],Math.max(0,ledger.limit-ledger.branchesExplored),
-      technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",true);
-    const accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,builds:0,hits:0,scans:0,domainMs:0,checkMs:0};
+      technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",false);
+    const accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,builds:0,hits:0,scans:0,domainMs:0,checkMs:0,rootStarts:0};
     while(true){const candidate=explorer.nextCandidate();if(!mergeTechnicalDiagnostics(explorer,accounted))return "BUDGET_EXHAUSTED";
       if(explorer.exhausted){ledger.consume("STANDALONE");return "BUDGET_EXHAUSTED";}
       if(!candidate)break;const child=recurse(candidate.tasks);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
@@ -735,6 +742,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainCompleteCandidates:0,technicalChainActiveFrontierPeak:0,
     technicalChainAlternativesDeferred:0,technicalChainAlternativesRevisited:0,
     technicalChainDeferredQueuePeak:0,technicalChainDeferredPushes:0,technicalChainDeferredPops:0,
+    technicalChainMacroDomainQueries:0,technicalChainMacroDomainCandidates:0,technicalChainMacroDomainCacheHits:0,technicalChainMacroDomainCacheMisses:0,
+    technicalChainRootStartsConsidered:0,technicalChainRootStartsFeasible:0,technicalChainBranchesExplored:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
