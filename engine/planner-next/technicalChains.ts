@@ -199,6 +199,15 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
   return explorer;
 }
 
+/** Exact count of the complete candidates exposed by the canonical incremental explorer. */
+export function probeExactTechnicalChainMacroDomain(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],
+  startDomainMode:TechnicalChainStartDomainMode="ANALYTIC_DOMAIN",scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):number{
+  const explorer=createTechnicalChainExplorer(problem,chainTasks,placed,Number.POSITIVE_INFINITY,startDomainMode,scheduledSpaceMeals);
+  let count=0;
+  while(explorer.nextCandidate())count+=1;
+  return count;
+}
+
 function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],allowance:number,
   mode:TechnicalChainMode,probeLimit:number,scheduledSpaceMeals:ScheduledSpaceMeal[]):TechnicalChainCandidateResult {
   const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;

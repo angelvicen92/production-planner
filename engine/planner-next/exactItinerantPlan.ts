@@ -11,7 +11,7 @@ import {
   type ExactFutureFeasibilityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
+import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
@@ -25,10 +25,10 @@ import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerpri
 import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
-import { exploreExactRoundSynchronizationPolicy, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
+import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
-import { createTechnicalChainExplorer, getTechnicalChains, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
+import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
@@ -233,7 +233,7 @@ export interface ExactItinerantPlanEvidence {
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
   macroDomainSizes: Record<string, number>;
-  macroSelectionSteps: Array<{ selected: string; reason: string; candidates: Array<{ id: string; kind: string; domainSize: number; hardResourceAvailabilityMinutes: number }> }>;
+  macroSelectionSteps: Array<{ selected: string; reason: string; candidates: Array<{ id: string; kind: string; domainSize: number; domainMeasure: string; domainExact: boolean; hardResourceAvailabilityMinutes: number; totalDuration: number; affectedTaskCount: number; structuralCandidateCount?: number; matchingFeasibleCandidateCount?: number }> }>;
   ordinaryDomainQueries: number;
   ordinaryAnalyticDomainBuilds: number;
   ordinaryAnalyticEligibleStarts: number;
@@ -382,7 +382,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
-  const macroDomainCache = new Map<string, number>();
+  const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
@@ -549,35 +549,46 @@ const resourceAvailabilityMinutes = (tasks: readonly Task[]): number => {
   return ids.flatMap((id) => problem.resources.find((resource) => resource.id === id)?.availability ?? [])
     .reduce((sum, interval) => sum + interval.end - interval.start, 0);
 };
-const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[]) => {
+const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], roundPreparations: ScheduledRoundPreparation[] = []) => {
   const allPlaced = [...coreTasks, ...placed];
-  const taskDomains = unit.tasks.map((task) => {
+  const taskDomain = (task:Task) => {
     let staticDomain=staticMacroDomains.get(task.id);
     if(!staticDomain){staticDomain=standaloneForwardStaticDomain(problem,task,coreMeals);staticMacroDomains.set(task.id,staticDomain);}
     const signature=standaloneForwardAuthoritySignature(problem,task,allPlaced,coreMeals,staticDomain,"STATIC_DOMAIN");
-    const cached=macroDomainCache.get(signature);if(cached!==undefined)return cached;
+    const cached=macroDomainCache.get(`task:${signature}`);if(cached!==undefined)return cached.domainSize;
     const count=standaloneForwardDynamicDomain(problem,task,allPlaced,staticDomain).eligibleStartCount;
     if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);
-    macroDomainCache.set(signature,count);return count;
-  });
-  // This is an exact per-member dynamic-domain bound. It is used only for ordering;
-  // selected-unit generation remains authoritative and is the only source of zero-domain pruning.
-  const domainSize = Math.min(...taskDomains);
+    macroDomainCache.set(`task:${signature}`,{domainSize:count});return count;
+  };
+  const authoritySignatures=unit.tasks.map((task)=>{let staticDomain=staticMacroDomains.get(task.id);if(!staticDomain){staticDomain=standaloneForwardStaticDomain(problem,task,coreMeals);staticMacroDomains.set(task.id,staticDomain);}return standaloneForwardAuthoritySignature(problem,task,allPlaced,coreMeals,staticDomain,"STATIC_DOMAIN");}).sort();
+  const macroSignature=causalHash({id:unit.id,authoritySignatures,preparations:[...preparations].sort(byId),roundPreparations:[...roundPreparations].sort(byId)});
+  let measure=macroDomainCache.get(macroSignature);
+  if(!measure){
+    if(unit.kind==="RESOURCE_TASK")measure={domainSize:taskDomain(unit.tasks[0]!)};
+    else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
+    else if(unit.kind==="ROUND_SYNCHRONIZATION")measure=probeExactRoundSynchronizationMacroDomain(problem,unit.policy,allPlaced,preparations,roundPreparations,coreMeals);
+    else if(unit.kind==="SETUP_GROUP")measure=probeExactSetupMacroDomain(problem,unit.tasks,allPlaced,preparations,coreMeals);
+    else measure={domainSize:probeExactTechnicalChainMacroDomain(problem,unit.tasks,allPlaced,technicalChainStartDomainMode,coreMeals)};
+    if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);macroDomainCache.set(macroSignature,measure);
+  }
   const resourceIds = [...new Set(unit.tasks.flatMap((task) => task.requiredResourceIds ?? []))];
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
     : unit.kind === "JOINT" ? unit.tasks.length : 0;
-  return { unit, id: unit.id, domainSize, hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
+  return { unit, id: unit.id, domainSize:measure.domainSize, domainMeasure:"hard-valid-top-level-macro-placements", domainExact:true,
+    structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
+    hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
     exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
     totalDuration: unit.tasks.reduce((sum, task) => sum + task.duration, 0), affectedTaskCount: unit.tasks.length };
 };
 const selectionReason = (selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): string => {
   const peers = candidates.filter(({ id }) => id !== selected.id);
-  if (peers.some((item) => item.domainSize !== selected.domainSize)) return "minimum-domain";
+  if (peers.some((item) => item.domainSize !== selected.domainSize)) return "minimum-macro-domain";
   if (peers.some((item) => item.hardResourceAvailabilityMinutes !== selected.hardResourceAvailabilityMinutes)) return "resource-availability-tiebreak";
   if (peers.some((item) => item.exclusiveResourceCount !== selected.exclusiveResourceCount)) return "exclusive-resource-tiebreak";
   if (peers.some((item) => item.synchronizedSlotCount !== selected.synchronizedSlotCount)) return "synchronization-tiebreak";
   if (peers.some((item) => item.totalDuration !== selected.totalDuration)) return "duration-tiebreak";
+  if (peers.some((item) => item.affectedTaskCount !== selected.affectedTaskCount)) return "affected-task-count-tiebreak";
   return "canonical-id-tiebreak";
 };
 const recordMacroDecision = (depth: number, selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): void => {
@@ -589,7 +600,10 @@ const recordMacroDecision = (depth: number, selected: ReturnType<typeof macroCon
   evidence.macroSelectionReason.push(reason);
   evidence.macroSelectionSteps.push({ selected: selected.id, reason, candidates: candidates.map((candidate) => ({
     id: candidate.id, kind: candidate.unit.kind, domainSize: candidate.domainSize,
-    hardResourceAvailabilityMinutes: candidate.hardResourceAvailabilityMinutes,
+    domainMeasure:candidate.domainMeasure,domainExact:candidate.domainExact,
+    hardResourceAvailabilityMinutes: candidate.hardResourceAvailabilityMinutes,totalDuration:candidate.totalDuration,
+    affectedTaskCount:candidate.affectedTaskCount,structuralCandidateCount:candidate.structuralCandidateCount,
+    matchingFeasibleCandidateCount:candidate.matchingFeasibleCandidateCount,
   })).sort((left, right) => left.id.localeCompare(right.id)) });
 };
 const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalChainExplorer>, accounted: {
@@ -624,7 +638,7 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
   roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
   if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder);
-  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed));
+  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
   const selected = selectMostConstrainedUnit(constrained)!;
   recordMacroDecision(depth, selected, constrained);
   const unit = selected.unit;
@@ -679,7 +693,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     const explorer=createTechnicalChainExplorer(problem,unit.tasks,[...coreTasks,...placed],Math.max(0,ledger.limit-ledger.branchesExplored),
       technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",true);
     const accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,builds:0,hits:0,scans:0,domainMs:0,checkMs:0};
-    while(true){const candidate=explorer.nextCandidate();if(!mergeTechnicalDiagnostics(explorer,accounted)||explorer.exhausted)return "BUDGET_EXHAUSTED";
+    while(true){const candidate=explorer.nextCandidate();if(!mergeTechnicalDiagnostics(explorer,accounted))return "BUDGET_EXHAUSTED";
+      if(explorer.exhausted){ledger.consume("STANDALONE");return "BUDGET_EXHAUSTED";}
       if(!candidate)break;const child=recurse(candidate.tasks);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
   }
   for (const task of unit.tasks) recordBlockingTask(task);

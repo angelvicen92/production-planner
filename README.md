@@ -2859,3 +2859,7 @@ Las operaciones individuales con recursos explícitos se incorporan a la fronter
 ### A2-FULL-014 — MRV global y dinámico entre recursos críticos, Totales y setup · 2026-08-27 21:35 UTC
 
 Planner Next sustituye las fases macro rígidas por una frontera recursiva común: operaciones conjuntas, cadenas técnicas, tareas con recursos explícitos, rondas sincronizadas y grupos de setup compiten mediante constrainedness recalculado después de cada placement. La selección sólo ordena el backtracking; las autoridades canónicas, los matchings exactos y el presupuesto compartido conservan la semántica hard.
+
+### A2-FULL-015 — Dominios macro comparables para MRV global · 2026-08-28 08:24 UTC
+
+MRV compara ahora alternativas estructurales hard-valid de macrocolocación: cada unidad compuesta usa el dominio común o completo que realmente exploraría su generador, en vez del menor dominio individual de uno de sus miembros. El cambio conserva las autoridades y matchings exactos existentes y no introduce nuevas reglas hard.

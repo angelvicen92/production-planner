@@ -119,12 +119,21 @@ test("global macro MRV lets setup beat a broader synchronized round unit", () =>
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.match(result.evidence.macroSelectionOrder[0]!, /^SETUP_GROUP:/);
   assert.ok(result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "ROUND_SYNCHRONIZATION"));
+  const setup = result.evidence.macroSelectionSteps[0]!.candidates.find(({ kind }) => kind === "SETUP_GROUP")!;
+  assert.equal(setup.domainSize, 1);
+  assert.equal(setup.domainMeasure, "hard-valid-top-level-macro-placements");
+  assert.equal(setup.domainExact, true);
+  assert.equal(setup.matchingFeasibleCandidateCount, 1);
 });
 
 test("global macro MRV lets narrow rounds beat a flexible explicit-resource task", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
+  const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
+    result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
+  assert.equal(round.domainSize, 1);
+  assert.ok(resource.domainSize > round.domainSize);
 });
 
 test("global macro MRV lets a scarce resource task beat broader rounds", () => {
@@ -200,6 +209,17 @@ test("joint common domain analytically applies participant, space, resource, dep
   assert.deepEqual([...standaloneJointGroupStartDomain(reversed, [...members].reverse(), [...placed].reverse()).starts()], [70]);
   placed.push(blocker("empty", 70, 80, { spaceId: "joint", participantId: "empty" }));
   assert.equal(standaloneJointGroupStartDomain(input, members, placed).eligibleStartCount, 0);
+});
+
+test("global macro MRV measures a joint unit by its exact common domain", () => {
+  const input = problem([
+    { ...auxiliary("joint-wide-left", "a", [{ start: 0, end: 60 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+    { ...auxiliary("joint-wide-right", "b", [{ start: 50, end: 110 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },
+  ]);
+  const result = constructExactItinerantPlan(input);
+  const joint = result.evidence.macroSelectionSteps[0]!.candidates.find(({ kind }) => kind === "JOINT")!;
+  assert.equal(joint.domainSize, 1);
+  assert.equal(joint.domainExact, true);
 });
 
 test("EXACT_CONSTRUCTIVE schedules a technical dependency chain atomically", () => {
