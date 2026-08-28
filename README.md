@@ -2847,3 +2847,15 @@ Los nombres legacy `arrivalGroupingTarget` y `departureGroupingTarget` se interp
 ### A2-FULL-011 — target de transporte desacoplado del mínimo · 2026-08-27 08:47 UTC
 
 Planner Next interpreta `arrivalGroupingTarget` y `departureGroupingTarget` exclusivamente como tamaños objetivo: los grupos terminales son contiguos, respetan capacidad y admiten residuos menores (`[3,3,1]`, `[3,3,2]`) sin convertir el target en una restricción hard mínima. IN/OUT permanecen fuera de la búsqueda sustantiva temprana.
+
+### A2-FULL-012 — Planificación por constrainedness y macroasignación de recursos críticos/Totales/setup · 2026-08-27 12:40 UTC
+
+Planner Next incorpora un selector MRV determinista e invariante al orden y un matching bipartito exacto compartido para macro-slots. Las operaciones hard acopladas se exploran antes de las rondas sincronizadas; Totales y los bloques de setup asignan participantes mediante caminos aumentantes en lugar de enumerar permutaciones internas. La heurística sólo ordena decisiones y conserva `canPlaceTask`, validación final, backtracking temporal y el presupuesto compartido como autoridades.
+
+### A2-FULL-013 — Integración real de MRV y domains incrementales para macro/standalone scheduling · 2026-08-27 17:01 UTC
+
+Las operaciones individuales con recursos explícitos se incorporan a la frontera estructurada mediante el contrato canónico `requiredResourceIds`, sin inferencias nominales. La selección ordinary usa dominios analíticos exactos para MRV, refina con `canPlaceTask` sólo la tarea seleccionada y contabiliza las alternativas recorridas —no las inspecciones administrativas— como ramas del árbol.
+
+### A2-FULL-014 — MRV global y dinámico entre recursos críticos, Totales y setup · 2026-08-27 21:35 UTC
+
+Planner Next sustituye las fases macro rígidas por una frontera recursiva común: operaciones conjuntas, cadenas técnicas, tareas con recursos explícitos, rondas sincronizadas y grupos de setup compiten mediante constrainedness recalculado después de cada placement. La selección sólo ordena el backtracking; las autoridades canónicas, los matchings exactos y el presupuesto compartido conservan la semántica hard.

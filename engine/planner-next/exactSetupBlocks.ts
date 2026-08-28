@@ -18,6 +18,7 @@ import {
   spaceOccupations,
 } from "./setupPreparation";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
+import { findCanonicalPerfectMatching } from "./macroScheduling";
 
 export interface ExactSetupBlockCandidate {
   tasks: ScheduledTask[];
@@ -31,6 +32,9 @@ export interface ExactSetupBlockGenerationEvidence {
   maximumDepth: number;
   completeCandidateCount: number;
   familyOrderCandidateCounts: Record<string, number>;
+  matchingAttempts: number;
+  matchingSuccesses: number;
+  permutationBranchesAvoided: number;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -77,6 +81,9 @@ export function generateExactSetupBlockCandidates(
   let branchesExplored = 0;
   let startsExplored = 0;
   let maximumDepth = 0;
+  let matchingAttempts = 0;
+  let matchingSuccesses = 0;
+  let permutationBranchesAvoided = 0;
 
   const finish = (
     outcome: ExactSetupBlockGenerationResult["outcome"],
@@ -94,6 +101,9 @@ export function generateExactSetupBlockCandidates(
         maximumDepth,
         completeCandidateCount: complete.length,
         familyOrderCandidateCounts: { ...familyOrderCandidateCounts },
+        matchingAttempts,
+        matchingSuccesses,
+        permutationBranchesAvoided,
       },
     };
   };
@@ -133,23 +143,22 @@ export function generateExactSetupBlockCandidates(
       partialTasks,
       policy,
     );
-    for (const task of eligible) {
+    const eligibleFamilies = [...new Set(eligible.map(({ setupFamilyId }) => setupFamilyId!))].sort();
+    for (const familyId of eligibleFamilies) {
       if (!ledger.consume("STANDALONE")) {
         exhausted = true;
         return;
       }
       branchesExplored += 1;
-
-      const firstOfFamily = !partialTasks.some(
-        (placedTask) => placedTask.setupFamilyId === task.setupFamilyId,
-      );
+      const familyTasks = remaining.filter((task) => task.setupFamilyId === familyId).sort(byId);
+      const firstOfFamily = !partialTasks.some((placedTask) => placedTask.setupFamilyId === familyId);
       const hasPriorFamily = partialTasks.some(
         (placedTask) => placedTask.setupFamilyId !== undefined,
       );
-      const duration = task.setupFamilyId !== undefined && firstOfFamily
+      const duration = firstOfFamily
         ? setupPreparationDuration(
           policy,
-          task.setupFamilyId,
+          familyId,
           hasPriorFamily,
         )
         : undefined;
@@ -158,7 +167,7 @@ export function generateExactSetupBlockCandidates(
         ? undefined
         : createSetupPreparation(
           spaceId,
-          task.setupFamilyId!,
+          familyId,
           1,
           duration,
           cursor,
@@ -190,22 +199,35 @@ export function generateExactSetupBlockCandidates(
         )
       )) continue;
 
-      if (!canPlaceTask(problem, task, start, priorTasks, meals)) continue;
-      const scored = scoreAuxiliaryTask(
-        problem,
-        task,
-        start,
-        priorTasks,
-      );
+      const durations = [...new Set(familyTasks.map((task) => task.duration))];
+      if (durations.length !== 1) continue;
+      const slotIds = familyTasks.map((_task, index) => `${familyId}:${index}`);
+      matchingAttempts += 1;
+      const matching = findCanonicalPerfectMatching(slotIds, familyTasks.map(({ id }) => id), (taskId, slotId) => {
+        const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
+        const task = familyTasks.find(({ id }) => id === taskId)!;
+        return canPlaceTask(problem, task, start + index * task.duration, priorTasks, meals);
+      });
+      if (!matching) continue;
+      const scheduledFamily = [...matching].map(([slotId, taskId]) => {
+        const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
+        const task = familyTasks.find(({ id }) => id === taskId)!;
+        return scoreAuxiliaryTask(problem, task, start + index * task.duration, priorTasks).scheduled;
+      }).sort((a, b) => a.start - b.start || byId(a, b));
+      if (scheduledFamily.some((task) => !canPlaceTask(problem, task, task.start,
+        [...priorTasks, ...scheduledFamily.filter(({ id }) => id !== task.id)], meals))) continue;
+      matchingSuccesses += 1;
+      permutationBranchesAvoided += Math.max(0, familyTasks.length - 1);
       visit(
         canonicalStart,
-        remaining.filter(({ id }) => id !== task.id),
-        [...partialTasks, scored.scheduled],
+        remaining.filter((task) => task.setupFamilyId !== familyId),
+        [...partialTasks, ...scheduledFamily],
         preparation
           ? [...partialPreparations, preparation]
           : partialPreparations,
-        cost + scored.cost,
-        depth + 1,
+        cost + scheduledFamily.reduce((sum, task) => sum + scoreAuxiliaryTask(problem,
+          familyTasks.find(({ id }) => id === task.id)!, task.start, priorTasks).cost, 0),
+        depth + scheduledFamily.length,
       );
       if (exhausted) return;
     }

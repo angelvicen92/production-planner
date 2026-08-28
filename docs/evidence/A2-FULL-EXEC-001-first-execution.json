@@ -57,7 +57,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "a00c3a96a3bec8d6904be3fb3a5ba58903e52131abb0cc17599260ab83e389d6"
+    "problemFingerprint": "d2bca56dc63c3c39f9425728f84349b39478b9549adb5efddae53d1f264195c0"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -279,35 +279,56 @@
       "coreBranches": 13056,
       "standaloneBranches": 286944,
       "standaloneStartChecks": 0,
-      "jointGroupFullGridStarts": 287,
-      "jointGroupAnalyticEligibleStarts": 175,
-      "jointGroupAnalyticallyEliminatedStarts": 112,
-      "jointGroupStartsEvaluated": 2,
-      "technicalChainFullGridStarts": 236,
-      "technicalChainAnalyticEligibleStarts": 209,
-      "technicalChainAnalyticallyEliminatedStarts": 27,
-      "technicalChainStartsEvaluated": 209,
+      "jointGroupFullGridStarts": 5269,
+      "jointGroupAnalyticEligibleStarts": 2254,
+      "jointGroupAnalyticallyEliminatedStarts": 3015,
+      "jointGroupStartsEvaluated": 607,
+      "technicalChainFullGridStarts": 204,
+      "technicalChainAnalyticEligibleStarts": 143,
+      "technicalChainAnalyticallyEliminatedStarts": 61,
+      "technicalChainStartsEvaluated": 143,
       "technicalChainPreparedAuthorityBuilds": 3,
       "technicalChainPreparedAuthorityHits": 3,
-      "technicalChainFixedPlacedScansAvoided": 14204,
-      "technicalChainDomainBuildMs": 0.12776300000041374,
-      "technicalChainFinalPlacementCheckMs": 1.2452650000068388,
+      "technicalChainFixedPlacedScansAvoided": 10658,
+      "technicalChainDomainBuildMs": 0.15766599999915343,
+      "technicalChainFinalPlacementCheckMs": 0.12237499999901047,
       "technicalChainCompleteCandidates": 1,
       "technicalChainActiveFrontierPeak": 5,
-      "technicalChainAlternativesDeferred": 202,
+      "technicalChainAlternativesDeferred": 136,
       "technicalChainAlternativesRevisited": 0,
-      "technicalChainDeferredQueuePeak": 202,
-      "technicalChainDeferredPushes": 202,
+      "technicalChainDeferredQueuePeak": 136,
+      "technicalChainDeferredPushes": 136,
       "technicalChainDeferredPops": 0,
       "standaloneTaskSelections": 0,
-      "standaloneZeroAlternativePrunes": 0,
-      "standaloneBacktracks": 0,
-      "standaloneMaximumDepth": 0,
+      "standaloneZeroAlternativePrunes": 107160,
+      "standaloneBacktracks": 107737,
+      "standaloneMaximumDepth": 71,
       "standaloneCompleteLeafCount": 0,
       "coreCompleteLeavesEvaluated": 1,
       "coreLeavesRejectedByStandalone": 0,
       "standaloneSearchInvocations": 1,
-      "standaloneBlockingTaskCounts": {},
+      "standaloneBlockingTaskCounts": {
+        "task:10003": 107160,
+        "task:10020": 570,
+        "task:10026": 570,
+        "task:10059": 570,
+        "task:10066": 570,
+        "task:10075": 570,
+        "task:10091": 570,
+        "task:10097": 570,
+        "task:10119": 570,
+        "task:10126": 570,
+        "task:10134": 570,
+        "task:10141": 570,
+        "task:10156": 570,
+        "task:10178": 570,
+        "task:10185": 570,
+        "task:10212": 570,
+        "task:10232": 570,
+        "task:10251": 570,
+        "task:10085": 7,
+        "task:10144": 7
+      },
       "standaloneForwardChecks": 3,
       "standaloneForwardStartChecks": 182,
       "standaloneForwardWitnessesFound": 220,
@@ -738,26 +759,3901 @@
       "selectedCompleteFingerprint": null,
       "firstCompleteQuality": null,
       "selectedCompleteQuality": null,
-      "setupBlockBranchesExplored": 286475,
-      "setupBlockSearchInvocations": 1,
-      "setupBlockStartsExplored": 1,
-      "setupBlockCompleteCandidateCount": 83196,
+      "setupBlockBranchesExplored": 285954,
+      "setupBlockSearchInvocations": 571,
+      "setupBlockStartsExplored": 82178,
+      "setupBlockCompleteCandidateCount": 107346,
       "setupBlockBudgetExhaustions": 1,
+      "setupBlockMatchingAttempts": 285954,
+      "setupBlockMatchingSuccesses": 228946,
+      "setupBlockPermutationBranchesAvoided": 1717381,
       "setupFamilyOrderCandidateCountsBySpaceId": {
         "space:3009": {
-          "setup-family:3009:estrellas>setup-family:3009:sillon": 83196
+          "setup-family:3009:estrellas>setup-family:3009:sillon": 53673,
+          "setup-family:3009:sillon>setup-family:3009:estrellas": 53673
         }
       },
       "selectedSetupFamilySequenceBySpaceId": {},
       "selectedSetupPreparationIds": [],
       "roundSynchronizationSearchInvocations": 1,
       "roundSynchronizationStartCandidates": 1,
-      "roundSynchronizationAssignmentBranches": 19,
-      "roundSynchronizationAssignmentChecks": 1480,
+      "roundSynchronizationAssignmentBranches": 1,
+      "roundSynchronizationAssignmentChecks": 361,
       "roundSynchronizationCompleteAssignments": 1,
       "roundSynchronizationBacktracks": 0,
       "roundSynchronizationZeroAlternativePrunes": 0,
       "selectedRoundPreparationIds": [],
+      "totalesMacroCandidates": 1,
+      "totalesMatchingAttempts": 1,
+      "totalesMatchingSuccesses": 1,
+      "totalesAssignmentBranchesAvoided": 18,
+      "criticalResourceBranches": 607,
+      "criticalResourceMacroCandidates": 607,
+      "criticalResourceAssignments": 1179,
+      "macroUnitsSelected": 33,
+      "macroSelectionOrder": [
+        "RESOURCE_TASK:resource:task:10263",
+        "RESOURCE_TASK:resource:task:10124",
+        "RESOURCE_TASK:resource:task:10237",
+        "RESOURCE_TASK:resource:task:10139",
+        "RESOURCE_TASK:resource:task:10081",
+        "RESOURCE_TASK:resource:task:10154",
+        "RESOURCE_TASK:resource:task:10169",
+        "RESOURCE_TASK:resource:task:10041",
+        "RESOURCE_TASK:resource:task:10173",
+        "ROUND_SYNCHRONIZATION:round:round-synchronization:a2-totales-rounds",
+        "RESOURCE_TASK:resource:task:10001",
+        "TECHNICAL_CHAIN:technical-chain:task:10268",
+        "JOINT:joint:joint-group:joint.alfombra-roja.C06-C10",
+        "RESOURCE_TASK:resource:task:10071",
+        "RESOURCE_TASK:resource:task:10115",
+        "RESOURCE_TASK:resource:task:10130",
+        "RESOURCE_TASK:resource:task:10146",
+        "RESOURCE_TASK:resource:task:10160",
+        "RESOURCE_TASK:resource:task:10055",
+        "RESOURCE_TASK:resource:task:10101",
+        "RESOURCE_TASK:resource:task:10042",
+        "RESOURCE_TASK:resource:task:10016",
+        "RESOURCE_TASK:resource:task:10030",
+        "RESOURCE_TASK:resource:task:10087",
+        "RESOURCE_TASK:resource:task:10202",
+        "RESOURCE_TASK:resource:task:10228",
+        "RESOURCE_TASK:resource:task:10174",
+        "RESOURCE_TASK:resource:task:10189",
+        "RESOURCE_TASK:resource:task:10217",
+        "RESOURCE_TASK:resource:task:10255",
+        "RESOURCE_TASK:resource:task:10242",
+        "JOINT:joint:joint-group:joint.totales-post.C06-C10",
+        "SETUP_GROUP:setup:space:3009"
+      ],
+      "macroSelectionReason": [
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "minimum-domain",
+        "canonical-id-tiebreak"
+      ],
+      "macroDomainSizes": {
+        "resource:task:10263": 2,
+        "resource:task:10124": 1,
+        "resource:task:10237": 3,
+        "resource:task:10139": 5,
+        "resource:task:10081": 19,
+        "resource:task:10154": 13,
+        "resource:task:10169": 7,
+        "resource:task:10041": 4,
+        "resource:task:10173": 1,
+        "round:round-synchronization:a2-totales-rounds": 51,
+        "resource:task:10001": 56,
+        "technical-chain:task:10268": 80,
+        "joint:joint-group:joint.alfombra-roja.C06-C10": 86,
+        "resource:task:10071": 91,
+        "resource:task:10115": 89,
+        "resource:task:10130": 87,
+        "resource:task:10146": 85,
+        "resource:task:10160": 83,
+        "resource:task:10055": 82,
+        "resource:task:10101": 82,
+        "resource:task:10042": 80,
+        "resource:task:10016": 82,
+        "resource:task:10030": 80,
+        "resource:task:10087": 80,
+        "resource:task:10202": 79,
+        "resource:task:10228": 77,
+        "resource:task:10174": 78,
+        "resource:task:10189": 80,
+        "resource:task:10217": 78,
+        "resource:task:10255": 78,
+        "resource:task:10242": 76,
+        "joint:joint-group:joint.totales-post.C06-C10": 93,
+        "setup:space:3009": 93
+      },
+      "macroSelectionSteps": [
+        {
+          "selected": "resource:task:10263",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 110,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10081",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10124",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 6,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10139",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 5,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10237",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 3,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10263",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 2,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 114,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10124",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 110,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10081",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10124",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 1,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10139",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 5,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10237",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 3,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 108,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10237",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 110,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10081",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10139",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 5,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10237",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 3,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 108,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10139",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 110,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10081",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10139",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 5,
+              "hardResourceAvailabilityMinutes": 1440
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 108,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10081",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10081",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 19,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 22,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10154",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 16,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 13,
+              "hardResourceAvailabilityMinutes": 2160
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 13,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 16,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10169",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 10,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 7,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 10,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10041",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 4,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 4,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10173",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 103,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 1,
+              "hardResourceAvailabilityMinutes": 2880
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "round:round-synchronization:a2-totales-rounds",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 103,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 103,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 51,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 104,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10001",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 56,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 100,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "technical-chain:task:10268",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 95,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 2880
+            }
+          ]
+        },
+        {
+          "selected": "joint:joint-group:joint.alfombra-roja.C06-C10",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 97,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 95,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10071",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 95,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 95,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10115",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10130",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10146",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 99,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 96,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10160",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10055",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 92,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10101",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 97,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 90,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10042",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10016",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 87,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10030",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 91,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10087",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 85,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 89,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10202",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 88,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 83,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10228",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 77,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 86,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10174",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 78,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10189",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 80,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 84,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10217",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 78,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 82,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 81,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10255",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 78,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "resource:task:10242",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 76,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "joint:joint-group:joint.totales-post.C06-C10",
+          "reason": "minimum-domain",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 94,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        },
+        {
+          "selected": "setup:space:3009",
+          "reason": "canonical-id-tiebreak",
+          "candidates": [
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 93,
+              "hardResourceAvailabilityMinutes": 720
+            }
+          ]
+        }
+      ],
+      "ordinaryDomainQueries": 107160,
+      "ordinaryAnalyticDomainBuilds": 1,
+      "ordinaryAnalyticEligibleStarts": 0,
+      "ordinaryExactStartEnumerations": 0,
+      "ordinaryExactStartChecks": 0,
+      "ordinaryDomainCacheHits": 107159,
+      "ordinaryDomainCacheMisses": 1,
+      "ordinaryDomainRecomputations": 1,
+      "ordinaryMRVSelections": 0,
+      "ordinaryBranchesExplored": 0,
+      "standaloneBlockingTaskDetails": {
+        "task:10003": {
+          "taskId": "task:10003",
+          "participantId": "participant:201",
+          "spaceId": "space:3018",
+          "duration": 10,
+          "requiredResourceIds": [],
+          "setupFamilyId": null,
+          "kind": "auxiliary"
+        },
+        "task:10020": {
+          "taskId": "task:10020",
+          "participantId": "participant:202",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10026": {
+          "taskId": "task:10026",
+          "participantId": "participant:202",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10059": {
+          "taskId": "task:10059",
+          "participantId": "participant:205",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10066": {
+          "taskId": "task:10066",
+          "participantId": "participant:205",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10075": {
+          "taskId": "task:10075",
+          "participantId": "participant:206",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10091": {
+          "taskId": "task:10091",
+          "participantId": "participant:207",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10097": {
+          "taskId": "task:10097",
+          "participantId": "participant:207",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10119": {
+          "taskId": "task:10119",
+          "participantId": "participant:209",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10126": {
+          "taskId": "task:10126",
+          "participantId": "participant:209",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10134": {
+          "taskId": "task:10134",
+          "participantId": "participant:210",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10141": {
+          "taskId": "task:10141",
+          "participantId": "participant:210",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10156": {
+          "taskId": "task:10156",
+          "participantId": "participant:211",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10178": {
+          "taskId": "task:10178",
+          "participantId": "participant:213",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10185": {
+          "taskId": "task:10185",
+          "participantId": "participant:213",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10212": {
+          "taskId": "task:10212",
+          "participantId": "participant:215",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10232": {
+          "taskId": "task:10232",
+          "participantId": "participant:217",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:estrellas",
+          "kind": "auxiliary"
+        },
+        "task:10251": {
+          "taskId": "task:10251",
+          "participantId": "participant:218",
+          "spaceId": "space:3009",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": "setup-family:3009:sillon",
+          "kind": "auxiliary"
+        },
+        "task:10085": {
+          "taskId": "task:10085",
+          "participantId": "participant:206",
+          "spaceId": "space:3022",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": null,
+          "kind": "auxiliary"
+        },
+        "task:10144": {
+          "taskId": "task:10144",
+          "participantId": "participant:210",
+          "spaceId": "space:3022",
+          "duration": 5,
+          "requiredResourceIds": [],
+          "setupFamilyId": null,
+          "kind": "auxiliary"
+        }
+      },
       "participantMealBranchesExplored": 57,
       "participantMealFutureFeasibilityChecks": 3,
       "participantMealFutureInfeasibleBranches": 0,
@@ -774,8 +4670,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 284,
-            "total": 976
+            "other": 286989,
+            "total": 287681
           },
           "6": {
             "mainCandidate": 0,
@@ -4186,8 +8082,8 @@
           "continuation": 0,
           "participantMeal": 0,
           "standaloneForward": 0,
-          "other": 284,
-          "total": 976
+          "other": 286989,
+          "total": 287681
         },
         "6": {
           "mainCandidate": 0,
@@ -4230,7 +8126,7 @@
           "total": 118
         }
       },
-      "waterfallReconciles": false,
+      "waterfallReconciles": true,
       "feederByDepth": {
         "6": {
           "startsConsidered": 29,
