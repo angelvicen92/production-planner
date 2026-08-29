@@ -36,6 +36,9 @@ test("arrival probe preserves residual contiguous groups, min gap, cache, and in
   const problem=arrivalProbeProblem(7,20);const substantive=problem.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,60));
   const cache=new Map();const first=assessArrivalTransportFutureFeasibility(problem,substantive,cache),cached=assessArrivalTransportFutureFeasibility(problem,substantive,cache);
   assert.equal(first.feasible,true);assert.equal(first.groupsChecked,3);assert.equal(cached.cacheHit,true);
+  const unrelated=scheduled({id:"neutral",kind:"technical",duration:5,spaceId:"neutral-room",dependencies:[]},80);
+  assert.equal(assessArrivalTransportFutureFeasibility(problem,[...substantive,unrelated],cache).cacheHit,true,
+    "occupations outside every arrival authority do not fragment the safe cache");
   const reversed={...problem,tasks:[...problem.tasks].reverse(),participants:[...problem.participants].reverse(),transportPolicy:{...problem.transportPolicy!,arrival:{...problem.transportPolicy!.arrival,taskIds:[...problem.transportPolicy!.arrival.taskIds].reverse()}}};
   assert.equal(assessArrivalTransportFutureFeasibility(reversed,[...substantive].reverse()).witnessFingerprint,first.witnessFingerprint);
   const impossible=arrivalProbeProblem(7,50);const early=impossible.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,30));

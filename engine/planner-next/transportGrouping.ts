@@ -201,10 +201,17 @@ export function assessArrivalTransportFutureFeasibility(
   if (unknown.length) return { feasible: true, conclusive: false, cacheHit: false, groupsChecked: 0, startsChecked: 0, witnessFingerprint: null, blockingParticipantIds: [] };
   const ordered = [...tasks].sort((left, right) => boundaryFor(left.participantId!)! - boundaryFor(right.participantId!)!
     || left.participantId!.localeCompare(right.participantId!) || left.id.localeCompare(right.id));
+  const canAffectArrival = (placed: ScheduledTask): boolean => tasks.some((arrival) =>
+    placed.participantId !== undefined && placed.participantId === arrival.participantId
+    || placed.coachId !== undefined && placed.coachId === arrival.coachId
+    || placed.spaceId === arrival.spaceId
+    || (placed.requiredResourceIds ?? []).some((id) => (arrival.requiredResourceIds ?? []).includes(id))
+    || placed.dependencies.includes(arrival.id) || arrival.dependencies.includes(placed.id));
+  const transportRelevantPlaced = [...substantive].filter(canAffectArrival).sort((a, b) => a.id.localeCompare(b.id));
   const key = createHash("sha256").update(JSON.stringify({
     policy: { ...policy, taskIds: [...policy.taskIds].sort() },
     tasks: ordered.map((task) => ({ id: task.id, participantId: task.participantId, duration: task.duration, boundary: boundaryFor(task.participantId!), availability: task.availability ?? [] })),
-    placed: [...substantive].sort((a, b) => a.id.localeCompare(b.id)).map(({ id, start, end, participantId, spaceId, coachId, requiredResourceIds }) => ({ id, start, end, participantId, spaceId, coachId, requiredResourceIds: [...(requiredResourceIds ?? [])].sort() })),
+    placed: transportRelevantPlaced.map(({ id, start, end, participantId, spaceId, coachId, requiredResourceIds }) => ({ id, start, end, participantId, spaceId, coachId, requiredResourceIds: [...(requiredResourceIds ?? [])].sort() })),
     day: problem.day,
   })).digest("hex");
   const cached = cache?.get(key); if (cached) return { ...cached, cacheHit: true };
@@ -214,7 +221,7 @@ export function assessArrivalTransportFutureFeasibility(
   if (sizes) for (const size of sizes) {
     const group = ordered.slice(offset, offset + size); offset += size; groupsChecked += 1;
     const boundary = Math.min(...group.map((task) => boundaryFor(task.participantId!)!));
-    const candidates = transportGroupStarts(problem, group, [...substantive, ...placed], starts, policy)
+    const candidates = transportGroupStarts(problem, group, [...transportRelevantPlaced, ...placed], starts, policy)
       .filter((start) => start + group[0]!.duration <= boundary).sort((a, b) => b - a);
     startsChecked += candidates.length;
     const start = candidates[0];
