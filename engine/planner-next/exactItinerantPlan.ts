@@ -253,6 +253,15 @@ export interface ExactItinerantPlanEvidence {
   ordinaryDomainRecomputations: number;
   ordinaryMRVSelections: number;
   ordinaryBranchesExplored: number;
+  ordinaryIndividualForwardChecks: number;
+  ordinaryIndividualForwardTasksChecked: number;
+  ordinaryIndividualForwardExactDomainChecks: number;
+  ordinaryIndividualForwardStartsChecked: number;
+  ordinaryIndividualForwardZeroDomainPrunes: number;
+  ordinaryIndividualForwardUnrelatedSkips: number;
+  ordinaryIndividualForwardWitnesses: number;
+  ordinaryIndividualForwardCausingTaskCounts: Record<string, number>;
+  ordinaryIndividualForwardBlockingTaskCounts: Record<string, number>;
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
@@ -391,9 +400,18 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
+  const ordinaryStaticDomainCache = new Map<string, StandaloneForwardStaticDomain>();
+  const ordinaryStaticDomain = (task: Task): StandaloneForwardStaticDomain => {
+    const cached = ordinaryStaticDomainCache.get(task.id);
+    if (cached) return cached;
+    const domain = standaloneForwardStaticDomain(problem, task, coreMeals);
+    ordinaryStaticDomainCache.set(task.id, domain);
+    return domain;
+  };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
+  const hardPrerequisiteIds = new Set(problem.tasks.flatMap((task) => task.dependencies));
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
     evidence.standaloneBlockingTaskDetails[task.id] ??= {
@@ -455,7 +473,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const allPlaced = [...coreTasks, ...placed];
     for (const task of [...remaining].sort(byId)) {
       evidence.ordinaryDomainQueries += 1;
-      const staticDomain = standaloneForwardStaticDomain(problem, task, coreMeals);
+      const staticDomain = ordinaryStaticDomain(task);
       const signature = standaloneForwardAuthoritySignature(problem, task, allPlaced, coreMeals, staticDomain, "STATIC_DOMAIN");
       let domain = ordinaryDomainCache.get(signature);
       if (domain) evidence.ordinaryDomainCacheHits += 1;
@@ -480,6 +498,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       || (b.task.requiredResourceIds?.length ?? 0) - (a.task.requiredResourceIds?.length ?? 0)
       || a.task.id.localeCompare(b.task.id));
     const choice = alternatives[0]!;
+    // Prepare the lightweight set of still-pending hard predecessors once for
+    // this ordinary node, not once per candidate start.
     evidence.standaloneTaskSelections += 1;
     evidence.ordinaryMRVSelections += 1;
     evidence.ordinaryExactStartEnumerations += 1;
@@ -496,9 +516,54 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const orderedStarts = feasibleStarts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
       allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
         || a.scheduled.id.localeCompare(b.scheduled.id));
+    const ordinaryForwardPrerequisites = orderedStarts.length > 1 ? remaining
+      .filter((task) => task.id !== choice.task.id && hardPrerequisiteIds.has(task.id))
+      .sort(byId) : [];
     for (const { scheduled } of orderedStarts) {
       if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
       evidence.ordinaryBranchesExplored += 1;
+      // A singleton domain has no sibling candidate to preserve.  Probing it
+      // merely moves the same dead-end outward into macro search, so abstain.
+      const shouldForwardCheck = orderedStarts.length > 1;
+      if (shouldForwardCheck) evidence.ordinaryIndividualForwardChecks += 1;
+      const relevantPrerequisites = shouldForwardCheck ? ordinaryForwardPrerequisites.filter((task) =>
+        // A pending direct dependency receives a candidate-specific deadline.
+        choice.task.dependencies.includes(task.id)
+        // A predecessor whose successor was already placed has an existing
+        // hard deadline; only a structurally interacting candidate can shrink it.
+        || (allPlaced.some((placedTask) => placedTask.dependencies.includes(task.id))
+          && tasksCanAffectEachOther(task, choice.task))) : [];
+      if (shouldForwardCheck)
+        evidence.ordinaryIndividualForwardUnrelatedSkips += ordinaryForwardPrerequisites.length - relevantPrerequisites.length;
+      let zeroDomainPrerequisite: Task | null = null;
+      const provisionalPlaced = [...allPlaced, scheduled];
+      for (const prerequisite of relevantPrerequisites) {
+        evidence.ordinaryIndividualForwardTasksChecked += 1;
+        evidence.ordinaryIndividualForwardExactDomainChecks += 1;
+        // The provisional successor is included here, so the canonical dynamic
+        // authority applies any deadline induced by this exact candidate.
+        const domain = standaloneForwardDynamicDomain(problem, prerequisite, provisionalPlaced,
+          ordinaryStaticDomain(prerequisite));
+        let witness = false;
+        for (const start of domain.starts()) {
+          evidence.ordinaryIndividualForwardStartsChecked += 1;
+          if (canPlaceTask(problem, prerequisite, start, provisionalPlaced, coreMeals)) {
+            witness = true;
+            evidence.ordinaryIndividualForwardWitnesses += 1;
+            break;
+          }
+        }
+        if (!witness) { zeroDomainPrerequisite = prerequisite; break; }
+      }
+      if (zeroDomainPrerequisite) {
+        evidence.ordinaryIndividualForwardZeroDomainPrunes += 1;
+        evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id]
+          = (evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id] ?? 0) + 1;
+        evidence.ordinaryIndividualForwardBlockingTaskCounts[zeroDomainPrerequisite.id]
+          = (evidence.ordinaryIndividualForwardBlockingTaskCounts[zeroDomainPrerequisite.id] ?? 0) + 1;
+        evidence.standaloneBacktracks += 1;
+        continue;
+      }
       if((problem.participantMeals?.length??0)>0){const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};const mealProbe=assessParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],mealBudget,"PROBE");evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealProbe.branchesExplored;if(!mealProbe.complete){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);if(mealProbe.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
@@ -832,6 +897,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryDomainQueries:0,ordinaryAnalyticDomainBuilds:0,ordinaryAnalyticEligibleStarts:0,
     ordinaryExactStartEnumerations:0,ordinaryExactStartChecks:0,ordinaryDomainCacheHits:0,
     ordinaryDomainCacheMisses:0,ordinaryDomainRecomputations:0,ordinaryMRVSelections:0,ordinaryBranchesExplored:0,
+    ordinaryIndividualForwardChecks:0,ordinaryIndividualForwardTasksChecked:0,
+    ordinaryIndividualForwardExactDomainChecks:0,ordinaryIndividualForwardStartsChecked:0,
+    ordinaryIndividualForwardZeroDomainPrunes:0,ordinaryIndividualForwardUnrelatedSkips:0,
+    ordinaryIndividualForwardWitnesses:0,ordinaryIndividualForwardCausingTaskCounts:{},
+    ordinaryIndividualForwardBlockingTaskCounts:{},
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };
