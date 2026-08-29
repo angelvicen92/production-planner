@@ -6904,6 +6904,15 @@
       "ordinaryDomainRecomputations": 543541,
       "ordinaryMRVSelections": 12751,
       "ordinaryBranchesExplored": 12751,
+      "ordinaryIndividualForwardChecks": 0,
+      "ordinaryIndividualForwardTasksChecked": 0,
+      "ordinaryIndividualForwardExactDomainChecks": 0,
+      "ordinaryIndividualForwardStartsChecked": 0,
+      "ordinaryIndividualForwardZeroDomainPrunes": 0,
+      "ordinaryIndividualForwardUnrelatedSkips": 0,
+      "ordinaryIndividualForwardWitnesses": 0,
+      "ordinaryIndividualForwardCausingTaskCounts": {},
+      "ordinaryIndividualForwardBlockingTaskCounts": {},
       "standaloneBlockingTaskDetails": {
         "task:10019": {
           "taskId": "task:10019",

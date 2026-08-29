@@ -153,14 +153,21 @@ test("ordinary individual forward check skips unrelated pending prerequisites", 
 });
 
 test("ordinary forward check accepts individual witnesses without joint prerequisite search", () => {
+  const prerequisiteAvailability = [{ start: 0, end: 10 }, { start: 20, end: 30 }, { start: 40, end: 50 }];
   const prerequisites = ["p1", "p2"].map((id) =>
-    ({ ...auxiliary(id, `${id}-person`, [{ start: 0, end: 15 }]), duration: 10, spaceId: "forward-space" }));
-  const candidate = { ...auxiliary("a", "a-person", [{ start: 20, end: 40 }]), duration: 20,
+    ({ ...auxiliary(id, `${id}-person`, prerequisiteAvailability), duration: 10, spaceId: "forward-space" }));
+  const candidate = { ...auxiliary("a", "a-person", [{ start: 15, end: 25 }]), duration: 5,
     dependencies: prerequisites.map(({ id }) => id) };
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, ...prerequisites]));
   assert.equal(result.status, "INFEASIBLE");
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id], undefined,
-    "A is not pruned by a joint search when each predecessor has an individual witness");
+  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
+  assert.ok(result.evidence.ordinaryIndividualForwardTasksChecked >= 2);
+  assert.ok(result.evidence.ordinaryIndividualForwardExactDomainChecks >= 2);
+  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses >= 2,
+    "P1 and P2 each retain the start at zero after provisional A");
+  assert.equal(result.evidence.ordinaryIndividualForwardZeroDomainPrunes, 0,
+    "the individual checker does not infer that P1 and P2 cannot coexist at their shared witness");
+  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id], undefined);
 });
 
 test("global macro MRV lets setup beat a broader synchronized round unit", () => {

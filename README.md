@@ -2875,3 +2875,7 @@ Cada macro candidate conserva la factibilidad exacta de sus prerrequisitos pendi
 ### A2-FULL-018 — Forward-check ordinary incremental de dominio individual cero · 2026-08-29 15:18 UTC
 
 Cada candidate ordinary comprueba únicamente los prerrequisitos hard pendientes que puede afectar y poda cuando la autoridad canónica demuestra que alguno perdió su último start individual. El probe existencial termina al primer witness, no busca combinaciones conjuntas ni transporte futuro y no reserva starts ni añade precedencias hard.
+
+### A2-FULL-019 — Cierre auditable de A2-FULL-018 y Evidence Full A2 reproducible · 2026-08-29 17:29 UTC
+
+La Evidence Full A2 directa queda versionada tras dos ejecuciones canónicas deterministas, y la regresión conservadora demuestra que dos prerrequisitos con witnesses individuales no activan joint pruning aunque sean incompatibles conjuntamente. Este cierre no resuelve Full A2, no amplía el checker y no cambia reglas hard, transporte ni future-IN.
