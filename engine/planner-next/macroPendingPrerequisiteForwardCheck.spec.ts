@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, createPendingPrerequisiteForwardContext } from "./macroPendingPrerequisiteForwardCheck";
 
 const task=(id:string,duration:number,dependencies:string[]=[],availability?:Array<{start:number;end:number}>):Task=>({id,kind:"auxiliary",participantId:"person",duration,spaceId:"room",dependencies,...(availability?{availability}: {})});
 const problem=(tasks:Task[]):PlannerNextProblem=>({day:{start:0,end:100},spaces:[{id:"room",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],resources:[],participants:[{id:"person",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],coaches:[],tasks,mainFlow:{spaceId:"other",preferredEnd:100,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:0,maxPatterns:1,maxBranchExpansions:1000},searchPolicy:"EXACT_CONSTRUCTIVE"});
@@ -20,6 +20,24 @@ test("transitive prerequisite chains are checked jointly before the placed desce
 });
 
 test("unrelated impossible ordinary work is not checked and results are order invariant",()=>{const prerequisite=task("required",10,[],[{start:20,end:30}]),successor=task("successor",10,[prerequisite.id]),unrelated=task("unrelated",10,[],[]),trigger=scheduled(task("trigger",5),70,{participantId:"other",spaceId:"other"});const p=problem([prerequisite,successor,unrelated]);const placed=[scheduled(successor,50)];const forward=checkMacroPendingPrerequisites(p,[prerequisite,unrelated],placed,[trigger]),reversed=checkMacroPendingPrerequisites({...p,tasks:[...p.tasks].reverse()},[unrelated,prerequisite],placed,[trigger]);assert.equal(forward.feasible,true);assert.deepEqual(reversed,forward);
+ assert.equal(forward.fastPathSkips,1);assert.equal(forward.exactDomainEvaluations,0);assert.equal(forward.authoritySignatureBuilds,0);
+});
+
+test("static context and minimal authority signatures avoid branch-global cache invalidation",()=>{
+ const prerequisite=task("required",10,[],[{start:20,end:40}]),successor=task("successor",10,[prerequisite.id]);
+ const trigger=task("trigger",5),irrelevantTask=task("irrelevant",5);irrelevantTask.participantId="other";irrelevantTask.spaceId="other";
+ const p=problem([prerequisite,successor,trigger,irrelevantTask]);const context=createPendingPrerequisiteForwardContext(p),cache=new Map();
+ const base=[scheduled(successor,50)],candidate=[scheduled(trigger,70)];
+ const first=checkMacroPendingPrerequisites(p,[prerequisite],base,candidate,[],cache,undefined,context);
+ const irrelevant=scheduled(irrelevantTask,80);
+ const second=checkMacroPendingPrerequisites(p,[prerequisite],[...base,irrelevant],candidate,[],cache,undefined,context);
+ assert.equal(first.cacheHit,false);assert.equal(second.cacheHit,true);assert.equal(second.contextBuilds,0);
+ assert.ok(second.minimalSignaturePlacedTaskCount<second.fullProvisionalPlacedTaskCount);
+ const relevant=scheduled(task("relevant",5),20);
+ const third=checkMacroPendingPrerequisites(p,[prerequisite],[...base,relevant],candidate,[],cache,undefined,context);
+ assert.equal(third.cacheHit,false);assert.ok(third.exactDomainEvaluations>0);
+ const changedDeadline=checkMacroPendingPrerequisites(p,[prerequisite],[scheduled(successor,45)],candidate,[],cache,undefined,context);
+ assert.equal(changedDeadline.cacheHit,false);
 });
 
 test("pending prerequisite feasibility combines a dynamic arrival with each possible ordinary start",()=>{

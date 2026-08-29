@@ -30,7 +30,7 @@ import { materializeTerminalTransport, transportTaskIds, type ArrivalFutureFeasi
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, createPendingPrerequisiteForwardContext, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -261,6 +261,9 @@ export interface ExactItinerantPlanEvidence {
   arrivalFutureFeasibilityChecks:number;arrivalFutureFeasibilityCacheHits:number;arrivalFutureFeasibilityCacheMisses:number;
   arrivalFutureFeasibilityWitnesses:number;arrivalFutureFeasibilityInfeasible:number;arrivalFutureFeasibilityGroupsChecked:number;
   arrivalFutureFeasibilityStartsChecked:number;arrivalFutureFeasibilityBlockingParticipantCounts:Record<string,number>;
+  pendingForwardFastPathSkips:number;pendingForwardContextBuilds:number;pendingForwardRelevantTaskCount:number;
+  pendingForwardDeadlineEvaluations:number;pendingForwardExactDomainEvaluations:number;pendingForwardComponentBuilds:number;
+  pendingForwardAuthoritySignatureBuilds:number;pendingForwardMinimalSignaturePlacedTaskCount:number;pendingForwardFullProvisionalPlacedTaskCount:number;
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
@@ -403,6 +406,16 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const ordinaryPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const arrivalFutureFeasibilityCache:ArrivalFutureFeasibilityCache=new Map();
+  const pendingPrerequisiteForwardContext=createPendingPrerequisiteForwardContext(problem);
+  evidence.pendingForwardContextBuilds+=1;
+  const recordPendingForwardWork=(checked:ReturnType<typeof checkMacroPendingPrerequisites>):void=>{
+    evidence.pendingForwardFastPathSkips+=checked.fastPathSkips;evidence.pendingForwardContextBuilds+=checked.contextBuilds;
+    evidence.pendingForwardRelevantTaskCount+=checked.relevantTaskCount;evidence.pendingForwardDeadlineEvaluations+=checked.deadlineEvaluations;
+    evidence.pendingForwardExactDomainEvaluations+=checked.exactDomainEvaluations;evidence.pendingForwardComponentBuilds+=checked.componentBuilds;
+    evidence.pendingForwardAuthoritySignatureBuilds+=checked.authoritySignatureBuilds;
+    evidence.pendingForwardMinimalSignaturePlacedTaskCount+=checked.minimalSignaturePlacedTaskCount;
+    evidence.pendingForwardFullProvisionalPlacedTaskCount+=checked.fullProvisionalPlacedTaskCount;
+  };
   const recordArrivalProbeEvidence=(checked:ReturnType<typeof checkMacroPendingPrerequisites>):void=>{
     evidence.arrivalFutureFeasibilityChecks+=checked.arrivalChecks;evidence.arrivalFutureFeasibilityCacheHits+=checked.arrivalCacheHits;
     evidence.arrivalFutureFeasibilityCacheMisses+=checked.arrivalChecks-checked.arrivalCacheHits;
@@ -516,12 +529,13 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     for (const { scheduled } of orderedStarts) {
       if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
       evidence.ordinaryBranchesExplored += 1;
-      const checked=checkMacroPendingPrerequisites(problem,remaining.filter(({id})=>id!==choice.task.id),allPlaced,[scheduled],coreMeals,ordinaryPendingPrerequisiteCache,arrivalFutureFeasibilityCache);
+      const checked=checkMacroPendingPrerequisites(problem,remaining.filter(({id})=>id!==choice.task.id),allPlaced,[scheduled],coreMeals,ordinaryPendingPrerequisiteCache,arrivalFutureFeasibilityCache,pendingPrerequisiteForwardContext);
       evidence.ordinaryPendingForwardChecks+=1;evidence.ordinaryPendingForwardTasksChecked+=checked.tasksChecked;
       evidence.ordinaryPendingForwardIndividualChecks+=checked.individualDomainChecks;evidence.ordinaryPendingForwardJointChecks+=checked.jointChecks;
       evidence.ordinaryPendingForwardWitnesses+=checked.witnesses;
       if(checked.cacheHit)evidence.ordinaryPendingForwardCacheHits+=1;else evidence.ordinaryPendingForwardCacheMisses+=1;
       recordArrivalProbeEvidence(checked);
+      recordPendingForwardWork(checked);
       if(!checked.feasible){evidence.ordinaryPendingForwardPrunes+=1;evidence.ordinaryPendingForwardPrunesByDepth[String(depth)]=(evidence.ordinaryPendingForwardPrunesByDepth[String(depth)]??0)+1;
         evidence.ordinaryPendingForwardCausingTaskCounts[choice.task.id]=(evidence.ordinaryPendingForwardCausingTaskCounts[choice.task.id]??0)+1;
         if(checked.blockingTaskId)evidence.ordinaryPendingForwardBlockingTaskCounts[checked.blockingTaskId]=(evidence.ordinaryPendingForwardBlockingTaskCounts[checked.blockingTaskId]??0)+1;
@@ -690,12 +704,13 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
-    const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache,arrivalFutureFeasibilityCache);
+    const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache,arrivalFutureFeasibilityCache,pendingPrerequisiteForwardContext);
     evidence.macroPendingPrerequisiteForwardChecks+=1;evidence.macroPendingPrerequisiteTasksChecked+=checked.tasksChecked;
     evidence.macroPendingPrerequisiteIndividualDomainChecks+=checked.individualDomainChecks;evidence.macroPendingPrerequisiteJointChecks+=checked.jointChecks;
     evidence.macroPendingPrerequisiteWitnesses+=checked.witnesses;evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]=(evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]??0)+1;
     if(checked.cacheHit)evidence.macroPendingPrerequisiteCacheHits+=1;else evidence.macroPendingPrerequisiteCacheMisses+=1;
     recordArrivalProbeEvidence(checked);
+    recordPendingForwardWork(checked);
     if(!checked.feasible){evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;else if(checked.failure==="ARRIVAL_INFEASIBLE")evidence.macroPendingPrerequisiteArrivalInfeasiblePrunes+=1;
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
@@ -870,6 +885,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     arrivalFutureFeasibilityChecks:0,arrivalFutureFeasibilityCacheHits:0,arrivalFutureFeasibilityCacheMisses:0,
     arrivalFutureFeasibilityWitnesses:0,arrivalFutureFeasibilityInfeasible:0,arrivalFutureFeasibilityGroupsChecked:0,
     arrivalFutureFeasibilityStartsChecked:0,arrivalFutureFeasibilityBlockingParticipantCounts:{},
+    pendingForwardFastPathSkips:0,pendingForwardContextBuilds:0,pendingForwardRelevantTaskCount:0,pendingForwardDeadlineEvaluations:0,
+    pendingForwardExactDomainEvaluations:0,pendingForwardComponentBuilds:0,pendingForwardAuthoritySignatureBuilds:0,
+    pendingForwardMinimalSignaturePlacedTaskCount:0,pendingForwardFullProvisionalPlacedTaskCount:0,
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };

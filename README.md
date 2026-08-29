@@ -2875,3 +2875,7 @@ Cada macro candidate conserva la factibilidad exacta de sus prerrequisitos pendi
 ### A2-FULL-018 — Forward checking ordinary y factibilidad futura de transporte IN · 2026-08-28 19:42 UTC
 
 Cada ordinary placement reutiliza la authority de factibilidad de prerrequisitos para descartar inmediatamente dominios vacíos y conjuntos conflictivos sin witness. IN continúa excluido de ordinary search: un probe read-only reutiliza la agrupación contigua, límites y `minGapMinutes` de transporte para certificar conjuntamente una llegada y el start potencial de su obligación dependiente. Los witnesses no se reservan ni se materializan, y no cambian las reglas de agrupación ni se crean nuevas precedencias hard.
+
+### A2-FULL-019 — Optimización incremental del forward-check ordinary · 2026-08-29 11:59 UTC
+
+El forward-check reutiliza un contexto estático por búsqueda, descarta candidatos causalmente independientes mediante un fast relevance gate y firma sólo las authorities y colocaciones relevantes. Se elimina así la reconstrucción global por candidate sin cambiar constraints, transporte ni el budget canónico; Full A2 permanece sujeto a validación operativa en CI.
