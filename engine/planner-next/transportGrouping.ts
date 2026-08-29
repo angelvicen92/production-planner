@@ -217,32 +217,44 @@ export function assessArrivalTransportFutureFeasibility(
   const cached = cache?.get(key); if (cached) return { ...cached, cacheHit: true };
   const sizes = transportContiguousGroupSizes(ordered.length, policy, "arrival");
   let groupsChecked = 0, startsChecked = 0, blockingParticipantIds: string[] = [];
-  const groups: Task[][] = [];
+  const groups: Array<{ id: string; tasks: Task[]; boundary: number }> = [];
   if (sizes) {
     let offset = 0;
-    for (const size of sizes) { groups.push(ordered.slice(offset, offset + size)); offset += size; }
+    for (const size of sizes) {
+      const tasks = ordered.slice(offset, offset + size); offset += size;
+      groups.push({ id: tasks.map(({ id }) => id).join("|"), tasks,
+        boundary: Math.min(...tasks.map((task) => boundaryFor(task.participantId!)!)) });
+    }
   }
   // Membership remains the canonical contiguous slicing. Only group starts are
   // explored, latest first, until the first complete witness is found. Taking
   // just the first local start is not an infeasibility certificate: that start
   // may consume the only min-gap/resource-compatible start of a later group.
-  const search = (index: number, placed: ScheduledTask[], starts: number[]): ScheduledTask[] | null => {
-    if (index === groups.length) return placed;
-    const group = groups[index]!; groupsChecked += 1;
-    const boundary = Math.min(...group.map((task) => boundaryFor(task.participantId!)!));
-    const candidates = transportGroupStarts(problem, group, [...transportRelevantPlaced, ...placed], starts, policy)
-      .filter((start) => start + group[0]!.duration <= boundary).sort((a, b) => b - a);
-    startsChecked += candidates.length;
-    if (!candidates.length) blockingParticipantIds = group.map((task) => task.participantId!).sort();
-    for (const start of candidates) {
-      const witness = search(index + 1, [...placed, ...scheduleTransportGroup(group, start)], [...starts, start]);
+  const search = (remaining: typeof groups, placed: ScheduledTask[], starts: number[]): ScheduledTask[] | null => {
+    if (!remaining.length) return placed;
+    const domains = remaining.map((group) => {
+      groupsChecked += 1;
+      const candidates = transportGroupStarts(problem, group.tasks, [...transportRelevantPlaced, ...placed], starts, policy)
+        .filter((start) => start + group.tasks[0]!.duration <= group.boundary).sort((a, b) => b - a);
+      startsChecked += candidates.length;
+      return { group, candidates };
+    }).sort((a, b) => a.candidates.length - b.candidates.length || a.group.id.localeCompare(b.group.id));
+    const selected = domains[0]!;
+    if (!selected.candidates.length) {
+      blockingParticipantIds = selected.group.tasks.map((task) => task.participantId!).sort();
+      return null;
+    }
+    const next = remaining.filter(({ id }) => id !== selected.group.id);
+    for (const start of selected.candidates) {
+      const witness = search(next, [...placed, ...scheduleTransportGroup(selected.group.tasks, start)], [...starts, start]);
       if (witness) return witness;
     }
     return null;
   };
-  const placed = sizes === null ? null : search(0, [], []);
+  if (sizes === null) blockingParticipantIds = ordered.map((task) => task.participantId!).sort();
+  const placed = sizes === null ? null : search(groups, [], []);
   const witnessFingerprint = placed === null ? null
-    : createHash("sha256").update(JSON.stringify(placed.map(({ id, start, end }) => ({ id, start, end })))).digest("hex");
+    : createHash("sha256").update(JSON.stringify([...placed].sort((a,b)=>a.id.localeCompare(b.id)).map(({ id, start, end }) => ({ id, start, end })))).digest("hex");
   const result = { feasible: placed !== null, conclusive: true, groupsChecked, startsChecked, witnessFingerprint,
     blockingParticipantIds: placed === null ? blockingParticipantIds : [] as string[] };
   cache?.set(key, result); return { ...result, cacheHit: false };

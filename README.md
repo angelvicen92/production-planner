@@ -2879,3 +2879,7 @@ Cada ordinary placement reutiliza la authority de factibilidad de prerrequisitos
 ### A2-FULL-019 — Optimización incremental del forward-check ordinary · 2026-08-29 11:59 UTC
 
 El forward-check reutiliza un contexto estático por búsqueda, descarta candidatos causalmente independientes mediante un fast relevance gate y firma sólo las authorities y colocaciones relevantes. Se elimina así la reconstrucción global por candidate sin cambiar constraints, transporte ni el budget canónico; Full A2 permanece sujeto a validación operativa en CI.
+
+### A2-FULL-020 — Certificado exacto de factibilidad futura de transporte IN · 2026-08-29 13:13 UTC
+
+El probe read-only ya no interpreta un fallo greedy como imposibilidad: explora con MRV las combinaciones de starts dentro de la partición canónica fija hasta encontrar un witness o demostrar su agotamiento. Un resultado inconcluso se trata como abstención y nunca poda; no cambian la política, los integrantes de los grupos ni el materializador terminal de transporte.

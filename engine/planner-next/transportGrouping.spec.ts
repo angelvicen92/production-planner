@@ -35,27 +35,34 @@ test("arrival future probe jointly certifies transport before a substantive obli
 test("arrival probe preserves residual contiguous groups, min gap, cache, and input-order determinism",()=>{
   const problem=arrivalProbeProblem(7,20);const substantive=problem.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,60));
   const cache=new Map();const first=assessArrivalTransportFutureFeasibility(problem,substantive,cache),cached=assessArrivalTransportFutureFeasibility(problem,substantive,cache);
-  assert.equal(first.feasible,true);assert.equal(first.groupsChecked,3);assert.equal(cached.cacheHit,true);
+  assert.equal(first.feasible,true);assert.ok(first.groupsChecked>=3);assert.equal(cached.cacheHit,true);
   const unrelated=scheduled({id:"neutral",kind:"technical",duration:5,spaceId:"neutral-room",dependencies:[]},80);
   assert.equal(assessArrivalTransportFutureFeasibility(problem,[...substantive,unrelated],cache).cacheHit,true,
     "occupations outside every arrival authority do not fragment the safe cache");
   const reversed={...problem,tasks:[...problem.tasks].reverse(),participants:[...problem.participants].reverse(),transportPolicy:{...problem.transportPolicy!,arrival:{...problem.transportPolicy!.arrival,taskIds:[...problem.transportPolicy!.arrival.taskIds].reverse()}}};
   assert.equal(assessArrivalTransportFutureFeasibility(reversed,[...substantive].reverse()).witnessFingerprint,first.witnessFingerprint);
   const impossible=arrivalProbeProblem(7,50);const early=impossible.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,30));
-  assert.equal(assessArrivalTransportFutureFeasibility(impossible,early).feasible,false);
+  const certifiedImpossible=assessArrivalTransportFutureFeasibility(impossible,early);
+  assert.equal(certifiedImpossible.feasible,false);assert.equal(certifiedImpossible.conclusive,true);
 });
 
 test("arrival probe backtracks from a locally latest start to certify a later group",()=>{
-  const problem=arrivalProbeProblem(2,15);
+  const problem=arrivalProbeProblem(2,20);
   problem.transportPolicy!.arrival={...problem.transportPolicy!.arrival,targetGroupSize:1,maximumGroupSize:1};
   const first=problem.tasks.find(({id})=>id==="transport-0")!,second=problem.tasks.find(({id})=>id==="transport-1")!;
-  first.availability=[{start:0,end:15}];second.availability=[{start:20,end:25}];
+  first.availability=[{start:0,end:5},{start:25,end:30}];second.availability=[{start:20,end:25},{start:30,end:35}];
   const firstObligation=problem.tasks.find(({id})=>id==="obligation-0")!;
   const secondObligation=problem.tasks.find(({id})=>id==="obligation-1")!;
-  const result=assessArrivalTransportFutureFeasibility(problem,[scheduled(firstObligation,15),scheduled(secondObligation,30)]);
+  const result=assessArrivalTransportFutureFeasibility(problem,[scheduled(firstObligation,30),scheduled(secondObligation,35)]);
   assert.equal(result.feasible,true);
   assert.ok(result.witnessFingerprint);
-  assert.ok(result.groupsChecked>2,"the failed latest local start is revisited with an earlier exact alternative");
+  assert.ok(result.groupsChecked>=4,"the failed latest local start is revisited with an earlier exact alternative");
+});
+
+test("arrival probe abstains instead of pruning when a participant boundary is unknown",()=>{
+  const problem=arrivalProbeProblem(2,15),obligation=problem.tasks.find(({id})=>id==="obligation-0")!;
+  const result=assessArrivalTransportFutureFeasibility(problem,[scheduled(obligation,30)]);
+  assert.equal(result.feasible,true);assert.equal(result.conclusive,false);assert.equal(result.witnessFingerprint,null);
 });
 const tasks = (count: number): Task[] => Array.from({ length: count }, (_, index) => ({
   id: `transport-${String(index).padStart(2, "0")}`, kind: "auxiliary", participantId: `p-${index}`,
