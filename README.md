@@ -2871,3 +2871,11 @@ EngineInput proyecta losslessly la policy de cadena técnica hasta Planner Next:
 ### A2-FULL-017 — Forward checking de prerrequisitos hard pendientes durante macro search · 2026-08-28 12:55 UTC
 
 Cada macro candidate conserva la factibilidad exacta de sus prerrequisitos pendientes antes de continuar: primero descarta dominios individuales vacíos y, para conjuntos conflictivos pequeños, busca un witness conjunto mediante las autoridades canónicas. El probe no reserva starts ni modifica `placed`, no consume branch budget, no añade reglas hard y adelanta el pruning antes de Setup y ordinary.
+
+### A2-FULL-018 — Forward-check ordinary incremental de dominio individual cero · 2026-08-29 15:18 UTC
+
+Cada candidate ordinary comprueba únicamente los prerrequisitos hard pendientes que puede afectar y poda cuando la autoridad canónica demuestra que alguno perdió su último start individual. El probe existencial termina al primer witness, no busca combinaciones conjuntas ni transporte futuro y no reserva starts ni añade precedencias hard.
+
+### A2-FULL-019 — Cierre auditable de A2-FULL-018 y Evidence Full A2 reproducible · 2026-08-29 17:29 UTC
+
+La Evidence Full A2 directa queda versionada tras dos ejecuciones canónicas deterministas, y la regresión conservadora demuestra que dos prerrequisitos con witnesses individuales no activan joint pruning aunque sean incompatibles conjuntamente. Este cierre no resuelve Full A2, no amplía el checker y no cambia reglas hard, transporte ni future-IN.

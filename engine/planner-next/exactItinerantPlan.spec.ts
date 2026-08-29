@@ -114,6 +114,62 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.ok(result.evidence.ordinaryAnalyticDomainBuilds >= 2);
 });
 
+function ordinaryForwardProblem(tasks: Task[]): PlannerNextProblem {
+  const input = problem(tasks);
+  input.protectedMeal = undefined;
+  if (!input.spaces.some(({ id }) => id === "forward-space"))
+    input.spaces.push({ id: "forward-space", availability: [{ start: 0, end: 120 }] });
+  return input;
+}
+
+test("ordinary candidate that destroys the last exact prerequisite start is pruned before recursion", () => {
+  const prerequisite = { ...auxiliary("p", "p-person", [{ start: 0, end: 20 }]), duration: 10,
+    spaceId: "forward-space" };
+  const candidate = { ...auxiliary("a", "a-person", [{ start: 0, end: 20 }, { start: 20, end: 40 }],
+    []), duration: 20, dependencies: [prerequisite.id], spaceId: "forward-space" };
+  const input = ordinaryForwardProblem([candidate, prerequisite]);
+  const core = constructExactMainAndFeederCore(input);
+  assert.equal(canPlaceTask(input, candidate, 0, core.scheduledTasks, core.scheduledSpaceMeals), true,
+    "A1 is legal for A itself before the pending prerequisite is materialized");
+
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({ id }) => id === candidate.id)?.start, 20,
+    "A2 is explored after A1 destroys P's only individual domain");
+  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
+  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id], 1);
+  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[prerequisite.id], 1);
+  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses > 0);
+});
+
+test("ordinary individual forward check skips unrelated pending prerequisites", () => {
+  const prerequisite = auxiliary("p", "p-person", [{ start: 40, end: 60 }]);
+  const successor = { ...auxiliary("z", "z-person", [{ start: 70, end: 90 }]), dependencies: [prerequisite.id] };
+  const unrelated = { ...auxiliary("a", "a-person", [{ start: 0, end: 20 }, { start: 20, end: 40 }]), duration: 20 };
+  const result = runExactItinerantPlanSearch(ordinaryForwardProblem([unrelated, prerequisite, successor]));
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.ordinaryIndividualForwardUnrelatedSkips > 0);
+  assert.equal(result.evidence.ordinaryIndividualForwardZeroDomainPrunes, 0);
+});
+
+test("ordinary forward check accepts individual witnesses without joint prerequisite search", () => {
+  const prerequisiteAvailability = [{ start: 0, end: 10 }, { start: 20, end: 30 }, { start: 40, end: 50 }];
+  const prerequisites = ["p1", "p2"].map((id) =>
+    ({ ...auxiliary(id, `${id}-person`, prerequisiteAvailability), duration: 10, spaceId: "forward-space" }));
+  const candidate = { ...auxiliary("a", "a-person", [{ start: 15, end: 25 }]), duration: 5,
+    dependencies: prerequisites.map(({ id }) => id) };
+  const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, ...prerequisites]));
+  assert.equal(result.status, "INFEASIBLE");
+  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
+  assert.ok(result.evidence.ordinaryIndividualForwardTasksChecked >= 2);
+  assert.ok(result.evidence.ordinaryIndividualForwardExactDomainChecks >= 2);
+  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses >= 2,
+    "P1 and P2 each retain the start at zero after provisional A");
+  assert.equal(result.evidence.ordinaryIndividualForwardZeroDomainPrunes, 0,
+    "the individual checker does not infer that P1 and P2 cannot coexist at their shared witness");
+  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id], undefined);
+});
+
 test("global macro MRV lets setup beat a broader synchronized round unit", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ setup: [60, 70], rounds: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
