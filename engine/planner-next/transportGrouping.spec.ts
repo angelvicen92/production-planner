@@ -44,6 +44,19 @@ test("arrival probe preserves residual contiguous groups, min gap, cache, and in
   const impossible=arrivalProbeProblem(7,50);const early=impossible.tasks.filter(({id})=>id.startsWith("obligation-")).map(task=>scheduled(task,30));
   assert.equal(assessArrivalTransportFutureFeasibility(impossible,early).feasible,false);
 });
+
+test("arrival probe backtracks from a locally latest start to certify a later group",()=>{
+  const problem=arrivalProbeProblem(2,15);
+  problem.transportPolicy!.arrival={...problem.transportPolicy!.arrival,targetGroupSize:1,maximumGroupSize:1};
+  const first=problem.tasks.find(({id})=>id==="transport-0")!,second=problem.tasks.find(({id})=>id==="transport-1")!;
+  first.availability=[{start:0,end:15}];second.availability=[{start:20,end:25}];
+  const firstObligation=problem.tasks.find(({id})=>id==="obligation-0")!;
+  const secondObligation=problem.tasks.find(({id})=>id==="obligation-1")!;
+  const result=assessArrivalTransportFutureFeasibility(problem,[scheduled(firstObligation,15),scheduled(secondObligation,30)]);
+  assert.equal(result.feasible,true);
+  assert.ok(result.witnessFingerprint);
+  assert.ok(result.groupsChecked>2,"the failed latest local start is revisited with an earlier exact alternative");
+});
 const tasks = (count: number): Task[] => Array.from({ length: count }, (_, index) => ({
   id: `transport-${String(index).padStart(2, "0")}`, kind: "auxiliary", participantId: `p-${index}`,
   duration: 10, spaceId: "transport", dependencies: [],
