@@ -1,0 +1,53 @@
+{
+  "evidenceId": "A2-FULL-023-collective-prerequisite-capacity",
+  "objective": "Detect analytically proven collective overload among pending hard prerequisites sharing an exclusive authority before deeper standalone search.",
+  "baseMainSha": "4dc17c6a165ab11ae1596903c39f7a421511e70b",
+  "validatedFunctionalHeadSha": "56db03c3feb462f19f2e3a2c1e45189f2c8ffdc2",
+  "diagnosticWorkflow": {
+    "pullRequest": 756,
+    "runId": 33324837663,
+    "firstAttemptConclusion": "success",
+    "artifactId": 9736111301,
+    "artifactDigest": "sha256:8903afba18e667b2739bfa14156077ef1b27cae4e3c7e96e4f6865ee7e8c3648"
+  },
+  "canonical": {
+    "obligationCount": 269,
+    "branchBudget": 300000,
+    "sourceHumanTimesUsed": false
+  },
+  "before": {
+    "status": "BRANCH_BUDGET_EXHAUSTED",
+    "branchesExplored": 300000,
+    "standaloneTaskSelections": 75530,
+    "standaloneMaximumDepth": 71,
+    "standaloneCompleteLeafCount": 0,
+    "ordinaryIndividualForwardZeroDomainPrunes": 75530,
+    "participantMealBranchesExplored": 0
+  },
+  "after": {
+    "status": "BRANCH_BUDGET_EXHAUSTED",
+    "complete": false,
+    "branchesExplored": 300000,
+    "coreBranches": 13056,
+    "standaloneBranches": 286944,
+    "standaloneTaskSelections": 267,
+    "standaloneMaximumDepth": 168,
+    "standaloneCompleteLeafCount": 13609,
+    "ordinaryIndividualForwardChecks": 13918,
+    "ordinaryIndividualForwardZeroDomainPrunes": 0,
+    "macroPendingPrerequisiteCollectiveCapacityChecks": 1014,
+    "macroPendingPrerequisiteObligationsChecked": 20446,
+    "macroPendingPrerequisiteCollectiveCapacityPrunes": 128,
+    "macroPendingPrerequisitePrunes": 153,
+    "macroPendingPrerequisiteIndividualZeroDomainPrunes": 25,
+    "macroPendingPrerequisiteJointInfeasiblePrunes": 0,
+    "participantMealExactMaterializations": 13609,
+    "participantMealBranchesExplored": 258554,
+    "participantMealFutureInfeasibleBranches": 44,
+    "participantMealActuallyEvaluatedStarts": 90331782,
+    "completePlansObserved": 0,
+    "lastExhaustionPhase": "STANDALONE"
+  },
+  "verdict": "ACCEPT_CAUSAL_FRONTIER_ADVANCE",
+  "interpretation": "A2-FULL-023 eliminates the prior late ordinary zero-domain wall and advances from no complete standalone leaves at depth 71 to 13609 substantive complete leaves at depth 168. The next demonstrated bottleneck is terminal completion: participant-meal materialization is repeated at each substantive leaf and dominates the remaining branch/work budget. No claim of complete hard-valid A2 plan is made."
+}
