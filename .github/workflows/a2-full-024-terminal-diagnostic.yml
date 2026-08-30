@@ -1,0 +1,55 @@
+name: A2 FULL 024 First Terminal Leaf Diagnostic
+
+on:
+  pull_request:
+    branches:
+      - codex/implementar-certificado-de-sobrecarga-colectiva
+    paths:
+      - ".github/workflows/a2-full-024-terminal-diagnostic.yml"
+      - ".github/scripts/a2-full-024-terminal-instrument.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  first-terminal-leaf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply temporary instrumentation
+        run: node .github/scripts/a2-full-024-terminal-instrument.mjs
+      - name: Capture first terminal rejection
+        run: |
+          set +e
+          PLANNER_NEXT_A2_TERMINAL_DIAG=1 npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts >/tmp/a2-terminal-out.txt 2>/tmp/a2-terminal-err.txt
+          code=$?
+          set -e
+          cat /tmp/a2-terminal-err.txt
+          python - <<'PY'
+          import json,re,pathlib,sys
+          text=pathlib.Path('/tmp/a2-terminal-err.txt').read_text()
+          match=re.search(r'A2_TERMINAL_DIAG:(\{.*\})', text)
+          if not match:
+              print('Expected A2_TERMINAL_DIAG marker was not captured', file=sys.stderr)
+              sys.exit(1)
+          data=json.loads(match.group(1))
+          pathlib.Path('/tmp/a2-full-024-terminal.json').write_text(json.dumps(data,indent=2)+'\n')
+          print(json.dumps(data,indent=2))
+          PY
+          test "$code" -ne 0
+      - name: Upload terminal diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-full-024-terminal-${{ github.sha }}
+          path: /tmp/a2-full-024-terminal.json
+          retention-days: 3
