@@ -58,6 +58,61 @@ jobs:
           cmp /tmp/SPEC10-016-full-a2-first.json docs/evidence/SPEC10-016-full-a2-canonical-template.json
           cmp /tmp/SPEC10-016-full-a2-first.md docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
 
+      - name: A2-FULL-EXEC-001 causal benchmark first run
+        run: |
+          npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts > /tmp/a2-full-exec-first.txt
+          cp docs/evidence/A2-FULL-EXEC-001-first-execution.json /tmp/A2-FULL-EXEC-001-first.json
+
+      - name: A2-FULL-EXEC-001 causal benchmark second run
+        run: npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts > /tmp/a2-full-exec-second.txt
+
+      - name: Verify A2-FULL-EXEC-001 determinism and print causal metrics
+        run: |
+          cmp /tmp/a2-full-exec-first.txt /tmp/a2-full-exec-second.txt
+          cmp /tmp/A2-FULL-EXEC-001-first.json docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          node <<'NODE'
+          const j = require('./docs/evidence/A2-FULL-EXEC-001-first-execution.json');
+          const x = j.execution ?? {};
+          const e = x.evidence ?? {};
+          console.log(JSON.stringify({
+            status: x.status,
+            complete: x.complete,
+            branchesExplored: e.branchesExplored,
+            coreBranches: e.coreBranches,
+            standaloneBranches: e.standaloneBranches,
+            standaloneTaskSelections: e.standaloneTaskSelections,
+            standaloneBacktracks: e.standaloneBacktracks,
+            standaloneMaximumDepth: e.standaloneMaximumDepth,
+            standaloneCompleteLeafCount: e.standaloneCompleteLeafCount,
+            participantMealBranchesExplored: e.participantMealBranchesExplored,
+            participantMealFutureFeasibilityChecks: e.participantMealFutureFeasibilityChecks,
+            participantMealFutureInfeasibleBranches: e.participantMealFutureInfeasibleBranches,
+            participantMealCheapProbes: e.participantMealCheapProbes,
+            participantMealAffectedObligationsChecked: e.participantMealAffectedObligationsChecked,
+            participantMealAnalyticDomainBuilds: e.participantMealAnalyticDomainBuilds,
+            participantMealLogicalGridStarts: e.participantMealLogicalGridStarts,
+            participantMealAnalyticallyEliminatedStarts: e.participantMealAnalyticallyEliminatedStarts,
+            participantMealActuallyEvaluatedStarts: e.participantMealActuallyEvaluatedStarts,
+            participantMealZeroDomainPrunes: e.participantMealZeroDomainPrunes,
+            participantMealAnalyticCollectivePrunes: e.participantMealAnalyticCollectivePrunes,
+            participantMealExactSearchesAvoided: e.participantMealExactSearchesAvoided,
+            participantMealExactMaterializations: e.participantMealExactMaterializations,
+            lastExhaustionPhase: e.lastExhaustionPhase,
+            causalDiagnostic: e.causalDiagnostic ?? null
+          }, null, 2));
+          NODE
+
+      - name: Upload A2-FULL-EXEC-001 generated Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-full-exec-001-${{ github.sha }}
+          path: docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Restore tracked causal Evidence after validation
+        run: git checkout -- docs/evidence/A2-FULL-EXEC-001-first-execution.json
+
       - name: Verify generated Evidence is current
         run: git diff --exit-code
 
