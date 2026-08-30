@@ -413,7 +413,6 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
-  const hardPrerequisiteIds = new Set(problem.tasks.flatMap((task) => task.dependencies));
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
     evidence.standaloneBlockingTaskDetails[task.id] ??= {
@@ -518,8 +517,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const orderedStarts = feasibleStarts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
       allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
         || a.scheduled.id.localeCompare(b.scheduled.id));
-    const ordinaryForwardPrerequisites = remaining
-      .filter((task) => task.id !== choice.task.id && hardPrerequisiteIds.has(task.id))
+    const ordinaryForwardObligations = remaining
+      .filter((task) => task.id !== choice.task.id)
       .sort(byId);
     for (const { scheduled } of orderedStarts) {
       if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
@@ -527,29 +526,27 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.ordinaryIndividualForwardChecks += 1;
       evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
         = (evidence.ordinaryIndividualForwardChecksByDepth[String(depth)] ?? 0) + 1;
-      const relevantPrerequisites = ordinaryForwardPrerequisites.filter((task) =>
+      const affectedObligations = ordinaryForwardObligations.filter((task) =>
         tasksCanAffectEachOther(task, choice.task));
-      evidence.ordinaryIndividualForwardUnrelatedSkips += ordinaryForwardPrerequisites.length - relevantPrerequisites.length;
-      let zeroDomainPrerequisite: Task | null = null;
+      evidence.ordinaryIndividualForwardUnrelatedSkips += ordinaryForwardObligations.length - affectedObligations.length;
+      let zeroDomainObligation: Task | null = null;
       const provisionalPlaced = [...allPlaced, scheduled];
-      for (const prerequisite of relevantPrerequisites) {
+      for (const obligation of affectedObligations) {
         evidence.ordinaryIndividualForwardTasksChecked += 1;
         evidence.ordinaryIndividualForwardExactDomainChecks += 1;
-        // The provisional successor is included here, so the canonical dynamic
-        // authority applies any deadline induced by this exact candidate.
-        const domain = standaloneForwardDynamicDomain(problem, prerequisite, provisionalPlaced,
-          ordinaryStaticDomain(prerequisite));
+        const domain = standaloneForwardDynamicDomain(problem, obligation, provisionalPlaced,
+          ordinaryStaticDomain(obligation));
         if (domain.eligibleStartCount > 0) evidence.ordinaryIndividualForwardWitnesses += 1;
-        else { zeroDomainPrerequisite = prerequisite; break; }
+        else { zeroDomainObligation = obligation; break; }
       }
-      if (zeroDomainPrerequisite) {
+      if (zeroDomainObligation) {
         evidence.ordinaryIndividualForwardZeroDomainPrunes += 1;
         evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id]
           = (evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id] ?? 0) + 1;
-        evidence.ordinaryIndividualForwardBlockingTaskCounts[zeroDomainPrerequisite.id]
-          = (evidence.ordinaryIndividualForwardBlockingTaskCounts[zeroDomainPrerequisite.id] ?? 0) + 1;
+        evidence.ordinaryIndividualForwardBlockingTaskCounts[zeroDomainObligation.id]
+          = (evidence.ordinaryIndividualForwardBlockingTaskCounts[zeroDomainObligation.id] ?? 0) + 1;
         evidence.ordinaryIndividualForwardFirstPrune ??= {
-          causingTaskId: choice.task.id, blockingTaskId: zeroDomainPrerequisite.id, depth,
+          causingTaskId: choice.task.id, blockingTaskId: zeroDomainObligation.id, depth,
         };
         evidence.standaloneBacktracks += 1;
         continue;

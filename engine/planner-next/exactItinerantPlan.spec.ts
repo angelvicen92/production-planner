@@ -148,6 +148,26 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
     "the analytic certificate does not enumerate starts");
 });
 
+test("ordinary provisional placement prunes an affected hard obligation that is not a prerequisite", () => {
+  const candidate = { ...auxiliary("a", "a-person", [{ start: 0, end: 20 }]), duration: 20,
+    spaceId: "forward-space" };
+  const obligation = { ...auxiliary("z", "z-person", [{ start: 0, end: 20 }]), duration: 10,
+    spaceId: "forward-space" };
+  assert.equal(candidate.dependencies.length, 0);
+  assert.equal(obligation.dependencies.length, 0);
+
+  const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, obligation]));
+  assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
+  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
+    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
+  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[obligation.id],
+    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
+  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
+    { causingTaskId: candidate.id, blockingTaskId: obligation.id, depth: 0 });
+  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0);
+});
+
 test("singleton ordinary candidate is retained when its affected prerequisite keeps an analytic domain", () => {
   const prerequisite = { ...auxiliary("p", "p-person", [{ start: 0, end: 20 }]), duration: 10,
     spaceId: "forward-space" };
