@@ -1,0 +1,84 @@
+name: A2 FULL 023 Causal Validation
+
+on:
+  pull_request:
+    branches:
+      - codex/implementar-certificado-de-sobrecarga-colectiva
+    paths:
+      - "engine/**"
+      - ".github/workflows/a2-full-023-causal.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a2-full-023-causal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  causal-a2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run causal Full A2
+        run: npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts > /tmp/a2-full-023.txt
+
+      - name: Print decisive metrics
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('docs/evidence/A2-FULL-EXEC-001-first-execution.json','utf8'));
+          const e = j.execution?.evidence ?? {};
+          console.log(JSON.stringify({
+            status: j.execution?.status,
+            complete: j.execution?.complete,
+            branchesExplored: e.branchesExplored,
+            coreBranches: e.coreBranches,
+            standaloneBranches: e.standaloneBranches,
+            standaloneTaskSelections: e.standaloneTaskSelections,
+            standaloneZeroAlternativePrunes: e.standaloneZeroAlternativePrunes,
+            standaloneMaximumDepth: e.standaloneMaximumDepth,
+            standaloneCompleteLeafCount: e.standaloneCompleteLeafCount,
+            ordinaryMRVSelections: e.ordinaryMRVSelections,
+            ordinaryIndividualForwardChecks: e.ordinaryIndividualForwardChecks,
+            ordinaryIndividualForwardZeroDomainPrunes: e.ordinaryIndividualForwardZeroDomainPrunes,
+            ordinaryIndividualForwardFirstPrune: e.ordinaryIndividualForwardFirstPrune,
+            macroPendingPrerequisiteForwardChecks: e.macroPendingPrerequisiteForwardChecks,
+            macroPendingPrerequisiteTasksChecked: e.macroPendingPrerequisiteTasksChecked,
+            macroPendingPrerequisiteIndividualDomainChecks: e.macroPendingPrerequisiteIndividualDomainChecks,
+            macroPendingPrerequisiteCollectiveCapacityChecks: e.macroPendingPrerequisiteCollectiveCapacityChecks,
+            macroPendingPrerequisiteObligationsChecked: e.macroPendingPrerequisiteObligationsChecked,
+            macroPendingPrerequisiteCollectiveCapacityPrunes: e.macroPendingPrerequisiteCollectiveCapacityPrunes,
+            macroPendingPrerequisiteJointChecks: e.macroPendingPrerequisiteJointChecks,
+            macroPendingPrerequisitePrunes: e.macroPendingPrerequisitePrunes,
+            macroPendingPrerequisiteIndividualZeroDomainPrunes: e.macroPendingPrerequisiteIndividualZeroDomainPrunes,
+            macroPendingPrerequisiteJointInfeasiblePrunes: e.macroPendingPrerequisiteJointInfeasiblePrunes,
+            macroPendingPrerequisiteFirstPrune: e.macroPendingPrerequisiteFirstPrune,
+            participantMealBranchesExplored: e.participantMealBranchesExplored,
+            coreMaximumDepth: e.coreMaximumDepth,
+            deepestCoreDepthReached: e.deepestCoreDepthReached,
+            lastExhaustionPhase: e.lastExhaustionPhase,
+            waterfallByDepth: e.causalDiagnostic?.waterfallByDepth,
+            feederByDepth: e.causalDiagnostic?.feederByDepth
+          }, null, 2));
+          NODE
+
+      - name: Upload causal Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-full-023-causal-${{ github.sha }}
+          path: docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          retention-days: 3
