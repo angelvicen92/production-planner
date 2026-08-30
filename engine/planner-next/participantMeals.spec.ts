@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ParticipantMealObligation, PlannerNextProblem, ScheduledTask } from "./contracts";
-import { assessParticipantMealFutureFeasibility, participantMealCandidates, scheduleParticipantMeals } from "./participantMeals";
+import { assessParticipantMealFutureFeasibility, participantMealCandidates, probeParticipantMealFutureFeasibility, scheduleParticipantMeals } from "./participantMeals";
 import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { preflight, validatePlan } from "./validate";
@@ -41,6 +41,57 @@ test("joint witness rejects capacity collision although every meal has an indivi
   const source=problem(obligations,2);
   assert.ok(obligations.every(item=>participantMealCandidates(source,item,[],[]).length===1));
   const result=scheduleParticipantMeals(source,[],500);assert.equal(result.complete,false);assert.deepEqual(result.scheduled,[]);assert.ok(result.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"));
+});
+
+test("cheap probe soundly prunes a zero individual domain",()=>{
+  const source=problem([meal("1","p1",{start:780,end:820},40)],2);
+  const tasks=[{id:"busy",kind:"auxiliary",participantId:"p1",spaceId:"s",duration:40,dependencies:[],start:780,end:820}] as ScheduledTask[];
+  const probe=probeParticipantMealFutureFeasibility(source,tasks,tasks);
+  assert.equal(probe.feasible,false);assert.equal(probe.affectedObligationsChecked,1);assert.equal(probe.zeroDomainPrunes,1);
+  assert.equal(probe.analyticDomainBuilds,1);assert.equal(probe.logicalGridStarts,1);assert.equal(probe.analyticallyEliminatedStarts,1);assert.equal(probe.actuallyEvaluatedStarts,0);
+});
+
+test("analytic probe represents fragmented holes and exact boundaries without scanning starts",()=>{
+  const source=problem([meal("1","p1",{start:780,end:900},40)],2);
+  const tasks=[
+    {id:"left",kind:"auxiliary",participantId:"p1",spaceId:"s",duration:25,dependencies:[],start:780,end:805},
+    {id:"middle",kind:"auxiliary",participantId:"p1",spaceId:"s",duration:35,dependencies:[],start:845,end:880},
+  ] as ScheduledTask[];
+  const probe=probeParticipantMealFutureFeasibility(source,tasks);
+  assert.equal(probe.feasible,true);assert.equal(probe.candidateCountByTaskId["task:1"],1);
+  assert.equal(probe.logicalGridStarts,17);assert.equal(probe.analyticallyEliminatedStarts,16);assert.equal(probe.actuallyEvaluatedStarts,0);
+  assert.equal(participantMealCandidates(source,source.participantMeals![0]!,tasks,[])[0]?.start,805);
+});
+
+test("analytic dependency bounds retain the exact boundary and eliminate later starts arithmetically",()=>{
+  const obligation={...meal("1","p1",{start:780,end:900},40),dependencies:["pre"]};
+  const source=problem([obligation],1);
+  const tasks=[
+    {id:"pre",kind:"auxiliary",participantId:null,spaceId:"s",duration:30,dependencies:[],start:780,end:810},
+    {id:"post",kind:"auxiliary",participantId:null,spaceId:"s",duration:30,dependencies:[obligation.sourceTaskId],start:850,end:880},
+  ] as ScheduledTask[];
+  const first=probeParticipantMealFutureFeasibility(source,tasks),second=probeParticipantMealFutureFeasibility(source,tasks);
+  assert.deepEqual(first,second);assert.equal(first.feasible,true);assert.equal(first.candidateCountByTaskId[obligation.sourceTaskId],1);
+  assert.equal(first.logicalGridStarts,17);assert.equal(first.analyticallyEliminatedStarts,16);assert.equal(first.actuallyEvaluatedStarts,0);
+  assert.equal(participantMealCandidates(source,obligation,tasks,[])[0]?.start,810);
+});
+
+test("cheap probe analytically prunes collective capacity overload",()=>{
+  const source=problem([meal("1","p1",{start:780,end:820},40),meal("2","p2",{start:780,end:820},40),meal("3","p3",{start:780,end:820},40)],2);
+  const probe=probeParticipantMealFutureFeasibility(source,[]);
+  assert.equal(probe.feasible,false);assert.equal(probe.zeroDomainPrunes,0);assert.equal(probe.analyticCollectivePrunes,1);
+});
+
+test("inconclusive cheap probe never substitutes for exact joint search",()=>{
+  const source=problem([meal("1","p1",{start:780,end:860},40),meal("2","p2",{start:780,end:860},40),meal("3","p3",{start:780,end:860},40)],2);
+  const probe=probeParticipantMealFutureFeasibility(source,[]), exact=scheduleParticipantMeals(source,[],500);
+  assert.equal(probe.feasible,true);assert.equal(probe.analyticCollectivePrunes,0);assert.equal(probe.actuallyEvaluatedStarts,0);assert.equal(exact.complete,true);assert.ok(exact.branchesExplored>0);assert.ok(exact.actuallyEvaluatedStarts>0);
+});
+
+test("cheap and exact meal authorities honor variable duration and capacity",()=>{
+  const source=problem([meal("1","p1",{start:780,end:840},30),meal("2","p2",{start:780,end:840},30)],1);
+  const probe=probeParticipantMealFutureFeasibility(source,[]), exact=scheduleParticipantMeals(source,[],500);
+  assert.equal(probe.feasible,true);assert.equal(exact.complete,true);assert.ok(exact.scheduled.every(x=>x.duration===30));assert.equal(exact.maximumSimultaneous,1);
 });
 
 test("meals occupy only their participant and exact boundaries remain valid",()=>{
