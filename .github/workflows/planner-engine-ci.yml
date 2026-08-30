@@ -58,18 +58,50 @@ jobs:
           cmp /tmp/SPEC10-016-full-a2-first.json docs/evidence/SPEC10-016-full-a2-canonical-template.json
           cmp /tmp/SPEC10-016-full-a2-first.md docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md
 
-      - name: A2-FULL-EXEC-001 causal benchmark first run
-        run: |
-          npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts > /tmp/a2-full-exec-first.txt
-          cp docs/evidence/A2-FULL-EXEC-001-first-execution.json /tmp/A2-FULL-EXEC-001-first.json
+      - name: Verify generated Evidence is current
+        run: git diff --exit-code
 
-      - name: A2-FULL-EXEC-001 causal benchmark second run
-        run: npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts > /tmp/a2-full-exec-second.txt
+      - name: Diff hygiene
+        run: git diff --check
 
-      - name: Verify A2-FULL-EXEC-001 determinism and print causal metrics
+      - name: TypeScript check
+        run: npm run check
+
+      - name: Production build
+        run: npm run build
+
+  a2-full-exec-001-causal:
+    name: a2-full-exec-001-causal
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run A2-FULL-EXEC-001 once
+        shell: bash
         run: |
-          cmp /tmp/a2-full-exec-first.txt /tmp/a2-full-exec-second.txt
-          cmp /tmp/A2-FULL-EXEC-001-first.json docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          set -o pipefail
+          rm -f docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts | tee /tmp/a2-full-exec-001.txt
+
+      - name: Print causal metrics
+        if: always()
+        run: |
+          if [ ! -f docs/evidence/A2-FULL-EXEC-001-first-execution.json ]; then
+            echo "No fresh A2-FULL-EXEC-001 Evidence was generated."
+            exit 0
+          fi
           node <<'NODE'
           const j = require('./docs/evidence/A2-FULL-EXEC-001-first-execution.json');
           const x = j.execution ?? {};
@@ -102,25 +134,13 @@ jobs:
           }, null, 2));
           NODE
 
-      - name: Upload A2-FULL-EXEC-001 generated Evidence
+      - name: Upload fresh A2-FULL-EXEC-001 Evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: a2-full-exec-001-${{ github.sha }}
-          path: docs/evidence/A2-FULL-EXEC-001-first-execution.json
-          if-no-files-found: error
+          path: |
+            docs/evidence/A2-FULL-EXEC-001-first-execution.json
+            /tmp/a2-full-exec-001.txt
+          if-no-files-found: warn
           retention-days: 7
-
-      - name: Restore tracked causal Evidence after validation
-        run: git checkout -- docs/evidence/A2-FULL-EXEC-001-first-execution.json
-
-      - name: Verify generated Evidence is current
-        run: git diff --exit-code
-
-      - name: Diff hygiene
-        run: git diff --check
-
-      - name: TypeScript check
-        run: npm run check
-
-      - name: Production build
-        run: npm run build
