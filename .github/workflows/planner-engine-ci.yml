@@ -69,3 +69,77 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  a2-full-exec-001-causal:
+    name: a2-full-exec-001-causal
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run A2-FULL-EXEC-001 once
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -f docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts | tee /tmp/a2-full-exec-001.txt
+
+      - name: Print A2-FULL-021 causal metrics
+        if: always()
+        run: |
+          if [ ! -f docs/evidence/A2-FULL-EXEC-001-first-execution.json ]; then
+            echo "No fresh A2-FULL-EXEC-001 Evidence was generated."
+            exit 0
+          fi
+          node <<'NODE'
+          const j = require('./docs/evidence/A2-FULL-EXEC-001-first-execution.json');
+          const x = j.execution ?? {};
+          const e = x.evidence ?? {};
+          console.log(JSON.stringify({
+            status: x.status,
+            complete: x.complete,
+            branchesExplored: e.branchesExplored,
+            standaloneBranches: e.standaloneBranches,
+            standaloneTaskSelections: e.standaloneTaskSelections,
+            standaloneBacktracks: e.standaloneBacktracks,
+            standaloneMaximumDepth: e.standaloneMaximumDepth,
+            standaloneCompleteLeafCount: e.standaloneCompleteLeafCount,
+            setupBlockBranchesExplored: e.setupBlockBranchesExplored,
+            setupBlockSearchInvocations: e.setupBlockSearchInvocations,
+            setupBlockBudgetExhaustions: e.setupBlockBudgetExhaustions,
+            ordinaryIndividualForwardChecks: e.ordinaryIndividualForwardChecks,
+            ordinaryIndividualForwardTasksChecked: e.ordinaryIndividualForwardTasksChecked,
+            ordinaryIndividualForwardExactDomainChecks: e.ordinaryIndividualForwardExactDomainChecks,
+            ordinaryIndividualForwardStartsChecked: e.ordinaryIndividualForwardStartsChecked,
+            ordinaryIndividualForwardZeroDomainPrunes: e.ordinaryIndividualForwardZeroDomainPrunes,
+            ordinaryIndividualForwardUnrelatedSkips: e.ordinaryIndividualForwardUnrelatedSkips,
+            ordinaryIndividualForwardFirstPrune: e.ordinaryIndividualForwardFirstPrune,
+            ordinaryIndividualForwardCausingTaskCounts: e.ordinaryIndividualForwardCausingTaskCounts,
+            ordinaryIndividualForwardBlockingTaskCounts: e.ordinaryIndividualForwardBlockingTaskCounts,
+            participantMealBranchesExplored: e.participantMealBranchesExplored,
+            lastExhaustionPhase: e.lastExhaustionPhase,
+            causalDiagnostic: e.causalDiagnostic ?? null
+          }, null, 2));
+          NODE
+
+      - name: Upload fresh A2-FULL-EXEC-001 Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-full-exec-001-${{ github.sha }}
+          path: |
+            docs/evidence/A2-FULL-EXEC-001-first-execution.json
+            /tmp/a2-full-exec-001.txt
+          if-no-files-found: warn
+          retention-days: 7
