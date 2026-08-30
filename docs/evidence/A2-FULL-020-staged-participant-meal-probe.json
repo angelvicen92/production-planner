@@ -1,0 +1,80 @@
+{
+  "evidenceId": "A2-FULL-020-staged-participant-meal-probe",
+  "validatedEngineHead": "8e1e9e293b2f846c1bfd35272be7344dadf019bb",
+  "canonicalBenchmark": "A2-FULL-EXEC-001-first-execution",
+  "canonicalObligationCount": 269,
+  "sourceHumanTimesUsed": false,
+  "branchBudget": 300000,
+  "workflow": {
+    "runId": 33304281047,
+    "jobId": 99237932305,
+    "artifactId": 9730116291,
+    "artifactDigest": "sha256:cd1231f3ad94a1980a62b9762a0c93fd8d76d58a7a2f754abbde454e64fb90a2",
+    "causalJobConclusion": "success"
+  },
+  "before": {
+    "status": "BRANCH_BUDGET_EXHAUSTED",
+    "complete": false,
+    "branchesExplored": 300000,
+    "standaloneTaskSelections": 12751,
+    "standaloneBacktracks": 26013,
+    "standaloneMaximumDepth": 72,
+    "standaloneCompleteLeafCount": 0,
+    "participantMealBranchesExplored": 238315,
+    "participantMealFutureFeasibilityChecks": 12754,
+    "participantMealFutureInfeasibleBranches": 212,
+    "setupBlockBranchesExplored": 35571
+  },
+  "after": {
+    "status": "BRANCH_BUDGET_EXHAUSTED",
+    "complete": false,
+    "branchesExplored": 300000,
+    "coreBranches": 13056,
+    "standaloneBranches": 286944,
+    "standaloneTaskSelections": 75530,
+    "standaloneBacktracks": 154941,
+    "standaloneMaximumDepth": 72,
+    "standaloneCompleteLeafCount": 0,
+    "participantMealBranchesExplored": 0,
+    "participantMealFutureFeasibilityChecks": 75533,
+    "participantMealFutureInfeasibleBranches": 0,
+    "participantMealCheapProbes": 75533,
+    "participantMealAffectedObligationsChecked": 75549,
+    "participantMealAnalyticDomainBuilds": 75549,
+    "participantMealLogicalGridStarts": 1737843,
+    "participantMealAnalyticallyEliminatedStarts": 1208617,
+    "participantMealActuallyEvaluatedStarts": 0,
+    "participantMealZeroDomainPrunes": 0,
+    "participantMealAnalyticCollectivePrunes": 0,
+    "participantMealExactSearchesAvoided": 75533,
+    "participantMealExactMaterializations": 0,
+    "setupBlockBranchesExplored": 210747,
+    "setupBlockSearchInvocations": 421,
+    "setupBlockBudgetExhaustions": 1,
+    "macroPendingPrerequisiteIndividualZeroDomainPrunes": 1708,
+    "ordinaryIndividualForwardChecks": 0,
+    "lastExhaustionPhase": "STANDALONE"
+  },
+  "causalFinding": {
+    "mealBranchReduction": 238315,
+    "mealBranchReductionPercent": 100,
+    "structuralFrontierAdvanced": false,
+    "dominantStandaloneBlockingTaskId": "task:10073",
+    "dominantStandaloneBlockingTaskCount": 75115,
+    "dominantStandaloneBlockingTask": {
+      "participantId": "participant:206",
+      "spaceId": "space:3018",
+      "duration": 10,
+      "kind": "auxiliary"
+    },
+    "dominantBlockingTaskEligibleStartsAtCoreDepth19": 74,
+    "setupBlockBranchesShareOfGlobalBudgetPercent": 70.249,
+    "interpretation": "A2-FULL-020 removes the repeated exact participant-meal DFS from construction and preserves truthful accounting, but the Full A2 frontier remains at standalone depth 72. Freed budget is consumed by additional macro/setup and ordinary exploration. The current Evidence identifies task:10073 as the repeated zero-domain blocker but does not yet certify which preceding placement closes its last valid position."
+  },
+  "acceptance": {
+    "hardSemanticsRelaxed": false,
+    "partialPlanPublished": false,
+    "cheapProbeActuallyEvaluatedStarts": 0,
+    "result": "ACCEPT_RESOURCE_WASTE_REDUCTION_WITHOUT_STRUCTURAL_A2_FRONTIER_GAIN"
+  }
+}
