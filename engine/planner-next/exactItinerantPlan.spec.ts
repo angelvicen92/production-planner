@@ -122,24 +122,45 @@ function ordinaryForwardProblem(tasks: Task[]): PlannerNextProblem {
   return input;
 }
 
-test("ordinary candidate that destroys the last exact prerequisite start is pruned before recursion", () => {
+test("singleton ordinary candidate that destroys the last analytic prerequisite domain is pruned immediately", () => {
   const prerequisite = { ...auxiliary("p", "p-person", [{ start: 0, end: 20 }]), duration: 10,
     spaceId: "forward-space" };
-  const candidate = { ...auxiliary("a", "a-person", [{ start: 0, end: 20 }, { start: 20, end: 40 }],
-    []), duration: 20, dependencies: [prerequisite.id], spaceId: "forward-space" };
+  const candidate = { ...auxiliary("a", "a-person", [{ start: 0, end: 20 }]), duration: 20,
+    dependencies: [prerequisite.id], spaceId: "forward-space" };
   const input = ordinaryForwardProblem([candidate, prerequisite]);
   const core = constructExactMainAndFeederCore(input);
   assert.equal(canPlaceTask(input, candidate, 0, core.scheduledTasks, core.scheduledSpaceMeals), true,
-    "A1 is legal for A itself before the pending prerequisite is materialized");
+    "the singleton is legal for A itself before the pending prerequisite is materialized");
 
   const result = runExactItinerantPlanSearch(input);
-  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.equal(result.scheduledTasks.find(({ id }) => id === candidate.id)?.start, 20,
-    "A2 is explored after A1 destroys P's only individual domain");
+  assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
   assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id], 1);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[prerequisite.id], 1);
-  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses > 0);
+  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
+    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
+  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[prerequisite.id],
+    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
+  assert.equal(result.evidence.ordinaryIndividualForwardChecksByDepth["0"],
+    result.evidence.ordinaryIndividualForwardChecks);
+  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
+    { causingTaskId: candidate.id, blockingTaskId: prerequisite.id, depth: 0 });
+  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
+    "the analytic certificate does not enumerate starts");
+});
+
+test("singleton ordinary candidate is retained when its affected prerequisite keeps an analytic domain", () => {
+  const prerequisite = { ...auxiliary("p", "p-person", [{ start: 0, end: 20 }]), duration: 10,
+    spaceId: "forward-space" };
+  const candidate = { ...auxiliary("a", "a-person", [{ start: 20, end: 40 }]), duration: 20,
+    dependencies: [prerequisite.id], spaceId: "forward-space" };
+  const input = ordinaryForwardProblem([candidate, prerequisite]);
+  const first = runExactItinerantPlanSearch(input), second = runExactItinerantPlanSearch(structuredClone(input));
+  assert.equal(first.status, "COMPLETE", first.evidence.reasonCodes.join(","));
+  assert.ok(first.evidence.ordinaryIndividualForwardChecks > 0);
+  assert.ok(first.evidence.ordinaryIndividualForwardWitnesses > 0);
+  assert.equal(first.evidence.ordinaryIndividualForwardZeroDomainPrunes, 0);
+  assert.equal(first.evidence.ordinaryIndividualForwardStartsChecked, 0);
+  assert.deepEqual(first.evidence, second.evidence, "forward accounting is deterministic");
 });
 
 test("ordinary individual forward check skips unrelated pending prerequisites", () => {
@@ -165,9 +186,8 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
   assert.ok(result.evidence.ordinaryIndividualForwardExactDomainChecks >= 2);
   assert.ok(result.evidence.ordinaryIndividualForwardWitnesses >= 2,
     "P1 and P2 each retain the start at zero after provisional A");
-  assert.equal(result.evidence.ordinaryIndividualForwardZeroDomainPrunes, 0,
-    "the individual checker does not infer that P1 and P2 cannot coexist at their shared witness");
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id], undefined);
+  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
+    "the individual checker derives witnesses from analytic domain counts without a joint start scan");
 });
 
 test("global macro MRV lets setup beat a broader synchronized round unit", () => {
