@@ -1,0 +1,75 @@
+name: A2 Main Causal Refresh
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/a2-main-causal-refresh.yml"
+      - "engine/**"
+      - "docs/evidence/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a2-main-causal-refresh-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  a2-main-causal-refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run current-main causal Full A2
+        run: npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts > /tmp/a2-main-causal.txt
+
+      - name: Print decisive causal metrics
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('docs/evidence/A2-FULL-EXEC-001-first-execution.json','utf8'));
+          const e = j.execution?.evidence ?? {};
+          console.log(JSON.stringify({
+            status: j.execution?.status,
+            complete: j.execution?.complete,
+            branchesExplored: e.branchesExplored,
+            coreBranches: e.coreBranches,
+            standaloneBranches: e.standaloneBranches,
+            standaloneTaskSelections: e.standaloneTaskSelections,
+            standaloneZeroAlternativePrunes: e.standaloneZeroAlternativePrunes,
+            standaloneMaximumDepth: e.standaloneMaximumDepth,
+            standaloneCompleteLeafCount: e.standaloneCompleteLeafCount,
+            ordinaryMRVSelections: e.ordinaryMRVSelections,
+            ordinaryIndividualForwardChecks: e.ordinaryIndividualForwardChecks,
+            ordinaryIndividualForwardTasksChecked: e.ordinaryIndividualForwardTasksChecked,
+            ordinaryIndividualForwardZeroDomainPrunes: e.ordinaryIndividualForwardZeroDomainPrunes,
+            ordinaryIndividualForwardFirstPrune: e.ordinaryIndividualForwardFirstPrune,
+            topStandaloneBlockers: Object.entries(e.standaloneBlockingTaskCounts ?? {}).sort((a,b)=>b[1]-a[1]).slice(0,10),
+            participantMealBranchesExplored: e.participantMealBranchesExplored,
+            participantMealCheapProbes: e.participantMealCheapProbes,
+            coreMaximumDepth: e.coreMaximumDepth,
+            deepestCoreDepthReached: e.deepestCoreDepthReached,
+            lastExhaustionPhase: e.lastExhaustionPhase,
+            causalDiagnostic: e.causalDiagnostic
+          }, null, 2));
+          NODE
+
+      - name: Upload causal Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-main-causal-refresh-${{ github.sha }}
+          path: docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          retention-days: 3
