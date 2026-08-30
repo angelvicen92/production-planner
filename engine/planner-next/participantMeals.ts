@@ -13,6 +13,8 @@ export interface ParticipantMealWitness {
   readonly rejectedCandidateCount: number;
   readonly candidateOrderByTaskId: Readonly<Record<string, readonly { start:number; spanIncrease:number; internalGap:boolean; residualSlack:number; capacityFree:number }[]>>;
   readonly branchesExplored: number;
+  readonly logicalGridStarts: number;
+  readonly actuallyEvaluatedStarts: number;
   readonly backtracks: number;
   readonly maximumSimultaneous: number;
   readonly reasonCodes: readonly string[];
@@ -25,6 +27,10 @@ export interface ParticipantMealProbe {
   readonly affectedObligationsChecked: number;
   readonly zeroDomainPrunes: number;
   readonly analyticCollectivePrunes: number;
+  readonly analyticDomainBuilds: number;
+  readonly logicalGridStarts: number;
+  readonly analyticallyEliminatedStarts: number;
+  readonly actuallyEvaluatedStarts: 0;
   readonly blockingMealTaskIds: readonly string[];
   readonly candidateCountByTaskId: Readonly<Record<string, number>>;
   readonly reasonCodes: readonly string[];
@@ -34,6 +40,46 @@ export interface ParticipantMealProbe {
 const byIdentity = (a: ParticipantMealObligation, b: ParticipantMealObligation): number => a.sourceTaskId.localeCompare(b.sourceTaskId, "en") || a.id.localeCompare(b.id, "en");
 const intervalOverlaps = (a: Window, b: Window): boolean => a.start < b.end && b.start < a.end;
 const freeze = <T>(value: T): T => { if (value && typeof value === "object" && !Object.isFrozen(value)) { Object.freeze(value); Object.values(value as Record<string, unknown>).forEach(freeze); } return value; };
+const GRID = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
+
+interface AnalyticStartDomain { ranges: { first:number; last:number }[]; logicalStarts:number; validStarts:number }
+const rangeCount = ({first,last}:{first:number;last:number}):number => last < first ? 0 : Math.floor((last-first)/GRID)+1;
+const firstGridAtOrAfter = (base:number, minute:number):number => base + Math.ceil((minute-base)/GRID)*GRID;
+const lastGridAtOrBefore = (base:number, minute:number):number => base + Math.floor((minute-base)/GRID)*GRID;
+
+/** Builds grid-aligned start ranges using interval arithmetic only; it never visits an individual start. */
+function analyticParticipantMealDomain(problem:PlannerNextProblem, obligation:ParticipantMealObligation, tasks:readonly ScheduledTask[]):AnalyticStartDomain {
+  const base=obligation.window.start, duration=obligation.duration;
+  const initialFirst=obligation.fixedInterval?.start??base;
+  const initialLast=obligation.fixedInterval?.start??lastGridAtOrBefore(base,obligation.window.end-duration);
+  const logicalStarts=Math.max(0,rangeCount({first:initialFirst,last:initialLast}));
+  const participant=problem.participants.find(({id})=>id===obligation.participantId);
+  if(!participant||logicalStarts===0||initialFirst<obligation.window.start||initialLast+duration>obligation.window.end)return {ranges:[],logicalStarts,validStarts:0};
+  const taskById=new Map(tasks.map(task=>[task.id,task]));
+  let lower=initialFirst,upper=initialLast;
+  for(const dependencyId of obligation.dependencies??[]){const dependency=taskById.get(dependencyId);if(dependency)lower=Math.max(lower,firstGridAtOrAfter(base,dependency.end));}
+  for(const task of tasks)if(task.dependencies.includes(obligation.sourceTaskId))upper=Math.min(upper,lastGridAtOrBefore(base,task.start-duration));
+  let ranges=participant.availability.map(available=>({
+    first:Math.max(lower,firstGridAtOrAfter(base,available.start)),
+    last:Math.min(upper,lastGridAtOrBefore(base,available.end-duration)),
+  })).filter(range=>range.first<=range.last);
+  for(const task of tasks.filter(task=>task.participantId===obligation.participantId)){
+    // A meal overlaps the task exactly when start is in (task.start-duration, task.end).
+    const blockedFirst=firstGridAtOrAfter(base,task.start-duration+1);
+    const blockedLast=lastGridAtOrBefore(base,task.end-1);
+    ranges=ranges.flatMap(range=>{
+      if(blockedLast<range.first||blockedFirst>range.last)return [range];
+      const pieces:{first:number;last:number}[]=[];
+      if(range.first<blockedFirst)pieces.push({first:range.first,last:blockedFirst-GRID});
+      if(blockedLast<range.last)pieces.push({first:blockedLast+GRID,last:range.last});
+      return pieces;
+    });
+  }
+  ranges.sort((a,b)=>a.first-b.first||a.last-b.last);
+  const merged:{first:number;last:number}[]=[];
+  for(const range of ranges){const previous=merged.at(-1);if(previous&&range.first<=previous.last+GRID)previous.last=Math.max(previous.last,range.last);else merged.push({...range});}
+  return {ranges:merged,logicalStarts,validStarts:merged.reduce((sum,range)=>sum+rangeCount(range),0)};
+}
 
 function maximumConcurrent(meals: readonly ScheduledParticipantMeal[]): number {
   const points = meals.flatMap((meal) => [{ minute: meal.start, delta: 1 }, { minute: meal.end, delta: -1 }])
@@ -87,14 +133,16 @@ export function probeParticipantMealFutureFeasibility(problem: PlannerNextProble
     || task.dependencies.includes(obligation.sourceTaskId) || (obligation.dependencies ?? []).includes(task.id)));
   const capacity = problem.participantMealCapacity?.maxSimultaneous;
   if (!Number.isInteger(capacity) || capacity! <= 0) return freeze({ feasible:false, affectedObligationsChecked:affected.length,
-    zeroDomainPrunes:0, analyticCollectivePrunes:1, blockingMealTaskIds:obligations.map(x=>x.sourceTaskId), candidateCountByTaskId:{},
+    zeroDomainPrunes:0, analyticCollectivePrunes:1, analyticDomainBuilds:0,logicalGridStarts:0,analyticallyEliminatedStarts:0,actuallyEvaluatedStarts:0,blockingMealTaskIds:obligations.map(x=>x.sourceTaskId), candidateCountByTaskId:{},
     reasonCodes:["INVALID_PARTICIPANT_MEAL_CAPACITY"], readOnly:true });
-  const domains = affected.map((obligation) => ({ obligation, candidates:participantMealCandidates(problem, obligation, tasks, []) }));
-  const counts = Object.fromEntries(domains.map(({obligation,candidates})=>[obligation.sourceTaskId,candidates.length]));
-  const empty = domains.filter(({candidates})=>candidates.length===0).map(({obligation})=>obligation.sourceTaskId);
+  const domains = affected.map((obligation) => ({ obligation, domain:analyticParticipantMealDomain(problem,obligation,tasks) }));
+  const logicalGridStarts=domains.reduce((sum,{domain})=>sum+domain.logicalStarts,0);
+  const validStarts=domains.reduce((sum,{domain})=>sum+domain.validStarts,0);
+  const counts = Object.fromEntries(domains.map(({obligation,domain})=>[obligation.sourceTaskId,domain.validStarts]));
+  const empty = domains.filter(({domain})=>domain.validStarts===0).map(({obligation})=>obligation.sourceTaskId);
   if (empty.length) return freeze({ feasible:false, affectedObligationsChecked:affected.length, zeroDomainPrunes:1,
-    analyticCollectivePrunes:0, blockingMealTaskIds:empty, candidateCountByTaskId:counts, reasonCodes:["PARTICIPANT_MEAL_ZERO_DOMAIN"], readOnly:true });
-  const envelopes=domains.map(({obligation,candidates})=>({obligation,candidates,start:Math.min(...candidates.map(x=>x.start)),end:Math.max(...candidates.map(x=>x.end))}));
+    analyticCollectivePrunes:0,analyticDomainBuilds:domains.length,logicalGridStarts,analyticallyEliminatedStarts:logicalGridStarts-validStarts,actuallyEvaluatedStarts:0,blockingMealTaskIds:empty, candidateCountByTaskId:counts, reasonCodes:["PARTICIPANT_MEAL_ZERO_DOMAIN"], readOnly:true });
+  const envelopes=domains.map(({obligation,domain})=>({obligation,start:domain.ranges[0]!.first,end:domain.ranges.at(-1)!.last+obligation.duration}));
   const endpoints = [...new Set(envelopes.flatMap(({start,end})=>[start,end]))].sort((a,b)=>a-b);
   for (let left=0; left<endpoints.length; left++) for (let right=left+1; right<endpoints.length; right++) {
     const start=endpoints[left]!,end=endpoints[right]!,contained=envelopes.filter((domain)=>domain.start>=start&&domain.end<=end);
@@ -102,26 +150,26 @@ export function probeParticipantMealFutureFeasibility(problem: PlannerNextProble
     for(const {obligation} of contained) participantDuration.set(obligation.participantId,(participantDuration.get(obligation.participantId)??0)+obligation.duration);
     if(duration>capacity!*(end-start)||[...participantDuration.values()].some(value=>value>end-start)) return freeze({ feasible:false,
       affectedObligationsChecked:affected.length, zeroDomainPrunes:0, analyticCollectivePrunes:1,
-      blockingMealTaskIds:contained.map(x=>x.obligation.sourceTaskId).sort(), candidateCountByTaskId:counts,
+      analyticDomainBuilds:domains.length,logicalGridStarts,analyticallyEliminatedStarts:logicalGridStarts-validStarts,actuallyEvaluatedStarts:0,blockingMealTaskIds:contained.map(x=>x.obligation.sourceTaskId).sort(), candidateCountByTaskId:counts,
       reasonCodes:["PARTICIPANT_MEALS_ANALYTICALLY_INFEASIBLE"], readOnly:true });
   }
   return freeze({ feasible:true, affectedObligationsChecked:affected.length, zeroDomainPrunes:0, analyticCollectivePrunes:0,
-    blockingMealTaskIds:[], candidateCountByTaskId:counts, reasonCodes:[], readOnly:true });
+    analyticDomainBuilds:domains.length,logicalGridStarts,analyticallyEliminatedStarts:logicalGridStarts-validStarts,actuallyEvaluatedStarts:0,blockingMealTaskIds:[], candidateCountByTaskId:counts, reasonCodes:[], readOnly:true });
 }
 
 /** Exact deterministic joint witness; smallest-domain-first and ID only as final tie-break. */
 export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode): ParticipantMealWitness {
   const obligations = [...(problem.participantMeals ?? [])].sort(byIdentity);
-  if (obligations.length === 0) return freeze({ complete: true, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: [], rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, backtracks: 0, maximumSimultaneous: 0, reasonCodes: [], readOnly: true });
+  if (obligations.length === 0) return freeze({ complete: true, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: [], rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: [], readOnly: true });
   const capacity = problem.participantMealCapacity?.maxSimultaneous;
-  if (!Number.isInteger(capacity) || capacity! <= 0) return freeze({ complete: false, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: obligations.map(x=>x.sourceTaskId), rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, backtracks: 0, maximumSimultaneous: 0, reasonCodes: ["INVALID_PARTICIPANT_MEAL_CAPACITY"], readOnly: true });
-  let branches = 0, backtracks = 0;
+  if (!Number.isInteger(capacity) || capacity! <= 0) return freeze({ complete: false, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: obligations.map(x=>x.sourceTaskId), rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0,logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: ["INVALID_PARTICIPANT_MEAL_CAPACITY"], readOnly: true });
+  let branches = 0, backtracks = 0, logicalGridStarts=0, actuallyEvaluatedStarts=0;
   const counts: Record<string, number> = {}, candidateOrders:Record<string,{start:number;spanIncrease:number;internalGap:boolean;residualSlack:number;capacityFree:number}[]>= {}, trace: string[] = [], blockers = new Set<string>();
   let acceptedOrder: string[] = [], exhausted = false, rejected = 0;
   const consume = (): boolean => { if (budget.remaining <= 0) { exhausted = true; return false; } if (budget.consume && !budget.consume(1)) { exhausted = true; return false; } budget.remaining -= 1; branches += 1; return true; };
   const search = (pending: ParticipantMealObligation[], placed: ScheduledParticipantMeal[], path: string[]): ScheduledParticipantMeal[] | null => {
     if (pending.length === 0) { acceptedOrder = path; return placed; }
-    const domains = pending.map((obligation) => ({ obligation, candidates: participantMealCandidates(problem, obligation, tasks, placed) }))
+    const domains = pending.map((obligation) => {const logical=obligation.fixedInterval?1:Math.max(0,Math.floor((obligation.window.end-obligation.duration-obligation.window.start)/GRID)+1);logicalGridStarts+=logical;actuallyEvaluatedStarts+=logical;return { obligation, candidates: participantMealCandidates(problem, obligation, tasks, placed) };})
       .sort((a, b) => a.candidates.length - b.candidates.length || byIdentity(a.obligation, b.obligation));
     const selected = domains[0]!;
     counts[selected.obligation.sourceTaskId] = selected.candidates.length;
@@ -139,7 +187,7 @@ export function assessParticipantMealFutureFeasibility(problem: PlannerNextProbl
   };
   const scheduled = search(obligations, [], []);
   if (!scheduled && !exhausted && blockers.size === 0) obligations.forEach(x=>blockers.add(x.sourceTaskId));
-  return freeze({ complete: scheduled !== null, scheduled: mode === "MATERIALIZE" ? (scheduled ?? []).sort((a, b) => a.start - b.start || a.sourceTaskId.localeCompare(b.sourceTaskId, "en")) : [], candidateCountByTaskId: counts, finalSelectionOrder: acceptedOrder, attemptedSelectionTrace: trace, blockingMealTaskIds: [...blockers].sort(), rejectedCandidateCount: rejected, candidateOrderByTaskId:candidateOrders, branchesExplored: branches, backtracks, maximumSimultaneous: maximumConcurrent(scheduled ?? []), reasonCodes: scheduled ? [] : [exhausted ? "PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED" : "PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"], readOnly: true });
+  return freeze({ complete: scheduled !== null, scheduled: mode === "MATERIALIZE" ? (scheduled ?? []).sort((a, b) => a.start - b.start || a.sourceTaskId.localeCompare(b.sourceTaskId, "en")) : [], candidateCountByTaskId: counts, finalSelectionOrder: acceptedOrder, attemptedSelectionTrace: trace, blockingMealTaskIds: [...blockers].sort(), rejectedCandidateCount: rejected, candidateOrderByTaskId:candidateOrders, branchesExplored: branches,logicalGridStarts,actuallyEvaluatedStarts,backtracks, maximumSimultaneous: maximumConcurrent(scheduled ?? []), reasonCodes: scheduled ? [] : [exhausted ? "PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED" : "PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"], readOnly: true });
 }
 
 export function scheduleParticipantMeals(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], branchAllowance: number): ParticipantMealWitness {
