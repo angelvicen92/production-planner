@@ -41,7 +41,19 @@ jobs:
         run: npm ci
 
       - name: Full test suite
-        run: npm test
+        run: |
+          set +e
+          npm test 2>&1 | tee /tmp/full-test-suite.log
+          status=${PIPESTATUS[0]}
+          exit $status
+
+      - name: Upload full test suite log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr758-full-test-log-${{ github.sha }}
+          path: /tmp/full-test-suite.log
+          retention-days: 7
 
       - name: Full A2 benchmark first run
         run: |
