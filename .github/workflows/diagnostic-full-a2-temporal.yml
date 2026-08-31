@@ -1,0 +1,86 @@
+name: Diagnostic - Full A2 temporal comparison (do not merge)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-a2-first-execution:
+    name: Full A2 first execution (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: a2-full-023-functional-head
+            sha: 56db03c3feb462f19f2e3a2c1e45189f2c8ffdc2
+          - label: pr-755-merge
+            sha: efe1350ae562ef1c44d1a2bb9919fb03085a514f
+          - label: main-after-pr-758
+            sha: c19de13e9050f6b10bd6d796049ef354f1357579
+
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.sha }}
+
+      - name: Print checked-out revision
+        run: |
+          git rev-parse HEAD
+          git rev-parse 'HEAD^{tree}'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Full A2 first-execution benchmark directly
+        run: npx tsx engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.ts
+
+      - name: Print compact Evidence summary
+        run: |
+          node <<'NODE'
+          const evidence = require("./docs/evidence/A2-FULL-EXEC-001-first-execution.json");
+          const execution = evidence.execution ?? {};
+          const metrics = execution.evidence ?? {};
+          const summary = {
+            canonicalObligationCount: evidence.canonicalObligationCount,
+            problemFingerprint: evidence.adapter?.problemFingerprint,
+            status: execution.status,
+            complete: execution.complete,
+            branchesExplored: metrics.branchesExplored,
+            coreBranches: metrics.coreBranches,
+            standaloneBranches: metrics.standaloneBranches,
+            coreCompleteLeafCount: metrics.coreCompleteLeafCount,
+            deepestPartialCoreTasksRemaining: metrics.deepestPartialCoreTasksRemaining,
+            standaloneMaximumDepth: metrics.standaloneMaximumDepth,
+            standaloneCompleteLeafCount: metrics.standaloneCompleteLeafCount,
+            deepestPartialScheduledTaskCount: metrics.deepestPartialScheduledTaskCount,
+            participantMealExactMaterializations: metrics.participantMealExactMaterializations,
+            participantMealBranchesExplored: metrics.participantMealBranchesExplored,
+            operationalMealCheapProbes: metrics.operationalMealCheapProbes,
+            operationalMealZeroDomainPrunes: metrics.operationalMealZeroDomainPrunes,
+            feederSlotMatchingBranchesExplored: metrics.feederSlotMatchingBranchesExplored,
+            lastExhaustionPhase: metrics.lastExhaustionPhase,
+            ...(metrics.completePlansObserved === undefined
+              ? {}
+              : { completePlansObserved: metrics.completePlansObserved }),
+          };
+          console.log(JSON.stringify(summary));
+          NODE
+
+      - name: Upload complete generated Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-a2-first-execution-${{ matrix.label }}-${{ matrix.sha }}
+          path: docs/evidence/A2-FULL-EXEC-001-first-execution.json
+          if-no-files-found: error
+          retention-days: 30
