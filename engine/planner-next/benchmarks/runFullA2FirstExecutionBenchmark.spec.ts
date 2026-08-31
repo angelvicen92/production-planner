@@ -17,6 +17,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const lines = child.stdout.trim().split(/\n/).filter(Boolean);
     const evidence = JSON.parse(lines.at(-1)!) as {
       canonicalObligationCount: number;
+      engineInput: { maxBranchExpansions: number };
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
@@ -82,6 +83,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
       diagnosticScheduledCanonicalObligations: evidence.result.diagnosticScheduledCanonicalObligations,
       targetCanonicalObligations: evidence.result.targetCanonicalObligations,
       fullHardValidEligible: evidence.result.fullHardValidEligible,
+      maxBranchExpansions: evidence.engineInput.maxBranchExpansions,
     }));
   } finally {
     if (originalEvidence === null) {

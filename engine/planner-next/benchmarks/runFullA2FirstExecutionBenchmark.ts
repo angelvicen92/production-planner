@@ -237,6 +237,7 @@ const evidence = {
     participantCount: expansion.participants.length,
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
+    maxBranchExpansions: branchBudget,
     genericTransitionMinutes: { participant: 0, resource: 0 },
     operationalMealProjection: operationalMealGroups,
     itineraryAvailabilityProjected,
