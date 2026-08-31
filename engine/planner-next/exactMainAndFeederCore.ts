@@ -963,7 +963,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             const affectsPolicy=problem.operationalMealPolicies!.some(policy=>
               commonResourceIds.some(id=>policy.resourceIds.includes(id))
                 ||commonSpaceIds.some(id=>policy.spaceIds.includes(id)));
-            if(inevitable===null||!affectsPolicy){
+            if(!contiguousApplicable||inevitable===null||!affectsPolicy){
               evidence.operationalMealPreMatchingAbstentions++;
             }else{
               evidence.operationalMealPreMatchingChecks++;

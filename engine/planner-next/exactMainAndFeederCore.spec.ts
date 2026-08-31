@@ -816,7 +816,10 @@ function splitTransitionCohort(transitionMinutes:number):PlannerNextProblem {
 }
 
 test("split coach availability bridged by a positive transition remains exactly searchable",()=>{
-  const result=constructExactMainAndFeederCore(splitTransitionCohort(20));
+  const problem=splitTransitionCohort(20);
+  problem.operationalMealPolicies=[{id:"transition-gap-meal",window:{start:20,end:40},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const result=constructExactMainAndFeederCore(problem);
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.deepEqual(result.scheduledTasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start).map(({start,end})=>({start,end})),
     [{start:0,end:20},{start:40,end:60}]);
@@ -824,6 +827,8 @@ test("split coach availability bridged by a positive transition remains exactly 
   assert.ok(result.evidence.feederRunOptimisticSkippedByTransition>0);
   assert.equal(result.evidence.feederRunOptimisticPrunes,0);
   assert.equal(result.evidence.feederCohortContiguousWindowPrunes,0);
+  assert.ok(result.evidence.operationalMealPreMatchingAbstentions>0);
+  assert.equal(result.evidence.operationalMealPreMatchingPrunes,0);
 });
 
 test("an impossible contiguous run is rejected structurally before matching or feeder search",()=>{
@@ -844,6 +849,8 @@ test("a fixed authorized space meal bridges one feeder operational block", () =>
   problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-a");
   problem.tasks.find(({ id }) => id === "feeder-a1")!.availability = [{ start: 20, end: 30 }];
   problem.spaces.find(({ id }) => id === "feed-a")!.mealPolicy = { window: { start: 10, end: 20 }, duration: 10 };
+  problem.operationalMealPolicies=[{id:"authorized-gap-meal",window:{start:10,end:20},duration:10,
+    resourceIds:["coach-a"],spaceIds:[]}];
   const result = constructExactMainAndFeederCore(problem);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   const feeders = result.scheduledTasks.filter(({ kind }) => kind === "vocal").sort((a,b)=>a.start-b.start);
@@ -853,6 +860,8 @@ test("a fixed authorized space meal bridges one feeder operational block", () =>
   assert.ok(result.evidence.contiguousWindowSkippedByAuthorizedMeal>0);
   assert.ok(result.evidence.feederRunOptimisticSkippedByAuthorizedMeal>0);
   assert.equal(result.evidence.feederRunOptimisticPrunes,0);
+  assert.ok(result.evidence.operationalMealPreMatchingAbstentions>0);
+  assert.equal(result.evidence.operationalMealPreMatchingPrunes,0);
 });
 
 test("an uncontracted pause breaks feeder continuity", () => {
