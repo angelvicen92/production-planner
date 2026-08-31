@@ -43,6 +43,12 @@ export interface OperationalMealProbe {
   readonly readOnly: true;
 }
 
+/** An occupation which is present in every completion of a relaxed search branch. */
+export interface InevitableOperationalMealOccupation extends Window {
+  readonly resourceIds: readonly string[];
+  readonly spaceIds: readonly string[];
+}
+
 const byIdentity = (left: OperationalMealPolicy, right: OperationalMealPolicy): number =>
   left.id.localeCompare(right.id, "en");
 
@@ -63,6 +69,14 @@ function scopedResourceIds(task: ScheduledTask): readonly string[] {
 function taskConflictsWithPolicy(task: ScheduledTask, policy: OperationalMealPolicy): boolean {
   return policy.spaceIds.includes(task.spaceId)
     || scopedResourceIds(task).some((id) => policy.resourceIds.includes(id));
+}
+
+function occupationConflictsWithPolicy(
+  occupation: InevitableOperationalMealOccupation,
+  policy: OperationalMealPolicy,
+): boolean {
+  return occupation.spaceIds.some((id) => policy.spaceIds.includes(id))
+    || occupation.resourceIds.some((id) => policy.resourceIds.includes(id));
 }
 
 function mealScopesOverlap(left: ScheduledOperationalMeal, right: ScheduledOperationalMeal): boolean {
@@ -120,9 +134,23 @@ export function probeOperationalMealFutureFeasibility(
   tasks: readonly ScheduledTask[],
   addedTasks?: readonly ScheduledTask[],
 ): OperationalMealProbe {
+  return probeOperationalMealFeasibilityWithInevitableOccupations(problem, tasks, [], addedTasks);
+}
+
+/**
+ * The same interval authority as the exact-task probe, extended with occupations that a
+ * caller has proved invariant across all alternatives represented by its relaxed branch.
+ */
+export function probeOperationalMealFeasibilityWithInevitableOccupations(
+  problem: PlannerNextProblem,
+  tasks: readonly ScheduledTask[],
+  inevitableOccupations: readonly InevitableOperationalMealOccupation[],
+  addedTasks?: readonly ScheduledTask[],
+): OperationalMealProbe {
   const policies = [...(problem.operationalMealPolicies ?? [])].sort(byIdentity);
-  const affected = addedTasks === undefined ? policies : policies.filter((policy) =>
-    addedTasks.some((task) => taskConflictsWithPolicy(task, policy)));
+  const affected = addedTasks === undefined && inevitableOccupations.length === 0 ? policies : policies.filter((policy) =>
+    (addedTasks?.some((task) => taskConflictsWithPolicy(task, policy)) ?? false)
+      || inevitableOccupations.some((occupation) => occupationConflictsWithPolicy(occupation, policy)));
   let logicalGridStarts = 0, validStarts = 0;
   const counts: Record<string, number> = {};
   const logicalCounts: Record<string, number> = {};
@@ -143,6 +171,10 @@ export function probeOperationalMealFutureFeasibility(
     for (const task of [...tasks].filter((candidate) => taskConflictsWithPolicy(candidate, policy))
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id))) {
       free = subtractInterval(free, task);
+    }
+    for (const occupation of inevitableOccupations.filter((candidate) => occupationConflictsWithPolicy(candidate, policy))
+      .sort((a, b) => a.start - b.start || a.end - b.end)) {
+      free = subtractInterval(free, occupation);
     }
     const count = free.reduce((sum, interval) => {
       const first = firstGridAtOrAfter(policy.window.start, interval.start);

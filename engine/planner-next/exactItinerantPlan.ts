@@ -152,6 +152,10 @@ export interface ExactItinerantPlanEvidence {
   feederSlotMatchingEdgeChecks: number;
   feederSlotMatchingAugmentTraversals: number;
   feederSlotMatchingBranchesExplored: number;
+  operationalMealPreMatchingChecks:number; operationalMealPreMatchingPrunes:number;
+  operationalMealPreMatchingAbstentions:number;
+  operationalMealPreMatchingFirstPrune:{policyId:string;depth:number;blockStart:number;
+    logicalStartsBefore:number;logicalStartsAfter:number}|null;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -845,6 +849,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
     feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,feederSlotMatchingAugmentTraversals:0,
     feederSlotMatchingBranchesExplored:0,feederCohortCapacityChecks:0,
+    operationalMealPreMatchingChecks:0,operationalMealPreMatchingPrunes:0,
+    operationalMealPreMatchingAbstentions:0,operationalMealPreMatchingFirstPrune:null,
     feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
     blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
     feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
@@ -1127,6 +1133,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederSlotMatchingEdgeChecks=core.evidence.feederSlotMatchingEdgeChecks;
   evidence.feederSlotMatchingAugmentTraversals=core.evidence.feederSlotMatchingAugmentTraversals;
   evidence.feederSlotMatchingBranchesExplored=core.evidence.feederSlotMatchingBranchesExplored;
+  evidence.operationalMealPreMatchingChecks=core.evidence.operationalMealPreMatchingChecks;
+  evidence.operationalMealPreMatchingPrunes=core.evidence.operationalMealPreMatchingPrunes;
+  evidence.operationalMealPreMatchingAbstentions=core.evidence.operationalMealPreMatchingAbstentions;
+  evidence.operationalMealPreMatchingFirstPrune=core.evidence.operationalMealPreMatchingFirstPrune;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;

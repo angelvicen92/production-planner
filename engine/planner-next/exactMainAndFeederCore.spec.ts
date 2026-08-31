@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
-  exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
+  deriveInevitableFeederRunScopes, exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
   subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
 import type { PlannerNextProblem, Task } from "./contracts";
+import { assessOperationalMealFutureFeasibility,
+  probeOperationalMealFeasibilityWithInevitableOccupations } from "./operationalMeals";
 
 function syntheticProblem(tasks: Task[], participantIds: string[], spaceIds: string[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -122,6 +124,44 @@ test("a perfect feeder-slot matching materializes its witness without FEEDER_ORD
   assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
+});
+
+test("inevitable feeder-run occupation prunes an operational meal before slot matching",()=>{
+  const problem=fixedFeederSlotProblem("PERFECT");
+  problem.operationalMealPolicies=[{id:"run-meal",window:{start:40,end:70},duration:10,
+    resourceIds:["coach"],spaceIds:["feed"]}];
+  const result=constructExactMainAndFeederCore(problem);
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.operationalMealPreMatchingChecks>0);
+  assert.ok(result.evidence.operationalMealPreMatchingPrunes>0);
+  assert.deepEqual(result.evidence.operationalMealPreMatchingFirstPrune,
+    {policyId:"run-meal",depth:3,blockStart:45,logicalStartsBefore:5,logicalStartsAfter:0});
+});
+
+test("pre-matching meal certificate abstains when feeder order can free the relevant space",()=>{
+  const feeders=fixedFeederSlotProblem("PERFECT").tasks.filter(task=>task.kind==="vocal");
+  feeders[0]!.duration=5;
+  assert.equal(deriveInevitableFeederRunScopes(feeders),null,
+    "variable geometry cannot certify that every ordinal remains occupied");
+});
+
+test("inevitable-occupation probe is scoped, deterministic, immutable, and agrees with exact search",()=>{
+  const problem=fixedFeederSlotProblem("PERFECT");
+  problem.operationalMealPolicies=[
+    {id:"affected",window:{start:40,end:70},duration:10,resourceIds:[],spaceIds:["feed"]},
+    {id:"unaffected",window:{start:40,end:70},duration:10,resourceIds:[],spaceIds:["main"]},
+  ];
+  const before=structuredClone(problem);
+  const occupation={start:40,end:70,resourceIds:[],spaceIds:["feed"]};
+  const first=probeOperationalMealFeasibilityWithInevitableOccupations(problem,[],[occupation]);
+  const permuted=structuredClone(problem);permuted.operationalMealPolicies!.reverse();permuted.spaces.reverse();
+  const second=probeOperationalMealFeasibilityWithInevitableOccupations(permuted,[],[occupation]);
+  assert.equal(first.affectedPoliciesChecked,1,"an unrelated policy must not be rebuilt");
+  assert.deepEqual(second,first);assert.deepEqual(problem,before);
+  const exact=assessOperationalMealFutureFeasibility(problem,[{id:"inevitable",kind:"vocal",duration:30,
+    spaceId:"feed",dependencies:[],start:40,end:70}],{remaining:100},"PROBE");
+  assert.equal(first.feasible,exact.complete,"small exact search must confirm the negative certificate");
+  assert.equal(first.feasible,false);
 });
 
 for(const size of [8,11] as const)test(`a ${size}-task run materializes main and feeder witnesses without factorial DFS`,()=>{

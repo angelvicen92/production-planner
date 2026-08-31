@@ -10,6 +10,7 @@ import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./co
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
+import { probeOperationalMealFeasibilityWithInevitableOccupations } from "./operationalMeals";
 
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
@@ -73,6 +74,11 @@ export interface ExactMainAndFeederCoreEvidence {
   feederSlotMatchingEdgeChecks: number;
   feederSlotMatchingAugmentTraversals: number;
   feederSlotMatchingBranchesExplored: number;
+  operationalMealPreMatchingChecks: number;
+  operationalMealPreMatchingPrunes: number;
+  operationalMealPreMatchingAbstentions: number;
+  operationalMealPreMatchingFirstPrune: { policyId:string; depth:number; blockStart:number;
+    logicalStartsBefore:number; logicalStartsAfter:number } | null;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -123,6 +129,20 @@ interface MainChoice {
   feeder: Task;
   participantSlack: number;
   firstObligation: number;
+}
+
+const operationalMealScopedResourceIds = (task: Task): string[] => task.coachId === undefined
+  ? [...(task.requiredResourceIds ?? [])]
+  : [...(task.requiredResourceIds ?? []), task.coachId];
+
+export function deriveInevitableFeederRunScopes(tasks: readonly Task[]):
+Readonly<{ duration:number; resourceIds:readonly string[]; spaceIds:readonly string[] }> | null {
+  const first=tasks[0];
+  if(first===undefined||tasks.some(task=>task.duration!==first.duration))return null;
+  return {duration:first.duration,
+    resourceIds:operationalMealScopedResourceIds(first).filter(id=>
+      tasks.every(task=>operationalMealScopedResourceIds(task).includes(id))).sort(),
+    spaceIds:tasks.every(task=>task.spaceId===first.spaceId)?[first.spaceId]:[]};
 }
 
 interface ResidualMatchingEdge {
@@ -532,6 +552,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
     feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
     feederSlotMatchingAugmentTraversals:0,feederSlotMatchingBranchesExplored:0,
+    operationalMealPreMatchingChecks:0,operationalMealPreMatchingPrunes:0,
+    operationalMealPreMatchingAbstentions:0,operationalMealPreMatchingFirstPrune:null,
     feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
     feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,
     feederCohortContiguousWindowChecks:0,feederCohortContiguousWindowPrunes:0,
@@ -935,6 +957,30 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)) return "BUDGET_EXHAUSTED";
           evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
           if(feederRow)feederRow.startsEvaluated++;
+          const inevitable=deriveInevitableFeederRunScopes(rankedCohort.map(({choice})=>choice.feeder));
+          const commonResourceIds=inevitable?.resourceIds??[],commonSpaceIds=inevitable?.spaceIds??[];
+          if((problem.operationalMealPolicies?.length??0)>0){
+            const affectsPolicy=problem.operationalMealPolicies!.some(policy=>
+              commonResourceIds.some(id=>policy.resourceIds.includes(id))
+                ||commonSpaceIds.some(id=>policy.spaceIds.includes(id)));
+            if(inevitable===null||!affectsPolicy){
+              evidence.operationalMealPreMatchingAbstentions++;
+            }else{
+              evidence.operationalMealPreMatchingChecks++;
+              const probe=probeOperationalMealFeasibilityWithInevitableOccupations(problem,
+                [...blockPlaced,...blockOperations],[{start:blockStart,
+                  end:blockStart+rankedCohort.length*inevitable.duration,
+                  resourceIds:commonResourceIds,spaceIds:commonSpaceIds}]);
+              if(!probe.feasible){
+                evidence.operationalMealPreMatchingPrunes++;evidence.zeroAlternativePrunes++;
+                const policyId=probe.blockingPolicyIds[0]!;
+                evidence.operationalMealPreMatchingFirstPrune??={policyId,depth:runEnd,blockStart,
+                  logicalStartsBefore:probe.logicalStartCountByPolicyId[policyId]??0,
+                  logicalStartsAfter:probe.candidateCountByPolicyId[policyId]??0};
+                continue;
+              }
+            }
+          }
           const feederSlotMatching=feederSlotCertificate(blockStart);
           if(feederSlotMatching.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
           if(feederSlotMatching.outcome==="NO_PERFECT_MATCH"){
