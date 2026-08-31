@@ -22,7 +22,6 @@ test("Full A2 first executable integration reports an atomic completion count", 
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
         evidence: { branchesExplored:number;coreBranches:number;standaloneBranches:number;
           coreMaximumDepth:number;coreCompleteLeafCount:number;deepestCoreDepthReached:number;
-          operationalMealZeroDomainPrunes:number;
           deepestPartialScheduledTaskCount:number;deepestPartialMainRunsClosed:number;
           deepestPartialFeederRunsClosed:number;deepestPartialCoreTasksRemaining:number;
           firstFeedableRunSizes:number[];
@@ -59,11 +58,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.firstFeedableRunSizes.length>0);
     assert.ok(executionEvidence.firstFeedableRunSizes.every((size)=>Number.isInteger(size)&&size>0));
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
-    assert.ok(executionEvidence.coreCompleteLeafCount>0
-      || executionEvidence.operationalMealZeroDomainPrunes>0);
+    assert.ok(executionEvidence.coreCompleteLeafCount>0);
     assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
-    assert.equal(executionEvidence.lastExhaustionPhase,
-      executionEvidence.coreCompleteLeafCount > 0 ? "STANDALONE" : "CORE");
+    assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);
