@@ -1,6 +1,9 @@
 name: Diagnostic - Full A2 temporal comparison (do not merge)
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
