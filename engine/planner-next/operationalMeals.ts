@@ -28,21 +28,6 @@ export interface OperationalMealSearchBudget {
 
 export type OperationalMealAssessmentMode = "PROBE" | "MATERIALIZE";
 
-export interface OperationalMealProbe {
-  readonly feasible: boolean;
-  readonly affectedPoliciesChecked: number;
-  readonly analyticDomainBuilds: number;
-  readonly logicalGridStarts: number;
-  readonly analyticallyEliminatedStarts: number;
-  readonly actuallyEvaluatedStarts: 0;
-  readonly zeroDomainPrunes: number;
-  readonly blockingPolicyIds: readonly string[];
-  readonly candidateCountByPolicyId: Readonly<Record<string, number>>;
-  readonly logicalStartCountByPolicyId: Readonly<Record<string, number>>;
-  readonly reasonCodes: readonly string[];
-  readonly readOnly: true;
-}
-
 const byIdentity = (left: OperationalMealPolicy, right: OperationalMealPolicy): number =>
   left.id.localeCompare(right.id, "en");
 
@@ -82,91 +67,6 @@ function scopeAvailable(problem: PlannerNextProblem, policy: OperationalMealPoli
     return space !== undefined && contains(space.availability, start, end);
   });
   return resourcesAvailable && spacesAvailable;
-}
-
-const GRID = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
-type Interval = { start: number; end: number };
-const firstGridAtOrAfter = (base: number, minute: number): number => base + Math.ceil((minute - base) / GRID) * GRID;
-const lastGridAtOrBefore = (base: number, minute: number): number => base + Math.floor((minute - base) / GRID) * GRID;
-const gridCount = (first: number, last: number): number => last < first ? 0 : Math.floor((last - first) / GRID) + 1;
-const canonicalIntervals = (intervals: readonly Window[]): Interval[] => {
-  const result: Interval[] = [];
-  for (const interval of [...intervals].filter(({ start, end }) => start < end).sort((a, b) => a.start - b.start || a.end - b.end)) {
-    const previous = result.at(-1);
-    if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
-    else result.push({ start: interval.start, end: interval.end });
-  }
-  return result;
-};
-const intersectIntervals = (left: readonly Interval[], right: readonly Window[]): Interval[] => {
-  const intersections: Interval[] = [];
-  for (const a of left) for (const b of canonicalIntervals(right)) {
-    const start = Math.max(a.start, b.start), end = Math.min(a.end, b.end);
-    if (start < end) intersections.push({ start, end });
-  }
-  return canonicalIntervals(intersections);
-};
-const subtractInterval = (free: readonly Interval[], occupied: Window): Interval[] => free.flatMap((interval) => {
-  if (occupied.end <= interval.start || interval.end <= occupied.start) return [interval];
-  const result: Interval[] = [];
-  if (interval.start < occupied.start) result.push({ start: interval.start, end: occupied.start });
-  if (occupied.end < interval.end) result.push({ start: occupied.end, end: interval.end });
-  return result;
-});
-
-/** Sound interval-only zero-domain probe. It deliberately ignores competition between policies. */
-export function probeOperationalMealFutureFeasibility(
-  problem: PlannerNextProblem,
-  tasks: readonly ScheduledTask[],
-  addedTasks?: readonly ScheduledTask[],
-): OperationalMealProbe {
-  const policies = [...(problem.operationalMealPolicies ?? [])].sort(byIdentity);
-  const affected = addedTasks === undefined ? policies : policies.filter((policy) =>
-    addedTasks.some((task) => taskConflictsWithPolicy(task, policy)));
-  let logicalGridStarts = 0, validStarts = 0;
-  const counts: Record<string, number> = {};
-  const logicalCounts: Record<string, number> = {};
-  const blockers: string[] = [];
-  for (const policy of affected) {
-    const logical = gridCount(policy.window.start, lastGridAtOrBefore(policy.window.start, policy.window.end - policy.duration));
-    logicalCounts[policy.id] = logical;
-    logicalGridStarts += logical;
-    let free: Interval[] = canonicalIntervals([policy.window]);
-    for (const id of [...policy.resourceIds].sort()) {
-      const availability = problem.resources.find((resource) => resource.id === id)?.availability
-        ?? problem.coaches.find((coach) => coach.id === id)?.availability ?? [];
-      free = intersectIntervals(free, availability);
-    }
-    for (const id of [...policy.spaceIds].sort()) {
-      free = intersectIntervals(free, problem.spaces.find((space) => space.id === id)?.availability ?? []);
-    }
-    for (const task of [...tasks].filter((candidate) => taskConflictsWithPolicy(candidate, policy))
-      .sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id))) {
-      free = subtractInterval(free, task);
-    }
-    const count = free.reduce((sum, interval) => {
-      const first = firstGridAtOrAfter(policy.window.start, interval.start);
-      const last = lastGridAtOrBefore(policy.window.start, interval.end - policy.duration);
-      return sum + gridCount(first, last);
-    }, 0);
-    counts[policy.id] = count;
-    validStarts += count;
-    if (count === 0) blockers.push(policy.id);
-  }
-  return freeze({
-    feasible: blockers.length === 0,
-    affectedPoliciesChecked: affected.length,
-    analyticDomainBuilds: affected.length,
-    logicalGridStarts,
-    analyticallyEliminatedStarts: logicalGridStarts - validStarts,
-    actuallyEvaluatedStarts: 0,
-    zeroDomainPrunes: blockers.length > 0 ? 1 : 0,
-    blockingPolicyIds: blockers,
-    candidateCountByPolicyId: counts,
-    logicalStartCountByPolicyId: logicalCounts,
-    reasonCodes: blockers.length > 0 ? ["OPERATIONAL_MEAL_ZERO_DOMAIN"] : [],
-    readOnly: true,
-  });
 }
 
 export function operationalMealCandidates(
