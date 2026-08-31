@@ -1,6 +1,9 @@
 name: Diagnostic - Full A2 temporal comparison (do not merge)
 
 on:
+  push:
+    branches:
+      - codex/crear-pr-diagnostico-temporal-para-comparacion
   pull_request:
     branches:
       - main
