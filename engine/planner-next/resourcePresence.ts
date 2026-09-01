@@ -36,6 +36,7 @@ export interface ContinuousResourcePresence {
   presenceStart: number | null;
   presenceEnd: number | null;
   presenceSpanMinutes: number;
+  effectivePresenceMinutes: number;
   productiveTaskMinutes: number;
   authorizedMealMinutes: number;
   internalGapMinutes: number;
@@ -69,7 +70,7 @@ export function evaluateResourcePresence(
     .map(({ id, start, end }) => ({ id, start, end }));
   const taskUnion = union(own);
   if (taskUnion.length === 0) return {
-    presenceStart: null, presenceEnd: null, presenceSpanMinutes: 0, productiveTaskMinutes: 0,
+    presenceStart: null, presenceEnd: null, presenceSpanMinutes: 0, effectivePresenceMinutes: 0, productiveTaskMinutes: 0,
     authorizedMealMinutes: 0, internalGapMinutes: 0, operationalBlockCount: 0,
     preferredLexicographicTuple: [0, 0, 0], crossesAuthorizedMeal: false, requiredPolicySatisfied: true,
   };
@@ -88,13 +89,14 @@ export function evaluateResourcePresence(
   const productiveTaskMinutes = taskUnion.reduce((sum, interval) => sum + interval.end - interval.start, 0);
   const authorizedMealMinutes = mealUnion.reduce((sum, interval) => sum + interval.end - interval.start, 0);
   const presenceSpanMinutes = presenceEnd - presenceStart;
+  const effectivePresenceMinutes = presenceSpanMinutes - authorizedMealMinutes;
   const internalGapMinutes = presenceSpanMinutes - union([...taskUnion, ...mealUnion])
     .reduce((sum, interval) => sum + interval.end - interval.start, 0);
   const operationalBlockCount = occupations.length;
   return {
-    presenceStart, presenceEnd, presenceSpanMinutes, productiveTaskMinutes, authorizedMealMinutes,
+    presenceStart, presenceEnd, presenceSpanMinutes, effectivePresenceMinutes, productiveTaskMinutes, authorizedMealMinutes,
     internalGapMinutes, operationalBlockCount,
-    preferredLexicographicTuple: [operationalBlockCount, presenceSpanMinutes, internalGapMinutes],
+    preferredLexicographicTuple: [operationalBlockCount, effectivePresenceMinutes, internalGapMinutes],
     crossesAuthorizedMeal: authorizedMealMinutes > 0,
     requiredPolicySatisfied: resource.presenceConcentrationPolicy !== "REQUIRED" || operationalBlockCount === 1,
   };
@@ -112,7 +114,7 @@ export function resourcePresenceMetrics(resources: Resource[], tasks: ScheduledT
   const authorizedMealMinutesById: Record<string, number> = {};
   for (const resource of [...resources].sort((a, b) => a.id.localeCompare(b.id))) {
     const result = evaluateResourcePresence(resource, tasks, scheduledSpaceMeals,scheduledResourceMeals);
-    presenceMinutesById[resource.id] = result.presenceSpanMinutes;
+    presenceMinutesById[resource.id] = result.effectivePresenceMinutes;
     internalGapMinutesById[resource.id] = result.internalGapMinutes;
     operationalBlockCountById[resource.id] = result.operationalBlockCount;
     authorizedMealMinutesById[resource.id] = result.authorizedMealMinutes;

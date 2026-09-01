@@ -264,6 +264,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
     problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey,
     problem.budget.maxPatterns,
+    problem.resources,
   );
   const counters: Counters = {
     alternativesGenerated: 0,

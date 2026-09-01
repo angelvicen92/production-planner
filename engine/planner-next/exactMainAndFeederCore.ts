@@ -604,7 +604,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const duration = mains[0]!.duration;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns);
+    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
   if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const latestDepartureStart = latestDepartureStartByParticipant(problem);
