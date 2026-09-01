@@ -189,7 +189,10 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable resource ${id}`);
-    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes };
+    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes,
+      ...(source.presenceConcentrationPolicy !== undefined ? { presenceConcentrationPolicy: source.presenceConcentrationPolicy } : {}),
+      ...(source.assignedSpaceId !== undefined ? { assignedSpaceId: canonical("space", source.assignedSpaceId) } : {}),
+    };
   });
   const coaches = [...coachResourceIds].sort((a, b) => a - b).map((id) => {
     const source = input.planResourceItems.find((entry) => entry.id === id)!;

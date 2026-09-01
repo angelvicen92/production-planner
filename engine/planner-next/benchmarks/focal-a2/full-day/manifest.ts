@@ -148,6 +148,7 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
 ]);
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
+  { id: "band", label: "Banda", kind: "band", availability: "inherits_day_unless_overridden" },
   { id: "cam-2", label: "CAM 2", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-3", label: "CAM 3", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-4", label: "CAM 4", kind: "camera", availability: "inherits_day_unless_overridden" },
@@ -189,6 +190,7 @@ function assignment(participantId: string): CanonicalParticipantAssignment {
     corner: sequence.filter((type) => type.startsWith("CORNER_")),
     setup: sequence.filter((type) => type === "SILLON" || type === "ESTRELLAS"),
     extras: sequence.filter((type) => !["IN", "ESTILISMO_ENTRADA", "CROMA", "PRUEBA_VOCAL_LUCIA", "PRUEBA_VOCAL_JOSE_MARIA", "ENSAYO_ESTUDIO_7", "REDES", "PASILLO", "TOTALES_1", "TOTALES_COREO", "SODEXO", "ESTILISMO_SALIDA", "OUT"].includes(type) && !type.startsWith("CORNER_") && type !== "SILLON" && type !== "ESTRELLAS"),
+    requiresBand: new Set(["C01", "C04", "C07", "C08", "C09", "C10", "C11", "C13", "C14", "C15", "C16", "C17", "C18"]).has(participantId),
   };
 }
 

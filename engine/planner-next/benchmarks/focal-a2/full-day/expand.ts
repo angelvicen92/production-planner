@@ -73,6 +73,7 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     const operation = operationLookup.get(id);
     const requiredResourceIds = new Set<string>(definition.knownResourceIds);
     if (type === "ENSAYO_ESTUDIO_7" && coachId) requiredResourceIds.add(coachId);
+    if (type === "ENSAYO_ESTUDIO_7" && assignment?.requiresBand) requiredResourceIds.add("band");
     for (const resourceId of operation?.memberResourceIds ?? []) requiredResourceIds.add(resourceId);
 
     return {

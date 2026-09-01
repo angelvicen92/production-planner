@@ -9,7 +9,7 @@
     "searchBudgetIsTechnicalExecutionConfiguration": true,
     "genericTransitionMinutes": {
       "participant": 0,
-      "resource": 0
+      "resource": 5
     },
     "operationalMealProjection": [
       [
@@ -44,9 +44,24 @@
         [
           "coach-jose-maria"
         ]
+      ],
+      [
+        "estudio-7-operations",
+        [
+          "band"
+        ]
       ]
     ],
-    "itineraryAvailabilityProjected": true
+    "itineraryAvailabilityProjected": true,
+    "band": {
+      "canonicalResourceCount": 1,
+      "requiredMainCount": 13,
+      "presenceConcentrationPolicy": "PREFERRED",
+      "assignedSpaceId": "estudio-7",
+      "availabilitySource": "INHERIT_DAY_UNLESS_OVERRIDDEN",
+      "sharedOperationalMealPolicyId": "estudio-7-operations"
+    },
+    "maxBranchExpansions": 300000
   },
   "preflight": {
     "status": "SUPPORTED",

@@ -93,6 +93,7 @@ export interface CanonicalParticipantAssignment {
   readonly corner: readonly TaskType[];
   readonly setup: readonly TaskType[];
   readonly extras: readonly TaskType[];
+  readonly requiresBand: boolean;
 }
 
 export interface CanonicalSpace {
@@ -106,7 +107,7 @@ export interface CanonicalSpace {
 export interface CanonicalResource {
   readonly id: string;
   readonly label: string;
-  readonly kind: "camera" | "sound" | "coach" | "presenter";
+  readonly kind: "camera" | "sound" | "coach" | "presenter" | "band";
   readonly availability: "inherits_day_unless_overridden";
 }
 

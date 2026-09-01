@@ -69,6 +69,25 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
   assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
 });
 
+test("generic resource presence metadata is fingerprinted and projected losslessly", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  const baseline = supported(input);
+  const genericResourceId = Number(baseline.problem.resources[0]!.id.split(":").at(-1));
+  const resource = input.planResourceItems.find(({ id }) => id === genericResourceId)!;
+  resource.presenceConcentrationPolicy = "PREFERRED";
+  resource.assignedSpaceId = input.tasks[0]!.spaceId!;
+  const before = structuredClone(input);
+  const adapted = supported(input);
+  const projected = adapted.problem.resources.find(({ id }) => id === `plan-resource:${resource.id}`)!;
+  assert.equal(projected.presenceConcentrationPolicy, "PREFERRED");
+  assert.equal(projected.assignedSpaceId, `space:${resource.assignedSpaceId}`);
+  assert.deepEqual(input, before);
+
+  const changed = structuredClone(input);
+  changed.planResourceItems.find(({ id }) => id === resource.id)!.presenceConcentrationPolicy = "REQUIRED";
+  assert.notEqual(supported(changed).problemFingerprint, adapted.problemFingerprint);
+});
+
 test("technical-chain contract is preflighted and projected losslessly",()=>{
  const input=createSupportedEngineInputAdapterFixture(),before=clone(input);input.tasks.push({...input.tasks.find(task=>task.id===105)!,id:106,dependsOnTaskIds:[105]});
  input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];

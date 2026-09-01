@@ -123,6 +123,8 @@ export interface PlanResourceItemInput {
   isAvailable: boolean;
   availabilityStart?: string | null;
   availabilityEnd?: string | null;
+  presenceConcentrationPolicy?: "OFF" | "PREFERRED" | "REQUIRED";
+  assignedSpaceId?: number;
 }
 
 export interface PlanZoneAvailabilityInput {

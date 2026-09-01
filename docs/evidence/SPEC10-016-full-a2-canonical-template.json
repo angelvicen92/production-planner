@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "19b3cfe2692c9b98f2c0494e7fecaeb0d49e9a987becbe0b35c61b18ba21a707",
-  "expansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+  "manifestFingerprint": "265d10df72fa6706089fc9b0d9d45775cfabb2ef813b23688e1f2ca7b22545a9",
+  "expansionFingerprint": "7e3b051408657b6fee479f95df32719535298108d7aef3540d5fa8a56b5b8072",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -65,6 +65,12 @@
     "TECH_TOTALES_POST": 1
   },
   "canonicalResources": [
+    {
+      "id": "band",
+      "label": "Banda",
+      "kind": "band",
+      "availability": "inherits_day_unless_overridden"
+    },
     {
       "id": "cam-2",
       "label": "CAM 2",
@@ -345,6 +351,7 @@
         {
           "taskId": "C01.ensayo_estudio_7",
           "requiredResourceIds": [
+            "band",
             "cam-3",
             "coach-lucia",
             "son-1"
@@ -377,6 +384,7 @@
         {
           "taskId": "C08.ensayo_estudio_7",
           "requiredResourceIds": [
+            "band",
             "cam-3",
             "coach-jose-maria",
             "son-1"
@@ -600,6 +608,7 @@
         "son-1"
       ],
       "requiredResourceIds": [
+        "band",
         "cam-3",
         "coach-lucia",
         "son-1"
@@ -628,6 +637,7 @@
         "son-1"
       ],
       "requiredResourceIds": [
+        "band",
         "cam-3",
         "coach-jose-maria",
         "son-1"
@@ -1597,7 +1607,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+    "shuffledExpansionFingerprint": "7e3b051408657b6fee479f95df32719535298108d7aef3540d5fa8a56b5b8072",
     "matches": true
   },
   "inputImmutable": {

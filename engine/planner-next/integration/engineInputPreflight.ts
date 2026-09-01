@@ -314,6 +314,8 @@ function sourceProjection(input: EngineInput): unknown {
     isAvailable: resource.isAvailable,
     availabilityStart: projectAvailabilityEndpoint(resource, "availabilityStart"),
     availabilityEnd: projectAvailabilityEndpoint(resource, "availabilityEnd"),
+    presenceConcentrationPolicy: resource.presenceConcentrationPolicy,
+    assignedSpaceId: resource.assignedSpaceId,
   }));
   const endpoint = (row: Record<string, unknown>, key: string): unknown => Object.prototype.hasOwnProperty.call(row, key) && row[key] === undefined ? { undefined: true } : Object.prototype.hasOwnProperty.call(row, key) ? row[key] : { absent: true };
   const planZoneSettings = input.planZoneSettings?.map((row) => ({ id: endpoint(row as unknown as Record<string, unknown>, "id"), zoneId: row.zoneId, availabilityStart: endpoint(row as unknown as Record<string, unknown>, "availabilityStart"), availabilityEnd: endpoint(row as unknown as Record<string, unknown>, "availabilityEnd"), source: endpoint(row as unknown as Record<string, unknown>, "source") }));
@@ -1065,6 +1067,22 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const planResourceIds = new Set(input.planResourceItems.map((resource) => String(resource.id)));
   const resourceItemIds = new Set(input.planResourceItems.map((resource) => String(resource.resourceItemId)));
   const resourceTypeIds = new Set(input.planResourceItems.map((resource) => String(resource.typeId)));
+  const knownSpaceIds = new Set([
+    ...(input.planSpaceSettings ?? []).map((space) => String(space.spaceId)),
+    ...input.tasks.flatMap((task) => task.spaceId == null ? [] : [String(task.spaceId)]),
+  ]);
+  for (const resource of input.planResourceItems) {
+    if (resource.presenceConcentrationPolicy !== undefined
+      && !["OFF", "PREFERRED", "REQUIRED"].includes(resource.presenceConcentrationPolicy)) {
+      addIssue("INVALID_RESOURCE_PRESENCE_CONCENTRATION_POLICY", "plan-resource", resource.id,
+        `planResourceItems.${resource.id}.presenceConcentrationPolicy`, "Resource presence concentration policy is invalid.");
+    }
+    if (resource.assignedSpaceId !== undefined
+      && (!isPositiveInteger(resource.assignedSpaceId) || !knownSpaceIds.has(String(resource.assignedSpaceId)))) {
+      addIssue("INVALID_RESOURCE_ASSIGNED_SPACE", "plan-resource", resource.id,
+        `planResourceItems.${resource.id}.assignedSpaceId`, "Assigned resource space does not exist.");
+    }
+  }
   let missingResourceReferenceCount = 0;
   let resourceAssignmentReferenceCount = 0;
   let resourceComponentReferenceCount = 0;

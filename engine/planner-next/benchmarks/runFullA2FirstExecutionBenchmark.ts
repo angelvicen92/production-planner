@@ -89,6 +89,7 @@ input.contestantAvailabilityById = Object.fromEntries(expansion.participants.map
 input.planResourceItems = expansion.resources.map((resource, index) => ({
   id: resourceId.get(resource.id)!, resourceItemId: 7001 + index, typeId: 8001 + index,
   name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
+  ...(resource.id === "band" ? { presenceConcentrationPolicy: "PREFERRED" as const, assignedSpaceId: spaceId.get("estudio-7")! } : {}),
 }));
 input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
 input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
@@ -103,7 +104,7 @@ input.plannerNext = {
   searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
   timeGridMinutes: 5,
   participantTransitionMinutes: 0,
-  resourceTransitionMinutes: 0,
+  resourceTransitionMinutes: 5,
   mainFlow: {
     spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
     preferredEnd: config.meals.effectiveWindow.start,
@@ -157,6 +158,7 @@ const operationalMealGroups: Array<[string, string[]]> = [
   ["eva-operations", ["eva"]],
   ["coach-lucia", ["coach-lucia"]],
   ["coach-jose-maria", ["coach-jose-maria"]],
+  ["estudio-7-operations", ["band"]],
 ];
 input.operationalMealPolicies = operationalMealGroups.map(([id, resources]) => ({
   id,
@@ -238,8 +240,16 @@ const evidence = {
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
-    genericTransitionMinutes: { participant: 0, resource: 0 },
+    genericTransitionMinutes: { participant: 0, resource: 5 },
     operationalMealProjection: operationalMealGroups,
+    band: {
+      canonicalResourceCount: expansion.resources.filter(({ id }) => id === "band").length,
+      requiredMainCount: expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7" && task.requiredResourceIds.includes("band")).length,
+      presenceConcentrationPolicy: "PREFERRED",
+      assignedSpaceId: "estudio-7",
+      availabilitySource: config.resourceAvailability,
+      sharedOperationalMealPolicyId: "estudio-7-operations",
+    },
     itineraryAvailabilityProjected,
     ...(!itineraryAvailabilityProjected ? { itineraryAvailabilityGap: "Not every referenced itinerant unit has its source availability represented losslessly in Planner Next." } : {}),
   },

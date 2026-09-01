@@ -39,13 +39,19 @@ const instruments: Record<string, string> = {
   "marta-fonrali": "GUITARRA",
   "pere-portero": "GUITARRA",
 };
+const requiresBand = new Set([
+  "cristina-zuloaga", "carmen-maria-saborido", "naomi-ines-carretero",
+  "jose-javier-cuenca", "luis-belda", "gisela-montserrat", "linet-varela",
+  "eva-martin-fernandez", "noa-marcos-diez", "claudia-torrent", "adrian-darrel",
+  "nela-garcia", "daniel-hernan-barres",
+]);
 export const focalA2ParticipantRequirementProfiles: FocalA2ParticipantRequirementProfile[] =
   focalA2Reference.participants.map((p) => {
     const annotation = instruments[p.participantId];
     return {
       participantId: p.participantId,
       displayName: p.displayName,
-      requiresBand: !annotation,
+      requiresBand: requiresBand.has(p.participantId),
       usesInstrument: Boolean(annotation),
       instrumentAnnotation: annotation ?? null,
       sourceConfidence: annotation
