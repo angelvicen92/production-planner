@@ -136,9 +136,9 @@ test("representability separates source configuration, implementation blockers a
   const analysis = analyzeCanonicalFullA2Representability(expansion);
   let callCount = 0;
   const gate = runRepresentabilityGate(analysis, () => { callCount += 1; return { engineInputBuilt: true, preflightCalled: true, adapterCalled: true, executePlannerNextCalled: true }; });
-  assert.equal(analysis.status, "FULLY_REPRESENTABLE");
-  assert.deepEqual(expansion.requiredCreationInputs, []);
-  assert.deepEqual(analysis.requiredCreationInputs, []);
+  assert.equal(analysis.status, "BLOCKED");
+  assert.deepEqual(expansion.requiredCreationInputs, ["band_authorized_meal", "band_presence_concentration_policy", "band_resource_availability"]);
+  assert.deepEqual(analysis.requiredCreationInputs.map(({ affectedRule }) => affectedRule), expansion.requiredCreationInputs);
   assert.equal(analysis.jointGroupProbe.executed, true);
   assert.equal(analysis.jointGroupProbe.engineInputPreflightSupported, true);
   assert.equal(analysis.jointGroupProbe.adapterSupported, true);
@@ -293,13 +293,13 @@ test("representability separates source configuration, implementation blockers a
     "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
   );
 
-  assert.equal(gate.status, "EXECUTED");
-  assert.equal(gate.executorCallCount, 1);
-  assert.equal(callCount, 1);
-  assert.equal(gate.engineInputBuilt, true);
-  assert.equal(gate.preflightCalled, true);
-  assert.equal(gate.adapterCalled, true);
-  assert.equal(gate.executePlannerNextCalled, true);
+  assert.equal(gate.status, "REJECTED_BLOCKED");
+  assert.equal(gate.executorCallCount, 0);
+  assert.equal(callCount, 0);
+  assert.equal(gate.engineInputBuilt, false);
+  assert.equal(gate.preflightCalled, false);
+  assert.equal(gate.adapterCalled, false);
+  assert.equal(gate.executePlannerNextCalled, false);
 });
 
 test("representability keeps dependent joint group blocker when the connected probe fails", () => {
@@ -334,7 +334,7 @@ test("generated artifacts are reproducible against current expansion", () => {
   const evidence = JSON.parse(readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json", "utf8"));
   assert.equal(evidence.totalTaskCount, 269);
   assert.equal(evidence.expansionFingerprint, canonicalFingerprint(expandCanonicalFullA2Template(createCanonicalFullA2Template())));
-  assert.equal(evidence.representabilityGate.executorCallCount, 1);
+  assert.equal(evidence.representabilityGate.executorCallCount, 0);
   assert.equal(evidence.noEngineInputPartial, true);
   assert.equal(evidence.itinerantUnits.length, 3);
   assert.equal(evidence.unitIdNotHardResource, true);

@@ -39,13 +39,36 @@ const instruments: Record<string, string> = {
   "marta-fonrali": "GUITARRA",
   "pere-portero": "GUITARRA",
 };
+// Daily production configuration. This is deliberately independent from the
+// instrument annotations above: instrument metadata cannot decide resource use.
+const requiresBandByParticipantId: Readonly<Record<string, boolean>> = Object.freeze({
+  "cristina-zuloaga": true,
+  "moises-salazar-ramirez": false,
+  "angel-gonzalez": false,
+  "carmen-maria-saborido": true,
+  "julio-gomez": false,
+  "lina-isabel-garcia-salcedo": false,
+  "naomi-ines-carretero": true,
+  "jose-javier-cuenca": true,
+  "luis-belda": true,
+  "gisela-montserrat": true,
+  "linet-varela": true,
+  "marta-fonrali": false,
+  "eva-martin-fernandez": true,
+  "noa-marcos-diez": true,
+  "claudia-torrent": true,
+  "adrian-darrel": true,
+  "nela-garcia": true,
+  "daniel-hernan-barres": true,
+  "pere-portero": false,
+});
 export const focalA2ParticipantRequirementProfiles: FocalA2ParticipantRequirementProfile[] =
   focalA2Reference.participants.map((p) => {
     const annotation = instruments[p.participantId];
     return {
       participantId: p.participantId,
       displayName: p.displayName,
-      requiresBand: !annotation,
+      requiresBand: requiresBandByParticipantId[p.participantId]!,
       usesInstrument: Boolean(annotation),
       instrumentAnnotation: annotation ?? null,
       sourceConfidence: annotation

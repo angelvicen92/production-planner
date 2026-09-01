@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "19b3cfe2692c9b98f2c0494e7fecaeb0d49e9a987becbe0b35c61b18ba21a707",
-  "expansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+  "manifestFingerprint": "9fa38bbf3814636b25194c5ce3566250e44014f11e86eaa8b3f1242f5ee9d1b0",
+  "expansionFingerprint": "d25b616a22f8aa07fe4f51d1e32159cccac8d95acc80ee32662fe28039e38f7e",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1082,7 +1082,11 @@
   ],
   "validationStatus": "VALID",
   "validationIssues": [],
-  "requiredCreationInputs": [],
+  "requiredCreationInputs": [
+    "band_authorized_meal",
+    "band_presence_concentration_policy",
+    "band_resource_availability"
+  ],
   "effectiveConfiguration": {
     "version": "A2-FULL-009.source-configuration.v1",
     "executionDate": "2025-06-15",
@@ -1094,6 +1098,28 @@
     "spaceAvailability": "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN",
     "resourceAvailability": "INHERIT_DAY_UNLESS_OVERRIDDEN",
     "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
+    "resourceTransitionMinutes": 5,
+    "requiresBand": {
+      "C01": true,
+      "C02": false,
+      "C03": false,
+      "C04": true,
+      "C05": false,
+      "C06": false,
+      "C07": true,
+      "C08": true,
+      "C09": true,
+      "C10": true,
+      "C11": true,
+      "C12": false,
+      "C13": true,
+      "C14": true,
+      "C15": true,
+      "C16": true,
+      "C17": true,
+      "C18": true,
+      "C19": false
+    },
     "itinerantUnitAvailability": {
       "reality-unit-a": {
         "start": "11:00",
@@ -1225,12 +1251,43 @@
     "provenance": {
       "participantAvailability": "A2-FULL-008-effective-configuration-probe",
       "transportPolicy": "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11",
-      "meals": "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11"
+      "meals": "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11",
+      "resourceTransitionMinutes": "SPEC10-019",
+      "requiresBand": "USER_CONFIRMED_COMPLEMENT_OF_EXPLICIT_INSTRUMENT_SET"
     },
-    "unresolvedCreationInputs": []
+    "unresolvedCreationInputs": [
+      "band_resource_availability",
+      "band_authorized_meal",
+      "band_presence_concentration_policy"
+    ]
   },
-  "representabilityStatus": "FULLY_REPRESENTABLE",
-  "requiredCreationInputBlockers": [],
+  "representabilityStatus": "BLOCKED",
+  "requiredCreationInputBlockers": [
+    {
+      "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_AUTHORIZED_MEAL",
+      "layer": "SOURCE_CONFIGURATION",
+      "affectedRule": "band_authorized_meal",
+      "canonicalIds": [],
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+    },
+    {
+      "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_PRESENCE_CONCENTRATION_POLICY",
+      "layer": "SOURCE_CONFIGURATION",
+      "affectedRule": "band_presence_concentration_policy",
+      "canonicalIds": [],
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+    },
+    {
+      "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_RESOURCE_AVAILABILITY",
+      "layer": "SOURCE_CONFIGURATION",
+      "affectedRule": "band_resource_availability",
+      "canonicalIds": [],
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+    }
+  ],
   "implementationBlockers": [],
   "nextImplementationBlocker": null,
   "participantAvailabilityProbe": {
@@ -1405,12 +1462,62 @@
   },
   "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
-    "status": "EXECUTED",
+    "status": "REJECTED_BLOCKED",
     "analysis": {
-      "status": "FULLY_REPRESENTABLE",
-      "requiredCreationInputs": [],
+      "status": "BLOCKED",
+      "requiredCreationInputs": [
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_AUTHORIZED_MEAL",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "band_authorized_meal",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_PRESENCE_CONCENTRATION_POLICY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "band_presence_concentration_policy",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_RESOURCE_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "band_resource_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        }
+      ],
       "implementationBlockers": [],
-      "blockers": [],
+      "blockers": [
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_AUTHORIZED_MEAL",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "band_authorized_meal",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_PRESENCE_CONCENTRATION_POLICY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "band_presence_concentration_policy",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_BAND_RESOURCE_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "band_resource_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        }
+      ],
       "nextImplementationBlocker": null,
       "participantAvailabilityProbe": {
         "sourceConfigurationPresent": true,
@@ -1584,7 +1691,7 @@
       },
       "roundSynchronizationCapabilityProven": true
     },
-    "executorCallCount": 1,
+    "executorCallCount": 0,
     "engineInputBuilt": false,
     "preflightCalled": false,
     "adapterCalled": false,
@@ -1597,7 +1704,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+    "shuffledExpansionFingerprint": "d25b616a22f8aa07fe4f51d1e32159cccac8d95acc80ee32662fe28039e38f7e",
     "matches": true
   },
   "inputImmutable": {

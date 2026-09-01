@@ -103,7 +103,7 @@ input.plannerNext = {
   searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
   timeGridMinutes: 5,
   participantTransitionMinutes: 0,
-  resourceTransitionMinutes: 0,
+  resourceTransitionMinutes: config.resourceTransitionMinutes,
   mainFlow: {
     spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
     preferredEnd: config.meals.effectiveWindow.start,
@@ -187,7 +187,10 @@ input.transportSettings = {
 
 const preflight = preflightEngineInputForPlannerNext(input);
 const adapted = adaptEngineInputToPlannerNextProblem(input);
-const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:true}) : null;
+const unresolvedCreationInputs = [...expansion.requiredCreationInputs];
+const execution = adapted.status === "SUPPORTED" && unresolvedCreationInputs.length === 0
+  ? executePlannerNext(adapted.problem,{causalDiagnostic:true})
+  : null;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
 const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
@@ -238,7 +241,13 @@ const evidence = {
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
-    genericTransitionMinutes: { participant: 0, resource: 0 },
+    genericTransitionMinutes: { participant: 0, resource: config.resourceTransitionMinutes },
+    coachRouteTransitionMinutes: { caracolaToEstudio7: expansion.rules.coachTransition.minutes, reverseAndOtherRoutes: config.resourceTransitionMinutes },
+    requiresBandByParticipant: config.requiresBand,
+    requiresBandCount: Object.values(config.requiresBand).filter(Boolean).length,
+    instrumentMetadataAffectsRequiresBand: false,
+    bandResourceProjected: false,
+    unresolvedCreationInputs,
     operationalMealProjection: operationalMealGroups,
     itineraryAvailabilityProjected,
     ...(!itineraryAvailabilityProjected ? { itineraryAvailabilityGap: "Not every referenced itinerant unit has its source availability represented losslessly in Planner Next." } : {}),
@@ -266,11 +275,16 @@ const evidence = {
     evidence: exactResult?.evidence ?? null,
     diagnosticReport,
   } : null,
+  executionBlocker: unresolvedCreationInputs.length > 0 ? {
+    code: "UNRESOLVED_BAND_CREATION_INPUT",
+    missing: unresolvedCreationInputs,
+    explanation: "Band is not projected and Full A2 is not executed until its resource availability, authorized meal, and presence concentration policy are authoritatively configured.",
+  } : null,
   result: {
     publishedCanonicalObligations,
     diagnosticScheduledCanonicalObligations: scheduledCanonicalObligations,
     targetCanonicalObligations: expansion.tasks.length,
-    fullHardValidEligible: Boolean(exactResult?.complete && publishedCanonicalObligations === expansion.tasks.length && itineraryAvailabilityProjected),
+    fullHardValidEligible: Boolean(unresolvedCreationInputs.length === 0 && exactResult?.complete && publishedCanonicalObligations === expansion.tasks.length && itineraryAvailabilityProjected),
   },
 };
 

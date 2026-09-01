@@ -10,11 +10,13 @@ Se conservan tres composiciones explícitas, sin registrarlas como recursos hard
 
 ## Required creation inputs
 
-Todos los inputs de creación A2 conocidos para este benchmark están resueltos. Los blockers restantes son exclusivamente técnicos y están demostrados por los probes ejecutables.
+- **band_authorized_meal**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **band_presence_concentration_policy**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **band_resource_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 
 ## Implementation blockers
 
-Estado de representabilidad: **FULLY_REPRESENTABLE**. La puerta ejecutada devuelve **EXECUTED**, con executorCallCount=1. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
+Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
 
 
 

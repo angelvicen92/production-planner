@@ -9,6 +9,13 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   spaceAvailability: "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN" as const,
   resourceAvailability: "INHERIT_DAY_UNLESS_OVERRIDDEN" as const,
   productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,
+  resourceTransitionMinutes: 5 as const,
+  requiresBand: Object.freeze({
+    C01: true, C02: false, C03: false, C04: true, C05: false,
+    C06: false, C07: true, C08: true, C09: true, C10: true,
+    C11: true, C12: false, C13: true, C14: true, C15: true,
+    C16: true, C17: true, C18: true, C19: false,
+  } as const),
   itinerantUnitAvailability: Object.freeze({
     "reality-unit-a": Object.freeze({ start: "11:00" as const, end: "14:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
     "reality-unit-b": Object.freeze({ start: "11:15" as const, end: "13:30" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
@@ -31,8 +38,14 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
     participantAvailability: "A2-FULL-008-effective-configuration-probe" as const,
     transportPolicy: "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11" as const,
     meals: "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11" as const,
+    resourceTransitionMinutes: "SPEC10-019" as const,
+    requiresBand: "USER_CONFIRMED_COMPLEMENT_OF_EXPLICIT_INSTRUMENT_SET" as const,
   }),
-  unresolvedCreationInputs: Object.freeze([] as const),
+  unresolvedCreationInputs: Object.freeze([
+    "band_resource_availability",
+    "band_authorized_meal",
+    "band_presence_concentration_policy",
+  ] as const),
 });
 
 export type A2BenchmarkUnresolvedCreationInput =

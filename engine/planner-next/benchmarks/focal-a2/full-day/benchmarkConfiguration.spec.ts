@@ -19,7 +19,14 @@ test("A2 source configuration materializes all effective source decisions", () =
     "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },
     "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
   });
-  assert.deepEqual(config.unresolvedCreationInputs, []);
+  assert.deepEqual(config.unresolvedCreationInputs, [
+    "band_resource_availability",
+    "band_authorized_meal",
+    "band_presence_concentration_policy",
+  ]);
+  assert.equal(config.resourceTransitionMinutes, 5);
+  assert.equal(Object.keys(config.requiresBand).length, 19);
+  assert.equal(Object.values(config.requiresBand).filter(Boolean).length, 13);
   assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
   assert.equal(config.participantAvailability.C19.end, "18:40");
   assert.equal(config.transportPolicy.arrival.minGapMinutes, 35);
@@ -27,6 +34,17 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.deepEqual(config.transportPolicy.departure, { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
+});
+
+test("A2 requiresBand decisions are explicit participant configuration", () => {
+  const expected = {
+    C01: true, C02: false, C03: false, C04: true, C05: false,
+    C06: false, C07: true, C08: true, C09: true, C10: true,
+    C11: true, C12: false, C13: true, C14: true, C15: true,
+    C16: true, C17: true, C18: true, C19: false,
+  };
+  assert.deepEqual(A2_BENCHMARK_SOURCE_CONFIGURATION.requiresBand, expected);
+  assert.equal(JSON.stringify(expected).toLowerCase().includes("instrument"), false);
 });
 
 test("A2 resolved source configuration contains no human schedule ordering or task timing", () => {
