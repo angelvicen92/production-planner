@@ -43,7 +43,7 @@ jobs:
       - name: Full test suite and Full A2 structural frontier guard
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           test_log="$(mktemp)"
           npm test 2>&1 | tee "$test_log"
           npx tsx engine/planner-next/benchmarks/checkFullA2StructuralFrontier.ts "$test_log"
