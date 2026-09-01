@@ -25,7 +25,7 @@ jobs:
   planner-engine-ci:
     name: planner-engine-ci
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
@@ -40,16 +40,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Full test suite
-        run: npm test
+      - name: Full test suite and Full A2 structural frontier guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_log="$(mktemp)"
+          npm test 2>&1 | tee "$test_log"
+          npx tsx engine/planner-next/benchmarks/checkFullA2StructuralFrontier.ts "$test_log"
 
-      - name: Full A2 benchmark first run
+      - name: SPEC10-016 canonical template benchmark first run
         run: |
           npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-first.txt
           cp docs/evidence/SPEC10-016-full-a2-canonical-template.json /tmp/SPEC10-016-full-a2-first.json
           cp docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md /tmp/SPEC10-016-full-a2-first.md
 
-      - name: Full A2 benchmark second run
+      - name: SPEC10-016 canonical template benchmark second run
         run: npm run benchmark:planner-next:a2-full-template > /tmp/full-a2-second.txt
 
       - name: Verify deterministic benchmark and generated artifacts

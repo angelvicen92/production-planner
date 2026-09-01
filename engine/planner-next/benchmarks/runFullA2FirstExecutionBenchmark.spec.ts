@@ -17,6 +17,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const lines = child.stdout.trim().split(/\n/).filter(Boolean);
     const evidence = JSON.parse(lines.at(-1)!) as {
       canonicalObligationCount: number;
+      engineInput: { maxBranchExpansions: number };
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
@@ -35,7 +36,8 @@ test("Full A2 first executable integration reports an atomic completion count", 
           feederOrderBranches:number;feederSlotMatchingChecks:number;feederSlotMatchingPrunes:number;
           feederSlotAnalyticChecks:number;feederSlotAnalyticPrunes:number;feederSlotAnalyticAbstentions:number;
           feederSlotMatchingEdgeChecks:number;feederSlotMatchingAugmentTraversals:number;
-          feederSlotMatchingBranchesExplored:number;lastExhaustionPhase:string|null };
+          feederSlotMatchingBranchesExplored:number;feederMatchingWitnessRepairs:number;
+          standaloneCompleteLeafCount:number;lastExhaustionPhase:string|null };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
@@ -77,11 +79,23 @@ test("Full A2 first executable integration reports an atomic completion count", 
       preflightReasonCodes: evidence.preflight.reasonCodes,
       adapterStatus: evidence.adapter.status,
       adapterReasonCodes: evidence.adapter.reasonCodes,
-      execution: evidence.execution,
+      execution: {
+        complete: evidence.execution!.complete,
+        evidence: {
+          branchesExplored: executionEvidence.branchesExplored,
+          coreBranches: executionEvidence.coreBranches,
+          standaloneBranches: executionEvidence.standaloneBranches,
+          coreCompleteLeafCount: executionEvidence.coreCompleteLeafCount,
+          deepestPartialCoreTasksRemaining: executionEvidence.deepestPartialCoreTasksRemaining,
+          standaloneCompleteLeafCount: executionEvidence.standaloneCompleteLeafCount,
+          lastExhaustionPhase: executionEvidence.lastExhaustionPhase,
+        },
+      },
       publishedCanonicalObligations: evidence.result.publishedCanonicalObligations,
       diagnosticScheduledCanonicalObligations: evidence.result.diagnosticScheduledCanonicalObligations,
       targetCanonicalObligations: evidence.result.targetCanonicalObligations,
       fullHardValidEligible: evidence.result.fullHardValidEligible,
+      maxBranchExpansions: evidence.engineInput.maxBranchExpansions,
     }));
   } finally {
     if (originalEvidence === null) {
