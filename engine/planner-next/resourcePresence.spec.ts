@@ -16,7 +16,7 @@ test("REQUIRED presence treats only the assigned-space meal as an authorized bri
   ] as ScheduledTask[];
   const authorized = evaluateResourcePresence(resource, tasks,
     [{ id: "meal", kind: "space-meal", spaceId: "main", entryIndex: 1, duration: 75, start: 15, end: 90 }]);
-  assert.deepEqual(authorized.preferredLexicographicTuple, [1, 30, 0]);
+  assert.deepEqual(authorized.preferredLexicographicTuple, [1, 105, 0]);
   assert.equal(authorized.crossesAuthorizedMeal, true);
   assert.equal(authorized.requiredPolicySatisfied, true);
   const foreign = evaluateResourcePresence(resource, tasks,
@@ -64,13 +64,13 @@ test("authorized space meals join operational occupations without becoming produ
   const meal = { id: "meal", kind: "space-meal" as const, spaceId: "space", entryIndex: 0, duration: 75, start: 840, end: 915 };
   const before = JSON.stringify({ resource, tasks, meal });
   assert.deepEqual(evaluateResourcePresence(resource, tasks, [meal]), {
-    presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, effectivePresenceMinutes: 30, productiveTaskMinutes: 30,
+    presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, productiveTaskMinutes: 30,
     authorizedMealMinutes: 75, internalGapMinutes: 0, operationalBlockCount: 1,
-    preferredLexicographicTuple: [1, 30, 0],
+    preferredLexicographicTuple: [1, 105, 0],
     crossesAuthorizedMeal: true, requiredPolicySatisfied: true,
   });
   assert.deepEqual(evaluateResourcePresence(resource, tasks, [{ ...meal, spaceId: "other" }]), {
-    presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, effectivePresenceMinutes: 105, productiveTaskMinutes: 30,
+    presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, productiveTaskMinutes: 30,
     authorizedMealMinutes: 0, internalGapMinutes: 75, operationalBlockCount: 2,
     preferredLexicographicTuple: [2, 105, 75],
     crossesAuthorizedMeal: false, requiredPolicySatisfied: true,
@@ -108,5 +108,5 @@ test("resource-scoped meal bridges presence without a false operational block",(
   const resource={id:"r",availability:[{start:480,end:720},{start:780,end:1080}],presencePreference:"OFF" as const,presenceConcentrationPolicy:"REQUIRED" as const};
   const tasks=[{id:"before",kind:"technical" as const,spaceId:"a",dependencies:[],requiredResourceIds:["r"],duration:30,start:690,end:720},{id:"after",kind:"technical" as const,spaceId:"a",dependencies:[],requiredResourceIds:["r"],duration:30,start:780,end:810}];
   const result=evaluateResourcePresence(resource,tasks,[],[{id:"meal",sourceTaskId:"task:meal",resourceIds:["r"],start:720,end:780,duration:60}]);
-  assert.deepEqual({span:result.presenceSpanMinutes,effective:result.effectivePresenceMinutes,meal:result.authorizedMealMinutes,gap:result.internalGapMinutes,blocks:result.operationalBlockCount,crosses:result.crossesAuthorizedMeal,required:result.requiredPolicySatisfied},{span:120,effective:60,meal:60,gap:0,blocks:1,crosses:true,required:true});
+  assert.deepEqual({span:result.presenceSpanMinutes,meal:result.authorizedMealMinutes,gap:result.internalGapMinutes,blocks:result.operationalBlockCount,crosses:result.crossesAuthorizedMeal,required:result.requiredPolicySatisfied},{span:120,meal:60,gap:0,blocks:1,crosses:true,required:true});
 });
