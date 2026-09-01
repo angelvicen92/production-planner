@@ -1,7 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
-import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
+import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
+
+test("PREFERRED resource concentration orders patterns without removing interleaved alternatives", () => {
+  const mains = [
+    ...["r1", "r2", "r3"].map((id) => ({ id, kind: "main" as const, duration: 10, spaceId: "main",
+      blockKey: "r", dependencies: [], requiredResourceIds: ["resource"] })),
+    ...["n1", "n2"].map((id) => ({ id, kind: "main" as const, duration: 10, spaceId: "main",
+      blockKey: "n", dependencies: [] })),
+  ];
+  const resource = { id: "resource", availability: [{ start: 0, end: 100 }], presencePreference: "OFF" as const,
+    presenceConcentrationPolicy: "PREFERRED" as const, assignedSpaceId: "main" };
+  const result = generateMainFlowPatterns(mains, 1, 3, 100, [resource]);
+  assert.ok(["r,r,r,n,n", "n,n,r,r,r"].includes(result.patterns[0]!.join()),
+    "a single resource run is preferred regardless of which end contains it");
+  assert.ok(result.patterns.some((pattern) => pattern.join() === "r,n,r,n,r"),
+    "the soft preference retains a hard-valid interleaved architecture");
+  // Rename the requirement consistently; neither task input order nor opaque IDs are an ordering signal.
+  const renamedTasks = [...mains].reverse().map((task) => ({ ...task, id: `x-${task.id}`,
+    requiredResourceIds: task.requiredResourceIds?.map(() => "x-resource") }));
+  const invariant = generateMainFlowPatterns(renamedTasks, 1, 3, 100, [{ ...resource, id: "x-resource" }]);
+  assert.deepEqual(invariant.patterns, result.patterns);
+});
 
 const architecture = { pattern: ["a", "a", "b", "a", "a"], slots: [40, 50, 60, 80, 90] } as const;
 
