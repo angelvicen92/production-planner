@@ -659,6 +659,12 @@ test("block-closed future diagnostics are neutral, deterministic, and authority-
   assert.equal(frontier.certificates.reduce((sum,row)=>sum+row.frequency,0),frontier.totalRejections);
   assert.ok(frontier.examples.every(row=>row.overloadTasks.every(task=>task.duration>0)
     &&row.consumingCoreTasks.every(task=>task.end>task.start)));
+  assert.ok(frontier.examples.every(row=>row.pivotPairProven&&row.prefixChecks.length===2
+    &&row.prefixChecks[0]!.prefixDepth===row.certificate.pivotDepth
+    &&row.prefixChecks[1]!.prefixDepth===row.certificate.pivotDepth!-1
+    &&row.prefixChecks[0]!.certificatePersists&&!row.prefixChecks[1]!.certificatePersists));
+  assert.equal(new Set(frontier.certificates.map(row=>JSON.stringify([row.failure,row.authorityId,row.demandMinutes,
+    row.freeCapacityMinutes,row.blockingTaskId,row.overloadTaskIds,row.pivotDepth]))).size,frontier.certificates.length);
   const reversed=create();reversed.tasks.reverse();reversed.spaces.reverse();reversed.resources.reverse();reversed.participants.reverse();
   const reversedDiagnostic=runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!;
   assert.deepEqual(reversedDiagnostic.futureFeasibility,diagnostic);

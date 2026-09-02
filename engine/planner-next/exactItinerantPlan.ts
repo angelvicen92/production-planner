@@ -1058,35 +1058,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.coreStandaloneFrontierFirstPrune??={blockingTaskId:frontier.blockingTaskId,failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,freeCapacityMinutes:frontier.freeCapacityMinutes,causingCoreTaskIds:causingCoreTasks.map(task=>task.id).sort()};
       const depths=causingCoreTasks.map(({id})=>candidate.decisionDepthByTaskId[id]).filter((depth):depth is number=>depth!==undefined);
       const targetDepth=depths.length===causingCoreTasks.length&&depths.length>0?Math.max(...depths):null;
-      if(options.causalDiagnostic){
-        const summary=standaloneFrontierDiagnostic;summary.totalRejections+=1;
-        const certificate={failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,
-          freeCapacityMinutes:frontier.freeCapacityMinutes,blockingTaskId:frontier.blockingTaskId};
-        const existing=summary.certificates.find(row=>row.failure===certificate.failure&&row.authorityId===certificate.authorityId
-          &&row.demandMinutes===certificate.demandMinutes&&row.freeCapacityMinutes===certificate.freeCapacityMinutes
-          &&row.blockingTaskId===certificate.blockingTaskId);
-        const targetKey=targetDepth===null?"null":String(targetDepth);
-        if(existing){existing.frequency+=1;existing.targetDepthCounts[targetKey]=(existing.targetDepthCounts[targetKey]??0)+1;}else{
-          summary.certificates.push({...certificate,frequency:1,targetDepthCounts:{[targetKey]:1}});
-          // One deterministic representative per distinct certificate is sufficient to explain
-          // the leaf family without retaining any complete leaf.
-          const prefixChecks=[];let lastDecisionWhoseReopeningClearsCertificate:null|number=null;
-          for(let prefixDepth=targetDepth===null?0:targetDepth-1;prefixDepth>=0;prefixDepth--){
-            const prefix=candidate.tasks.filter(task=>(candidate.decisionDepthByTaskId[task.id]??0)<=prefixDepth);
-            const checked=checkStandaloneCoreFrontier(problem,standaloneTasks,prefix,[],"ANALYTIC_CAPACITY_ONLY");
-            const persists=!checked.feasible&&checked.failure===frontier.failure&&checked.authorityId===frontier.authorityId
-              &&checked.demandMinutes===frontier.demandMinutes&&checked.freeCapacityMinutes===frontier.freeCapacityMinutes;
-            prefixChecks.push({prefixDepth,failure:checked.failure,authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,
-              freeCapacityMinutes:checked.freeCapacityMinutes,certificatePersists:persists});
-            if(!persists){lastDecisionWhoseReopeningClearsCertificate=prefixDepth+1;break;}
-          }
-          const overloadIds=new Set(frontier.overloadTaskIds??[]);
-          summary.examples.push({certificate,overloadTasks:standaloneTasks.filter(task=>overloadIds.has(task.id)).map(task=>({id:task.id,duration:task.duration,kind:task.kind})).sort((a,b)=>a.id.localeCompare(b.id)),
-            consumingCoreTasks:causingCoreTasks.map(task=>({id:task.id,start:task.start,end:task.end,kind:task.kind,
-              decisionDepth:candidate.decisionDepthByTaskId[task.id]??null})).sort((a,b)=>a.decisionDepth!-b.decisionDepth!||a.id.localeCompare(b.id)),
-            targetDepth,lastDecisionWhoseReopeningClearsCertificate,prefixChecks});
-        }
-      }
       // Remove the whole suffix (and meals) and ask the same necessary authority again. This
       // is an optimistic relaxation: every alternative of a later decision can only restore
       // occupations/deadlines, never capacity. Therefore an identical certificate proves that
@@ -1096,6 +1067,34 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       const suffixIsProvenIrrelevant=prefixCertificate!==null&&!prefixCertificate.feasible
         &&prefixCertificate.failure===frontier.failure&&prefixCertificate.authorityId===frontier.authorityId
         &&prefixCertificate.demandMinutes===frontier.demandMinutes&&prefixCertificate.freeCapacityMinutes===frontier.freeCapacityMinutes;
+      if(options.causalDiagnostic){
+        const summary=standaloneFrontierDiagnostic;summary.totalRejections+=1;
+        const overloadTaskIds=[...(frontier.overloadTaskIds??[])].sort();
+        const certificate={failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,
+          freeCapacityMinutes:frontier.freeCapacityMinutes,blockingTaskId:frontier.blockingTaskId,overloadTaskIds,pivotDepth:targetDepth};
+        const existing=summary.certificates.find(row=>JSON.stringify({...row,frequency:undefined})===JSON.stringify({...certificate,frequency:undefined}));
+        if(existing)existing.frequency+=1;else{
+          summary.certificates.push({...certificate,frequency:1});
+          const beforeDepth=targetDepth===null?null:targetDepth-1;
+          const before=beforeDepth===null?null:checkStandaloneCoreFrontier(problem,standaloneTasks,
+            candidate.tasks.filter(task=>(candidate.decisionDepthByTaskId[task.id]??0)<=beforeDepth),[],"ANALYTIC_CAPACITY_ONLY");
+          const row=(prefixDepth:number,checked:typeof frontier)=>({prefixDepth,failure:checked.failure,authorityId:checked.authorityId,
+            demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes,
+            certificatePersists:!checked.feasible&&checked.failure===frontier.failure&&checked.authorityId===frontier.authorityId
+              &&checked.demandMinutes===frontier.demandMinutes&&checked.freeCapacityMinutes===frontier.freeCapacityMinutes});
+          const prefixChecks=[...(targetDepth!==null&&prefixCertificate?[row(targetDepth,prefixCertificate)]:[]),
+            ...(beforeDepth!==null&&before?[row(beforeDepth,before)]:[])];
+          const asCoreTask=(task:ScheduledTask)=>({id:task.id,start:task.start,end:task.end,kind:task.kind,
+            decisionDepth:candidate.decisionDepthByTaskId[task.id]??null});
+          const overloadIds=new Set(overloadTaskIds);
+          summary.examples.push({certificate,
+            overloadTasks:standaloneTasks.filter(task=>overloadIds.has(task.id)).map(task=>({id:task.id,duration:task.duration,kind:task.kind,
+              authorityId:frontier.authorityId})).sort((a,b)=>a.id.localeCompare(b.id)),
+            consumingCoreTasks:causingCoreTasks.map(asCoreTask).sort((a,b)=>(a.decisionDepth??0)-(b.decisionDepth??0)||a.id.localeCompare(b.id)),
+            introducedByPivot:targetDepth===null?[]:candidate.tasks.filter(task=>candidate.decisionDepthByTaskId[task.id]===targetDepth).map(asCoreTask).sort((a,b)=>a.id.localeCompare(b.id)),
+            prefixChecks,pivotPairProven:prefixChecks.length===2&&prefixChecks[0]!.certificatePersists&&!prefixChecks[1]!.certificatePersists});
+        }
+      }
       if(frontier.failure==="COLLECTIVE_CAPACITY"&&targetDepth!==null&&targetDepth<candidate.tasks.filter(({kind})=>kind==="main").length&&suffixIsProvenIrrelevant){
         evidence.causalBacktracks+=1;const key=String(targetDepth);evidence.causalBacktrackTargetDepthCounts[key]=(evidence.causalBacktrackTargetDepthCounts[key]??0)+1;
         return {outcome:"CERTIFIED_BACKJUMP",targetDepth};
