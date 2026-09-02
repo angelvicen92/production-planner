@@ -656,6 +656,22 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   assert.equal(result.evidence.feederOrderBranches,0);
 });
 
+test("a leaf certificate skips irrelevant suffix decisions and reopens its causal CORE decision deterministically",()=>{
+  const run=(causal:boolean)=>{const leaves:string[]=[];const result=runExactMainAndFeederSearch(twoCohortProblem(),{
+    onHardValidCoreLeaf(candidate){
+      leaves.push(candidate.tasks.filter(({kind})=>kind==="main").sort((a,b)=>a.start-b.start).map(({id})=>id).join("|"));
+      assert.equal(candidate.decisionDepthByTaskId["feeder-a1"],candidate.decisionDepthByTaskId["main-a1"],
+        "an atomic feeder is owned by the same macro decision as its main");
+      return causal?{outcome:"CERTIFIED_BACKJUMP",targetDepth:2}:"REJECT";
+    }});return {leaves,result};};
+  const ordinary=run(false),first=run(true),second=run(true);
+  assert.ok(ordinary.leaves.length>first.leaves.length,"ordinary rejection must enumerate suffix alternatives");
+  assert.ok(first.result.evidence.mainRunWitnessRepairs>0,"the causal main assignment must be reopened");
+  assert.ok(new Set(first.leaves.map(order=>order.split("|").slice(0,2).join("|"))).size>1,
+    "backtracking must reach a materially different causal prefix");
+  assert.deepEqual(second,first,"causal unwind must remain deterministic");
+});
+
 test("an analytically impossible cohort cannot perform hidden factorial work", () => {
   const participantIds = Array.from({ length: 7 }, (_, index) => `p${index}`);
   const tasks: Task[] = participantIds.flatMap((participantId, index) => [

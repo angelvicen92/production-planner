@@ -174,7 +174,7 @@ export interface ExactMainChoiceDescriptor {
 interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number }
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 
-export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED";
+export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 export interface ExactSearchLedger {
   limit: number;
@@ -189,6 +189,8 @@ export interface ExactCoreLeafCandidate {
   meals: ScheduledSpaceMeal[];
   remainingTaskIds: string[];
   fingerprint: string;
+  /** Branch-local ownership of every materialized atomic task by its CORE decision. */
+  decisionDepthByTaskId: Readonly<Record<string, number>>;
 }
 export interface ExactPartialCoreCandidate {
   tasks: ScheduledTask[];
@@ -653,10 +655,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
         })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        const decisionDepthByTaskId=Object.fromEntries(placed.flatMap(task=>{const owner=introducedBy(task.id,placed).depth;
+          return owner===null?[]:[[task.id,owner]];}));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
-          remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
+          remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals),
+          decisionDepthByTaskId }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
+        if(typeof continuation==="object")return continuation;
       }
       return "DEAD_END";
     }
