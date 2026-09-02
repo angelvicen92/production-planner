@@ -3,7 +3,7 @@ import test from "node:test";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain, checkPartialCoreStandaloneCollectiveCapacity } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -396,6 +396,31 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
     isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start);
   assert.equal(validatePlan(input, integrated.scheduledTasks, [], integrated.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
+});
+
+test("partial CORE prunes collective standalone overload while a different structure remains explorable", () => {
+  const obligations = ["future-a", "future-b"].map((id) =>
+    auxiliary(id, id, [{ start: 0, end: 30 }], ["unit"]));
+  const input = problem(obligations);
+  const coreTask = input.tasks.find(({ id }) => id === "main")!;
+  coreTask.requiredResourceIds = ["unit"];
+  coreTask.duration = 15;
+  const provisional = (start: number) => [{ ...coreTask, start, end: start + coreTask.duration }];
+
+  const blocked = checkPartialCoreStandaloneCollectiveCapacity(input, obligations, provisional(10));
+  assert.equal(blocked.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(blocked.demandMinutes, 20);
+  assert.equal(blocked.freeCapacityMinutes, 10);
+  assert.deepEqual(blocked.overloadTaskIds, ["future-a", "future-b"]);
+  for (const task of obligations)
+    assert.ok([...standaloneForwardDynamicDomain(input, task, provisional(10)).starts()].length > 0,
+      `${task.id} has an individual domain despite the collective overload`);
+
+  const alternative = checkPartialCoreStandaloneCollectiveCapacity(input, obligations, provisional(30));
+  assert.equal(alternative.feasible, true, "a structurally different provisional CORE remains explorable");
+  const pruneDepth = 1, otherwiseReachedDepth = 2;
+  assert.ok(pruneDepth < otherwiseReachedDepth,
+    "the certificate rejects at the provisional decision instead of a later complete CORE leaf");
 });
 
 test("derived feeder endpoints preserve a solution after historical endpoints fail", () => {

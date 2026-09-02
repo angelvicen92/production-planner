@@ -60,9 +60,11 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.firstFeedableRunSizes.length>0);
     assert.ok(executionEvidence.firstFeedableRunSizes.every((size)=>Number.isInteger(size)&&size>0));
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
-    assert.ok(executionEvidence.coreCompleteLeafCount>0);
-    assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
-    assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");
+    assert.ok(executionEvidence.standaloneForwardCollectiveCapacityPrunes>0);
+    assert.equal(executionEvidence.coreCompleteLeafCount,0,
+      "collective standalone overload must be intercepted before a complete CORE leaf");
+    assert.ok(executionEvidence.deepestPartialCoreTasksRemaining>0);
+    assert.equal(executionEvidence.lastExhaustionPhase,"CORE");
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);
