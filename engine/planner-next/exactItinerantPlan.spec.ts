@@ -653,8 +653,16 @@ test("block-closed future diagnostics are neutral, deterministic, and authority-
   assert.equal(enabled.evidence.coreMaximumDepth,disabled.evidence.coreMaximumDepth);
   assert.equal(enabled.evidence.coreCompleteLeafCount,disabled.evidence.coreCompleteLeafCount);
   assert.equal(enabled.evidence.coreBacktracks,disabled.evidence.coreBacktracks);
+  const frontier=enabled.evidence.causalDiagnostic!.standaloneFrontier;
+  assert.equal(frontier.totalRejections,enabled.evidence.coreStandaloneFrontierPrunes);
+  assert.ok(frontier.certificates.length<=frontier.totalRejections);
+  assert.equal(frontier.certificates.reduce((sum,row)=>sum+row.frequency,0),frontier.totalRejections);
+  assert.ok(frontier.examples.every(row=>row.overloadTasks.every(task=>task.duration>0)
+    &&row.consumingCoreTasks.every(task=>task.end>task.start)));
   const reversed=create();reversed.tasks.reverse();reversed.spaces.reverse();reversed.resources.reverse();reversed.participants.reverse();
-  assert.deepEqual(runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility,diagnostic);
+  const reversedDiagnostic=runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!;
+  assert.deepEqual(reversedDiagnostic.futureFeasibility,diagnostic);
+  assert.deepEqual(reversedDiagnostic.standaloneFrontier,frontier);
 
   const changed=create();changed.participantTransitionMinutes=5;
   const changedRows=runExactItinerantPlanSearch(changed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility.assessments;

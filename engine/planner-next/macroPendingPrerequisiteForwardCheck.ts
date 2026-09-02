@@ -13,6 +13,8 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
   authorityId: string | null;
   demandMinutes: number | null;
   freeCapacityMinutes: number | null;
+  /** Stable IDs of the obligations whose demand forms a collective-capacity certificate. */
+  overloadTaskIds?: string[];
   jointChecks: number;
   witnesses: number;
   blockingTaskId: string | null;
@@ -67,7 +69,7 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   for(const [authorityKey,entry] of [...authorityEntries].sort(([a],[b])=>a.localeCompare(b))){if(entry.tasks.length<2)continue;collectiveCapacityChecks+=1;obligationsChecked+=entry.tasks.length;
     const occupation=new Map(entry.tasks.map(task=>[task.id,mergeIntervals(domains.get(task.id)?.intervals.map(interval=>({start:interval.start,end:interval.end+task.duration}))??exactTaskStartDomain(problem,task,provisional,[...meals]).intervals.flatMap(interval=>{const end=Math.min(interval.end,deadline(task.id)-task.duration);return interval.start<=end?[{start:interval.start,end:end+task.duration}]:[]}))]));
     const endpoints=[...new Set([...occupation.values()].flatMap(intervals=>intervals.flatMap(({start,end})=>[start,end])))].sort((a,b)=>a-b);
-    for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;const confined=entry.tasks.filter(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end));if(confined.length<2)continue;const demand=confined.reduce((sum,task)=>sum+task.duration,0);const capacity=intervalMinutes(confined.flatMap(task=>occupation.get(task.id)!));if(demand>capacity){const blocker=confined[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:1,authorityId:entry.id,demandMinutes:demand,freeCapacityMinutes:capacity,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"COLLECTIVE_CAPACITY" as const};cache?.set(key,result);return{...result,cacheHit:false};}}
+    for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;const confined=entry.tasks.filter(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end));if(confined.length<2)continue;const demand=confined.reduce((sum,task)=>sum+task.duration,0);const capacity=intervalMinutes(confined.flatMap(task=>occupation.get(task.id)!));if(demand>capacity){const blocker=confined[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:1,authorityId:entry.id,demandMinutes:demand,freeCapacityMinutes:capacity,overloadTaskIds:confined.map(({id})=>id).sort(),jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"COLLECTIVE_CAPACITY" as const};cache?.set(key,result);return{...result,cacheHit:false};}}
   }
   if(mode==="ANALYTIC_CAPACITY_ONLY"){const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false};}
   const remaining=new Set(relevant.map(task=>task.id));const components:Task[][]=[];

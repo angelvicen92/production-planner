@@ -915,6 +915,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
+  const standaloneFrontierDiagnostic:ExactCoreCausalDiagnostic["standaloneFrontier"]={totalRejections:0,certificates:[],examples:[]};
   const standaloneForwardWitnessCache=new Map<string,number>();
   const certifyFutureBackjump=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
     staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):number|null=>{
@@ -1057,6 +1058,35 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.coreStandaloneFrontierFirstPrune??={blockingTaskId:frontier.blockingTaskId,failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,freeCapacityMinutes:frontier.freeCapacityMinutes,causingCoreTaskIds:causingCoreTasks.map(task=>task.id).sort()};
       const depths=causingCoreTasks.map(({id})=>candidate.decisionDepthByTaskId[id]).filter((depth):depth is number=>depth!==undefined);
       const targetDepth=depths.length===causingCoreTasks.length&&depths.length>0?Math.max(...depths):null;
+      if(options.causalDiagnostic){
+        const summary=standaloneFrontierDiagnostic;summary.totalRejections+=1;
+        const certificate={failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,
+          freeCapacityMinutes:frontier.freeCapacityMinutes,blockingTaskId:frontier.blockingTaskId};
+        const existing=summary.certificates.find(row=>row.failure===certificate.failure&&row.authorityId===certificate.authorityId
+          &&row.demandMinutes===certificate.demandMinutes&&row.freeCapacityMinutes===certificate.freeCapacityMinutes
+          &&row.blockingTaskId===certificate.blockingTaskId);
+        const targetKey=targetDepth===null?"null":String(targetDepth);
+        if(existing){existing.frequency+=1;existing.targetDepthCounts[targetKey]=(existing.targetDepthCounts[targetKey]??0)+1;}else{
+          summary.certificates.push({...certificate,frequency:1,targetDepthCounts:{[targetKey]:1}});
+          // One deterministic representative per distinct certificate is sufficient to explain
+          // the leaf family without retaining any complete leaf.
+          const prefixChecks=[];let lastDecisionWhoseReopeningClearsCertificate:null|number=null;
+          for(let prefixDepth=targetDepth===null?0:targetDepth-1;prefixDepth>=0;prefixDepth--){
+            const prefix=candidate.tasks.filter(task=>(candidate.decisionDepthByTaskId[task.id]??0)<=prefixDepth);
+            const checked=checkStandaloneCoreFrontier(problem,standaloneTasks,prefix,[],"ANALYTIC_CAPACITY_ONLY");
+            const persists=!checked.feasible&&checked.failure===frontier.failure&&checked.authorityId===frontier.authorityId
+              &&checked.demandMinutes===frontier.demandMinutes&&checked.freeCapacityMinutes===frontier.freeCapacityMinutes;
+            prefixChecks.push({prefixDepth,failure:checked.failure,authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,
+              freeCapacityMinutes:checked.freeCapacityMinutes,certificatePersists:persists});
+            if(!persists){lastDecisionWhoseReopeningClearsCertificate=prefixDepth+1;break;}
+          }
+          const overloadIds=new Set(frontier.overloadTaskIds??[]);
+          summary.examples.push({certificate,overloadTasks:standaloneTasks.filter(task=>overloadIds.has(task.id)).map(task=>({id:task.id,duration:task.duration,kind:task.kind})).sort((a,b)=>a.id.localeCompare(b.id)),
+            consumingCoreTasks:causingCoreTasks.map(task=>({id:task.id,start:task.start,end:task.end,kind:task.kind,
+              decisionDepth:candidate.decisionDepthByTaskId[task.id]??null})).sort((a,b)=>a.decisionDepth!-b.decisionDepth!||a.id.localeCompare(b.id)),
+            targetDepth,lastDecisionWhoseReopeningClearsCertificate,prefixChecks});
+        }
+      }
       // Remove the whole suffix (and meals) and ask the same necessary authority again. This
       // is an optimistic relaxation: every alternative of a later decision can only restore
       // occupations/deadlines, never capacity. Therefore an identical certificate proves that
@@ -1091,6 +1121,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
+  if(evidence.causalDiagnostic)evidence.causalDiagnostic.standaloneFrontier=standaloneFrontierDiagnostic;
   if(evidence.causalDiagnostic){const summary=evidence.causalDiagnostic.futureFeasibility;const states=[...futureAssessments.values()];summary.assessments=states.flatMap(state=>[...state.rows.values()]).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature)||a.resultSignature.localeCompare(b.resultSignature));
     summary.collisions=states.filter(state=>state.rows.size>1).map(state=>{const row=state.rows.values().next().value!;return {depth:row.depth,taskId:row.taskId,authoritySignature:row.authoritySignature,resultSignatures:[...state.rows.keys()].sort()}}).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature));summary.authorityResultCollisions=summary.collisions.length;
     for(const state of states){const row=state.rows.values().next().value!;summary.totalEvaluations+=state.occurrences;summary.uniqueAuthorityStates+=1;summary.repeatedEvaluations+=state.occurrences-1;
