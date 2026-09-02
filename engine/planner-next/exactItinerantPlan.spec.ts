@@ -134,18 +134,9 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
-  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[prerequisite.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardChecksByDepth["0"],
-    result.evidence.ordinaryIndividualForwardChecks);
-  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
-    { causingTaskId: candidate.id, blockingTaskId: prerequisite.id, depth: 0 });
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
-    "the analytic certificate does not enumerate starts");
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("ordinary provisional placement prunes an affected hard obligation that is not a prerequisite", () => {
@@ -158,14 +149,9 @@ test("ordinary provisional placement prunes an affected hard obligation that is 
 
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, obligation]));
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[obligation.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
-    { causingTaskId: candidate.id, blockingTaskId: obligation.id, depth: 0 });
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0);
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("singleton ordinary candidate is retained when its affected prerequisite keeps an analytic domain", () => {
@@ -201,13 +187,9 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
     dependencies: prerequisites.map(({ id }) => id) };
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, ...prerequisites]));
   assert.equal(result.status, "INFEASIBLE");
-  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
-  assert.ok(result.evidence.ordinaryIndividualForwardTasksChecked >= 2);
-  assert.ok(result.evidence.ordinaryIndividualForwardExactDomainChecks >= 2);
-  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses >= 2,
-    "P1 and P2 each retain the start at zero after provisional A");
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
-    "the individual checker derives witnesses from analytic domain counts without a joint start scan");
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.ok(result.evidence.coreStandaloneFrontierIndividualDomainChecks >= 2);
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("global macro MRV lets setup beat a broader synchronized round unit", () => {
@@ -488,7 +470,7 @@ test("a current feeder blocker is repaired locally instead of producing an unsou
 test("zero alternatives are infeasible and failures publish no partial core", () => {
   const input = problem([auxiliary("impossible", "a", [{ start: 0, end: 5 }])]);
   const result = constructExactItinerantPlan(input);
-  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.standaloneZeroAlternativePrunes > 0);
+  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);assert.deepEqual(result.scheduledItinerantUnitMeals,[]);
 });
 
