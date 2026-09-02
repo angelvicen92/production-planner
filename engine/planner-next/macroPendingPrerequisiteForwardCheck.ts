@@ -33,7 +33,8 @@ const exclusiveAuthorities=(task:Task)=>[{key:`space:${task.spaceId}`,id:task.sp
 
 /** Exact, read-only existence proof for pending ancestors affected by one provisional macro placement. */
 export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
-  candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],cache?:MacroPendingPrerequisiteForwardCache):MacroPendingPrerequisiteForwardCheckResult{
+  candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],cache?:MacroPendingPrerequisiteForwardCache,
+  scope:"AFFECTED_PREREQUISITES"|"ALL_PENDING"="AFFECTED_PREREQUISITES"):MacroPendingPrerequisiteForwardCheckResult{
   const provisional=[...previouslyPlaced,...candidate].sort(byId),pendingById=new Map(pending.map(task=>[task.id,task]));
   const successors=new Map<string,string[]>();for(const task of problem.tasks)for(const dependency of task.dependencies)successors.set(dependency,[...(successors.get(dependency)??[]),task.id]);
   const placedById=new Map(provisional.map(task=>[task.id,task]));
@@ -44,8 +45,8 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   const candidateIds=new Set(candidate.map(task=>task.id)),ancestors=new Set<string>();
   const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
   for(const id of candidateIds)visitAncestors(id);
-  const allRequired=[...pending].filter(task=>deadline(task.id)<problem.day.end);
-  const affected=new Set([...ancestors,...allRequired.filter(task=>candidate.some(item=>tasksCanAffectEachOther(task,item))).map(task=>task.id)]);
+  const allRequired=scope==="ALL_PENDING"?[...pending]:[...pending].filter(task=>deadline(task.id)<problem.day.end);
+  const affected=scope==="ALL_PENDING"?new Set(allRequired.map(task=>task.id)):new Set([...ancestors,...allRequired.filter(task=>candidate.some(item=>tasksCanAffectEachOther(task,item))).map(task=>task.id)]);
   const relevant=allRequired.filter(task=>affected.has(task.id)).sort(byId);
   if(!relevant.length)return{feasible:true,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,obligationsChecked:0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:null,failure:null,cacheHit:false};
   const affectedAuthorities=new Set(relevant.flatMap(exclusiveAuthorities).map(item=>item.key));
@@ -76,4 +77,10 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
       const choice=choices[0];if(!choice||!choice.starts.length)return false;for(const start of choice.starts)if(search(left.filter(task=>task.id!==choice.task.id),[...placed,{...choice.task,start,end:start+choice.task.duration}]))return true;return false;};
     if(!search(component,[])){const blocker=component[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"JOINT_INFEASIBLE" as const};cache?.set(key,result);return{...result,cacheHit:false};}witnesses+=1;}
   const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false};
+}
+
+/** Read-only necessary/exact feasibility certificate at a hard-valid CORE leaf. */
+export function checkStandaloneCoreFrontier(problem:PlannerNextProblem,pending:readonly Task[],core:readonly ScheduledTask[],
+  meals:readonly ScheduledSpaceMeal[]=[]):MacroPendingPrerequisiteForwardCheckResult{
+  return checkMacroPendingPrerequisites(problem,pending,core,[],meals,undefined,"ALL_PENDING");
 }

@@ -30,7 +30,7 @@ import { materializeTerminalTransport, transportTaskIds } from "./transportGroup
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -82,6 +82,9 @@ export interface ExactItinerantPlanEvidence {
   standaloneCompleteLeafCount: number;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
+  coreStandaloneFrontierChecks:number;coreStandaloneFrontierPrunes:number;coreStandaloneFrontierIndividualDomainChecks:number;
+  coreStandaloneFrontierCollectiveCapacityChecks:number;coreStandaloneFrontierJointChecks:number;
+  coreStandaloneFrontierFirstPrune:{blockingTaskId:string|null;failure:string|null;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;causingCoreTaskIds:string[]}|null;
   standaloneSearchInvocations: number;
   standaloneBlockingTaskCounts: Record<string, number>;
   standaloneForwardChecks: number;
@@ -818,7 +821,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainRootStartsConsidered:0,technicalChainRootStartsFeasible:0,technicalChainBranchesExplored:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
-    coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
+    coreLeavesRejectedByStandalone: 0, coreStandaloneFrontierChecks:0,coreStandaloneFrontierPrunes:0,
+    coreStandaloneFrontierIndividualDomainChecks:0,coreStandaloneFrontierCollectiveCapacityChecks:0,coreStandaloneFrontierJointChecks:0,
+    coreStandaloneFrontierFirstPrune:null,standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
     standaloneForwardImpactedTaskChecks: 0, standaloneLeafSearchBranches: 0, standaloneForwardBranches: 0,
@@ -1043,6 +1048,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
+    const frontier=checkStandaloneCoreFrontier(problem,standaloneTasks,candidate.tasks,candidate.meals);
+    evidence.coreStandaloneFrontierChecks+=1;evidence.coreStandaloneFrontierIndividualDomainChecks+=frontier.individualDomainChecks;
+    evidence.coreStandaloneFrontierCollectiveCapacityChecks+=frontier.collectiveCapacityChecks;evidence.coreStandaloneFrontierJointChecks+=frontier.jointChecks;
+    if(!frontier.feasible){evidence.coreStandaloneFrontierPrunes+=1;evidence.coreLeavesRejectedByStandalone+=1;
+      evidence.coreStandaloneFrontierFirstPrune??={blockingTaskId:frontier.blockingTaskId,failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,freeCapacityMinutes:frontier.freeCapacityMinutes,causingCoreTaskIds:candidate.tasks.filter(task=>frontier.authorityId!==null&&(task.spaceId===frontier.authorityId||(task.requiredResourceIds??[]).includes(frontier.authorityId))).map(task=>task.id).sort()};
+      return "REJECT";
+    }
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN");

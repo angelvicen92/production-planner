@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier } from "./macroPendingPrerequisiteForwardCheck";
 
 const task=(id:string,duration:number,dependencies:string[]=[],availability?:Array<{start:number;end:number}>):Task=>({id,kind:"auxiliary",participantId:"person",duration,spaceId:"room",dependencies,...(availability?{availability}: {})});
 const problem=(tasks:Task[]):PlannerNextProblem=>({day:{start:0,end:100},spaces:[{id:"room",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],resources:[],participants:[{id:"person",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],coaches:[],tasks,mainFlow:{spaceId:"other",preferredEnd:100,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:0,maxPatterns:1,maxBranchExpansions:1000},searchPolicy:"EXACT_CONSTRUCTIVE"});
@@ -26,4 +26,17 @@ test("transitive prerequisite chains are checked jointly before the placed desce
 });
 
 test("unrelated impossible ordinary work is not checked and results are order invariant",()=>{const prerequisite=task("required",10,[],[{start:20,end:30}]),successor=task("successor",10,[prerequisite.id]),unrelated=task("unrelated",10,[],[]),trigger=scheduled(task("trigger",5),70,{participantId:"other",spaceId:"other"});const p=problem([prerequisite,successor,unrelated]);const placed=[scheduled(successor,50)];const forward=checkMacroPendingPrerequisites(p,[prerequisite,unrelated],placed,[trigger]),reversed=checkMacroPendingPrerequisites({...p,tasks:[...p.tasks].reverse()},[unrelated,prerequisite],placed,[trigger]);assert.equal(forward.feasible,true);assert.deepEqual(reversed,forward);
+});
+
+
+test("CORE frontier proves collective standalone overload and abstains when capacity is sufficient or authorities differ",()=>{
+ const standalone=(id:string,spaceId:string,participantId:string,resourceId:string,availability:Array<{start:number;end:number}>):Task=>({...task(id,30,[],availability),spaceId,participantId,requiredResourceIds:[resourceId]});
+ const first=standalone("first","room","person","shared",[{start:0,end:30}]);
+ const second=standalone("second","other","other","shared",[{start:0,end:30}]);
+ const p={...problem([first,second]),resources:[{id:"shared",availability:[{start:0,end:100}]}]};
+ const overloaded=checkStandaloneCoreFrontier(p,[first,second],[]);
+ assert.equal(overloaded.failure,"COLLECTIVE_CAPACITY");assert.equal(overloaded.demandMinutes,60);assert.equal(overloaded.freeCapacityMinutes,30);assert.equal(overloaded.jointChecks,0);
+ second.availability=[{start:30,end:60}];assert.equal(checkStandaloneCoreFrontier(p,[first,second],[]).feasible,true);
+ second.availability=[{start:0,end:30}];second.requiredResourceIds=["separate"];p.resources.push({id:"separate",availability:[{start:0,end:100}]});
+ assert.equal(checkStandaloneCoreFrontier(p,[first,second],[]).feasible,true);
 });
