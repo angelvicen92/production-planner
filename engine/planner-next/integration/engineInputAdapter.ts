@@ -253,7 +253,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     })).sort((left, right) => compare(left.id, right.id));
   const technicalChains:TechnicalChainPolicy[]=sourceTechnicalChains.map(policy=>({
     id:canonical("technical-chain",policy.id),orderedTaskIds:policy.orderedTaskIds.map(id=>canonical("task",id)),
-    adjacency:policy.adjacency,resourceContinuity:policy.resourceContinuity,
+    adjacency:policy.adjacency,...(policy.internalTransition!==undefined?{internalTransition:policy.internalTransition}:{}),resourceContinuity:policy.resourceContinuity,
     requiredResourceIds:policy.requiredResourceIds.map(id=>canonical("plan-resource",id)).sort(compare),
   })).sort((a,b)=>compare(a.id,b.id));
 

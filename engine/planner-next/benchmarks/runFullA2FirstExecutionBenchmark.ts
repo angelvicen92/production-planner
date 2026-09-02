@@ -141,6 +141,7 @@ input.roundSynchronizations = [{
 }];
 input.technicalChains=expansion.technicalChains.map(chain=>({
   id:chain.id,orderedTaskIds:chain.orderedTaskIds.map(id=>taskId.get(id)!),adjacency:chain.adjacency,
+  internalTransition:chain.internalTransition,
   resourceContinuity:chain.resourceContinuity,requiredResourceIds:chain.requiredResourceIds.map(id=>resourceId.get(id)!),
 }));
 input.coachRouteTransitions = [

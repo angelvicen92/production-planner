@@ -888,7 +888,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       let invalid=typeof id!=="string"||id.trim()!==id||id.length===0||chainIds.has(id)
         ||ordered.length<2||ordered.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(ordered).size!==ordered.length
         ||resources.some(value=>!Number.isSafeInteger(value)||!resourceIds.has(value as number))||new Set(resources).size!==resources.length
-        ||p.adjacency!=="REQUIRED"||p.resourceContinuity!=="REQUIRED";
+        ||p.adjacency!=="REQUIRED"||(p.internalTransition!==undefined&&p.internalTransition!=="INCLUDED")||p.resourceContinuity!=="REQUIRED";
       if(typeof id==="string")chainIds.add(id);
       for(const value of ordered)if(Number.isSafeInteger(value)){const prior=owners.get(value as number);if(prior&&prior!==id)invalid=true;else if(typeof id==="string")owners.set(value as number,id);}
       if(invalid)addIssue("UNSUPPORTED_TECHNICAL_CHAIN","technicalChain",typeof id==="string"?id:index,path,"Technical chain cannot be projected losslessly.");

@@ -90,11 +90,13 @@ test("generic resource presence metadata is fingerprinted and projected lossless
 
 test("technical-chain contract is preflighted and projected losslessly",()=>{
  const input=createSupportedEngineInputAdapterFixture(),before=clone(input);input.tasks.push({...input.tasks.find(task=>task.id===105)!,id:106,dependsOnTaskIds:[105]});
- input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];
+ input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];
  const snapshot=clone(input),first=supported(input),second=supported(clone(input));
- assert.deepEqual(first.problem.technicalChains,[{id:"technical-chain:camera-chain",orderedTaskIds:["task:105","task:106"],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["plan-resource:503"]}]);
+ assert.deepEqual(first.problem.technicalChains,[{id:"technical-chain:camera-chain",orderedTaskIds:["task:105","task:106"],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED",requiredResourceIds:["plan-resource:503"]}]);
  assert.equal(first.problemFingerprint,second.problemFingerprint);assert.deepEqual(input,snapshot);assert.notDeepEqual(input,before);
  const reversed=clone(input);reversed.tasks.reverse();reversed.planResourceItems.reverse();assert.equal(supported(reversed).problemFingerprint,first.problemFingerprint);
+ const omitted=clone(input);delete omitted.technicalChains![0]!.internalTransition;assert.notEqual(supported(omitted).sourceFingerprint,first.sourceFingerprint);assert.notEqual(supported(omitted).problemFingerprint,first.problemFingerprint);
+ const invalid=clone(input);(invalid.technicalChains![0] as any).internalTransition="OMITTED";assert.ok(preflightEngineInputForPlannerNext(invalid).reasonCodes.includes("UNSUPPORTED_TECHNICAL_CHAIN"));
  const duplicate=clone(input);duplicate.technicalChains![0]!.orderedTaskIds=[105,105];assert.ok(preflightEngineInputForPlannerNext(duplicate).reasonCodes.includes("UNSUPPORTED_TECHNICAL_CHAIN"));
 });
 
