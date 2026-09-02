@@ -191,7 +191,9 @@ input.transportSettings = {
 const preflight = preflightEngineInputForPlannerNext(input);
 const adapted = adaptEngineInputToPlannerNextProblem(input);
 const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:true}) : null;
+const executionWithoutDiagnostic = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
+const exactResultWithoutDiagnostic = executionWithoutDiagnostic?.kind === "EXACT_CONSTRUCTIVE" ? executionWithoutDiagnostic.result : null;
 const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
   : 0;
@@ -220,7 +222,14 @@ const diagnosticReport = diagnostic ? {
   waterfallByDepth: diagnostic.waterfallByDepth,
   waterfallReconciles: Object.values(diagnostic.waterfallByDepth).reduce((sum,row)=>sum+row.total,0) === exactResult!.evidence.branchesExplored,
   feederByDepth: diagnostic.feederByDepth,
-  futureFeasibility: diagnostic.futureFeasibility,
+  futureFeasibility: {
+    ...diagnostic.futureFeasibility,
+    // The canonical artifact keeps bounded aggregates; per-state rows are available only in
+    // the in-memory diagnostic and made the Evidence grow in proportion to search traffic.
+    assessments: undefined,
+    collisions: undefined,
+  },
+  standaloneFrontier: diagnostic.standaloneFrontier,
   criticalDepth,
   criticalRejectionReasons: top((row)=>row.reason),
   topMainTasks: top((row)=>row.mainTaskId),
@@ -230,6 +239,20 @@ const diagnosticReport = diagnostic ? {
   criticalRejectionCount,
   recommendation,
 } : null;
+const invariantEvidenceKeys = ["branchesExplored","coreBranches","standaloneBranches","coreCompleteLeafCount",
+  "coreCompleteLeavesEvaluated","coreStandaloneFrontierChecks","coreStandaloneFrontierPrunes","causalBacktracks",
+  "causalBacktrackTargetDepthCounts","standaloneSearchInvocations","standaloneMaximumDepth","standaloneCompleteLeafCount",
+  "lastExhaustionPhase"] as const;
+const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
+  diagnosticOn:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResult.evidence[key]])),
+  diagnosticOff:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResultWithoutDiagnostic.evidence[key]])),
+  statusOn:exactResult.status,statusOff:exactResultWithoutDiagnostic.status,
+  exactMatch:exactResult.status===exactResultWithoutDiagnostic.status
+    &&invariantEvidenceKeys.every(key=>JSON.stringify(exactResult.evidence[key])===JSON.stringify(exactResultWithoutDiagnostic.evidence[key])),
+}:null;
+if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
+const persistedEvidence=exactResult?{...exactResult.evidence,
+  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier}:null}:null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
@@ -274,8 +297,9 @@ const evidence = {
     scheduledParticipantMealCount: exactResult?.scheduledParticipantMeals.length ?? 0,
     scheduledOperationalMealCount: exactResult?.scheduledOperationalMeals.length ?? 0,
     remainingTaskIds: exactResult?.remainingTaskIds ?? [],
-    evidence: exactResult?.evidence ?? null,
+    evidence: persistedEvidence,
     diagnosticReport,
+    searchInvariance,
   } : null,
   result: {
     publishedCanonicalObligations,
