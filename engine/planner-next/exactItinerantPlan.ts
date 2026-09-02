@@ -1062,7 +1062,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       // occupations/deadlines, never capacity. Therefore an identical certificate proves that
       // those frames cannot repair this rejection without encoding fixture-specific causality.
       const relaxedPrefix=targetDepth===null?null:candidate.tasks.filter(task=>(candidate.decisionDepthByTaskId[task.id]??0)<=targetDepth);
-      const prefixCertificate=relaxedPrefix===null?null:checkStandaloneCoreFrontier(problem,standaloneTasks,relaxedPrefix,[]);
+      const prefixCertificate=relaxedPrefix===null?null:checkStandaloneCoreFrontier(problem,standaloneTasks,relaxedPrefix,[],"ANALYTIC_CAPACITY_ONLY");
       const suffixIsProvenIrrelevant=prefixCertificate!==null&&!prefixCertificate.feasible
         &&prefixCertificate.failure===frontier.failure&&prefixCertificate.authorityId===frontier.authorityId
         &&prefixCertificate.demandMinutes===frontier.demandMinutes&&prefixCertificate.freeCapacityMinutes===frontier.freeCapacityMinutes;

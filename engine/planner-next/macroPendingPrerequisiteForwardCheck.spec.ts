@@ -40,3 +40,13 @@ test("CORE frontier proves collective standalone overload and abstains when capa
  second.availability=[{start:0,end:30}];second.requiredResourceIds=["separate"];p.resources.push({id:"separate",availability:[{start:0,end:100}]});
  assert.equal(checkStandaloneCoreFrontier(p,[first,second],[]).feasible,true);
 });
+
+test("analytic CORE frontier abstains before joint DFS while FULL preserves the joint proof",()=>{
+ const first=task("first",10,[],[{start:20,end:30}]),second=task("second",10,[first.id],[{start:0,end:10}]);
+ first.spaceId="room";first.participantId="person";second.spaceId="other";second.participantId="other";
+ const p=problem([first,second]);
+ const full=checkStandaloneCoreFrontier(p,[first,second],[]);
+ assert.equal(full.failure,"JOINT_INFEASIBLE");assert.equal(full.jointChecks,1);
+ const analytic=checkStandaloneCoreFrontier(p,[first,second],[],[],"ANALYTIC_CAPACITY_ONLY");
+ assert.equal(analytic.feasible,true);assert.equal(analytic.failure,null);assert.equal(analytic.jointChecks,0);
+});
