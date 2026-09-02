@@ -167,6 +167,7 @@ function technicalChains(): TechnicalChainContract[] {
     id: TECHNICAL_CHAIN_ID,
     orderedTaskIds: ["TECH.tech_reality_eva", "TECH.tech_desmontaje_traslado", "TECH.tech_totales_post"],
     adjacency: "REQUIRED",
+    internalTransition: "INCLUDED",
     resourceContinuity: "REQUIRED",
     requiredResourceIds: [...TECHNICAL_RESOURCE_IDS],
   }];

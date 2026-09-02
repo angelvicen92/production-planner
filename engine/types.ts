@@ -247,6 +247,7 @@ export interface EngineInputTechnicalChainInput {
   id: string;
   orderedTaskIds: number[];
   adjacency: "REQUIRED";
+  internalTransition?: "INCLUDED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: number[];
 }

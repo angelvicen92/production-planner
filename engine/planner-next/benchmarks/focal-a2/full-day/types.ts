@@ -157,6 +157,7 @@ export interface TechnicalChainContract {
   readonly id: string;
   readonly orderedTaskIds: readonly string[];
   readonly adjacency: "REQUIRED";
+  readonly internalTransition: "INCLUDED";
   readonly resourceContinuity: "REQUIRED";
   readonly requiredResourceIds: readonly ["cam-3", "cam-4", "son-1", "eva"];
 }

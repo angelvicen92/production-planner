@@ -266,7 +266,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     return [...setIssues, ...expansion.technicalChains.flatMap((chain) => {
     const chainTasks = chain.orderedTaskIds.map((id) => expansion.tasks.find((task) => task.id === id));
     const issues: ValidationIssue[] = [];
-    if (chain.adjacency !== "REQUIRED" || chain.resourceContinuity !== "REQUIRED") issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID", chain.id, "Technical chain must require adjacency and resource continuity."));
+    if (chain.adjacency !== "REQUIRED" || chain.internalTransition !== "INCLUDED" || chain.resourceContinuity !== "REQUIRED") issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID", chain.id, "Technical chain must require adjacency, included internal transition and resource continuity."));
     if (JSON.stringify(chain.orderedTaskIds) !== JSON.stringify(expectedOrderedTaskIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_ORDER_INVALID", chain.id, "Technical chain orderedTaskIds must match the official sequence."));
     if (JSON.stringify([...chain.requiredResourceIds].sort()) !== JSON.stringify(expectedResourceIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_SET_INVALID", chain.id, "Technical chain contract resources must be exactly CAM 3, CAM 4, SON 1 and EVA."));
     if (chainTasks.some((task) => !task || task.participantId !== undefined || task.operationalKind !== "technical")) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID", chain.id, "Technical chain member missing or attributed to participant."));

@@ -51,6 +51,7 @@ export interface TechnicalChainPolicy {
   id: string;
   orderedTaskIds: string[];
   adjacency: "REQUIRED";
+  internalTransition?: "INCLUDED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: string[];
 }
