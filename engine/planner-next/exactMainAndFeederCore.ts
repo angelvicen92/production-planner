@@ -4,7 +4,7 @@ import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompa
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
-import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
+import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
@@ -62,6 +62,8 @@ export interface ExactMainAndFeederCoreEvidence {
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  runLayers: Array<{ runCount: number; patternsGenerated: number; architecturesChecked: number;
+    rejectionReasons: Partial<Record<MainFeederStructuralRejection, number>> }>;
   firstExactArchitecture: string | null;
   firstFeedableRunSizes: number[];
   feederOrderBranchesByArchitecture: Record<string, number>;
@@ -546,7 +548,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
-    architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
+    architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {}, runLayers: [],
     firstExactArchitecture: null, firstFeedableRunSizes: [], feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
     feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
     feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
@@ -622,9 +624,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return true;
   };
   const duration = mains[0]!.duration;
-  const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
+  const patternLayers = generateMainFlowPatternRunLayers(mains, problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
-  if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
@@ -1562,145 +1563,154 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { outcome: "FOUND", certificate };
   };
 
-  outer: for (const pattern of patterns.patterns) {
-    if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
-      return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-    evidence.patternCandidatesExplored += 1;
-    const compositeAllowance = ledger.limit - ledger.branchesExplored;
-    const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, compositeAllowance);
-    if (!ledger.consume("CORE", positionsResult.rawCombinationCount))
-      return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
-    recordBranch("OTHER",0,positionsResult.rawCombinationCount);
-    evidence.branchesExplored = ledger.coreBranches;
-    if (positionsResult.exhausted)
-      return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
-    const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
-    const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-      ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
-    for (const timeline of timelines) {
-      const departureEnds = [...latestDepartureStart.values()];
-      const historicalEnds = [...new Set([
-        problem.mainFlow.preferredEnd,
-        ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
-          .sort((left, right) => left - right),
-        ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-        ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
-          .sort((left, right) => right - left),
-      ])];
-      let candidateEnds = timeline
-        ? [problem.mainFlow.preferredEnd]
-        : [...new Set([
+  outer: for (const layer of patternLayers) {
+    const layerEvidence = { runCount: layer.runCount, patternsGenerated: layer.patterns.length,
+      architecturesChecked: 0, rejectionReasons: {} as Partial<Record<MainFeederStructuralRejection, number>> };
+    evidence.runLayers.push(layerEvidence);
+    if (!layer.complete)
+      return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+    for (const pattern of layer.patterns) {
+      if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
+        return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+      evidence.patternCandidatesExplored += 1;
+      const compositeAllowance = ledger.limit - ledger.branchesExplored;
+      const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, compositeAllowance);
+      if (!ledger.consume("CORE", positionsResult.rawCombinationCount))
+        return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+      recordBranch("OTHER",0,positionsResult.rawCombinationCount);
+      evidence.branchesExplored = ledger.coreBranches;
+      if (positionsResult.exhausted)
+        return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+      const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
+      const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
+        ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
+      for (const timeline of timelines) {
+        const departureEnds = [...latestDepartureStart.values()];
+        const historicalEnds = [...new Set([
           problem.mainFlow.preferredEnd,
-          problem.day.start + pattern.length * duration,
-          // Structural lower-bound events let backward packing move away from an
-          // unusably early preferred end without sweeping human clock values.  The
-          // exact closure still decides whether either vocal/styling order works.
-          ...pattern.flatMap((blockKey, position) => mains.filter((main) => main.blockKey === blockKey).map((main) => {
-            const ancestors = new Map<string, Task>();
-            const collect = (id: string): void => {
-              const task = problem.tasks.find((candidate) => candidate.id === id);
-              if (!task || task.participantId !== main.participantId || ancestors.has(id)) return;
-              ancestors.set(id, task);
-              for (const dependency of task.dependencies) collect(dependency);
-            };
-            for (const dependency of main.dependencies) collect(dependency);
-            const feeder = feederByMain.get(main.id)!;
-            const transition = effectiveCoachTransitionMinutes(problem, main.coachId!, feeder.spaceId, main.spaceId);
-            const earliestMainStart = problem.day.start
-              + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition;
-            return earliestMainStart + main.duration + (pattern.length - position - 1) * duration;
-          })),
-          ...pattern.flatMap((blockKey, runStart) => {
-            if (runStart > 0 && pattern[runStart - 1] === blockKey) return [];
-            let runEnd = runStart + 1;
-            while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
-            const candidates = mains.filter((main) => main.blockKey === blockKey)
-              .map((main) => ({ main, feeder: feederByMain.get(main.id)! }));
-            const selected = candidates.sort((left, right) => left.feeder.duration - right.feeder.duration
-              || left.main.id.localeCompare(right.main.id)).slice(0, runEnd - runStart);
-            if (selected.length !== runEnd - runStart) return [];
-            const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
-            const prerequisiteLeadIn = Math.min(...candidates.map(({ feeder }) =>
-              optimisticPrerequisiteLeadInMinutes(problem, feeder)));
-            const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
-              : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
-            const withoutLeadIn = problem.day.start + feederLoad + terminalTransition
-              + (pattern.length - runStart) * duration;
-            return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
-          }),
-          ...[...new Set(pattern)].flatMap((blockKey) => {
-            const runStarts = pattern.flatMap((key, index) => key === blockKey
-              && (index === 0 || pattern[index - 1] !== key) ? [index] : []);
-            const eligible = mains.filter((main) => main.blockKey === blockKey)
-              .map((main) => ({ main, feeder: feederByMain.get(main.id)! }))
-              .sort((left, right) => left.feeder.duration - right.feeder.duration
-                || left.main.id.localeCompare(right.main.id));
-            let required = 0;
-            return runStarts.map((runStart) => {
-              let runEnd = runStart + 1;
-              while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
-              required += runEnd - runStart;
-              const selected = eligible.slice(0, required);
-              const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
-              const prerequisiteLeadIn = Math.min(...eligible.map(({ feeder }) =>
-                optimisticPrerequisiteLeadInMinutes(problem, feeder)));
-              const earlierMainLoad = pattern.slice(0, runStart).filter((key) => key === blockKey).length * duration;
-              const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
-                : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
-              const withoutLeadIn = problem.day.start + feederLoad + earlierMainLoad + terminalTransition
-                + (pattern.length - runStart) * duration;
-              return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
-            });
-          }).flat(),
-          ...departureEnds
-            .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+          ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
             .sort((left, right) => left - right),
           ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-          ...departureEnds
-            .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+          ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
             .sort((left, right) => right - left),
         ])];
-      if (!timeline) {
-        const historicalSet = new Set(historicalEnds);
-        candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
-      }
-      for (const candidateEnd of candidateEnds) {
-        if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
-          return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        evidence.timelineCandidatesExplored += 1;
-        const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
-        if (slots.length > 0 && slots[0]! < problem.day.start) continue;
-        for (const composite of positions) {
-          if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+        let candidateEnds = timeline
+          ? [problem.mainFlow.preferredEnd]
+          : [...new Set([
+            problem.mainFlow.preferredEnd,
+            problem.day.start + pattern.length * duration,
+            // Structural lower-bound events let backward packing move away from an
+            // unusably early preferred end without sweeping human clock values.  The
+            // exact closure still decides whether either vocal/styling order works.
+            ...pattern.flatMap((blockKey, position) => mains.filter((main) => main.blockKey === blockKey).map((main) => {
+              const ancestors = new Map<string, Task>();
+              const collect = (id: string): void => {
+                const task = problem.tasks.find((candidate) => candidate.id === id);
+                if (!task || task.participantId !== main.participantId || ancestors.has(id)) return;
+                ancestors.set(id, task);
+                for (const dependency of task.dependencies) collect(dependency);
+              };
+              for (const dependency of main.dependencies) collect(dependency);
+              const feeder = feederByMain.get(main.id)!;
+              const transition = effectiveCoachTransitionMinutes(problem, main.coachId!, feeder.spaceId, main.spaceId);
+              const earliestMainStart = problem.day.start
+                + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition;
+              return earliestMainStart + main.duration + (pattern.length - position - 1) * duration;
+            })),
+            ...pattern.flatMap((blockKey, runStart) => {
+              if (runStart > 0 && pattern[runStart - 1] === blockKey) return [];
+              let runEnd = runStart + 1;
+              while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
+              const candidates = mains.filter((main) => main.blockKey === blockKey)
+                .map((main) => ({ main, feeder: feederByMain.get(main.id)! }));
+              const selected = candidates.sort((left, right) => left.feeder.duration - right.feeder.duration
+                || left.main.id.localeCompare(right.main.id)).slice(0, runEnd - runStart);
+              if (selected.length !== runEnd - runStart) return [];
+              const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+              const prerequisiteLeadIn = Math.min(...candidates.map(({ feeder }) =>
+                optimisticPrerequisiteLeadInMinutes(problem, feeder)));
+              const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
+                : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
+              const withoutLeadIn = problem.day.start + feederLoad + terminalTransition
+                + (pattern.length - runStart) * duration;
+              return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
+            }),
+            ...[...new Set(pattern)].flatMap((blockKey) => {
+              const runStarts = pattern.flatMap((key, index) => key === blockKey
+                && (index === 0 || pattern[index - 1] !== key) ? [index] : []);
+              const eligible = mains.filter((main) => main.blockKey === blockKey)
+                .map((main) => ({ main, feeder: feederByMain.get(main.id)! }))
+                .sort((left, right) => left.feeder.duration - right.feeder.duration
+                  || left.main.id.localeCompare(right.main.id));
+              let required = 0;
+              return runStarts.map((runStart) => {
+                let runEnd = runStart + 1;
+                while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
+                required += runEnd - runStart;
+                const selected = eligible.slice(0, required);
+                const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+                const prerequisiteLeadIn = Math.min(...eligible.map(({ feeder }) =>
+                  optimisticPrerequisiteLeadInMinutes(problem, feeder)));
+                const earlierMainLoad = pattern.slice(0, runStart).filter((key) => key === blockKey).length * duration;
+                const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
+                  : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
+                const withoutLeadIn = problem.day.start + feederLoad + earlierMainLoad + terminalTransition
+                  + (pattern.length - runStart) * duration;
+                return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
+              });
+            }).flat(),
+            ...departureEnds
+              .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+              .sort((left, right) => left - right),
+            ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+            ...departureEnds
+              .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+              .sort((left, right) => right - left),
+          ])];
+        if (!timeline) {
+          const historicalSet = new Set(historicalEnds);
+          candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
+        }
+        for (const candidateEnd of candidateEnds) {
+          if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-          const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
-          evidence.architecturesChecked += 1;
-          const rejection = proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots });
-          if (rejection) {
-            evidence.architecturesStructurallyRejected += 1;
-            evidence.structuralRejectionsByReason[rejection] =
-              (evidence.structuralRejectionsByReason[rejection] ?? 0) + 1;
-            evidence.feederOrderBranchesByArchitecture[architectureKey] = 0;
-            continue;
-          }
-          if (evidence.firstExactArchitecture === null) {
-            evidence.firstExactArchitecture = architectureKey;
-            evidence.firstFeedableRunSizes = pattern.reduce<number[]>((runs, key, index) => {
-              if (index === 0 || pattern[index - 1] !== key) runs.push(1);
-              else runs[runs.length - 1]! += 1;
-              return runs;
-            }, []);
-          }
-          evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
-          currentArchitecture = architectureKey;
-          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
-            timeline?.key ?? null);
-          currentArchitecture = null;
-          if (result === "BUDGET_EXHAUSTED")
-            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-          if (result === "FOUND") {
-            if (selected) selected.timeline = timeline;
-            break outer;
+          evidence.timelineCandidatesExplored += 1;
+          const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
+          if (slots.length > 0 && slots[0]! < problem.day.start) continue;
+          for (const composite of positions) {
+            if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+              return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+            const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
+            evidence.architecturesChecked += 1;
+            layerEvidence.architecturesChecked += 1;
+            const rejection = proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots });
+            if (rejection) {
+              evidence.architecturesStructurallyRejected += 1;
+              evidence.structuralRejectionsByReason[rejection] =
+                (evidence.structuralRejectionsByReason[rejection] ?? 0) + 1;
+              layerEvidence.rejectionReasons[rejection] = (layerEvidence.rejectionReasons[rejection] ?? 0) + 1;
+              evidence.feederOrderBranchesByArchitecture[architectureKey] = 0;
+              continue;
+            }
+            if (evidence.firstExactArchitecture === null) {
+              evidence.firstExactArchitecture = architectureKey;
+              evidence.firstFeedableRunSizes = pattern.reduce<number[]>((runs, key, index) => {
+                if (index === 0 || pattern[index - 1] !== key) runs.push(1);
+                else runs[runs.length - 1]! += 1;
+                return runs;
+              }, []);
+            }
+            evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
+            currentArchitecture = architectureKey;
+            const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
+              timeline?.key ?? null);
+            currentArchitecture = null;
+            if (result === "BUDGET_EXHAUSTED")
+              return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+            if (result === "FOUND") {
+              if (selected) selected.timeline = timeline;
+              break outer;
+            }
           }
         }
       }

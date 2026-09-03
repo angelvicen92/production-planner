@@ -4,6 +4,8 @@
 
 La plantilla anónima expresa 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
 
+La aclaración canónica asigna cámaras por espacio: Recursos y Pasillo comparten CAM4; Giratuto no la consume; Croma y Estrellas/Sillón comparten CAM2; Totales 1 y Totales Coreo usan respectivamente CAM5 y CAM6 y conservan la sincronización REQUIRED. El target IN de 3 es preferido, con mínimo hard 1, máximo 6 y separación de 30 minutos. Vocal Coach no tiene máximo hard de bloques: la proyección numérica exigida por el contrato usa la cardinalidad real de tareas como cota técnica no vinculante para esta instancia.
+
 ## Unidades itinerantes A2
 
 Se conservan tres composiciones explícitas, sin registrarlas como recursos hard: **reality-unit-a** (cam-3, son-1), **reality-unit-b** (cam-4, son-2) y **reality-unit-combined** (cam-3, cam-4, son-1). Las tres heredan la jornada efectiva completa según SPEC-08 v1.1; las horas del planning humano no se usan como ventana, seed, lock ni hint. Cada operación itinerante declara sus tareas y recursos miembros; los anchors C01/C05/C08 retienen esos recursos además del coach de Estudio 7. EVA se añade sólo a operaciones que la requieren explícitamente.

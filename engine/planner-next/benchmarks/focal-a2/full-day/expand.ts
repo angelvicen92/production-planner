@@ -192,6 +192,7 @@ export function expandCanonicalFullA2Template(template: CanonicalFullA2Template)
     technicalChains: technicalChains(),
     spaces: sorted(template.spaces, (space) => space.id),
     resources: sorted(template.resources, (resource) => resource.id),
+    spaceResourceAssignments: template.spaceResourceAssignments,
     itinerantUnits: sorted(template.itinerantUnits, (unit) => unit.id),
     itinerantOperations: sorted(template.itinerantOperations, (operation) => operation.id),
     rules: template.rules,

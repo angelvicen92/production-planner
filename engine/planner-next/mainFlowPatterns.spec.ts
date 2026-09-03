@@ -1,7 +1,52 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
-import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
+import { generateMainFlowPatternRunLayers, generateMainFlowPatterns,
+  proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
+
+const mainsForKeys = (keys: readonly string[]): Task[] => keys.map((blockKey, index) => ({
+  id: `main-${index}`, kind: "main", duration: 10, spaceId: "main", blockKey, dependencies: [],
+}));
+
+test("exact pattern layers start at the non-empty block-key lower bound", () => {
+  const one = generateMainFlowPatternRunLayers(mainsForKeys(["a", "a"]), 1, 2, 20);
+  assert.equal(one[0]?.runCount, 1);
+  assert.deepEqual(one[0]?.patterns.map((pattern) => pattern.join("")), ["aa"]);
+
+  const two = generateMainFlowPatternRunLayers(mainsForKeys(["a", "a", "b"]), 1, 2, 20);
+  assert.deepEqual(two.map(({ runCount }) => runCount), [2, 3]);
+  assert.ok(two[0]!.patterns.every((pattern) => pattern.reduce((runs, key, index) =>
+    runs + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0) === 2));
+});
+
+test("exact pattern-layer budget is global, deterministic, and never marks a partial layer complete", () => {
+  const tasks = mainsForKeys(["a", "a", "b"]);
+  const first = generateMainFlowPatternRunLayers(tasks, 1, 2, 2);
+  const again = generateMainFlowPatternRunLayers([...tasks].reverse(), 1, 2, 2);
+  assert.deepEqual(first, again);
+  assert.deepEqual(first.map(({ runCount, patterns, complete }) =>
+    ({ runCount, generated: patterns.length, complete })), [
+    { runCount: 2, generated: 2, complete: true },
+    { runCount: 3, generated: 0, complete: false },
+  ]);
+  assert.equal(first.reduce((sum, layer) => sum + layer.patterns.length, 0), 2);
+});
+
+test("PREFERRED concentration reorders equal-run patterns without removing alternatives", () => {
+  const tasks = mainsForKeys(["n", "n", "r", "r", "r"]).map((task) =>
+    task.blockKey === "n" ? { ...task, requiredResourceIds: ["preferred"] } : task);
+  const withoutPreference = generateMainFlowPatternRunLayers(tasks, 1, 3, 100);
+  const withPreference = generateMainFlowPatternRunLayers(tasks, 1, 3, 100, [{
+    id: "preferred", availability: [{ start: 0, end: 100 }], presencePreference: "OFF",
+    presenceConcentrationPolicy: "PREFERRED", assignedSpaceId: "main",
+  }]);
+  const baseline = withoutPreference.find(({ runCount }) => runCount === 3)!.patterns.map((pattern) => pattern.join());
+  const preferred = withPreference.find(({ runCount }) => runCount === 3)!.patterns.map((pattern) => pattern.join());
+
+  assert.notEqual(preferred[0], baseline[0]);
+  assert.equal(preferred[0], "r,n,n,r,r");
+  assert.deepEqual([...preferred].sort(), [...baseline].sort());
+});
 
 test("PREFERRED resource concentration orders patterns without removing interleaved alternatives", () => {
   const mains = [

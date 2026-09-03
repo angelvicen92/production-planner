@@ -53,6 +53,83 @@
         ]
       ]
     ],
+    "spaceResourceAssignments": {
+      "p14-recursos": [
+        "cam-4"
+      ],
+      "p14-pasillo": [
+        "cam-4"
+      ],
+      "p15-croma": [
+        "cam-2"
+      ],
+      "p15-estrellas-sillon": [
+        "cam-2"
+      ],
+      "totales-1": [
+        "cam-5"
+      ],
+      "totales-coreo": [
+        "cam-6"
+      ]
+    },
+    "mainFlowBlockPolicy": {
+      "domainAuthority": "UNBOUNDED",
+      "projectedTechnicalMaximum": 11,
+      "technicalMaximumDerivation": "maximum actual main-task cardinality for one coach; not a domain rule"
+    },
+    "effectiveCameraProjection": {
+      "CROMA": [
+        "plan-resource:4002"
+      ],
+      "REDES": [
+        "plan-resource:4004"
+      ],
+      "PASILLO": [
+        "plan-resource:4004"
+      ],
+      "GIRATUTO": [],
+      "SILLON": [
+        "plan-resource:4002"
+      ],
+      "ESTRELLAS": [
+        "plan-resource:4002"
+      ],
+      "TOTALES_1": [
+        "plan-resource:4005"
+      ],
+      "TOTALES_COREO": [
+        "plan-resource:4006"
+      ]
+    },
+    "projectedArrivalTransportPolicy": {
+      "taskIds": [
+        "task:10006",
+        "task:10021",
+        "task:10034",
+        "task:10047",
+        "task:10060",
+        "task:10077",
+        "task:10092",
+        "task:10105",
+        "task:10120",
+        "task:10135",
+        "task:10150",
+        "task:10165",
+        "task:10180",
+        "task:10194",
+        "task:10207",
+        "task:10221",
+        "task:10233",
+        "task:10246",
+        "task:10259"
+      ],
+      "targetGroupSize": 3,
+      "minimumGroupSize": 1,
+      "maximumGroupSize": 6,
+      "minGapMinutes": 30,
+      "groupingWeight": 3
+    },
     "band": {
       "canonicalResourceCount": 1,
       "requiredMainCount": 13,
@@ -79,7 +156,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "41007a067b87361f6b55cd756443e4a78856d313c616e5a2c63ef34e573831e6"
+    "problemFingerprint": "828f70f92b586ac7684c13ec49362d80fab7c578078dac251ebae88892724dd4"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -356,9 +433,9 @@
       "standaloneForwardPrunesByDepth": {
         "19": 567
       },
-      "standaloneForwardCollectiveCapacityChecks": 8525,
+      "standaloneForwardCollectiveCapacityChecks": 9661,
       "standaloneForwardCollectiveCapacityPrunes": 567,
-      "standaloneForwardCollectiveObligationsChecked": 112524,
+      "standaloneForwardCollectiveObligationsChecked": 161940,
       "standaloneForwardCollectiveCapacityCertificates": [
         {
           "failure": "COLLECTIVE_CAPACITY",
@@ -654,7 +731,7 @@
       "deepestPartialMainRunsClosed": 2,
       "deepestPartialFeederRunsClosed": 2,
       "deepestPartialCoreTasksRemaining": 0,
-      "deepestPartialFrontierFingerprint": "0179b5d3417d66243a0ea58e580e8c1f44ed041284a2f0bbf8a4d7b705556fb6",
+      "deepestPartialFrontierFingerprint": "0091aba2473305a9c809b707d5c1d8026ffefea2a7b2293b578c71e9684454b5",
       "architecturesChecked": 13,
       "architecturesStructurallyRejected": 11,
       "structuralRejectionsByReason": {
@@ -663,25 +740,38 @@
         "PREREQUISITE_WINDOW": 4,
         "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 1
       },
-      "firstExactArchitecture": "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1025::",
+      "runLayers": [
+        {
+          "runCount": 2,
+          "patternsGenerated": 2,
+          "architecturesChecked": 13,
+          "rejectionReasons": {
+            "FEEDER_CAPACITY": 4,
+            "RESOURCE_WINDOW": 2,
+            "PREREQUISITE_WINDOW": 4,
+            "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 1
+          }
+        }
+      ],
+      "firstExactArchitecture": "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:1025::",
       "firstFeedableRunSizes": [
         11,
         8
       ],
       "feederOrderBranchesByArchitecture": {
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:925::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1115::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1260::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:825::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:900::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:885::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:870::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:855::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:840::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1020::": 0,
-        "plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1025::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005::END:925::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005::END:1115::": 0
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:925::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:1115::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:1260::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:825::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:900::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:885::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:870::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:855::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:840::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:1020::": 0,
+        "plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008::END:1025::": 0,
+        "plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007::END:925::": 0,
+        "plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007::END:1115::": 0
       },
       "feederOrderBranches": 0,
       "feederSlotAnalyticChecks": 14,
@@ -846,7 +936,7 @@
         "feederMatching": {
           "contexts": [
             {
-              "fingerprint": "d155a38147524da3c854b82e2c29d9a4f765fc37009c479240979626ef478ceb",
+              "fingerprint": "45b8ad24559bc58ddf5e752f4ec5f38cd0087fdcd2f071506ceeb4a9b126cf26",
               "depth": 8,
               "runEnd": 8,
               "blockStart": 680,
@@ -879,7 +969,7 @@
               "partialCoreRejects": []
             },
             {
-              "fingerprint": "6255a804cb3d4cb88d45ad927e6947229f7d06b72421407f941f75c5bd6b6e91",
+              "fingerprint": "03f4bd9dc00fcce718d13affafb5da7c2450d3bbcb8b98d331c97169dda337f3",
               "depth": 19,
               "runEnd": 19,
               "blockStart": 755,
@@ -1011,7 +1101,7 @@
       "feederMatching": {
         "contexts": [
           {
-            "fingerprint": "d155a38147524da3c854b82e2c29d9a4f765fc37009c479240979626ef478ceb",
+            "fingerprint": "45b8ad24559bc58ddf5e752f4ec5f38cd0087fdcd2f071506ceeb4a9b126cf26",
             "depth": 8,
             "runEnd": 8,
             "blockStart": 680,
@@ -1044,7 +1134,7 @@
             "partialCoreRejects": []
           },
           {
-            "fingerprint": "6255a804cb3d4cb88d45ad927e6947229f7d06b72421407f941f75c5bd6b6e91",
+            "fingerprint": "03f4bd9dc00fcce718d13affafb5da7c2450d3bbcb8b98d331c97169dda337f3",
             "depth": 19,
             "runEnd": 19,
             "blockStart": 755,
@@ -1319,8 +1409,7 @@
       "standaloneCompleteLeafCount": 0,
       "coreBranches": 299926,
       "standaloneBranches": 74,
-      "lastExhaustionPhase": "CORE",
-      "nextObservedBlocker": "styling demand=10 / free=5 during feeder partial-core validation"
+      "lastExhaustionPhase": "CORE"
     }
   },
   "result": {

@@ -241,17 +241,29 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     if (rules.microphoneChangeMinutesBetweenRounds !== 5 || rules.modelAsSpacePreparationOrTransition !== true) issues.push(issue("TOTALES_RULES", "TOTALES_MICROPHONE_TRANSITION_LOST", "rules.totalesSynchronization", "Five minute microphone change must be modelled as space preparation/transition."));
     return issues;
   }],
-  ["COACH_TRANSITION_RULE", (expansion) => expansion.rules.coachTransition.minutes === 30 && expansion.rules.coachTransition.scope === "coach" && expansion.rules.mainFlow.maxBlocksPerCoach === 2 && expansion.rules.mainFlow.continuity === "REQUIRED"
+  ["SPACE_CAMERA_AUTHORITY", (expansion) => {
+    const expected = {
+      "p14-recursos": ["cam-4"], "p14-pasillo": ["cam-4"],
+      "p15-croma": ["cam-2"], "p15-estrellas-sillon": ["cam-2"],
+      "totales-1": ["cam-5"], "totales-coreo": ["cam-6"],
+    };
+    const camerasPresent = ["cam-2", "cam-4", "cam-5", "cam-6"].every((id) => expansion.resources.some((resource) => resource.id === id));
+    const mappingExact = JSON.stringify(expansion.spaceResourceAssignments) === JSON.stringify(expected);
+    const noDuplicatedTaskAuthority = expansion.tasks.filter((task) => ["CROMA", "REDES", "PASILLO", "GIRATUTO", "SILLON", "ESTRELLAS", "TOTALES_1", "TOTALES_COREO"].includes(task.type))
+      .every((task) => !task.requiredResourceIds.some((id) => ["cam-2", "cam-4", "cam-5", "cam-6"].includes(id)));
+    return camerasPresent && mappingExact && noDuplicatedTaskAuthority ? [] : [issue("SPACE_CAMERA_AUTHORITY", "SPACE_CAMERA_AUTHORITY_CHANGED", "spaceResourceAssignments", "A2 camera use must be assigned effectively by canonical space without duplicated task authority.")];
+  }],
+  ["COACH_TRANSITION_RULE", (expansion) => expansion.rules.coachTransition.minutes === 30 && expansion.rules.coachTransition.scope === "coach" && expansion.rules.mainFlow.blockLimit === "UNBOUNDED" && expansion.rules.mainFlow.continuity === "REQUIRED"
     ? []
     : [issue("COACH_TRANSITION_RULE", "COACH_TRANSITION_RULE_CHANGED", "rules.coachTransition", "Coach transition/main-flow rule changed.")]],
   ["EFFECTIVE_CONFIGURATION", (expansion) => {
     const c = expansion.effectiveConfiguration;
     const availabilityValid = expansion.participants.every((id) => c.participantAvailability[id]?.start === "09:00" && c.participantAvailability[id]?.end === (id === "C01" ? "15:30" : "18:40"));
-    const transportValid = c.transportPolicy.arrival.targetGroupSize === 3 && c.transportPolicy.arrival.maximumGroupSize === 6 && c.transportPolicy.arrival.minGapMinutes === 35 && c.transportPolicy.arrival.groupingWeight === 3 && c.transportPolicy.departure.targetGroupSize === 1 && c.transportPolicy.departure.maximumGroupSize === 6 && c.transportPolicy.departure.minGapMinutes === 20 && c.transportPolicy.departure.groupingWeight === 3;
+    const transportValid = c.transportPolicy.arrival.targetGroupSize === 3 && c.transportPolicy.arrival.maximumGroupSize === 6 && c.transportPolicy.arrival.minGapMinutes === 30 && c.transportPolicy.arrival.groupingWeight === 3 && c.transportPolicy.departure.targetGroupSize === 1 && c.transportPolicy.departure.maximumGroupSize === 6 && c.transportPolicy.departure.minGapMinutes === 20 && c.transportPolicy.departure.groupingWeight === 3;
     const mealsValid = c.meals.effectiveWindow.start === "13:00" && c.meals.effectiveWindow.end === "16:30" && c.meals.operational.defaultDurationMinutes === 75 && c.meals.operational.realityDurationMinutes === 75 && c.meals.operational.flexible === true && c.meals.operational.fixedHumanCutIntervals.length === 0 && c.meals.operational.legacyItinerantMealBreakMinutesAuthoritative === false && c.meals.participant.sodexoDurationMinutes === 40 && c.meals.participant.maxSimultaneous === 10 && c.meals.participant.independentFromOperationalMeal === true;
     return availabilityValid && transportValid && mealsValid && expansion.requiredCreationInputs.length === 0 ? [] : [issue("EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT", "effectiveConfiguration", "Resolved A2 source configuration changed or acquired a human fixed meal interval.")];
   }],
-  ["TRANSPORT_RULE", (expansion) => expansion.rules.inTransport.targetGroupSize === 3 && expansion.rules.inTransport.maximumGroupSize === 6 && expansion.rules.inTransport.minGapMinutes === 35 && expansion.rules.outTransport.targetGroupSize === 1 && expansion.rules.outTransport.maximumGroupSize === 6 && expansion.rules.outTransport.minGapMinutes === 20 && expansion.tasks.filter((task) => task.type === "IN").every((task) => task.operationalKind === "transport_arrival" && task.transport?.direction === "arrival") && expansion.tasks.filter((task) => task.type === "OUT").every((task) => task.operationalKind === "transport_departure" && task.transport?.direction === "departure")
+  ["TRANSPORT_RULE", (expansion) => expansion.rules.inTransport.targetGroupSize === 3 && expansion.rules.inTransport.maximumGroupSize === 6 && expansion.rules.inTransport.minGapMinutes === 30 && expansion.rules.outTransport.targetGroupSize === 1 && expansion.rules.outTransport.maximumGroupSize === 6 && expansion.rules.outTransport.minGapMinutes === 20 && expansion.tasks.filter((task) => task.type === "IN").every((task) => task.operationalKind === "transport_arrival" && task.transport?.direction === "arrival") && expansion.tasks.filter((task) => task.type === "OUT").every((task) => task.operationalKind === "transport_departure" && task.transport?.direction === "departure")
     ? []
     : [issue("TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED", "rules.inTransport", "Transport semantics or IN policy changed.")]],
   ["TECHNICAL_CHAIN", (expansion) => {
@@ -329,7 +341,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     const issues: ValidationIssue[] = [];
     const croma = expansion.tasks.filter((task) => task.type === "CROMA");
     const soundResourceIds = new Set(expansion.resources.filter((resource) => resource.kind === "sound").map((resource) => resource.id));
-    if (croma.some((task) => !task.requiredResourceIds.includes("cam-2") || task.requiredResourceIds.some((resourceId) => soundResourceIds.has(resourceId)))) issues.push(issue("KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID", ids(croma).join(","), "Croma must keep CAM 2 and no canonical sound resource."));
+    if (croma.some((task) => task.requiredResourceIds.includes("cam-2") || task.requiredResourceIds.some((resourceId) => soundResourceIds.has(resourceId))) || expansion.spaceResourceAssignments["p15-croma"]?.join() !== "cam-2") issues.push(issue("KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID", ids(croma).join(","), "Croma must receive CAM 2 from its space and no canonical sound resource."));
     const evaTasks = expansion.tasks.filter((task) => task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA" || task.type.startsWith("TECH_"));
     if (evaTasks.some((task) => !task.requiredResourceIds.includes("eva"))) issues.push(issue("KNOWN_RESOURCES", "EVA_RESOURCE_LOST", ids(evaTasks).join(","), "EVA tasks must retain EVA resource."));
     const coached = expansion.tasks.filter((task) => task.type === "PRUEBA_VOCAL_LUCIA" || task.type === "PRUEBA_VOCAL_JOSE_MARIA" || task.type === "ENSAYO_ESTUDIO_7");

@@ -1,5 +1,5 @@
 {
-  "contractVersion": "A2-FULL-009.full-a2-template.v4",
+  "contractVersion": "A2-FULL-009.full-a2-template.v5",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "e0f87a6e4125a92b80d37c94efe967b0c4f8272718c854a5fc0df3359a455341",
-  "expansionFingerprint": "db592d48b27fd826f67b0878ead8a471bb3964278344dcfdbd49640861f0d843",
+  "manifestFingerprint": "6d8dd2838cddf8fc31fd1ba5a615619bcddd91a00249dd3f822b27be052a4234",
+  "expansionFingerprint": "ae2aa3a2cd1dc2c32a46478ea1738f048521441af51c9daacc057494970489d2",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -86,6 +86,18 @@
     {
       "id": "cam-4",
       "label": "CAM 4",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-5",
+      "label": "CAM 5",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-6",
+      "label": "CAM 6",
       "kind": "camera",
       "availability": "inherits_day_unless_overridden"
     },
@@ -1030,6 +1042,13 @@
       "affectedCanonicalIds": []
     },
     {
+      "code": "SPACE_CAMERA_AUTHORITY",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
       "code": "COACH_TRANSITION_RULE",
       "passed": true,
       "evaluated": true,
@@ -1066,10 +1085,14 @@
     },
     {
       "code": "KNOWN_RESOURCES",
-      "passed": true,
+      "passed": false,
       "evaluated": true,
-      "issueCodes": [],
-      "affectedCanonicalIds": []
+      "issueCodes": [
+        "CROMA_RESOURCE_INVALID"
+      ],
+      "affectedCanonicalIds": [
+        "C01.croma,C02.croma,C03.croma,C04.croma,C05.croma,C06.croma,C07.croma,C08.croma,C09.croma,C10.croma,C11.croma,C12.croma,C13.croma,C14.croma,C15.croma,C16.croma,C17.croma,C18.croma,C19.croma"
+      ]
     },
     {
       "code": "NO_EDITORIAL_OR_SEED",
@@ -1079,11 +1102,18 @@
       "affectedCanonicalIds": []
     }
   ],
-  "validationStatus": "VALID",
-  "validationIssues": [],
+  "validationStatus": "INVALID",
+  "validationIssues": [
+    {
+      "invariantCode": "KNOWN_RESOURCES",
+      "code": "CROMA_RESOURCE_INVALID",
+      "entityId": "C01.croma,C02.croma,C03.croma,C04.croma,C05.croma,C06.croma,C07.croma,C08.croma,C09.croma,C10.croma,C11.croma,C12.croma,C13.croma,C14.croma,C15.croma,C16.croma,C17.croma,C18.croma,C19.croma",
+      "message": "Croma must keep CAM 2 and no canonical sound resource."
+    }
+  ],
   "requiredCreationInputs": [],
   "effectiveConfiguration": {
-    "version": "A2-FULL-009.source-configuration.v1",
+    "version": "A2-FULL-009.source-configuration.v2",
     "executionDate": "2025-06-15",
     "effectiveDayWindow": {
       "start": "09:00",
@@ -1180,7 +1210,7 @@
       "arrival": {
         "targetGroupSize": 3,
         "maximumGroupSize": 6,
-        "minGapMinutes": 35,
+        "minGapMinutes": 30,
         "groupingWeight": 3
       },
       "departure": {
@@ -1585,7 +1615,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "db592d48b27fd826f67b0878ead8a471bb3964278344dcfdbd49640861f0d843",
+    "shuffledExpansionFingerprint": "ae2aa3a2cd1dc2c32a46478ea1738f048521441af51c9daacc057494970489d2",
     "matches": true
   },
   "inputImmutable": {

@@ -86,7 +86,7 @@ export const EXPECTED_COACH_BY_PARTICIPANT: Readonly<Record<string, "coach-lucia
 export const TASK_TYPES: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>> = Object.freeze({
   IN: { label: "IN", duration: 5, spaceId: "transport-in", operationalKind: "transport_arrival", exclusiveSpaceUse: "not_applicable", knownResourceIds: [], blocksParticipant: true },
   ESTILISMO_ENTRADA: { label: "Estilismo entrada", duration: 10, spaceId: "styling", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
-  CROMA: { label: "Croma", duration: 10, spaceId: "p15-croma", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["cam-2"], blocksParticipant: true },
+  CROMA: { label: "Croma", duration: 10, spaceId: "p15-croma", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   PRUEBA_VOCAL_LUCIA: { label: "Prueba vocal - Lucía", duration: 15, spaceId: "caracola-lucia", operationalKind: "vocal", exclusiveSpaceUse: true, knownResourceIds: ["coach-lucia"], blocksParticipant: true },
   PRUEBA_VOCAL_JOSE_MARIA: { label: "Prueba vocal - José María", duration: 15, spaceId: "caracola-jose-maria", operationalKind: "vocal", exclusiveSpaceUse: true, knownResourceIds: ["coach-jose-maria"], blocksParticipant: true },
   ENSAYO_ESTUDIO_7: { label: "Ensayo vocal - Estudio 7", duration: 15, spaceId: "estudio-7", operationalKind: "main", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true, countsForMainFlow: true },
@@ -152,12 +152,24 @@ export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
   { id: "cam-2", label: "CAM 2", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-3", label: "CAM 3", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-4", label: "CAM 4", kind: "camera", availability: "inherits_day_unless_overridden" },
+  { id: "cam-5", label: "CAM 5", kind: "camera", availability: "inherits_day_unless_overridden" },
+  { id: "cam-6", label: "CAM 6", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "son-1", label: "SON 1", kind: "sound", availability: "inherits_day_unless_overridden" },
   { id: "son-2", label: "SON 2", kind: "sound", availability: "inherits_day_unless_overridden" },
   { id: "eva", label: "EVA", kind: "presenter", availability: "inherits_day_unless_overridden" },
   { id: "coach-lucia", label: "Coach Lucía", kind: "coach", availability: "inherits_day_unless_overridden" },
   { id: "coach-jose-maria", label: "Coach José María", kind: "coach", availability: "inherits_day_unless_overridden" },
 ]);
+
+/** Effective camera authority is attached to spaces, never inferred from task names. */
+export const CANONICAL_SPACE_RESOURCE_ASSIGNMENTS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  "p14-recursos": Object.freeze(["cam-4"]),
+  "p14-pasillo": Object.freeze(["cam-4"]),
+  "p15-croma": Object.freeze(["cam-2"]),
+  "p15-estrellas-sillon": Object.freeze(["cam-2"]),
+  "totales-1": Object.freeze(["cam-5"]),
+  "totales-coreo": Object.freeze(["cam-6"]),
+});
 
 
 export const CANONICAL_ITINERANT_UNITS: readonly CanonicalItinerantUnit[] = Object.freeze([
@@ -209,6 +221,7 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
     taskTypes: TASK_TYPES,
     spaces: CANONICAL_SPACES,
     resources: CANONICAL_RESOURCES,
+    spaceResourceAssignments: CANONICAL_SPACE_RESOURCE_ASSIGNMENTS,
     itinerantUnits: CANONICAL_ITINERANT_UNITS,
     itinerantOperations: CANONICAL_ITINERANT_OPERATIONS,
     assignments: PARTICIPANT_IDS.map(assignment),
@@ -220,7 +233,7 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
       mainFlow: {
         spaceId: "estudio-7",
         continuity: "REQUIRED",
-        maxBlocksPerCoach: 2,
+        blockLimit: "UNBOUNDED",
         blockKey: "coach",
         optimizationAfterFeasibility: "minimize_coach_blocks",
       },
@@ -250,7 +263,7 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
         scope: "coach",
       },
       inTransport: {
-        targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 35, groupingWeight: 3,
+        targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 30, groupingWeight: 3,
       },
       outTransport: { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 },
       ignoredEditorialNotes: ["NO_P15", "instrument", "wardrobe", "prop"],
