@@ -42,6 +42,56 @@ function feederStartBacktrackingProblem(): PlannerNextProblem {
   return problem;
 }
 
+function layeredRunProblem(): PlannerNextProblem {
+  const problem = syntheticProblem([
+    { id: "feed-a1", kind: "vocal", participantId: "a1", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-a1", kind: "main", participantId: "a1", duration: 10, spaceId: "main", dependencies: ["feed-a1"], blockKey: "a", availability: [{ start: 70, end: 80 }] },
+    { id: "feed-b", kind: "vocal", participantId: "b", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["feed-b"], blockKey: "b", availability: [{ start: 80, end: 90 }] },
+    { id: "feed-a2", kind: "vocal", participantId: "a2", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-a2", kind: "main", participantId: "a2", duration: 10, spaceId: "main", dependencies: ["feed-a2"], blockKey: "a", availability: [{ start: 90, end: 100 }] },
+  ], ["a1", "b", "a2"], ["feed"]);
+  for (const task of problem.tasks.filter(({ kind }) => kind === "main"))
+    task.blockKey = task.coachId = task.id === "main-b" ? "coach-b" : "coach";
+  for (const task of problem.tasks.filter(({ kind }) => kind === "vocal"))
+    task.coachId = task.id === "feed-b" ? "coach-b" : "coach";
+  problem.coaches.push({ id: "coach-b", availability: [{ start: 0, end: 120 }] });
+  problem.mainFlow.maxBlocksByKey = 2;
+  problem.protectedMeal = undefined;
+  return problem;
+}
+
+test("EXACT_CONSTRUCTIVE proves lower run layers before accepting the first feasible layer", () => {
+  const result = constructExactMainAndFeederCore(layeredRunProblem());
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount }) => runCount), [2, 3]);
+  assert.ok(result.evidence.runLayers[0]!.architecturesChecked > 0);
+  assert.ok(result.evidence.runLayers[0]!.architecturesChecked
+    === Object.values(result.evidence.runLayers[0]!.rejectionReasons).reduce((sum, count) => sum + count, 0));
+  assert.equal(result.evidence.selectedPattern?.reduce((runs, key, index, pattern) =>
+    runs + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0), 3);
+});
+
+test("EXACT_CONSTRUCTIVE stops after a feasible minimum run layer", () => {
+  const problem = layeredRunProblem();
+  for (const task of problem.tasks.filter(({ kind }) => kind === "main")) task.availability = undefined;
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount }) => runCount), [2]);
+});
+
+test("an incomplete pattern layer reports budget exhaustion without false minimality", () => {
+  const problem = layeredRunProblem();
+  problem.budget.maxPatterns = 1;
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(result.evidence.reasonCodes, ["PATTERN_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.equal(result.evidence.architecturesChecked, 0);
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount, patternsGenerated, architecturesChecked }) =>
+    ({ runCount, patternsGenerated, architecturesChecked })),
+  [{ runCount: 2, patternsGenerated: 1, architecturesChecked: 0 }]);
+});
+
 function fixedFeederSlotProblem(kind:"HALL_DEFICIT"|"PERFECT", rename=(id:string)=>id):PlannerNextProblem {
   const participantIds=["a","b","c"].map(rename);
   const tasks:Task[]=participantIds.flatMap((participantId,index)=>[

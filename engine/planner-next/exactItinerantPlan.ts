@@ -149,6 +149,8 @@ export interface ExactItinerantPlanEvidence {
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  runLayers: Array<{ runCount: number; patternsGenerated: number; architecturesChecked: number;
+    rejectionReasons: Partial<Record<MainFeederStructuralRejection, number>> }>;
   firstExactArchitecture: string | null;
   firstFeedableRunSizes: number[];
   feederOrderBranchesByArchitecture: Record<string, number>;
@@ -856,7 +858,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     coreMaximumDepth: 0, coreCompleteLeafCount: 0,deepestCoreDepthReached:0,
     deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
     deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
-    architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,firstFeedableRunSizes:[],
+    architecturesStructurallyRejected:0,structuralRejectionsByReason:{},runLayers:[],firstExactArchitecture:null,firstFeedableRunSizes:[],
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
     feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,feederSlotMatchingAugmentTraversals:0,
@@ -1196,6 +1198,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.architecturesChecked=core.evidence.architecturesChecked;
   evidence.architecturesStructurallyRejected=core.evidence.architecturesStructurallyRejected;
   evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};
+  evidence.runLayers=core.evidence.runLayers.map((layer)=>({ ...layer,
+    rejectionReasons:{...layer.rejectionReasons} }));
   evidence.firstExactArchitecture=core.evidence.firstExactArchitecture;
   evidence.firstFeedableRunSizes=[...core.evidence.firstFeedableRunSizes];
   evidence.feederOrderBranchesByArchitecture={...core.evidence.feederOrderBranchesByArchitecture};

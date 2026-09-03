@@ -475,3 +475,63 @@ export function generateMainFlowPatterns(
     || runCount(a) - runCount(b) || a.join("|").localeCompare(b.join("|")));
   return { patterns: output, exhausted };
 }
+
+export interface MainFlowPatternRunLayer {
+  runCount: number;
+  patterns: string[][];
+  complete: boolean;
+}
+
+/**
+ * Enumerates exact run-count layers without borrowing budget from a later layer.
+ * The first incomplete layer is returned for accounting, but must not be searched:
+ * doing so could neither disprove that layer nor certify a minimum.
+ */
+export function generateMainFlowPatternRunLayers(
+  mains: Task[],
+  minimumRun: number,
+  maximumRunsByKey: number,
+  maximumPatterns: number,
+): MainFlowPatternRunLayer[] {
+  const counts = new Map<string, number>();
+  for (const task of mains) counts.set(task.blockKey ?? "", (counts.get(task.blockKey ?? "") ?? 0) + 1);
+  const keys = [...counts.keys()].filter((key) => (counts.get(key) ?? 0) > 0).sort();
+  const minimumTotalRuns = keys.length;
+  const maximumTotalRuns = [...counts.values()].reduce((sum, count) =>
+    sum + Math.min(maximumRunsByKey, Math.floor(count / minimumRun)), 0);
+  const layers: MainFlowPatternRunLayer[] = [];
+  let generated = 0;
+
+  for (let targetRuns = minimumTotalRuns; targetRuns <= maximumTotalRuns; targetRuns += 1) {
+    const patterns: string[][] = [];
+    let complete = true;
+    const visit = (remaining: Map<string, number>, runs: Array<{ key: string; count: number }>): void => {
+      if (!complete) return;
+      const left = [...remaining.values()].reduce((sum, count) => sum + count, 0);
+      if (left === 0) {
+        if (runs.length !== targetRuns) return;
+        if (generated >= maximumPatterns) { complete = false; return; }
+        patterns.push(runs.flatMap((run) => Array(run.count).fill(run.key) as string[]));
+        generated += 1;
+        return;
+      }
+      if (runs.length >= targetRuns) return;
+      for (const key of keys) {
+        const available = remaining.get(key) ?? 0;
+        if (available === 0 || runs.at(-1)?.key === key
+          || runs.filter((run) => run.key === key).length >= maximumRunsByKey) continue;
+        for (let take = minimumRun; take <= available; take += 1) {
+          remaining.set(key, available - take);
+          visit(remaining, [...runs, { key, count: take }]);
+          remaining.set(key, available);
+          if (!complete) return;
+        }
+      }
+    };
+    visit(new Map(counts), []);
+    patterns.sort((left, right) => left.join("|").localeCompare(right.join("|")));
+    layers.push({ runCount: targetRuns, patterns, complete });
+    if (!complete) break;
+  }
+  return layers;
+}
