@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "6d8dd2838cddf8fc31fd1ba5a615619bcddd91a00249dd3f822b27be052a4234",
-  "expansionFingerprint": "ae2aa3a2cd1dc2c32a46478ea1738f048521441af51c9daacc057494970489d2",
+  "manifestFingerprint": "e287f146eb4d637048212c0c9dc20f02111d39777ec8f331175100f42578eee8",
+  "expansionFingerprint": "5c440b7d8e8cf7963e49dcb664d3dabf3b14dddbd98af10a70254c5ef5b8e6c5",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1085,14 +1085,10 @@
     },
     {
       "code": "KNOWN_RESOURCES",
-      "passed": false,
+      "passed": true,
       "evaluated": true,
-      "issueCodes": [
-        "CROMA_RESOURCE_INVALID"
-      ],
-      "affectedCanonicalIds": [
-        "C01.croma,C02.croma,C03.croma,C04.croma,C05.croma,C06.croma,C07.croma,C08.croma,C09.croma,C10.croma,C11.croma,C12.croma,C13.croma,C14.croma,C15.croma,C16.croma,C17.croma,C18.croma,C19.croma"
-      ]
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
       "code": "NO_EDITORIAL_OR_SEED",
@@ -1102,15 +1098,8 @@
       "affectedCanonicalIds": []
     }
   ],
-  "validationStatus": "INVALID",
-  "validationIssues": [
-    {
-      "invariantCode": "KNOWN_RESOURCES",
-      "code": "CROMA_RESOURCE_INVALID",
-      "entityId": "C01.croma,C02.croma,C03.croma,C04.croma,C05.croma,C06.croma,C07.croma,C08.croma,C09.croma,C10.croma,C11.croma,C12.croma,C13.croma,C14.croma,C15.croma,C16.croma,C17.croma,C18.croma,C19.croma",
-      "message": "Croma must keep CAM 2 and no canonical sound resource."
-    }
-  ],
+  "validationStatus": "VALID",
+  "validationIssues": [],
   "requiredCreationInputs": [],
   "effectiveConfiguration": {
     "version": "A2-FULL-009.source-configuration.v2",
@@ -1231,12 +1220,24 @@
         "flexible": true,
         "followsAssignedResourcesAcrossRecomposition": true,
         "fixedHumanCutIntervals": [],
-        "legacyItinerantMealBreakMinutesAuthoritative": false
+        "legacyItinerantMealBreakMinutesAuthoritative": false,
+        "mealUnits": [
+          { "mealUnitId": "estudio-7-operations", "spaceIds": ["estudio-7"], "resourceIds": ["band"] },
+          { "mealUnitId": "plato-14-operations", "spaceIds": ["p14-recursos", "p14-pasillo", "p14-giratuto"], "resourceIds": [] },
+          { "mealUnitId": "plato-15-operations", "spaceIds": ["p15-croma", "p15-estrellas-sillon"], "resourceIds": [] },
+          { "mealUnitId": "reality-unit-a-operations", "spaceIds": [], "resourceIds": ["cam-3", "son-1"] },
+          { "mealUnitId": "reality-unit-b-operations", "spaceIds": [], "resourceIds": ["cam-4", "son-2"] },
+          { "mealUnitId": "totales-operations", "spaceIds": ["totales-1", "totales-coreo"], "resourceIds": [] }
+        ]
       },
       "participant": {
         "sodexoDurationMinutes": 40,
         "maxSimultaneous": 10,
         "independentFromOperationalMeal": true
+      },
+      "coach": {
+        "individualDurationMinutes": 45,
+        "inheritsSpaceOperationalMeal": false
       }
     },
     "provenance": {
@@ -1615,7 +1616,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "ae2aa3a2cd1dc2c32a46478ea1738f048521441af51c9daacc057494970489d2",
+    "shuffledExpansionFingerprint": "5c440b7d8e8cf7963e49dcb664d3dabf3b14dddbd98af10a70254c5ef5b8e6c5",
     "matches": true
   },
   "inputImmutable": {

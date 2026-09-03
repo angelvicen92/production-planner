@@ -6,7 +6,6 @@ import type {
   ScheduledTask,
   Window,
 } from "./contracts";
-import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
 import { contains, overlaps } from "./time";
 
 export interface OperationalMealWitness {
@@ -50,6 +49,27 @@ function taskConflictsWithPolicy(task: ScheduledTask, policy: OperationalMealPol
     || scopedResourceIds(task).some((id) => policy.resourceIds.includes(id));
 }
 
+function sourceTaskConflictsWithPolicy(task: PlannerNextProblem["tasks"][number], policy: OperationalMealPolicy): boolean {
+  return policy.spaceIds.includes(task.spaceId)
+    || [...(task.requiredResourceIds ?? []), ...(task.coachId === undefined ? [] : [task.coachId])]
+      .some((id) => policy.resourceIds.includes(id));
+}
+
+/** Sound interval probe: a policy is rejected only after every task in its scope is fixed. */
+export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[]): {
+  feasible: boolean; checkedPolicyIds: readonly string[]; blockingPolicyIds: readonly string[]; readOnly: true;
+} {
+  const scheduledIds = new Set(tasks.map(({ id }) => id));
+  const checked = [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
+    const scoped = problem.tasks.filter((task) => sourceTaskConflictsWithPolicy(task, policy));
+    return scoped.length > 1 && scoped.every(({ id }) => scheduledIds.has(id));
+  });
+  const blocking = checked.filter((policy) => operationalMealCandidates(problem, policy, tasks, []).length === 0)
+    .map(({ id }) => id).sort();
+  return freeze({ feasible: blocking.length === 0, checkedPolicyIds: checked.map(({ id }) => id).sort(),
+    blockingPolicyIds: blocking, readOnly: true });
+}
+
 function mealScopesOverlap(left: ScheduledOperationalMeal, right: ScheduledOperationalMeal): boolean {
   return left.resourceIds.some((id) => right.resourceIds.includes(id))
     || left.spaceIds.some((id) => right.spaceIds.includes(id));
@@ -76,11 +96,21 @@ export function operationalMealCandidates(
   placed: readonly ScheduledOperationalMeal[],
 ): ScheduledOperationalMeal[] {
   const candidates: ScheduledOperationalMeal[] = [];
-  for (
-    let start = policy.window.start;
-    start + policy.duration <= policy.window.end;
-    start += PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES
-  ) {
+  const productive = tasks.filter((task) => taskConflictsWithPolicy(task, policy))
+    .sort((left, right) => left.start - right.start || left.end - right.end || left.id.localeCompare(right.id, "en"));
+  const individualCoachMeal = policy.spaceIds.length === 0 && policy.resourceIds.length > 0
+    && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
+  const boundaries = individualCoachMeal
+    ? Array.from({ length: Math.max(0, Math.floor((policy.window.end - policy.duration - policy.window.start) / 5) + 1) },
+      (_, index) => ({ start: policy.window.start + index * 5, preferred: false }))
+    : productive.slice(0, -1).flatMap((left, index) => {
+    const right = productive[index + 1]!;
+    const start = left.end;
+    return start >= policy.window.start && start + policy.duration <= policy.window.end
+      && start + policy.duration <= right.start ? [{ start, preferred: left.blockKey !== undefined
+        && right.blockKey !== undefined && left.blockKey !== right.blockKey }] : [];
+    });
+  for (const { start, preferred } of boundaries) {
     const end = start + policy.duration;
     if (!scopeAvailable(problem, policy, start, end)) continue;
     const candidate: ScheduledOperationalMeal = {
@@ -93,9 +123,11 @@ export function operationalMealCandidates(
     };
     if (tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, candidate))) continue;
     if (placed.some((meal) => mealScopesOverlap(meal, candidate) && overlaps(meal, candidate))) continue;
-    candidates.push(candidate);
+    candidates.push(Object.assign(candidate, { preferredBoundary: preferred }));
   }
-  return candidates.sort((left, right) => left.start - right.start || left.id.localeCompare(right.id, "en"));
+  return candidates.sort((left, right) => Number(Boolean(right.preferredBoundary))
+    - Number(Boolean(left.preferredBoundary))
+    || left.start - right.start || left.id.localeCompare(right.id, "en"));
 }
 
 export function operationalMealWitnessFingerprint(meals: readonly ScheduledOperationalMeal[]): string {
