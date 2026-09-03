@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealIsOperational, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -666,20 +666,21 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
       const reducedPlaced = placed.map((task) => ({ ...task,
         dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
-      const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
+      const publishedMeals = mainFlowMealIsOperational(problem) ? [] : meals;
+      const validation = validatePlan(reduced, reducedPlaced, [], publishedMeals,[],fixedResourceMeals,fixedItinerantMeals);
       if (validShape && validation.hardValid) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
         const ordered = placed.map((task) => ({ ...task,
           dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
         })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
-        const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        const orderedMeals = [...publishedMeals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const decisionDepthByTaskId=Object.fromEntries(placed.flatMap(task=>{const owner=introducedBy(task.id,placed).depth;
           return owner===null?[]:[[task.id,owner]];}));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
           remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals),
           decisionDepthByTaskId }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
+        if (continuation === "ACCEPT") { selected = { tasks: ordered, meals: publishedMeals, pattern }; return "FOUND"; }
         if(typeof continuation==="object")return continuation;
       }
       return "DEAD_END";

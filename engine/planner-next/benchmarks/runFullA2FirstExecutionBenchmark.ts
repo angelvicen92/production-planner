@@ -158,20 +158,25 @@ input.coachRouteTransitions = [
   toSpaceId: spaceId.get("estudio-7")!,
   minutes: expansion.rules.coachTransition.minutes,
 }));
-const operationalMealGroups: Array<[string, string[]]> = [
+const operationalMealGroups: Array<[string, string[], string[]?]> = [
   ["reality-operations", ["cam-3", "cam-4", "son-1", "son-2"]],
   ["cam2-operations", ["cam-2"]],
   ["eva-operations", ["eva"]],
-  ["coach-lucia", ["coach-lucia"]],
-  ["coach-jose-maria", ["coach-jose-maria"]],
-  ["estudio-7-operations", ["band"]],
+  ["estudio-7-operations", ["band"], ["estudio-7"]],
 ];
-input.operationalMealPolicies = operationalMealGroups.map(([id, resources]) => ({
+input.operationalMealPolicies = operationalMealGroups.map(([id, resources, spaces]) => ({
   id,
   window: { ...config.meals.effectiveWindow },
   durationMinutes: config.meals.operational.defaultDurationMinutes,
   planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
+  ...(spaces ? { spaceIds: spaces.map((space) => spaceId.get(space)!) } : {}),
 }));
+input.operationalMealPolicies.push(...["coach-lucia", "coach-jose-maria"].map((coach) => ({
+  id: `${coach}-individual`,
+  window: { ...config.meals.effectiveWindow },
+  durationMinutes: config.meals.coach.individualDurationMinutes,
+  planResourceItemIds: [resourceId.get(coach)!],
+})));
 input.itinerantTeamAvailability = Object.keys(config.itinerantUnitAvailability).map((canonicalId) => ({
   itinerantTeamId: itinerantUnitId.get(canonicalId)!,
   windows: [{ start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end }],

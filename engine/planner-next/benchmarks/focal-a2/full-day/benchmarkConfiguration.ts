@@ -26,6 +26,7 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
     effectiveWindow: Object.freeze({ start: "13:00" as const, end: "16:30" as const }),
     operational: Object.freeze({ defaultDurationMinutes: 75 as const, realityDurationMinutes: 75 as const, flexible: true as const, followsAssignedResourcesAcrossRecomposition: true as const, fixedHumanCutIntervals: Object.freeze([] as const), legacyItinerantMealBreakMinutesAuthoritative: false as const }),
     participant: Object.freeze({ sodexoDurationMinutes: 40 as const, maxSimultaneous: 10 as const, independentFromOperationalMeal: true as const }),
+    coach: Object.freeze({ individualDurationMinutes: 45 as const, inheritsSpaceOperationalMeal: false as const }),
   }),
   provenance: Object.freeze({
     itinerantUnitAvailability: "SPEC-08.v1.1" as const,
