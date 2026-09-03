@@ -28,6 +28,8 @@ test("Full A2 first executable integration reports an atomic completion count", 
           deepestPartialScheduledTaskCount:number;deepestPartialMainRunsClosed:number;
           deepestPartialFeederRunsClosed:number;deepestPartialCoreTasksRemaining:number;
           firstFeedableRunSizes:number[];
+          runLayers:Array<{runCount:number;patternsGenerated:number;architecturesChecked:number;
+            rejectionReasons:Record<string,number>}>;
           structuralRejectionsByReason:Record<string,number>;
           standaloneForwardBranches:number;participantMealBranchesExplored:number;
           standaloneForwardWitnessCacheHits:number;standaloneForwardWitnessCacheMisses:number;
@@ -74,6 +76,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.firstFeedableRunSizes.length>0);
     assert.ok(executionEvidence.firstFeedableRunSizes.every((size)=>Number.isInteger(size)&&size>0));
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
+    assert.deepEqual(executionEvidence.runLayers.map(({runCount,patternsGenerated})=>({runCount,patternsGenerated})),
+      [{runCount:2,patternsGenerated:2}],"Full A2 must completely enumerate only its theoretical-minimum layer");
+    assert.ok(executionEvidence.runLayers[0]!.architecturesChecked>0);
     assert.ok(executionEvidence.coreCompleteLeafCount>0);
     assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
     assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");

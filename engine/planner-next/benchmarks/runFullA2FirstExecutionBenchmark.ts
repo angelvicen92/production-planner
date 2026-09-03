@@ -161,7 +161,6 @@ input.coachRouteTransitions = [
 const operationalMealGroups: Array<[string, string[]]> = [
   ["reality-operations", ["cam-3", "cam-4", "son-1", "son-2"]],
   ["cam2-operations", ["cam-2"]],
-  ["totales-operations", ["cam-5", "cam-6"]],
   ["eva-operations", ["eva"]],
   ["coach-lucia", ["coach-lucia"]],
   ["coach-jose-maria", ["coach-jose-maria"]],
