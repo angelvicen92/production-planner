@@ -341,4 +341,6 @@ test("generated artifacts are reproducible against current expansion", () => {
   assert.equal(evidence.noEngineInputPartial, true);
   assert.equal(evidence.itinerantUnits.length, 3);
   assert.equal(evidence.unitIdNotHardResource, true);
+  assert.ok(evidence.itinerantUnits.every((unit: any) => unit.availability === "inherits_day_unless_overridden"));
+  assert.equal(JSON.stringify(evidence).includes("SPEC08_FOCAL_A2_SECTION_24"), false);
 });

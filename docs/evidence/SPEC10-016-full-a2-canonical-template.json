@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "265d10df72fa6706089fc9b0d9d45775cfabb2ef813b23688e1f2ca7b22545a9",
-  "expansionFingerprint": "7e3b051408657b6fee479f95df32719535298108d7aef3540d5fa8a56b5b8072",
+  "manifestFingerprint": "e0f87a6e4125a92b80d37c94efe967b0c4f8272718c854a5fc0df3359a455341",
+  "expansionFingerprint": "db592d48b27fd826f67b0878ead8a471bb3964278344dcfdbd49640861f0d843",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -128,11 +128,7 @@
         "cam-3",
         "son-1"
       ],
-      "availability": {
-        "start": "11:00",
-        "end": "14:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "reality-unit-b",
@@ -141,11 +137,7 @@
         "cam-4",
         "son-2"
       ],
-      "availability": {
-        "start": "11:15",
-        "end": "13:30",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "reality-unit-combined",
@@ -155,11 +147,7 @@
         "cam-4",
         "son-1"
       ],
-      "availability": {
-        "start": "16:00",
-        "end": "18:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "availability": "inherits_day_unless_overridden"
     }
   ],
   "itinerantOperations": [
@@ -762,6 +750,7 @@
           "TECH.tech_totales_post"
         ],
         "adjacency": "REQUIRED",
+        "internalTransition": "INCLUDED",
         "resourceContinuity": "REQUIRED",
         "requiredResourceIds": [
           "cam-3",
@@ -1105,21 +1094,9 @@
     "resourceAvailability": "INHERIT_DAY_UNLESS_OVERRIDDEN",
     "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
     "itinerantUnitAvailability": {
-      "reality-unit-a": {
-        "start": "11:00",
-        "end": "14:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      },
-      "reality-unit-b": {
-        "start": "11:15",
-        "end": "13:30",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      },
-      "reality-unit-combined": {
-        "start": "16:00",
-        "end": "18:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "reality-unit-a": "inherits_day_unless_overridden",
+      "reality-unit-b": "inherits_day_unless_overridden",
+      "reality-unit-combined": "inherits_day_unless_overridden"
     },
     "participantAvailability": {
       "C01": {
@@ -1233,6 +1210,7 @@
       }
     },
     "provenance": {
+      "itinerantUnitAvailability": "SPEC-08.v1.1",
       "participantAvailability": "A2-FULL-008-effective-configuration-probe",
       "transportPolicy": "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11",
       "meals": "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11"
@@ -1607,7 +1585,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "7e3b051408657b6fee479f95df32719535298108d7aef3540d5fa8a56b5b8072",
+    "shuffledExpansionFingerprint": "db592d48b27fd826f67b0878ead8a471bb3964278344dcfdbd49640861f0d843",
     "matches": true
   },
   "inputImmutable": {

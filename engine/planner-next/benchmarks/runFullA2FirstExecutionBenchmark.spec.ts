@@ -37,6 +37,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
           feederSlotAnalyticChecks:number;feederSlotAnalyticPrunes:number;feederSlotAnalyticAbstentions:number;
           feederSlotMatchingEdgeChecks:number;feederSlotMatchingAugmentTraversals:number;
           feederSlotMatchingBranchesExplored:number;feederMatchingWitnessRepairs:number;
+          standaloneSearchInvocations:number;standaloneMaximumDepth:number;
           standaloneCompleteLeafCount:number;lastExhaustionPhase:string|null };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
@@ -60,9 +61,13 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.firstFeedableRunSizes.length>0);
     assert.ok(executionEvidence.firstFeedableRunSizes.every((size)=>Number.isInteger(size)&&size>0));
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
-    assert.ok(executionEvidence.coreCompleteLeafCount>0);
+    assert.equal(executionEvidence.coreMaximumDepth,19);
+    assert.equal(executionEvidence.coreCompleteLeafCount,0);
     assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
-    assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");
+    assert.equal(executionEvidence.standaloneSearchInvocations,0);
+    assert.equal(executionEvidence.standaloneMaximumDepth,0);
+    assert.equal(executionEvidence.standaloneCompleteLeafCount,0);
+    assert.equal(executionEvidence.lastExhaustionPhase,"CORE");
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);

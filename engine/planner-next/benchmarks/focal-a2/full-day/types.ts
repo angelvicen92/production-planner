@@ -130,7 +130,7 @@ export interface CanonicalItinerantUnit {
   readonly id: string;
   readonly label: string;
   readonly memberResourceIds: readonly string[];
-  readonly availability: { readonly start: string; readonly end: string; readonly source: "SPEC08_FOCAL_A2_SECTION_24"; };
+  readonly availability: "inherits_day_unless_overridden";
 }
 
 export interface CanonicalItinerantOperation {
