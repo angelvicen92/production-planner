@@ -95,7 +95,7 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   const arrival = projected?.arrival as Record<string, unknown> | undefined;
   const departure = projected?.departure as Record<string, unknown> | undefined;
   const targetPreserved = arrival?.targetGroupSize === 3 && departure?.targetGroupSize === 1;
-  const minGapPreserved = arrival?.minGapMinutes === 35 && departure?.minGapMinutes === 20;
+  const minGapPreserved = arrival?.minGapMinutes === 30 && departure?.minGapMinutes === 20;
   const maximumPreserved = arrival?.maximumGroupSize === 6 && departure?.maximumGroupSize === 6;
   const groupingWeightPreserved = arrival?.groupingWeight === 3 && departure?.groupingWeight === 3;
   const separateTargetSemantic = [arrival, departure].every((direction) => direction !== undefined
@@ -110,7 +110,7 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   const capabilities = adapted.status === "SUPPORTED" ? detectPlannerCapabilities(adapted.problem) : [];
   const resolution = exactProblem ? resolvePlannerSearchPolicy(exactProblem) : null;
   return {
-    sourceConfigurationPresent: policy.arrival.targetGroupSize === 3 && policy.arrival.maximumGroupSize === 6 && policy.arrival.minGapMinutes === 35 && policy.arrival.groupingWeight === 3 && policy.departure.targetGroupSize === 1 && policy.departure.maximumGroupSize === 6 && policy.departure.minGapMinutes === 20 && policy.departure.groupingWeight === 3,
+    sourceConfigurationPresent: policy.arrival.targetGroupSize === 3 && policy.arrival.maximumGroupSize === 6 && policy.arrival.minGapMinutes === 30 && policy.arrival.groupingWeight === 3 && policy.departure.targetGroupSize === 1 && policy.departure.maximumGroupSize === 6 && policy.departure.minGapMinutes === 20 && policy.departure.groupingWeight === 3,
     engineInputContractPresent,
     transportSettingsSourcePresent: input.transportSettings?.source === "engine-buildInput-optimizer-transport",
     engineInputPreflightSupported: preflight.status === "SUPPORTED",

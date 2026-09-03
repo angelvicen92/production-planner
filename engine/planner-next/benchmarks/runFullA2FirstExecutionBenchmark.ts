@@ -94,7 +94,9 @@ input.planResourceItems = expansion.resources.map((resource, index) => ({
 input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
 input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
 input.zoneResourceAssignments = {};
-input.spaceResourceAssignments = {};
+input.spaceResourceAssignments = Object.fromEntries(Object.entries(expansion.spaceResourceAssignments).map(([space, resources]) => [
+  spaceId.get(space)!, resources.map((resource) => resourceId.get(resource)!),
+]));
 input.zoneResourceTypeRequirements = {};
 input.spaceResourceTypeRequirements = {};
 input.resourceItemComponents = {};
@@ -109,7 +111,10 @@ input.plannerNext = {
     spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
     preferredEnd: config.meals.effectiveWindow.start,
     continuity: "REQUIRED",
-    maxBlocksByKey: expansion.rules.mainFlow.maxBlocksPerCoach,
+    // Planner Next currently requires a finite integer. One possible block per actual
+    // main task is a cardinality-derived technical bound, not an A2 domain maximum.
+    maxBlocksByKey: Math.max(...Object.values(EXPECTED_COACH_BY_PARTICIPANT).map((coach) =>
+      expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7" && task.blockKey === coach).length)),
     minTasksPerBlock: 1,
   },
 };
@@ -156,6 +161,7 @@ input.coachRouteTransitions = [
 const operationalMealGroups: Array<[string, string[]]> = [
   ["reality-operations", ["cam-3", "cam-4", "son-1", "son-2"]],
   ["cam2-operations", ["cam-2"]],
+  ["totales-operations", ["cam-5", "cam-6"]],
   ["eva-operations", ["eva"]],
   ["coach-lucia", ["coach-lucia"]],
   ["coach-jose-maria", ["coach-jose-maria"]],
@@ -201,6 +207,12 @@ const publishedCanonicalObligations = exactResult?.complete ? scheduledCanonical
 const projectedItinerantAvailability = adapted.status === "SUPPORTED"
   ? adapted.problem.itinerantUnits ?? []
   : [];
+const effectiveResourcesForType = (type: string) => {
+  if (adapted.status !== "SUPPORTED") return [];
+  const sourceIds = new Set(input.tasks.filter((task) => task.templateName === type).map((task) => `task:${task.id}`));
+  return [...new Set(adapted.problem.tasks.filter((task) => sourceIds.has(task.id))
+    .flatMap((task) => task.requiredResourceIds ?? []))].sort();
+};
 const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => {
   const source = config.itinerantUnitAvailability[unit.id as keyof typeof config.itinerantUnitAvailability];
   const projected = projectedItinerantAvailability.find((entry) => entry.id === `itinerant-team:${itinerantUnitId.get(unit.id)}`);
@@ -268,6 +280,23 @@ const evidence = {
     maxBranchExpansions: branchBudget,
     genericTransitionMinutes: { participant: 0, resource: 5 },
     operationalMealProjection: operationalMealGroups,
+    spaceResourceAssignments: expansion.spaceResourceAssignments,
+    mainFlowBlockPolicy: {
+      domainAuthority: expansion.rules.mainFlow.blockLimit,
+      projectedTechnicalMaximum: input.plannerNext.mainFlow.maxBlocksByKey,
+      technicalMaximumDerivation: "maximum actual main-task cardinality for one coach; not a domain rule",
+    },
+    effectiveCameraProjection: {
+      CROMA: effectiveResourcesForType("CROMA"),
+      REDES: effectiveResourcesForType("REDES"),
+      PASILLO: effectiveResourcesForType("PASILLO"),
+      GIRATUTO: effectiveResourcesForType("GIRATUTO"),
+      SILLON: effectiveResourcesForType("SILLON"),
+      ESTRELLAS: effectiveResourcesForType("ESTRELLAS"),
+      TOTALES_1: effectiveResourcesForType("TOTALES_1"),
+      TOTALES_COREO: effectiveResourcesForType("TOTALES_COREO"),
+    },
+    projectedArrivalTransportPolicy: adapted.status === "SUPPORTED" ? adapted.problem.transportPolicy?.arrival : null,
     band: {
       canonicalResourceCount: expansion.resources.filter(({ id }) => id === "band").length,
       requiredMainCount: expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7" && task.requiredResourceIds.includes("band")).length,

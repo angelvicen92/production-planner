@@ -17,7 +17,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const lines = child.stdout.trim().split(/\n/).filter(Boolean);
     const evidence = JSON.parse(lines.at(-1)!) as {
       canonicalObligationCount: number;
-      engineInput: { maxBranchExpansions: number };
+      engineInput: { maxBranchExpansions: number; mainFlowBlockPolicy:{domainAuthority:string;projectedTechnicalMaximum:number};
+        projectedArrivalTransportPolicy:{targetGroupSize:number;minimumGroupSize:number;maximumGroupSize:number;minGapMinutes:number};
+        effectiveCameraProjection:Record<string,string[]> };
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
@@ -46,6 +48,18 @@ test("Full A2 first executable integration reports an atomic completion count", 
     };
     assert.equal(evidence.canonicalObligationCount, 269);
     assert.equal(evidence.result.targetCanonicalObligations, 269);
+    const cameras=evidence.engineInput.effectiveCameraProjection;
+    assert.deepEqual(cameras.REDES,cameras.PASILLO,"Recursos and Pasillo share CAM4");
+    assert.ok(cameras.REDES.some((id)=>id===cameras.PASILLO.find((other)=>other===id)));
+    assert.ok(cameras.GIRATUTO.every((id)=>!cameras.REDES.includes(id)),"Giratuto does not consume CAM4");
+    assert.deepEqual(cameras.CROMA,cameras.SILLON);
+    assert.deepEqual(cameras.CROMA,cameras.ESTRELLAS);
+    assert.ok(cameras.TOTALES_1.every((id)=>!cameras.TOTALES_COREO.includes(id)),"Totales lanes use distinct CAM5/CAM6");
+    assert.equal(evidence.engineInput.mainFlowBlockPolicy.domainAuthority,"UNBOUNDED");
+    assert.ok(evidence.engineInput.mainFlowBlockPolicy.projectedTechnicalMaximum>2);
+    assert.deepEqual({target:evidence.engineInput.projectedArrivalTransportPolicy.targetGroupSize,minimum:evidence.engineInput.projectedArrivalTransportPolicy.minimumGroupSize,
+      maximum:evidence.engineInput.projectedArrivalTransportPolicy.maximumGroupSize,gap:evidence.engineInput.projectedArrivalTransportPolicy.minGapMinutes},
+      {target:3,minimum:1,maximum:6,gap:30});
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
