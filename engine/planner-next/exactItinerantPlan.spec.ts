@@ -398,6 +398,40 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
 });
 
+test("partial CORE integration rejects collective overload and explores a capacity-preserving alternative", () => {
+  const input = coreLeafContinuationProblem();
+  input.tasks = input.tasks.filter(({ id }) => id !== "standalone");
+  const availability = [{ start: 0, end: 120 }];
+  const obligations = ["future-a", "future-b"].map((id) => auxiliary(id, id, [{ start: 75, end: 100 }], ["unit"]));
+  for (const obligation of obligations) {
+    input.participants.push({ id: obligation.participantId, availability });
+    input.spaces.push({ id: obligation.spaceId, availability });
+    input.tasks.push(obligation);
+  }
+  input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
+  const isolated = constructExactMainAndFeederCore(input);
+  assert.equal(isolated.status, "COMPLETE");
+  for (const obligation of obligations)
+    assert.ok(standaloneForwardDynamicDomain(input, obligation, isolated.scheduledTasks).eligibleStartCount > 0,
+      `${obligation.id} retains an individual domain in the first provisional CORE`);
+
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.standaloneForwardCollectiveCapacityPrunes > 0);
+  assert.equal(result.evidence.coreLeavesRejectedByStandalone, 0,
+    "the overloaded alternative is rejected by partial Future Feasibility, not at a CORE leaf");
+  assert.equal(result.evidence.coreCompleteLeafCount, 1,
+    "only the capacity-preserving alternative reaches a complete CORE leaf");
+  assert.equal(result.evidence.standaloneSearchInvocations, 1);
+  assert.notEqual(result.scheduledTasks.find(({ id }) => id === "main")!.start,
+    isolated.scheduledTasks.find(({ id }) => id === "main")!.start,
+    "CORE continues to a structurally different alternative after the partial prune");
+  assert.ok(result.evidence.standaloneForwardCollectiveCapacityCertificates.some(certificate =>
+    certificate.failure === "COLLECTIVE_CAPACITY" && certificate.authorityId === "unit"
+      && certificate.demandMinutes === 20 && certificate.freeCapacityMinutes === 15
+      && certificate.overloadTaskIds.join(",") === "future-a,future-b" && certificate.frequency > 0));
+});
+
 test("derived feeder endpoints preserve a solution after historical endpoints fail", () => {
   const input = problem([auxiliary("standalone", "standalone-person", [{ start: 80, end: 105 }], ["unit"])]);
   const availability = [{ start: 0, end: 120 }];

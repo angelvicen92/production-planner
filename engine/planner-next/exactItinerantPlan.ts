@@ -92,6 +92,11 @@ export interface ExactItinerantPlanEvidence {
   standaloneForwardStartChecks: number;
   standaloneForwardWitnessesFound: number;
   standaloneForwardPrunes: number;
+  standaloneForwardCollectiveCapacityChecks: number;
+  standaloneForwardCollectiveCapacityPrunes: number;
+  standaloneForwardCollectiveObligationsChecked: number;
+  standaloneForwardCollectiveCapacityCertificates:Array<{failure:"COLLECTIVE_CAPACITY";authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];depth:number;frequency:number}>;
+  standaloneForwardCollectiveCapacityCertificateOverflow:number;
   standaloneForwardBlockingTaskCounts: Record<string, number>;
   standaloneForwardPrunesByDepth: Record<string, number>;
   standaloneForwardImpactedTaskChecks: number;
@@ -803,6 +808,11 @@ export interface ExactItinerantPlanSearchOptions {
   causalDiagnostic?: boolean;
 }
 
+/** Optimistic collective-only Future Feasibility authority for a provisional CORE. */
+function checkPartialCoreStandaloneCollectiveCapacity(problem:PlannerNextProblem,pending:readonly Task[],core:readonly ScheduledTask[]){
+  return checkStandaloneCoreFrontier(problem,pending,core,[],"ANALYTIC_CAPACITY_ONLY");
+}
+
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
   const completeSelectionMode = options.standaloneCompletionSelection ?? "FIRST_HARD_VALID";
@@ -827,6 +837,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     coreStandaloneFrontierFirstPrune:null,causalBacktracks:0,causalBacktrackTargetDepthCounts:{},standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
+    standaloneForwardCollectiveCapacityChecks:0,standaloneForwardCollectiveCapacityPrunes:0,standaloneForwardCollectiveObligationsChecked:0,
+    standaloneForwardCollectiveCapacityCertificates:[],standaloneForwardCollectiveCapacityCertificateOverflow:0,
     standaloneForwardImpactedTaskChecks: 0, standaloneLeafSearchBranches: 0, standaloneForwardBranches: 0,
     standaloneForwardStaticEligibleStarts: 0, standaloneForwardStaticEliminatedStarts: 0,
     standaloneForwardFullGridStarts: 0, standaloneForwardDynamicEligibleStarts: 0,
@@ -972,6 +984,39 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
     evidence.standaloneForwardChecks += 1;
+    // Reuse the leaf frontier's necessary energetic certificate as soon as a CORE
+    // decision can affect a pending obligation. Omitting future meals is an
+    // optimistic relaxation: an infeasible result here therefore remains sound,
+    // while every inconclusive result simply falls through to the existing search.
+    const collective=checkPartialCoreStandaloneCollectiveCapacity(problem,standaloneTasks,candidate.tasks);
+    evidence.standaloneForwardCollectiveCapacityChecks+=collective.collectiveCapacityChecks;
+    evidence.standaloneForwardCollectiveObligationsChecked+=collective.obligationsChecked;
+    if(!collective.feasible&&collective.failure==="COLLECTIVE_CAPACITY"){
+      evidence.standaloneForwardCollectiveCapacityPrunes+=1;
+      const overloadTaskIds=[...(collective.overloadTaskIds??[])].sort();
+      const existing=evidence.standaloneForwardCollectiveCapacityCertificates.find(item=>item.depth===candidate.depth
+        &&item.authorityId===collective.authorityId&&item.demandMinutes===collective.demandMinutes
+        &&item.freeCapacityMinutes===collective.freeCapacityMinutes
+        &&item.overloadTaskIds.length===overloadTaskIds.length&&item.overloadTaskIds.every((id,index)=>id===overloadTaskIds[index]));
+      if(existing)existing.frequency+=1;
+      else if(evidence.standaloneForwardCollectiveCapacityCertificates.length<16)
+        evidence.standaloneForwardCollectiveCapacityCertificates.push({failure:"COLLECTIVE_CAPACITY",authorityId:collective.authorityId,
+          demandMinutes:collective.demandMinutes,freeCapacityMinutes:collective.freeCapacityMinutes,overloadTaskIds,
+          depth:candidate.depth,frequency:1});
+      else evidence.standaloneForwardCollectiveCapacityCertificateOverflow+=1;
+      evidence.standaloneForwardPrunes+=1;
+      const depthKey=String(candidate.depth);
+      evidence.standaloneForwardPrunesByDepth[depthKey]=(evidence.standaloneForwardPrunesByDepth[depthKey]??0)+1;
+      evidence.firstStandaloneForwardPruneDepth??=candidate.depth;
+      evidence.lastStandaloneForwardPruneDepth=candidate.depth;
+      evidence.lastStandaloneForwardBlockingTaskId=collective.blockingTaskId;
+      evidence.lastStandaloneForwardCausingCoreTaskIds=candidate.addedTasks.map(({id})=>id).sort();
+      evidence.lastStandaloneForwardCausingMainTaskId=candidate.mainTaskId;
+      evidence.lastStandaloneForwardCausingFeederStart=candidate.feederStart;
+      for(const id of collective.overloadTaskIds??[])
+        evidence.standaloneForwardBlockingTaskCounts[id]=(evidence.standaloneForwardBlockingTaskCounts[id]??0)+1;
+      return "REJECT";
+    }
     for (const task of impacted) {
       evidence.standaloneForwardImpactedTaskChecks += 1;
       let witness = false;

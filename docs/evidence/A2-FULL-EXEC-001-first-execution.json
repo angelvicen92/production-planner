@@ -291,8 +291,8 @@
     ],
     "evidence": {
       "branchesExplored": 300000,
-      "coreBranches": 297795,
-      "standaloneBranches": 2205,
+      "coreBranches": 299774,
+      "standaloneBranches": 226,
       "standaloneStartChecks": 0,
       "jointGroupFullGridStarts": 0,
       "jointGroupAnalyticEligibleStarts": 0,
@@ -326,81 +326,98 @@
       "standaloneBacktracks": 0,
       "standaloneMaximumDepth": 0,
       "standaloneCompleteLeafCount": 0,
-      "coreCompleteLeavesEvaluated": 710,
-      "coreLeavesRejectedByStandalone": 710,
-      "coreStandaloneFrontierChecks": 710,
-      "coreStandaloneFrontierPrunes": 710,
-      "coreStandaloneFrontierIndividualDomainChecks": 146260,
-      "coreStandaloneFrontierCollectiveCapacityChecks": 1420,
+      "coreCompleteLeavesEvaluated": 0,
+      "coreLeavesRejectedByStandalone": 0,
+      "coreStandaloneFrontierChecks": 0,
+      "coreStandaloneFrontierPrunes": 0,
+      "coreStandaloneFrontierIndividualDomainChecks": 0,
+      "coreStandaloneFrontierCollectiveCapacityChecks": 0,
       "coreStandaloneFrontierJointChecks": 0,
-      "coreStandaloneFrontierFirstPrune": {
-        "blockingTaskId": "task:10124",
-        "failure": "COLLECTIVE_CAPACITY",
-        "authorityId": "plan-resource:4003",
-        "demandMinutes": 60,
-        "freeCapacityMinutes": 45,
-        "causingCoreTaskIds": [
-          "task:10002",
-          "task:10010",
-          "task:10011",
-          "task:10102",
-          "task:10109",
-          "task:10110"
-        ]
-      },
-      "causalBacktracks": 710,
-      "causalBacktrackTargetDepthCounts": {
-        "5": 50,
-        "6": 448,
-        "7": 212
-      },
+      "coreStandaloneFrontierFirstPrune": null,
+      "causalBacktracks": 0,
+      "causalBacktrackTargetDepthCounts": {},
       "standaloneSearchInvocations": 0,
       "standaloneBlockingTaskCounts": {},
-      "standaloneForwardChecks": 1666,
-      "standaloneForwardStartChecks": 2205,
-      "standaloneForwardWitnessesFound": 141895,
-      "standaloneForwardPrunes": 9,
+      "standaloneForwardChecks": 567,
+      "standaloneForwardStartChecks": 226,
+      "standaloneForwardWitnessesFound": 325,
+      "standaloneForwardPrunes": 566,
       "standaloneForwardBlockingTaskCounts": {
-        "task:10006": 5,
-        "task:10207": 1,
-        "task:10194": 1,
-        "task:10180": 1,
-        "task:10165": 1
+        "task:10124": 564,
+        "task:10263": 562,
+        "task:10237": 2
       },
       "standaloneForwardPrunesByDepth": {
-        "1": 1,
-        "2": 8
+        "12": 566
       },
-      "standaloneForwardImpactedTaskChecks": 141904,
+      "standaloneForwardCollectiveCapacityChecks": 1144,
+      "standaloneForwardCollectiveCapacityPrunes": 562,
+      "standaloneForwardCollectiveObligationsChecked": 16556,
+      "standaloneForwardCollectiveCapacityCertificates": [
+        {
+          "failure": "COLLECTIVE_CAPACITY",
+          "authorityId": "plan-resource:4003",
+          "demandMinutes": 60,
+          "freeCapacityMinutes": 45,
+          "overloadTaskIds": [
+            "task:10124",
+            "task:10263"
+          ],
+          "depth": 12,
+          "frequency": 562
+        }
+      ],
+      "standaloneForwardCollectiveCapacityCertificateOverflow": 0,
+      "standaloneForwardImpactedTaskChecks": 329,
       "standaloneLeafSearchBranches": 0,
-      "standaloneForwardBranches": 2205,
-      "standaloneForwardStaticEligibleStarts": 15435538,
-      "standaloneForwardStaticEliminatedStarts": 4854460,
-      "standaloneForwardFullGridStarts": 20289998,
-      "standaloneForwardDynamicEligibleStarts": 11889606,
-      "standaloneForwardDynamicEliminatedStarts": 3545932,
-      "standaloneForwardDynamicNonemptyCertificates": 141895,
-      "standaloneForwardOracleChecks": 2205,
+      "standaloneForwardBranches": 226,
+      "standaloneForwardStaticEligibleStarts": 34979,
+      "standaloneForwardStaticEliminatedStarts": 12054,
+      "standaloneForwardFullGridStarts": 47033,
+      "standaloneForwardDynamicEligibleStarts": 26368,
+      "standaloneForwardDynamicEliminatedStarts": 8611,
+      "standaloneForwardDynamicNonemptyCertificates": 325,
+      "standaloneForwardOracleChecks": 226,
       "standaloneForwardOracleFallbacks": 0,
       "standaloneForwardOracleFallbackReasons": {},
-      "standaloneForwardAnalyticEmptyDomainPrunes": 9,
-      "standaloneForwardWitnessCacheHits": 114494,
-      "standaloneForwardWitnessCacheMisses": 2205,
-      "standaloneForwardWitnessCacheEntries": 2205,
-      "standaloneForwardWitnessBranchesAvoided": 114494,
-      "firstStandaloneForwardPruneDepth": 1,
-      "lastStandaloneForwardPruneDepth": 2,
-      "lastStandaloneForwardBlockingTaskId": "task:10006",
+      "standaloneForwardAnalyticEmptyDomainPrunes": 4,
+      "standaloneForwardWitnessCacheHits": 41,
+      "standaloneForwardWitnessCacheMisses": 226,
+      "standaloneForwardWitnessCacheEntries": 226,
+      "standaloneForwardWitnessBranchesAvoided": 41,
+      "firstStandaloneForwardPruneDepth": 12,
+      "lastStandaloneForwardPruneDepth": 12,
+      "lastStandaloneForwardBlockingTaskId": "task:10124",
       "lastStandaloneForwardCausingCoreTaskIds": [
-        "task:10002",
-        "task:10009",
-        "task:10010",
-        "task:10011",
-        "task:10161",
-        "task:10168"
+        "task:10056",
+        "task:10063",
+        "task:10064",
+        "task:10065",
+        "task:10072",
+        "task:10080",
+        "task:10088",
+        "task:10095",
+        "task:10102",
+        "task:10108",
+        "task:10109",
+        "task:10110",
+        "task:10116",
+        "task:10123",
+        "task:10131",
+        "task:10138",
+        "task:10147",
+        "task:10153",
+        "task:10218",
+        "task:10224",
+        "task:10229",
+        "task:10236",
+        "task:10243",
+        "task:10249",
+        "task:10256",
+        "task:10262"
       ],
-      "lastStandaloneForwardCausingMainTaskId": "task:10002",
-      "lastStandaloneForwardCausingFeederStart": 540,
+      "lastStandaloneForwardCausingMainTaskId": "task:10088",
+      "lastStandaloneForwardCausingFeederStart": 545,
       "selectedStandaloneTaskIds": [],
       "selectedStandaloneStarts": {},
       "selectedStandaloneSelectionOrder": [],
@@ -618,27 +635,27 @@
       ],
       "coreStatus": "BRANCH_BUDGET_EXHAUSTED",
       "coreReasonCodes": [
-        "MATCHING_SEARCH_BUDGET_EXHAUSTED"
+        "FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED"
       ],
       "reasonCodes": [
         "CORE_BRANCH_BUDGET_EXHAUSTED"
       ],
-      "coreBacktracks": 490,
-      "coreMaximumDepth": 19,
-      "coreCompleteLeafCount": 710,
-      "deepestCoreDepthReached": 19,
-      "deepestPartialScheduledTaskCount": 44,
-      "deepestPartialMainRunsClosed": 3,
-      "deepestPartialFeederRunsClosed": 3,
-      "deepestPartialCoreTasksRemaining": 0,
-      "deepestPartialFrontierFingerprint": "00637efe1e9910ce94111ee7ba1b3110b64e5bb8603994b5a6aa71453da6ef55",
-      "architecturesChecked": 125,
-      "architecturesStructurallyRejected": 112,
+      "coreBacktracks": 1132,
+      "coreMaximumDepth": 12,
+      "coreCompleteLeafCount": 0,
+      "deepestCoreDepthReached": 12,
+      "deepestPartialScheduledTaskCount": 30,
+      "deepestPartialMainRunsClosed": 2,
+      "deepestPartialFeederRunsClosed": 2,
+      "deepestPartialCoreTasksRemaining": 14,
+      "deepestPartialFrontierFingerprint": "000b01d71d345deb3d32b5e4d9c63d73c03c875f22073e9d206b1899fb2679d3",
+      "architecturesChecked": 113,
+      "architecturesStructurallyRejected": 102,
       "structuralRejectionsByReason": {
-        "FEEDER_CAPACITY": 34,
-        "RESOURCE_WINDOW": 14,
-        "PREREQUISITE_WINDOW": 44,
-        "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 13,
+        "FEEDER_CAPACITY": 31,
+        "RESOURCE_WINDOW": 13,
+        "PREREQUISITE_WINDOW": 40,
+        "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 11,
         "TRANSITION_CAPACITY": 4,
         "FEEDER_CONTIGUOUS_CAPACITY": 3
       },
@@ -760,69 +777,57 @@
         "plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:840::": 0,
         "plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:875::": 0,
         "plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1005::": 0,
-        "plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1010::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:925::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1115::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1260::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:825::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:900::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:885::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:870::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:855::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:840::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:890::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:990::": 0,
-        "plan-resource:4006|plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:995::": 0
+        "plan-resource:4006|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006|plan-resource:4006::END:1010::": 0
       },
       "feederOrderBranches": 0,
-      "feederSlotAnalyticChecks": 10076,
-      "feederSlotAnalyticPrunes": 8520,
+      "feederSlotAnalyticChecks": 8,
+      "feederSlotAnalyticPrunes": 6,
       "feederSlotAnalyticAbstentions": 0,
-      "feederSlotMatchingChecks": 1556,
-      "feederSlotMatchingPrunes": 8520,
-      "feederSlotMatchingEdgeChecks": 112911,
-      "feederSlotMatchingAugmentTraversals": 63419,
-      "feederSlotMatchingBranchesExplored": 176794,
-      "feederCohortCapacityChecks": 1426,
+      "feederSlotMatchingChecks": 2,
+      "feederSlotMatchingPrunes": 6,
+      "feederSlotMatchingEdgeChecks": 122,
+      "feederSlotMatchingAugmentTraversals": 292968,
+      "feederSlotMatchingBranchesExplored": 298597,
+      "feederCohortCapacityChecks": 2,
       "feederCohortPrefixCapacityPrunes": 0,
-      "feederCohortEddChecks": 1426,
+      "feederCohortEddChecks": 2,
       "feederCohortEddEmptyPrunes": 0,
-      "blockStartsEliminatedByCohortBound": 2145,
-      "feederCohortContiguousWindowChecks": 1426,
+      "blockStartsEliminatedByCohortBound": 3,
+      "feederCohortContiguousWindowChecks": 2,
       "feederCohortContiguousWindowPrunes": 0,
-      "blockStartsEliminatedByContiguousWindowBound": 32664,
+      "blockStartsEliminatedByContiguousWindowBound": 21,
       "contiguousWindowSkippedByTransition": 0,
       "contiguousWindowSkippedByAuthorizedMeal": 0,
-      "feederRunOptimisticChecks": 2632,
+      "feederRunOptimisticChecks": 581,
       "feederRunOptimisticPrunes": 0,
       "feederRunOptimisticPrunesByDepth": {},
-      "feederRunPrePartialChecks": 956,
+      "feederRunPrePartialChecks": 567,
       "feederRunPrePartialPrunes": 0,
       "feederRunPrePartialPrunesByDepth": {},
-      "feederRunPreFeederChecks": 716,
+      "feederRunPreFeederChecks": 2,
       "feederRunPreFeederPrunes": 0,
       "feederRunPreFeederPrunesByDepth": {},
       "feederRunOptimisticSkippedByTransition": 0,
       "feederRunOptimisticSkippedByAuthorizedMeal": 0,
-      "residualMatchingInvocations": 3105,
-      "residualMatchingFullBuilds": 1439,
-      "residualMatchingIncrementalUpdates": 1666,
-      "residualMatchingEdgeCacheHits": 61313,
+      "residualMatchingInvocations": 580,
+      "residualMatchingFullBuilds": 13,
+      "residualMatchingIncrementalUpdates": 567,
+      "residualMatchingEdgeCacheHits": 27887,
       "residualMatchingEdgeCacheMisses": 0,
-      "residualMatchingPositionChecks": 27983,
-      "residualMatchingAugmentTraversals": 80167,
-      "residualMatchingBranchesExplored": 108150,
-      "residualMatchingPrunes": 11,
+      "residualMatchingPositionChecks": 519,
+      "residualMatchingAugmentTraversals": 282,
+      "residualMatchingBranchesExplored": 801,
+      "residualMatchingPrunes": 10,
       "residualMatchingRepairs": 0,
       "residualMatchingRepairFailures": 0,
       "mainWitnessChoicesFollowed": 0,
       "mainWitnessFallbacks": 0,
-      "mainRunWitnessAttempts": 4976,
-      "mainRunWitnessRepairs": 1184,
-      "mainRunEquivalentOrdersCollapsed": 236,
-      "feederMatchingWitnessMaterializations": 1666,
-      "feederMatchingWitnessRepairs": 464,
-      "feederMatchingEquivalentOrdersCollapsed": 109,
+      "mainRunWitnessAttempts": 3,
+      "mainRunWitnessRepairs": 1,
+      "mainRunEquivalentOrdersCollapsed": 0,
+      "feederMatchingWitnessMaterializations": 567,
+      "feederMatchingWitnessRepairs": 5507,
+      "feederMatchingEquivalentOrdersCollapsed": 1720,
       "feederOrderFallbacks": 0,
       "forcedMainSingletonChecks": 0,
       "forcedMainSingletonChoices": 0,
@@ -830,15 +835,7 @@
       "forcedMainSingletonDeadEnds": 0,
       "mainCandidatesExploredBeforeCohort": {
         "1": 1,
-        "2": 1,
-        "4": 1,
-        "6": 636,
-        "7": 75,
-        "8": 1,
-        "10": 1,
-        "11": 237,
-        "22": 237,
-        "33": 236
+        "11": 1
       },
       "lastExhaustionPhase": "CORE",
       "completePlansObserved": 0,
@@ -920,17 +917,17 @@
       "ordinaryIndividualForwardFirstPrune": null,
       "standaloneBlockingTaskDetails": {},
       "participantMealBranchesExplored": 0,
-      "participantMealFutureFeasibilityChecks": 1666,
+      "participantMealFutureFeasibilityChecks": 567,
       "participantMealFutureInfeasibleBranches": 0,
-      "participantMealCheapProbes": 1666,
-      "participantMealAffectedObligationsChecked": 12611,
-      "participantMealAnalyticDomainBuilds": 12611,
-      "participantMealLogicalGridStarts": 438433,
-      "participantMealAnalyticallyEliminatedStarts": 122193,
+      "participantMealCheapProbes": 567,
+      "participantMealAffectedObligationsChecked": 6227,
+      "participantMealAnalyticDomainBuilds": 6227,
+      "participantMealLogicalGridStarts": 217933,
+      "participantMealAnalyticallyEliminatedStarts": 42450,
       "participantMealActuallyEvaluatedStarts": 0,
       "participantMealZeroDomainPrunes": 0,
       "participantMealAnalyticCollectivePrunes": 0,
-      "participantMealExactSearchesAvoided": 1666,
+      "participantMealExactSearchesAvoided": 567,
       "participantMealExactMaterializations": 0,
       "participantMealBlockingTaskIds": [],
       "participantMealAcceptedWitnessFingerprint": null,
@@ -938,413 +935,9 @@
       "participantMealAttemptedSelectionTrace": [],
       "causalDiagnostic": {
         "standaloneFrontier": {
-          "totalRejections": 710,
-          "certificates": [
-            {
-              "failure": "COLLECTIVE_CAPACITY",
-              "authorityId": "plan-resource:4003",
-              "demandMinutes": 60,
-              "freeCapacityMinutes": 45,
-              "blockingTaskId": "task:10124",
-              "overloadTaskIds": [
-                "task:10124",
-                "task:10263"
-              ],
-              "pivotDepth": 6,
-              "frequency": 448
-            },
-            {
-              "failure": "COLLECTIVE_CAPACITY",
-              "authorityId": "plan-resource:4003",
-              "demandMinutes": 60,
-              "freeCapacityMinutes": 45,
-              "blockingTaskId": "task:10124",
-              "overloadTaskIds": [
-                "task:10124",
-                "task:10263"
-              ],
-              "pivotDepth": 5,
-              "frequency": 50
-            },
-            {
-              "failure": "COLLECTIVE_CAPACITY",
-              "authorityId": "plan-resource:4003",
-              "demandMinutes": 60,
-              "freeCapacityMinutes": 45,
-              "blockingTaskId": "task:10124",
-              "overloadTaskIds": [
-                "task:10124",
-                "task:10263"
-              ],
-              "pivotDepth": 7,
-              "frequency": 212
-            }
-          ],
-          "examples": [
-            {
-              "certificate": {
-                "failure": "COLLECTIVE_CAPACITY",
-                "authorityId": "plan-resource:4003",
-                "demandMinutes": 60,
-                "freeCapacityMinutes": 45,
-                "blockingTaskId": "task:10124",
-                "overloadTaskIds": [
-                  "task:10124",
-                  "task:10263"
-                ],
-                "pivotDepth": 6
-              },
-              "overloadTasks": [
-                {
-                  "id": "task:10124",
-                  "duration": 30,
-                  "kind": "auxiliary",
-                  "authorityId": "plan-resource:4003"
-                },
-                {
-                  "id": "task:10263",
-                  "duration": 30,
-                  "kind": "auxiliary",
-                  "authorityId": "plan-resource:4003"
-                }
-              ],
-              "consumingCoreTasks": [
-                {
-                  "id": "task:10002",
-                  "start": 725,
-                  "end": 740,
-                  "kind": "main",
-                  "decisionDepth": 1
-                },
-                {
-                  "id": "task:10010",
-                  "start": 710,
-                  "end": 725,
-                  "kind": "auxiliary",
-                  "decisionDepth": 1
-                },
-                {
-                  "id": "task:10011",
-                  "start": 740,
-                  "end": 755,
-                  "kind": "auxiliary",
-                  "decisionDepth": 1
-                },
-                {
-                  "id": "task:10102",
-                  "start": 800,
-                  "end": 815,
-                  "kind": "main",
-                  "decisionDepth": 6
-                },
-                {
-                  "id": "task:10109",
-                  "start": 785,
-                  "end": 800,
-                  "kind": "auxiliary",
-                  "decisionDepth": 6
-                },
-                {
-                  "id": "task:10110",
-                  "start": 815,
-                  "end": 830,
-                  "kind": "auxiliary",
-                  "decisionDepth": 6
-                }
-              ],
-              "introducedByPivot": [
-                {
-                  "id": "task:10102",
-                  "start": 800,
-                  "end": 815,
-                  "kind": "main",
-                  "decisionDepth": 6
-                },
-                {
-                  "id": "task:10108",
-                  "start": 650,
-                  "end": 665,
-                  "kind": "vocal",
-                  "decisionDepth": 6
-                },
-                {
-                  "id": "task:10109",
-                  "start": 785,
-                  "end": 800,
-                  "kind": "auxiliary",
-                  "decisionDepth": 6
-                },
-                {
-                  "id": "task:10110",
-                  "start": 815,
-                  "end": 830,
-                  "kind": "auxiliary",
-                  "decisionDepth": 6
-                }
-              ],
-              "prefixChecks": [
-                {
-                  "prefixDepth": 6,
-                  "failure": "COLLECTIVE_CAPACITY",
-                  "authorityId": "plan-resource:4003",
-                  "demandMinutes": 60,
-                  "freeCapacityMinutes": 45,
-                  "certificatePersists": true
-                },
-                {
-                  "prefixDepth": 5,
-                  "failure": null,
-                  "authorityId": null,
-                  "demandMinutes": null,
-                  "freeCapacityMinutes": null,
-                  "certificatePersists": false
-                }
-              ],
-              "pivotPairProven": true
-            },
-            {
-              "certificate": {
-                "failure": "COLLECTIVE_CAPACITY",
-                "authorityId": "plan-resource:4003",
-                "demandMinutes": 60,
-                "freeCapacityMinutes": 45,
-                "blockingTaskId": "task:10124",
-                "overloadTaskIds": [
-                  "task:10124",
-                  "task:10263"
-                ],
-                "pivotDepth": 5
-              },
-              "overloadTasks": [
-                {
-                  "id": "task:10124",
-                  "duration": 30,
-                  "kind": "auxiliary",
-                  "authorityId": "plan-resource:4003"
-                },
-                {
-                  "id": "task:10263",
-                  "duration": 30,
-                  "kind": "auxiliary",
-                  "authorityId": "plan-resource:4003"
-                }
-              ],
-              "consumingCoreTasks": [
-                {
-                  "id": "task:10002",
-                  "start": 725,
-                  "end": 740,
-                  "kind": "main",
-                  "decisionDepth": 1
-                },
-                {
-                  "id": "task:10010",
-                  "start": 710,
-                  "end": 725,
-                  "kind": "auxiliary",
-                  "decisionDepth": 1
-                },
-                {
-                  "id": "task:10011",
-                  "start": 740,
-                  "end": 755,
-                  "kind": "auxiliary",
-                  "decisionDepth": 1
-                },
-                {
-                  "id": "task:10102",
-                  "start": 785,
-                  "end": 800,
-                  "kind": "main",
-                  "decisionDepth": 5
-                },
-                {
-                  "id": "task:10109",
-                  "start": 770,
-                  "end": 785,
-                  "kind": "auxiliary",
-                  "decisionDepth": 5
-                },
-                {
-                  "id": "task:10110",
-                  "start": 800,
-                  "end": 815,
-                  "kind": "auxiliary",
-                  "decisionDepth": 5
-                }
-              ],
-              "introducedByPivot": [
-                {
-                  "id": "task:10102",
-                  "start": 785,
-                  "end": 800,
-                  "kind": "main",
-                  "decisionDepth": 5
-                },
-                {
-                  "id": "task:10108",
-                  "start": 650,
-                  "end": 665,
-                  "kind": "vocal",
-                  "decisionDepth": 5
-                },
-                {
-                  "id": "task:10109",
-                  "start": 770,
-                  "end": 785,
-                  "kind": "auxiliary",
-                  "decisionDepth": 5
-                },
-                {
-                  "id": "task:10110",
-                  "start": 800,
-                  "end": 815,
-                  "kind": "auxiliary",
-                  "decisionDepth": 5
-                }
-              ],
-              "prefixChecks": [
-                {
-                  "prefixDepth": 5,
-                  "failure": "COLLECTIVE_CAPACITY",
-                  "authorityId": "plan-resource:4003",
-                  "demandMinutes": 60,
-                  "freeCapacityMinutes": 45,
-                  "certificatePersists": true
-                },
-                {
-                  "prefixDepth": 4,
-                  "failure": null,
-                  "authorityId": null,
-                  "demandMinutes": null,
-                  "freeCapacityMinutes": null,
-                  "certificatePersists": false
-                }
-              ],
-              "pivotPairProven": true
-            },
-            {
-              "certificate": {
-                "failure": "COLLECTIVE_CAPACITY",
-                "authorityId": "plan-resource:4003",
-                "demandMinutes": 60,
-                "freeCapacityMinutes": 45,
-                "blockingTaskId": "task:10124",
-                "overloadTaskIds": [
-                  "task:10124",
-                  "task:10263"
-                ],
-                "pivotDepth": 7
-              },
-              "overloadTasks": [
-                {
-                  "id": "task:10124",
-                  "duration": 30,
-                  "kind": "auxiliary",
-                  "authorityId": "plan-resource:4003"
-                },
-                {
-                  "id": "task:10263",
-                  "duration": 30,
-                  "kind": "auxiliary",
-                  "authorityId": "plan-resource:4003"
-                }
-              ],
-              "consumingCoreTasks": [
-                {
-                  "id": "task:10002",
-                  "start": 725,
-                  "end": 740,
-                  "kind": "main",
-                  "decisionDepth": 2
-                },
-                {
-                  "id": "task:10010",
-                  "start": 710,
-                  "end": 725,
-                  "kind": "auxiliary",
-                  "decisionDepth": 2
-                },
-                {
-                  "id": "task:10011",
-                  "start": 740,
-                  "end": 755,
-                  "kind": "auxiliary",
-                  "decisionDepth": 2
-                },
-                {
-                  "id": "task:10102",
-                  "start": 800,
-                  "end": 815,
-                  "kind": "main",
-                  "decisionDepth": 7
-                },
-                {
-                  "id": "task:10109",
-                  "start": 785,
-                  "end": 800,
-                  "kind": "auxiliary",
-                  "decisionDepth": 7
-                },
-                {
-                  "id": "task:10110",
-                  "start": 815,
-                  "end": 830,
-                  "kind": "auxiliary",
-                  "decisionDepth": 7
-                }
-              ],
-              "introducedByPivot": [
-                {
-                  "id": "task:10102",
-                  "start": 800,
-                  "end": 815,
-                  "kind": "main",
-                  "decisionDepth": 7
-                },
-                {
-                  "id": "task:10108",
-                  "start": 650,
-                  "end": 665,
-                  "kind": "vocal",
-                  "decisionDepth": 7
-                },
-                {
-                  "id": "task:10109",
-                  "start": 785,
-                  "end": 800,
-                  "kind": "auxiliary",
-                  "decisionDepth": 7
-                },
-                {
-                  "id": "task:10110",
-                  "start": 815,
-                  "end": 830,
-                  "kind": "auxiliary",
-                  "decisionDepth": 7
-                }
-              ],
-              "prefixChecks": [
-                {
-                  "prefixDepth": 7,
-                  "failure": "COLLECTIVE_CAPACITY",
-                  "authorityId": "plan-resource:4003",
-                  "demandMinutes": 60,
-                  "freeCapacityMinutes": 45,
-                  "certificatePersists": true
-                },
-                {
-                  "prefixDepth": 6,
-                  "failure": null,
-                  "authorityId": null,
-                  "demandMinutes": null,
-                  "freeCapacityMinutes": null,
-                  "certificatePersists": false
-                }
-              ],
-              "pivotPairProven": true
-            }
-          ]
+          "totalRejections": 0,
+          "certificates": [],
+          "examples": []
         }
       }
     },
@@ -1353,62 +946,32 @@
         "0": {
           "mainCandidate": 0,
           "feederStart": 0,
-          "residualMatching": 735,
+          "residualMatching": 421,
           "continuation": 0,
           "participantMeal": 0,
           "standaloneForward": 0,
-          "other": 1118,
-          "total": 1853
+          "other": 367,
+          "total": 788
         },
         "1": {
           "mainCandidate": 0,
-          "feederStart": 26,
-          "residualMatching": 1342,
-          "continuation": 25,
+          "feederStart": 1,
+          "residualMatching": 305,
+          "continuation": 1,
           "participantMeal": 0,
-          "standaloneForward": 189,
+          "standaloneForward": 17,
           "other": 0,
-          "total": 1582
-        },
-        "2": {
-          "mainCandidate": 0,
-          "feederStart": 110,
-          "residualMatching": 11341,
-          "continuation": 212,
-          "participantMeal": 0,
-          "standaloneForward": 1278,
-          "other": 0,
-          "total": 12941
+          "total": 324
         },
         "12": {
           "mainCandidate": 0,
-          "feederStart": 525,
-          "residualMatching": 20325,
-          "continuation": 75,
+          "feederStart": 7,
+          "residualMatching": 298672,
+          "continuation": 0,
           "participantMeal": 0,
-          "standaloneForward": 181,
+          "standaloneForward": 209,
           "other": 0,
-          "total": 21106
-        },
-        "13": {
-          "mainCandidate": 0,
-          "feederStart": 4445,
-          "residualMatching": 158750,
-          "continuation": 635,
-          "participantMeal": 0,
-          "standaloneForward": 394,
-          "other": 0,
-          "total": 164224
-        },
-        "19": {
-          "mainCandidate": 0,
-          "feederStart": 4970,
-          "residualMatching": 92451,
-          "continuation": 710,
-          "participantMeal": 0,
-          "standaloneForward": 163,
-          "other": 0,
-          "total": 98294
+          "total": 298888
         }
       },
       "waterfallReconciles": true,
@@ -1416,658 +979,227 @@
         "1": {
           "startsConsidered": 26,
           "startsCoachEliminated": 0,
-          "startsEvaluated": 26,
-          "valid": 26,
+          "startsEvaluated": 1,
+          "valid": 1,
           "invalid": 0,
           "mainChoicesReachingFeeder": 1,
           "mainChoicesWithValidFeeder": 1
         },
-        "2": {
-          "startsConsidered": 130,
-          "startsCoachEliminated": 0,
-          "startsEvaluated": 110,
-          "valid": 220,
-          "invalid": 0,
-          "mainChoicesReachingFeeder": 5,
-          "mainChoicesWithValidFeeder": 5
-        },
         "12": {
-          "startsConsidered": 4650,
-          "startsCoachEliminated": 2250,
-          "startsEvaluated": 525,
-          "valid": 75,
+          "startsConsidered": 62,
+          "startsCoachEliminated": 30,
+          "startsEvaluated": 7,
+          "valid": 566,
           "invalid": 0,
-          "mainChoicesReachingFeeder": 75,
-          "mainChoicesWithValidFeeder": 75
-        },
-        "13": {
-          "startsConsidered": 39370,
-          "startsCoachEliminated": 19050,
-          "startsEvaluated": 4445,
-          "valid": 635,
-          "invalid": 0,
-          "mainChoicesReachingFeeder": 635,
-          "mainChoicesWithValidFeeder": 635
-        },
-        "19": {
-          "startsConsidered": 57025,
-          "startsCoachEliminated": 26638,
-          "startsEvaluated": 4970,
-          "valid": 710,
-          "invalid": 0,
-          "mainChoicesReachingFeeder": 710,
-          "mainChoicesWithValidFeeder": 710
+          "mainChoicesReachingFeeder": 1,
+          "mainChoicesWithValidFeeder": 1
         }
       },
       "futureFeasibility": {
-        "totalEvaluations": 116708,
-        "uniqueAuthorityStates": 2211,
-        "repeatedEvaluations": 114497,
+        "totalEvaluations": 271,
+        "uniqueAuthorityStates": 230,
+        "repeatedEvaluations": 41,
         "authorityResultCollisions": 0,
-        "negativeEvaluations": 9,
-        "repeatedNegativeEvaluations": 3,
+        "negativeEvaluations": 4,
+        "repeatedNegativeEvaluations": 0,
         "rejectsWithCertifiedBackjumpTarget": 0,
         "evaluationsByDepth": {
-          "1": 430,
-          "2": 5446,
-          "12": 7800,
-          "13": 66040,
-          "19": 36992
+          "1": 17,
+          "12": 254
         },
         "repeatedByDepth": {
-          "1": 240,
-          "2": 4163,
-          "12": 7619,
-          "13": 65646,
-          "19": 36829
+          "12": 41
         },
         "negativeByDepth": {
-          "1": 1,
-          "2": 8
+          "12": 4
         }
       },
-      "criticalDepth": 19,
+      "standaloneFrontier": {
+        "totalRejections": 0,
+        "certificates": [],
+        "examples": []
+      },
+      "criticalDepth": 12,
       "criticalRejectionReasons": [
         {
-          "id": "OVERLAP_COACH",
-          "count": 73020
+          "id": "TRANSITION_COACH",
+          "count": 84
         },
         {
-          "id": "TRANSITION_COACH",
-          "count": 56130
+          "id": "OVERLAP_COACH",
+          "count": 78
         }
       ],
       "topMainTasks": [
         {
-          "id": "task:10017",
-          "count": 26638
+          "id": "task:10088",
+          "count": 30
         },
         {
-          "id": "task:10031",
-          "count": 24508
+          "id": "task:10072",
+          "count": 27
         },
         {
-          "id": "task:10043",
-          "count": 18972
+          "id": "task:10116",
+          "count": 24
         },
         {
-          "id": "task:10161",
-          "count": 16765
+          "id": "task:10131",
+          "count": 21
         },
         {
-          "id": "task:10175",
-          "count": 15427
+          "id": "task:10147",
+          "count": 18
         },
         {
-          "id": "task:10190",
-          "count": 14089
+          "id": "task:10218",
+          "count": 15
         },
         {
-          "id": "task:10203",
-          "count": 12751
+          "id": "task:10102",
+          "count": 9
+        },
+        {
+          "id": "task:10229",
+          "count": 9
+        },
+        {
+          "id": "task:10243",
+          "count": 6
+        },
+        {
+          "id": "task:10256",
+          "count": 3
         }
       ],
       "topFeederTasks": [
         {
-          "id": "task:10024",
-          "count": 26638
+          "id": "task:10095",
+          "count": 30
         },
         {
-          "id": "task:10037",
-          "count": 24508
+          "id": "task:10080",
+          "count": 27
         },
         {
-          "id": "task:10050",
-          "count": 18972
+          "id": "task:10123",
+          "count": 24
         },
         {
-          "id": "task:10168",
-          "count": 16765
+          "id": "task:10138",
+          "count": 21
         },
         {
-          "id": "task:10183",
-          "count": 15427
+          "id": "task:10153",
+          "count": 18
         },
         {
-          "id": "task:10197",
-          "count": 14089
+          "id": "task:10224",
+          "count": 15
         },
         {
-          "id": "task:10210",
-          "count": 12751
+          "id": "task:10108",
+          "count": 9
+        },
+        {
+          "id": "task:10236",
+          "count": 9
+        },
+        {
+          "id": "task:10249",
+          "count": 6
+        },
+        {
+          "id": "task:10262",
+          "count": 3
         }
       ],
       "topBlockingPlacedTasks": [
         {
-          "id": "task:10203",
-          "count": 34680
+          "id": "task:10056",
+          "count": 99
         },
         {
-          "id": "task:10002",
-          "count": 17730
+          "id": "task:10256",
+          "count": 18
         },
         {
-          "id": "task:10009",
-          "count": 17496
+          "id": "task:10243",
+          "count": 15
         },
         {
-          "id": "task:10190",
-          "count": 16611
+          "id": "task:10229",
+          "count": 12
         },
         {
-          "id": "task:10175",
-          "count": 10521
+          "id": "task:10102",
+          "count": 9
         },
         {
-          "id": "task:10161",
-          "count": 9504
+          "id": "task:10218",
+          "count": 6
         },
         {
-          "id": "task:10043",
-          "count": 7704
-        },
-        {
-          "id": "task:10168",
-          "count": 3096
-        },
-        {
-          "id": "task:10183",
-          "count": 3096
-        },
-        {
-          "id": "task:10197",
-          "count": 3096
+          "id": "task:10147",
+          "count": 3
         }
       ],
       "topFeederBlockerPairs": [
         {
-          "id": "task:10024 + task:10203",
-          "count": 8520
+          "id": "task:10080 + task:10056",
+          "count": 12
         },
         {
-          "id": "task:10037 + task:10203",
-          "count": 8520
+          "id": "task:10095 + task:10056",
+          "count": 12
         },
         {
-          "id": "task:10050 + task:10203",
-          "count": 6048
+          "id": "task:10123 + task:10056",
+          "count": 12
         },
         {
-          "id": "task:10168 + task:10203",
-          "count": 4806
+          "id": "task:10138 + task:10056",
+          "count": 12
         },
         {
-          "id": "task:10024 + task:10190",
-          "count": 4506
+          "id": "task:10153 + task:10056",
+          "count": 12
         },
         {
-          "id": "task:10183 + task:10203",
-          "count": 3864
+          "id": "task:10224 + task:10056",
+          "count": 12
         },
         {
-          "id": "task:10037 + task:10190",
-          "count": 3393
+          "id": "task:10108 + task:10056",
+          "count": 9
         },
         {
-          "id": "task:10197 + task:10203",
-          "count": 2922
+          "id": "task:10236 + task:10056",
+          "count": 9
         },
         {
-          "id": "task:10024 + task:10009",
-          "count": 2854
+          "id": "task:10249 + task:10056",
+          "count": 6
         },
         {
-          "id": "task:10037 + task:10009",
-          "count": 2854
+          "id": "task:10080 + task:10102",
+          "count": 3
         }
       ],
-      "criticalRejectionCount": 129150,
-      "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10203, which accounts for 34,680 of 129,150 (26.9%) depth-19 feeder rejections, while preserving every hard constraint and the 300,000-branch budget.",
-      "standaloneFrontier": {
-        "totalRejections": 710,
-        "certificates": [
-          {
-            "failure": "COLLECTIVE_CAPACITY",
-            "authorityId": "plan-resource:4003",
-            "demandMinutes": 60,
-            "freeCapacityMinutes": 45,
-            "blockingTaskId": "task:10124",
-            "overloadTaskIds": [
-              "task:10124",
-              "task:10263"
-            ],
-            "pivotDepth": 6,
-            "frequency": 448
-          },
-          {
-            "failure": "COLLECTIVE_CAPACITY",
-            "authorityId": "plan-resource:4003",
-            "demandMinutes": 60,
-            "freeCapacityMinutes": 45,
-            "blockingTaskId": "task:10124",
-            "overloadTaskIds": [
-              "task:10124",
-              "task:10263"
-            ],
-            "pivotDepth": 5,
-            "frequency": 50
-          },
-          {
-            "failure": "COLLECTIVE_CAPACITY",
-            "authorityId": "plan-resource:4003",
-            "demandMinutes": 60,
-            "freeCapacityMinutes": 45,
-            "blockingTaskId": "task:10124",
-            "overloadTaskIds": [
-              "task:10124",
-              "task:10263"
-            ],
-            "pivotDepth": 7,
-            "frequency": 212
-          }
-        ],
-        "examples": [
-          {
-            "certificate": {
-              "failure": "COLLECTIVE_CAPACITY",
-              "authorityId": "plan-resource:4003",
-              "demandMinutes": 60,
-              "freeCapacityMinutes": 45,
-              "blockingTaskId": "task:10124",
-              "overloadTaskIds": [
-                "task:10124",
-                "task:10263"
-              ],
-              "pivotDepth": 6
-            },
-            "overloadTasks": [
-              {
-                "id": "task:10124",
-                "duration": 30,
-                "kind": "auxiliary",
-                "authorityId": "plan-resource:4003"
-              },
-              {
-                "id": "task:10263",
-                "duration": 30,
-                "kind": "auxiliary",
-                "authorityId": "plan-resource:4003"
-              }
-            ],
-            "consumingCoreTasks": [
-              {
-                "id": "task:10002",
-                "start": 725,
-                "end": 740,
-                "kind": "main",
-                "decisionDepth": 1
-              },
-              {
-                "id": "task:10010",
-                "start": 710,
-                "end": 725,
-                "kind": "auxiliary",
-                "decisionDepth": 1
-              },
-              {
-                "id": "task:10011",
-                "start": 740,
-                "end": 755,
-                "kind": "auxiliary",
-                "decisionDepth": 1
-              },
-              {
-                "id": "task:10102",
-                "start": 800,
-                "end": 815,
-                "kind": "main",
-                "decisionDepth": 6
-              },
-              {
-                "id": "task:10109",
-                "start": 785,
-                "end": 800,
-                "kind": "auxiliary",
-                "decisionDepth": 6
-              },
-              {
-                "id": "task:10110",
-                "start": 815,
-                "end": 830,
-                "kind": "auxiliary",
-                "decisionDepth": 6
-              }
-            ],
-            "introducedByPivot": [
-              {
-                "id": "task:10102",
-                "start": 800,
-                "end": 815,
-                "kind": "main",
-                "decisionDepth": 6
-              },
-              {
-                "id": "task:10108",
-                "start": 650,
-                "end": 665,
-                "kind": "vocal",
-                "decisionDepth": 6
-              },
-              {
-                "id": "task:10109",
-                "start": 785,
-                "end": 800,
-                "kind": "auxiliary",
-                "decisionDepth": 6
-              },
-              {
-                "id": "task:10110",
-                "start": 815,
-                "end": 830,
-                "kind": "auxiliary",
-                "decisionDepth": 6
-              }
-            ],
-            "prefixChecks": [
-              {
-                "prefixDepth": 6,
-                "failure": "COLLECTIVE_CAPACITY",
-                "authorityId": "plan-resource:4003",
-                "demandMinutes": 60,
-                "freeCapacityMinutes": 45,
-                "certificatePersists": true
-              },
-              {
-                "prefixDepth": 5,
-                "failure": null,
-                "authorityId": null,
-                "demandMinutes": null,
-                "freeCapacityMinutes": null,
-                "certificatePersists": false
-              }
-            ],
-            "pivotPairProven": true
-          },
-          {
-            "certificate": {
-              "failure": "COLLECTIVE_CAPACITY",
-              "authorityId": "plan-resource:4003",
-              "demandMinutes": 60,
-              "freeCapacityMinutes": 45,
-              "blockingTaskId": "task:10124",
-              "overloadTaskIds": [
-                "task:10124",
-                "task:10263"
-              ],
-              "pivotDepth": 5
-            },
-            "overloadTasks": [
-              {
-                "id": "task:10124",
-                "duration": 30,
-                "kind": "auxiliary",
-                "authorityId": "plan-resource:4003"
-              },
-              {
-                "id": "task:10263",
-                "duration": 30,
-                "kind": "auxiliary",
-                "authorityId": "plan-resource:4003"
-              }
-            ],
-            "consumingCoreTasks": [
-              {
-                "id": "task:10002",
-                "start": 725,
-                "end": 740,
-                "kind": "main",
-                "decisionDepth": 1
-              },
-              {
-                "id": "task:10010",
-                "start": 710,
-                "end": 725,
-                "kind": "auxiliary",
-                "decisionDepth": 1
-              },
-              {
-                "id": "task:10011",
-                "start": 740,
-                "end": 755,
-                "kind": "auxiliary",
-                "decisionDepth": 1
-              },
-              {
-                "id": "task:10102",
-                "start": 785,
-                "end": 800,
-                "kind": "main",
-                "decisionDepth": 5
-              },
-              {
-                "id": "task:10109",
-                "start": 770,
-                "end": 785,
-                "kind": "auxiliary",
-                "decisionDepth": 5
-              },
-              {
-                "id": "task:10110",
-                "start": 800,
-                "end": 815,
-                "kind": "auxiliary",
-                "decisionDepth": 5
-              }
-            ],
-            "introducedByPivot": [
-              {
-                "id": "task:10102",
-                "start": 785,
-                "end": 800,
-                "kind": "main",
-                "decisionDepth": 5
-              },
-              {
-                "id": "task:10108",
-                "start": 650,
-                "end": 665,
-                "kind": "vocal",
-                "decisionDepth": 5
-              },
-              {
-                "id": "task:10109",
-                "start": 770,
-                "end": 785,
-                "kind": "auxiliary",
-                "decisionDepth": 5
-              },
-              {
-                "id": "task:10110",
-                "start": 800,
-                "end": 815,
-                "kind": "auxiliary",
-                "decisionDepth": 5
-              }
-            ],
-            "prefixChecks": [
-              {
-                "prefixDepth": 5,
-                "failure": "COLLECTIVE_CAPACITY",
-                "authorityId": "plan-resource:4003",
-                "demandMinutes": 60,
-                "freeCapacityMinutes": 45,
-                "certificatePersists": true
-              },
-              {
-                "prefixDepth": 4,
-                "failure": null,
-                "authorityId": null,
-                "demandMinutes": null,
-                "freeCapacityMinutes": null,
-                "certificatePersists": false
-              }
-            ],
-            "pivotPairProven": true
-          },
-          {
-            "certificate": {
-              "failure": "COLLECTIVE_CAPACITY",
-              "authorityId": "plan-resource:4003",
-              "demandMinutes": 60,
-              "freeCapacityMinutes": 45,
-              "blockingTaskId": "task:10124",
-              "overloadTaskIds": [
-                "task:10124",
-                "task:10263"
-              ],
-              "pivotDepth": 7
-            },
-            "overloadTasks": [
-              {
-                "id": "task:10124",
-                "duration": 30,
-                "kind": "auxiliary",
-                "authorityId": "plan-resource:4003"
-              },
-              {
-                "id": "task:10263",
-                "duration": 30,
-                "kind": "auxiliary",
-                "authorityId": "plan-resource:4003"
-              }
-            ],
-            "consumingCoreTasks": [
-              {
-                "id": "task:10002",
-                "start": 725,
-                "end": 740,
-                "kind": "main",
-                "decisionDepth": 2
-              },
-              {
-                "id": "task:10010",
-                "start": 710,
-                "end": 725,
-                "kind": "auxiliary",
-                "decisionDepth": 2
-              },
-              {
-                "id": "task:10011",
-                "start": 740,
-                "end": 755,
-                "kind": "auxiliary",
-                "decisionDepth": 2
-              },
-              {
-                "id": "task:10102",
-                "start": 800,
-                "end": 815,
-                "kind": "main",
-                "decisionDepth": 7
-              },
-              {
-                "id": "task:10109",
-                "start": 785,
-                "end": 800,
-                "kind": "auxiliary",
-                "decisionDepth": 7
-              },
-              {
-                "id": "task:10110",
-                "start": 815,
-                "end": 830,
-                "kind": "auxiliary",
-                "decisionDepth": 7
-              }
-            ],
-            "introducedByPivot": [
-              {
-                "id": "task:10102",
-                "start": 800,
-                "end": 815,
-                "kind": "main",
-                "decisionDepth": 7
-              },
-              {
-                "id": "task:10108",
-                "start": 650,
-                "end": 665,
-                "kind": "vocal",
-                "decisionDepth": 7
-              },
-              {
-                "id": "task:10109",
-                "start": 785,
-                "end": 800,
-                "kind": "auxiliary",
-                "decisionDepth": 7
-              },
-              {
-                "id": "task:10110",
-                "start": 815,
-                "end": 830,
-                "kind": "auxiliary",
-                "decisionDepth": 7
-              }
-            ],
-            "prefixChecks": [
-              {
-                "prefixDepth": 7,
-                "failure": "COLLECTIVE_CAPACITY",
-                "authorityId": "plan-resource:4003",
-                "demandMinutes": 60,
-                "freeCapacityMinutes": 45,
-                "certificatePersists": true
-              },
-              {
-                "prefixDepth": 6,
-                "failure": null,
-                "authorityId": null,
-                "demandMinutes": null,
-                "freeCapacityMinutes": null,
-                "certificatePersists": false
-              }
-            ],
-            "pivotPairProven": true
-          }
-        ]
-      }
+      "criticalRejectionCount": 162,
+      "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10056, which accounts for 99 of 162 (61.1%) depth-12 feeder rejections, while preserving every hard constraint and the 300,000-branch budget."
     },
     "searchInvariance": {
       "diagnosticOn": {
         "branchesExplored": 300000,
-        "coreBranches": 297795,
-        "standaloneBranches": 2205,
-        "coreCompleteLeafCount": 710,
-        "coreCompleteLeavesEvaluated": 710,
-        "coreStandaloneFrontierChecks": 710,
-        "coreStandaloneFrontierPrunes": 710,
-        "causalBacktracks": 710,
-        "causalBacktrackTargetDepthCounts": {
-          "5": 50,
-          "6": 448,
-          "7": 212
-        },
+        "coreBranches": 299774,
+        "standaloneBranches": 226,
+        "coreCompleteLeafCount": 0,
+        "coreCompleteLeavesEvaluated": 0,
+        "coreStandaloneFrontierChecks": 0,
+        "coreStandaloneFrontierPrunes": 0,
+        "causalBacktracks": 0,
+        "causalBacktrackTargetDepthCounts": {},
         "standaloneSearchInvocations": 0,
         "standaloneMaximumDepth": 0,
         "standaloneCompleteLeafCount": 0,
@@ -2075,18 +1207,14 @@
       },
       "diagnosticOff": {
         "branchesExplored": 300000,
-        "coreBranches": 297795,
-        "standaloneBranches": 2205,
-        "coreCompleteLeafCount": 710,
-        "coreCompleteLeavesEvaluated": 710,
-        "coreStandaloneFrontierChecks": 710,
-        "coreStandaloneFrontierPrunes": 710,
-        "causalBacktracks": 710,
-        "causalBacktrackTargetDepthCounts": {
-          "5": 50,
-          "6": 448,
-          "7": 212
-        },
+        "coreBranches": 299774,
+        "standaloneBranches": 226,
+        "coreCompleteLeafCount": 0,
+        "coreCompleteLeavesEvaluated": 0,
+        "coreStandaloneFrontierChecks": 0,
+        "coreStandaloneFrontierPrunes": 0,
+        "causalBacktracks": 0,
+        "causalBacktrackTargetDepthCounts": {},
         "standaloneSearchInvocations": 0,
         "standaloneMaximumDepth": 0,
         "standaloneCompleteLeafCount": 0,
