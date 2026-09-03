@@ -625,7 +625,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const duration = mains[0]!.duration;
   const patternLayers = generateMainFlowPatternRunLayers(mains, problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns);
+    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
