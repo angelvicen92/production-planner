@@ -27,6 +27,11 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.deepEqual(config.transportPolicy.arrival, { targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 30, groupingWeight: 3 });
   assert.deepEqual(config.transportPolicy.departure, { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
+  assert.equal(config.meals.operational.mealUnits.length, 7);
+  assert.ok(config.meals.operational.mealUnits.every(({ mealUnitId, spaceIds, resourceIds }) => mealUnitId && spaceIds.length + resourceIds.length > 0));
+  assert.ok(config.meals.operational.mealUnits.every(() => config.meals.operational.defaultDurationMinutes === 75));
+  const scopes=config.meals.operational.mealUnits.flatMap(({spaceIds,resourceIds})=>[...spaceIds.map(id=>`space:${id}`),...resourceIds.map(id=>`resource:${id}`)]);
+  assert.equal(new Set(scopes).size,scopes.length);
   assert.equal(config.meals.participant.sodexoDurationMinutes, 40);
   assert.deepEqual(config.meals.coach, { individualDurationMinutes: 45, inheritsSpaceOperationalMeal: false });
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);

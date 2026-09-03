@@ -1220,7 +1220,16 @@
         "flexible": true,
         "followsAssignedResourcesAcrossRecomposition": true,
         "fixedHumanCutIntervals": [],
-        "legacyItinerantMealBreakMinutesAuthoritative": false
+        "legacyItinerantMealBreakMinutesAuthoritative": false,
+        "mealUnits": [
+          { "mealUnitId": "styling-operations", "spaceIds": ["styling"], "resourceIds": [] },
+          { "mealUnitId": "cam2-operations", "spaceIds": ["p15-croma", "p15-estrellas-sillon"], "resourceIds": ["cam-2"] },
+          { "mealUnitId": "estudio-7-operations", "spaceIds": ["estudio-7"], "resourceIds": ["band"] },
+          { "mealUnitId": "reality-p14-operations", "spaceIds": ["p14-recursos", "p14-pasillo", "reality-plato", "reality-hall-p14", "reality-influencer", "reality-manzano", "reality-buggy", "reality-control", "reality-corner-music", "alfombra-roja", "totales-post", "technical-transfer"], "resourceIds": ["cam-3", "cam-4", "son-1", "son-2", "eva"] },
+          { "mealUnitId": "totales-1-operations", "spaceIds": ["totales-1"], "resourceIds": ["cam-5"] },
+          { "mealUnitId": "totales-coreo-operations", "spaceIds": ["totales-coreo"], "resourceIds": ["cam-6"] },
+          { "mealUnitId": "giratuto-operations", "spaceIds": ["p14-giratuto"], "resourceIds": [] }
+        ]
       },
       "participant": {
         "sodexoDurationMinutes": 40,

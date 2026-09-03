@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealIsOperational, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
+import { candidateTimelines, hasMainFlowMeal, mainFlowMealIsOperational, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -1584,7 +1584,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
       const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
       const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-        ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
+        ? candidateTimelines(problem, pattern, duration) : [undefined];
       for (const timeline of timelines) {
         const departureEnds = [...latestDepartureStart.values()];
         const historicalEnds = [...new Set([
@@ -1596,7 +1596,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             .sort((left, right) => right - left),
         ])];
         let candidateEnds = timeline
-          ? [problem.mainFlow.preferredEnd]
+          ? [timeline.meal.start]
           : [...new Set([
             problem.mainFlow.preferredEnd,
             problem.day.start + pattern.length * duration,

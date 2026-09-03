@@ -24,7 +24,20 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   }),
   meals: Object.freeze({
     effectiveWindow: Object.freeze({ start: "13:00" as const, end: "16:30" as const }),
-    operational: Object.freeze({ defaultDurationMinutes: 75 as const, realityDurationMinutes: 75 as const, flexible: true as const, followsAssignedResourcesAcrossRecomposition: true as const, fixedHumanCutIntervals: Object.freeze([] as const), legacyItinerantMealBreakMinutesAuthoritative: false as const }),
+    operational: Object.freeze({
+      defaultDurationMinutes: 75 as const, realityDurationMinutes: 75 as const, flexible: true as const,
+      followsAssignedResourcesAcrossRecomposition: true as const, fixedHumanCutIntervals: Object.freeze([] as const),
+      legacyItinerantMealBreakMinutesAuthoritative: false as const,
+      mealUnits: Object.freeze([
+        { mealUnitId: "styling-operations", spaceIds: ["styling"], resourceIds: [] },
+        { mealUnitId: "cam2-operations", spaceIds: ["p15-croma", "p15-estrellas-sillon"], resourceIds: ["cam-2"] },
+        { mealUnitId: "estudio-7-operations", spaceIds: ["estudio-7"], resourceIds: ["band"] },
+        { mealUnitId: "reality-p14-operations", spaceIds: ["p14-recursos", "p14-pasillo", "reality-plato", "reality-hall-p14", "reality-influencer", "reality-manzano", "reality-buggy", "reality-control", "reality-corner-music", "alfombra-roja", "totales-post", "technical-transfer"], resourceIds: ["cam-3", "cam-4", "son-1", "son-2", "eva"] },
+        { mealUnitId: "totales-1-operations", spaceIds: ["totales-1"], resourceIds: ["cam-5"] },
+        { mealUnitId: "totales-coreo-operations", spaceIds: ["totales-coreo"], resourceIds: ["cam-6"] },
+        { mealUnitId: "giratuto-operations", spaceIds: ["p14-giratuto"], resourceIds: [] },
+      ].map((unit) => Object.freeze({ ...unit, spaceIds: Object.freeze(unit.spaceIds), resourceIds: Object.freeze(unit.resourceIds) }))),
+    }),
     participant: Object.freeze({ sodexoDurationMinutes: 40 as const, maxSimultaneous: 10 as const, independentFromOperationalMeal: true as const }),
     coach: Object.freeze({ individualDurationMinutes: 45 as const, inheritsSpaceOperationalMeal: false as const }),
   }),

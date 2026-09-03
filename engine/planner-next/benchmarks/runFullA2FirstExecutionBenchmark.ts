@@ -158,18 +158,12 @@ input.coachRouteTransitions = [
   toSpaceId: spaceId.get("estudio-7")!,
   minutes: expansion.rules.coachTransition.minutes,
 }));
-const operationalMealGroups: Array<[string, string[], string[]?]> = [
-  ["reality-operations", ["cam-3", "cam-4", "son-1", "son-2"]],
-  ["cam2-operations", ["cam-2"]],
-  ["eva-operations", ["eva"]],
-  ["estudio-7-operations", ["band"], ["estudio-7"]],
-];
-input.operationalMealPolicies = operationalMealGroups.map(([id, resources, spaces]) => ({
-  id,
+input.operationalMealPolicies = config.meals.operational.mealUnits.map(({ mealUnitId, resourceIds, spaceIds }) => ({
+  id: mealUnitId,
   window: { ...config.meals.effectiveWindow },
   durationMinutes: config.meals.operational.defaultDurationMinutes,
-  planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
-  ...(spaces ? { spaceIds: spaces.map((space) => spaceId.get(space)!) } : {}),
+  planResourceItemIds: resourceIds.map((resource) => resourceId.get(resource)!),
+  spaceIds: spaceIds.map((space) => spaceId.get(space)!),
 }));
 input.operationalMealPolicies.push(...["coach-lucia", "coach-jose-maria"].map((coach) => ({
   id: `${coach}-individual`,
