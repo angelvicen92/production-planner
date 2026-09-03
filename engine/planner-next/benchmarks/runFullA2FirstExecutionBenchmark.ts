@@ -328,7 +328,6 @@ const evidence = {
       coreBranches: exactResult.evidence.coreBranches,
       standaloneBranches: exactResult.evidence.standaloneBranches,
       lastExhaustionPhase: exactResult.evidence.lastExhaustionPhase,
-      nextObservedBlocker: "styling demand=10 / free=5 during feeder partial-core validation",
     },
   } : null,
   result: {
