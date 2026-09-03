@@ -79,7 +79,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.deepEqual(executionEvidence.runLayers.map(({runCount,patternsGenerated})=>({runCount,patternsGenerated})),
       [{runCount:2,patternsGenerated:2}],"Full A2 must completely enumerate only its theoretical-minimum layer");
     assert.ok(executionEvidence.runLayers[0]!.architecturesChecked>0);
-    assert.equal(executionEvidence.lastExhaustionPhase,"CORE");
+    assert.ok(executionEvidence.coreCompleteLeafCount>0);
+    assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
+    assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);

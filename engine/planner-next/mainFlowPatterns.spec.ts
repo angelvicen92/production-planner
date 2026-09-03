@@ -32,6 +32,22 @@ test("exact pattern-layer budget is global, deterministic, and never marks a par
   assert.equal(first.reduce((sum, layer) => sum + layer.patterns.length, 0), 2);
 });
 
+test("PREFERRED concentration reorders equal-run patterns without removing alternatives", () => {
+  const tasks = mainsForKeys(["n", "n", "r", "r", "r"]).map((task) =>
+    task.blockKey === "n" ? { ...task, requiredResourceIds: ["preferred"] } : task);
+  const withoutPreference = generateMainFlowPatternRunLayers(tasks, 1, 3, 100);
+  const withPreference = generateMainFlowPatternRunLayers(tasks, 1, 3, 100, [{
+    id: "preferred", availability: [{ start: 0, end: 100 }], presencePreference: "OFF",
+    presenceConcentrationPolicy: "PREFERRED", assignedSpaceId: "main",
+  }]);
+  const baseline = withoutPreference.find(({ runCount }) => runCount === 3)!.patterns.map((pattern) => pattern.join());
+  const preferred = withPreference.find(({ runCount }) => runCount === 3)!.patterns.map((pattern) => pattern.join());
+
+  assert.notEqual(preferred[0], baseline[0]);
+  assert.equal(preferred[0], "r,n,n,r,r");
+  assert.deepEqual([...preferred].sort(), [...baseline].sort());
+});
+
 test("PREFERRED resource concentration orders patterns without removing interleaved alternatives", () => {
   const mains = [
     ...["r1", "r2", "r3"].map((id) => ({ id, kind: "main" as const, duration: 10, spaceId: "main",

@@ -386,6 +386,56 @@ export function proveMainFeederArchitectureImpossible(
   return null;
 }
 
+const compareTuple = (a: readonly number[], b: readonly number[]): number => {
+  for (let index = 0; index < a.length; index += 1) if (a[index] !== b[index]) return a[index]! - b[index]!;
+  return 0;
+};
+
+function comparePreferredConcentration(
+  left: string[],
+  right: string[],
+  mains: readonly Task[],
+  resources: readonly Resource[],
+): number {
+  const preferred = resources.filter(({ presenceConcentrationPolicy }) =>
+    presenceConcentrationPolicy === "PREFERRED");
+  const concentrationSignature = (pattern: string[]): [number, number, number] => {
+    let blocks = 0, effectiveSpan = 0, gaps = 0;
+    for (const resource of preferred) {
+      const requiredByKey = new Map<string, number>();
+      for (const task of mains) if ((task.requiredResourceIds ?? []).includes(resource.id))
+        requiredByKey.set(task.blockKey ?? "", (requiredByKey.get(task.blockKey ?? "") ?? 0) + 1);
+      const requiredCount = [...requiredByKey.values()].reduce((sum, count) => sum + count, 0);
+      if (requiredCount === 0) continue;
+      let best: [number, number, number] | undefined;
+      const visitLabels = (position: number, remaining: Map<string, number>, previous: boolean,
+        first: number, last: number, blockCount: number): void => {
+        if (position === pattern.length) {
+          if ([...remaining.values()].some(Boolean)) return;
+          const span = last - first + 1;
+          const tuple: [number, number, number] = [blockCount, span, span - requiredCount];
+          if (best === undefined || compareTuple(tuple, best) < 0) best = tuple;
+          return;
+        }
+        const key = pattern[position]!;
+        const needed = remaining.get(key) ?? 0;
+        const positionsLeftForKey = pattern.slice(position).filter((candidate) => candidate === key).length;
+        if (positionsLeftForKey > needed) visitLabels(position + 1, remaining, false, first, last, blockCount);
+        if (needed > 0) {
+          remaining.set(key, needed - 1);
+          visitLabels(position + 1, remaining, true, first < 0 ? position : first, position,
+            blockCount + (previous ? 0 : 1));
+          remaining.set(key, needed);
+        }
+      };
+      visitLabels(0, new Map(requiredByKey), false, -1, -1, 0);
+      blocks += best?.[0] ?? 0; effectiveSpan += best?.[1] ?? 0; gaps += best?.[2] ?? 0;
+    }
+    return [blocks, effectiveSpan, gaps];
+  };
+  return compareTuple(concentrationSignature(left), concentrationSignature(right));
+}
+
 /** Canonical generator for the block-key sequences admitted by the main-flow contract. */
 export function generateMainFlowPatterns(
   mains: Task[],
@@ -429,49 +479,7 @@ export function generateMainFlowPatterns(
   const runCount = (pattern: string[]): number => pattern.reduce(
     (count, key, index) => count + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0,
   );
-  const preferred = resources.filter(({ presenceConcentrationPolicy }) =>
-    presenceConcentrationPolicy === "PREFERRED");
-  const concentrationSignature = (pattern: string[]): [number, number, number] => {
-    let blocks = 0, effectiveSpan = 0, gaps = 0;
-    for (const resource of preferred) {
-      const requiredByKey = new Map<string, number>();
-      for (const task of mains) if ((task.requiredResourceIds ?? []).includes(resource.id))
-        requiredByKey.set(task.blockKey ?? "", (requiredByKey.get(task.blockKey ?? "") ?? 0) + 1);
-      const requiredCount = [...requiredByKey.values()].reduce((sum, count) => sum + count, 0);
-      if (requiredCount === 0) continue;
-      let best: [number, number, number] | undefined;
-      const visitLabels = (position: number, remaining: Map<string, number>, previous: boolean,
-        first: number, last: number, blockCount: number): void => {
-        if (position === pattern.length) {
-          if ([...remaining.values()].some(Boolean)) return;
-          const span = last - first + 1;
-          const tuple: [number, number, number] = [blockCount, span, span - requiredCount];
-          if (best === undefined || tuple.some((value, index) => value !== best![index]
-            && tuple.slice(0, index).every((prefix, prefixIndex) => prefix === best![prefixIndex])
-            && value < best![index]!)) best = tuple;
-          return;
-        }
-        const key = pattern[position]!;
-        const needed = remaining.get(key) ?? 0;
-        const positionsLeftForKey = pattern.slice(position).filter((candidate) => candidate === key).length;
-        if (positionsLeftForKey > needed) visitLabels(position + 1, remaining, false, first, last, blockCount);
-        if (needed > 0) {
-          remaining.set(key, needed - 1);
-          visitLabels(position + 1, remaining, true, first < 0 ? position : first, position,
-            blockCount + (previous ? 0 : 1));
-          remaining.set(key, needed);
-        }
-      };
-      visitLabels(0, new Map(requiredByKey), false, -1, -1, 0);
-      blocks += best?.[0] ?? 0; effectiveSpan += best?.[1] ?? 0; gaps += best?.[2] ?? 0;
-    }
-    return [blocks, effectiveSpan, gaps];
-  };
-  const compareTuple = (a: readonly number[], b: readonly number[]): number => {
-    for (let index = 0; index < a.length; index += 1) if (a[index] !== b[index]) return a[index]! - b[index]!;
-    return 0;
-  };
-  output.sort((a, b) => compareTuple(concentrationSignature(a), concentrationSignature(b))
+  output.sort((a, b) => comparePreferredConcentration(a, b, mains, resources)
     || runCount(a) - runCount(b) || a.join("|").localeCompare(b.join("|")));
   return { patterns: output, exhausted };
 }
@@ -492,6 +500,7 @@ export function generateMainFlowPatternRunLayers(
   minimumRun: number,
   maximumRunsByKey: number,
   maximumPatterns: number,
+  resources: readonly Resource[] = [],
 ): MainFlowPatternRunLayer[] {
   const counts = new Map<string, number>();
   for (const task of mains) counts.set(task.blockKey ?? "", (counts.get(task.blockKey ?? "") ?? 0) + 1);
@@ -529,7 +538,8 @@ export function generateMainFlowPatternRunLayers(
       }
     };
     visit(new Map(counts), []);
-    patterns.sort((left, right) => left.join("|").localeCompare(right.join("|")));
+    patterns.sort((left, right) => comparePreferredConcentration(left, right, mains, resources)
+      || left.join("|").localeCompare(right.join("|")));
     layers.push({ runCount: targetRuns, patterns, complete });
     if (!complete) break;
   }
