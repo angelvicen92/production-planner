@@ -44,6 +44,11 @@ export interface ExactMainAndFeederCoreEvidence {
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
   feederOrderFallbacks: number;
+  feederOrderIrrelevantChecks: number;
+  feederOrderIrrelevantCertified: number;
+  feederRepairsAvoided: number;
+  branchesAvoided: number;
+  feederOrderIrrelevantCertificates: Array<{before:ExactPartialCoreRejectionCertificate;relaxed:ExactPartialCoreRejectionCertificate;frequency:number}>;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
   forcedMainSiblingAlternativesEliminated: number;
@@ -115,7 +120,7 @@ export interface ExactStandaloneFrontierPrefixCheck { prefixDepth:number;failure
 export interface ExactStandaloneFrontierExample { certificate:Omit<ExactStandaloneFrontierCertificate,"frequency">;overloadTasks:Array<{id:string;duration:number;kind:string;authorityId:string|null}>;consumingCoreTasks:ExactStandaloneFrontierCoreTask[];introducedByPivot:ExactStandaloneFrontierCoreTask[];prefixChecks:ExactStandaloneFrontierPrefixCheck[];pivotPairProven:boolean }
 export interface ExactStandaloneFrontierCausalSummary { totalRejections:number;certificates:ExactStandaloneFrontierCertificate[];examples:ExactStandaloneFrontierExample[] }
 export type ExactFeederMatchingRepairTrigger="RESIDUAL_MATCHING_DEAD_END"|"PARTIAL_CORE_REJECT"|"CHILD_DEAD_END";
-export interface ExactPartialCoreRejectionCertificate { authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[] }
+export interface ExactPartialCoreRejectionCertificate { failure:string|null;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[] }
 export interface ExactFeederMatchingContextDiagnostic {
   fingerprint:string;depth:number;runEnd:number;blockStart:number;cohortSize:number;distinctFeederProfiles:number;
   edgeCount:number;domainSizes:number[];witnessMaterializations:number;rejectedWitnesses:number;repairAttempts:number;
@@ -225,6 +230,8 @@ export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
+  /** Read-only optimistic proof used only after a material partial-core rejection. */
+  onFeederOrderRelaxedCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreRejectionCertificate | null;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
   mainChoiceComparator?: (a: ExactMainChoiceDescriptor, b: ExactMainChoiceDescriptor) => number;
   onMainChoicesRanked?: (baseline: readonly ExactMainChoiceDescriptor[], ordered: readonly ExactMainChoiceDescriptor[]) => void;
@@ -542,6 +549,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
+    feederOrderIrrelevantChecks:0,feederOrderIrrelevantCertified:0,feederRepairsAvoided:0,branchesAvoided:0,
+    feederOrderIrrelevantCertificates:[],
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -915,6 +924,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         };
 
         let feederOrderAuthorityObserved=false;
+        let feederOrderIrrelevantCertified=false;
         let feederRepairTrigger:ExactFeederMatchingRepairTrigger="RESIDUAL_MATCHING_DEAD_END";
         let partialCoreCertificate:ExactPartialCoreRejectionCertificate|null=null;
         const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
@@ -946,6 +956,23 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               if (partial === "REJECT"||(typeof partial === "object"&&partial.outcome==="REJECT")) {
                 feederOrderAuthorityObserved=true;feederRepairTrigger="PARTIAL_CORE_REJECT";
                 partialCoreCertificate=typeof partial==="object"?partial.diagnosticCertificate??null:null;
+                feederOrderIrrelevantCertified=false;
+                if(partialCoreCertificate&&options.onFeederOrderRelaxedCandidate){
+                  const feederIds=new Set(scheduled.map(({id})=>id));
+                  evidence.feederOrderIrrelevantChecks++;
+                  const relaxed=options.onFeederOrderRelaxedCandidate({tasks:nextPlaced.filter(({id})=>!feederIds.has(id)),
+                    addedTasks:blockOperations,meals:blockMeals,depth:runEnd,mainTaskId:cohort.at(-1)!.task.id,
+                    feederStart:Math.min(...scheduled.map(({start})=>start)),pattern:[...pattern],timelineKey});
+                  const normalized=(certificate:ExactPartialCoreRejectionCertificate)=>({...certificate,
+                    overloadTaskIds:[...certificate.overloadTaskIds].sort()});
+                  const before=normalized(partialCoreCertificate);
+                  if(relaxed){const after=normalized(relaxed);feederOrderIrrelevantCertified=JSON.stringify(before)===JSON.stringify(after);
+                    if(feederOrderIrrelevantCertified){evidence.feederOrderIrrelevantCertified++;
+                      const row=evidence.feederOrderIrrelevantCertificates.find(item=>JSON.stringify(item.before)===JSON.stringify(before)
+                        &&JSON.stringify(item.relaxed)===JSON.stringify(after));
+                      if(row)row.frequency++;else evidence.feederOrderIrrelevantCertificates.push({before,relaxed:after,frequency:1});
+                    }}
+                }
                 evidence.backtracks += 1; return "DEAD_END";
               }
               if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
@@ -1042,6 +1069,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                   }}
                 evidence.backtracks++;
                 if(!feederOrderAuthorityObserved)continue blockStarts;
+                if(feederOrderIrrelevantCertified){
+                  let avoided=0;
+                  for(const [feederId,ordinal] of witness){const profile=feederProfileById.get(feederId)!,next=new Set(forbidden);
+                    for(const [candidateId,candidateProfile] of feederProfileById)if(candidateProfile===profile)next.add(`${candidateId}@${ordinal}`);
+                    if(!seenForbidden.has([...next].sort().join("|")))avoided++;
+                  }
+                  evidence.feederRepairsAvoided+=avoided;evidence.branchesAvoided+=avoided;
+                  continue blockStarts;
+                }
               }
               for(const [feederId,ordinal] of witness){
                 // Branch on the structural profile at this ordinal, not on a nominal

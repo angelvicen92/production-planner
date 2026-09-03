@@ -694,6 +694,7 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
   problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
   problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");
+  problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");
   const orders=new Set<string>();
   const result=runExactMainAndFeederSearch(problem,{onHardValidCoreLeaf(candidate){
     const order=candidate.tasks.filter(({kind})=>kind==="vocal").sort((a,b)=>a.start-b.start)
@@ -714,7 +715,7 @@ test("feeder matching diagnostics distinguish repair triggers without changing t
     problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");return problem;};
   let partialCalls=0;
   const partial=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onPartialCoreCandidate(){
-    return ++partialCalls===1?{outcome:"REJECT",diagnosticCertificate:{authorityId:"resource",demandMinutes:20,
+    return ++partialCalls===1?{outcome:"REJECT",diagnosticCertificate:{failure:"COLLECTIVE_CAPACITY",authorityId:"resource",demandMinutes:20,
       freeCapacityMinutes:10,overloadTaskIds:["later"]}}:"CONTINUE";}});
   let leafCalls=0;
   const child=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onHardValidCoreLeaf(){return ++leafCalls===1?"REJECT":"ACCEPT";}});
@@ -725,7 +726,46 @@ test("feeder matching diagnostics distinguish repair triggers without changing t
   assert.ok([...partialRows,...childRows].every(row=>Object.keys(row.repairsByTrigger).sort().join("|")===
     "CHILD_DEAD_END|PARTIAL_CORE_REJECT|RESIDUAL_MATCHING_DEAD_END"));
   assert.deepEqual(partialRows.flatMap(row=>row.partialCoreRejects).map(row=>row.certificate),
-    [{authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["later"]}]);
+    [{failure:"COLLECTIVE_CAPACITY",authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["later"]}]);
+});
+
+test("an identical optimistic feeder relaxation certifies that matching repairs are irrelevant",()=>{
+  const problem=twoCohortProblem();
+  problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+  problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
+  problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+  problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");
+  const certificate={failure:"COLLECTIVE_CAPACITY",authorityId:"space",demandMinutes:20,
+    freeCapacityMinutes:10,overloadTaskIds:["later-b","later-a"]};
+  const run=()=>runExactMainAndFeederSearch(structuredClone(problem),{
+    onPartialCoreCandidate:()=>({outcome:"REJECT",diagnosticCertificate:certificate}),
+    onFeederOrderRelaxedCandidate:(candidate)=>{
+      assert.equal(candidate.tasks.some(({kind})=>kind==="vocal"),false,"the read-only view removes only witness feeders");
+      assert.ok(candidate.addedTasks.every(({kind})=>kind!=="vocal"));
+      return {...certificate,overloadTaskIds:[...certificate.overloadTaskIds].reverse()};
+    }});
+  const first=run(),second=run();
+  assert.equal(first.evidence.feederMatchingWitnessRepairs,0);
+  assert.ok(first.evidence.feederOrderIrrelevantChecks>0);
+  assert.equal(first.evidence.feederOrderIrrelevantCertified,first.evidence.feederOrderIrrelevantChecks);
+  assert.ok(first.evidence.feederRepairsAvoided>0);
+  assert.equal(first.evidence.branchesAvoided,first.evidence.feederRepairsAvoided);
+  assert.deepEqual(first.evidence,second.evidence,"certificate accounting remains deterministic");
+});
+
+test("inconclusive or materially changed feeder relaxations preserve current repairs and valid alternatives",()=>{
+  const onlyB=()=>{const problem=twoCohortProblem();problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+    problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+    problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");return problem;};
+  const before={failure:"COLLECTIVE_CAPACITY",authorityId:"space",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["later"]};
+  for(const relaxed of [null,{...before,freeCapacityMinutes:15}]){let calls=0;
+    const result=runExactMainAndFeederSearch(onlyB(),{onPartialCoreCandidate:()=>++calls===1?{outcome:"REJECT",diagnosticCertificate:before}:"CONTINUE",
+      onFeederOrderRelaxedCandidate:()=>relaxed});
+    assert.equal(result.status,"COMPLETE","the second feeder order remains a valid alternative");
+    assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
+    assert.equal(result.evidence.feederOrderIrrelevantCertified,0);
+    assert.equal(result.evidence.feederRepairsAvoided,0);
+  }
 });
 
 test("a leaf certificate skips irrelevant suffix decisions and reopens its causal CORE decision deterministically",()=>{

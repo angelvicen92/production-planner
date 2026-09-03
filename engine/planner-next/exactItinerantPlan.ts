@@ -8,6 +8,7 @@ import {
   type ExactSearchLedger,
   type ExactMainAndFeederSearchOptions,
   type ExactCoreCausalDiagnostic,
+  type ExactMainAndFeederCoreEvidence,
   type ExactFutureFeasibilityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
@@ -204,6 +205,11 @@ export interface ExactItinerantPlanEvidence {
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
   feederOrderFallbacks: number;
+  feederOrderIrrelevantChecks:number;
+  feederOrderIrrelevantCertified:number;
+  feederRepairsAvoided:number;
+  branchesAvoided:number;
+  feederOrderIrrelevantCertificates:ExactMainAndFeederCoreEvidence["feederOrderIrrelevantCertificates"];
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
   forcedMainSiblingAlternativesEliminated: number;
@@ -880,6 +886,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
+    feederOrderIrrelevantChecks:0,feederOrderIrrelevantCertified:0,feederRepairsAvoided:0,branchesAvoided:0,
+    feederOrderIrrelevantCertificates:[],
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -962,7 +970,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     futureAssessments.set(key,state);
     return certified;
   };
-  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
+  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic,
+  onFeederOrderRelaxedCandidate(candidate){
+    const relaxed=checkPartialCoreStandaloneCollectiveCapacity(problem,standaloneTasks,candidate.tasks);
+    return !relaxed.feasible&&relaxed.failure==="COLLECTIVE_CAPACITY"?{failure:relaxed.failure,
+      authorityId:relaxed.authorityId,demandMinutes:relaxed.demandMinutes,freeCapacityMinutes:relaxed.freeCapacityMinutes,
+      overloadTaskIds:[...(relaxed.overloadTaskIds??[])].sort()}:null;
+  }, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
       ||(candidate.depth===evidence.deepestCoreDepthReached
@@ -1017,9 +1031,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.lastStandaloneForwardCausingFeederStart=candidate.feederStart;
       for(const id of collective.overloadTaskIds??[])
         evidence.standaloneForwardBlockingTaskCounts[id]=(evidence.standaloneForwardBlockingTaskCounts[id]??0)+1;
-      return options.causalDiagnostic?{outcome:"REJECT",diagnosticCertificate:{authorityId:collective.authorityId??null,
+      return {outcome:"REJECT",diagnosticCertificate:{failure:collective.failure,authorityId:collective.authorityId??null,
         demandMinutes:collective.demandMinutes??null,freeCapacityMinutes:collective.freeCapacityMinutes??null,
-        overloadTaskIds:[...(collective.overloadTaskIds??[])].sort()}}:"REJECT";
+        overloadTaskIds:[...(collective.overloadTaskIds??[])].sort()}};
     }
     for (const task of impacted) {
       evidence.standaloneForwardImpactedTaskChecks += 1;
@@ -1253,6 +1267,12 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederMatchingWitnessRepairs=core.evidence.feederMatchingWitnessRepairs;
   evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
+  evidence.feederOrderIrrelevantChecks=core.evidence.feederOrderIrrelevantChecks;
+  evidence.feederOrderIrrelevantCertified=core.evidence.feederOrderIrrelevantCertified;
+  evidence.feederRepairsAvoided=core.evidence.feederRepairsAvoided;
+  evidence.branchesAvoided=core.evidence.branchesAvoided;
+  evidence.feederOrderIrrelevantCertificates=core.evidence.feederOrderIrrelevantCertificates.map(row=>({...row,
+    before:{...row.before,overloadTaskIds:[...row.before.overloadTaskIds]},relaxed:{...row.relaxed,overloadTaskIds:[...row.relaxed.overloadTaskIds]}}));
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
   evidence.forcedMainSingletonChoices = core.evidence.forcedMainSingletonChoices;
   evidence.forcedMainSiblingAlternativesEliminated = core.evidence.forcedMainSiblingAlternativesEliminated;

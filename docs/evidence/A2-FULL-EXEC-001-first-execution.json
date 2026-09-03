@@ -375,8 +375,8 @@
     ],
     "evidence": {
       "branchesExplored": 300000,
-      "coreBranches": 299926,
-      "standaloneBranches": 74,
+      "coreBranches": 299112,
+      "standaloneBranches": 888,
       "standaloneStartChecks": 0,
       "jointGroupFullGridStarts": 0,
       "jointGroupAnalyticEligibleStarts": 0,
@@ -422,20 +422,31 @@
       "causalBacktrackTargetDepthCounts": {},
       "standaloneSearchInvocations": 0,
       "standaloneBlockingTaskCounts": {},
-      "standaloneForwardChecks": 568,
-      "standaloneForwardStartChecks": 74,
-      "standaloneForwardWitnessesFound": 90,
-      "standaloneForwardPrunes": 567,
+      "standaloneForwardChecks": 593,
+      "standaloneForwardStartChecks": 888,
+      "standaloneForwardWitnessesFound": 25033,
+      "standaloneForwardPrunes": 592,
       "standaloneForwardBlockingTaskCounts": {
-        "task:10058": 567,
-        "task:10074": 567
+        "task:10058": 43,
+        "task:10074": 43,
+        "task:10259": 10,
+        "task:10246": 9,
+        "task:10233": 8,
+        "task:10221": 7,
+        "task:10150": 17,
+        "task:10135": 72,
+        "task:10120": 40,
+        "task:10105": 68,
+        "task:10092": 82,
+        "task:10077": 103,
+        "task:10060": 133
       },
       "standaloneForwardPrunesByDepth": {
-        "19": 567
+        "19": 592
       },
-      "standaloneForwardCollectiveCapacityChecks": 9661,
-      "standaloneForwardCollectiveCapacityPrunes": 567,
-      "standaloneForwardCollectiveObligationsChecked": 161940,
+      "standaloneForwardCollectiveCapacityChecks": 753,
+      "standaloneForwardCollectiveCapacityPrunes": 43,
+      "standaloneForwardCollectiveObligationsChecked": 12600,
       "standaloneForwardCollectiveCapacityCertificates": [
         {
           "failure": "COLLECTIVE_CAPACITY",
@@ -447,30 +458,30 @@
             "task:10074"
           ],
           "depth": 19,
-          "frequency": 567
+          "frequency": 43
         }
       ],
       "standaloneForwardCollectiveCapacityCertificateOverflow": 0,
-      "standaloneForwardImpactedTaskChecks": 90,
+      "standaloneForwardImpactedTaskChecks": 25582,
       "standaloneLeafSearchBranches": 0,
-      "standaloneForwardBranches": 74,
-      "standaloneForwardStaticEligibleStarts": 10088,
-      "standaloneForwardStaticEliminatedStarts": 2778,
-      "standaloneForwardFullGridStarts": 12866,
-      "standaloneForwardDynamicEligibleStarts": 7915,
-      "standaloneForwardDynamicEliminatedStarts": 2173,
-      "standaloneForwardDynamicNonemptyCertificates": 90,
-      "standaloneForwardOracleChecks": 74,
+      "standaloneForwardBranches": 888,
+      "standaloneForwardStaticEligibleStarts": 2906254,
+      "standaloneForwardStaticEliminatedStarts": 758278,
+      "standaloneForwardFullGridStarts": 3664532,
+      "standaloneForwardDynamicEligibleStarts": 2151424,
+      "standaloneForwardDynamicEliminatedStarts": 754830,
+      "standaloneForwardDynamicNonemptyCertificates": 25033,
+      "standaloneForwardOracleChecks": 888,
       "standaloneForwardOracleFallbacks": 0,
       "standaloneForwardOracleFallbackReasons": {},
-      "standaloneForwardAnalyticEmptyDomainPrunes": 0,
-      "standaloneForwardWitnessCacheHits": 0,
-      "standaloneForwardWitnessCacheMisses": 74,
-      "standaloneForwardWitnessCacheEntries": 74,
-      "standaloneForwardWitnessBranchesAvoided": 0,
+      "standaloneForwardAnalyticEmptyDomainPrunes": 549,
+      "standaloneForwardWitnessCacheHits": 21355,
+      "standaloneForwardWitnessCacheMisses": 888,
+      "standaloneForwardWitnessCacheEntries": 888,
+      "standaloneForwardWitnessBranchesAvoided": 21355,
       "firstStandaloneForwardPruneDepth": 19,
       "lastStandaloneForwardPruneDepth": 19,
-      "lastStandaloneForwardBlockingTaskId": "task:10058",
+      "lastStandaloneForwardBlockingTaskId": "task:10092",
       "lastStandaloneForwardCausingCoreTaskIds": [
         "task:10056",
         "task:10063",
@@ -500,7 +511,7 @@
         "task:10262"
       ],
       "lastStandaloneForwardCausingMainTaskId": "task:10072",
-      "lastStandaloneForwardCausingFeederStart": 755,
+      "lastStandaloneForwardCausingFeederStart": 540,
       "selectedStandaloneTaskIds": [],
       "selectedStandaloneStarts": {},
       "selectedStandaloneSelectionOrder": [],
@@ -723,7 +734,7 @@
       "reasonCodes": [
         "CORE_BRANCH_BUDGET_EXHAUSTED"
       ],
-      "coreBacktracks": 1134,
+      "coreBacktracks": 1184,
       "coreMaximumDepth": 19,
       "coreCompleteLeafCount": 0,
       "deepestCoreDepthReached": 19,
@@ -731,7 +742,7 @@
       "deepestPartialMainRunsClosed": 2,
       "deepestPartialFeederRunsClosed": 2,
       "deepestPartialCoreTasksRemaining": 0,
-      "deepestPartialFrontierFingerprint": "0091aba2473305a9c809b707d5c1d8026ffefea2a7b2293b578c71e9684454b5",
+      "deepestPartialFrontierFingerprint": "002be3b4e8a06cd842b455739a901565dee8891461298561ec7081b50b60d8f5",
       "architecturesChecked": 13,
       "architecturesStructurallyRejected": 11,
       "structuralRejectionsByReason": {
@@ -774,14 +785,14 @@
         "plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4008|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007|plan-resource:4007::END:1115::": 0
       },
       "feederOrderBranches": 0,
-      "feederSlotAnalyticChecks": 14,
+      "feederSlotAnalyticChecks": 57,
       "feederSlotAnalyticPrunes": 12,
       "feederSlotAnalyticAbstentions": 0,
-      "feederSlotMatchingChecks": 2,
+      "feederSlotMatchingChecks": 45,
       "feederSlotMatchingPrunes": 12,
-      "feederSlotMatchingEdgeChecks": 185,
-      "feederSlotMatchingAugmentTraversals": 293633,
-      "feederSlotMatchingBranchesExplored": 299335,
+      "feederSlotMatchingEdgeChecks": 5388,
+      "feederSlotMatchingAugmentTraversals": 287732,
+      "feederSlotMatchingBranchesExplored": 298478,
       "feederCohortCapacityChecks": 2,
       "feederCohortPrefixCapacityPrunes": 0,
       "feederCohortEddChecks": 2,
@@ -803,9 +814,9 @@
       "feederRunPreFeederPrunesByDepth": {},
       "feederRunOptimisticSkippedByTransition": 0,
       "feederRunOptimisticSkippedByAuthorizedMeal": 0,
-      "residualMatchingInvocations": 572,
+      "residualMatchingInvocations": 597,
       "residualMatchingFullBuilds": 4,
-      "residualMatchingIncrementalUpdates": 568,
+      "residualMatchingIncrementalUpdates": 593,
       "residualMatchingEdgeCacheHits": 119,
       "residualMatchingEdgeCacheMisses": 0,
       "residualMatchingPositionChecks": 314,
@@ -819,10 +830,39 @@
       "mainRunWitnessAttempts": 3,
       "mainRunWitnessRepairs": 1,
       "mainRunEquivalentOrdersCollapsed": 0,
-      "feederMatchingWitnessMaterializations": 568,
-      "feederMatchingWitnessRepairs": 5517,
-      "feederMatchingEquivalentOrdersCollapsed": 1720,
+      "feederMatchingWitnessMaterializations": 593,
+      "feederMatchingWitnessRepairs": 5358,
+      "feederMatchingEquivalentOrdersCollapsed": 1652,
       "feederOrderFallbacks": 0,
+      "feederOrderIrrelevantChecks": 43,
+      "feederOrderIrrelevantCertified": 43,
+      "feederRepairsAvoided": 473,
+      "branchesAvoided": 473,
+      "feederOrderIrrelevantCertificates": [
+        {
+          "before": {
+            "failure": "COLLECTIVE_CAPACITY",
+            "authorityId": "space:3018",
+            "demandMinutes": 10,
+            "freeCapacityMinutes": 5,
+            "overloadTaskIds": [
+              "task:10058",
+              "task:10074"
+            ]
+          },
+          "relaxed": {
+            "failure": "COLLECTIVE_CAPACITY",
+            "authorityId": "space:3018",
+            "demandMinutes": 10,
+            "freeCapacityMinutes": 5,
+            "overloadTaskIds": [
+              "task:10058",
+              "task:10074"
+            ]
+          },
+          "frequency": 43
+        }
+      ],
       "forcedMainSingletonChecks": 0,
       "forcedMainSingletonChoices": 0,
       "forcedMainSiblingAlternativesEliminated": 0,
@@ -911,17 +951,17 @@
       "ordinaryIndividualForwardFirstPrune": null,
       "standaloneBlockingTaskDetails": {},
       "participantMealBranchesExplored": 0,
-      "participantMealFutureFeasibilityChecks": 568,
+      "participantMealFutureFeasibilityChecks": 593,
       "participantMealFutureInfeasibleBranches": 0,
-      "participantMealCheapProbes": 568,
-      "participantMealAffectedObligationsChecked": 6245,
-      "participantMealAnalyticDomainBuilds": 6245,
-      "participantMealLogicalGridStarts": 218563,
-      "participantMealAnalyticallyEliminatedStarts": 56228,
+      "participantMealCheapProbes": 593,
+      "participantMealAffectedObligationsChecked": 6520,
+      "participantMealAnalyticDomainBuilds": 6520,
+      "participantMealLogicalGridStarts": 228188,
+      "participantMealAnalyticallyEliminatedStarts": 11796,
       "participantMealActuallyEvaluatedStarts": 0,
       "participantMealZeroDomainPrunes": 0,
       "participantMealAnalyticCollectivePrunes": 0,
-      "participantMealExactSearchesAvoided": 568,
+      "participantMealExactSearchesAvoided": 593,
       "participantMealExactMaterializations": 0,
       "participantMealBlockingTaskIds": [],
       "participantMealAcceptedWitnessFingerprint": null,
@@ -989,22 +1029,23 @@
                 11,
                 11
               ],
-              "witnessMaterializations": 567,
-              "rejectedWitnesses": 567,
-              "repairAttempts": 5517,
-              "successfulRepairs": 2643,
-              "failedRepairs": 2874,
-              "augmentTraversals": 293531,
-              "equivalentOrdersCollapsed": 1720,
-              "distinctOrderFingerprints": 567,
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
               "repairsByTrigger": {
                 "RESIDUAL_MATCHING_DEAD_END": 0,
-                "PARTIAL_CORE_REJECT": 5517,
+                "PARTIAL_CORE_REJECT": 0,
                 "CHILD_DEAD_END": 0
               },
               "partialCoreRejects": [
                 {
                   "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
                     "authorityId": "space:3018",
                     "demandMinutes": 10,
                     "freeCapacityMinutes": 5,
@@ -1013,15 +1054,757 @@
                       "task:10074"
                     ]
                   },
-                  "rejectedWitnesses": 567,
-                  "repairAttempts": 5517,
-                  "augmentTraversals": 293531,
-                  "distinctOrderFingerprints": 567
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "07f0d1abbae26d66a5bea820bfda3f1eba049bef521d624a2363ea52e96379b3",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 750,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "9bcaf5e3713a24fec7938eb734ec4bdcbda8c06f4c13d41c90868b0a3e0f7682",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 745,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "90b936d77f4a3a9bfe9af2efa7ca9e1c450acfcfc6ddd18d3c1febf3af19331d",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 740,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "15b660c69a4fbe03555668fe926906f09b2d50472ecc3f5c7ab97f8e7031c6f9",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 735,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "1941865fbfe963e976921f0aee78a9185be4b6b8c66c03d234adff99c2fb23e4",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 730,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "14b051a725b60844ac966637ac22322f70f326bcd93ba957938809a9c2380d81",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 725,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "593baa89dc780b382fc0a83222eb43ac6fe6ca5bb9d2f82b715121b5e3358b29",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 720,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "1f6f0f67705ec298346d052acc6afd13b3f897574691fcbcc406c0d027352681",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 715,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "3fa8cb01d43503dffc7167ff3b8853bc4b4c81650fbd4ade9822f12de8244ecc",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 710,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "932e8f116b9817be52fe1418d774a219963f5fd8b1247bfe872c6b6ab318f195",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 705,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "ca3dabd30eb51a7bda0f18991b8afb593ce8ff474982b96fac0ca5363b560bbe",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 700,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "076eb9ffe819b02ce18bcff703d7d8393bd945ea961f9eb31327e02e2b948b04",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 695,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "c6970c041fe6203fc6131ab9c3300709a70be8e8f55dcd8feef39e13aeac72ea",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 690,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "514d5eccbeffe7b453c331774866592c311a0c5836cb32d7baf36ea9e6f8499a",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 685,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "failure": "COLLECTIVE_CAPACITY",
+                    "authorityId": "space:3018",
+                    "demandMinutes": 10,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10058",
+                      "task:10074"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
                 }
               ]
             }
           ],
-          "overflowContexts": 0
+          "overflowContexts": 29
         }
       }
     },
@@ -1049,11 +1832,11 @@
         },
         "19": {
           "mainCandidate": 0,
-          "feederStart": 7,
-          "residualMatching": 299235,
+          "feederStart": 50,
+          "residualMatching": 298378,
           "continuation": 0,
           "participantMeal": 0,
-          "standaloneForward": 0,
+          "standaloneForward": 814,
           "other": 0,
           "total": 299242
         }
@@ -1072,26 +1855,31 @@
         "19": {
           "startsConsidered": 104,
           "startsCoachEliminated": 30,
-          "startsEvaluated": 7,
-          "valid": 567,
+          "startsEvaluated": 50,
+          "valid": 592,
           "invalid": 0,
           "mainChoicesReachingFeeder": 1,
           "mainChoicesWithValidFeeder": 1
         }
       },
       "futureFeasibility": {
-        "totalEvaluations": 74,
-        "uniqueAuthorityStates": 74,
-        "repeatedEvaluations": 0,
+        "totalEvaluations": 22792,
+        "uniqueAuthorityStates": 899,
+        "repeatedEvaluations": 21893,
         "authorityResultCollisions": 0,
-        "negativeEvaluations": 0,
-        "repeatedNegativeEvaluations": 0,
+        "negativeEvaluations": 549,
+        "repeatedNegativeEvaluations": 538,
         "rejectsWithCertifiedBackjumpTarget": 0,
         "evaluationsByDepth": {
-          "8": 74
+          "8": 74,
+          "19": 22718
         },
-        "repeatedByDepth": {},
-        "negativeByDepth": {}
+        "repeatedByDepth": {
+          "19": 21893
+        },
+        "negativeByDepth": {
+          "19": 549
+        }
       },
       "standaloneFrontier": {
         "totalRejections": 0,
@@ -1154,22 +1942,23 @@
               11,
               11
             ],
-            "witnessMaterializations": 567,
-            "rejectedWitnesses": 567,
-            "repairAttempts": 5517,
-            "successfulRepairs": 2643,
-            "failedRepairs": 2874,
-            "augmentTraversals": 293531,
-            "equivalentOrdersCollapsed": 1720,
-            "distinctOrderFingerprints": 567,
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
             "repairsByTrigger": {
               "RESIDUAL_MATCHING_DEAD_END": 0,
-              "PARTIAL_CORE_REJECT": 5517,
+              "PARTIAL_CORE_REJECT": 0,
               "CHILD_DEAD_END": 0
             },
             "partialCoreRejects": [
               {
                 "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
                   "authorityId": "space:3018",
                   "demandMinutes": 10,
                   "freeCapacityMinutes": 5,
@@ -1178,15 +1967,757 @@
                     "task:10074"
                   ]
                 },
-                "rejectedWitnesses": 567,
-                "repairAttempts": 5517,
-                "augmentTraversals": 293531,
-                "distinctOrderFingerprints": 567
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "07f0d1abbae26d66a5bea820bfda3f1eba049bef521d624a2363ea52e96379b3",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 750,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "9bcaf5e3713a24fec7938eb734ec4bdcbda8c06f4c13d41c90868b0a3e0f7682",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 745,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "90b936d77f4a3a9bfe9af2efa7ca9e1c450acfcfc6ddd18d3c1febf3af19331d",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 740,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "15b660c69a4fbe03555668fe926906f09b2d50472ecc3f5c7ab97f8e7031c6f9",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 735,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "1941865fbfe963e976921f0aee78a9185be4b6b8c66c03d234adff99c2fb23e4",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 730,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "14b051a725b60844ac966637ac22322f70f326bcd93ba957938809a9c2380d81",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 725,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "593baa89dc780b382fc0a83222eb43ac6fe6ca5bb9d2f82b715121b5e3358b29",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 720,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "1f6f0f67705ec298346d052acc6afd13b3f897574691fcbcc406c0d027352681",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 715,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "3fa8cb01d43503dffc7167ff3b8853bc4b4c81650fbd4ade9822f12de8244ecc",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 710,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "932e8f116b9817be52fe1418d774a219963f5fd8b1247bfe872c6b6ab318f195",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 705,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "ca3dabd30eb51a7bda0f18991b8afb593ce8ff474982b96fac0ca5363b560bbe",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 700,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "076eb9ffe819b02ce18bcff703d7d8393bd945ea961f9eb31327e02e2b948b04",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 695,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "c6970c041fe6203fc6131ab9c3300709a70be8e8f55dcd8feef39e13aeac72ea",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 690,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "514d5eccbeffe7b453c331774866592c311a0c5836cb32d7baf36ea9e6f8499a",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 685,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "failure": "COLLECTIVE_CAPACITY",
+                  "authorityId": "space:3018",
+                  "demandMinutes": 10,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10058",
+                    "task:10074"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
               }
             ]
           }
         ],
-        "overflowContexts": 0
+        "overflowContexts": 29
       },
       "criticalDepth": 19,
       "criticalRejectionReasons": [
@@ -1353,8 +2884,8 @@
     "searchInvariance": {
       "diagnosticOn": {
         "branchesExplored": 300000,
-        "coreBranches": 299926,
-        "standaloneBranches": 74,
+        "coreBranches": 299112,
+        "standaloneBranches": 888,
         "coreCompleteLeafCount": 0,
         "coreCompleteLeavesEvaluated": 0,
         "coreStandaloneFrontierChecks": 0,
@@ -1368,8 +2899,8 @@
       },
       "diagnosticOff": {
         "branchesExplored": 300000,
-        "coreBranches": 299926,
-        "standaloneBranches": 74,
+        "coreBranches": 299112,
+        "standaloneBranches": 888,
         "coreCompleteLeafCount": 0,
         "coreCompleteLeavesEvaluated": 0,
         "coreStandaloneFrontierChecks": 0,
@@ -1400,15 +2931,15 @@
       "lastExhaustionPhase": "CORE"
     },
     "corrected": {
-      "standaloneForwardCollectiveCapacityPrunes": 567,
+      "standaloneForwardCollectiveCapacityPrunes": 43,
       "legacyCam3CollectiveCapacityCertificatePresent": false,
       "coreMaximumDepth": 19,
       "coreCompleteLeafCount": 0,
       "standaloneSearchInvocations": 0,
       "standaloneMaximumDepth": 0,
       "standaloneCompleteLeafCount": 0,
-      "coreBranches": 299926,
-      "standaloneBranches": 74,
+      "coreBranches": 299112,
+      "standaloneBranches": 888,
       "lastExhaustionPhase": "CORE"
     }
   },
