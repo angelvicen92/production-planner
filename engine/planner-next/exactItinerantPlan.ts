@@ -1015,7 +1015,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.lastStandaloneForwardCausingFeederStart=candidate.feederStart;
       for(const id of collective.overloadTaskIds??[])
         evidence.standaloneForwardBlockingTaskCounts[id]=(evidence.standaloneForwardBlockingTaskCounts[id]??0)+1;
-      return "REJECT";
+      return options.causalDiagnostic?{outcome:"REJECT",diagnosticCertificate:{authorityId:collective.authorityId??null,
+        demandMinutes:collective.demandMinutes??null,freeCapacityMinutes:collective.freeCapacityMinutes??null,
+        overloadTaskIds:[...(collective.overloadTaskIds??[])].sort()}}:"REJECT";
     }
     for (const task of impacted) {
       evidence.standaloneForwardImpactedTaskChecks += 1;
