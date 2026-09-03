@@ -27,11 +27,21 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.deepEqual(config.transportPolicy.arrival, { targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 30, groupingWeight: 3 });
   assert.deepEqual(config.transportPolicy.departure, { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
-  assert.equal(config.meals.operational.mealUnits.length, 7);
+  assert.deepEqual(config.meals.operational.mealUnits, [
+    { mealUnitId: "estudio-7-operations", spaceIds: ["estudio-7"], resourceIds: ["band"] },
+    { mealUnitId: "plato-14-operations", spaceIds: ["p14-recursos", "p14-pasillo", "p14-giratuto"], resourceIds: [] },
+    { mealUnitId: "plato-15-operations", spaceIds: ["p15-croma", "p15-estrellas-sillon"], resourceIds: [] },
+    { mealUnitId: "reality-unit-a-operations", spaceIds: [], resourceIds: ["cam-3", "son-1"] },
+    { mealUnitId: "reality-unit-b-operations", spaceIds: [], resourceIds: ["cam-4", "son-2"] },
+    { mealUnitId: "totales-operations", spaceIds: ["totales-1", "totales-coreo"], resourceIds: [] },
+  ]);
   assert.ok(config.meals.operational.mealUnits.every(({ mealUnitId, spaceIds, resourceIds }) => mealUnitId && spaceIds.length + resourceIds.length > 0));
   assert.ok(config.meals.operational.mealUnits.every(() => config.meals.operational.defaultDurationMinutes === 75));
   const scopes=config.meals.operational.mealUnits.flatMap(({spaceIds,resourceIds})=>[...spaceIds.map(id=>`space:${id}`),...resourceIds.map(id=>`resource:${id}`)]);
   assert.equal(new Set(scopes).size,scopes.length);
+  assert.ok(config.meals.operational.mealUnits.every(({mealUnitId})=>mealUnitId!=="reality-unit-combined-operations"));
+  for(const excluded of ["styling","caracola-lucia","caracola-jose-maria","alfombra-roja","totales-post","technical-transfer"])
+    assert.ok(!scopes.includes(`space:${excluded}`),excluded);
   assert.equal(config.meals.participant.sodexoDurationMinutes, 40);
   assert.deepEqual(config.meals.coach, { individualDurationMinutes: 45, inheritsSpaceOperationalMeal: false });
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);

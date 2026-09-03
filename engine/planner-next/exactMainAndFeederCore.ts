@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { candidateTimelines, hasMainFlowMeal, mainFlowMealIsOperational, type MainFlowTimeline } from "./mainFlowMeal";
+import { candidateTimelineDomain, hasMainFlowMeal, mainFlowMealIsOperational, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -19,6 +19,11 @@ export interface ExactMainAndFeederCoreEvidence {
   branchesExplored: number;
   patternCandidatesExplored: number;
   timelineCandidatesExplored: number;
+  mealTimelineDomainCount: number;
+  mealTimelinesExplored: number;
+  mealTimelinesEliminatedAnalytically: number;
+  mealTimelinesPreferred: number;
+  mealTimelinesNonPreferred: number;
   mainCandidatesEvaluated: number;
   feederCandidatesEvaluated: number;
   constructiveFeederStartChecks: number;
@@ -531,6 +536,8 @@ function latestDepartureStartByParticipant(problem: PlannerNextProblem): Readonl
 
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
+    mealTimelineDomainCount:0,mealTimelinesExplored:0,mealTimelinesEliminatedAnalytically:0,
+    mealTimelinesPreferred:0,mealTimelinesNonPreferred:0,
     mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, constructiveFeederStartChecks: 0,
     matchingFeederStartChecks: 0, residualMatchingChecks: 0, residualMatchingInvocations: 0,
     residualMatchingFullBuilds: 0, residualMatchingIncrementalUpdates: 0,
@@ -1583,8 +1590,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if (positionsResult.exhausted)
         return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
       const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
-      const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-        ? candidateTimelines(problem, pattern, duration) : [undefined];
+      const mealTimelineDomain=hasMainFlowMeal(problem)?candidateTimelineDomain(problem,pattern,duration):undefined;
+      if(mealTimelineDomain){evidence.mealTimelineDomainCount+=mealTimelineDomain.domainCount;
+        evidence.mealTimelinesEliminatedAnalytically+=mealTimelineDomain.analyticallyEliminated;}
+      const timelines: Array<MainFlowTimeline | undefined> = mealTimelineDomain?.timelines ?? [undefined];
       for (const timeline of timelines) {
         const departureEnds = [...latestDepartureStart.values()];
         const historicalEnds = [...new Set([
@@ -1676,6 +1685,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
           evidence.timelineCandidatesExplored += 1;
+          if(timeline){evidence.mealTimelinesExplored+=1;if(timeline.strategyRank===0)evidence.mealTimelinesPreferred+=1;
+            else evidence.mealTimelinesNonPreferred+=1;}
           const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
           if (slots.length > 0 && slots[0]! < problem.day.start) continue;
           for (const composite of positions) {
