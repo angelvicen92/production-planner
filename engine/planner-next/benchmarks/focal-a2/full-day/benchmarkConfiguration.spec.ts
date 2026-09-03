@@ -15,10 +15,11 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.equal(config.resourceAvailability, "INHERIT_DAY_UNLESS_OVERRIDDEN");
   assert.equal(config.productiveIds, "DERIVE_FROM_CANONICAL_IDENTITIES");
   assert.deepEqual(config.itinerantUnitAvailability, {
-    "reality-unit-a": { start: "11:00", end: "14:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
-    "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },
-    "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
+    "reality-unit-a": "inherits_day_unless_overridden",
+    "reality-unit-b": "inherits_day_unless_overridden",
+    "reality-unit-combined": "inherits_day_unless_overridden",
   });
+  assert.equal(config.provenance.itinerantUnitAvailability, "SPEC-08.v1.1");
   assert.deepEqual(config.unresolvedCreationInputs, []);
   assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
   assert.equal(config.participantAvailability.C19.end, "18:40");
@@ -33,6 +34,7 @@ test("A2 resolved source configuration contains no human schedule ordering or ta
   const serialized = JSON.stringify(A2_BENCHMARK_SOURCE_CONFIGURATION);
   for (const forbidden of [
     "referenceOrder", "startPlanned", "endPlanned", "17:15", "18:35",
+    "11:00", "11:15", "13:30", "14:00", "16:00", "18:00", "SPEC08_FOCAL_A2_SECTION_24",
     "Cristina", "Julio", "José Javier",
   ]) assert.equal(serialized.includes(forbidden), false, forbidden);
 });

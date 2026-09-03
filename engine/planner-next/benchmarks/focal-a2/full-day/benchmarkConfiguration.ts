@@ -10,9 +10,9 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   resourceAvailability: "INHERIT_DAY_UNLESS_OVERRIDDEN" as const,
   productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,
   itinerantUnitAvailability: Object.freeze({
-    "reality-unit-a": Object.freeze({ start: "11:00" as const, end: "14:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
-    "reality-unit-b": Object.freeze({ start: "11:15" as const, end: "13:30" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
-    "reality-unit-combined": Object.freeze({ start: "16:00" as const, end: "18:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
+    "reality-unit-a": "inherits_day_unless_overridden" as const,
+    "reality-unit-b": "inherits_day_unless_overridden" as const,
+    "reality-unit-combined": "inherits_day_unless_overridden" as const,
   }),
   participantAvailability: Object.freeze(Object.fromEntries(Array.from({ length: 19 }, (_, index) => {
     const id = `C${String(index + 1).padStart(2, "0")}`;
@@ -28,6 +28,7 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
     participant: Object.freeze({ sodexoDurationMinutes: 40 as const, maxSimultaneous: 10 as const, independentFromOperationalMeal: true as const }),
   }),
   provenance: Object.freeze({
+    itinerantUnitAvailability: "SPEC-08.v1.1" as const,
     participantAvailability: "A2-FULL-008-effective-configuration-probe" as const,
     transportPolicy: "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11" as const,
     meals: "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11" as const,

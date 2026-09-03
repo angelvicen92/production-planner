@@ -1,32 +1,27 @@
-# A2-FULL-005 — Corrección de disponibilidad de unidades itinerantes
+# A2-FULL-005 — Disponibilidad de unidades Reality (corregida por SPEC-08 v1.1)
 
-Estado: Evidence documental + materialización de configuración del benchmark.
-Clasificación: DB Safe Merge por afectar al contrato de entrada del Full A2; no modifica algoritmo, DB, UI ni presupuesto de búsqueda.
+Estado: superseded por la autoridad oficial SPEC-08 v1.1.
 
-## Hallazgo
+## Corrección de autoridad
 
-A2-FULL-003 dejó `daily_itinerant_unit_availability` como decisión pendiente aplicando correctamente la regla genérica de SPEC-08 §6: una composición no puede asumir jornada completa si necesita ventana propia. Sin embargo, para el caso Focal A2, SPEC-08 §24 sí canoniza tres ventanas de composición y §25 exige mantener y respetar las ventanas de las tres unidades en el benchmark.
+En A2 existen tres composiciones: **reality-unit-a** (CAM3 + SON1),
+**reality-unit-b** (CAM4 + SON2) y **reality-unit-combined** (CAM3 + CAM4 +
+SON1). Las tres heredan la jornada efectiva completa, 09:00–21:00.
 
-Estas ventanas son restricciones de disponibilidad de la composición, no horarios de tareas ni seed del planning humano:
+Las horas observadas en el planning humano no son disponibilidad, ventanas hard,
+seed, lock, ordering hint ni restricciones de composición. Por tanto, no se
+proyectan al `EngineInput`.
 
-- `reality-unit-a`: 11:00–14:00;
-- `reality-unit-b`: 11:15–13:30;
-- `reality-unit-combined`: 16:00–18:00.
+## Exclusividad
 
-## Decisión
+La unidad A y la B pueden solaparse. A y combined se excluyen por CAM3/SON1; B y
+combined se excluyen por CAM4. El modelo conserva esa exclusividad mediante los
+recursos miembros, sin registrar los IDs de unidad como recursos hard ni añadir
+capacidad duplicada.
 
-Materializar exclusivamente esas tres ventanas en el Full A2 con procedencia `SPEC08_FOCAL_A2_SECTION_24`. No copiar el orden ni los horarios de ninguna operación Reality.
+## Materialización
 
-El gate de creación baja de cuatro a tres inputs genuinamente no resueltos:
-
-1. `daily_participant_availability`;
-2. `scoped_meal_policies`;
-3. `out_transport_policy`.
-
-## Seguridad
-
-- No se infiere disponibilidad de participantes desde IN/OUT.
-- No se usa una ventana común 08:00–19:00 ni jornada completa para Reality.
-- No se resuelve comida ni OUT sin fuente/decisión expresa.
-- No cambia el presupuesto de búsqueda ni el algoritmo.
-- Mientras queden inputs fuente sin resolver, Full A2 continúa fail-closed y no ejecuta Planner Next.
+El contrato canónico usa `inherits_day_unless_overridden`. Como el `EngineInput`
+requiere ventanas de equipos itinerantes, la ejecución materializa para las tres
+unidades una única ventana derivada de `effectiveDayWindow`, no de horarios del
+planning humano.

@@ -167,9 +167,9 @@ input.operationalMealPolicies = operationalMealGroups.map(([id, resources]) => (
   durationMinutes: config.meals.operational.defaultDurationMinutes,
   planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
 }));
-input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailability).map(([canonicalId, availability]) => ({
+input.itinerantTeamAvailability = Object.keys(config.itinerantUnitAvailability).map((canonicalId) => ({
   itinerantTeamId: itinerantUnitId.get(canonicalId)!,
-  windows: [{ start: availability.start, end: availability.end }],
+  windows: [{ start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end }],
 }));
 input.arrivalGroupingTarget = config.transportPolicy.arrival.targetGroupSize;
 input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;
@@ -204,7 +204,8 @@ const projectedItinerantAvailability = adapted.status === "SUPPORTED"
 const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => {
   const source = config.itinerantUnitAvailability[unit.id as keyof typeof config.itinerantUnitAvailability];
   const projected = projectedItinerantAvailability.find((entry) => entry.id === `itinerant-team:${itinerantUnitId.get(unit.id)}`);
-  return Boolean(source && projected?.availability.some((window) => window.start === Number(source.start.slice(0, 2)) * 60 + Number(source.start.slice(3)) && window.end === Number(source.end.slice(0, 2)) * 60 + Number(source.end.slice(3))));
+  const day = config.effectiveDayWindow;
+  return source === "inherits_day_unless_overridden" && Boolean(projected?.availability.some((window) => window.start === Number(day.start.slice(0, 2)) * 60 + Number(day.start.slice(3)) && window.end === Number(day.end.slice(0, 2)) * 60 + Number(day.end.slice(3))));
 });
 
 const diagnostic = exactResult?.evidence.causalDiagnostic ?? null;
@@ -276,6 +277,10 @@ const evidence = {
       sharedOperationalMealPolicyId: "estudio-7-operations",
     },
     itineraryAvailabilityProjected,
+    itineraryAvailabilityAuthority: "SPEC-08.v1.1",
+    itineraryAvailabilitySemantic: "INHERIT_EFFECTIVE_DAY_WINDOW",
+    projectedItineraryWindow: { start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end },
+    legacyHumanPlanningWindowsProjected: false,
     ...(!itineraryAvailabilityProjected ? { itineraryAvailabilityGap: "Not every referenced itinerant unit has its source availability represented losslessly in Planner Next." } : {}),
   },
   preflight: {
@@ -301,6 +306,29 @@ const evidence = {
     evidence: persistedEvidence,
     diagnosticReport,
     searchInvariance,
+  } : null,
+  baselineComparison: exactResult ? {
+    previous: {
+      standaloneForwardCollectiveCapacityPrunes: 562,
+      cam3CollectiveCapacityCertificate: { demandMinutes: 60, freeCapacityMinutes: 45 },
+      coreMaximumDepth: 12,
+      coreCompleteLeafCount: 0,
+      standaloneSearchInvocations: 0,
+      feederSlotMatchingBranchesExplored: 298597,
+      lastExhaustionPhase: "CORE",
+    },
+    corrected: {
+      standaloneForwardCollectiveCapacityPrunes: exactResult.evidence.standaloneForwardCollectiveCapacityPrunes,
+      legacyCam3CollectiveCapacityCertificatePresent: diagnostic?.standaloneFrontier.certificates.some((certificate) => certificate.authorityId === `plan-resource:${resourceId.get("cam-3")}` && certificate.demandMinutes === 60 && certificate.freeCapacityMinutes === 45) ?? false,
+      coreMaximumDepth: exactResult.evidence.coreMaximumDepth,
+      coreCompleteLeafCount: exactResult.evidence.coreCompleteLeafCount,
+      standaloneSearchInvocations: exactResult.evidence.standaloneSearchInvocations,
+      standaloneMaximumDepth: exactResult.evidence.standaloneMaximumDepth,
+      standaloneCompleteLeafCount: exactResult.evidence.standaloneCompleteLeafCount,
+      coreBranches: exactResult.evidence.coreBranches,
+      standaloneBranches: exactResult.evidence.standaloneBranches,
+      lastExhaustionPhase: exactResult.evidence.lastExhaustionPhase,
+    },
   } : null,
   result: {
     publishedCanonicalObligations,
