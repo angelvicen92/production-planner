@@ -656,6 +656,28 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   assert.equal(result.evidence.feederOrderBranches,0);
 });
 
+test("feeder matching diagnostics distinguish repair triggers without changing the search",()=>{
+  const onlyB=()=>{const problem=twoCohortProblem();
+    problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+    problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
+    problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+    problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");return problem;};
+  let partialCalls=0;
+  const partial=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onPartialCoreCandidate(){
+    return ++partialCalls===1?{outcome:"REJECT",diagnosticCertificate:{authorityId:"resource",demandMinutes:20,
+      freeCapacityMinutes:10,overloadTaskIds:["later"]}}:"CONTINUE";}});
+  let leafCalls=0;
+  const child=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onHardValidCoreLeaf(){return ++leafCalls===1?"REJECT":"ACCEPT";}});
+  const partialRows=partial.evidence.causalDiagnostic!.feederMatching.contexts;
+  const childRows=child.evidence.causalDiagnostic!.feederMatching.contexts;
+  assert.ok(partialRows.some(row=>row.repairsByTrigger.PARTIAL_CORE_REJECT>0));
+  assert.ok(childRows.some(row=>row.repairsByTrigger.CHILD_DEAD_END>0));
+  assert.ok([...partialRows,...childRows].every(row=>Object.keys(row.repairsByTrigger).sort().join("|")===
+    "CHILD_DEAD_END|PARTIAL_CORE_REJECT|RESIDUAL_MATCHING_DEAD_END"));
+  assert.deepEqual(partialRows.flatMap(row=>row.partialCoreRejects).map(row=>row.certificate),
+    [{authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["later"]}]);
+});
+
 test("a leaf certificate skips irrelevant suffix decisions and reopens its causal CORE decision deterministically",()=>{
   const run=(causal:boolean)=>{const leaves:string[]=[];const result=runExactMainAndFeederSearch(twoCohortProblem(),{
     onHardValidCoreLeaf(candidate){

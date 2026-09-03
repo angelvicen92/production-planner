@@ -938,6 +938,96 @@
           "totalRejections": 0,
           "certificates": [],
           "examples": []
+        },
+        "feederMatching": {
+          "contexts": [
+            {
+              "fingerprint": "42f49879f01150ad041b2282dbdc721b1a58ee37dad04da9cb171801da99cf59",
+              "depth": 1,
+              "runEnd": 1,
+              "blockStart": 665,
+              "cohortSize": 1,
+              "distinctFeederProfiles": 1,
+              "edgeCount": 1,
+              "domainSizes": [
+                1
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 0,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": []
+            },
+            {
+              "fingerprint": "523cc471cd9777dd36ea4f8af68a8b30bf9d8d2513b5a95f7aad3cebe444f673",
+              "depth": 12,
+              "runEnd": 12,
+              "blockStart": 545,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 120,
+              "domainSizes": [
+                10,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 566,
+              "rejectedWitnesses": 566,
+              "repairAttempts": 5507,
+              "successfulRepairs": 2632,
+              "failedRepairs": 2875,
+              "augmentTraversals": 292901,
+              "equivalentOrdersCollapsed": 1720,
+              "distinctOrderFingerprints": 566,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 5507,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "plan-resource:4003",
+                    "demandMinutes": 60,
+                    "freeCapacityMinutes": 45,
+                    "overloadTaskIds": [
+                      "task:10124",
+                      "task:10263"
+                    ]
+                  },
+                  "rejectedWitnesses": 562,
+                  "repairAttempts": 5463,
+                  "augmentTraversals": 290016,
+                  "distinctOrderFingerprints": 566
+                },
+                {
+                  "certificate": null,
+                  "rejectedWitnesses": 4,
+                  "repairAttempts": 44,
+                  "augmentTraversals": 2885,
+                  "distinctOrderFingerprints": 23
+                }
+              ]
+            }
+          ],
+          "overflowContexts": 0
         }
       }
     },
@@ -1018,6 +1108,96 @@
         "totalRejections": 0,
         "certificates": [],
         "examples": []
+      },
+      "feederMatching": {
+        "contexts": [
+          {
+            "fingerprint": "42f49879f01150ad041b2282dbdc721b1a58ee37dad04da9cb171801da99cf59",
+            "depth": 1,
+            "runEnd": 1,
+            "blockStart": 665,
+            "cohortSize": 1,
+            "distinctFeederProfiles": 1,
+            "edgeCount": 1,
+            "domainSizes": [
+              1
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 0,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": []
+          },
+          {
+            "fingerprint": "523cc471cd9777dd36ea4f8af68a8b30bf9d8d2513b5a95f7aad3cebe444f673",
+            "depth": 12,
+            "runEnd": 12,
+            "blockStart": 545,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 120,
+            "domainSizes": [
+              10,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 566,
+            "rejectedWitnesses": 566,
+            "repairAttempts": 5507,
+            "successfulRepairs": 2632,
+            "failedRepairs": 2875,
+            "augmentTraversals": 292901,
+            "equivalentOrdersCollapsed": 1720,
+            "distinctOrderFingerprints": 566,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 5507,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "plan-resource:4003",
+                  "demandMinutes": 60,
+                  "freeCapacityMinutes": 45,
+                  "overloadTaskIds": [
+                    "task:10124",
+                    "task:10263"
+                  ]
+                },
+                "rejectedWitnesses": 562,
+                "repairAttempts": 5463,
+                "augmentTraversals": 290016,
+                "distinctOrderFingerprints": 566
+              },
+              {
+                "certificate": null,
+                "rejectedWitnesses": 4,
+                "repairAttempts": 44,
+                "augmentTraversals": 2885,
+                "distinctOrderFingerprints": 23
+              }
+            ]
+          }
+        ],
+        "overflowContexts": 0
       },
       "criticalDepth": 12,
       "criticalRejectionReasons": [

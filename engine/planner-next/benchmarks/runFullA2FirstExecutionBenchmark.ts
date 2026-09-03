@@ -230,6 +230,7 @@ const diagnosticReport = diagnostic ? {
     collisions: undefined,
   },
   standaloneFrontier: diagnostic.standaloneFrontier,
+  feederMatching: diagnostic.feederMatching,
   criticalDepth,
   criticalRejectionReasons: top((row)=>row.reason),
   topMainTasks: top((row)=>row.mainTaskId),
@@ -252,7 +253,7 @@ const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
 }:null;
 if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
 const persistedEvidence=exactResult?{...exactResult.evidence,
-  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier}:null}:null;
+  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,feederMatching:diagnostic.feederMatching}:null}:null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
