@@ -277,7 +277,7 @@ const evidence = {
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
     genericTransitionMinutes: { participant: 0, resource: 5 },
-    operationalMealProjection: operationalMealGroups,
+    operationalMealProjection: config.meals.operational.mealUnits,
     spaceResourceAssignments: expansion.spaceResourceAssignments,
     mainFlowBlockPolicy: {
       domainAuthority: expansion.rules.mainFlow.blockLimit,
