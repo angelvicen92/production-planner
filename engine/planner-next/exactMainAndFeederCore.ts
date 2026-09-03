@@ -114,12 +114,18 @@ export interface ExactStandaloneFrontierExample { certificate:Omit<ExactStandalo
 export interface ExactStandaloneFrontierCausalSummary { totalRejections:number;certificates:ExactStandaloneFrontierCertificate[];examples:ExactStandaloneFrontierExample[] }
 export type ExactFeederMatchingRepairTrigger="RESIDUAL_MATCHING_DEAD_END"|"PARTIAL_CORE_REJECT"|"CHILD_DEAD_END";
 export interface ExactPartialCoreRejectionCertificate { authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[] }
+export type ExactFeederCertificateInvarianceResult="PROVEN_INVARIANT"|"COUNTEREXAMPLE"|"UNKNOWN";
+export interface ExactFeederCertificateInvarianceProbe {
+  result:ExactFeederCertificateInvarianceResult;limit:number;relevantFeederCount:number;relevantFeederIds:string[];assignmentsCertified:number;
+  feasibleMatchingsChecked:number;distinctCertificates:Array<ExactPartialCoreRejectionCertificate|null>;
+  counterexampleOrder:string[]|null;counterexamplePositions:Record<string,number>|null;
+}
 export interface ExactFeederMatchingContextDiagnostic {
   fingerprint:string;depth:number;runEnd:number;blockStart:number;cohortSize:number;distinctFeederProfiles:number;
   edgeCount:number;domainSizes:number[];witnessMaterializations:number;rejectedWitnesses:number;repairAttempts:number;
   successfulRepairs:number;failedRepairs:number;augmentTraversals:number;equivalentOrdersCollapsed:number;
   distinctOrderFingerprints:number;repairsByTrigger:Record<ExactFeederMatchingRepairTrigger,number>;
-  partialCoreRejects:Array<{certificate:ExactPartialCoreRejectionCertificate|null;rejectedWitnesses:number;repairAttempts:number;augmentTraversals:number;distinctOrderFingerprints:number}>;
+  partialCoreRejects:Array<{certificate:ExactPartialCoreRejectionCertificate|null;rejectedWitnesses:number;repairAttempts:number;augmentTraversals:number;distinctOrderFingerprints:number;invarianceProbe:ExactFeederCertificateInvarianceProbe|null}>;
 }
 export interface ExactFeederMatchingCausalSummary { contexts:ExactFeederMatchingContextDiagnostic[];overflowContexts:number }
 export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary }
@@ -223,6 +229,12 @@ export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
+  /** Read-only authority adapter for the bounded feeder/certificate invariance probe. */
+  partialCoreInvarianceDiagnostic?: Readonly<{
+    limit:number;
+    relevantFeederIds:(certificate:ExactPartialCoreRejectionCertificate,feeders:readonly ScheduledTask[])=>readonly string[];
+    evaluate:(tasks:readonly ScheduledTask[])=>ExactPartialCoreRejectionCertificate|null;
+  }>;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
   mainChoiceComparator?: (a: ExactMainChoiceDescriptor, b: ExactMainChoiceDescriptor) => number;
   onMainChoicesRanked?: (baseline: readonly ExactMainChoiceDescriptor[], ordered: readonly ExactMainChoiceDescriptor[]) => void;
@@ -262,6 +274,46 @@ export interface ExactFeederStartDomain {
 }
 
 export type ExactFeederSlotAnalyticCertificate = "NO_PERFECT_MATCH" | "NOT_PROVEN" | "NOT_APPLICABLE";
+
+/** Enumerates only certificate-relevant feeder vertices.  Every partial assignment is extended
+ * by bipartite matching, so irrelevant vertices are never permuted.  This is a diagnostic proof:
+ * its own explicit limit is independent from the search ledger. */
+export function probeFeederCertificateInvariance(input:Readonly<{
+  feederIds:readonly string[];positionsByFeeder:ReadonlyMap<string,readonly number[]>;
+  baselineCertificate:ExactPartialCoreRejectionCertificate;relevantFeederIds:readonly string[];limit:number;
+  evaluate:(matching:ReadonlyMap<string,number>)=>ExactPartialCoreRejectionCertificate|null;
+}>):ExactFeederCertificateInvarianceProbe{
+  const feederIds=[...input.feederIds].sort(),relevant=[...new Set(input.relevantFeederIds)]
+    .filter(id=>feederIds.includes(id)).sort();
+  const signature=(certificate:ExactPartialCoreRejectionCertificate|null)=>JSON.stringify(certificate===null?null:{...certificate,overloadTaskIds:[...certificate.overloadTaskIds].sort()});
+  const baselineSignature=signature(input.baselineCertificate),observed=new Map<string,ExactPartialCoreRejectionCertificate|null>();
+  observed.set(baselineSignature,{...input.baselineCertificate,overloadTaskIds:[...input.baselineCertificate.overloadTaskIds].sort()});
+  let assignmentsCertified=0,feasibleMatchingsChecked=0,exhausted=false;
+  let counterexample:ReadonlyMap<string,number>|null=null;
+  const complete=(fixed:ReadonlyMap<string,number>):ReadonlyMap<string,number>|null=>{
+    const owner=new Map<number,string>(),matching=new Map<string,number>();
+    for(const [id,position] of fixed){if(owner.has(position)||!(input.positionsByFeeder.get(id)??[]).includes(position))return null;owner.set(position,id);matching.set(id,position);}
+    const augment=(id:string,seen:Set<number>):boolean=>{for(const position of input.positionsByFeeder.get(id)??[]){if(seen.has(position)||fixed.has(id)||owner.has(position)&&fixed.has(owner.get(position)!))continue;seen.add(position);const previous=owner.get(position);if(previous===undefined||augment(previous,seen)){owner.set(position,id);matching.set(id,position);return true;}}return false;};
+    for(const id of feederIds)if(!matching.has(id)&&!augment(id,new Set()))return null;
+    return matching;
+  };
+  const visit=(index:number,fixed:ReadonlyMap<string,number>):void=>{
+    if(exhausted||counterexample)return;
+    if(assignmentsCertified>=input.limit){exhausted=true;return;}
+    const witness=complete(fixed);assignmentsCertified++;
+    if(witness===null)return;
+    if(index===relevant.length){feasibleMatchingsChecked++;const certificate=input.evaluate(witness);const key=signature(certificate);
+      if(!observed.has(key))observed.set(key,certificate===null?null:{...certificate,overloadTaskIds:[...certificate.overloadTaskIds].sort()});
+      if(key!==baselineSignature)counterexample=witness;return;}
+    const id=relevant[index]!;
+    for(const position of input.positionsByFeeder.get(id)??[]){if([...fixed.values()].includes(position))continue;visit(index+1,new Map(fixed).set(id,position));if(exhausted||counterexample)return;}
+  };
+  visit(0,new Map());
+  const ordered=counterexample?[...counterexample].sort((a,b)=>a[1]-b[1]):null;
+  return {result:counterexample?"COUNTEREXAMPLE":exhausted?"UNKNOWN":"PROVEN_INVARIANT",limit:input.limit,
+    relevantFeederCount:relevant.length,relevantFeederIds:relevant,assignmentsCertified,feasibleMatchingsChecked,distinctCertificates:[...observed.values()],
+    counterexampleOrder:ordered?.map(([id])=>id)??null,counterexamplePositions:ordered?Object.fromEntries(ordered):null};
+}
 
 /** Negative certificate using only deadlines and feeder-domain interval geometry.
  * NOT_PROVEN never establishes feasibility; the exact checks remain authoritative. */
@@ -834,7 +886,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
          * every feeder is a sound negative proof, while success leaves FEEDER_ORDER unchanged. */
         type FeederRepairResult={outcome:"PERFECT";matching:ReadonlyMap<string,number>}
           |{outcome:"NO_PERFECT_MATCH"|"BUDGET_EXHAUSTED"};
-        type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>;edgeCount:number;domainSizes:number[];
+        type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>;edgeCount:number;domainSizes:number[];positionsByFeeder:ReadonlyMap<string,readonly number[]>;
           repair:(forbidden:ReadonlySet<string>)=>FeederRepairResult}
           | {outcome:"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED"};
         const feederSlotCertificate = (blockStart:number):FeederSlotCertificate => {
@@ -910,7 +962,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           const initial=findMatching(new Set());
           if(initial.outcome!=="PERFECT")return initial;
           return {...initial,edgeCount:[...edges.values()].reduce((sum,row)=>sum+row.length,0),
-            domainSizes:[...edges.values()].map(row=>row.length).sort((a,b)=>a-b),repair:findMatching};
+            domainSizes:[...edges.values()].map(row=>row.length).sort((a,b)=>a-b),positionsByFeeder:edges,repair:findMatching};
         };
 
         let feederOrderAuthorityObserved=false;
@@ -1036,8 +1088,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                   if(feederRepairTrigger==="PARTIAL_CORE_REJECT"){
                     const certificate=partialCoreCertificate?{...partialCoreCertificate,overloadTaskIds:[...partialCoreCertificate.overloadTaskIds].sort()}:null;
                     const signature=JSON.stringify(certificate);let row=context.partialCoreRejects.find(item=>JSON.stringify(item.certificate)===signature);
-                    if(!row){row={certificate,rejectedWitnesses:0,repairAttempts:0,augmentTraversals:0,distinctOrderFingerprints:0};context.partialCoreRejects.push(row);}
+                    if(!row){row={certificate,rejectedWitnesses:0,repairAttempts:0,augmentTraversals:0,distinctOrderFingerprints:0,invarianceProbe:null};context.partialCoreRejects.push(row);}
                     row.rejectedWitnesses++;row.distinctOrderFingerprints=context.distinctOrderFingerprints;
+                    const adapter=options.partialCoreInvarianceDiagnostic;
+                    if(row.invarianceProbe===null&&certificate&&adapter){
+                      row.invarianceProbe=probeFeederCertificateInvariance({feederIds:[...byFeederId.keys()],positionsByFeeder:feederSlotMatching.positionsByFeeder,
+                        baselineCertificate:certificate,relevantFeederIds:adapter.relevantFeederIds(certificate,scheduled),limit:adapter.limit,
+                        evaluate(matching){const alternative=[...matching].sort((a,b)=>a[1]-b[1]).map(([feederId,ordinal])=>{
+                          const feeder=byFeederId.get(feederId)!.choice.feeder,start=blockStart+ordinal*feeder.duration;
+                          return {...feeder,start,end:start+feeder.duration};});
+                          return adapter.evaluate([...blockPlaced,...blockOperations,...alternative]);}});
+                    }
                   }}
                 evidence.backtracks++;
                 if(!feederOrderAuthorityObserved)continue blockStarts;
@@ -1064,7 +1125,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                   if(feederRepairTrigger==="PARTIAL_CORE_REJECT"){
                     const certificate=partialCoreCertificate?{...partialCoreCertificate,overloadTaskIds:[...partialCoreCertificate.overloadTaskIds].sort()}:null;
                     const signature=JSON.stringify(certificate);let row=context.partialCoreRejects.find(item=>JSON.stringify(item.certificate)===signature);
-                    if(!row){row={certificate,rejectedWitnesses:0,repairAttempts:0,augmentTraversals:0,distinctOrderFingerprints:0};context.partialCoreRejects.push(row);}
+                    if(!row){row={certificate,rejectedWitnesses:0,repairAttempts:0,augmentTraversals:0,distinctOrderFingerprints:0,invarianceProbe:null};context.partialCoreRejects.push(row);}
                     row.repairAttempts++;row.augmentTraversals+=traversals;row.distinctOrderFingerprints=context.distinctOrderFingerprints;
                   }}
                 if(repaired.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";

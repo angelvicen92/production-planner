@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
   exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
-  subtractMergedIntervals } from "./exactMainAndFeederCore";
+  probeFeederCertificateInvariance, subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -936,4 +936,35 @@ test("cohort causal diagnostics are passive and preserve structural depth and co
       && feederTaskId.startsWith("feeder-")
       && (blockingPlacedTaskId.startsWith("main-") || blockingPlacedTaskId.startsWith("feeder-"))
       && blockingDecisionDepth !== null && blockingDecisionMainTaskId !== null));
+});
+
+const feederProbeFixture=()=>({feederIds:["f-a","f-b","f-c"],positionsByFeeder:new Map([
+  ["f-a",[0,1,2]],["f-b",[0,1,2]],["f-c",[0,1,2]]]),baselineCertificate:{authorityId:"resource",
+    demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["pending-a","pending-b"]},relevantFeederIds:["f-a"]});
+
+test("feeder certificate probe proves invariance across every relevant feasible assignment",()=>{
+  const fixture=feederProbeFixture(),result=probeFeederCertificateInvariance({...fixture,limit:20,
+    evaluate:()=>fixture.baselineCertificate});
+  assert.equal(result.result,"PROVEN_INVARIANT");
+  assert.equal(result.relevantFeederCount,1);
+  assert.deepEqual(result.relevantFeederIds,["f-a"]);
+  assert.equal(result.feasibleMatchingsChecked,3);
+  assert.equal(result.distinctCertificates.length,1);
+  assert.equal(result.counterexampleOrder,null);
+});
+
+test("feeder certificate probe returns a positional counterexample",()=>{
+  const fixture=feederProbeFixture(),result=probeFeederCertificateInvariance({...fixture,limit:20,
+    evaluate:matching=>matching.get("f-a")===1?null:fixture.baselineCertificate});
+  assert.equal(result.result,"COUNTEREXAMPLE");
+  assert.equal(result.counterexamplePositions?.["f-a"],1);
+  assert.equal(result.feasibleMatchingsChecked,2);
+});
+
+test("feeder certificate probe reports UNKNOWN at its diagnostic-only limit",()=>{
+  const fixture=feederProbeFixture(),result=probeFeederCertificateInvariance({...fixture,limit:1,
+    evaluate:()=>fixture.baselineCertificate});
+  assert.equal(result.result,"UNKNOWN");
+  assert.equal(result.assignmentsCertified,1);
+  assert.equal(result.feasibleMatchingsChecked,0);
 });

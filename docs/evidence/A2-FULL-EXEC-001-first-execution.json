@@ -1015,14 +1015,64 @@
                   "rejectedWitnesses": 562,
                   "repairAttempts": 5463,
                   "augmentTraversals": 290016,
-                  "distinctOrderFingerprints": 566
+                  "distinctOrderFingerprints": 566,
+                  "invarianceProbe": {
+                    "result": "COUNTEREXAMPLE",
+                    "limit": 10000,
+                    "relevantFeederCount": 2,
+                    "relevantFeederIds": [
+                      "task:10123",
+                      "task:10262"
+                    ],
+                    "assignmentsCertified": 10,
+                    "feasibleMatchingsChecked": 8,
+                    "distinctCertificates": [
+                      {
+                        "authorityId": "plan-resource:4003",
+                        "demandMinutes": 60,
+                        "freeCapacityMinutes": 45,
+                        "overloadTaskIds": [
+                          "task:10124",
+                          "task:10263"
+                        ]
+                      },
+                      null
+                    ],
+                    "counterexampleOrder": [
+                      "task:10123",
+                      "task:10249",
+                      "task:10236",
+                      "task:10224",
+                      "task:10153",
+                      "task:10138",
+                      "task:10108",
+                      "task:10095",
+                      "task:10262",
+                      "task:10063",
+                      "task:10080"
+                    ],
+                    "counterexamplePositions": {
+                      "task:10123": 0,
+                      "task:10249": 1,
+                      "task:10236": 2,
+                      "task:10224": 3,
+                      "task:10153": 4,
+                      "task:10138": 5,
+                      "task:10108": 6,
+                      "task:10095": 7,
+                      "task:10262": 8,
+                      "task:10063": 9,
+                      "task:10080": 10
+                    }
+                  }
                 },
                 {
                   "certificate": null,
                   "rejectedWitnesses": 4,
                   "repairAttempts": 44,
                   "augmentTraversals": 2885,
-                  "distinctOrderFingerprints": 23
+                  "distinctOrderFingerprints": 23,
+                  "invarianceProbe": null
                 }
               ]
             }
@@ -1185,14 +1235,64 @@
                 "rejectedWitnesses": 562,
                 "repairAttempts": 5463,
                 "augmentTraversals": 290016,
-                "distinctOrderFingerprints": 566
+                "distinctOrderFingerprints": 566,
+                "invarianceProbe": {
+                  "result": "COUNTEREXAMPLE",
+                  "limit": 10000,
+                  "relevantFeederCount": 2,
+                  "relevantFeederIds": [
+                    "task:10123",
+                    "task:10262"
+                  ],
+                  "assignmentsCertified": 10,
+                  "feasibleMatchingsChecked": 8,
+                  "distinctCertificates": [
+                    {
+                      "authorityId": "plan-resource:4003",
+                      "demandMinutes": 60,
+                      "freeCapacityMinutes": 45,
+                      "overloadTaskIds": [
+                        "task:10124",
+                        "task:10263"
+                      ]
+                    },
+                    null
+                  ],
+                  "counterexampleOrder": [
+                    "task:10123",
+                    "task:10249",
+                    "task:10236",
+                    "task:10224",
+                    "task:10153",
+                    "task:10138",
+                    "task:10108",
+                    "task:10095",
+                    "task:10262",
+                    "task:10063",
+                    "task:10080"
+                  ],
+                  "counterexamplePositions": {
+                    "task:10123": 0,
+                    "task:10249": 1,
+                    "task:10236": 2,
+                    "task:10224": 3,
+                    "task:10153": 4,
+                    "task:10138": 5,
+                    "task:10108": 6,
+                    "task:10095": 7,
+                    "task:10262": 8,
+                    "task:10063": 9,
+                    "task:10080": 10
+                  }
+                }
               },
               {
                 "certificate": null,
                 "rejectedWitnesses": 4,
                 "repairAttempts": 44,
                 "augmentTraversals": 2885,
-                "distinctOrderFingerprints": 23
+                "distinctOrderFingerprints": 23,
+                "invarianceProbe": null
               }
             ]
           }

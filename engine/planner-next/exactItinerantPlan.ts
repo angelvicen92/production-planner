@@ -960,7 +960,21 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     futureAssessments.set(key,state);
     return certified;
   };
-  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
+  const feederCertificateProbeLimit=10_000;
+  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, causalDiagnostic:options.causalDiagnostic,
+    partialCoreInvarianceDiagnostic:options.causalDiagnostic?{limit:feederCertificateProbeLimit,
+      relevantFeederIds(certificate,feeders){const overload=certificate.overloadTaskIds
+        .map(id=>standaloneTasks.find(task=>task.id===id)).filter((task):task is Task=>task!==undefined);
+        const dependsTransitively=(taskId:string,ancestorId:string,seen=new Set<string>()):boolean=>{if(seen.has(taskId))return false;
+          seen.add(taskId);const task=problem.tasks.find(item=>item.id===taskId);return task?.dependencies.some(id=>id===ancestorId||dependsTransitively(id,ancestorId,seen))??false;};
+        return feeders.filter(feeder=>certificate.authorityId===feeder.spaceId
+          ||(feeder.requiredResourceIds??[]).includes(certificate.authorityId??"")
+          ||overload.some(task=>tasksCanAffectEachOther(task,feeder)||dependsTransitively(feeder.id,task.id))).map(({id})=>id).sort();},
+      evaluate(tasks){const result=checkPartialCoreStandaloneCollectiveCapacity(problem,standaloneTasks,tasks);
+        return !result.feasible&&result.failure==="COLLECTIVE_CAPACITY"?{authorityId:result.authorityId??null,
+          demandMinutes:result.demandMinutes??null,freeCapacityMinutes:result.freeCapacityMinutes??null,
+          overloadTaskIds:[...(result.overloadTaskIds??[])].sort()}:null;} }:undefined,
+    onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
       ||(candidate.depth===evidence.deepestCoreDepthReached
