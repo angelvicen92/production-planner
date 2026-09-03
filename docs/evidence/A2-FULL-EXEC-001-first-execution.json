@@ -353,6 +353,21 @@
       "standaloneForwardCollectiveCapacityChecks": 1144,
       "standaloneForwardCollectiveCapacityPrunes": 562,
       "standaloneForwardCollectiveObligationsChecked": 16556,
+      "standaloneForwardCollectiveCapacityCertificates": [
+        {
+          "failure": "COLLECTIVE_CAPACITY",
+          "authorityId": "plan-resource:4003",
+          "demandMinutes": 60,
+          "freeCapacityMinutes": 45,
+          "overloadTaskIds": [
+            "task:10124",
+            "task:10263"
+          ],
+          "depth": 12,
+          "frequency": 562
+        }
+      ],
+      "standaloneForwardCollectiveCapacityCertificateOverflow": 0,
       "standaloneForwardImpactedTaskChecks": 329,
       "standaloneLeafSearchBranches": 0,
       "standaloneForwardBranches": 226,

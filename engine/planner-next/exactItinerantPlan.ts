@@ -95,6 +95,8 @@ export interface ExactItinerantPlanEvidence {
   standaloneForwardCollectiveCapacityChecks: number;
   standaloneForwardCollectiveCapacityPrunes: number;
   standaloneForwardCollectiveObligationsChecked: number;
+  standaloneForwardCollectiveCapacityCertificates:Array<{failure:"COLLECTIVE_CAPACITY";authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];depth:number;frequency:number}>;
+  standaloneForwardCollectiveCapacityCertificateOverflow:number;
   standaloneForwardBlockingTaskCounts: Record<string, number>;
   standaloneForwardPrunesByDepth: Record<string, number>;
   standaloneForwardImpactedTaskChecks: number;
@@ -807,7 +809,7 @@ export interface ExactItinerantPlanSearchOptions {
 }
 
 /** Optimistic collective-only Future Feasibility authority for a provisional CORE. */
-export function checkPartialCoreStandaloneCollectiveCapacity(problem:PlannerNextProblem,pending:readonly Task[],core:readonly ScheduledTask[]){
+function checkPartialCoreStandaloneCollectiveCapacity(problem:PlannerNextProblem,pending:readonly Task[],core:readonly ScheduledTask[]){
   return checkStandaloneCoreFrontier(problem,pending,core,[],"ANALYTIC_CAPACITY_ONLY");
 }
 
@@ -836,6 +838,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
     standaloneForwardCollectiveCapacityChecks:0,standaloneForwardCollectiveCapacityPrunes:0,standaloneForwardCollectiveObligationsChecked:0,
+    standaloneForwardCollectiveCapacityCertificates:[],standaloneForwardCollectiveCapacityCertificateOverflow:0,
     standaloneForwardImpactedTaskChecks: 0, standaloneLeafSearchBranches: 0, standaloneForwardBranches: 0,
     standaloneForwardStaticEligibleStarts: 0, standaloneForwardStaticEliminatedStarts: 0,
     standaloneForwardFullGridStarts: 0, standaloneForwardDynamicEligibleStarts: 0,
@@ -990,6 +993,17 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     evidence.standaloneForwardCollectiveObligationsChecked+=collective.obligationsChecked;
     if(!collective.feasible&&collective.failure==="COLLECTIVE_CAPACITY"){
       evidence.standaloneForwardCollectiveCapacityPrunes+=1;
+      const overloadTaskIds=[...(collective.overloadTaskIds??[])].sort();
+      const existing=evidence.standaloneForwardCollectiveCapacityCertificates.find(item=>item.depth===candidate.depth
+        &&item.authorityId===collective.authorityId&&item.demandMinutes===collective.demandMinutes
+        &&item.freeCapacityMinutes===collective.freeCapacityMinutes
+        &&item.overloadTaskIds.length===overloadTaskIds.length&&item.overloadTaskIds.every((id,index)=>id===overloadTaskIds[index]));
+      if(existing)existing.frequency+=1;
+      else if(evidence.standaloneForwardCollectiveCapacityCertificates.length<16)
+        evidence.standaloneForwardCollectiveCapacityCertificates.push({failure:"COLLECTIVE_CAPACITY",authorityId:collective.authorityId,
+          demandMinutes:collective.demandMinutes,freeCapacityMinutes:collective.freeCapacityMinutes,overloadTaskIds,
+          depth:candidate.depth,frequency:1});
+      else evidence.standaloneForwardCollectiveCapacityCertificateOverflow+=1;
       evidence.standaloneForwardPrunes+=1;
       const depthKey=String(candidate.depth);
       evidence.standaloneForwardPrunesByDepth[depthKey]=(evidence.standaloneForwardPrunesByDepth[depthKey]??0)+1;
