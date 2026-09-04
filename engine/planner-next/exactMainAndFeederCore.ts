@@ -6,7 +6,8 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateTimelineDomain, hasMainFlowMeal, mainFlowMealIsOperational, mainFlowOperationalMealPolicy, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, prepareTaskPlacementAuthority, type PlacementRejectionReason } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, intersectExactStartIntervals,
+  prepareTaskPlacementAuthority, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
@@ -1004,10 +1005,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           };
           const ordinalDomains=rankedCohort.map(candidate=>{
             const limit=candidate.deadline-duration;
-            const ranges=feederPlacementAuthority(candidate.choice.feeder).baseDomain.intervals
+            // baseDomain is the canonical canPlaceTask projection for every fixed authority;
+            // retain the feeder-domain grid and coach projection as an independent authority.
+            // This intersection makes the certificate exactly the old edge predicate without
+            // enumerating feeder x slot.
+            const authorityIntervals=intersectExactStartIntervals(
+              feederPlacementAuthority(candidate.choice.feeder).baseDomain.intervals.map(interval=>({...interval})),
+              candidate.domain.intervals.map(interval=>({...interval})));
+            const ranges=(candidate.domain.gridAnchor-blockStart)%5===0?authorityIntervals
               .flatMap(interval=>{const first=Math.max(0,Math.ceil((interval.start-blockStart)/duration));
                 const last=Math.min(rankedCohort.length-1,Math.floor((Math.min(interval.end,limit)-blockStart)/duration));
-                return first<=last?[{first,last}]:[];});
+                return first<=last?[{first,last}]:[]}):[];
             const merged:Array<{first:number;last:number}>=[];
             for(const range of ranges){const previous=merged.at(-1);if(previous&&range.first<=previous.last+1)previous.last=Math.max(previous.last,range.last);else merged.push({...range});}
             return {id:candidate.choice.feeder.id,ranges:merged};
