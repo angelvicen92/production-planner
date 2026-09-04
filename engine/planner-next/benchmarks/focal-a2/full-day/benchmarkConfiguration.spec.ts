@@ -49,12 +49,17 @@ test("A2 source configuration materializes all effective source decisions", () =
 
 test("A2 camera authority and vocal block policy preserve the clarified domain", () => {
   const template = createCanonicalFullA2Template();
+  assert.ok(template.resources.some(({ id, kind, availability }) => id === "cam-1" && kind === "camera" && availability === "inherits_day_unless_overridden"));
   assert.deepEqual(template.spaceResourceAssignments, {
-    "p14-recursos": ["cam-4"], "p14-pasillo": ["cam-4"],
+    "p14-recursos": ["cam-1"], "p14-pasillo": ["cam-1"],
     "p15-croma": ["cam-2"], "p15-estrellas-sillon": ["cam-2"],
     "totales-1": ["cam-5"], "totales-coreo": ["cam-6"],
   });
   assert.equal(template.spaceResourceAssignments["p14-giratuto"], undefined);
+  assert.ok(!template.spaceResourceAssignments["p14-recursos"].includes("cam-4"));
+  assert.ok(!template.spaceResourceAssignments["p14-pasillo"].includes("cam-4"));
+  assert.deepEqual(template.itinerantUnits.find(({ id }) => id === "reality-unit-b")?.memberResourceIds, ["cam-4", "son-2"]);
+  assert.deepEqual(template.itinerantUnits.find(({ id }) => id === "reality-unit-combined")?.memberResourceIds, ["cam-3", "cam-4", "son-1"]);
   assert.equal(template.rules.mainFlow.blockLimit, "UNBOUNDED");
   assert.equal("maxBlocksPerCoach" in template.rules.mainFlow, false);
   assert.ok(template.resources.some(({ id }) => id === "cam-5"));

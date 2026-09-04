@@ -19,6 +19,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
       canonicalObligationCount: number;
       engineInput: { maxBranchExpansions: number; mainFlowBlockPolicy:{domainAuthority:string;projectedTechnicalMaximum:number};
         projectedArrivalTransportPolicy:{targetGroupSize:number;minimumGroupSize:number;maximumGroupSize:number;minGapMinutes:number};
+        spaceResourceAssignments:Record<string,string[]>;
         effectiveCameraProjection:Record<string,string[]> };
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
@@ -51,11 +52,19 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.equal(evidence.canonicalObligationCount, 269);
     assert.equal(evidence.result.targetCanonicalObligations, 269);
     const cameras=evidence.engineInput.effectiveCameraProjection;
-    assert.deepEqual(cameras.REDES,cameras.PASILLO,"Recursos and Pasillo share CAM4");
-    assert.ok(cameras.REDES.some((id)=>id===cameras.PASILLO.find((other)=>other===id)));
-    assert.ok(cameras.GIRATUTO.every((id)=>!cameras.REDES.includes(id)),"Giratuto does not consume CAM4");
+    assert.deepEqual(evidence.engineInput.spaceResourceAssignments,{
+      "p14-recursos":["cam-1"],"p14-pasillo":["cam-1"],
+      "p15-croma":["cam-2"],"p15-estrellas-sillon":["cam-2"],
+      "totales-1":["cam-5"],"totales-coreo":["cam-6"],
+    });
+    assert.deepEqual(cameras.REDES,cameras.PASILLO,"Recursos and Pasillo share exactly CAM1");
+    assert.equal(cameras.REDES.length,1);
+    assert.ok(cameras.GIRATUTO.every((id)=>!cameras.REDES.includes(id)),"Giratuto does not inherit CAM1");
     assert.deepEqual(cameras.CROMA,cameras.SILLON);
     assert.deepEqual(cameras.CROMA,cameras.ESTRELLAS);
+    assert.equal(cameras.CROMA.length,1);
+    assert.equal(cameras.TOTALES_1.length,1);
+    assert.equal(cameras.TOTALES_COREO.length,1);
     assert.ok(cameras.TOTALES_1.every((id)=>!cameras.TOTALES_COREO.includes(id)),"Totales lanes use distinct CAM5/CAM6");
     assert.equal(evidence.engineInput.mainFlowBlockPolicy.domainAuthority,"UNBOUNDED");
     assert.ok(evidence.engineInput.mainFlowBlockPolicy.projectedTechnicalMaximum>2);
