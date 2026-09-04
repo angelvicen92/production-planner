@@ -138,6 +138,12 @@ export interface ExactItinerantPlanEvidence {
   coreBacktracks: number;
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
+  coreLeafValidationAttempts:number;coreLeafValidShapeRejects:number;coreLeafHardValidationRejects:number;
+  coreLeafValidationAccepted:number;coreLeafValidationReasonCounts:Record<string,number>;
+  firstCoreLeafShapeRejection:import("./exactMainAndFeederCore").ExactCoreLeafShapeRejection|null;
+  firstCoreLeafHardValidationRejection:import("./exactMainAndFeederCore").ExactCoreLeafHardValidationRejection|null;
+  mealTimelineDomainCount:number;mealTimelinesExplored:number;mealTimelinesEliminatedAnalytically:number;
+  mealTimelinesPendingAtExhaustion:number;mealTimelinesPreferred:number;mealTimelinesNonPreferred:number;
   /** Deepest block-closed, hard-valid partial frontier observed; unlike coreMaximumDepth,
    * this never counts an open main run whose feeder cohort has not closed. */
   deepestCoreDepthReached: number;
@@ -855,7 +861,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
-    coreMaximumDepth: 0, coreCompleteLeafCount: 0,deepestCoreDepthReached:0,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0,coreLeafValidationAttempts:0,coreLeafValidShapeRejects:0,
+    coreLeafHardValidationRejects:0,coreLeafValidationAccepted:0,coreLeafValidationReasonCounts:{},
+    firstCoreLeafShapeRejection:null,firstCoreLeafHardValidationRejection:null,
+    mealTimelineDomainCount:0,mealTimelinesExplored:0,mealTimelinesEliminatedAnalytically:0,
+    mealTimelinesPendingAtExhaustion:0,mealTimelinesPreferred:0,mealTimelinesNonPreferred:0,deepestCoreDepthReached:0,
     deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
     deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},runLayers:[],firstExactArchitecture:null,firstFeedableRunSizes:[],
@@ -1196,6 +1206,21 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
   evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
   evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
+  evidence.coreLeafValidationAttempts=core.evidence.coreLeafValidationAttempts;
+  evidence.coreLeafValidShapeRejects=core.evidence.coreLeafValidShapeRejects;
+  evidence.coreLeafHardValidationRejects=core.evidence.coreLeafHardValidationRejects;
+  evidence.coreLeafValidationAccepted=core.evidence.coreLeafValidationAccepted;
+  evidence.coreLeafValidationReasonCounts={...core.evidence.coreLeafValidationReasonCounts};
+  evidence.firstCoreLeafShapeRejection=core.evidence.firstCoreLeafShapeRejection
+    ?{...core.evidence.firstCoreLeafShapeRejection,missingTaskIds:[...core.evidence.firstCoreLeafShapeRejection.missingTaskIds],extraTaskIds:[...core.evidence.firstCoreLeafShapeRejection.extraTaskIds]}:null;
+  evidence.firstCoreLeafHardValidationRejection=core.evidence.firstCoreLeafHardValidationRejection
+    ?{...core.evidence.firstCoreLeafHardValidationRejection,reasonCodes:[...core.evidence.firstCoreLeafHardValidationRejection.reasonCodes]}:null;
+  evidence.mealTimelineDomainCount=core.evidence.mealTimelineDomainCount;
+  evidence.mealTimelinesExplored=core.evidence.mealTimelinesExplored;
+  evidence.mealTimelinesEliminatedAnalytically=core.evidence.mealTimelinesEliminatedAnalytically;
+  evidence.mealTimelinesPendingAtExhaustion=core.evidence.mealTimelinesPendingAtExhaustion;
+  evidence.mealTimelinesPreferred=core.evidence.mealTimelinesPreferred;
+  evidence.mealTimelinesNonPreferred=core.evidence.mealTimelinesNonPreferred;
   evidence.architecturesChecked=core.evidence.architecturesChecked;
   evidence.architecturesStructurallyRejected=core.evidence.architecturesStructurallyRejected;
   evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};

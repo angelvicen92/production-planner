@@ -702,6 +702,13 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   }});
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.equal(orders.size,2);
+  assert.equal(result.evidence.coreLeafValidationAttempts,result.evidence.completeLeafCount);
+  assert.equal(result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
+  assert.equal(result.evidence.coreLeafValidShapeRejects,0);
+  assert.equal(result.evidence.coreLeafHardValidationRejects,0);
+  assert.equal(result.evidence.coreLeafValidShapeRejects+result.evidence.coreLeafHardValidationRejects
+    +result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
+  assert.deepEqual(result.evidence.coreLeafValidationReasonCounts,{});
   assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
   assert.equal(result.evidence.feederOrderBranches,0);
 });
