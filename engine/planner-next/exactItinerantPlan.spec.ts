@@ -554,9 +554,9 @@ test("macro capacity certificate identity is deterministic and distinguishes cau
   const after={authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["b","a"]};
   assert.equal(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature({...after,overloadTaskIds:["a","b"]},"macro",2));
   assert.notEqual(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature(after,"macro",3));
-  const absent={failure:null,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,overloadTaskIds:[]};
-  assert.equal(candidateIntroducesCapacityCertificate(absent,after),true);
-  assert.equal(candidateIntroducesCapacityCertificate({failure:"COLLECTIVE_CAPACITY",...after,overloadTaskIds:["a","b"]},after),false);
+  assert.equal(candidateIntroducesCapacityCertificate("INTRODUCED_BY_CANDIDATE"),true);
+  assert.equal(candidateIntroducesCapacityCertificate("PREEXISTING"),false);
+  assert.equal(candidateIntroducesCapacityCertificate("UNRESOLVED"),false);
 });
 
 test("static forward domain exactly intersects hard windows and subtracts hard meals", () => {

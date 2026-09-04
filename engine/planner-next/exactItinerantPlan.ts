@@ -10,6 +10,7 @@ import {
   type ExactCoreCausalDiagnostic,
   type ExactFutureFeasibilityCausalAssessment,
   type ExactMacroCapacityCertificate,
+  type ExactMacroCapacityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
@@ -31,7 +32,7 @@ import { materializeTerminalTransport, transportTaskIds } from "./transportGroup
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -314,10 +315,7 @@ type CapacityCertificateIdentity={authorityId:string|null;demandMinutes:number|n
 export const macroCapacityCertificateSignature=(certificate:CapacityCertificateIdentity,causingMacroUnitId:string,macroDepth:number):string=>
   JSON.stringify([certificate.authorityId,certificate.demandMinutes,certificate.freeCapacityMinutes,
     [...(certificate.overloadTaskIds??[])].sort(),causingMacroUnitId,macroDepth]);
-export const candidateIntroducesCapacityCertificate=(before:CapacityCertificateIdentity&{failure:string|null},after:CapacityCertificateIdentity):boolean=>
-  !(before.failure==="COLLECTIVE_CAPACITY"&&before.authorityId===after.authorityId&&before.demandMinutes===after.demandMinutes
-    &&before.freeCapacityMinutes===after.freeCapacityMinutes
-    &&JSON.stringify([...(before.overloadTaskIds??[])].sort())===JSON.stringify([...(after.overloadTaskIds??[])].sort()));
+export const candidateIntroducesCapacityCertificate=(assessment:ExactMacroCapacityCausalAssessment):boolean=>assessment==="INTRODUCED_BY_CANDIDATE";
 export interface StandaloneForwardStaticDomain {
   readonly intervals: ReadonlyArray<Readonly<ClosedStartInterval>>;
   readonly eligibleStartCount: number;
@@ -441,9 +439,6 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
-  const capacityCheck=(result:ReturnType<typeof checkMacroPendingPrerequisites>)=>({feasible:result.feasible,
-    failure:result.failure,authorityId:result.authorityId,demandMinutes:result.demandMinutes,
-    freeCapacityMinutes:result.freeCapacityMinutes,overloadTaskIds:[...(result.overloadTaskIds??[])].sort()});
   const capacityTask=(task:Task)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
     spaceId:task.spaceId,duration:task.duration,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
   const capacityPlacement=(task:ScheduledTask)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
@@ -765,12 +760,18 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         if(existing)existing.frequency+=1;
         else if(macroCapacityDiagnostic.certificates.length>=32)macroCapacityDiagnostic.overflow+=1;
         else {
-          // This uncached analytic replay is diagnostic only: it neither consumes the ledger nor populates the search cache.
+          // Target-specific diagnostic replays neither consume the ledger nor populate the search cache.
           const beforePending=[...pendingForCheck,...unit.tasks].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
-          const before=checkMacroPendingPrerequisites(problem,beforePending,[...coreTasks,...placed],[],coreMeals,undefined,"ALL_PENDING","ANALYTIC_CAPACITY_ONLY");
           const scheduled=[...tasks].sort(byId),definitions=new Map(problem.tasks.map(task=>[task.id,task]));
           const common=<T>(values:T[]):T|null=>values.length&&values.every(value=>value===values[0])?values[0]!:null;
-          const afterCandidate=capacityCheck(checked),beforeCandidate=capacityCheck(before);
+          const beforeCandidate=evaluateTargetCollectiveCapacityCertificate(problem,beforePending,[...coreTasks,...placed],[],coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterCandidate=evaluateTargetCollectiveCapacityCertificate(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterMatchesNormalCertificate=afterCandidate.evaluated&&afterCandidate.overloaded
+            &&afterCandidate.authorityId===checked.authorityId&&afterCandidate.demandMinutes===checked.demandMinutes
+            &&afterCandidate.freeCapacityMinutes===checked.freeCapacityMinutes
+            &&JSON.stringify(afterCandidate.overloadTaskIds)===JSON.stringify(overloadTaskIds);
+          const causalAssessment:ExactMacroCapacityCausalAssessment=!afterMatchesNormalCertificate||!beforeCandidate.evaluated
+            ?"UNRESOLVED":beforeCandidate.overloaded?"PREEXISTING":"INTRODUCED_BY_CANDIDATE";
           const relevant=(placement:ScheduledTask)=>placement.spaceId===checked.authorityId
             ||(placement.requiredResourceIds??[]).includes(checked.authorityId??"");
           macroCapacityDiagnostic.certificates.push({frequency:1,authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,
@@ -780,7 +781,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
               kind:common(scheduled.map(task=>task.kind))??"MIXED",start:Math.min(...scheduled.map(task=>task.start)),end:Math.max(...scheduled.map(task=>task.end)),
               spaceId:common(scheduled.map(task=>task.spaceId))??"MIXED",requiredResourceIds:[...new Set(scheduled.flatMap(task=>task.requiredResourceIds??[]))].sort(),tasks:scheduled.map(capacityPlacement)},
             priorRelevantPlacements:[...coreTasks,...placed].filter(relevant).sort(byId).slice(0,32).map(capacityPlacement),
-            beforeCandidate,afterCandidate,candidateIntroducesCertificate:candidateIntroducesCapacityCertificate(beforeCandidate,afterCandidate)});
+            beforeCandidate,afterCandidate,afterMatchesNormalCertificate,causalAssessment,
+            candidateIntroducesCertificate:candidateIntroducesCapacityCertificate(causalAssessment)});
         }
       }
       return "DEAD_END";}

@@ -26,6 +26,9 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
 export type MacroPendingPrerequisiteForwardCheckMode = "FULL" | "ANALYTIC_CAPACITY_ONLY";
 
 export type MacroPendingPrerequisiteForwardCache = Map<string, Omit<MacroPendingPrerequisiteForwardCheckResult,"cacheHit">>;
+export interface TargetCollectiveCapacityCertificateEvaluation {
+  evaluated:boolean;overloaded:boolean;authorityId:string;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];
+}
 // Joint proof is deliberately limited to small connected sets. Larger sets are
 // left to the real search: declining to prune is safe, while an unbounded
 // feasibility search here would amount to running a second planner per macro.
@@ -34,18 +37,47 @@ const byId=<T extends{id:string}>(a:T,b:T)=>a.id.localeCompare(b.id);
 const mergeIntervals=(intervals:ExactStartInterval[]):ExactStartInterval[]=>{const merged:ExactStartInterval[]=[];for(const interval of [...intervals].sort((a,b)=>a.start-b.start||a.end-b.end)){const previous=merged.at(-1);if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);else merged.push({...interval});}return merged;};
 const intervalMinutes=(intervals:ExactStartInterval[])=>mergeIntervals(intervals).reduce((sum,{start,end})=>sum+Math.max(0,end-start),0);
 const exclusiveAuthorities=(task:Task)=>[{key:`space:${task.spaceId}`,id:task.spaceId},...(task.requiredResourceIds??[]).map(id=>({key:`resource:${id}`,id}))].sort((a,b)=>a.key.localeCompare(b.key));
+const deadlineAuthority=(problem:PlannerNextProblem,pending:readonly Task[],provisional:readonly ScheduledTask[])=>{
+  const pendingById=new Map(pending.map(task=>[task.id,task])),successors=new Map<string,string[]>();
+  for(const task of problem.tasks)for(const dependency of task.dependencies)successors.set(dependency,[...(successors.get(dependency)??[]),task.id]);
+  const placedById=new Map(provisional.map(task=>[task.id,task])),memo=new Map<string,number>();
+  const deadline=(id:string,visiting=new Set<string>()):number=>{const hit=memo.get(id);if(hit!==undefined)return hit;if(visiting.has(id))return problem.day.end;
+    const next=new Set(visiting).add(id),values=(successors.get(id)??[]).flatMap(successorId=>{const placed=placedById.get(successorId);if(placed)return[placed.start];const successor=pendingById.get(successorId);return successor?[deadline(successorId,next)-successor.duration]:[];});
+    const value=Math.min(problem.day.end,...values);memo.set(id,value);return value;};
+  return{pendingById,deadline};
+};
+const collectiveOccupation=(problem:PlannerNextProblem,task:Task,provisional:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],deadline:number,
+  domain?:ReturnType<typeof exactTaskStartDomain>)=>mergeIntervals(domain?.intervals.map(interval=>({start:interval.start,end:interval.end+task.duration}))
+    ??exactTaskStartDomain(problem,task,provisional,[...meals]).intervals.flatMap(interval=>{const end=Math.min(interval.end,deadline-task.duration);return interval.start<=end?[{start:interval.start,end:end+task.duration}]:[]}));
+const evaluateCollectiveTasks=(problem:PlannerNextProblem,tasks:readonly Task[],provisional:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],
+  deadline:(id:string)=>number,domains?:ReadonlyMap<string,ReturnType<typeof exactTaskStartDomain>>):Omit<TargetCollectiveCapacityCertificateEvaluation,"evaluated"|"authorityId">=>{
+  const ordered=[...tasks].sort(byId),occupation=new Map(ordered.map(task=>[task.id,collectiveOccupation(problem,task,provisional,meals,deadline(task.id),domains?.get(task.id))]));
+  const endpoints=[...new Set([...occupation.values()].flatMap(intervals=>intervals.flatMap(({start,end})=>[start,end])))].sort((a,b)=>a-b);
+  for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;
+    if(!ordered.every(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end)))continue;
+    const demand=ordered.reduce((sum,task)=>sum+task.duration,0),capacity=intervalMinutes(ordered.flatMap(task=>occupation.get(task.id)!));
+    if(demand>capacity)return{overloaded:true,demandMinutes:demand,freeCapacityMinutes:capacity,overloadTaskIds:ordered.map(({id})=>id)};
+  }
+  return{overloaded:false,demandMinutes:ordered.reduce((sum,task)=>sum+task.duration,0),freeCapacityMinutes:intervalMinutes(ordered.flatMap(task=>occupation.get(task.id)!)),overloadTaskIds:ordered.map(({id})=>id)};
+};
+
+/** Diagnostic-only replay of one exact collective-capacity identity. It does not use a cache or a search ledger. */
+export function evaluateTargetCollectiveCapacityCertificate(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
+  candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],authorityId:string,overloadTaskIds:readonly string[]):TargetCollectiveCapacityCertificateEvaluation{
+  const ids=[...overloadTaskIds].sort(),provisional=[...previouslyPlaced,...candidate].sort(byId),{pendingById,deadline}=deadlineAuthority(problem,pending,provisional);
+  const tasks=ids.map(id=>pendingById.get(id));
+  if(!ids.length||tasks.some(task=>!task))return{evaluated:false,overloaded:false,authorityId,demandMinutes:null,freeCapacityMinutes:null,overloadTaskIds:ids};
+  const authorityKeys=[...new Set(exclusiveAuthorities(tasks[0]!).filter(authority=>authority.id===authorityId).map(authority=>authority.key))]
+    .filter(key=>tasks.every(task=>exclusiveAuthorities(task!).some(authority=>authority.key===key)));
+  if(authorityKeys.length!==1)return{evaluated:false,overloaded:false,authorityId,demandMinutes:null,freeCapacityMinutes:null,overloadTaskIds:ids};
+  return{evaluated:true,authorityId,...evaluateCollectiveTasks(problem,tasks as Task[],provisional,meals,deadline)};
+}
 
 /** Exact, read-only existence proof for pending ancestors affected by one provisional macro placement. */
 export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
   candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],cache?:MacroPendingPrerequisiteForwardCache,
   scope:"AFFECTED_PREREQUISITES"|"ALL_PENDING"="AFFECTED_PREREQUISITES",mode:MacroPendingPrerequisiteForwardCheckMode="FULL"):MacroPendingPrerequisiteForwardCheckResult{
-  const provisional=[...previouslyPlaced,...candidate].sort(byId),pendingById=new Map(pending.map(task=>[task.id,task]));
-  const successors=new Map<string,string[]>();for(const task of problem.tasks)for(const dependency of task.dependencies)successors.set(dependency,[...(successors.get(dependency)??[]),task.id]);
-  const placedById=new Map(provisional.map(task=>[task.id,task]));
-  const deadlineMemo=new Map<string,number>();
-  const deadline=(id:string,visiting=new Set<string>()):number=>{const hit=deadlineMemo.get(id);if(hit!==undefined)return hit;if(visiting.has(id))return problem.day.end;
-    const next=new Set(visiting).add(id),values=(successors.get(id)??[]).flatMap(successorId=>{const placed=placedById.get(successorId);if(placed)return [placed.start];const successor=pendingById.get(successorId);return successor?[deadline(successorId,next)-successor.duration]:[];});
-    const value=Math.min(problem.day.end,...values);deadlineMemo.set(id,value);return value;};
+  const provisional=[...previouslyPlaced,...candidate].sort(byId),{pendingById,deadline}=deadlineAuthority(problem,pending,provisional);
   const candidateIds=new Set(candidate.map(task=>task.id)),ancestors=new Set<string>();
   const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
   for(const id of candidateIds)visitAncestors(id);
@@ -67,9 +99,10 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   const authorityEntries=new Map<string,{id:string;tasks:Task[]}>();
   for(const task of collectiveTasks)for(const authority of exclusiveAuthorities(task))if(affectedAuthorities.has(authority.key)){const entry=authorityEntries.get(authority.key)??{id:authority.id,tasks:[]};entry.tasks.push(task);authorityEntries.set(authority.key,entry);}
   for(const [authorityKey,entry] of [...authorityEntries].sort(([a],[b])=>a.localeCompare(b))){if(entry.tasks.length<2)continue;collectiveCapacityChecks+=1;obligationsChecked+=entry.tasks.length;
-    const occupation=new Map(entry.tasks.map(task=>[task.id,mergeIntervals(domains.get(task.id)?.intervals.map(interval=>({start:interval.start,end:interval.end+task.duration}))??exactTaskStartDomain(problem,task,provisional,[...meals]).intervals.flatMap(interval=>{const end=Math.min(interval.end,deadline(task.id)-task.duration);return interval.start<=end?[{start:interval.start,end:end+task.duration}]:[]}))]));
+    // Evaluate each deterministic confined subset through the same target authority used by diagnostics.
+    const occupation=new Map(entry.tasks.map(task=>[task.id,collectiveOccupation(problem,task,provisional,meals,deadline(task.id),domains.get(task.id))]));
     const endpoints=[...new Set([...occupation.values()].flatMap(intervals=>intervals.flatMap(({start,end})=>[start,end])))].sort((a,b)=>a-b);
-    for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;const confined=entry.tasks.filter(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end));if(confined.length<2)continue;const demand=confined.reduce((sum,task)=>sum+task.duration,0);const capacity=intervalMinutes(confined.flatMap(task=>occupation.get(task.id)!));if(demand>capacity){const blocker=confined[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:1,authorityId:entry.id,demandMinutes:demand,freeCapacityMinutes:capacity,overloadTaskIds:confined.map(({id})=>id).sort(),jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"COLLECTIVE_CAPACITY" as const};cache?.set(key,result);return{...result,cacheHit:false};}}
+    for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;const confined=entry.tasks.filter(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end));if(confined.length<2)continue;const target=evaluateCollectiveTasks(problem,confined,provisional,meals,deadline,domains);if(target.overloaded){const blocker=confined[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:1,authorityId:entry.id,demandMinutes:target.demandMinutes,freeCapacityMinutes:target.freeCapacityMinutes,overloadTaskIds:target.overloadTaskIds,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"COLLECTIVE_CAPACITY" as const};cache?.set(key,result);return{...result,cacheHit:false};}}
   }
   if(mode==="ANALYTIC_CAPACITY_ONLY"){const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false};}
   const remaining=new Set(relevant.map(task=>task.id));const components:Task[][]=[];
