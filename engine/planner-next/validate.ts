@@ -25,7 +25,7 @@ import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "
 import { canPlaceTask } from "./placement";
 import { createScheduledSpaceMeal, spaceMealAvoidsAssignedResourceTasks, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
 import { operationalMealCandidates } from "./operationalMeals";
-import { mainFlowMealAligned, hasMainFlowMeal } from "./mainFlowMeal";
+import { mainFlowMealAligned, hasMainFlowMeal, mainFlowOperationalMealPolicy } from "./mainFlowMeal";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { evaluateResourcePresence } from "./resourcePresence";
 import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
@@ -477,6 +477,15 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let mainFlowMeal = 0;
   const mainPolicy = problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)?.mealPolicy;
   const ownMeals = meals.filter(x=>x.spaceId===problem.mainFlow.spaceId);
+  const operationalMainPolicy=mainPolicy===undefined?mainFlowOperationalMealPolicy(problem):undefined;
+  const authorizedOperationalMainMeals=operationalMainPolicy===undefined?[]:operationalMeals.filter(meal=>{
+    const exactScope=meal.id===operationalMainPolicy.id&&meal.duration===operationalMainPolicy.duration
+      &&meal.end-meal.start===meal.duration
+      &&[...meal.resourceIds].sort().join("\0")===[...operationalMainPolicy.resourceIds].sort().join("\0")
+      &&[...meal.spaceIds].sort().join("\0")===[...operationalMainPolicy.spaceIds].sort().join("\0");
+    return exactScope&&operationalMealCandidates(problem,operationalMainPolicy,scheduled,
+      operationalMeals.filter(candidate=>candidate!==meal)).some(candidate=>candidate.start===meal.start&&candidate.end===meal.end);
+  });
   if (mainPolicy) {
     const meal=ownMeals[0], mealStart=meal?.start??problem.mainFlow.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
     const consecutive=(xs:ScheduledTask[])=>xs.slice(1).every((x,i)=>xs[i]?.end===x.start);
@@ -487,7 +496,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     // preferredEnd guides search/ranking; hard validity does not require the final main to end there.
     for (let index = 1; index < mains.length; index += 1) {
       const previous = mains[index - 1]; const current = mains[index];
-      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
+      const ownMeal=ownMeals[0];
+      const bridgingMeals=mainPolicy&&ownMeal&&previous?.end===ownMeal.start&&ownMeal.end===current?.start?[ownMeal]
+        :authorizedOperationalMainMeals.filter(meal=>previous?.end===meal.start&&meal.end===current?.start);
+      const connected=previous?.end===current?.start||bridgingMeals.length===1;
+      if (!previous || !current || !connected) block += 1;
     }
     const runs: Array<{ key: string; count: number }> = [];
     for (const task of mains) {
