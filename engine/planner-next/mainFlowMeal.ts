@@ -1,18 +1,18 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, SpaceMealPolicy } from "./contracts";
+import type { OperationalMealPolicy, PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, SpaceMealPolicy } from "./contracts";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 export interface MainFlowTimeline { key:string; slots:number[]; meal:ScheduledSpaceMeal; splitIndex:number; morningTaskCount:number; afternoonTaskCount:number; strategyRank:number }
 export interface MainFlowTimelineRange { cut:number; strategyRank:number; startMin:number; startMax:number; step:number;
   feasibleCount:number; rawCount:number; analyticallyEliminated:number }
 export interface MainFlowTimelineDomain { ranges:MainFlowTimelineRange[]; domainCount:number; feasibleCount:number; analyticallyEliminated:number }
-const operationalMainPolicy=(p:PlannerNextProblem)=>p.operationalMealPolicies?.find(policy=>{
+export const mainFlowOperationalMealPolicy=(p:PlannerNextProblem):OperationalMealPolicy|undefined=>p.operationalMealPolicies?.find(policy=>{
   const mains=p.tasks.filter(task=>task.kind==="main"&&task.spaceId===p.mainFlow.spaceId);
   return mains.length>1&&mains.every(task=>policy.spaceIds.includes(task.spaceId)
     ||(task.requiredResourceIds??[]).some(id=>policy.resourceIds.includes(id)));
 });
 export const mainFlowMealPolicy=(p:PlannerNextProblem):SpaceMealPolicy|undefined=>p.spaces.find(s=>s.id===p.mainFlow.spaceId)?.mealPolicy
-  ??operationalMainPolicy(p);
+  ??mainFlowOperationalMealPolicy(p);
 export const mainFlowMealIsOperational=(p:PlannerNextProblem)=>p.spaces.find(s=>s.id===p.mainFlow.spaceId)?.mealPolicy===undefined
-  &&operationalMainPolicy(p)!==undefined;
+  &&mainFlowOperationalMealPolicy(p)!==undefined;
 export const hasMainFlowMeal=(p:PlannerNextProblem)=>mainFlowMealPolicy(p)!==undefined;
 export const mainFlowMealAligned=(p:PlannerNextProblem)=>{const x=mainFlowMealPolicy(p),m=p.protectedMeal;if(!x)return false;return m?x.window.start===m.start&&x.window.end===m.end&&x.duration===m.end-m.start:x.window.start+x.duration<=x.window.end};
 export const createMainFlowMeal=(p:PlannerNextProblem,start=p.mainFlow.preferredEnd)=>createScheduledSpaceMeal(p.mainFlow.spaceId,start,mainFlowMealPolicy(p)!.duration);

@@ -1,9 +1,9 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledOperationalMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { createHash } from "node:crypto";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateTimelineDomain, hasMainFlowMeal, mainFlowMealIsOperational, type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, candidateTimelineDomain, hasMainFlowMeal, mainFlowMealIsOperational, mainFlowOperationalMealPolicy, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -689,11 +689,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }));
       const deferredSetupSpaceIds = new Set(problem.spaces.filter((space) => space.setupPolicy !== undefined
         && !reducedTasks.some((task) => task.spaceId === space.id)).map(({ id }) => id));
+      const operationalMainPolicy=mainFlowMealIsOperational(problem)?mainFlowOperationalMealPolicy(problem):undefined;
       const reduced: PlannerNextProblem = { ...problem, tasks: reducedTasks,
         spaces: problem.spaces.map((space) => deferredSetupSpaceIds.has(space.id)
           ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space),
         anchoredAccompaniments: applicableContracts, roundSynchronizations: undefined,
-        participantMeals: undefined, participantMealCapacity: undefined, operationalMealPolicies: undefined,
+        participantMeals: undefined, participantMealCapacity: undefined,
+        operationalMealPolicies: operationalMainPolicy===undefined?undefined:[operationalMainPolicy],
         transportPolicy: undefined };
       const expected = [...coreIds].sort(), actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
@@ -702,7 +704,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const reducedPlaced = placed.map((task) => ({ ...task,
         dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
       const publishedMeals = mainFlowMealIsOperational(problem) ? [] : meals;
-      const validation = validatePlan(reduced, reducedPlaced, [], publishedMeals,[],fixedResourceMeals,fixedItinerantMeals);
+      const validationOperationalMeals:ScheduledOperationalMeal[]=operationalMainPolicy===undefined?[]:meals.map(meal=>({
+        id:operationalMainPolicy.id,resourceIds:[...operationalMainPolicy.resourceIds],spaceIds:[...operationalMainPolicy.spaceIds],
+        duration:operationalMainPolicy.duration,start:meal.start,end:meal.end,
+      }));
+      const validation = validatePlan(reduced, reducedPlaced, [], publishedMeals,[],fixedResourceMeals,fixedItinerantMeals,[],validationOperationalMeals);
       if (!validShape) {
         evidence.coreLeafValidShapeRejects += 1;
         evidence.coreLeafValidationReasonCounts.INVALID_CORE_LEAF_SHAPE =
