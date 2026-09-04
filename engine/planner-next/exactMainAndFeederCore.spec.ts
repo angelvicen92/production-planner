@@ -169,6 +169,7 @@ test("a perfect feeder-slot matching materializes its witness without FEEDER_ORD
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.feederSlotMatchingChecks>result.evidence.feederSlotMatchingPrunes);
   assert.ok(result.evidence.feederMatchingWitnessMaterializations>0);
+  assert.ok(result.evidence.feederSlotIntervalCertificates>0);
   assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
@@ -262,10 +263,13 @@ test("feeder-slot matching is invariant to IDs and input order",()=>{
 });
 
 test("feeder-slot matching exhausts the shared budget without hidden branches",()=>{
-  const complete=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
+  const explicitProblem=()=>{const problem=fixedFeederSlotProblem("PERFECT");
+    problem.tasks.find(({id})=>id==="feeder-a")!.availability=[{start:40,end:50},{start:60,end:70}];return problem;};
+  const complete=constructExactMainAndFeederCore(explicitProblem());
+  assert.ok(complete.evidence.feederSlotExplicitFallbacks>0);
   const findExhaustion=(phase:"EDGE"|"AUGMENT")=>{
     for(let budget=1;budget<complete.evidence.branchesExplored;budget++){
-      const problem=fixedFeederSlotProblem("PERFECT");problem.budget.maxBranchExpansions=budget;
+      const problem=explicitProblem();problem.budget.maxBranchExpansions=budget;
       const result=constructExactMainAndFeederCore(problem);
       if(result.status==="BRANCH_BUDGET_EXHAUSTED"&&(phase==="EDGE"
         ?result.evidence.feederSlotMatchingEdgeChecks>0&&result.evidence.feederSlotMatchingAugmentTraversals===0
@@ -702,6 +706,8 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   }});
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.equal(orders.size,2);
+  assert.ok(result.evidence.feederSlotLazyRepairBuilds>0,"repair must materialize the explicit graph lazily");
+  assert.ok(result.evidence.feederSlotMatchingEdgeChecks>0,"lazy repair must charge every explicit edge check");
   assert.equal(result.evidence.coreLeafValidationAttempts,result.evidence.completeLeafCount);
   assert.equal(result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
   assert.equal(result.evidence.coreLeafValidShapeRejects,0);

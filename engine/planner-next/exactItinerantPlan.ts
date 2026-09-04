@@ -171,6 +171,9 @@ export interface ExactItinerantPlanEvidence {
   feederSlotMatchingEdgeChecks: number;
   feederSlotMatchingAugmentTraversals: number;
   feederSlotMatchingBranchesExplored: number;
+  feederSlotIntervalCertificates: number;
+  feederSlotExplicitFallbacks: number;
+  feederSlotLazyRepairBuilds: number;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -918,7 +921,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
     feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,feederSlotMatchingAugmentTraversals:0,
-    feederSlotMatchingBranchesExplored:0,feederCohortCapacityChecks:0,
+    feederSlotMatchingBranchesExplored:0,feederSlotIntervalCertificates:0,feederSlotExplicitFallbacks:0,
+    feederSlotLazyRepairBuilds:0,feederCohortCapacityChecks:0,
     feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
     blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
     feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
@@ -1308,6 +1312,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederSlotMatchingEdgeChecks=core.evidence.feederSlotMatchingEdgeChecks;
   evidence.feederSlotMatchingAugmentTraversals=core.evidence.feederSlotMatchingAugmentTraversals;
   evidence.feederSlotMatchingBranchesExplored=core.evidence.feederSlotMatchingBranchesExplored;
+  evidence.feederSlotIntervalCertificates=core.evidence.feederSlotIntervalCertificates;
+  evidence.feederSlotExplicitFallbacks=core.evidence.feederSlotExplicitFallbacks;
+  evidence.feederSlotLazyRepairBuilds=core.evidence.feederSlotLazyRepairBuilds;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;
