@@ -392,6 +392,12 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.equal(integrated.evidence.firstStandaloneForwardPruneDepth, integrated.evidence.coreMaximumDepth);
   assert.equal(integrated.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
   assert.equal(integrated.evidence.standaloneSearchInvocations, 1);
+  assert.equal(integrated.evidence.coreLeafValidationAttempts,integrated.evidence.coreCompleteLeafCount);
+  assert.equal(integrated.evidence.coreLeafValidShapeRejects+integrated.evidence.coreLeafHardValidationRejects
+    +integrated.evidence.coreLeafValidationAccepted,integrated.evidence.coreCompleteLeafCount);
+  const isolatedMealCounters=["mealTimelineDomainCount","mealTimelinesExplored","mealTimelinesEliminatedAnalytically",
+    "mealTimelinesPendingAtExhaustion","mealTimelinesPreferred","mealTimelinesNonPreferred"] as const;
+  for(const key of isolatedMealCounters)assert.equal(integrated.evidence[key],isolated.evidence[key]);
   assert.notEqual(integrated.scheduledTasks.find(({ id }) => id === "vocal")!.start,
     isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start);
   assert.equal(validatePlan(input, integrated.scheduledTasks, [], integrated.scheduledSpaceMeals).hardValid, true);

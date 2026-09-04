@@ -15,6 +15,22 @@ import { preflight, validatePlan } from "./validate";
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
+export interface ExactCoreLeafShapeRejection {
+  expectedCount: number;
+  actualCount: number;
+  missingTaskIds: string[];
+  extraTaskIds: string[];
+  architectureKey: string | null;
+  timelineKey: string | null;
+}
+
+export type ExactCoreLeafHardValidationRejection = ReturnType<typeof validatePlan> & {
+  architectureKey: string | null;
+  timelineKey: string | null;
+  mealStart: number | null;
+  mealSplit: number | null;
+};
+
 export interface ExactMainAndFeederCoreEvidence {
   branchesExplored: number;
   patternCandidatesExplored: number;
@@ -59,6 +75,13 @@ export interface ExactMainAndFeederCoreEvidence {
   backtracks: number;
   maximumDepth: number;
   completeLeafCount: number;
+  coreLeafValidationAttempts: number;
+  coreLeafValidShapeRejects: number;
+  coreLeafHardValidationRejects: number;
+  coreLeafValidationAccepted: number;
+  coreLeafValidationReasonCounts: Record<string, number>;
+  firstCoreLeafShapeRejection: ExactCoreLeafShapeRejection | null;
+  firstCoreLeafHardValidationRejection: ExactCoreLeafHardValidationRejection | null;
   selectedPattern: string[] | null;
   selectedTimelineKey: string | null;
   selectedMainTaskIds: string[];
@@ -554,7 +577,10 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
-    completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
+    completeLeafCount: 0, coreLeafValidationAttempts:0, coreLeafValidShapeRejects:0,
+    coreLeafHardValidationRejects:0, coreLeafValidationAccepted:0, coreLeafValidationReasonCounts:{},
+    firstCoreLeafShapeRejection:null, firstCoreLeafHardValidationRejection:null,
+    selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
     architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {}, runLayers: [],
     firstExactArchitecture: null, firstFeedableRunSizes: [], feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
@@ -657,6 +683,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
+      evidence.coreLeafValidationAttempts += 1;
       const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
         ...task, dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
       }));
@@ -676,6 +703,32 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
       const publishedMeals = mainFlowMealIsOperational(problem) ? [] : meals;
       const validation = validatePlan(reduced, reducedPlaced, [], publishedMeals,[],fixedResourceMeals,fixedItinerantMeals);
+      if (!validShape) {
+        evidence.coreLeafValidShapeRejects += 1;
+        evidence.coreLeafValidationReasonCounts.INVALID_CORE_LEAF_SHAPE =
+          (evidence.coreLeafValidationReasonCounts.INVALID_CORE_LEAF_SHAPE ?? 0) + 1;
+        if (evidence.firstCoreLeafShapeRejection === null) {
+          const expectedIds = new Set(expected), actualIds = new Set(actual);
+          evidence.firstCoreLeafShapeRejection = {
+            expectedCount: expected.length, actualCount: actual.length,
+            missingTaskIds: expected.filter((id) => !actualIds.has(id)),
+            extraTaskIds: actual.filter((id) => !expectedIds.has(id)),
+            architectureKey: currentArchitecture, timelineKey,
+          };
+        }
+      } else if (!validation.hardValid) {
+        evidence.coreLeafHardValidationRejects += 1;
+        for (const reason of validation.reasonCodes)
+          evidence.coreLeafValidationReasonCounts[reason] = (evidence.coreLeafValidationReasonCounts[reason] ?? 0) + 1;
+        if (evidence.firstCoreLeafHardValidationRejection === null) {
+          const split = timelineKey?.match(/^SPLIT\|(\d+)\|/)?.[1];
+          evidence.firstCoreLeafHardValidationRejection = { ...validation,
+            architectureKey: currentArchitecture, timelineKey,
+            mealStart: meals[0]?.start ?? null, mealSplit: split === undefined ? null : Number(split) };
+        }
+      } else {
+        evidence.coreLeafValidationAccepted += 1;
+      }
       if (validShape && validation.hardValid) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
         const ordered = placed.map((task) => ({ ...task,
