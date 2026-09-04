@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate } from "./macroPendingPrerequisiteForwardCheck";
 
 const task=(id:string,duration:number,dependencies:string[]=[],availability?:Array<{start:number;end:number}>):Task=>({id,kind:"auxiliary",participantId:"person",duration,spaceId:"room",dependencies,...(availability?{availability}: {})});
 const problem=(tasks:Task[]):PlannerNextProblem=>({day:{start:0,end:100},spaces:[{id:"room",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],resources:[],participants:[{id:"person",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],coaches:[],tasks,mainFlow:{spaceId:"other",preferredEnd:100,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:0,maxPatterns:1,maxBranchExpansions:1000},searchPolicy:"EXACT_CONSTRUCTIVE"});
@@ -49,4 +49,21 @@ test("analytic CORE frontier abstains before joint DFS while FULL preserves the 
  assert.equal(full.failure,"JOINT_INFEASIBLE");assert.equal(full.jointChecks,1);
  const analytic=checkStandaloneCoreFrontier(p,[first,second],[],[],"ANALYTIC_CAPACITY_ONLY");
  assert.equal(analytic.feasible,true);assert.equal(analytic.failure,null);assert.equal(analytic.jointChecks,0);
+});
+
+test("target collective-capacity replay compares the same authority and overload tasks before and after",()=>{
+ const first=task("first",10,[],[{start:0,end:20}]),second=task("second",10,[],[{start:0,end:20}]),p=problem([first,second]);
+ const before=evaluateTargetCollectiveCapacityCertificate(p,[first,second],[],[],[],"room",["second","first"]);
+ const after=evaluateTargetCollectiveCapacityCertificate(p,[first,second],[],[scheduled(task("candidate",10),10)],[],"room",["first","second"]);
+ assert.equal(before.evaluated,true);assert.equal(before.overloaded,false);assert.deepEqual(before.overloadTaskIds,["first","second"]);
+ assert.deepEqual(after,{evaluated:true,overloaded:true,authorityId:"room",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["first","second"]});
+});
+
+test("target replay reports a preexisting overload and abstains when the exact target is unavailable",()=>{
+ const first=task("first",10,[],[{start:0,end:10}]),second=task("second",10,[],[{start:0,end:10}]),p=problem([first,second]);
+ const snapshot=JSON.stringify(p),before=evaluateTargetCollectiveCapacityCertificate(p,[first,second],[],[],[],"room",["first","second"]);
+ const after=evaluateTargetCollectiveCapacityCertificate(p,[first,second],[],[scheduled(task("candidate",10),20)],[],"room",["first","second"]);
+ assert.equal(before.overloaded,true);assert.deepEqual(after,before);assert.equal(JSON.stringify(p),snapshot);
+ assert.deepEqual(evaluateTargetCollectiveCapacityCertificate(p,[first],[],[],[],"room",["first","second"]),
+   {evaluated:false,overloaded:false,authorityId:"room",demandMinutes:null,freeCapacityMinutes:null,overloadTaskIds:["first","second"]});
 });

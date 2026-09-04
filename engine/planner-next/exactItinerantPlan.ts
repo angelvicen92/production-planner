@@ -9,6 +9,8 @@ import {
   type ExactMainAndFeederSearchOptions,
   type ExactCoreCausalDiagnostic,
   type ExactFutureFeasibilityCausalAssessment,
+  type ExactMacroCapacityCertificate,
+  type ExactMacroCapacityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
@@ -30,7 +32,7 @@ import { materializeTerminalTransport, transportTaskIds } from "./transportGroup
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -308,6 +310,12 @@ interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
 export type JointGroupStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
+
+type CapacityCertificateIdentity={authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds?:string[]};
+export const macroCapacityCertificateSignature=(certificate:CapacityCertificateIdentity,causingMacroUnitId:string,macroDepth:number):string=>
+  JSON.stringify([certificate.authorityId,certificate.demandMinutes,certificate.freeCapacityMinutes,
+    [...(certificate.overloadTaskIds??[])].sort(),causingMacroUnitId,macroDepth]);
+export const candidateIntroducesCapacityCertificate=(assessment:ExactMacroCapacityCausalAssessment):boolean=>assessment==="INTRODUCED_BY_CANDIDATE";
 export interface StandaloneForwardStaticDomain {
   readonly intervals: ReadonlyArray<Readonly<ClosedStartInterval>>;
   readonly eligibleStartCount: number;
@@ -414,7 +422,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
-  technicalChainStartDomainMode:TechnicalChainStartDomainMode): StandaloneSearchResult {
+  technicalChainStartDomainMode:TechnicalChainStartDomainMode,
+  macroCapacityDiagnostic:{enabled:boolean;certificates:ExactMacroCapacityCertificate[];overflow:number}): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -430,6 +439,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
+  const capacityTask=(task:Task)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
+    spaceId:task.spaceId,duration:task.duration,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
+  const capacityPlacement=(task:ScheduledTask)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
+    start:task.start,end:task.end,spaceId:task.spaceId,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
@@ -739,7 +752,40 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(!checked.feasible){evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
-      evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};return "DEAD_END";}
+      evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};
+      if(macroCapacityDiagnostic.enabled&&checked.failure==="COLLECTIVE_CAPACITY"){
+        const overloadTaskIds=[...(checked.overloadTaskIds??[])].sort();
+        const signature=macroCapacityCertificateSignature(checked,unit.id,depth);
+        const existing=macroCapacityDiagnostic.certificates.find(row=>macroCapacityCertificateSignature(row,row.causingMacroUnitId,row.macroDepth)===signature);
+        if(existing)existing.frequency+=1;
+        else if(macroCapacityDiagnostic.certificates.length>=32)macroCapacityDiagnostic.overflow+=1;
+        else {
+          // Target-specific diagnostic replays neither consume the ledger nor populate the search cache.
+          const beforePending=[...pendingForCheck,...unit.tasks].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
+          const scheduled=[...tasks].sort(byId),definitions=new Map(problem.tasks.map(task=>[task.id,task]));
+          const common=<T>(values:T[]):T|null=>values.length&&values.every(value=>value===values[0])?values[0]!:null;
+          const beforeCandidate=evaluateTargetCollectiveCapacityCertificate(problem,beforePending,[...coreTasks,...placed],[],coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterCandidate=evaluateTargetCollectiveCapacityCertificate(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterMatchesNormalCertificate=afterCandidate.evaluated&&afterCandidate.overloaded
+            &&afterCandidate.authorityId===checked.authorityId&&afterCandidate.demandMinutes===checked.demandMinutes
+            &&afterCandidate.freeCapacityMinutes===checked.freeCapacityMinutes
+            &&JSON.stringify(afterCandidate.overloadTaskIds)===JSON.stringify(overloadTaskIds);
+          const causalAssessment:ExactMacroCapacityCausalAssessment=!afterMatchesNormalCertificate||!beforeCandidate.evaluated
+            ?"UNRESOLVED":beforeCandidate.overloaded?"PREEXISTING":"INTRODUCED_BY_CANDIDATE";
+          const relevant=(placement:ScheduledTask)=>placement.spaceId===checked.authorityId
+            ||(placement.requiredResourceIds??[]).includes(checked.authorityId??"");
+          macroCapacityDiagnostic.certificates.push({frequency:1,authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,
+            freeCapacityMinutes:checked.freeCapacityMinutes,overloadTaskIds,blockingTaskId:checked.blockingTaskId,
+            causingMacroUnitId:unit.id,macroDepth:depth,overloadTasks:overloadTaskIds.slice(0,32).flatMap(id=>{const task=definitions.get(id);return task?[capacityTask(task)]:[];}),
+            candidatePlacement:{macroUnitId:unit.id,taskIds:scheduled.map(({id})=>id),participantId:common(scheduled.map(task=>task.participantId??null)),
+              kind:common(scheduled.map(task=>task.kind))??"MIXED",start:Math.min(...scheduled.map(task=>task.start)),end:Math.max(...scheduled.map(task=>task.end)),
+              spaceId:common(scheduled.map(task=>task.spaceId))??"MIXED",requiredResourceIds:[...new Set(scheduled.flatMap(task=>task.requiredResourceIds??[]))].sort(),tasks:scheduled.map(capacityPlacement)},
+            priorRelevantPlacements:[...coreTasks,...placed].filter(relevant).sort(byId).slice(0,32).map(capacityPlacement),
+            beforeCandidate,afterCandidate,afterMatchesNormalCertificate,causalAssessment,
+            candidateIntroducesCertificate:candidateIntroducesCapacityCertificate(causalAssessment)});
+        }
+      }
+      return "DEAD_END";}
     return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]);
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
@@ -938,6 +984,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }
   const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
+  const macroCapacityDiagnostic={enabled:Boolean(options.causalDiagnostic),certificates:[] as ExactMacroCapacityCertificate[],overflow:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
   const standaloneFrontierDiagnostic:ExactCoreCausalDiagnostic["standaloneFrontier"]={totalRejections:0,certificates:[],examples:[]};
   const standaloneForwardWitnessCache=new Map<string,number>();
@@ -1163,7 +1210,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN");
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",macroCapacityDiagnostic);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -1181,6 +1228,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
   if(evidence.causalDiagnostic)evidence.causalDiagnostic.standaloneFrontier=standaloneFrontierDiagnostic;
+  if(evidence.causalDiagnostic){evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificates=macroCapacityDiagnostic.certificates;
+    evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificateOverflow=macroCapacityDiagnostic.overflow;}
   if(evidence.causalDiagnostic){const summary=evidence.causalDiagnostic.futureFeasibility;const states=[...futureAssessments.values()];summary.assessments=states.flatMap(state=>[...state.rows.values()]).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature)||a.resultSignature.localeCompare(b.resultSignature));
     summary.collisions=states.filter(state=>state.rows.size>1).map(state=>{const row=state.rows.values().next().value!;return {depth:row.depth,taskId:row.taskId,authoritySignature:row.authoritySignature,resultSignatures:[...state.rows.keys()].sort()}}).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature));summary.authorityResultCollisions=summary.collisions.length;
     for(const state of states){const row=state.rows.values().next().value!;summary.totalEvaluations+=state.occurrences;summary.uniqueAuthorityStates+=1;summary.repeatedEvaluations+=state.occurrences-1;

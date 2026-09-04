@@ -3,7 +3,8 @@ import test from "node:test";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
+  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -547,6 +548,15 @@ test("results are deterministic and invariant to input collection order", () => 
   const reversed = constructExactItinerantPlan(reversedInput);
   assert.deepEqual(first, second); assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
   assert.deepEqual(first.scheduledTasks, reversed.scheduledTasks);
+});
+
+test("macro capacity certificate identity is deterministic and distinguishes causal signatures",()=>{
+  const after={authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["b","a"]};
+  assert.equal(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature({...after,overloadTaskIds:["a","b"]},"macro",2));
+  assert.notEqual(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature(after,"macro",3));
+  assert.equal(candidateIntroducesCapacityCertificate("INTRODUCED_BY_CANDIDATE"),true);
+  assert.equal(candidateIntroducesCapacityCertificate("PREEXISTING"),false);
+  assert.equal(candidateIntroducesCapacityCertificate("UNRESOLVED"),false);
 });
 
 test("static forward domain exactly intersects hard windows and subtracts hard meals", () => {

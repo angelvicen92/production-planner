@@ -242,6 +242,10 @@ const diagnosticReport = diagnostic ? {
   },
   standaloneFrontier: diagnostic.standaloneFrontier,
   feederMatching: diagnostic.feederMatching,
+  macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
+  macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
+  macroPendingPrerequisiteCapacityCertificateReconciles:diagnostic.macroPendingPrerequisiteCapacityCertificates.reduce((sum,row)=>sum+row.frequency,0)
+    +diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow===exactResult!.evidence.macroPendingPrerequisiteCollectiveCapacityPrunes,
   criticalDepth,
   criticalRejectionReasons: top((row)=>row.reason),
   topMainTasks: top((row)=>row.mainTaskId),
@@ -264,7 +268,9 @@ const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
 }:null;
 if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
 const persistedEvidence=exactResult?{...exactResult.evidence,
-  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,feederMatching:diagnostic.feederMatching}:null}:null;
+  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,feederMatching:diagnostic.feederMatching,
+    macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
+    macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow}:null}:null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",

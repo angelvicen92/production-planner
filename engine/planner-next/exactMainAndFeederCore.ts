@@ -153,7 +153,18 @@ export interface ExactFeederMatchingContextDiagnostic {
   partialCoreRejects:Array<{certificate:ExactPartialCoreRejectionCertificate|null;rejectedWitnesses:number;repairAttempts:number;augmentTraversals:number;distinctOrderFingerprints:number}>;
 }
 export interface ExactFeederMatchingCausalSummary { contexts:ExactFeederMatchingContextDiagnostic[];overflowContexts:number }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary }
+export interface ExactMacroCapacityCheck { evaluated:boolean;overloaded:boolean;authorityId:string;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[] }
+export type ExactMacroCapacityCausalAssessment="INTRODUCED_BY_CANDIDATE"|"PREEXISTING"|"UNRESOLVED";
+export interface ExactMacroCapacityTask { taskId:string;participantId:string|null;kind:string;spaceId:string;duration:number;requiredResourceIds:string[] }
+export interface ExactMacroCapacityPlacement { taskId:string;participantId:string|null;kind:string;start:number;end:number;spaceId:string;requiredResourceIds:string[] }
+export interface ExactMacroCapacityCertificate {
+  frequency:number;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];
+  blockingTaskId:string|null;causingMacroUnitId:string;macroDepth:number;overloadTasks:ExactMacroCapacityTask[];
+  candidatePlacement:{macroUnitId:string;taskIds:string[];participantId:string|null;kind:string;start:number;end:number;spaceId:string;requiredResourceIds:string[];tasks:ExactMacroCapacityPlacement[]};
+  priorRelevantPlacements:ExactMacroCapacityPlacement[];beforeCandidate:ExactMacroCapacityCheck;afterCandidate:ExactMacroCapacityCheck;
+  afterMatchesNormalCertificate:boolean;causalAssessment:ExactMacroCapacityCausalAssessment;candidateIntroducesCertificate:boolean;
+}
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary;macroPendingPrerequisiteCapacityCertificates:ExactMacroCapacityCertificate[];macroPendingPrerequisiteCapacityCertificateOverflow:number }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -604,7 +615,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],feederMatching:{contexts:[],overflowContexts:0},futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]},standaloneFrontier:{totalRejections:0,certificates:[],examples:[]}}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],feederMatching:{contexts:[],overflowContexts:0},futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]},standaloneFrontier:{totalRejections:0,certificates:[],examples:[]},macroPendingPrerequisiteCapacityCertificates:[],macroPendingPrerequisiteCapacityCertificateOverflow:0}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
