@@ -149,6 +149,7 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
   { id: "band", label: "Banda", kind: "band", availability: "inherits_day_unless_overridden" },
+  { id: "cam-1", label: "CAM 1", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-2", label: "CAM 2", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-3", label: "CAM 3", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-4", label: "CAM 4", kind: "camera", availability: "inherits_day_unless_overridden" },
@@ -163,8 +164,8 @@ export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
 
 /** Effective camera authority is attached to spaces, never inferred from task names. */
 export const CANONICAL_SPACE_RESOURCE_ASSIGNMENTS: Readonly<Record<string, readonly string[]>> = Object.freeze({
-  "p14-recursos": Object.freeze(["cam-4"]),
-  "p14-pasillo": Object.freeze(["cam-4"]),
+  "p14-recursos": Object.freeze(["cam-1"]),
+  "p14-pasillo": Object.freeze(["cam-1"]),
   "p15-croma": Object.freeze(["cam-2"]),
   "p15-estrellas-sillon": Object.freeze(["cam-2"]),
   "totales-1": Object.freeze(["cam-5"]),

@@ -243,14 +243,14 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
   }],
   ["SPACE_CAMERA_AUTHORITY", (expansion) => {
     const expected = {
-      "p14-recursos": ["cam-4"], "p14-pasillo": ["cam-4"],
+      "p14-recursos": ["cam-1"], "p14-pasillo": ["cam-1"],
       "p15-croma": ["cam-2"], "p15-estrellas-sillon": ["cam-2"],
       "totales-1": ["cam-5"], "totales-coreo": ["cam-6"],
     };
-    const camerasPresent = ["cam-2", "cam-4", "cam-5", "cam-6"].every((id) => expansion.resources.some((resource) => resource.id === id));
+    const camerasPresent = ["cam-1", "cam-2", "cam-4", "cam-5", "cam-6"].every((id) => expansion.resources.some((resource) => resource.id === id));
     const mappingExact = JSON.stringify(expansion.spaceResourceAssignments) === JSON.stringify(expected);
     const noDuplicatedTaskAuthority = expansion.tasks.filter((task) => ["CROMA", "REDES", "PASILLO", "GIRATUTO", "SILLON", "ESTRELLAS", "TOTALES_1", "TOTALES_COREO"].includes(task.type))
-      .every((task) => !task.requiredResourceIds.some((id) => ["cam-2", "cam-4", "cam-5", "cam-6"].includes(id)));
+      .every((task) => !task.requiredResourceIds.some((id) => ["cam-1", "cam-2", "cam-4", "cam-5", "cam-6"].includes(id)));
     return camerasPresent && mappingExact && noDuplicatedTaskAuthority ? [] : [issue("SPACE_CAMERA_AUTHORITY", "SPACE_CAMERA_AUTHORITY_CHANGED", "spaceResourceAssignments", "A2 camera use must be assigned effectively by canonical space without duplicated task authority.")];
   }],
   ["COACH_TRANSITION_RULE", (expansion) => expansion.rules.coachTransition.minutes === 30 && expansion.rules.coachTransition.scope === "coach" && expansion.rules.mainFlow.blockLimit === "UNBOUNDED" && expansion.rules.mainFlow.continuity === "REQUIRED"
