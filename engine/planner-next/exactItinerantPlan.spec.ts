@@ -4,7 +4,8 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
-  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature } from "./exactItinerantPlan";
+  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature, ordinaryPairCertificateFromExhaustion,
+  ordinaryPairCertificateHit } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -404,6 +405,43 @@ test("ordinary pair-certificate oracle preserves semantics, determinism, order i
   assert.equal(reordered.evidence.fullFingerprint,enabled.evidence.fullFingerprint);
   assert.equal(disabled.evidence.ordinaryPairCertificateCacheHits,0);
   assert.equal(disabled.evidence.ordinaryPairCertificateCacheEntries,0);
+});
+
+test("ordinary pair certificate learns only a complete uniform exact exhaustion",()=>{
+  const authority=new Map([["blocker","blocker-before"]]);
+  const base={choiceTaskId:"choice",choiceAuthoritySignature:"choice-before",initialExactStartCount:3,
+    evaluatedStarts:[{blockingTaskId:"blocker"},{blockingTaskId:"blocker"},{blockingTaskId:"blocker"}],
+    blockingAuthorities:authority,budgetExhausted:false};
+  assert.deepEqual(ordinaryPairCertificateFromExhaustion(base),{
+    blockingTaskId:"blocker",blockingAuthoritySignature:"blocker-before",logicalStarts:3,
+  },"all exact starts against one blocker learn exactly one certificate");
+  assert.equal(ordinaryPairCertificateFromExhaustion({...base,initialExactStartCount:0,evaluatedStarts:[]}),null);
+  assert.equal(ordinaryPairCertificateFromExhaustion({...base,evaluatedStarts:base.evaluatedStarts.slice(0,2),budgetExhausted:true}),null,
+    "budget exhaustion cannot certify a partial traversal");
+  assert.equal(ordinaryPairCertificateFromExhaustion({...base,evaluatedStarts:[
+    {blockingTaskId:"left"},{blockingTaskId:"right"},{blockingTaskId:"left"}],
+    blockingAuthorities:new Map([["left","left-before"],["right","right-before"]])}),null,
+    "different blockers cannot be collapsed");
+  assert.equal(ordinaryPairCertificateFromExhaustion({...base,evaluatedStarts:[
+    {blockingTaskId:"blocker"},{blockingTaskId:null},{blockingTaskId:"blocker"}]}),null,
+    "a recursively descended start invalidates pair certification");
+});
+
+test("ordinary pair certificate hits only the exact pending blocker authority",()=>{
+  const certificate={blockingTaskId:"blocker",blockingAuthoritySignature:"blocker-before",logicalStarts:3};
+  const exact=[{task:{id:"choice"},authoritySignature:"choice-before"},
+    {task:{id:"blocker"},authoritySignature:"blocker-before"}];
+  assert.equal(ordinaryPairCertificateHit([certificate],exact),certificate);
+  assert.equal(ordinaryPairCertificateHit([certificate],exact.map(row=>row.task.id==="blocker"
+    ?{...row,authoritySignature:"blocker-after"}:row)),undefined,"different blocker authority misses");
+  assert.equal(ordinaryPairCertificateHit([certificate],exact.filter(row=>row.task.id!=="blocker")),undefined,
+    "a blocker which is no longer pending misses");
+  const buckets=new Map([[JSON.stringify(["choice","choice-before"]),[certificate]]]);
+  assert.equal(buckets.get(JSON.stringify(["choice","choice-after"])),undefined,"different choice authority selects no bucket");
+  const counters={ordinaryBranchesExplored:7,ordinaryExactStartEnumerations:5,ordinaryExactStartChecks:11};
+  assert.equal(ordinaryPairCertificateHit(buckets.get(JSON.stringify(["choice","choice-before"]))!,exact),certificate);
+  assert.deepEqual(counters,{ordinaryBranchesExplored:7,ordinaryExactStartEnumerations:5,ordinaryExactStartChecks:11},
+    "an exact lookup does not enumerate, check, or consume starts");
 });
 
 test("a blocking first core leaf is rejected and a later hard-valid core leaf completes standalone", () => {

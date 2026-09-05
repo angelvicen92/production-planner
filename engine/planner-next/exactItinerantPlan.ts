@@ -315,6 +315,27 @@ export interface ExactItinerantPlanResult {
 
 type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; domain: StandaloneForwardDynamicDomain; authoritySignature:string; effectiveDeadline: number }
+export interface OrdinaryPairCertificate { blockingTaskId:string; blockingAuthoritySignature:string; logicalStarts:number }
+export interface OrdinaryPairCertificateExhaustion {
+  choiceTaskId:string;choiceAuthoritySignature:string;initialExactStartCount:number;
+  evaluatedStarts:Array<{blockingTaskId:string|null}>;blockingAuthorities:ReadonlyMap<string,string>;
+  budgetExhausted:boolean;
+}
+/** Pure soundness gate: only a complete, uniform, pre-recursion exhaustion is certifiable. */
+export function ordinaryPairCertificateFromExhaustion(exhaustion:OrdinaryPairCertificateExhaustion):OrdinaryPairCertificate|null{
+  if(exhaustion.budgetExhausted||exhaustion.initialExactStartCount===0
+    ||exhaustion.evaluatedStarts.length!==exhaustion.initialExactStartCount)return null;
+  const blockerIds=[...new Set(exhaustion.evaluatedStarts.map(({blockingTaskId})=>blockingTaskId))];
+  if(blockerIds.length!==1||blockerIds[0]===null)return null;
+  const blockingAuthoritySignature=exhaustion.blockingAuthorities.get(blockerIds[0]);
+  return blockingAuthoritySignature===undefined?null:{blockingTaskId:blockerIds[0],blockingAuthoritySignature,
+    logicalStarts:exhaustion.initialExactStartCount};
+}
+export function ordinaryPairCertificateHit(certificates:readonly OrdinaryPairCertificate[],
+  alternatives:readonly {task:{id:string};authoritySignature:string}[]):OrdinaryPairCertificate|undefined{
+  return certificates.find(certificate=>alternatives.find(alternative=>alternative.task.id===certificate.blockingTaskId)
+    ?.authoritySignature===certificate.blockingAuthoritySignature);
+}
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
 export type JointGroupStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
@@ -439,8 +460,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
   const ordinaryStaticDomainCache = new Map<string, StandaloneForwardStaticDomain>();
-  type PairCertificate={blockingTaskId:string;blockingAuthoritySignature:string;logicalStarts:number};
-  const ordinaryPairCertificateCache=new Map<string,PairCertificate[]>();
+  const ordinaryPairCertificateCache=new Map<string,OrdinaryPairCertificate[]>();
   const pairChoiceKey=(taskId:string,authoritySignature:string)=>JSON.stringify([taskId,authoritySignature]);
   const ordinaryStaticDomain = (task: Task): StandaloneForwardStaticDomain => {
     const cached = ordinaryStaticDomainCache.get(task.id);
@@ -549,10 +569,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const certificateBucket=ordinaryPairCertificateMemoization
       ?ordinaryPairCertificateCache.get(pairChoiceKey(choice.task.id,choice.authoritySignature)):undefined;
     if(certificateBucket){
-      const hit=certificateBucket.find(certificate=>{
-        const blocker=alternatives.find(alternative=>alternative.task.id===certificate.blockingTaskId);
-        return blocker?.authoritySignature===certificate.blockingAuthoritySignature;
-      });
+      const hit=ordinaryPairCertificateHit(certificateBucket,alternatives);
       if(hit){
         evidence.ordinaryPairCertificateCacheHits+=1;
         evidence.ordinaryPairCertificateLogicalStartsEliminated+=hit.logicalStarts;
@@ -577,10 +594,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)
       .sort(byId);
-    let certifiedBlocker:Task|null=null;
-    let pairCertificateEligible=true;
+    const evaluatedStarts:Array<{blockingTaskId:string|null}>=[];
+    let budgetExhausted=false;
     for (const { scheduled } of orderedStarts) {
-      if (!consumeLeafBranch()) { pairCertificateEligible=false; return "BUDGET_EXHAUSTED"; }
+      if (!consumeLeafBranch()) { budgetExhausted=true; return "BUDGET_EXHAUSTED"; }
       evidence.ordinaryBranchesExplored += 1;
       evidence.ordinaryIndividualForwardChecks += 1;
       evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
@@ -598,9 +615,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         if (domain.eligibleStartCount > 0) evidence.ordinaryIndividualForwardWitnesses += 1;
         else { zeroDomainObligation = obligation; break; }
       }
+      evaluatedStarts.push({blockingTaskId:zeroDomainObligation?.id??null});
       if (zeroDomainObligation) {
-        if(certifiedBlocker===null)certifiedBlocker=zeroDomainObligation;
-        else if(certifiedBlocker.id!==zeroDomainObligation.id)pairCertificateEligible=false;
         evidence.ordinaryIndividualForwardZeroDomainPrunes += 1;
         evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id]
           = (evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id] ?? 0) + 1;
@@ -612,21 +628,22 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         evidence.standaloneBacktracks += 1;
         continue;
       }
-      pairCertificateEligible=false;
       if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
       if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
     }
-    if(ordinaryPairCertificateMemoization&&pairCertificateEligible&&certifiedBlocker!==null){
-      const blocker=alternatives.find(alternative=>alternative.task.id===certifiedBlocker!.id)!;
+    const certificate=ordinaryPairCertificateFromExhaustion({choiceTaskId:choice.task.id,
+      choiceAuthoritySignature:choice.authoritySignature,initialExactStartCount:orderedStarts.length,evaluatedStarts,
+      blockingAuthorities:new Map(alternatives.map(alternative=>[alternative.task.id,alternative.authoritySignature])),
+      budgetExhausted});
+    if(ordinaryPairCertificateMemoization&&certificate!==null){
       const key=pairChoiceKey(choice.task.id,choice.authoritySignature);
       const bucket=ordinaryPairCertificateCache.get(key)??[];
-      if(!bucket.some(certificate=>certificate.blockingTaskId===certifiedBlocker!.id
-        &&certificate.blockingAuthoritySignature===blocker.authoritySignature)){
-        bucket.push({blockingTaskId:certifiedBlocker.id,blockingAuthoritySignature:blocker.authoritySignature,
-          logicalStarts:orderedStarts.length});
+      if(!bucket.some(existing=>existing.blockingTaskId===certificate.blockingTaskId
+        &&existing.blockingAuthoritySignature===certificate.blockingAuthoritySignature)){
+        bucket.push(certificate);
         ordinaryPairCertificateCache.set(key,bucket);
         evidence.ordinaryPairCertificateCacheEntries+=1;
       }
