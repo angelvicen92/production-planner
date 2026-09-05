@@ -6,7 +6,8 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, candidateTimelineDomain, hasMainFlowMeal, mainFlowMealIsOperational, mainFlowOperationalMealPolicy, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, intersectExactStartIntervals,
+  prepareTaskPlacementAuthority, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
@@ -105,6 +106,9 @@ export interface ExactMainAndFeederCoreEvidence {
   feederSlotMatchingEdgeChecks: number;
   feederSlotMatchingAugmentTraversals: number;
   feederSlotMatchingBranchesExplored: number;
+  feederSlotIntervalCertificates: number;
+  feederSlotExplicitFallbacks: number;
+  feederSlotLazyRepairBuilds: number;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -598,6 +602,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
     feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
     feederSlotMatchingAugmentTraversals:0,feederSlotMatchingBranchesExplored:0,
+    feederSlotIntervalCertificates:0,feederSlotExplicitFallbacks:0,feederSlotLazyRepairBuilds:0,
     feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
     feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,
     feederCohortContiguousWindowChecks:0,feederCohortContiguousWindowPrunes:0,
@@ -917,6 +922,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>;edgeCount:number;domainSizes:number[];
           repair:(forbidden:ReadonlySet<string>)=>FeederRepairResult}
           | {outcome:"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED"};
+        const fixedFeederSlotPlaced=[...blockPlaced,...blockOperations];
+        const feederPlacementAuthorities=new Map<string,ReturnType<typeof prepareTaskPlacementAuthority>>();
+        const feederPlacementAuthority=(task:Task)=>{const existing=feederPlacementAuthorities.get(task.id);if(existing)return existing;
+          const prepared=prepareTaskPlacementAuthority(problem,task,fixedFeederSlotPlaced,blockMeals);
+          feederPlacementAuthorities.set(task.id,prepared);return prepared;};
         const feederSlotCertificate = (blockStart:number):FeederSlotCertificate => {
           const first=rankedCohort[0];
           if(!first)return {outcome:"NOT_APPLICABLE"};
@@ -945,25 +955,31 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }
           if(analytic==="NOT_APPLICABLE")evidence.feederSlotAnalyticAbstentions++;
           evidence.feederSlotMatchingChecks++;
-          const edges=new Map<string,number[]>();
-          const fixedPlaced=[...blockPlaced,...blockOperations];
-          for(const candidate of rankedCohort){
-            const candidateEdges:number[]=[];
-            for(let ordinal=0;ordinal<rankedCohort.length;ordinal++){
-              if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
-                return {outcome:"BUDGET_EXHAUSTED"};
-              evidence.feederSlotMatchingBranchesExplored++;
-              evidence.feederSlotMatchingEdgeChecks++;
-              const start=blockStart+ordinal*duration;
-              if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
-              if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
+          const fixedPlaced=fixedFeederSlotPlaced;
+          let edges:Map<string,number[]>|undefined;
+          const buildEdges=():"BUILT"|"BUDGET_EXHAUSTED"=>{
+            if(edges)return "BUILT";
+            edges=new Map<string,number[]>();
+            for(const candidate of rankedCohort){
+              const candidateEdges:number[]=[];
+              for(let ordinal=0;ordinal<rankedCohort.length;ordinal++){
+                if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
+                  return "BUDGET_EXHAUSTED";
+                evidence.feederSlotMatchingBranchesExplored++;
+                evidence.feederSlotMatchingEdgeChecks++;
+                const start=blockStart+ordinal*duration;
+                if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
+                if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
+              }
+              edges.set(candidate.choice.feeder.id,candidateEdges);
             }
-            edges.set(candidate.choice.feeder.id,candidateEdges);
-          }
+            return "BUILT";
+          };
           const findMatching=(forbidden:ReadonlySet<string>):FeederRepairResult=>{
+           if(buildEdges()==="BUDGET_EXHAUSTED")return {outcome:"BUDGET_EXHAUSTED"};
            const owner=new Map<number,string>();
            const augment=(feederId:string,seen:Set<number>):"MATCHED"|"UNMATCHED"|"BUDGET_EXHAUSTED"=>{
-            for(const ordinal of edges.get(feederId)??[]){
+            for(const ordinal of edges!.get(feederId)??[]){
               if(seen.has(ordinal)||forbidden.has(`${feederId}@${ordinal}`))continue;
               if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
                 return "BUDGET_EXHAUSTED";
@@ -987,10 +1003,47 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
            }
            return {outcome:"PERFECT",matching:new Map([...owner].map(([ordinal,feederId])=>[feederId,ordinal]))};
           };
+          const ordinalDomains=rankedCohort.map(candidate=>{
+            const limit=candidate.deadline-duration;
+            // baseDomain is the canonical canPlaceTask projection for every fixed authority;
+            // retain the feeder-domain grid and coach projection as an independent authority.
+            // This intersection makes the certificate exactly the old edge predicate without
+            // enumerating feeder x slot.
+            const authorityIntervals=intersectExactStartIntervals(
+              feederPlacementAuthority(candidate.choice.feeder).baseDomain.intervals.map(interval=>({...interval})),
+              candidate.domain.intervals.map(interval=>({...interval})));
+            const ranges=(candidate.domain.gridAnchor-blockStart)%5===0?authorityIntervals
+              .flatMap(interval=>{const first=Math.max(0,Math.ceil((interval.start-blockStart)/duration));
+                const last=Math.min(rankedCohort.length-1,Math.floor((Math.min(interval.end,limit)-blockStart)/duration));
+                return first<=last?[{first,last}]:[]}):[];
+            const merged:Array<{first:number;last:number}>=[];
+            for(const range of ranges){const previous=merged.at(-1);if(previous&&range.first<=previous.last+1)previous.last=Math.max(previous.last,range.last);else merged.push({...range});}
+            return {id:candidate.choice.feeder.id,ranges:merged};
+          });
+          if(ordinalDomains.every(({ranges})=>ranges.length===1)){
+            const owner=new Map<number,string>();
+            const next=Array.from({length:rankedCohort.length+1},(_,ordinal)=>ordinal);
+            const available=(ordinal:number):number=>next[ordinal]===ordinal?ordinal:(next[ordinal]=available(next[ordinal]!));
+            const rank=new Map(rankedCohort.map((row,index)=>[row.choice.feeder.id,index]));
+            const ordered=[...ordinalDomains].sort((left,right)=>left.ranges[0]!.last-right.ranges[0]!.last
+              ||left.ranges[0]!.first-right.ranges[0]!.first
+              ||rank.get(left.id)!-rank.get(right.id)!);
+            for(const candidate of ordered){const {first,last}=candidate.ranges[0]!,ordinal=available(first);
+              if(ordinal>last)return {outcome:"NO_PERFECT_MATCH"};
+              owner.set(ordinal,candidate.id);next[ordinal]=available(ordinal+1);
+            }
+            evidence.feederSlotIntervalCertificates++;
+            const matching=new Map([...owner].map(([ordinal,id])=>[id,ordinal]));
+            const sizes=ordinalDomains.map(({ranges})=>ranges[0]!.last-ranges[0]!.first+1);
+            let repairBuilt=false;
+            return {outcome:"PERFECT",matching,edgeCount:sizes.reduce((sum,size)=>sum+size,0),domainSizes:[...sizes].sort((a,b)=>a-b),
+              repair:(forbidden)=>{if(!repairBuilt){evidence.feederSlotLazyRepairBuilds++;repairBuilt=true;}return findMatching(forbidden);}};
+          }
+          evidence.feederSlotExplicitFallbacks++;
           const initial=findMatching(new Set());
           if(initial.outcome!=="PERFECT")return initial;
-          return {...initial,edgeCount:[...edges.values()].reduce((sum,row)=>sum+row.length,0),
-            domainSizes:[...edges.values()].map(row=>row.length).sort((a,b)=>a-b),repair:findMatching};
+          return {...initial,edgeCount:[...edges!.values()].reduce((sum,row)=>sum+row.length,0),
+            domainSizes:[...edges!.values()].map(row=>row.length).sort((a,b)=>a-b),repair:findMatching};
         };
 
         let feederOrderAuthorityObserved=false;
