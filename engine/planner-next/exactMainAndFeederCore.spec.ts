@@ -42,6 +42,56 @@ function feederStartBacktrackingProblem(): PlannerNextProblem {
   return problem;
 }
 
+function layeredRunProblem(): PlannerNextProblem {
+  const problem = syntheticProblem([
+    { id: "feed-a1", kind: "vocal", participantId: "a1", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-a1", kind: "main", participantId: "a1", duration: 10, spaceId: "main", dependencies: ["feed-a1"], blockKey: "a", availability: [{ start: 70, end: 80 }] },
+    { id: "feed-b", kind: "vocal", participantId: "b", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["feed-b"], blockKey: "b", availability: [{ start: 80, end: 90 }] },
+    { id: "feed-a2", kind: "vocal", participantId: "a2", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-a2", kind: "main", participantId: "a2", duration: 10, spaceId: "main", dependencies: ["feed-a2"], blockKey: "a", availability: [{ start: 90, end: 100 }] },
+  ], ["a1", "b", "a2"], ["feed"]);
+  for (const task of problem.tasks.filter(({ kind }) => kind === "main"))
+    task.blockKey = task.coachId = task.id === "main-b" ? "coach-b" : "coach";
+  for (const task of problem.tasks.filter(({ kind }) => kind === "vocal"))
+    task.coachId = task.id === "feed-b" ? "coach-b" : "coach";
+  problem.coaches.push({ id: "coach-b", availability: [{ start: 0, end: 120 }] });
+  problem.mainFlow.maxBlocksByKey = 2;
+  problem.protectedMeal = undefined;
+  return problem;
+}
+
+test("EXACT_CONSTRUCTIVE proves lower run layers before accepting the first feasible layer", () => {
+  const result = constructExactMainAndFeederCore(layeredRunProblem());
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount }) => runCount), [2, 3]);
+  assert.ok(result.evidence.runLayers[0]!.architecturesChecked > 0);
+  assert.ok(result.evidence.runLayers[0]!.architecturesChecked
+    === Object.values(result.evidence.runLayers[0]!.rejectionReasons).reduce((sum, count) => sum + count, 0));
+  assert.equal(result.evidence.selectedPattern?.reduce((runs, key, index, pattern) =>
+    runs + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0), 3);
+});
+
+test("EXACT_CONSTRUCTIVE stops after a feasible minimum run layer", () => {
+  const problem = layeredRunProblem();
+  for (const task of problem.tasks.filter(({ kind }) => kind === "main")) task.availability = undefined;
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount }) => runCount), [2]);
+});
+
+test("an incomplete pattern layer reports budget exhaustion without false minimality", () => {
+  const problem = layeredRunProblem();
+  problem.budget.maxPatterns = 1;
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(result.evidence.reasonCodes, ["PATTERN_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.equal(result.evidence.architecturesChecked, 0);
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount, patternsGenerated, architecturesChecked }) =>
+    ({ runCount, patternsGenerated, architecturesChecked })),
+  [{ runCount: 2, patternsGenerated: 1, architecturesChecked: 0 }]);
+});
+
 function fixedFeederSlotProblem(kind:"HALL_DEFICIT"|"PERFECT", rename=(id:string)=>id):PlannerNextProblem {
   const participantIds=["a","b","c"].map(rename);
   const tasks:Task[]=participantIds.flatMap((participantId,index)=>[
@@ -119,6 +169,7 @@ test("a perfect feeder-slot matching materializes its witness without FEEDER_ORD
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.feederSlotMatchingChecks>result.evidence.feederSlotMatchingPrunes);
   assert.ok(result.evidence.feederMatchingWitnessMaterializations>0);
+  assert.ok(result.evidence.feederSlotIntervalCertificates>0);
   assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
@@ -212,10 +263,13 @@ test("feeder-slot matching is invariant to IDs and input order",()=>{
 });
 
 test("feeder-slot matching exhausts the shared budget without hidden branches",()=>{
-  const complete=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
+  const explicitProblem=()=>{const problem=fixedFeederSlotProblem("PERFECT");
+    problem.tasks.find(({id})=>id==="feeder-a")!.availability=[{start:40,end:50},{start:60,end:70}];return problem;};
+  const complete=constructExactMainAndFeederCore(explicitProblem());
+  assert.ok(complete.evidence.feederSlotExplicitFallbacks>0);
   const findExhaustion=(phase:"EDGE"|"AUGMENT")=>{
     for(let budget=1;budget<complete.evidence.branchesExplored;budget++){
-      const problem=fixedFeederSlotProblem("PERFECT");problem.budget.maxBranchExpansions=budget;
+      const problem=explicitProblem();problem.budget.maxBranchExpansions=budget;
       const result=constructExactMainAndFeederCore(problem);
       if(result.status==="BRANCH_BUDGET_EXHAUSTED"&&(phase==="EDGE"
         ?result.evidence.feederSlotMatchingEdgeChecks>0&&result.evidence.feederSlotMatchingAugmentTraversals===0
@@ -652,8 +706,55 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   }});
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.equal(orders.size,2);
+  assert.ok(result.evidence.feederSlotLazyRepairBuilds>0,"repair must materialize the explicit graph lazily");
+  assert.ok(result.evidence.feederSlotMatchingEdgeChecks>0,"lazy repair must charge every explicit edge check");
+  assert.equal(result.evidence.coreLeafValidationAttempts,result.evidence.completeLeafCount);
+  assert.equal(result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
+  assert.equal(result.evidence.coreLeafValidShapeRejects,0);
+  assert.equal(result.evidence.coreLeafHardValidationRejects,0);
+  assert.equal(result.evidence.coreLeafValidShapeRejects+result.evidence.coreLeafHardValidationRejects
+    +result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
+  assert.deepEqual(result.evidence.coreLeafValidationReasonCounts,{});
   assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
   assert.equal(result.evidence.feederOrderBranches,0);
+});
+
+test("feeder matching diagnostics distinguish repair triggers without changing the search",()=>{
+  const onlyB=()=>{const problem=twoCohortProblem();
+    problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+    problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
+    problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+    problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");return problem;};
+  let partialCalls=0;
+  const partial=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onPartialCoreCandidate(){
+    return ++partialCalls===1?{outcome:"REJECT",diagnosticCertificate:{authorityId:"resource",demandMinutes:20,
+      freeCapacityMinutes:10,overloadTaskIds:["later"]}}:"CONTINUE";}});
+  let leafCalls=0;
+  const child=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onHardValidCoreLeaf(){return ++leafCalls===1?"REJECT":"ACCEPT";}});
+  const partialRows=partial.evidence.causalDiagnostic!.feederMatching.contexts;
+  const childRows=child.evidence.causalDiagnostic!.feederMatching.contexts;
+  assert.ok(partialRows.some(row=>row.repairsByTrigger.PARTIAL_CORE_REJECT>0));
+  assert.ok(childRows.some(row=>row.repairsByTrigger.CHILD_DEAD_END>0));
+  assert.ok([...partialRows,...childRows].every(row=>Object.keys(row.repairsByTrigger).sort().join("|")===
+    "CHILD_DEAD_END|PARTIAL_CORE_REJECT|RESIDUAL_MATCHING_DEAD_END"));
+  assert.deepEqual(partialRows.flatMap(row=>row.partialCoreRejects).map(row=>row.certificate),
+    [{authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["later"]}]);
+});
+
+test("a leaf certificate skips irrelevant suffix decisions and reopens its causal CORE decision deterministically",()=>{
+  const run=(causal:boolean)=>{const leaves:string[]=[];const result=runExactMainAndFeederSearch(twoCohortProblem(),{
+    onHardValidCoreLeaf(candidate){
+      leaves.push(candidate.tasks.filter(({kind})=>kind==="main").sort((a,b)=>a.start-b.start).map(({id})=>id).join("|"));
+      assert.equal(candidate.decisionDepthByTaskId["feeder-a1"],candidate.decisionDepthByTaskId["main-a1"],
+        "an atomic feeder is owned by the same macro decision as its main");
+      return causal?{outcome:"CERTIFIED_BACKJUMP",targetDepth:2}:"REJECT";
+    }});return {leaves,result};};
+  const ordinary=run(false),first=run(true),second=run(true);
+  assert.ok(ordinary.leaves.length>first.leaves.length,"ordinary rejection must enumerate suffix alternatives");
+  assert.ok(first.result.evidence.mainRunWitnessRepairs>0,"the causal main assignment must be reopened");
+  assert.ok(new Set(first.leaves.map(order=>order.split("|").slice(0,2).join("|"))).size>1,
+    "backtracking must reach a materially different causal prefix");
+  assert.deepEqual(second,first,"causal unwind must remain deterministic");
 });
 
 test("an analytically impossible cohort cannot perform hidden factorial work", () => {

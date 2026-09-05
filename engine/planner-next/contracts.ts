@@ -51,6 +51,7 @@ export interface TechnicalChainPolicy {
   id: string;
   orderedTaskIds: string[];
   adjacency: "REQUIRED";
+  internalTransition?: "INCLUDED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: string[];
 }
@@ -195,6 +196,8 @@ export interface ScheduledOperationalMeal {
   duration: Minute;
   start: Minute;
   end: Minute;
+  /** Ordering evidence only; false remains a fully viable boundary. */
+  preferredBoundary?: boolean;
 }
 
 export interface ParticipantMealObligation {

@@ -28,6 +28,9 @@ function assertInvariantFails(mutator: (expansion: any) => void, invariantCode: 
 
 test("expands exact semantic full A2 template", () => {
   const template = createCanonicalFullA2Template();
+  assert.equal(template.assignments.filter(({ requiresBand }) => requiresBand).length, 13);
+  assert.equal(template.assignments.filter(({ requiresBand }) => !requiresBand).length, 6);
+  assert.equal(template.resources.filter(({ id }) => id === "band").length, 1);
   const expansion = expandCanonicalFullA2Template(template);
   const validation = validateExpandedCanonicalFullA2Template(expansion);
   assert.equal(template.participants.join(","), "C01,C02,C03,C04,C05,C06,C07,C08,C09,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19");
@@ -338,4 +341,6 @@ test("generated artifacts are reproducible against current expansion", () => {
   assert.equal(evidence.noEngineInputPartial, true);
   assert.equal(evidence.itinerantUnits.length, 3);
   assert.equal(evidence.unitIdNotHardResource, true);
+  assert.ok(evidence.itinerantUnits.every((unit: any) => unit.availability === "inherits_day_unless_overridden"));
+  assert.equal(JSON.stringify(evidence).includes("SPEC08_FOCAL_A2_SECTION_24"), false);
 });

@@ -15,24 +15,62 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.equal(config.resourceAvailability, "INHERIT_DAY_UNLESS_OVERRIDDEN");
   assert.equal(config.productiveIds, "DERIVE_FROM_CANONICAL_IDENTITIES");
   assert.deepEqual(config.itinerantUnitAvailability, {
-    "reality-unit-a": { start: "11:00", end: "14:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
-    "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },
-    "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
+    "reality-unit-a": "inherits_day_unless_overridden",
+    "reality-unit-b": "inherits_day_unless_overridden",
+    "reality-unit-combined": "inherits_day_unless_overridden",
   });
+  assert.equal(config.provenance.itinerantUnitAvailability, "SPEC-08.v1.1");
   assert.deepEqual(config.unresolvedCreationInputs, []);
   assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
   assert.equal(config.participantAvailability.C19.end, "18:40");
-  assert.equal(config.transportPolicy.arrival.minGapMinutes, 35);
-  assert.deepEqual(config.transportPolicy.arrival, { targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 35, groupingWeight: 3 });
+  assert.equal(config.transportPolicy.arrival.minGapMinutes, 30);
+  assert.deepEqual(config.transportPolicy.arrival, { targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 30, groupingWeight: 3 });
   assert.deepEqual(config.transportPolicy.departure, { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
+  assert.deepEqual(config.meals.operational.mealUnits, [
+    { mealUnitId: "estudio-7-operations", spaceIds: ["estudio-7"], resourceIds: ["band"] },
+    { mealUnitId: "plato-14-operations", spaceIds: ["p14-recursos", "p14-pasillo", "p14-giratuto"], resourceIds: [] },
+    { mealUnitId: "plato-15-operations", spaceIds: ["p15-croma", "p15-estrellas-sillon"], resourceIds: [] },
+    { mealUnitId: "reality-unit-a-operations", spaceIds: [], resourceIds: ["cam-3", "son-1"] },
+    { mealUnitId: "reality-unit-b-operations", spaceIds: [], resourceIds: ["cam-4", "son-2"] },
+    { mealUnitId: "totales-operations", spaceIds: ["totales-1", "totales-coreo"], resourceIds: [] },
+  ]);
+  assert.ok(config.meals.operational.mealUnits.every(({ mealUnitId, spaceIds, resourceIds }) => mealUnitId && spaceIds.length + resourceIds.length > 0));
+  assert.ok(config.meals.operational.mealUnits.every(() => config.meals.operational.defaultDurationMinutes === 75));
+  const scopes=config.meals.operational.mealUnits.flatMap(({spaceIds,resourceIds})=>[...spaceIds.map(id=>`space:${id}`),...resourceIds.map(id=>`resource:${id}`)]);
+  assert.equal(new Set(scopes).size,scopes.length);
+  assert.ok(config.meals.operational.mealUnits.every(({mealUnitId})=>mealUnitId!=="reality-unit-combined-operations"));
+  for(const excluded of ["styling","caracola-lucia","caracola-jose-maria","alfombra-roja","totales-post","technical-transfer"])
+    assert.ok(!scopes.includes(`space:${excluded}`),excluded);
+  assert.equal(config.meals.participant.sodexoDurationMinutes, 40);
+  assert.deepEqual(config.meals.coach, { individualDurationMinutes: 45, inheritsSpaceOperationalMeal: false });
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
+});
+
+test("A2 camera authority and vocal block policy preserve the clarified domain", () => {
+  const template = createCanonicalFullA2Template();
+  assert.ok(template.resources.some(({ id, kind, availability }) => id === "cam-1" && kind === "camera" && availability === "inherits_day_unless_overridden"));
+  assert.deepEqual(template.spaceResourceAssignments, {
+    "p14-recursos": ["cam-1"], "p14-pasillo": ["cam-1"],
+    "p15-croma": ["cam-2"], "p15-estrellas-sillon": ["cam-2"],
+    "totales-1": ["cam-5"], "totales-coreo": ["cam-6"],
+  });
+  assert.equal(template.spaceResourceAssignments["p14-giratuto"], undefined);
+  assert.ok(!template.spaceResourceAssignments["p14-recursos"].includes("cam-4"));
+  assert.ok(!template.spaceResourceAssignments["p14-pasillo"].includes("cam-4"));
+  assert.deepEqual(template.itinerantUnits.find(({ id }) => id === "reality-unit-b")?.memberResourceIds, ["cam-4", "son-2"]);
+  assert.deepEqual(template.itinerantUnits.find(({ id }) => id === "reality-unit-combined")?.memberResourceIds, ["cam-3", "cam-4", "son-1"]);
+  assert.equal(template.rules.mainFlow.blockLimit, "UNBOUNDED");
+  assert.equal("maxBlocksPerCoach" in template.rules.mainFlow, false);
+  assert.ok(template.resources.some(({ id }) => id === "cam-5"));
+  assert.ok(template.resources.some(({ id }) => id === "cam-6"));
 });
 
 test("A2 resolved source configuration contains no human schedule ordering or task timing", () => {
   const serialized = JSON.stringify(A2_BENCHMARK_SOURCE_CONFIGURATION);
   for (const forbidden of [
     "referenceOrder", "startPlanned", "endPlanned", "17:15", "18:35",
+    "11:00", "11:15", "13:30", "14:00", "16:00", "18:00", "SPEC08_FOCAL_A2_SECTION_24",
     "Cristina", "Julio", "José Javier",
   ]) assert.equal(serialized.includes(forbidden), false, forbidden);
 });

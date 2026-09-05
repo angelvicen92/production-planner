@@ -3,7 +3,8 @@ import test from "node:test";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
+  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -134,18 +135,9 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
-  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[prerequisite.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardChecksByDepth["0"],
-    result.evidence.ordinaryIndividualForwardChecks);
-  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
-    { causingTaskId: candidate.id, blockingTaskId: prerequisite.id, depth: 0 });
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
-    "the analytic certificate does not enumerate starts");
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("ordinary provisional placement prunes an affected hard obligation that is not a prerequisite", () => {
@@ -158,14 +150,9 @@ test("ordinary provisional placement prunes an affected hard obligation that is 
 
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, obligation]));
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[obligation.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
-    { causingTaskId: candidate.id, blockingTaskId: obligation.id, depth: 0 });
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0);
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("singleton ordinary candidate is retained when its affected prerequisite keeps an analytic domain", () => {
@@ -201,13 +188,9 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
     dependencies: prerequisites.map(({ id }) => id) };
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, ...prerequisites]));
   assert.equal(result.status, "INFEASIBLE");
-  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
-  assert.ok(result.evidence.ordinaryIndividualForwardTasksChecked >= 2);
-  assert.ok(result.evidence.ordinaryIndividualForwardExactDomainChecks >= 2);
-  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses >= 2,
-    "P1 and P2 each retain the start at zero after provisional A");
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
-    "the individual checker derives witnesses from analytic domain counts without a joint start scan");
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.ok(result.evidence.coreStandaloneFrontierIndividualDomainChecks >= 2);
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("global macro MRV lets setup beat a broader synchronized round unit", () => {
@@ -410,10 +393,50 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.equal(integrated.evidence.firstStandaloneForwardPruneDepth, integrated.evidence.coreMaximumDepth);
   assert.equal(integrated.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
   assert.equal(integrated.evidence.standaloneSearchInvocations, 1);
+  assert.equal(integrated.evidence.coreLeafValidationAttempts,integrated.evidence.coreCompleteLeafCount);
+  assert.equal(integrated.evidence.coreLeafValidShapeRejects+integrated.evidence.coreLeafHardValidationRejects
+    +integrated.evidence.coreLeafValidationAccepted,integrated.evidence.coreCompleteLeafCount);
+  const isolatedMealCounters=["mealTimelineDomainCount","mealTimelinesExplored","mealTimelinesEliminatedAnalytically",
+    "mealTimelinesPendingAtExhaustion","mealTimelinesPreferred","mealTimelinesNonPreferred"] as const;
+  for(const key of isolatedMealCounters)assert.equal(integrated.evidence[key],isolated.evidence[key]);
   assert.notEqual(integrated.scheduledTasks.find(({ id }) => id === "vocal")!.start,
     isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start);
   assert.equal(validatePlan(input, integrated.scheduledTasks, [], integrated.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
+});
+
+test("partial CORE integration rejects collective overload and explores a capacity-preserving alternative", () => {
+  const input = coreLeafContinuationProblem();
+  input.tasks = input.tasks.filter(({ id }) => id !== "standalone");
+  const availability = [{ start: 0, end: 120 }];
+  const obligations = ["future-a", "future-b"].map((id) => auxiliary(id, id, [{ start: 75, end: 100 }], ["unit"]));
+  for (const obligation of obligations) {
+    input.participants.push({ id: obligation.participantId, availability });
+    input.spaces.push({ id: obligation.spaceId, availability });
+    input.tasks.push(obligation);
+  }
+  input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
+  const isolated = constructExactMainAndFeederCore(input);
+  assert.equal(isolated.status, "COMPLETE");
+  for (const obligation of obligations)
+    assert.ok(standaloneForwardDynamicDomain(input, obligation, isolated.scheduledTasks).eligibleStartCount > 0,
+      `${obligation.id} retains an individual domain in the first provisional CORE`);
+
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.standaloneForwardCollectiveCapacityPrunes > 0);
+  assert.equal(result.evidence.coreLeavesRejectedByStandalone, 0,
+    "the overloaded alternative is rejected by partial Future Feasibility, not at a CORE leaf");
+  assert.equal(result.evidence.coreCompleteLeafCount, 1,
+    "only the capacity-preserving alternative reaches a complete CORE leaf");
+  assert.equal(result.evidence.standaloneSearchInvocations, 1);
+  assert.notEqual(result.scheduledTasks.find(({ id }) => id === "main")!.start,
+    isolated.scheduledTasks.find(({ id }) => id === "main")!.start,
+    "CORE continues to a structurally different alternative after the partial prune");
+  assert.ok(result.evidence.standaloneForwardCollectiveCapacityCertificates.some(certificate =>
+    certificate.failure === "COLLECTIVE_CAPACITY" && certificate.authorityId === "unit"
+      && certificate.demandMinutes === 20 && certificate.freeCapacityMinutes === 15
+      && certificate.overloadTaskIds.join(",") === "future-a,future-b" && certificate.frequency > 0));
 });
 
 test("derived feeder endpoints preserve a solution after historical endpoints fail", () => {
@@ -454,7 +477,7 @@ test("secondary feasibility runs only after the accumulating core cohort is clos
   assert.deepEqual(result.scheduledTasks, []);
 });
 
-test("a current feeder blocker is repaired locally instead of producing an unsound causal backjump", () => {
+test("a current feeder blocker resolves without producing an unsound causal backjump", () => {
   const input = problem([auxiliary("standalone-a", "a", [{ start:60, end:70 }])]);
   const availability=[{start:0,end:120}];
   input.participants=input.participants.filter(({id})=>id!=="core"&&id!=="a"&&id!=="b");
@@ -476,10 +499,9 @@ test("a current feeder blocker is repaired locally instead of producing an unsou
   assert.equal(result.scheduledTasks.find(({id})=>id==="feeder-b")!.start,60);
   assert.equal(result.scheduledTasks.find(({id})=>id==="feeder-a")!.start,70);
   assert.equal(result.scheduledTasks.find(({id})=>id==="standalone-a")!.start,60);
-  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
   const rejected=result.evidence.causalDiagnostic!.futureFeasibility.assessments
     .find(row=>row.taskId==="standalone-a"&&row.domainEmpty);
-  assert.equal(rejected?.certifiedBackjumpTargetDepth,null);
+  assert.equal(rejected?.certifiedBackjumpTargetDepth??null,null);
   assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assert.deepEqual(runExactItinerantPlanSearch(structuredClone(input)),
     {...result,evidence:{...result.evidence,causalDiagnostic:null}});
@@ -488,7 +510,7 @@ test("a current feeder blocker is repaired locally instead of producing an unsou
 test("zero alternatives are infeasible and failures publish no partial core", () => {
   const input = problem([auxiliary("impossible", "a", [{ start: 0, end: 5 }])]);
   const result = constructExactItinerantPlan(input);
-  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.standaloneZeroAlternativePrunes > 0);
+  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);assert.deepEqual(result.scheduledItinerantUnitMeals,[]);
 });
 
@@ -525,6 +547,15 @@ test("results are deterministic and invariant to input collection order", () => 
   const reversed = constructExactItinerantPlan(reversedInput);
   assert.deepEqual(first, second); assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
   assert.deepEqual(first.scheduledTasks, reversed.scheduledTasks);
+});
+
+test("macro capacity certificate identity is deterministic and distinguishes causal signatures",()=>{
+  const after={authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["b","a"]};
+  assert.equal(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature({...after,overloadTaskIds:["a","b"]},"macro",2));
+  assert.notEqual(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature(after,"macro",3));
+  assert.equal(candidateIntroducesCapacityCertificate("INTRODUCED_BY_CANDIDATE"),true);
+  assert.equal(candidateIntroducesCapacityCertificate("PREEXISTING"),false);
+  assert.equal(candidateIntroducesCapacityCertificate("UNRESOLVED"),false);
 });
 
 test("static forward domain exactly intersects hard windows and subtracts hard meals", () => {
@@ -671,8 +702,22 @@ test("block-closed future diagnostics are neutral, deterministic, and authority-
   assert.equal(enabled.evidence.coreMaximumDepth,disabled.evidence.coreMaximumDepth);
   assert.equal(enabled.evidence.coreCompleteLeafCount,disabled.evidence.coreCompleteLeafCount);
   assert.equal(enabled.evidence.coreBacktracks,disabled.evidence.coreBacktracks);
+  const frontier=enabled.evidence.causalDiagnostic!.standaloneFrontier;
+  assert.equal(frontier.totalRejections,enabled.evidence.coreStandaloneFrontierPrunes);
+  assert.ok(frontier.certificates.length<=frontier.totalRejections);
+  assert.equal(frontier.certificates.reduce((sum,row)=>sum+row.frequency,0),frontier.totalRejections);
+  assert.ok(frontier.examples.every(row=>row.overloadTasks.every(task=>task.duration>0)
+    &&row.consumingCoreTasks.every(task=>task.end>task.start)));
+  assert.ok(frontier.examples.every(row=>row.pivotPairProven&&row.prefixChecks.length===2
+    &&row.prefixChecks[0]!.prefixDepth===row.certificate.pivotDepth
+    &&row.prefixChecks[1]!.prefixDepth===row.certificate.pivotDepth!-1
+    &&row.prefixChecks[0]!.certificatePersists&&!row.prefixChecks[1]!.certificatePersists));
+  assert.equal(new Set(frontier.certificates.map(row=>JSON.stringify([row.failure,row.authorityId,row.demandMinutes,
+    row.freeCapacityMinutes,row.blockingTaskId,row.overloadTaskIds,row.pivotDepth]))).size,frontier.certificates.length);
   const reversed=create();reversed.tasks.reverse();reversed.spaces.reverse();reversed.resources.reverse();reversed.participants.reverse();
-  assert.deepEqual(runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility,diagnostic);
+  const reversedDiagnostic=runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!;
+  assert.deepEqual(reversedDiagnostic.futureFeasibility,diagnostic);
+  assert.deepEqual(reversedDiagnostic.standaloneFrontier,frontier);
 
   const changed=create();changed.participantTransitionMinutes=5;
   const changedRows=runExactItinerantPlanSearch(changed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility.assessments;

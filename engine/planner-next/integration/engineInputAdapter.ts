@@ -189,7 +189,10 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable resource ${id}`);
-    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes };
+    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes,
+      ...(source.presenceConcentrationPolicy !== undefined ? { presenceConcentrationPolicy: source.presenceConcentrationPolicy } : {}),
+      ...(source.assignedSpaceId !== undefined ? { assignedSpaceId: canonical("space", source.assignedSpaceId) } : {}),
+    };
   });
   const coaches = [...coachResourceIds].sort((a, b) => a - b).map((id) => {
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
@@ -250,7 +253,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     })).sort((left, right) => compare(left.id, right.id));
   const technicalChains:TechnicalChainPolicy[]=sourceTechnicalChains.map(policy=>({
     id:canonical("technical-chain",policy.id),orderedTaskIds:policy.orderedTaskIds.map(id=>canonical("task",id)),
-    adjacency:policy.adjacency,resourceContinuity:policy.resourceContinuity,
+    adjacency:policy.adjacency,...(policy.internalTransition!==undefined?{internalTransition:policy.internalTransition}:{}),resourceContinuity:policy.resourceContinuity,
     requiredResourceIds:policy.requiredResourceIds.map(id=>canonical("plan-resource",id)).sort(compare),
   })).sort((a,b)=>compare(a.id,b.id));
 

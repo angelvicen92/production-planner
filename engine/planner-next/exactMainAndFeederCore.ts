@@ -1,11 +1,13 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledOperationalMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import { createHash } from "node:crypto";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
-import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
+import { buildTimeline, candidateTimelineDomain, hasMainFlowMeal, mainFlowMealIsOperational, mainFlowOperationalMealPolicy, type MainFlowTimeline } from "./mainFlowMeal";
+import { generateMainFlowPatternRunLayers, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, intersectExactStartIntervals,
+  prepareTaskPlacementAuthority, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
@@ -14,10 +16,32 @@ import { preflight, validatePlan } from "./validate";
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
+export interface ExactCoreLeafShapeRejection {
+  expectedCount: number;
+  actualCount: number;
+  missingTaskIds: string[];
+  extraTaskIds: string[];
+  architectureKey: string | null;
+  timelineKey: string | null;
+}
+
+export type ExactCoreLeafHardValidationRejection = ReturnType<typeof validatePlan> & {
+  architectureKey: string | null;
+  timelineKey: string | null;
+  mealStart: number | null;
+  mealSplit: number | null;
+};
+
 export interface ExactMainAndFeederCoreEvidence {
   branchesExplored: number;
   patternCandidatesExplored: number;
   timelineCandidatesExplored: number;
+  mealTimelineDomainCount: number;
+  mealTimelinesExplored: number;
+  mealTimelinesEliminatedAnalytically: number;
+  mealTimelinesPreferred: number;
+  mealTimelinesNonPreferred: number;
+  mealTimelinesPendingAtExhaustion: number;
   mainCandidatesEvaluated: number;
   feederCandidatesEvaluated: number;
   constructiveFeederStartChecks: number;
@@ -52,6 +76,13 @@ export interface ExactMainAndFeederCoreEvidence {
   backtracks: number;
   maximumDepth: number;
   completeLeafCount: number;
+  coreLeafValidationAttempts: number;
+  coreLeafValidShapeRejects: number;
+  coreLeafHardValidationRejects: number;
+  coreLeafValidationAccepted: number;
+  coreLeafValidationReasonCounts: Record<string, number>;
+  firstCoreLeafShapeRejection: ExactCoreLeafShapeRejection | null;
+  firstCoreLeafHardValidationRejection: ExactCoreLeafHardValidationRejection | null;
   selectedPattern: string[] | null;
   selectedTimelineKey: string | null;
   selectedMainTaskIds: string[];
@@ -61,6 +92,8 @@ export interface ExactMainAndFeederCoreEvidence {
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  runLayers: Array<{ runCount: number; patternsGenerated: number; architecturesChecked: number;
+    rejectionReasons: Partial<Record<MainFeederStructuralRejection, number>> }>;
   firstExactArchitecture: string | null;
   firstFeedableRunSizes: number[];
   feederOrderBranchesByArchitecture: Record<string, number>;
@@ -73,6 +106,9 @@ export interface ExactMainAndFeederCoreEvidence {
   feederSlotMatchingEdgeChecks: number;
   feederSlotMatchingAugmentTraversals: number;
   feederSlotMatchingBranchesExplored: number;
+  feederSlotIntervalCertificates: number;
+  feederSlotExplicitFallbacks: number;
+  feederSlotLazyRepairBuilds: number;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -106,7 +142,33 @@ export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:st
 export interface ExactFutureFeasibilityCausalAssessment { depth:number; taskId:string; authoritySignature:string; resultSignature:string; domainEmpty:boolean; eligibleStartCount:number; blockers:string[]; ancestralDecisionDepths:number[]; certifiedBackjumpTargetDepth:number|null; occurrences:number }
 export interface ExactFutureFeasibilityAuthorityCollision { depth:number; taskId:string; authoritySignature:string; resultSignatures:string[] }
 export interface ExactFutureFeasibilityCausalSummary { totalEvaluations:number; uniqueAuthorityStates:number; repeatedEvaluations:number; authorityResultCollisions:number; negativeEvaluations:number; repeatedNegativeEvaluations:number; rejectsWithCertifiedBackjumpTarget:number; evaluationsByDepth:Record<string,number>; repeatedByDepth:Record<string,number>; negativeByDepth:Record<string,number>; assessments:ExactFutureFeasibilityCausalAssessment[]; collisions:ExactFutureFeasibilityAuthorityCollision[] }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; futureFeasibility:ExactFutureFeasibilityCausalSummary }
+export interface ExactStandaloneFrontierCertificate { failure:string|null;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;blockingTaskId:string|null;overloadTaskIds:string[];pivotDepth:number|null;frequency:number }
+export interface ExactStandaloneFrontierCoreTask { id:string;start:number;end:number;kind:string;decisionDepth:number|null }
+export interface ExactStandaloneFrontierPrefixCheck { prefixDepth:number;failure:string|null;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;certificatePersists:boolean }
+export interface ExactStandaloneFrontierExample { certificate:Omit<ExactStandaloneFrontierCertificate,"frequency">;overloadTasks:Array<{id:string;duration:number;kind:string;authorityId:string|null}>;consumingCoreTasks:ExactStandaloneFrontierCoreTask[];introducedByPivot:ExactStandaloneFrontierCoreTask[];prefixChecks:ExactStandaloneFrontierPrefixCheck[];pivotPairProven:boolean }
+export interface ExactStandaloneFrontierCausalSummary { totalRejections:number;certificates:ExactStandaloneFrontierCertificate[];examples:ExactStandaloneFrontierExample[] }
+export type ExactFeederMatchingRepairTrigger="RESIDUAL_MATCHING_DEAD_END"|"PARTIAL_CORE_REJECT"|"CHILD_DEAD_END";
+export interface ExactPartialCoreRejectionCertificate { authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[] }
+export interface ExactFeederMatchingContextDiagnostic {
+  fingerprint:string;depth:number;runEnd:number;blockStart:number;cohortSize:number;distinctFeederProfiles:number;
+  edgeCount:number;domainSizes:number[];witnessMaterializations:number;rejectedWitnesses:number;repairAttempts:number;
+  successfulRepairs:number;failedRepairs:number;augmentTraversals:number;equivalentOrdersCollapsed:number;
+  distinctOrderFingerprints:number;repairsByTrigger:Record<ExactFeederMatchingRepairTrigger,number>;
+  partialCoreRejects:Array<{certificate:ExactPartialCoreRejectionCertificate|null;rejectedWitnesses:number;repairAttempts:number;augmentTraversals:number;distinctOrderFingerprints:number}>;
+}
+export interface ExactFeederMatchingCausalSummary { contexts:ExactFeederMatchingContextDiagnostic[];overflowContexts:number }
+export interface ExactMacroCapacityCheck { evaluated:boolean;overloaded:boolean;authorityId:string;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[] }
+export type ExactMacroCapacityCausalAssessment="INTRODUCED_BY_CANDIDATE"|"PREEXISTING"|"UNRESOLVED";
+export interface ExactMacroCapacityTask { taskId:string;participantId:string|null;kind:string;spaceId:string;duration:number;requiredResourceIds:string[] }
+export interface ExactMacroCapacityPlacement { taskId:string;participantId:string|null;kind:string;start:number;end:number;spaceId:string;requiredResourceIds:string[] }
+export interface ExactMacroCapacityCertificate {
+  frequency:number;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];
+  blockingTaskId:string|null;causingMacroUnitId:string;macroDepth:number;overloadTasks:ExactMacroCapacityTask[];
+  candidatePlacement:{macroUnitId:string;taskIds:string[];participantId:string|null;kind:string;start:number;end:number;spaceId:string;requiredResourceIds:string[];tasks:ExactMacroCapacityPlacement[]};
+  priorRelevantPlacements:ExactMacroCapacityPlacement[];beforeCandidate:ExactMacroCapacityCheck;afterCandidate:ExactMacroCapacityCheck;
+  afterMatchesNormalCertificate:boolean;causalAssessment:ExactMacroCapacityCausalAssessment;candidateIntroducesCertificate:boolean;
+}
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary;macroPendingPrerequisiteCapacityCertificates:ExactMacroCapacityCertificate[];macroPendingPrerequisiteCapacityCertificateOverflow:number }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -174,8 +236,9 @@ export interface ExactMainChoiceDescriptor {
 interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number }
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 
-export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED";
-export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
+export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
+export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump
+  | {readonly outcome:"REJECT";readonly diagnosticCertificate?:ExactPartialCoreRejectionCertificate};
 export interface ExactSearchLedger {
   limit: number;
   branchesExplored: number;
@@ -189,6 +252,8 @@ export interface ExactCoreLeafCandidate {
   meals: ScheduledSpaceMeal[];
   remainingTaskIds: string[];
   fingerprint: string;
+  /** Branch-local ownership of every materialized atomic task by its CORE decision. */
+  decisionDepthByTaskId: Readonly<Record<string, number>>;
 }
 export interface ExactPartialCoreCandidate {
   tasks: ScheduledTask[];
@@ -510,6 +575,8 @@ function latestDepartureStartByParticipant(problem: PlannerNextProblem): Readonl
 
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
+    mealTimelineDomainCount:0,mealTimelinesExplored:0,mealTimelinesEliminatedAnalytically:0,
+    mealTimelinesPreferred:0,mealTimelinesNonPreferred:0,mealTimelinesPendingAtExhaustion:0,
     mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, constructiveFeederStartChecks: 0,
     matchingFeederStartChecks: 0, residualMatchingChecks: 0, residualMatchingInvocations: 0,
     residualMatchingFullBuilds: 0, residualMatchingIncrementalUpdates: 0,
@@ -525,13 +592,17 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
-    completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
+    completeLeafCount: 0, coreLeafValidationAttempts:0, coreLeafValidShapeRejects:0,
+    coreLeafHardValidationRejects:0, coreLeafValidationAccepted:0, coreLeafValidationReasonCounts:{},
+    firstCoreLeafShapeRejection:null, firstCoreLeafHardValidationRejection:null,
+    selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
-    architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
+    architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {}, runLayers: [],
     firstExactArchitecture: null, firstFeedableRunSizes: [], feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
     feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
     feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
     feederSlotMatchingAugmentTraversals:0,feederSlotMatchingBranchesExplored:0,
+    feederSlotIntervalCertificates:0,feederSlotExplicitFallbacks:0,feederSlotLazyRepairBuilds:0,
     feederCohortCapacityChecks:0,feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,
     feederCohortEddEmptyPrunes:0,blockStartsEliminatedByCohortBound:0,
     feederCohortContiguousWindowChecks:0,feederCohortContiguousWindowPrunes:0,
@@ -549,7 +620,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]}}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],feederMatching:{contexts:[],overflowContexts:0},futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]},standaloneFrontier:{totalRejections:0,certificates:[],examples:[]},macroPendingPrerequisiteCapacityCertificates:[],macroPendingPrerequisiteCapacityCertificateOverflow:0}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
@@ -603,9 +674,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return true;
   };
   const duration = mains[0]!.duration;
-  const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
+  const patternLayers = generateMainFlowPatternRunLayers(mains, problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
-  if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
@@ -629,16 +699,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
+      evidence.coreLeafValidationAttempts += 1;
       const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
         ...task, dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
       }));
       const deferredSetupSpaceIds = new Set(problem.spaces.filter((space) => space.setupPolicy !== undefined
         && !reducedTasks.some((task) => task.spaceId === space.id)).map(({ id }) => id));
+      const operationalMainPolicy=mainFlowMealIsOperational(problem)?mainFlowOperationalMealPolicy(problem):undefined;
       const reduced: PlannerNextProblem = { ...problem, tasks: reducedTasks,
         spaces: problem.spaces.map((space) => deferredSetupSpaceIds.has(space.id)
           ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space),
         anchoredAccompaniments: applicableContracts, roundSynchronizations: undefined,
-        participantMeals: undefined, participantMealCapacity: undefined, operationalMealPolicies: undefined,
+        participantMeals: undefined, participantMealCapacity: undefined,
+        operationalMealPolicies: operationalMainPolicy===undefined?undefined:[operationalMainPolicy],
         transportPolicy: undefined };
       const expected = [...coreIds].sort(), actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
@@ -646,17 +719,52 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
       const reducedPlaced = placed.map((task) => ({ ...task,
         dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
-      const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
+      const publishedMeals = mainFlowMealIsOperational(problem) ? [] : meals;
+      const validationOperationalMeals:ScheduledOperationalMeal[]=operationalMainPolicy===undefined?[]:meals.map(meal=>({
+        id:operationalMainPolicy.id,resourceIds:[...operationalMainPolicy.resourceIds],spaceIds:[...operationalMainPolicy.spaceIds],
+        duration:operationalMainPolicy.duration,start:meal.start,end:meal.end,
+      }));
+      const validation = validatePlan(reduced, reducedPlaced, [], publishedMeals,[],fixedResourceMeals,fixedItinerantMeals,[],validationOperationalMeals);
+      if (!validShape) {
+        evidence.coreLeafValidShapeRejects += 1;
+        evidence.coreLeafValidationReasonCounts.INVALID_CORE_LEAF_SHAPE =
+          (evidence.coreLeafValidationReasonCounts.INVALID_CORE_LEAF_SHAPE ?? 0) + 1;
+        if (evidence.firstCoreLeafShapeRejection === null) {
+          const expectedIds = new Set(expected), actualIds = new Set(actual);
+          evidence.firstCoreLeafShapeRejection = {
+            expectedCount: expected.length, actualCount: actual.length,
+            missingTaskIds: expected.filter((id) => !actualIds.has(id)),
+            extraTaskIds: actual.filter((id) => !expectedIds.has(id)),
+            architectureKey: currentArchitecture, timelineKey,
+          };
+        }
+      } else if (!validation.hardValid) {
+        evidence.coreLeafHardValidationRejects += 1;
+        for (const reason of validation.reasonCodes)
+          evidence.coreLeafValidationReasonCounts[reason] = (evidence.coreLeafValidationReasonCounts[reason] ?? 0) + 1;
+        if (evidence.firstCoreLeafHardValidationRejection === null) {
+          const split = timelineKey?.match(/^SPLIT\|(\d+)\|/)?.[1];
+          evidence.firstCoreLeafHardValidationRejection = { ...validation,
+            architectureKey: currentArchitecture, timelineKey,
+            mealStart: meals[0]?.start ?? null, mealSplit: split === undefined ? null : Number(split) };
+        }
+      } else {
+        evidence.coreLeafValidationAccepted += 1;
+      }
       if (validShape && validation.hardValid) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
         const ordered = placed.map((task) => ({ ...task,
           dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
         })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
-        const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        const orderedMeals = [...publishedMeals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        const decisionDepthByTaskId=Object.fromEntries(placed.flatMap(task=>{const owner=introducedBy(task.id,placed).depth;
+          return owner===null?[]:[[task.id,owner]];}));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
-          remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
+          remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals),
+          decisionDepthByTaskId }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
+        if (continuation === "ACCEPT") { selected = { tasks: ordered, meals: publishedMeals, pattern }; return "FOUND"; }
+        if(typeof continuation==="object")return continuation;
       }
       return "DEAD_END";
     }
@@ -811,9 +919,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
          * every feeder is a sound negative proof, while success leaves FEEDER_ORDER unchanged. */
         type FeederRepairResult={outcome:"PERFECT";matching:ReadonlyMap<string,number>}
           |{outcome:"NO_PERFECT_MATCH"|"BUDGET_EXHAUSTED"};
-        type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>;
+        type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>;edgeCount:number;domainSizes:number[];
           repair:(forbidden:ReadonlySet<string>)=>FeederRepairResult}
           | {outcome:"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED"};
+        const fixedFeederSlotPlaced=[...blockPlaced,...blockOperations];
+        const feederPlacementAuthorities=new Map<string,ReturnType<typeof prepareTaskPlacementAuthority>>();
+        const feederPlacementAuthority=(task:Task)=>{const existing=feederPlacementAuthorities.get(task.id);if(existing)return existing;
+          const prepared=prepareTaskPlacementAuthority(problem,task,fixedFeederSlotPlaced,blockMeals);
+          feederPlacementAuthorities.set(task.id,prepared);return prepared;};
         const feederSlotCertificate = (blockStart:number):FeederSlotCertificate => {
           const first=rankedCohort[0];
           if(!first)return {outcome:"NOT_APPLICABLE"};
@@ -842,25 +955,31 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }
           if(analytic==="NOT_APPLICABLE")evidence.feederSlotAnalyticAbstentions++;
           evidence.feederSlotMatchingChecks++;
-          const edges=new Map<string,number[]>();
-          const fixedPlaced=[...blockPlaced,...blockOperations];
-          for(const candidate of rankedCohort){
-            const candidateEdges:number[]=[];
-            for(let ordinal=0;ordinal<rankedCohort.length;ordinal++){
-              if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
-                return {outcome:"BUDGET_EXHAUSTED"};
-              evidence.feederSlotMatchingBranchesExplored++;
-              evidence.feederSlotMatchingEdgeChecks++;
-              const start=blockStart+ordinal*duration;
-              if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
-              if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
+          const fixedPlaced=fixedFeederSlotPlaced;
+          let edges:Map<string,number[]>|undefined;
+          const buildEdges=():"BUILT"|"BUDGET_EXHAUSTED"=>{
+            if(edges)return "BUILT";
+            edges=new Map<string,number[]>();
+            for(const candidate of rankedCohort){
+              const candidateEdges:number[]=[];
+              for(let ordinal=0;ordinal<rankedCohort.length;ordinal++){
+                if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
+                  return "BUDGET_EXHAUSTED";
+                evidence.feederSlotMatchingBranchesExplored++;
+                evidence.feederSlotMatchingEdgeChecks++;
+                const start=blockStart+ordinal*duration;
+                if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
+                if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
+              }
+              edges.set(candidate.choice.feeder.id,candidateEdges);
             }
-            edges.set(candidate.choice.feeder.id,candidateEdges);
-          }
+            return "BUILT";
+          };
           const findMatching=(forbidden:ReadonlySet<string>):FeederRepairResult=>{
+           if(buildEdges()==="BUDGET_EXHAUSTED")return {outcome:"BUDGET_EXHAUSTED"};
            const owner=new Map<number,string>();
            const augment=(feederId:string,seen:Set<number>):"MATCHED"|"UNMATCHED"|"BUDGET_EXHAUSTED"=>{
-            for(const ordinal of edges.get(feederId)??[]){
+            for(const ordinal of edges!.get(feederId)??[]){
               if(seen.has(ordinal)||forbidden.has(`${feederId}@${ordinal}`))continue;
               if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
                 return "BUDGET_EXHAUSTED";
@@ -884,12 +1003,52 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
            }
            return {outcome:"PERFECT",matching:new Map([...owner].map(([ordinal,feederId])=>[feederId,ordinal]))};
           };
+          const ordinalDomains=rankedCohort.map(candidate=>{
+            const limit=candidate.deadline-duration;
+            // baseDomain is the canonical canPlaceTask projection for every fixed authority;
+            // retain the feeder-domain grid and coach projection as an independent authority.
+            // This intersection makes the certificate exactly the old edge predicate without
+            // enumerating feeder x slot.
+            const authorityIntervals=intersectExactStartIntervals(
+              feederPlacementAuthority(candidate.choice.feeder).baseDomain.intervals.map(interval=>({...interval})),
+              candidate.domain.intervals.map(interval=>({...interval})));
+            const ranges=(candidate.domain.gridAnchor-blockStart)%5===0?authorityIntervals
+              .flatMap(interval=>{const first=Math.max(0,Math.ceil((interval.start-blockStart)/duration));
+                const last=Math.min(rankedCohort.length-1,Math.floor((Math.min(interval.end,limit)-blockStart)/duration));
+                return first<=last?[{first,last}]:[]}):[];
+            const merged:Array<{first:number;last:number}>=[];
+            for(const range of ranges){const previous=merged.at(-1);if(previous&&range.first<=previous.last+1)previous.last=Math.max(previous.last,range.last);else merged.push({...range});}
+            return {id:candidate.choice.feeder.id,ranges:merged};
+          });
+          if(ordinalDomains.every(({ranges})=>ranges.length===1)){
+            const owner=new Map<number,string>();
+            const next=Array.from({length:rankedCohort.length+1},(_,ordinal)=>ordinal);
+            const available=(ordinal:number):number=>next[ordinal]===ordinal?ordinal:(next[ordinal]=available(next[ordinal]!));
+            const rank=new Map(rankedCohort.map((row,index)=>[row.choice.feeder.id,index]));
+            const ordered=[...ordinalDomains].sort((left,right)=>left.ranges[0]!.last-right.ranges[0]!.last
+              ||left.ranges[0]!.first-right.ranges[0]!.first
+              ||rank.get(left.id)!-rank.get(right.id)!);
+            for(const candidate of ordered){const {first,last}=candidate.ranges[0]!,ordinal=available(first);
+              if(ordinal>last)return {outcome:"NO_PERFECT_MATCH"};
+              owner.set(ordinal,candidate.id);next[ordinal]=available(ordinal+1);
+            }
+            evidence.feederSlotIntervalCertificates++;
+            const matching=new Map([...owner].map(([ordinal,id])=>[id,ordinal]));
+            const sizes=ordinalDomains.map(({ranges})=>ranges[0]!.last-ranges[0]!.first+1);
+            let repairBuilt=false;
+            return {outcome:"PERFECT",matching,edgeCount:sizes.reduce((sum,size)=>sum+size,0),domainSizes:[...sizes].sort((a,b)=>a-b),
+              repair:(forbidden)=>{if(!repairBuilt){evidence.feederSlotLazyRepairBuilds++;repairBuilt=true;}return findMatching(forbidden);}};
+          }
+          evidence.feederSlotExplicitFallbacks++;
           const initial=findMatching(new Set());
           if(initial.outcome!=="PERFECT")return initial;
-          return {...initial,repair:findMatching};
+          return {...initial,edgeCount:[...edges!.values()].reduce((sum,row)=>sum+row.length,0),
+            domainSizes:[...edges!.values()].map(row=>row.length).sort((a,b)=>a-b),repair:findMatching};
         };
 
         let feederOrderAuthorityObserved=false;
+        let feederRepairTrigger:ExactFeederMatchingRepairTrigger="RESIDUAL_MATCHING_DEAD_END";
+        let partialCoreCertificate:ExactPartialCoreRejectionCertificate|null=null;
         const closeBlock = (scheduled: ScheduledTask[]): SearchOutcome => {
               if (!validBlockFound && feederRow) feederRow.mainChoicesWithValidFeeder++;
               validBlockFound = true;
@@ -906,6 +1065,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 cohort.at(-1)!.task.id, scheduled);
               if (matching.outcome !== "FOUND") {
                 feederOrderAuthorityObserved=true;
+                feederRepairTrigger="RESIDUAL_MATCHING_DEAD_END";
                 if (matching.outcome === "DEAD_END") { evidence.residualMatchingPrunes += 1; evidence.backtracks += 1; }
                 return matching.outcome;
               }
@@ -914,8 +1074,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
                 pattern: [...pattern], timelineKey }) ?? "CONTINUE";
               if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-              if (typeof partial === "object") return partial;
-              if (partial === "REJECT") { feederOrderAuthorityObserved=true;evidence.backtracks += 1; return "DEAD_END"; }
+              if (typeof partial === "object"&&partial.outcome==="CERTIFIED_BACKJUMP") return partial;
+              if (partial === "REJECT"||(typeof partial === "object"&&partial.outcome==="REJECT")) {
+                feederOrderAuthorityObserved=true;feederRepairTrigger="PARTIAL_CORE_REJECT";
+                partialCoreCertificate=typeof partial==="object"?partial.diagnosticCertificate??null:null;
+                evidence.backtracks += 1; return "DEAD_END";
+              }
               if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED","CONTINUATION",runEnd)) return "BUDGET_EXHAUSTED";
               const child = search(pattern, slots, composite, blockMeals, nextPlaced, blockUsed, runEnd, timelineKey,
                 matching.certificate);
@@ -926,6 +1090,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 // feeder ordinal. Repair the ordinal matching rather than treating a
                 // recursively rejected witness as invariant across the cohort.
                 feederOrderAuthorityObserved=true;
+                feederRepairTrigger="CHILD_DEAD_END";
                 evidence.backtracks += 1;
               }
               return child;
@@ -958,6 +1123,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 resources:[...(feeder.requiredResourceIds??[])].sort(),dependencies:feeder.dependencies.map(dependencyProfile),
                 deadline,domain:domain.intervals,future});};
             const feederProfileById=new Map([...byFeederId.keys()].map(id=>[id,feederContextSignature(id)]));
+            const contextFingerprint=createHash("sha256").update(JSON.stringify({runEnd,blockStart,
+              profiles:[...feederProfileById.values()].sort()})).digest("hex");
+            const context=diagnostic?diagnostic.feederMatching.contexts.find(row=>row.fingerprint===contextFingerprint)
+              ??(diagnostic.feederMatching.contexts.length<16?(()=>{const row:ExactFeederMatchingContextDiagnostic={fingerprint:contextFingerprint,depth:runEnd,runEnd,blockStart,
+                cohortSize:rankedCohort.length,distinctFeederProfiles:new Set(feederProfileById.values()).size,
+                edgeCount:feederSlotMatching.edgeCount,domainSizes:feederSlotMatching.domainSizes,witnessMaterializations:0,rejectedWitnesses:0,repairAttempts:0,successfulRepairs:0,failedRepairs:0,
+                augmentTraversals:0,equivalentOrdersCollapsed:0,distinctOrderFingerprints:0,
+                repairsByTrigger:{RESIDUAL_MATCHING_DEAD_END:0,PARTIAL_CORE_REJECT:0,CHILD_DEAD_END:0},partialCoreRejects:[]};
+                diagnostic.feederMatching.contexts.push(row);return row;})():(diagnostic.feederMatching.overflowContexts++,null)):null;
             const pending:[ReadonlySet<string>,ReadonlyMap<string,number>][]=[[new Set(),feederSlotMatching.matching]];
             const seenForbidden=new Set<string>([""]),seenOrders=new Set<string>();
             while(pending.length>0){
@@ -966,9 +1140,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 .map(([id])=>feederContextSignature(id)).join("|");
               if(seenOrders.has(orderKey)){
                 evidence.feederMatchingEquivalentOrdersCollapsed++;
+                if(context)context.equivalentOrdersCollapsed++;
                 continue;
               }
               seenOrders.add(orderKey);
+              if(context)context.distinctOrderFingerprints=seenOrders.size;
               feederOrderAuthorityObserved=false;
               const scheduled=[...witness].sort((left,right)=>left[1]-right[1]).map(([feederId,ordinal])=>{
                 const feeder=byFeederId.get(feederId)!.choice.feeder;
@@ -985,9 +1161,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               }
               if(jointlyValid){
                 evidence.feederMatchingWitnessMaterializations++;
+                if(context)context.witnessMaterializations++;
                 if(feederRow)feederRow.valid++;
                 const child=closeBlock(scheduled);
                 if(child!=="DEAD_END")return child;
+                if(context){context.rejectedWitnesses++;
+                  if(feederRepairTrigger==="PARTIAL_CORE_REJECT"){
+                    const certificate=partialCoreCertificate?{...partialCoreCertificate,overloadTaskIds:[...partialCoreCertificate.overloadTaskIds].sort()}:null;
+                    const signature=JSON.stringify(certificate);let row=context.partialCoreRejects.find(item=>JSON.stringify(item.certificate)===signature);
+                    if(!row){row={certificate,rejectedWitnesses:0,repairAttempts:0,augmentTraversals:0,distinctOrderFingerprints:0};context.partialCoreRejects.push(row);}
+                    row.rejectedWitnesses++;row.distinctOrderFingerprints=context.distinctOrderFingerprints;
+                  }}
                 evidence.backtracks++;
                 if(!feederOrderAuthorityObserved)continue blockStarts;
               }
@@ -1005,7 +1189,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                   return "BUDGET_EXHAUSTED";
                 evidence.feederSlotMatchingBranchesExplored++;
                 seenForbidden.add(key);evidence.feederMatchingWitnessRepairs++;
+                const augmentBefore=evidence.feederSlotMatchingAugmentTraversals;
                 const repaired=feederSlotMatching.repair(next);
+                if(context){const traversals=evidence.feederSlotMatchingAugmentTraversals-augmentBefore;
+                  context.repairAttempts++;context.repairsByTrigger[feederRepairTrigger]++;context.augmentTraversals+=traversals;
+                  if(repaired.outcome==="PERFECT")context.successfulRepairs++;else context.failedRepairs++;
+                  if(feederRepairTrigger==="PARTIAL_CORE_REJECT"){
+                    const certificate=partialCoreCertificate?{...partialCoreCertificate,overloadTaskIds:[...partialCoreCertificate.overloadTaskIds].sort()}:null;
+                    const signature=JSON.stringify(certificate);let row=context.partialCoreRejects.find(item=>JSON.stringify(item.certificate)===signature);
+                    if(!row){row={certificate,rejectedWitnesses:0,repairAttempts:0,augmentTraversals:0,distinctOrderFingerprints:0};context.partialCoreRejects.push(row);}
+                    row.repairAttempts++;row.augmentTraversals+=traversals;row.distinctOrderFingerprints=context.distinctOrderFingerprints;
+                  }}
                 if(repaired.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
                 if(repaired.outcome==="PERFECT")pending.push([next,repaired.matching]);
               }
@@ -1501,147 +1695,173 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { outcome: "FOUND", certificate };
   };
 
-  outer: for (const pattern of patterns.patterns) {
-    if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
-      return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-    evidence.patternCandidatesExplored += 1;
-    const compositeAllowance = ledger.limit - ledger.branchesExplored;
-    const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, compositeAllowance);
-    if (!ledger.consume("CORE", positionsResult.rawCombinationCount))
-      return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
-    recordBranch("OTHER",0,positionsResult.rawCombinationCount);
-    evidence.branchesExplored = ledger.coreBranches;
-    if (positionsResult.exhausted)
-      return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
-    const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
-    const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-      ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
-    for (const timeline of timelines) {
-      const departureEnds = [...latestDepartureStart.values()];
-      const historicalEnds = [...new Set([
-        problem.mainFlow.preferredEnd,
-        ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
-          .sort((left, right) => left - right),
-        ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-        ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
-          .sort((left, right) => right - left),
-      ])];
-      let candidateEnds = timeline
-        ? [problem.mainFlow.preferredEnd]
-        : [...new Set([
+  outer: for (const layer of patternLayers) {
+    const layerEvidence = { runCount: layer.runCount, patternsGenerated: layer.patterns.length,
+      architecturesChecked: 0, rejectionReasons: {} as Partial<Record<MainFeederStructuralRejection, number>> };
+    evidence.runLayers.push(layerEvidence);
+    if (!layer.complete)
+      return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+    for (const pattern of layer.patterns) {
+      if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
+        return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+      evidence.patternCandidatesExplored += 1;
+      const compositeAllowance = ledger.limit - ledger.branchesExplored;
+      const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, compositeAllowance);
+      if (!ledger.consume("CORE", positionsResult.rawCombinationCount))
+        return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+      recordBranch("OTHER",0,positionsResult.rawCombinationCount);
+      evidence.branchesExplored = ledger.coreBranches;
+      if (positionsResult.exhausted)
+        return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+      const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
+      const mealTimelineDomain=hasMainFlowMeal(problem)?candidateTimelineDomain(problem,pattern,duration):undefined;
+      if(mealTimelineDomain){evidence.mealTimelineDomainCount+=mealTimelineDomain.domainCount;
+        evidence.mealTimelinesEliminatedAnalytically+=mealTimelineDomain.analyticallyEliminated;
+        evidence.mealTimelinesPendingAtExhaustion+=mealTimelineDomain.feasibleCount;}
+      const timelineRanges=mealTimelineDomain?.ranges??[undefined];
+      for(const timelineRange of timelineRanges){
+       const timelineCount=timelineRange?.feasibleCount??1;
+       for(let timelineIndex=0;timelineIndex<timelineCount;timelineIndex++){
+        let timeline:MainFlowTimeline|undefined;
+        if(timelineRange){
+          if(!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
+            return fail("BRANCH_BUDGET_EXHAUSTED",[exhaustionReason],coreIds);
+          evidence.timelineCandidatesExplored+=1;evidence.mealTimelinesExplored+=1;
+          evidence.mealTimelinesPendingAtExhaustion-=1;
+          if(timelineRange.strategyRank===0)evidence.mealTimelinesPreferred+=1;else evidence.mealTimelinesNonPreferred+=1;
+          timeline=buildTimeline(problem,pattern,duration,timelineRange.cut,timelineRange.startMin+timelineIndex*timelineRange.step);
+        }
+        const departureEnds = [...latestDepartureStart.values()];
+        const historicalEnds = [...new Set([
           problem.mainFlow.preferredEnd,
-          problem.day.start + pattern.length * duration,
-          // Structural lower-bound events let backward packing move away from an
-          // unusably early preferred end without sweeping human clock values.  The
-          // exact closure still decides whether either vocal/styling order works.
-          ...pattern.flatMap((blockKey, position) => mains.filter((main) => main.blockKey === blockKey).map((main) => {
-            const ancestors = new Map<string, Task>();
-            const collect = (id: string): void => {
-              const task = problem.tasks.find((candidate) => candidate.id === id);
-              if (!task || task.participantId !== main.participantId || ancestors.has(id)) return;
-              ancestors.set(id, task);
-              for (const dependency of task.dependencies) collect(dependency);
-            };
-            for (const dependency of main.dependencies) collect(dependency);
-            const feeder = feederByMain.get(main.id)!;
-            const transition = effectiveCoachTransitionMinutes(problem, main.coachId!, feeder.spaceId, main.spaceId);
-            const earliestMainStart = problem.day.start
-              + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition;
-            return earliestMainStart + main.duration + (pattern.length - position - 1) * duration;
-          })),
-          ...pattern.flatMap((blockKey, runStart) => {
-            if (runStart > 0 && pattern[runStart - 1] === blockKey) return [];
-            let runEnd = runStart + 1;
-            while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
-            const candidates = mains.filter((main) => main.blockKey === blockKey)
-              .map((main) => ({ main, feeder: feederByMain.get(main.id)! }));
-            const selected = candidates.sort((left, right) => left.feeder.duration - right.feeder.duration
-              || left.main.id.localeCompare(right.main.id)).slice(0, runEnd - runStart);
-            if (selected.length !== runEnd - runStart) return [];
-            const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
-            const prerequisiteLeadIn = Math.min(...candidates.map(({ feeder }) =>
-              optimisticPrerequisiteLeadInMinutes(problem, feeder)));
-            const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
-              : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
-            const withoutLeadIn = problem.day.start + feederLoad + terminalTransition
-              + (pattern.length - runStart) * duration;
-            return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
-          }),
-          ...[...new Set(pattern)].flatMap((blockKey) => {
-            const runStarts = pattern.flatMap((key, index) => key === blockKey
-              && (index === 0 || pattern[index - 1] !== key) ? [index] : []);
-            const eligible = mains.filter((main) => main.blockKey === blockKey)
-              .map((main) => ({ main, feeder: feederByMain.get(main.id)! }))
-              .sort((left, right) => left.feeder.duration - right.feeder.duration
-                || left.main.id.localeCompare(right.main.id));
-            let required = 0;
-            return runStarts.map((runStart) => {
-              let runEnd = runStart + 1;
-              while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
-              required += runEnd - runStart;
-              const selected = eligible.slice(0, required);
-              const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
-              const prerequisiteLeadIn = Math.min(...eligible.map(({ feeder }) =>
-                optimisticPrerequisiteLeadInMinutes(problem, feeder)));
-              const earlierMainLoad = pattern.slice(0, runStart).filter((key) => key === blockKey).length * duration;
-              const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
-                : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
-              const withoutLeadIn = problem.day.start + feederLoad + earlierMainLoad + terminalTransition
-                + (pattern.length - runStart) * duration;
-              return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
-            });
-          }).flat(),
-          ...departureEnds
-            .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+          ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
             .sort((left, right) => left - right),
           ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-          ...departureEnds
-            .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+          ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
             .sort((left, right) => right - left),
         ])];
-      if (!timeline) {
-        const historicalSet = new Set(historicalEnds);
-        candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
-      }
-      for (const candidateEnd of candidateEnds) {
-        if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
-          return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        evidence.timelineCandidatesExplored += 1;
-        const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
-        if (slots.length > 0 && slots[0]! < problem.day.start) continue;
-        for (const composite of positions) {
-          if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
-            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-          const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
-          evidence.architecturesChecked += 1;
-          const rejection = proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots });
-          if (rejection) {
-            evidence.architecturesStructurallyRejected += 1;
-            evidence.structuralRejectionsByReason[rejection] =
-              (evidence.structuralRejectionsByReason[rejection] ?? 0) + 1;
-            evidence.feederOrderBranchesByArchitecture[architectureKey] = 0;
-            continue;
+        let candidateEnds = timeline
+          ? [timeline.meal.start]
+          : [...new Set([
+            problem.mainFlow.preferredEnd,
+            problem.day.start + pattern.length * duration,
+            // Structural lower-bound events let backward packing move away from an
+            // unusably early preferred end without sweeping human clock values.  The
+            // exact closure still decides whether either vocal/styling order works.
+            ...pattern.flatMap((blockKey, position) => mains.filter((main) => main.blockKey === blockKey).map((main) => {
+              const ancestors = new Map<string, Task>();
+              const collect = (id: string): void => {
+                const task = problem.tasks.find((candidate) => candidate.id === id);
+                if (!task || task.participantId !== main.participantId || ancestors.has(id)) return;
+                ancestors.set(id, task);
+                for (const dependency of task.dependencies) collect(dependency);
+              };
+              for (const dependency of main.dependencies) collect(dependency);
+              const feeder = feederByMain.get(main.id)!;
+              const transition = effectiveCoachTransitionMinutes(problem, main.coachId!, feeder.spaceId, main.spaceId);
+              const earliestMainStart = problem.day.start
+                + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition;
+              return earliestMainStart + main.duration + (pattern.length - position - 1) * duration;
+            })),
+            ...pattern.flatMap((blockKey, runStart) => {
+              if (runStart > 0 && pattern[runStart - 1] === blockKey) return [];
+              let runEnd = runStart + 1;
+              while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
+              const candidates = mains.filter((main) => main.blockKey === blockKey)
+                .map((main) => ({ main, feeder: feederByMain.get(main.id)! }));
+              const selected = candidates.sort((left, right) => left.feeder.duration - right.feeder.duration
+                || left.main.id.localeCompare(right.main.id)).slice(0, runEnd - runStart);
+              if (selected.length !== runEnd - runStart) return [];
+              const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+              const prerequisiteLeadIn = Math.min(...candidates.map(({ feeder }) =>
+                optimisticPrerequisiteLeadInMinutes(problem, feeder)));
+              const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
+                : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
+              const withoutLeadIn = problem.day.start + feederLoad + terminalTransition
+                + (pattern.length - runStart) * duration;
+              return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
+            }),
+            ...[...new Set(pattern)].flatMap((blockKey) => {
+              const runStarts = pattern.flatMap((key, index) => key === blockKey
+                && (index === 0 || pattern[index - 1] !== key) ? [index] : []);
+              const eligible = mains.filter((main) => main.blockKey === blockKey)
+                .map((main) => ({ main, feeder: feederByMain.get(main.id)! }))
+                .sort((left, right) => left.feeder.duration - right.feeder.duration
+                  || left.main.id.localeCompare(right.main.id));
+              let required = 0;
+              return runStarts.map((runStart) => {
+                let runEnd = runStart + 1;
+                while (runEnd < pattern.length && pattern[runEnd] === blockKey) runEnd += 1;
+                required += runEnd - runStart;
+                const selected = eligible.slice(0, required);
+                const feederLoad = selected.reduce((sum, { feeder }) => sum + feeder.duration, 0);
+                const prerequisiteLeadIn = Math.min(...eligible.map(({ feeder }) =>
+                  optimisticPrerequisiteLeadInMinutes(problem, feeder)));
+                const earlierMainLoad = pattern.slice(0, runStart).filter((key) => key === blockKey).length * duration;
+                const terminalTransition = Math.min(...selected.map(({ main, feeder }) => main.coachId === undefined ? 0
+                  : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
+                const withoutLeadIn = problem.day.start + feederLoad + earlierMainLoad + terminalTransition
+                  + (pattern.length - runStart) * duration;
+                return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
+              });
+            }).flat(),
+            ...departureEnds
+              .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+              .sort((left, right) => left - right),
+            ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+            ...departureEnds
+              .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+              .sort((left, right) => right - left),
+          ])];
+        if (!timeline) {
+          const historicalSet = new Set(historicalEnds);
+          candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
+        }
+        for (const candidateEnd of candidateEnds) {
+          if (!timeline){
+            if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
+              return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+            evidence.timelineCandidatesExplored += 1;
           }
-          if (evidence.firstExactArchitecture === null) {
-            evidence.firstExactArchitecture = architectureKey;
-            evidence.firstFeedableRunSizes = pattern.reduce<number[]>((runs, key, index) => {
-              if (index === 0 || pattern[index - 1] !== key) runs.push(1);
-              else runs[runs.length - 1]! += 1;
-              return runs;
-            }, []);
-          }
-          evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
-          currentArchitecture = architectureKey;
-          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
-            timeline?.key ?? null);
-          currentArchitecture = null;
-          if (result === "BUDGET_EXHAUSTED")
-            return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-          if (result === "FOUND") {
-            if (selected) selected.timeline = timeline;
-            break outer;
+          const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
+          if (slots.length > 0 && slots[0]! < problem.day.start) continue;
+          for (const composite of positions) {
+            if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+              return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+            const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
+            evidence.architecturesChecked += 1;
+            layerEvidence.architecturesChecked += 1;
+            const rejection = proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots });
+            if (rejection) {
+              evidence.architecturesStructurallyRejected += 1;
+              evidence.structuralRejectionsByReason[rejection] =
+                (evidence.structuralRejectionsByReason[rejection] ?? 0) + 1;
+              layerEvidence.rejectionReasons[rejection] = (layerEvidence.rejectionReasons[rejection] ?? 0) + 1;
+              evidence.feederOrderBranchesByArchitecture[architectureKey] = 0;
+              continue;
+            }
+            if (evidence.firstExactArchitecture === null) {
+              evidence.firstExactArchitecture = architectureKey;
+              evidence.firstFeedableRunSizes = pattern.reduce<number[]>((runs, key, index) => {
+                if (index === 0 || pattern[index - 1] !== key) runs.push(1);
+                else runs[runs.length - 1]! += 1;
+                return runs;
+              }, []);
+            }
+            evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
+            currentArchitecture = architectureKey;
+            const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
+              timeline?.key ?? null);
+            currentArchitecture = null;
+            if (result === "BUDGET_EXHAUSTED")
+              return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+            if (result === "FOUND") {
+              if (selected) selected.timeline = timeline;
+              break outer;
+            }
           }
         }
+       }
       }
     }
   }

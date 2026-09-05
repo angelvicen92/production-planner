@@ -89,11 +89,14 @@ input.contestantAvailabilityById = Object.fromEntries(expansion.participants.map
 input.planResourceItems = expansion.resources.map((resource, index) => ({
   id: resourceId.get(resource.id)!, resourceItemId: 7001 + index, typeId: 8001 + index,
   name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
+  ...(resource.id === "band" ? { presenceConcentrationPolicy: "PREFERRED" as const, assignedSpaceId: spaceId.get("estudio-7")! } : {}),
 }));
 input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
 input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
 input.zoneResourceAssignments = {};
-input.spaceResourceAssignments = {};
+input.spaceResourceAssignments = Object.fromEntries(Object.entries(expansion.spaceResourceAssignments).map(([space, resources]) => [
+  spaceId.get(space)!, resources.map((resource) => resourceId.get(resource)!),
+]));
 input.zoneResourceTypeRequirements = {};
 input.spaceResourceTypeRequirements = {};
 input.resourceItemComponents = {};
@@ -103,12 +106,15 @@ input.plannerNext = {
   searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
   timeGridMinutes: 5,
   participantTransitionMinutes: 0,
-  resourceTransitionMinutes: 0,
+  resourceTransitionMinutes: 5,
   mainFlow: {
     spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
     preferredEnd: config.meals.effectiveWindow.start,
     continuity: "REQUIRED",
-    maxBlocksByKey: expansion.rules.mainFlow.maxBlocksPerCoach,
+    // Planner Next currently requires a finite integer. One possible block per actual
+    // main task is a cardinality-derived technical bound, not an A2 domain maximum.
+    maxBlocksByKey: Math.max(...Object.values(EXPECTED_COACH_BY_PARTICIPANT).map((coach) =>
+      expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7" && task.blockKey === coach).length)),
     minTasksPerBlock: 1,
   },
 };
@@ -140,6 +146,7 @@ input.roundSynchronizations = [{
 }];
 input.technicalChains=expansion.technicalChains.map(chain=>({
   id:chain.id,orderedTaskIds:chain.orderedTaskIds.map(id=>taskId.get(id)!),adjacency:chain.adjacency,
+  internalTransition:chain.internalTransition,
   resourceContinuity:chain.resourceContinuity,requiredResourceIds:chain.requiredResourceIds.map(id=>resourceId.get(id)!),
 }));
 input.coachRouteTransitions = [
@@ -151,22 +158,22 @@ input.coachRouteTransitions = [
   toSpaceId: spaceId.get("estudio-7")!,
   minutes: expansion.rules.coachTransition.minutes,
 }));
-const operationalMealGroups: Array<[string, string[]]> = [
-  ["reality-operations", ["cam-3", "cam-4", "son-1", "son-2"]],
-  ["cam2-operations", ["cam-2"]],
-  ["eva-operations", ["eva"]],
-  ["coach-lucia", ["coach-lucia"]],
-  ["coach-jose-maria", ["coach-jose-maria"]],
-];
-input.operationalMealPolicies = operationalMealGroups.map(([id, resources]) => ({
-  id,
+input.operationalMealPolicies = config.meals.operational.mealUnits.map(({ mealUnitId, resourceIds, spaceIds }) => ({
+  id: mealUnitId,
   window: { ...config.meals.effectiveWindow },
   durationMinutes: config.meals.operational.defaultDurationMinutes,
-  planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
+  planResourceItemIds: resourceIds.map((resource) => resourceId.get(resource)!),
+  spaceIds: spaceIds.map((space) => spaceId.get(space)!),
 }));
-input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailability).map(([canonicalId, availability]) => ({
+input.operationalMealPolicies.push(...["coach-lucia", "coach-jose-maria"].map((coach) => ({
+  id: `${coach}-individual`,
+  window: { ...config.meals.effectiveWindow },
+  durationMinutes: config.meals.coach.individualDurationMinutes,
+  planResourceItemIds: [resourceId.get(coach)!],
+})));
+input.itinerantTeamAvailability = Object.keys(config.itinerantUnitAvailability).map((canonicalId) => ({
   itinerantTeamId: itinerantUnitId.get(canonicalId)!,
-  windows: [{ start: availability.start, end: availability.end }],
+  windows: [{ start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end }],
 }));
 input.arrivalGroupingTarget = config.transportPolicy.arrival.targetGroupSize;
 input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;
@@ -188,7 +195,9 @@ input.transportSettings = {
 const preflight = preflightEngineInputForPlannerNext(input);
 const adapted = adaptEngineInputToPlannerNextProblem(input);
 const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:true}) : null;
+const executionWithoutDiagnostic = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
+const exactResultWithoutDiagnostic = executionWithoutDiagnostic?.kind === "EXACT_CONSTRUCTIVE" ? executionWithoutDiagnostic.result : null;
 const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
   : 0;
@@ -196,10 +205,17 @@ const publishedCanonicalObligations = exactResult?.complete ? scheduledCanonical
 const projectedItinerantAvailability = adapted.status === "SUPPORTED"
   ? adapted.problem.itinerantUnits ?? []
   : [];
+const effectiveResourcesForType = (type: string) => {
+  if (adapted.status !== "SUPPORTED") return [];
+  const sourceIds = new Set(input.tasks.filter((task) => task.templateName === type).map((task) => `task:${task.id}`));
+  return [...new Set(adapted.problem.tasks.filter((task) => sourceIds.has(task.id))
+    .flatMap((task) => task.requiredResourceIds ?? []))].sort();
+};
 const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => {
   const source = config.itinerantUnitAvailability[unit.id as keyof typeof config.itinerantUnitAvailability];
   const projected = projectedItinerantAvailability.find((entry) => entry.id === `itinerant-team:${itinerantUnitId.get(unit.id)}`);
-  return Boolean(source && projected?.availability.some((window) => window.start === Number(source.start.slice(0, 2)) * 60 + Number(source.start.slice(3)) && window.end === Number(source.end.slice(0, 2)) * 60 + Number(source.end.slice(3))));
+  const day = config.effectiveDayWindow;
+  return source === "inherits_day_unless_overridden" && Boolean(projected?.availability.some((window) => window.start === Number(day.start.slice(0, 2)) * 60 + Number(day.start.slice(3)) && window.end === Number(day.end.slice(0, 2)) * 60 + Number(day.end.slice(3))));
 });
 
 const diagnostic = exactResult?.evidence.causalDiagnostic ?? null;
@@ -217,7 +233,19 @@ const diagnosticReport = diagnostic ? {
   waterfallByDepth: diagnostic.waterfallByDepth,
   waterfallReconciles: Object.values(diagnostic.waterfallByDepth).reduce((sum,row)=>sum+row.total,0) === exactResult!.evidence.branchesExplored,
   feederByDepth: diagnostic.feederByDepth,
-  futureFeasibility: diagnostic.futureFeasibility,
+  futureFeasibility: {
+    ...diagnostic.futureFeasibility,
+    // The canonical artifact keeps bounded aggregates; per-state rows are available only in
+    // the in-memory diagnostic and made the Evidence grow in proportion to search traffic.
+    assessments: undefined,
+    collisions: undefined,
+  },
+  standaloneFrontier: diagnostic.standaloneFrontier,
+  feederMatching: diagnostic.feederMatching,
+  macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
+  macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
+  macroPendingPrerequisiteCapacityCertificateReconciles:diagnostic.macroPendingPrerequisiteCapacityCertificates.reduce((sum,row)=>sum+row.frequency,0)
+    +diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow===exactResult!.evidence.macroPendingPrerequisiteCollectiveCapacityPrunes,
   criticalDepth,
   criticalRejectionReasons: top((row)=>row.reason),
   topMainTasks: top((row)=>row.mainTaskId),
@@ -227,6 +255,22 @@ const diagnosticReport = diagnostic ? {
   criticalRejectionCount,
   recommendation,
 } : null;
+const invariantEvidenceKeys = ["branchesExplored","coreBranches","standaloneBranches","coreCompleteLeafCount",
+  "coreCompleteLeavesEvaluated","coreStandaloneFrontierChecks","coreStandaloneFrontierPrunes","causalBacktracks",
+  "causalBacktrackTargetDepthCounts","standaloneSearchInvocations","standaloneMaximumDepth","standaloneCompleteLeafCount",
+  "lastExhaustionPhase"] as const;
+const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
+  diagnosticOn:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResult.evidence[key]])),
+  diagnosticOff:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResultWithoutDiagnostic.evidence[key]])),
+  statusOn:exactResult.status,statusOff:exactResultWithoutDiagnostic.status,
+  exactMatch:exactResult.status===exactResultWithoutDiagnostic.status
+    &&invariantEvidenceKeys.every(key=>JSON.stringify(exactResult.evidence[key])===JSON.stringify(exactResultWithoutDiagnostic.evidence[key])),
+}:null;
+if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
+const persistedEvidence=exactResult?{...exactResult.evidence,
+  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,feederMatching:diagnostic.feederMatching,
+    macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
+    macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow}:null}:null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
@@ -238,9 +282,38 @@ const evidence = {
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
-    genericTransitionMinutes: { participant: 0, resource: 0 },
-    operationalMealProjection: operationalMealGroups,
+    genericTransitionMinutes: { participant: 0, resource: 5 },
+    operationalMealProjection: config.meals.operational.mealUnits,
+    spaceResourceAssignments: expansion.spaceResourceAssignments,
+    mainFlowBlockPolicy: {
+      domainAuthority: expansion.rules.mainFlow.blockLimit,
+      projectedTechnicalMaximum: input.plannerNext.mainFlow.maxBlocksByKey,
+      technicalMaximumDerivation: "maximum actual main-task cardinality for one coach; not a domain rule",
+    },
+    effectiveCameraProjection: {
+      CROMA: effectiveResourcesForType("CROMA"),
+      REDES: effectiveResourcesForType("REDES"),
+      PASILLO: effectiveResourcesForType("PASILLO"),
+      GIRATUTO: effectiveResourcesForType("GIRATUTO"),
+      SILLON: effectiveResourcesForType("SILLON"),
+      ESTRELLAS: effectiveResourcesForType("ESTRELLAS"),
+      TOTALES_1: effectiveResourcesForType("TOTALES_1"),
+      TOTALES_COREO: effectiveResourcesForType("TOTALES_COREO"),
+    },
+    projectedArrivalTransportPolicy: adapted.status === "SUPPORTED" ? adapted.problem.transportPolicy?.arrival : null,
+    band: {
+      canonicalResourceCount: expansion.resources.filter(({ id }) => id === "band").length,
+      requiredMainCount: expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7" && task.requiredResourceIds.includes("band")).length,
+      presenceConcentrationPolicy: "PREFERRED",
+      assignedSpaceId: "estudio-7",
+      availabilitySource: config.resourceAvailability,
+      sharedOperationalMealPolicyId: "estudio-7-operations",
+    },
     itineraryAvailabilityProjected,
+    itineraryAvailabilityAuthority: "SPEC-08.v1.1",
+    itineraryAvailabilitySemantic: "INHERIT_EFFECTIVE_DAY_WINDOW",
+    projectedItineraryWindow: { start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end },
+    legacyHumanPlanningWindowsProjected: false,
     ...(!itineraryAvailabilityProjected ? { itineraryAvailabilityGap: "Not every referenced itinerant unit has its source availability represented losslessly in Planner Next." } : {}),
   },
   preflight: {
@@ -263,8 +336,32 @@ const evidence = {
     scheduledParticipantMealCount: exactResult?.scheduledParticipantMeals.length ?? 0,
     scheduledOperationalMealCount: exactResult?.scheduledOperationalMeals.length ?? 0,
     remainingTaskIds: exactResult?.remainingTaskIds ?? [],
-    evidence: exactResult?.evidence ?? null,
+    evidence: persistedEvidence,
     diagnosticReport,
+    searchInvariance,
+  } : null,
+  baselineComparison: exactResult ? {
+    previous: {
+      standaloneForwardCollectiveCapacityPrunes: 562,
+      cam3CollectiveCapacityCertificate: { demandMinutes: 60, freeCapacityMinutes: 45 },
+      coreMaximumDepth: 12,
+      coreCompleteLeafCount: 0,
+      standaloneSearchInvocations: 0,
+      feederSlotMatchingBranchesExplored: 298597,
+      lastExhaustionPhase: "CORE",
+    },
+    corrected: {
+      standaloneForwardCollectiveCapacityPrunes: exactResult.evidence.standaloneForwardCollectiveCapacityPrunes,
+      legacyCam3CollectiveCapacityCertificatePresent: diagnostic?.standaloneFrontier.certificates.some((certificate) => certificate.authorityId === `plan-resource:${resourceId.get("cam-3")}` && certificate.demandMinutes === 60 && certificate.freeCapacityMinutes === 45) ?? false,
+      coreMaximumDepth: exactResult.evidence.coreMaximumDepth,
+      coreCompleteLeafCount: exactResult.evidence.coreCompleteLeafCount,
+      standaloneSearchInvocations: exactResult.evidence.standaloneSearchInvocations,
+      standaloneMaximumDepth: exactResult.evidence.standaloneMaximumDepth,
+      standaloneCompleteLeafCount: exactResult.evidence.standaloneCompleteLeafCount,
+      coreBranches: exactResult.evidence.coreBranches,
+      standaloneBranches: exactResult.evidence.standaloneBranches,
+      lastExhaustionPhase: exactResult.evidence.lastExhaustionPhase,
+    },
   } : null,
   result: {
     publishedCanonicalObligations,

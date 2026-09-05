@@ -16,7 +16,7 @@ import type {
 } from "./contracts";
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
-import { effectiveResourceTransitionMinutes } from "./placement";
+import { effectiveResourceTransitionMinutes, isIncludedInternalTechnicalChainTransition } from "./placement";
 import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupPolicy, hasSetupReentry, setupBlockCounts, setupFamilySequence, setupSpaces, setupTasks } from "./setupGrouping";
@@ -25,7 +25,7 @@ import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "
 import { canPlaceTask } from "./placement";
 import { createScheduledSpaceMeal, spaceMealAvoidsAssignedResourceTasks, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
 import { operationalMealCandidates } from "./operationalMeals";
-import { mainFlowMealAligned, hasMainFlowMeal } from "./mainFlowMeal";
+import { mainFlowMealAligned, hasMainFlowMeal, mainFlowOperationalMealPolicy } from "./mainFlowMeal";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { evaluateResourcePresence } from "./resourcePresence";
 import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
@@ -202,10 +202,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
   for(let i=0;i<resourceMeals.length;i++)for(let j=i+1;j<resourceMeals.length;j++){const a=resourceMeals[i]!,b=resourceMeals[j]!;if(a.interval.start<b.interval.end&&b.interval.start<a.interval.end&&a.resourceIds.some(id=>b.resourceIds.includes(id)))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");}
   const operationalMealPolicies=Array.isArray(problem.operationalMealPolicies)?problem.operationalMealPolicies:[];
   if(hasDuplicateIds(operationalMealPolicies))reasons.add("INVALID_OPERATIONAL_MEAL_POLICY");
-  const operationalMealResourceOwner=new Set<string>();
+  const operationalMealScopeOwner=new Set<string>();
   for(const meal of operationalMealPolicies){
-    if(typeof meal.id!=="string"||!meal.id||!Array.isArray(meal.resourceIds)||meal.resourceIds.length===0||new Set(meal.resourceIds).size!==meal.resourceIds.length||meal.resourceIds.some(id=>!resourceIds.has(id)&&!coachIds.has(id))||!Array.isArray(meal.spaceIds)||new Set(meal.spaceIds).size!==meal.spaceIds.length||meal.spaceIds.some(id=>!spaceIds.has(id))||invalidWindow(meal.window,day)||meal.window.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.window.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||!Number.isInteger(meal.duration)||meal.duration<=0||meal.duration%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.duration>meal.window.end-meal.window.start)reasons.add("INVALID_OPERATIONAL_MEAL_POLICY");
-    for(const id of meal.resourceIds){if(operationalMealResourceOwner.has(id))reasons.add("INVALID_OPERATIONAL_MEAL_POLICY");operationalMealResourceOwner.add(id);}
+    if(typeof meal.id!=="string"||!meal.id||!Array.isArray(meal.resourceIds)||!Array.isArray(meal.spaceIds)||(meal.resourceIds.length===0&&meal.spaceIds.length===0)||new Set(meal.resourceIds).size!==meal.resourceIds.length||meal.resourceIds.some(id=>!resourceIds.has(id)&&!coachIds.has(id))||new Set(meal.spaceIds).size!==meal.spaceIds.length||meal.spaceIds.some(id=>!spaceIds.has(id))||invalidWindow(meal.window,day)||meal.window.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.window.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||!Number.isInteger(meal.duration)||meal.duration<=0||meal.duration%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.duration>meal.window.end-meal.window.start)reasons.add("INVALID_OPERATIONAL_MEAL_POLICY");
+    for(const scope of [...meal.resourceIds.map(id=>`resource:${id}`),...meal.spaceIds.map(id=>`space:${id}`)]){if(operationalMealScopeOwner.has(scope))reasons.add("INVALID_OPERATIONAL_MEAL_POLICY");operationalMealScopeOwner.add(scope);}
   }
   const itinerantMeals=Array.isArray(problem.itinerantUnitMeals)?problem.itinerantUnitMeals:[];
   if(hasDuplicateIds(itinerantMeals))reasons.add("ITINERANT_UNIT_MEAL_IDENTITY_CONFLICT");
@@ -468,7 +468,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const [a, b] = unorderedA.start <= unorderedB.start ? [unorderedA, unorderedB] : [unorderedB, unorderedA];
       const shared = (a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
       const margin = shared.reduce((maximum, id) => Math.max(maximum, effectiveResourceTransitionMinutes(problem, id)), 0);
-      if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin && !isInternalAnchoredPair(problem,a,b)) resourceTransition += 1;
+      if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin && !isInternalAnchoredPair(problem,a,b) && !isIncludedInternalTechnicalChainTransition(problem,a.id,b.id)) resourceTransition += 1;
     }
   }
   const mains = scheduled.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
@@ -477,17 +477,30 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let mainFlowMeal = 0;
   const mainPolicy = problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)?.mealPolicy;
   const ownMeals = meals.filter(x=>x.spaceId===problem.mainFlow.spaceId);
+  const operationalMainPolicy=mainPolicy===undefined?mainFlowOperationalMealPolicy(problem):undefined;
+  const authorizedOperationalMainMeals=operationalMainPolicy===undefined?[]:operationalMeals.filter(meal=>{
+    const exactScope=meal.id===operationalMainPolicy.id&&meal.duration===operationalMainPolicy.duration
+      &&meal.end-meal.start===meal.duration
+      &&[...meal.resourceIds].sort().join("\0")===[...operationalMainPolicy.resourceIds].sort().join("\0")
+      &&[...meal.spaceIds].sort().join("\0")===[...operationalMainPolicy.spaceIds].sort().join("\0");
+    return exactScope&&operationalMealCandidates(problem,operationalMainPolicy,scheduled,
+      operationalMeals.filter(candidate=>candidate!==meal)).some(candidate=>candidate.start===meal.start&&candidate.end===meal.end);
+  });
   if (mainPolicy) {
     const meal=ownMeals[0], mealStart=meal?.start??problem.mainFlow.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
     const consecutive=(xs:ScheduledTask[])=>xs.slice(1).every((x,i)=>xs[i]?.end===x.start);
-    const morningMains=mains.filter(x=>x.end<=mealStart),afternoonMains=mains.filter(x=>x.start>=mealEnd);const globalMealMismatch=problem.protectedMeal!==undefined&&(meal?.start!==problem.protectedMeal.start||meal?.end!==problem.protectedMeal.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==problem.mainFlow.preferredEnd||globalMealMismatch||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
+    const globalMealMismatch=problem.protectedMeal!==undefined&&(meal?.start!==problem.protectedMeal.start||meal?.end!==problem.protectedMeal.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start<mainPolicy.window.start||meal.end>mainPolicy.window.end||globalMealMismatch||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||morning.length+afternoon.length!==mainFlowOccupations.length;
     if(invalid)mainFlowMeal=1;
   }
   if (mains.length > 0) {
     // preferredEnd guides search/ranking; hard validity does not require the final main to end there.
     for (let index = 1; index < mains.length; index += 1) {
       const previous = mains[index - 1]; const current = mains[index];
-      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
+      const ownMeal=ownMeals[0];
+      const bridgingMeals=mainPolicy&&ownMeal&&previous?.end===ownMeal.start&&ownMeal.end===current?.start?[ownMeal]
+        :authorizedOperationalMainMeals.filter(meal=>previous?.end===meal.start&&meal.end===current?.start);
+      const connected=previous?.end===current?.start||bridgingMeals.length===1;
+      if (!previous || !current || !connected) block += 1;
     }
     const runs: Array<{ key: string; count: number }> = [];
     for (const task of mains) {

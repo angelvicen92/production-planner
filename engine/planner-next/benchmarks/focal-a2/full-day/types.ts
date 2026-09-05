@@ -1,7 +1,7 @@
 import type { EngineInput, TaskInput } from "../../../../types";
 import type { PlannerNextProblem } from "../../../contracts";
 
-export const CONTRACT_VERSION = "A2-FULL-009.full-a2-template.v4";
+export const CONTRACT_VERSION = "A2-FULL-009.full-a2-template.v5";
 
 export const PARTICIPANT_IDS = Array.from({ length: 19 }, (_, index) => `C${String(index + 1).padStart(2, "0")}`) as readonly string[];
 
@@ -93,6 +93,7 @@ export interface CanonicalParticipantAssignment {
   readonly corner: readonly TaskType[];
   readonly setup: readonly TaskType[];
   readonly extras: readonly TaskType[];
+  readonly requiresBand: boolean;
 }
 
 export interface CanonicalSpace {
@@ -106,7 +107,7 @@ export interface CanonicalSpace {
 export interface CanonicalResource {
   readonly id: string;
   readonly label: string;
-  readonly kind: "camera" | "sound" | "coach" | "presenter";
+  readonly kind: "camera" | "sound" | "coach" | "presenter" | "band";
   readonly availability: "inherits_day_unless_overridden";
 }
 
@@ -129,7 +130,7 @@ export interface CanonicalItinerantUnit {
   readonly id: string;
   readonly label: string;
   readonly memberResourceIds: readonly string[];
-  readonly availability: { readonly start: string; readonly end: string; readonly source: "SPEC08_FOCAL_A2_SECTION_24"; };
+  readonly availability: "inherits_day_unless_overridden";
 }
 
 export interface CanonicalItinerantOperation {
@@ -156,6 +157,7 @@ export interface TechnicalChainContract {
   readonly id: string;
   readonly orderedTaskIds: readonly string[];
   readonly adjacency: "REQUIRED";
+  readonly internalTransition: "INCLUDED";
   readonly resourceContinuity: "REQUIRED";
   readonly requiredResourceIds: readonly ["cam-3", "cam-4", "son-1", "eva"];
 }
@@ -166,7 +168,7 @@ export interface CanonicalTemplateRules {
   readonly mainFlow: {
     readonly spaceId: "estudio-7";
     readonly continuity: "REQUIRED";
-    readonly maxBlocksPerCoach: 2;
+    readonly blockLimit: "UNBOUNDED";
     readonly blockKey: "coach";
     readonly optimizationAfterFeasibility: "minimize_coach_blocks";
   };
@@ -195,7 +197,7 @@ export interface CanonicalTemplateRules {
     readonly minutes: 30;
     readonly scope: "coach";
   };
-  readonly inTransport: { readonly targetGroupSize: 3; readonly maximumGroupSize: 6; readonly minGapMinutes: 35; readonly groupingWeight: 3 };
+  readonly inTransport: { readonly targetGroupSize: 3; readonly maximumGroupSize: 6; readonly minGapMinutes: 30; readonly groupingWeight: 3 };
   readonly outTransport: { readonly targetGroupSize: 1; readonly maximumGroupSize: 6; readonly minGapMinutes: 20; readonly groupingWeight: 3 };
   readonly ignoredEditorialNotes: readonly ["NO_P15", "instrument", "wardrobe", "prop"];
 }
@@ -206,6 +208,7 @@ export interface CanonicalFullA2Template {
   readonly taskTypes: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>>;
   readonly spaces: readonly CanonicalSpace[];
   readonly resources: readonly CanonicalResource[];
+  readonly spaceResourceAssignments: Readonly<Record<string, readonly string[]>>;
   readonly itinerantUnits: readonly CanonicalItinerantUnit[];
   readonly itinerantOperations: readonly CanonicalItinerantOperation[];
   readonly assignments: readonly CanonicalParticipantAssignment[];
@@ -225,6 +228,7 @@ export interface ExpandedCanonicalFullA2Template {
   readonly technicalChains: readonly TechnicalChainContract[];
   readonly spaces: readonly CanonicalSpace[];
   readonly resources: readonly CanonicalResource[];
+  readonly spaceResourceAssignments: Readonly<Record<string, readonly string[]>>;
   readonly itinerantUnits: readonly CanonicalItinerantUnit[];
   readonly itinerantOperations: readonly CanonicalItinerantOperation[];
   readonly rules: CanonicalTemplateRules;

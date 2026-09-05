@@ -73,6 +73,7 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     const operation = operationLookup.get(id);
     const requiredResourceIds = new Set<string>(definition.knownResourceIds);
     if (type === "ENSAYO_ESTUDIO_7" && coachId) requiredResourceIds.add(coachId);
+    if (type === "ENSAYO_ESTUDIO_7" && assignment?.requiresBand) requiredResourceIds.add("band");
     for (const resourceId of operation?.memberResourceIds ?? []) requiredResourceIds.add(resourceId);
 
     return {
@@ -166,6 +167,7 @@ function technicalChains(): TechnicalChainContract[] {
     id: TECHNICAL_CHAIN_ID,
     orderedTaskIds: ["TECH.tech_reality_eva", "TECH.tech_desmontaje_traslado", "TECH.tech_totales_post"],
     adjacency: "REQUIRED",
+    internalTransition: "INCLUDED",
     resourceContinuity: "REQUIRED",
     requiredResourceIds: [...TECHNICAL_RESOURCE_IDS],
   }];
@@ -190,6 +192,7 @@ export function expandCanonicalFullA2Template(template: CanonicalFullA2Template)
     technicalChains: technicalChains(),
     spaces: sorted(template.spaces, (space) => space.id),
     resources: sorted(template.resources, (resource) => resource.id),
+    spaceResourceAssignments: template.spaceResourceAssignments,
     itinerantUnits: sorted(template.itinerantUnits, (unit) => unit.id),
     itinerantOperations: sorted(template.itinerantOperations, (operation) => operation.id),
     rules: template.rules,

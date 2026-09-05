@@ -9,6 +9,8 @@ import {
   type ExactMainAndFeederSearchOptions,
   type ExactCoreCausalDiagnostic,
   type ExactFutureFeasibilityCausalAssessment,
+  type ExactMacroCapacityCertificate,
+  type ExactMacroCapacityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
@@ -22,7 +24,7 @@ import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySu
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
-import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
+import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerprint, probeOperationalMealFutureFeasibility, type OperationalMealWitness } from "./operationalMeals";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
@@ -30,7 +32,7 @@ import { materializeTerminalTransport, transportTaskIds } from "./transportGroup
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
+import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -82,12 +84,21 @@ export interface ExactItinerantPlanEvidence {
   standaloneCompleteLeafCount: number;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
+  coreStandaloneFrontierChecks:number;coreStandaloneFrontierPrunes:number;coreStandaloneFrontierIndividualDomainChecks:number;
+  coreStandaloneFrontierCollectiveCapacityChecks:number;coreStandaloneFrontierJointChecks:number;
+  coreStandaloneFrontierFirstPrune:{blockingTaskId:string|null;failure:string|null;authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;causingCoreTaskIds:string[]}|null;
+  causalBacktracks:number;causalBacktrackTargetDepthCounts:Record<string,number>;
   standaloneSearchInvocations: number;
   standaloneBlockingTaskCounts: Record<string, number>;
   standaloneForwardChecks: number;
   standaloneForwardStartChecks: number;
   standaloneForwardWitnessesFound: number;
   standaloneForwardPrunes: number;
+  standaloneForwardCollectiveCapacityChecks: number;
+  standaloneForwardCollectiveCapacityPrunes: number;
+  standaloneForwardCollectiveObligationsChecked: number;
+  standaloneForwardCollectiveCapacityCertificates:Array<{failure:"COLLECTIVE_CAPACITY";authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];depth:number;frequency:number}>;
+  standaloneForwardCollectiveCapacityCertificateOverflow:number;
   standaloneForwardBlockingTaskCounts: Record<string, number>;
   standaloneForwardPrunesByDepth: Record<string, number>;
   standaloneForwardImpactedTaskChecks: number;
@@ -129,6 +140,12 @@ export interface ExactItinerantPlanEvidence {
   coreBacktracks: number;
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
+  coreLeafValidationAttempts:number;coreLeafValidShapeRejects:number;coreLeafHardValidationRejects:number;
+  coreLeafValidationAccepted:number;coreLeafValidationReasonCounts:Record<string,number>;
+  firstCoreLeafShapeRejection:import("./exactMainAndFeederCore").ExactCoreLeafShapeRejection|null;
+  firstCoreLeafHardValidationRejection:import("./exactMainAndFeederCore").ExactCoreLeafHardValidationRejection|null;
+  mealTimelineDomainCount:number;mealTimelinesExplored:number;mealTimelinesEliminatedAnalytically:number;
+  mealTimelinesPendingAtExhaustion:number;mealTimelinesPreferred:number;mealTimelinesNonPreferred:number;
   /** Deepest block-closed, hard-valid partial frontier observed; unlike coreMaximumDepth,
    * this never counts an open main run whose feeder cohort has not closed. */
   deepestCoreDepthReached: number;
@@ -140,6 +157,8 @@ export interface ExactItinerantPlanEvidence {
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  runLayers: Array<{ runCount: number; patternsGenerated: number; architecturesChecked: number;
+    rejectionReasons: Partial<Record<MainFeederStructuralRejection, number>> }>;
   firstExactArchitecture: string | null;
   firstFeedableRunSizes: number[];
   feederOrderBranchesByArchitecture: Record<string, number>;
@@ -152,6 +171,9 @@ export interface ExactItinerantPlanEvidence {
   feederSlotMatchingEdgeChecks: number;
   feederSlotMatchingAugmentTraversals: number;
   feederSlotMatchingBranchesExplored: number;
+  feederSlotIntervalCertificates: number;
+  feederSlotExplicitFallbacks: number;
+  feederSlotLazyRepairBuilds: number;
   feederCohortCapacityChecks: number;
   feederCohortPrefixCapacityPrunes: number;
   feederCohortEddChecks: number;
@@ -291,6 +313,12 @@ interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
 export type JointGroupStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
+
+type CapacityCertificateIdentity={authorityId:string|null;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds?:string[]};
+export const macroCapacityCertificateSignature=(certificate:CapacityCertificateIdentity,causingMacroUnitId:string,macroDepth:number):string=>
+  JSON.stringify([certificate.authorityId,certificate.demandMinutes,certificate.freeCapacityMinutes,
+    [...(certificate.overloadTaskIds??[])].sort(),causingMacroUnitId,macroDepth]);
+export const candidateIntroducesCapacityCertificate=(assessment:ExactMacroCapacityCausalAssessment):boolean=>assessment==="INTRODUCED_BY_CANDIDATE";
 export interface StandaloneForwardStaticDomain {
   readonly intervals: ReadonlyArray<Readonly<ClosedStartInterval>>;
   readonly eligibleStartCount: number;
@@ -397,7 +425,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
-  technicalChainStartDomainMode:TechnicalChainStartDomainMode): StandaloneSearchResult {
+  technicalChainStartDomainMode:TechnicalChainStartDomainMode,
+  macroCapacityDiagnostic:{enabled:boolean;certificates:ExactMacroCapacityCertificate[];overflow:number}): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -413,6 +442,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
+  const capacityTask=(task:Task)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
+    spaceId:task.spaceId,duration:task.duration,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
+  const capacityPlacement=(task:ScheduledTask)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
+    start:task.start,end:task.end,spaceId:task.spaceId,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
@@ -722,7 +755,40 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(!checked.feasible){evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
-      evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};return "DEAD_END";}
+      evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};
+      if(macroCapacityDiagnostic.enabled&&checked.failure==="COLLECTIVE_CAPACITY"){
+        const overloadTaskIds=[...(checked.overloadTaskIds??[])].sort();
+        const signature=macroCapacityCertificateSignature(checked,unit.id,depth);
+        const existing=macroCapacityDiagnostic.certificates.find(row=>macroCapacityCertificateSignature(row,row.causingMacroUnitId,row.macroDepth)===signature);
+        if(existing)existing.frequency+=1;
+        else if(macroCapacityDiagnostic.certificates.length>=32)macroCapacityDiagnostic.overflow+=1;
+        else {
+          // Target-specific diagnostic replays neither consume the ledger nor populate the search cache.
+          const beforePending=[...pendingForCheck,...unit.tasks].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
+          const scheduled=[...tasks].sort(byId),definitions=new Map(problem.tasks.map(task=>[task.id,task]));
+          const common=<T>(values:T[]):T|null=>values.length&&values.every(value=>value===values[0])?values[0]!:null;
+          const beforeCandidate=evaluateTargetCollectiveCapacityCertificate(problem,beforePending,[...coreTasks,...placed],[],coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterCandidate=evaluateTargetCollectiveCapacityCertificate(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterMatchesNormalCertificate=afterCandidate.evaluated&&afterCandidate.overloaded
+            &&afterCandidate.authorityId===checked.authorityId&&afterCandidate.demandMinutes===checked.demandMinutes
+            &&afterCandidate.freeCapacityMinutes===checked.freeCapacityMinutes
+            &&JSON.stringify(afterCandidate.overloadTaskIds)===JSON.stringify(overloadTaskIds);
+          const causalAssessment:ExactMacroCapacityCausalAssessment=!afterMatchesNormalCertificate||!beforeCandidate.evaluated
+            ?"UNRESOLVED":beforeCandidate.overloaded?"PREEXISTING":"INTRODUCED_BY_CANDIDATE";
+          const relevant=(placement:ScheduledTask)=>placement.spaceId===checked.authorityId
+            ||(placement.requiredResourceIds??[]).includes(checked.authorityId??"");
+          macroCapacityDiagnostic.certificates.push({frequency:1,authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,
+            freeCapacityMinutes:checked.freeCapacityMinutes,overloadTaskIds,blockingTaskId:checked.blockingTaskId,
+            causingMacroUnitId:unit.id,macroDepth:depth,overloadTasks:overloadTaskIds.slice(0,32).flatMap(id=>{const task=definitions.get(id);return task?[capacityTask(task)]:[];}),
+            candidatePlacement:{macroUnitId:unit.id,taskIds:scheduled.map(({id})=>id),participantId:common(scheduled.map(task=>task.participantId??null)),
+              kind:common(scheduled.map(task=>task.kind))??"MIXED",start:Math.min(...scheduled.map(task=>task.start)),end:Math.max(...scheduled.map(task=>task.end)),
+              spaceId:common(scheduled.map(task=>task.spaceId))??"MIXED",requiredResourceIds:[...new Set(scheduled.flatMap(task=>task.requiredResourceIds??[]))].sort(),tasks:scheduled.map(capacityPlacement)},
+            priorRelevantPlacements:[...coreTasks,...placed].filter(relevant).sort(byId).slice(0,32).map(capacityPlacement),
+            beforeCandidate,afterCandidate,afterMatchesNormalCertificate,causalAssessment,
+            candidateIntroducesCertificate:candidateIntroducesCapacityCertificate(causalAssessment)});
+        }
+      }
+      return "DEAD_END";}
     return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]);
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
@@ -799,6 +865,11 @@ export interface ExactItinerantPlanSearchOptions {
   causalDiagnostic?: boolean;
 }
 
+/** Optimistic collective-only Future Feasibility authority for a provisional CORE. */
+function checkPartialCoreStandaloneCollectiveCapacity(problem:PlannerNextProblem,pending:readonly Task[],core:readonly ScheduledTask[]){
+  return checkStandaloneCoreFrontier(problem,pending,core,[],"ANALYTIC_CAPACITY_ONLY");
+}
+
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
   const completeSelectionMode = options.standaloneCompletionSelection ?? "FIRST_HARD_VALID";
@@ -818,9 +889,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainRootStartsConsidered:0,technicalChainRootStartsFeasible:0,technicalChainBranchesExplored:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
-    coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
+    coreLeavesRejectedByStandalone: 0, coreStandaloneFrontierChecks:0,coreStandaloneFrontierPrunes:0,
+    coreStandaloneFrontierIndividualDomainChecks:0,coreStandaloneFrontierCollectiveCapacityChecks:0,coreStandaloneFrontierJointChecks:0,
+    coreStandaloneFrontierFirstPrune:null,causalBacktracks:0,causalBacktrackTargetDepthCounts:{},standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
+    standaloneForwardCollectiveCapacityChecks:0,standaloneForwardCollectiveCapacityPrunes:0,standaloneForwardCollectiveObligationsChecked:0,
+    standaloneForwardCollectiveCapacityCertificates:[],standaloneForwardCollectiveCapacityCertificateOverflow:0,
     standaloneForwardImpactedTaskChecks: 0, standaloneLeafSearchBranches: 0, standaloneForwardBranches: 0,
     standaloneForwardStaticEligibleStarts: 0, standaloneForwardStaticEliminatedStarts: 0,
     standaloneForwardFullGridStarts: 0, standaloneForwardDynamicEligibleStarts: 0,
@@ -835,14 +910,19 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
-    coreMaximumDepth: 0, coreCompleteLeafCount: 0,deepestCoreDepthReached:0,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0,coreLeafValidationAttempts:0,coreLeafValidShapeRejects:0,
+    coreLeafHardValidationRejects:0,coreLeafValidationAccepted:0,coreLeafValidationReasonCounts:{},
+    firstCoreLeafShapeRejection:null,firstCoreLeafHardValidationRejection:null,
+    mealTimelineDomainCount:0,mealTimelinesExplored:0,mealTimelinesEliminatedAnalytically:0,
+    mealTimelinesPendingAtExhaustion:0,mealTimelinesPreferred:0,mealTimelinesNonPreferred:0,deepestCoreDepthReached:0,
     deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
     deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
-    architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,firstFeedableRunSizes:[],
+    architecturesStructurallyRejected:0,structuralRejectionsByReason:{},runLayers:[],firstExactArchitecture:null,firstFeedableRunSizes:[],
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
     feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,feederSlotMatchingAugmentTraversals:0,
-    feederSlotMatchingBranchesExplored:0,feederCohortCapacityChecks:0,
+    feederSlotMatchingBranchesExplored:0,feederSlotIntervalCertificates:0,feederSlotExplicitFallbacks:0,
+    feederSlotLazyRepairBuilds:0,feederCohortCapacityChecks:0,
     feederCohortPrefixCapacityPrunes:0,feederCohortEddChecks:0,feederCohortEddEmptyPrunes:0,
     blockStartsEliminatedByCohortBound:0,feederCohortContiguousWindowChecks:0,
     feederCohortContiguousWindowPrunes:0,blockStartsEliminatedByContiguousWindowBound:0,
@@ -908,7 +988,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }
   const supplementalByDepth:Record<string,{participantMeal:number;standaloneForward:number}>={};
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
+  const macroCapacityDiagnostic={enabled:Boolean(options.causalDiagnostic),certificates:[] as ExactMacroCapacityCertificate[],overflow:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
+  const standaloneFrontierDiagnostic:ExactCoreCausalDiagnostic["standaloneFrontier"]={totalRejections:0,certificates:[],examples:[]};
   const standaloneForwardWitnessCache=new Map<string,number>();
   const certifyFutureBackjump=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
     staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):number|null=>{
@@ -962,9 +1044,45 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
     if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return "REJECT";}}
+    if((problem.operationalMealPolicies?.length??0)>0){const operationalProbe=probeOperationalMealFutureFeasibility(problem,candidate.tasks);if(!operationalProbe.feasible){let runStart=candidate.depth-1;while(runStart>0&&candidate.pattern[runStart-1]===candidate.pattern[runStart])runStart--;return {outcome:"CERTIFIED_BACKJUMP",targetDepth:runStart};}}
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
     evidence.standaloneForwardChecks += 1;
+    // Reuse the leaf frontier's necessary energetic certificate as soon as a CORE
+    // decision can affect a pending obligation. Omitting future meals is an
+    // optimistic relaxation: an infeasible result here therefore remains sound,
+    // while every inconclusive result simply falls through to the existing search.
+    const collective=checkPartialCoreStandaloneCollectiveCapacity(problem,standaloneTasks,candidate.tasks);
+    evidence.standaloneForwardCollectiveCapacityChecks+=collective.collectiveCapacityChecks;
+    evidence.standaloneForwardCollectiveObligationsChecked+=collective.obligationsChecked;
+    if(!collective.feasible&&collective.failure==="COLLECTIVE_CAPACITY"){
+      evidence.standaloneForwardCollectiveCapacityPrunes+=1;
+      const overloadTaskIds=[...(collective.overloadTaskIds??[])].sort();
+      const existing=evidence.standaloneForwardCollectiveCapacityCertificates.find(item=>item.depth===candidate.depth
+        &&item.authorityId===collective.authorityId&&item.demandMinutes===collective.demandMinutes
+        &&item.freeCapacityMinutes===collective.freeCapacityMinutes
+        &&item.overloadTaskIds.length===overloadTaskIds.length&&item.overloadTaskIds.every((id,index)=>id===overloadTaskIds[index]));
+      if(existing)existing.frequency+=1;
+      else if(evidence.standaloneForwardCollectiveCapacityCertificates.length<16)
+        evidence.standaloneForwardCollectiveCapacityCertificates.push({failure:"COLLECTIVE_CAPACITY",authorityId:collective.authorityId,
+          demandMinutes:collective.demandMinutes,freeCapacityMinutes:collective.freeCapacityMinutes,overloadTaskIds,
+          depth:candidate.depth,frequency:1});
+      else evidence.standaloneForwardCollectiveCapacityCertificateOverflow+=1;
+      evidence.standaloneForwardPrunes+=1;
+      const depthKey=String(candidate.depth);
+      evidence.standaloneForwardPrunesByDepth[depthKey]=(evidence.standaloneForwardPrunesByDepth[depthKey]??0)+1;
+      evidence.firstStandaloneForwardPruneDepth??=candidate.depth;
+      evidence.lastStandaloneForwardPruneDepth=candidate.depth;
+      evidence.lastStandaloneForwardBlockingTaskId=collective.blockingTaskId;
+      evidence.lastStandaloneForwardCausingCoreTaskIds=candidate.addedTasks.map(({id})=>id).sort();
+      evidence.lastStandaloneForwardCausingMainTaskId=candidate.mainTaskId;
+      evidence.lastStandaloneForwardCausingFeederStart=candidate.feederStart;
+      for(const id of collective.overloadTaskIds??[])
+        evidence.standaloneForwardBlockingTaskCounts[id]=(evidence.standaloneForwardBlockingTaskCounts[id]??0)+1;
+      return options.causalDiagnostic?{outcome:"REJECT",diagnosticCertificate:{authorityId:collective.authorityId??null,
+        demandMinutes:collective.demandMinutes??null,freeCapacityMinutes:collective.freeCapacityMinutes??null,
+        overloadTaskIds:[...(collective.overloadTaskIds??[])].sort()}}:"REJECT";
+    }
     for (const task of impacted) {
       evidence.standaloneForwardImpactedTaskChecks += 1;
       let witness = false;
@@ -1043,9 +1161,60 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
+    const frontier=checkStandaloneCoreFrontier(problem,standaloneTasks,candidate.tasks,candidate.meals);
+    evidence.coreStandaloneFrontierChecks+=1;evidence.coreStandaloneFrontierIndividualDomainChecks+=frontier.individualDomainChecks;
+    evidence.coreStandaloneFrontierCollectiveCapacityChecks+=frontier.collectiveCapacityChecks;evidence.coreStandaloneFrontierJointChecks+=frontier.jointChecks;
+    if(!frontier.feasible){evidence.coreStandaloneFrontierPrunes+=1;evidence.coreLeavesRejectedByStandalone+=1;
+      const causingCoreTasks=candidate.tasks.filter(task=>frontier.authorityId!==null&&(task.spaceId===frontier.authorityId||(task.requiredResourceIds??[]).includes(frontier.authorityId)));
+      evidence.coreStandaloneFrontierFirstPrune??={blockingTaskId:frontier.blockingTaskId,failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,freeCapacityMinutes:frontier.freeCapacityMinutes,causingCoreTaskIds:causingCoreTasks.map(task=>task.id).sort()};
+      const depths=causingCoreTasks.map(({id})=>candidate.decisionDepthByTaskId[id]).filter((depth):depth is number=>depth!==undefined);
+      const targetDepth=depths.length===causingCoreTasks.length&&depths.length>0?Math.max(...depths):null;
+      // Remove the whole suffix (and meals) and ask the same necessary authority again. This
+      // is an optimistic relaxation: every alternative of a later decision can only restore
+      // occupations/deadlines, never capacity. Therefore an identical certificate proves that
+      // those frames cannot repair this rejection without encoding fixture-specific causality.
+      const relaxedPrefix=targetDepth===null?null:candidate.tasks.filter(task=>(candidate.decisionDepthByTaskId[task.id]??0)<=targetDepth);
+      const prefixCertificate=relaxedPrefix===null?null:checkStandaloneCoreFrontier(problem,standaloneTasks,relaxedPrefix,[],"ANALYTIC_CAPACITY_ONLY");
+      const suffixIsProvenIrrelevant=prefixCertificate!==null&&!prefixCertificate.feasible
+        &&prefixCertificate.failure===frontier.failure&&prefixCertificate.authorityId===frontier.authorityId
+        &&prefixCertificate.demandMinutes===frontier.demandMinutes&&prefixCertificate.freeCapacityMinutes===frontier.freeCapacityMinutes;
+      if(options.causalDiagnostic){
+        const summary=standaloneFrontierDiagnostic;summary.totalRejections+=1;
+        const overloadTaskIds=[...(frontier.overloadTaskIds??[])].sort();
+        const certificate={failure:frontier.failure,authorityId:frontier.authorityId,demandMinutes:frontier.demandMinutes,
+          freeCapacityMinutes:frontier.freeCapacityMinutes,blockingTaskId:frontier.blockingTaskId,overloadTaskIds,pivotDepth:targetDepth};
+        const existing=summary.certificates.find(row=>JSON.stringify({...row,frequency:undefined})===JSON.stringify({...certificate,frequency:undefined}));
+        if(existing)existing.frequency+=1;else{
+          summary.certificates.push({...certificate,frequency:1});
+          const beforeDepth=targetDepth===null?null:targetDepth-1;
+          const before=beforeDepth===null?null:checkStandaloneCoreFrontier(problem,standaloneTasks,
+            candidate.tasks.filter(task=>(candidate.decisionDepthByTaskId[task.id]??0)<=beforeDepth),[],"ANALYTIC_CAPACITY_ONLY");
+          const row=(prefixDepth:number,checked:typeof frontier)=>({prefixDepth,failure:checked.failure,authorityId:checked.authorityId,
+            demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes,
+            certificatePersists:!checked.feasible&&checked.failure===frontier.failure&&checked.authorityId===frontier.authorityId
+              &&checked.demandMinutes===frontier.demandMinutes&&checked.freeCapacityMinutes===frontier.freeCapacityMinutes});
+          const prefixChecks=[...(targetDepth!==null&&prefixCertificate?[row(targetDepth,prefixCertificate)]:[]),
+            ...(beforeDepth!==null&&before?[row(beforeDepth,before)]:[])];
+          const asCoreTask=(task:ScheduledTask)=>({id:task.id,start:task.start,end:task.end,kind:task.kind,
+            decisionDepth:candidate.decisionDepthByTaskId[task.id]??null});
+          const overloadIds=new Set(overloadTaskIds);
+          summary.examples.push({certificate,
+            overloadTasks:standaloneTasks.filter(task=>overloadIds.has(task.id)).map(task=>({id:task.id,duration:task.duration,kind:task.kind,
+              authorityId:frontier.authorityId})).sort((a,b)=>a.id.localeCompare(b.id)),
+            consumingCoreTasks:causingCoreTasks.map(asCoreTask).sort((a,b)=>(a.decisionDepth??0)-(b.decisionDepth??0)||a.id.localeCompare(b.id)),
+            introducedByPivot:targetDepth===null?[]:candidate.tasks.filter(task=>candidate.decisionDepthByTaskId[task.id]===targetDepth).map(asCoreTask).sort((a,b)=>a.id.localeCompare(b.id)),
+            prefixChecks,pivotPairProven:prefixChecks.length===2&&prefixChecks[0]!.certificatePersists&&!prefixChecks[1]!.certificatePersists});
+        }
+      }
+      if(frontier.failure==="COLLECTIVE_CAPACITY"&&targetDepth!==null&&targetDepth<candidate.tasks.filter(({kind})=>kind==="main").length&&suffixIsProvenIrrelevant){
+        evidence.causalBacktracks+=1;const key=String(targetDepth);evidence.causalBacktrackTargetDepthCounts[key]=(evidence.causalBacktrackTargetDepthCounts[key]??0)+1;
+        return {outcome:"CERTIFIED_BACKJUMP",targetDepth};
+      }
+      return "REJECT";
+    }
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN");
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",macroCapacityDiagnostic);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -1062,6 +1231,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
+  if(evidence.causalDiagnostic)evidence.causalDiagnostic.standaloneFrontier=standaloneFrontierDiagnostic;
+  if(evidence.causalDiagnostic){evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificates=macroCapacityDiagnostic.certificates;
+    evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificateOverflow=macroCapacityDiagnostic.overflow;}
   if(evidence.causalDiagnostic){const summary=evidence.causalDiagnostic.futureFeasibility;const states=[...futureAssessments.values()];summary.assessments=states.flatMap(state=>[...state.rows.values()]).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature)||a.resultSignature.localeCompare(b.resultSignature));
     summary.collisions=states.filter(state=>state.rows.size>1).map(state=>{const row=state.rows.values().next().value!;return {depth:row.depth,taskId:row.taskId,authoritySignature:row.authoritySignature,resultSignatures:[...state.rows.keys()].sort()}}).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature));summary.authorityResultCollisions=summary.collisions.length;
     for(const state of states){const row=state.rows.values().next().value!;summary.totalEvaluations+=state.occurrences;summary.uniqueAuthorityStates+=1;summary.repeatedEvaluations+=state.occurrences-1;
@@ -1087,9 +1259,26 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
   evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
   evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
+  evidence.coreLeafValidationAttempts=core.evidence.coreLeafValidationAttempts;
+  evidence.coreLeafValidShapeRejects=core.evidence.coreLeafValidShapeRejects;
+  evidence.coreLeafHardValidationRejects=core.evidence.coreLeafHardValidationRejects;
+  evidence.coreLeafValidationAccepted=core.evidence.coreLeafValidationAccepted;
+  evidence.coreLeafValidationReasonCounts={...core.evidence.coreLeafValidationReasonCounts};
+  evidence.firstCoreLeafShapeRejection=core.evidence.firstCoreLeafShapeRejection
+    ?{...core.evidence.firstCoreLeafShapeRejection,missingTaskIds:[...core.evidence.firstCoreLeafShapeRejection.missingTaskIds],extraTaskIds:[...core.evidence.firstCoreLeafShapeRejection.extraTaskIds]}:null;
+  evidence.firstCoreLeafHardValidationRejection=core.evidence.firstCoreLeafHardValidationRejection
+    ?{...core.evidence.firstCoreLeafHardValidationRejection,reasonCodes:[...core.evidence.firstCoreLeafHardValidationRejection.reasonCodes]}:null;
+  evidence.mealTimelineDomainCount=core.evidence.mealTimelineDomainCount;
+  evidence.mealTimelinesExplored=core.evidence.mealTimelinesExplored;
+  evidence.mealTimelinesEliminatedAnalytically=core.evidence.mealTimelinesEliminatedAnalytically;
+  evidence.mealTimelinesPendingAtExhaustion=core.evidence.mealTimelinesPendingAtExhaustion;
+  evidence.mealTimelinesPreferred=core.evidence.mealTimelinesPreferred;
+  evidence.mealTimelinesNonPreferred=core.evidence.mealTimelinesNonPreferred;
   evidence.architecturesChecked=core.evidence.architecturesChecked;
   evidence.architecturesStructurallyRejected=core.evidence.architecturesStructurallyRejected;
   evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};
+  evidence.runLayers=core.evidence.runLayers.map((layer)=>({ ...layer,
+    rejectionReasons:{...layer.rejectionReasons} }));
   evidence.firstExactArchitecture=core.evidence.firstExactArchitecture;
   evidence.firstFeedableRunSizes=[...core.evidence.firstFeedableRunSizes];
   evidence.feederOrderBranchesByArchitecture={...core.evidence.feederOrderBranchesByArchitecture};
@@ -1123,6 +1312,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederSlotMatchingEdgeChecks=core.evidence.feederSlotMatchingEdgeChecks;
   evidence.feederSlotMatchingAugmentTraversals=core.evidence.feederSlotMatchingAugmentTraversals;
   evidence.feederSlotMatchingBranchesExplored=core.evidence.feederSlotMatchingBranchesExplored;
+  evidence.feederSlotIntervalCertificates=core.evidence.feederSlotIntervalCertificates;
+  evidence.feederSlotExplicitFallbacks=core.evidence.feederSlotExplicitFallbacks;
+  evidence.feederSlotLazyRepairBuilds=core.evidence.feederSlotLazyRepairBuilds;
   evidence.residualMatchingInvocations = core.evidence.residualMatchingInvocations;
   evidence.residualMatchingFullBuilds = core.evidence.residualMatchingFullBuilds;
   evidence.residualMatchingIncrementalUpdates = core.evidence.residualMatchingIncrementalUpdates;

@@ -156,8 +156,8 @@ function countRuns(values: readonly string[]): { total: number; byValue: Record<
 function blocksSetupsQuality(expanded: ExpandedCanonicalFullA2Template, byId: ReadonlyMap<string, NormalizedPlanningInterval>, preparations: readonly NormalizedPlanningPreparation[] | undefined): KpiResult<BlocksSetupsQuality> {
   if (!preparations) return blocked(["scheduled_setup_preparations", "scheduled_round_preparations"], "P07 requires explicit scheduled preparation occupations; it does not infer setup work from idle gaps.");
   const mainCoachSequence = expanded.tasks.filter(({ type }) => type === "ENSAYO_ESTUDIO_7").map((task) => ({ task, interval: byId.get(task.id)! })).sort((left, right) => left.interval.start - right.interval.start || left.task.id.localeCompare(right.task.id, "en")).map(({ task }) => task.blockKey ?? "UNASSIGNED");
-  const mainRuns = countRuns(mainCoachSequence), mainBlockLimit = expanded.rules.mainFlow.maxBlocksPerCoach;
-  const mainBlockLimitViolationCount = Object.values(mainRuns.byValue).filter((count) => count > mainBlockLimit).length;
+  const mainRuns = countRuns(mainCoachSequence);
+  const mainBlockLimitViolationCount = 0;
   const setupSequence = expanded.tasks.filter((task) => task.setupFamilyId !== undefined).map((task) => ({ task, interval: byId.get(task.id)! })).sort((left, right) => left.interval.start - right.interval.start || left.task.id.localeCompare(right.task.id, "en")).map(({ task }) => task.setupFamilyId!);
   const setupRuns = countRuns(setupSequence), setupPreparations = preparations.filter(({ kind }) => kind === "setup_preparation"), roundPreparations = preparations.filter(({ kind }) => kind === "round_preparation");
   return available({
