@@ -287,6 +287,11 @@ export interface ExactItinerantPlanEvidence {
   ordinaryIndividualForwardBlockingTaskCounts: Record<string, number>;
   ordinaryIndividualForwardChecksByDepth: Record<string, number>;
   ordinaryIndividualForwardFirstPrune: { causingTaskId: string; blockingTaskId: string; depth: number } | null;
+  ordinaryPairCertificateCacheHits:number;
+  ordinaryPairCertificateCacheMisses:number;
+  ordinaryPairCertificateCacheEntries:number;
+  ordinaryPairCertificateCertifiedExhaustions:number;
+  ordinaryPairCertificateLogicalStartsEliminated:number;
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealCheapProbes:number; participantMealAffectedObligationsChecked:number; participantMealAnalyticDomainBuilds:number; participantMealLogicalGridStarts:number; participantMealAnalyticallyEliminatedStarts:number; participantMealActuallyEvaluatedStarts:number; participantMealZeroDomainPrunes:number; participantMealAnalyticCollectivePrunes:number; participantMealExactSearchesAvoided:number; participantMealExactMaterializations:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
@@ -309,7 +314,7 @@ export interface ExactItinerantPlanResult {
 }
 
 type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
-interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
+interface Positions { task: Task; domain: StandaloneForwardDynamicDomain; authoritySignature:string; effectiveDeadline: number }
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
 export type JointGroupStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
@@ -426,13 +431,17 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
   technicalChainStartDomainMode:TechnicalChainStartDomainMode,
-  macroCapacityDiagnostic:{enabled:boolean;certificates:ExactMacroCapacityCertificate[];overflow:number}): StandaloneSearchResult {
+  macroCapacityDiagnostic:{enabled:boolean;certificates:ExactMacroCapacityCertificate[];overflow:number},
+  ordinaryPairCertificateMemoization:boolean): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
   const ordinaryStaticDomainCache = new Map<string, StandaloneForwardStaticDomain>();
+  type PairCertificate={blockingTaskId:string;blockingAuthoritySignature:string;logicalStarts:number};
+  const ordinaryPairCertificateCache=new Map<string,PairCertificate[]>();
+  const pairChoiceKey=(taskId:string,authoritySignature:string)=>JSON.stringify([taskId,authoritySignature]);
   const ordinaryStaticDomain = (task: Task): StandaloneForwardStaticDomain => {
     const cached = ordinaryStaticDomainCache.get(task.id);
     if (cached) return cached;
@@ -526,9 +535,9 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         recordBlockingTask(task);
         return "DEAD_END";
       }
-      alternatives.push({ task, starts: [...domain.starts()], effectiveDeadline: effectiveDeadline(problem, task) });
+      alternatives.push({ task, domain, authoritySignature:signature, effectiveDeadline: effectiveDeadline(problem, task) });
     }
-    alternatives.sort((a, b) => a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
+    alternatives.sort((a, b) => a.domain.eligibleStartCount - b.domain.eligibleStartCount || a.effectiveDeadline - b.effectiveDeadline
       || b.task.duration - a.task.duration
       || (b.task.requiredResourceIds?.length ?? 0) - (a.task.requiredResourceIds?.length ?? 0)
       || a.task.id.localeCompare(b.task.id));
@@ -537,8 +546,22 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     // this ordinary node, not once per candidate start.
     evidence.standaloneTaskSelections += 1;
     evidence.ordinaryMRVSelections += 1;
+    const certificateBucket=ordinaryPairCertificateMemoization
+      ?ordinaryPairCertificateCache.get(pairChoiceKey(choice.task.id,choice.authoritySignature)):undefined;
+    if(certificateBucket){
+      const hit=certificateBucket.find(certificate=>{
+        const blocker=alternatives.find(alternative=>alternative.task.id===certificate.blockingTaskId);
+        return blocker?.authoritySignature===certificate.blockingAuthoritySignature;
+      });
+      if(hit){
+        evidence.ordinaryPairCertificateCacheHits+=1;
+        evidence.ordinaryPairCertificateLogicalStartsEliminated+=hit.logicalStarts;
+        return "DEAD_END";
+      }
+    }
+    if(ordinaryPairCertificateMemoization)evidence.ordinaryPairCertificateCacheMisses+=1;
     evidence.ordinaryExactStartEnumerations += 1;
-    const feasibleStarts = choice.starts.filter((start) => {
+    const feasibleStarts = [...choice.domain.starts()].filter((start) => {
       evidence.ordinaryExactStartChecks += 1;
       evidence.standaloneStartChecks += 1;
       return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals);
@@ -554,8 +577,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)
       .sort(byId);
+    let certifiedBlocker:Task|null=null;
+    let pairCertificateEligible=true;
     for (const { scheduled } of orderedStarts) {
-      if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+      if (!consumeLeafBranch()) { pairCertificateEligible=false; return "BUDGET_EXHAUSTED"; }
       evidence.ordinaryBranchesExplored += 1;
       evidence.ordinaryIndividualForwardChecks += 1;
       evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
@@ -574,6 +599,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         else { zeroDomainObligation = obligation; break; }
       }
       if (zeroDomainObligation) {
+        if(certifiedBlocker===null)certifiedBlocker=zeroDomainObligation;
+        else if(certifiedBlocker.id!==zeroDomainObligation.id)pairCertificateEligible=false;
         evidence.ordinaryIndividualForwardZeroDomainPrunes += 1;
         evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id]
           = (evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id] ?? 0) + 1;
@@ -585,11 +612,25 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         evidence.standaloneBacktracks += 1;
         continue;
       }
+      pairCertificateEligible=false;
       if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
       if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
+    }
+    if(ordinaryPairCertificateMemoization&&pairCertificateEligible&&certifiedBlocker!==null){
+      const blocker=alternatives.find(alternative=>alternative.task.id===certifiedBlocker!.id)!;
+      const key=pairChoiceKey(choice.task.id,choice.authoritySignature);
+      const bucket=ordinaryPairCertificateCache.get(key)??[];
+      if(!bucket.some(certificate=>certificate.blockingTaskId===certifiedBlocker!.id
+        &&certificate.blockingAuthoritySignature===blocker.authoritySignature)){
+        bucket.push({blockingTaskId:certifiedBlocker.id,blockingAuthoritySignature:blocker.authoritySignature,
+          logicalStarts:orderedStarts.length});
+        ordinaryPairCertificateCache.set(key,bucket);
+        evidence.ordinaryPairCertificateCacheEntries+=1;
+      }
+      evidence.ordinaryPairCertificateCertifiedExhaustions+=1;
     }
     return "DEAD_END";
   };
@@ -862,6 +903,8 @@ export interface ExactItinerantPlanSearchOptions {
   technicalChainStartDomainMode?:TechnicalChainStartDomainMode;
   /** Test oracle only; production memoizes positive block-closed witnesses locally. */
   standaloneForwardWitnessMemoization?: boolean;
+  /** Test oracle only; production caches exact ordinary choice/blocker exhaustion certificates locally. */
+  ordinaryPairCertificateMemoization?:boolean;
   causalDiagnostic?: boolean;
 }
 
@@ -973,6 +1016,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryIndividualForwardWitnesses:0,ordinaryIndividualForwardCausingTaskCounts:{},
     ordinaryIndividualForwardBlockingTaskCounts:{},ordinaryIndividualForwardChecksByDepth:{},
     ordinaryIndividualForwardFirstPrune:null,
+    ordinaryPairCertificateCacheHits:0,ordinaryPairCertificateCacheMisses:0,
+    ordinaryPairCertificateCacheEntries:0,ordinaryPairCertificateCertifiedExhaustions:0,
+    ordinaryPairCertificateLogicalStartsEliminated:0,
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };
@@ -1214,7 +1260,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",macroCapacityDiagnostic);
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",macroCapacityDiagnostic,
+      options.ordinaryPairCertificateMemoization!==false);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}

@@ -382,6 +382,30 @@ test("standalone DFS backtracks from a valid start that blocks an equal-scarcity
   assert.equal(result.scheduledTasks.find(({ id }) => id === "b")!.start, 0);
 });
 
+test("ordinary pair-certificate oracle preserves semantics, determinism, order invariance, and input", () => {
+  const create=()=>problem([
+    auxiliary("a", "a", [{ start: 0, end: 10 }, { start: 10, end: 20 }], ["unit"]),
+    auxiliary("b", "b", [{ start: 0, end: 15 }], ["unit"]),
+  ]);
+  const input=create(),snapshot=structuredClone(input);
+  const enabled=runExactItinerantPlanSearch(input,{ordinaryPairCertificateMemoization:true});
+  const disabled=runExactItinerantPlanSearch(create(),{ordinaryPairCertificateMemoization:false});
+  assert.equal(enabled.status,disabled.status);
+  assert.equal(enabled.complete,disabled.complete);
+  assert.deepEqual(enabled.scheduledTasks,disabled.scheduledTasks);
+  assert.equal(enabled.evidence.fullFingerprint,disabled.evidence.fullFingerprint);
+  assert.equal(validatePlan(input,enabled.scheduledTasks,[],enabled.scheduledSpaceMeals).hardValid,true);
+  assert.deepEqual(input,snapshot);
+  assert.deepEqual(runExactItinerantPlanSearch(create(),{ordinaryPairCertificateMemoization:true}),enabled);
+  const reversed=create();reversed.tasks.reverse();reversed.participants.reverse();reversed.spaces.reverse();
+  const reordered=runExactItinerantPlanSearch(reversed,{ordinaryPairCertificateMemoization:true});
+  assert.equal(reordered.status,enabled.status);
+  assert.deepEqual(reordered.scheduledTasks,enabled.scheduledTasks);
+  assert.equal(reordered.evidence.fullFingerprint,enabled.evidence.fullFingerprint);
+  assert.equal(disabled.evidence.ordinaryPairCertificateCacheHits,0);
+  assert.equal(disabled.evidence.ordinaryPairCertificateCacheEntries,0);
+});
+
 test("a blocking first core leaf is rejected and a later hard-valid core leaf completes standalone", () => {
   const input = coreLeafContinuationProblem(), snapshot = structuredClone(input);
   const isolated = constructExactMainAndFeederCore(input), standalone = input.tasks.find(({ id }) => id === "standalone")!;
