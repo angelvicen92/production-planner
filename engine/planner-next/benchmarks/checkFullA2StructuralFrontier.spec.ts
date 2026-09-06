@@ -12,10 +12,6 @@ const result = (overrides: Record<string, unknown> = {}) => ({
     coreCompleteLeafCount: 1,
     deepestPartialCoreTasksRemaining: 0,
     standaloneCompleteLeafCount: frontier.standaloneCompleteLeafCount,
-    operationalMealFuturePrunes: 0,
-    operationalMealFutureAnalyticChecks: 0,
-    operationalMealFutureBranchesExplored: 0,
-    operationalMealFutureFirstPrune: null,
     lastExhaustionPhase: frontier.lastExhaustionPhase,
   } },
   publishedCanonicalObligations: 0,
@@ -26,13 +22,6 @@ const result = (overrides: Record<string, unknown> = {}) => ({
 });
 
 test("A2-FULL-023 structural frontier passes", () => assert.doesNotThrow(() => checkFullA2StructuralFrontier(result())));
-
-test("branch-free sound operational future frontier passes without terminal leaves", () => assert.doesNotThrow(() => checkFullA2StructuralFrontier(result({
-  execution:{complete:false,evidence:{...result().execution.evidence,standaloneCompleteLeafCount:0,
-    operationalMealFuturePrunes:1,operationalMealFutureAnalyticChecks:1,operationalMealFutureBranchesExplored:0,
-    operationalMealFutureFirstPrune:{policyId:"configured-policy",requiredDuration:75,window:{start:780,end:990},
-      cause:"ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL"}}},
-}))));
 
 test("regressive #758 shape fails", () => assert.throws(() => checkFullA2StructuralFrontier(result({
   execution: { complete: false, evidence: { ...result().execution.evidence,

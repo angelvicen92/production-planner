@@ -62,6 +62,11 @@ function sourceTaskConflictsWithPolicy(task: PlannerNextProblem["tasks"][number]
       .some((id) => policy.resourceIds.includes(id));
 }
 
+function isIndividualCoachMeal(problem: PlannerNextProblem, policy: OperationalMealPolicy): boolean {
+  return policy.spaceIds.length === 0 && policy.resourceIds.length > 0
+    && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
+}
+
 /**
  * Sound, branch-free interval probe. Operational policies need two fixed productive
  * boundaries, so a missing terminal candidate is conclusive only once every task
@@ -69,21 +74,18 @@ function sourceTaskConflictsWithPolicy(task: PlannerNextProblem["tasks"][number]
  * instead and deliberately remain with the terminal authority.
  */
 export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
-  newlyFixed: readonly ScheduledTask[] = tasks): {
+  newlyFixed?: readonly ScheduledTask[]): {
   feasible: boolean; checkedPolicyIds: readonly string[]; blockingPolicyIds: readonly string[];
   pruneProofs: readonly OperationalMealFuturePruneProof[]; branchesExplored: 0; readOnly: true;
 } {
   const scheduledIds = new Set(tasks.map(({ id }) => id));
   const checked = [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
-    if (policy.futureReservation !== "REQUIRED") return false;
-    if (!newlyFixed.some((task) => taskConflictsWithPolicy(task, policy))) return false;
-    const individualCoachMeal = policy.spaceIds.length === 0 && policy.resourceIds.length > 0
-      && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
-    if (individualCoachMeal) return false;
+    if (newlyFixed && !newlyFixed.some((task) => taskConflictsWithPolicy(task, policy))) return false;
+    if (isIndividualCoachMeal(problem, policy)) return false;
     const scoped = problem.tasks.filter((task) => sourceTaskConflictsWithPolicy(task, policy));
-    return scoped.length > 1 && scoped.every(({ id }) => scheduledIds.has(id));
+    return scoped.every(({ id }) => scheduledIds.has(id));
   }).sort(byIdentity);
-  const blockingPolicies = checked.filter((policy) => operationalMealCandidates(problem, policy, tasks, []).length === 0);
+  const blockingPolicies = checked.filter((policy) => !hasOperationalMealBoundary(problem, policy, tasks));
   const blocking = blockingPolicies.map(({ id }) => id);
   return freeze({ feasible: blocking.length === 0, checkedPolicyIds: checked.map(({ id }) => id).sort(),
     blockingPolicyIds: blocking, pruneProofs: blockingPolicies.map((policy) => ({ policyId: policy.id,
@@ -111,6 +113,26 @@ function scopeAvailable(problem: PlannerNextProblem, policy: OperationalMealPoli
   return resourcesAvailable && spacesAvailable;
 }
 
+function productiveTasks(policy: OperationalMealPolicy, tasks: readonly ScheduledTask[]): ScheduledTask[] {
+  return tasks.filter((task) => taskConflictsWithPolicy(task, policy))
+    .sort((left, right) => left.start - right.start || left.end - right.end || left.id.localeCompare(right.id, "en"));
+}
+
+function hardBoundaryAvailable(problem: PlannerNextProblem, policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[], left: ScheduledTask, right: ScheduledTask): boolean {
+  const start = left.end, end = start + policy.duration;
+  return start >= policy.window.start && end <= policy.window.end && end <= right.start
+    && scopeAvailable(problem, policy, start, end)
+    && !tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, { start, end }));
+}
+
+function hasOperationalMealBoundary(problem: PlannerNextProblem, policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[]): boolean {
+  const productive = productiveTasks(policy, tasks);
+  return productive.slice(0, -1).some((left, index) =>
+    hardBoundaryAvailable(problem, policy, tasks, left, productive[index + 1]!));
+}
+
 export function operationalMealCandidates(
   problem: PlannerNextProblem,
   policy: OperationalMealPolicy,
@@ -118,18 +140,15 @@ export function operationalMealCandidates(
   placed: readonly ScheduledOperationalMeal[],
 ): ScheduledOperationalMeal[] {
   const candidates: ScheduledOperationalMeal[] = [];
-  const productive = tasks.filter((task) => taskConflictsWithPolicy(task, policy))
-    .sort((left, right) => left.start - right.start || left.end - right.end || left.id.localeCompare(right.id, "en"));
-  const individualCoachMeal = policy.spaceIds.length === 0 && policy.resourceIds.length > 0
-    && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
+  const productive = productiveTasks(policy, tasks);
+  const individualCoachMeal = isIndividualCoachMeal(problem, policy);
   const boundaries = individualCoachMeal
     ? Array.from({ length: Math.max(0, Math.floor((policy.window.end - policy.duration - policy.window.start) / 5) + 1) },
       (_, index) => ({ start: policy.window.start + index * 5, preferred: false }))
     : productive.slice(0, -1).flatMap((left, index) => {
     const right = productive[index + 1]!;
     const start = left.end;
-    return start >= policy.window.start && start + policy.duration <= policy.window.end
-      && start + policy.duration <= right.start ? [{ start, preferred: left.blockKey !== undefined
+    return hardBoundaryAvailable(problem, policy, tasks, left, right) ? [{ start, preferred: left.blockKey !== undefined
         && right.blockKey !== undefined && left.blockKey !== right.blockKey }] : [];
     });
   for (const { start, preferred } of boundaries) {

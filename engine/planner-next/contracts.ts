@@ -187,7 +187,6 @@ export interface OperationalMealPolicy {
   duration: Minute;
   resourceIds: string[];
   spaceIds: string[];
-  futureReservation?: "REQUIRED";
 }
 
 export interface ScheduledOperationalMeal {

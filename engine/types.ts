@@ -269,8 +269,6 @@ export interface EngineInputOperationalMealPolicyInput {
   planResourceItemIds: number[];
   /** Optional physical spaces blocked by the same single meal obligation. */
   spaceIds?: number[];
-  /** Opt-in to branch-free future viability checks before terminal materialization. */
-  futureReservation?: "REQUIRED";
 }
 
 export interface EngineInputItinerantTeamAvailabilityInput {

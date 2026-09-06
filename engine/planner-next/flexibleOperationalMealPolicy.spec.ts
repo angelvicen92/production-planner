@@ -57,7 +57,7 @@ test("CORE meal probe rejects a closed 45-minute operational domain and preserve
   const problem = exactMealProblem();
   problem.tasks[0]!.spaceId = "main";
   problem.operationalMealPolicies = [{ id: "operations-meal", window: { start: 10, end: 65 }, duration: 45,
-    resourceIds: [], spaceIds: ["main"], futureReservation: "REQUIRED" }];
+    resourceIds: [], spaceIds: ["main"] }];
   const closed = [
     { ...problem.tasks[0]!, start: 0, end: 10 },
     { ...problem.tasks[1]!, start: 50, end: 60 },
@@ -67,7 +67,7 @@ test("CORE meal probe rejects a closed 45-minute operational domain and preserve
   assert.equal(probeOperationalMealFutureFeasibility(problem, closed).feasible, true);
 });
 
-function futureReservationProblem(): PlannerNextProblem {
+function boundaryPolicyProblem(): PlannerNextProblem {
   const problem = exactMealProblem();
   problem.tasks = [
     { id: "left", kind: "auxiliary", participantId: "core", duration: 10, spaceId: "main", dependencies: [] },
@@ -75,13 +75,13 @@ function futureReservationProblem(): PlannerNextProblem {
     { id: "unrelated", kind: "main", participantId: "core", blockKey: "core", duration: 10, spaceId: "vocal", dependencies: [] },
   ];
   problem.operationalMealPolicies = [{ id: "operations", window: { start: 10, end: 100 }, duration: 75,
-    resourceIds: [], spaceIds: ["main"], futureReservation: "REQUIRED" }];
+    resourceIds: [], spaceIds: ["main"] }];
   problem.mainFlow = { ...problem.mainFlow, spaceId: "vocal" };
   return problem;
 }
 
 test("future operational reservation prunes only when the last possible 75 minutes are proven closed", () => {
-  const problem = futureReservationProblem();
+  const problem = boundaryPolicyProblem();
   const closed = [
     { ...problem.tasks[0]!, start: 0, end: 10 },
     { ...problem.tasks[1]!, start: 84, end: 94 },
@@ -94,7 +94,7 @@ test("future operational reservation prunes only when the last possible 75 minut
 });
 
 test("future operational reservation permits an exact interval and does not materialize a meal", () => {
-  const problem = futureReservationProblem();
+  const problem = boundaryPolicyProblem();
   const result = probeOperationalMealFutureFeasibility(problem, [
     { ...problem.tasks[0]!, start: 0, end: 10 },
     { ...problem.tasks[1]!, start: 85, end: 95 },
@@ -105,7 +105,7 @@ test("future operational reservation permits an exact interval and does not mate
 });
 
 test("future operational reservation is inconclusive until a future task can create the boundary", () => {
-  const problem = futureReservationProblem();
+  const problem = boundaryPolicyProblem();
   const onlyLeft = [{ ...problem.tasks[0]!, start: 0, end: 10 }] as ScheduledTask[];
   assert.deepEqual(operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, onlyLeft, []), []);
   const result = probeOperationalMealFutureFeasibility(problem, onlyLeft);
@@ -114,7 +114,7 @@ test("future operational reservation is inconclusive until a future task can cre
 });
 
 test("future operational reservation ignores unrelated work and is deterministic under order reversal", () => {
-  const problem = futureReservationProblem();
+  const problem = boundaryPolicyProblem();
   const scoped = [
     { ...problem.tasks[0]!, start: 0, end: 10 },
     { ...problem.tasks[1]!, start: 85, end: 95 },
@@ -125,7 +125,7 @@ test("future operational reservation ignores unrelated work and is deterministic
 });
 
 test("future operational reservation never turns a non-terminal or coach grid failure into a prune", () => {
-  const problem = futureReservationProblem();
+  const problem = boundaryPolicyProblem();
   problem.operationalMealPolicies!.push({ id: "coach-grid", window: { start: 10, end: 55 }, duration: 45,
     resourceIds: ["coach"], spaceIds: [] });
   const partial = [{ ...problem.tasks[0]!, start: 0, end: 10 }] as ScheduledTask[];
@@ -133,6 +133,47 @@ test("future operational reservation never turns a non-terminal or coach grid fa
   assert.equal(result.feasible, true);
   assert.deepEqual(result.checkedPolicyIds, []);
   assert.deepEqual(result.blockingPolicyIds, []);
+});
+
+test("every between-task operational policy participates without opt-in while an individual coach stays terminal", () => {
+  const problem = boundaryPolicyProblem();
+  problem.tasks.push(
+    { id: "other-left", kind: "auxiliary", participantId: "core", duration: 10, spaceId: "meal-room", dependencies: [] },
+    { id: "other-right", kind: "auxiliary", participantId: "core", duration: 10, spaceId: "meal-room", dependencies: [] },
+  );
+  problem.operationalMealPolicies!.push(
+    { id: "other-operations", window: { start: 10, end: 100 }, duration: 75, resourceIds: [], spaceIds: ["meal-room"] },
+    { id: "coach-grid", window: { start: 10, end: 55 }, duration: 45, resourceIds: ["coach"], spaceIds: [] },
+  );
+  const scheduled = [
+    { ...problem.tasks[0]!, start: 0, end: 10 }, { ...problem.tasks[1]!, start: 85, end: 95 },
+    { ...problem.tasks[3]!, start: 0, end: 10 }, { ...problem.tasks[4]!, start: 85, end: 95 },
+  ] as ScheduledTask[];
+  const result = probeOperationalMealFutureFeasibility(problem, scheduled);
+  assert.deepEqual(result.checkedPolicyIds, ["operations", "other-operations"]);
+  assert.equal(result.feasible, true);
+  assert.equal(result.branchesExplored, 0);
+});
+
+test("analytic proof matches terminal boundary authority for completely fixed schedules, including zero and one scoped task", () => {
+  for (const rightStart of [84, 85, 90]) {
+    const problem = boundaryPolicyProblem();
+    const scheduled = [
+      { ...problem.tasks[0]!, start: 0, end: 10 },
+      { ...problem.tasks[1]!, start: rightStart, end: rightStart + 10 },
+    ] as ScheduledTask[];
+    const analytic = probeOperationalMealFutureFeasibility(problem, scheduled);
+    const terminalHasCandidate = operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, scheduled, []).length > 0;
+    assert.equal(analytic.feasible, terminalHasCandidate);
+    assert.equal(analytic.branchesExplored, 0);
+  }
+  for (const scopedCount of [0, 1]) {
+    const problem = boundaryPolicyProblem();
+    problem.tasks = problem.tasks.slice(0, scopedCount);
+    const scheduled = problem.tasks.map((task, index) => ({ ...task, start: index * 20, end: index * 20 + task.duration })) as ScheduledTask[];
+    assert.equal(probeOperationalMealFutureFeasibility(problem, scheduled).feasible,
+      operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, scheduled, []).length > 0);
+  }
 });
 
 function exactMealProblem(): PlannerNextProblem {

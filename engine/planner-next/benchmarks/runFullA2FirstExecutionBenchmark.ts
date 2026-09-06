@@ -165,8 +165,6 @@ input.operationalMealPolicies = config.meals.operational.mealUnits.map(({ mealUn
   durationMinutes: config.meals.operational.defaultDurationMinutes,
   planResourceItemIds: resourceIds.map((resource) => resourceId.get(resource)!),
   spaceIds: spaceIds.map((space) => spaceId.get(space)!),
-  ...(config.meals.operational.mealUnits.find((unit) => unit.mealUnitId === mealUnitId)?.futureReservation
-    ? { futureReservation: "REQUIRED" as const } : {}),
 }));
 input.operationalMealPolicies.push(...["coach-lucia", "coach-jose-maria"].map((coach) => ({
   id: `${coach}-individual`,
