@@ -1,5 +1,5 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
-import { canPlaceTask } from "./placement";
+import { canPlaceTask, exactTaskStartDomain } from "./placement";
 
 export type TransportDirection = "arrival" | "departure";
 
@@ -165,6 +165,67 @@ export function transportGroupStarts(
     if (canPlaceTransportGroup(problem, tasks, start, placed, previousGroupStarts, policy)) starts.push(start);
   }
   return starts;
+}
+
+export interface TransportDirectionWitnessResult {
+  feasible: boolean;
+  groups: ScheduledTask[][];
+  branchesExplored: number;
+  backtracks: number;
+  exhausted: boolean;
+}
+
+/** Exact, ledger-accounted grouped witness. It is read-only and does not materialize into the plan. */
+export function findTransportDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection,
+  relevantTasks: readonly Task[], externalPlaced: readonly ScheduledTask[], consume: () => boolean): TransportDirectionWitnessResult {
+  const policy = problem.transportPolicy?.[direction];
+  if (!policy || relevantTasks.length === 0)
+    return { feasible: true, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
+  const policyIds = new Set(policy.taskIds);
+  const relevant = relevantTasks.filter(({ id }) => policyIds.has(id));
+  if (relevant.length !== relevantTasks.length)
+    return { feasible: false, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
+  let branchesExplored = 0, backtracks = 0, exhausted = false;
+  const arrivalIds = new Set(relevant.map(({ id }) => id));
+  const external = externalPlaced.filter(({ id }) => !arrivalIds.has(id));
+  const boundary = (task: Task): number => {
+    const obligations = external.filter((placed) => placed.participantId === task.participantId);
+    return direction === "arrival"
+      ? Math.min(problem.day.end, ...obligations.map(({ start }) => start))
+      : Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+  };
+  const tasks = [...relevant].sort((left, right) => boundary(left) - boundary(right) || byId(left, right));
+  const target = Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize);
+  const search = (remaining: readonly Task[], groups: readonly ScheduledTask[][]): ScheduledTask[][] | null => {
+    if (!remaining.length) return groups.map((group) => [...group]);
+    const [first, ...rest] = remaining;
+    const sizes = Array.from({ length: Math.min(policy.maximumGroupSize, remaining.length) }, (_, index) => index + 1)
+      .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || right - left);
+    for (const size of sizes) for (const tail of combinations(rest, size - 1)) {
+      if (!consume()) { exhausted = true; return null; }
+      branchesExplored += 1;
+      const group = [first!, ...tail].sort(byId);
+      const alreadyPlaced = [...external, ...groups.flat()];
+      const domains = group.map((task) => new Set([...exactTaskStartDomain(problem, task, alreadyPlaced).starts()]));
+      const starts = [...domains[0]!].filter((start) => domains.every((domain) => domain.has(start))
+        && group.every((task) => direction === "arrival" ? start + task.duration <= boundary(task) : start >= boundary(task)))
+        .sort((left, right) => direction === "arrival" ? right - left : left - right);
+      for (const start of starts) {
+        if (!consume()) { exhausted = true; return null; }
+        branchesExplored += 1;
+        if (!canPlaceTransportGroup(problem, group, start, alreadyPlaced,
+          groups.map((placedGroup) => placedGroup[0]!.start), policy)) continue;
+        const scheduled = scheduleTransportGroup(group, start);
+        const memberIds = new Set(group.map(({ id }) => id));
+        const found = search(remaining.filter(({ id }) => !memberIds.has(id)), [...groups, scheduled]);
+        if (found || exhausted) return found;
+        backtracks += 1;
+      }
+    }
+    return null;
+  };
+  const groups = search(tasks, []);
+  return { feasible: groups !== null, groups: groups ?? [], branchesExplored, backtracks, exhausted };
 }
 
 export interface TransportValidation {
