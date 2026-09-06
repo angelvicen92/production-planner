@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
+import { validateTransportGrouping } from "./transportGrouping";
 
 const interval = [{ start: 0, end: 60 }];
 function fixture(count: number, window = { start: 0, end: 30 }): { problem: PlannerNextProblem; pending: Task[]; core: ScheduledTask[] } {
@@ -149,4 +150,24 @@ test("arrival remains reserved after its intervening non-transport predecessor m
     [...input.core, placedStyling], [], first.reservation, () => true);
   assert.equal(afterMaterialization.feasible, true);
   assert.deepEqual(afterMaterialization.reservation!.arrivalTaskIds, [arrival.id]);
+});
+
+test("zero-gap groups at one interval respect the effective synchronized maximum and use another start when available", () => {
+  const run = (arrivalEnd: number) => {
+    const input = arrivalFixture(4, { maximum: 2, target: 2, gap: 0, arrivalWindow: { start: 0, end: arrivalEnd } });
+    const arrivals = input.pending.slice(0, 4);
+    input.problem.spaces = input.problem.spaces.filter(({ id }) => id !== "arrival-space");
+    for (const [index, arrival] of arrivals.entries()) {
+      arrival.spaceId = `arrival-space-${index}`;
+      input.problem.spaces.push({ id: arrival.spaceId, availability: [{ start: 0, end: 50 }] });
+    }
+    return { input, result: maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true) };
+  };
+  const singleStart = run(10);
+  assert.equal(singleStart.result.feasible, false);
+  const separable = run(20);
+  assert.equal(separable.result.feasible, true);
+  const groups = separable.result.reservation!.arrivalGroups;
+  assert.equal(new Set(groups.map((group) => group[0]!.start)).size, 2);
+  assert.equal(validateTransportGrouping(separable.input.problem, [...groups.flat()]).violationCount, 0);
 });

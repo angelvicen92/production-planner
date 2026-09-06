@@ -139,9 +139,15 @@ export function canPlaceTransportGroup(
   policy: Readonly<TransportGroupingPolicy>,
 ): boolean {
   const first = tasks[0];
+  const direction = first ? transportDirectionForTask(problem, first.id) : undefined;
+  const effectiveSynchronizedCount = first && direction
+    ? tasks.length + placed.filter((task) => transportDirectionForTask(problem, task.id) === direction
+      && task.start === start && task.end === start + first.duration).length
+    : tasks.length;
   return first !== undefined
     && tasks.every((task) => task.duration === first.duration)
     && new Set(tasks.map((task) => task.participantId)).size === tasks.length
+    && effectiveSynchronizedCount <= policy.maximumGroupSize
     && previousGroupStarts.every((other) => Math.abs(start - other) >= policy.minGapMinutes)
     && tasks.every((task) => task.dependencies.every((dependencyId) => {
       const dependency = placed.find(({ id }) => id === dependencyId);
