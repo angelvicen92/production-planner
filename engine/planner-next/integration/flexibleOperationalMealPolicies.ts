@@ -22,6 +22,7 @@ export interface ResolvedFlexibleOperationalMealPolicy {
   readonly duration: number;
   readonly resourceIds: readonly number[];
   readonly spaceIds: readonly number[];
+  readonly futureReservation?: "REQUIRED";
   readonly defects: readonly FlexibleOperationalMealPolicyDefect[];
   readonly status: "SUPPORTED" | "UNSUPPORTED";
 }
@@ -85,7 +86,8 @@ export function resolveFlexibleOperationalMealPolicies(
     if (canonicalSpaces.some((id) => !spaceIds.has(id))) defects.push("MISSING_SPACE");
     if (canonicalResources.length === 0 && canonicalSpaces.length === 0) defects.push("INVALID_RESOURCE");
 
-    return { id, window: { start, end }, duration, resourceIds: canonicalResources, spaceIds: canonicalSpaces, defects };
+    return { id, window: { start, end }, duration, resourceIds: canonicalResources, spaceIds: canonicalSpaces,
+      ...(policy.futureReservation === "REQUIRED" ? { futureReservation: policy.futureReservation } : {}), defects };
   }).sort((left, right) => compare(left.id, right.id));
 
   const ownerByScope = new Map<string, number>();

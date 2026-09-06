@@ -29,7 +29,7 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
   assert.deepEqual(config.meals.operational.mealUnits, [
     { mealUnitId: "estudio-7-operations", spaceIds: ["estudio-7"], resourceIds: ["band"] },
-    { mealUnitId: "plato-14-operations", spaceIds: ["p14-recursos", "p14-pasillo", "p14-giratuto"], resourceIds: [] },
+    { mealUnitId: "plato-14-operations", spaceIds: ["p14-recursos", "p14-pasillo", "p14-giratuto"], resourceIds: [], futureReservation: "REQUIRED" },
     { mealUnitId: "plato-15-operations", spaceIds: ["p15-croma", "p15-estrellas-sillon"], resourceIds: [] },
     { mealUnitId: "reality-unit-a-operations", spaceIds: [], resourceIds: ["cam-3", "son-1"] },
     { mealUnitId: "reality-unit-b-operations", spaceIds: [], resourceIds: ["cam-4", "son-2"] },

@@ -13,6 +13,10 @@ type Result = {
       coreCompleteLeafCount: number;
       deepestPartialCoreTasksRemaining: number;
       standaloneCompleteLeafCount: number;
+      operationalMealFuturePrunes:number;
+      operationalMealFutureAnalyticChecks:number;
+      operationalMealFutureBranchesExplored:number;
+      operationalMealFutureFirstPrune:null|{policyId:string;requiredDuration:number;window:{start:number;end:number};cause:string};
       lastExhaustionPhase: string | null;
     };
   };
@@ -46,6 +50,8 @@ export function checkFullA2StructuralFrontier(value: unknown): void {
     || !integer(evidence.branchesExplored) || !integer(evidence.coreBranches) || !integer(evidence.standaloneBranches)
     || !integer(evidence.coreCompleteLeafCount) || !integer(evidence.deepestPartialCoreTasksRemaining)
     || !integer(evidence.standaloneCompleteLeafCount)
+    || !integer(evidence.operationalMealFuturePrunes) || !integer(evidence.operationalMealFutureAnalyticChecks)
+    || !integer(evidence.operationalMealFutureBranchesExplored)
     || (evidence.lastExhaustionPhase !== null && typeof evidence.lastExhaustionPhase !== "string"))
     throw new Error("result has a malformed structural/accounting shape");
 
@@ -60,9 +66,17 @@ export function checkFullA2StructuralFrontier(value: unknown): void {
     && result.publishedCanonicalObligations === result.targetCanonicalObligations;
   if (completePublishedPlan) return;
 
+  const soundFutureOperationalFrontier = evidence.operationalMealFuturePrunes > 0
+    && evidence.operationalMealFutureAnalyticChecks >= evidence.operationalMealFuturePrunes
+    && evidence.operationalMealFutureBranchesExplored === 0
+    && evidence.operationalMealFutureFirstPrune !== null
+    && typeof evidence.operationalMealFutureFirstPrune.policyId === "string"
+    && evidence.operationalMealFutureFirstPrune.requiredDuration > 0
+    && evidence.operationalMealFutureFirstPrune.window.start < evidence.operationalMealFutureFirstPrune.window.end
+    && evidence.operationalMealFutureFirstPrune.cause === "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL";
   if (!(evidence.coreCompleteLeafCount > 0
     && evidence.deepestPartialCoreTasksRemaining === 0
-    && evidence.standaloneCompleteLeafCount > 0
+    && (evidence.standaloneCompleteLeafCount > 0 || soundFutureOperationalFrontier)
     && evidence.lastExhaustionPhase === "STANDALONE"))
     throw new Error("Full A2 structural frontier regressed");
 }

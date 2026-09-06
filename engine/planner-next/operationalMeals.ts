@@ -27,6 +27,13 @@ export interface OperationalMealSearchBudget {
 
 export type OperationalMealAssessmentMode = "PROBE" | "MATERIALIZE";
 
+export interface OperationalMealFuturePruneProof {
+  readonly policyId: string;
+  readonly requiredDuration: number;
+  readonly window: Window;
+  readonly cause: "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL";
+}
+
 const byIdentity = (left: OperationalMealPolicy, right: OperationalMealPolicy): number =>
   left.id.localeCompare(right.id, "en");
 
@@ -55,19 +62,34 @@ function sourceTaskConflictsWithPolicy(task: PlannerNextProblem["tasks"][number]
       .some((id) => policy.resourceIds.includes(id));
 }
 
-/** Sound interval probe: a policy is rejected only after every task in its scope is fixed. */
-export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[]): {
-  feasible: boolean; checkedPolicyIds: readonly string[]; blockingPolicyIds: readonly string[]; readOnly: true;
+/**
+ * Sound, branch-free interval probe. Operational policies need two fixed productive
+ * boundaries, so a missing terminal candidate is conclusive only once every task
+ * in that policy's scope is fixed. Individual coach meals use a free-start domain
+ * instead and deliberately remain with the terminal authority.
+ */
+export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
+  newlyFixed: readonly ScheduledTask[] = tasks): {
+  feasible: boolean; checkedPolicyIds: readonly string[]; blockingPolicyIds: readonly string[];
+  pruneProofs: readonly OperationalMealFuturePruneProof[]; branchesExplored: 0; readOnly: true;
 } {
   const scheduledIds = new Set(tasks.map(({ id }) => id));
   const checked = [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
+    if (policy.futureReservation !== "REQUIRED") return false;
+    if (!newlyFixed.some((task) => taskConflictsWithPolicy(task, policy))) return false;
+    const individualCoachMeal = policy.spaceIds.length === 0 && policy.resourceIds.length > 0
+      && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
+    if (individualCoachMeal) return false;
     const scoped = problem.tasks.filter((task) => sourceTaskConflictsWithPolicy(task, policy));
     return scoped.length > 1 && scoped.every(({ id }) => scheduledIds.has(id));
-  });
-  const blocking = checked.filter((policy) => operationalMealCandidates(problem, policy, tasks, []).length === 0)
-    .map(({ id }) => id).sort();
+  }).sort(byIdentity);
+  const blockingPolicies = checked.filter((policy) => operationalMealCandidates(problem, policy, tasks, []).length === 0);
+  const blocking = blockingPolicies.map(({ id }) => id);
   return freeze({ feasible: blocking.length === 0, checkedPolicyIds: checked.map(({ id }) => id).sort(),
-    blockingPolicyIds: blocking, readOnly: true });
+    blockingPolicyIds: blocking, pruneProofs: blockingPolicies.map((policy) => ({ policyId: policy.id,
+      requiredDuration: policy.duration, window: { ...policy.window },
+      cause: "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL" })),
+    branchesExplored: 0, readOnly: true });
 }
 
 function mealScopesOverlap(left: ScheduledOperationalMeal, right: ScheduledOperationalMeal): boolean {
