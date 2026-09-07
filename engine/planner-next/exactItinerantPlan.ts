@@ -1150,9 +1150,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
     if((problem.operationalMealPolicies?.length??0)>0){
-      const operationalProbe=probeOperationalMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);
+      const addedIds=new Set(candidate.addedTasks.map(({id})=>id));
+      const priorOperationalProbe=probeOperationalMealFutureFeasibility(problem,candidate.tasks.filter(({id})=>!addedIds.has(id)),candidate.addedTasks);
+      const operationalProbe=probeOperationalMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks,priorOperationalProbe.reservations);
       evidence.operationalMealFutureChecks+=1;evidence.operationalMealFutureAnalyticChecks+=operationalProbe.checkedPolicyIds.length;
       evidence.operationalMealReservationChecks+=1;evidence.operationalMealReservationAnalyticChecks+=operationalProbe.checkedPolicyIds.length;
+      evidence.operationalMealReservationRepairs+=operationalProbe.repairs;
+      for(const reservation of operationalProbe.reservations){const prior=priorOperationalProbe.reservations.find(({policyId})=>policyId===reservation.policyId);if(prior&&!reservation.feasibleIntervals.some(({start,end})=>start<=prior.witnessInterval.start&&prior.witnessInterval.end<=end))evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]=(evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]??0)+1;}
       if(!operationalProbe.feasible){evidence.operationalMealFuturePrunes+=1;evidence.operationalMealReservationPrunes+=1;
         for(const id of operationalProbe.blockingPolicyIds)evidence.operationalMealReservationPrunesByPolicy[id]=(evidence.operationalMealReservationPrunesByPolicy[id]??0)+1;
         const proof=operationalProbe.pruneProofs[0]!;evidence.operationalMealFutureFirstPrune??={...proof,causingTaskId:candidate.addedTasks[0]?.id??null,macroUnit:"CORE",depth:candidate.depth};

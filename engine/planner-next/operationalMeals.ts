@@ -8,6 +8,7 @@ import type {
 } from "./contracts";
 import { contains, overlaps } from "./time";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
+import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 
 export interface OperationalMealReservation {
   readonly policyId: string;
@@ -41,6 +42,7 @@ export interface OperationalMealFuturePruneProof {
   readonly cause: "NO_VALID_OPERATIONAL_MEAL_INTERVAL";
   readonly longestRemainingFreeIntervalBefore?: number;
   readonly longestRemainingFreeIntervalAfter: number;
+  readonly applicableTransitionMinutes?: number;
 }
 
 const byIdentity = (left: OperationalMealPolicy, right: OperationalMealPolicy): number =>
@@ -91,6 +93,42 @@ export function operationalMealPoliciesClosedByTaskIds(
 function isIndividualCoachMeal(problem: PlannerNextProblem, policy: OperationalMealPolicy): boolean {
   return policy.spaceIds.length === 0 && policy.resourceIds.length > 0
     && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
+}
+
+/**
+ * A resource-only coach meal occupies otherwise idle coach time, including time
+ * which is already committed to the hard route between consecutive tasks.  A
+ * route has no human-selected position inside its gap: analytically the meal is
+ * possible on either side of it.  Keeping those two alternatives as separate
+ * intervals is important (their union must not be coalesced).
+ */
+function coachTransitionCompatibleIntervals(
+  problem: PlannerNextProblem,
+  policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[],
+  free: readonly Window[],
+): Window[] {
+  if (!isIndividualCoachMeal(problem, policy)) return [...free];
+  let compatible = [...free];
+  for (const coachId of [...policy.resourceIds].sort()) {
+    const coachTasks = tasks.filter((task) => task.coachId === coachId)
+      .sort((left, right) => left.start - right.start || left.end - right.end
+        || left.id.localeCompare(right.id, "en"));
+    compatible = compatible.flatMap((interval) => {
+      const left = [...coachTasks].reverse().find((task) => task.end <= interval.start);
+      const right = coachTasks.find((task) => task.start >= interval.end);
+      if (!left || !right) return [interval];
+      const transition = effectiveCoachTransitionMinutes(
+        problem, coachId, left.spaceId, right.spaceId,
+      );
+      if (transition === 0) return [interval];
+      return [
+        { start: interval.start, end: interval.end - transition },
+        { start: interval.start + transition, end: interval.end },
+      ].filter(({ start, end }) => start < end);
+    });
+  }
+  return compatible.sort((left, right) => left.start - right.start || left.end - right.end);
 }
 
 const canonicalWindows = (windows: readonly Window[]): Window[] => [...windows]
@@ -159,9 +197,22 @@ function operationalMealRemainingIntervals(problem: PlannerNextProblem, policy: 
 
 export function operationalMealFreeIntervals(problem: PlannerNextProblem, policy: OperationalMealPolicy,
   tasks: readonly ScheduledTask[]): Window[] {
-  return operationalMealRemainingIntervals(problem, policy, tasks)
+  return coachTransitionCompatibleIntervals(problem, policy, tasks,
+    operationalMealRemainingIntervals(problem, policy, tasks))
     .filter((interval) => existsRepresentableOperationalMealStart(
       interval, policy.duration, problem.day.start, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES));
+}
+
+function applicableCoachTransitionMinutes(problem: PlannerNextProblem, policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[]): number | undefined {
+  if (!isIndividualCoachMeal(problem, policy)) return undefined;
+  const transitions = policy.resourceIds.flatMap((coachId) => {
+    const ordered = tasks.filter((task) => task.coachId === coachId)
+      .sort((left, right) => left.start - right.start || left.id.localeCompare(right.id, "en"));
+    return ordered.slice(0, -1).map((left, index) =>
+      effectiveCoachTransitionMinutes(problem, coachId, left.spaceId, ordered[index + 1]!.spaceId));
+  });
+  return transitions.length === 0 ? undefined : Math.max(...transitions);
 }
 
 export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
@@ -172,7 +223,6 @@ export function probeOperationalMealFutureFeasibility(problem: PlannerNextProble
 } {
   const checked = [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
     if (newlyFixed && !newlyFixed.some((task) => taskConflictsWithOperationalMealPolicy(task, policy))) return false;
-    if (isIndividualCoachMeal(problem, policy)) return false;
     return true;
   }).sort(byIdentity);
   const prior = new Map(previous.map((reservation) => [reservation.policyId, reservation]));
@@ -200,7 +250,10 @@ export function probeOperationalMealFutureFeasibility(problem: PlannerNextProble
       ...(prior.get(policy.id) ? { longestRemainingFreeIntervalBefore: Math.max(0,
         ...prior.get(policy.id)!.feasibleIntervals.map(({ start, end }) => end - start)) } : {}),
       longestRemainingFreeIntervalAfter: Math.max(0,
-        ...operationalMealRemainingIntervals(problem, policy, tasks).map(({ start, end }) => end - start)) })),
+        ...coachTransitionCompatibleIntervals(problem, policy, tasks,
+          operationalMealRemainingIntervals(problem, policy, tasks)).map(({ start, end }) => end - start)),
+      ...(applicableCoachTransitionMinutes(problem, policy, tasks) === undefined ? {}
+        : { applicableTransitionMinutes: applicableCoachTransitionMinutes(problem, policy, tasks) }) })),
     reservations: validReservations, repairs, branchesExplored: 0, readOnly: true });
 }
 
