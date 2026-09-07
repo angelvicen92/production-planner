@@ -7,6 +7,13 @@ import type {
   Window,
 } from "./contracts";
 import { contains, overlaps } from "./time";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
+
+export interface OperationalMealReservation {
+  readonly policyId: string;
+  readonly feasibleIntervals: readonly Window[];
+  readonly witnessInterval: Window;
+}
 
 export interface OperationalMealWitness {
   readonly complete: boolean;
@@ -31,7 +38,9 @@ export interface OperationalMealFuturePruneProof {
   readonly policyId: string;
   readonly requiredDuration: number;
   readonly window: Window;
-  readonly cause: "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL";
+  readonly cause: "NO_VALID_OPERATIONAL_MEAL_INTERVAL";
+  readonly longestRemainingFreeIntervalBefore?: number;
+  readonly longestRemainingFreeIntervalAfter: number;
 }
 
 const byIdentity = (left: OperationalMealPolicy, right: OperationalMealPolicy): number =>
@@ -84,31 +93,90 @@ function isIndividualCoachMeal(problem: PlannerNextProblem, policy: OperationalM
     && policy.resourceIds.every((id) => problem.coaches.some((coach) => coach.id === id));
 }
 
-/**
- * Sound, branch-free interval probe. Operational policies need two fixed productive
- * boundaries, so a missing terminal candidate is conclusive only once every task
- * in that policy's scope is fixed. Individual coach meals use a free-start domain
- * instead and deliberately remain with the terminal authority.
- */
+const canonicalWindows = (windows: readonly Window[]): Window[] => [...windows]
+  .filter(({ start, end }) => start < end).sort((a, b) => a.start - b.start || a.end - b.end)
+  .reduce<Window[]>((result, interval) => {
+    const last = result.at(-1);
+    if (!last || interval.start > last.end) result.push({ ...interval });
+    else last.end = Math.max(last.end, interval.end);
+    return result;
+  }, []);
+
+const intersectWindows = (left: readonly Window[], right: readonly Window[]): Window[] => {
+  const result: Window[] = [];
+  for (const a of left) for (const b of right) {
+    const start = Math.max(a.start, b.start), end = Math.min(a.end, b.end);
+    if (start < end) result.push({ start, end });
+  }
+  return canonicalWindows(result);
+};
+
+const subtractWindows = (source: readonly Window[], occupied: readonly Window[]): Window[] => {
+  let free = canonicalWindows(source);
+  for (const blocker of canonicalWindows(occupied)) free = free.flatMap((interval) => {
+    if (!overlaps(interval, blocker)) return [interval];
+    return [{ start: interval.start, end: Math.min(interval.end, blocker.start) },
+      { start: Math.max(interval.start, blocker.end), end: interval.end }].filter(({ start, end }) => start < end);
+  });
+  return free;
+};
+
+/** Complete branch-free interval authority for an operational meal reservation. */
+function operationalMealRemainingIntervals(problem: PlannerNextProblem, policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[]): Window[] {
+  let available: Window[] = [{ ...policy.window }];
+  for (const id of policy.resourceIds) {
+    const owner = problem.resources.find((candidate) => candidate.id === id)
+      ?? problem.coaches.find((candidate) => candidate.id === id);
+    available = intersectWindows(available, owner?.availability ?? []);
+  }
+  for (const id of policy.spaceIds) {
+    const owner = problem.spaces.find((candidate) => candidate.id === id);
+    available = intersectWindows(available, owner?.availability ?? []);
+  }
+  return subtractWindows(available, tasks.filter((task) => taskConflictsWithOperationalMealPolicy(task, policy))
+    .map(({ start, end }) => ({ start, end })));
+}
+
+export function operationalMealFreeIntervals(problem: PlannerNextProblem, policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[]): Window[] {
+  return operationalMealRemainingIntervals(problem, policy, tasks)
+    .filter(({ start, end }) => end - start >= policy.duration);
+}
+
 export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
-  newlyFixed?: readonly ScheduledTask[]): {
+  newlyFixed?: readonly ScheduledTask[], previous: readonly OperationalMealReservation[] = []): {
   feasible: boolean; checkedPolicyIds: readonly string[]; blockingPolicyIds: readonly string[];
   pruneProofs: readonly OperationalMealFuturePruneProof[]; branchesExplored: 0; readOnly: true;
+  reservations: readonly OperationalMealReservation[]; repairs: number;
 } {
-  const scheduledIds = new Set(tasks.map(({ id }) => id));
   const checked = [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
     if (newlyFixed && !newlyFixed.some((task) => taskConflictsWithOperationalMealPolicy(task, policy))) return false;
     if (isIndividualCoachMeal(problem, policy)) return false;
-    const scoped = problem.tasks.filter((task) => sourceTaskConflictsWithPolicy(task, policy));
-    return scoped.every(({ id }) => scheduledIds.has(id));
+    return true;
   }).sort(byIdentity);
-  const blockingPolicies = checked.filter((policy) => !hasOperationalMealBoundary(problem, policy, tasks));
+  const prior = new Map(previous.map((reservation) => [reservation.policyId, reservation]));
+  const reservations = checked.map((policy): OperationalMealReservation | null => {
+    const feasibleIntervals = operationalMealFreeIntervals(problem, policy, tasks);
+    const first = feasibleIntervals[0];
+    return first ? { policyId: policy.id, feasibleIntervals, witnessInterval: { start: first.start, end: first.start + policy.duration } } : null;
+  });
+  const blockingPolicies = checked.filter((_, index) => reservations[index] === null);
   const blocking = blockingPolicies.map(({ id }) => id);
+  const validReservations = reservations.filter((value): value is OperationalMealReservation => value !== null);
+  const repairs = validReservations.filter((reservation) => {
+    const old = prior.get(reservation.policyId)?.witnessInterval;
+    return old !== undefined && !reservation.feasibleIntervals.some((interval) => contains([interval], old.start, old.end));
+  }).length;
   return freeze({ feasible: blocking.length === 0, checkedPolicyIds: checked.map(({ id }) => id).sort(),
     blockingPolicyIds: blocking, pruneProofs: blockingPolicies.map((policy) => ({ policyId: policy.id,
       requiredDuration: policy.duration, window: { ...policy.window },
-      cause: "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL" })),
-    branchesExplored: 0, readOnly: true });
+      cause: "NO_VALID_OPERATIONAL_MEAL_INTERVAL",
+      ...(prior.get(policy.id) ? { longestRemainingFreeIntervalBefore: Math.max(0,
+        ...prior.get(policy.id)!.feasibleIntervals.map(({ start, end }) => end - start)) } : {}),
+      longestRemainingFreeIntervalAfter: Math.max(0,
+        ...operationalMealRemainingIntervals(problem, policy, tasks).map(({ start, end }) => end - start)) })),
+    reservations: validReservations, repairs, branchesExplored: 0, readOnly: true });
 }
 
 function mealScopesOverlap(left: ScheduledOperationalMeal, right: ScheduledOperationalMeal): boolean {
@@ -154,13 +222,6 @@ function hardBoundaryAvailable(problem: PlannerNextProblem, policy: OperationalM
   return end <= right.start && operationalMealBoundaryIntervalAvailable(problem, policy, tasks, start);
 }
 
-function hasOperationalMealBoundary(problem: PlannerNextProblem, policy: OperationalMealPolicy,
-  tasks: readonly ScheduledTask[]): boolean {
-  const productive = productiveTasks(policy, tasks);
-  return productive.slice(0, -1).some((left, index) =>
-    hardBoundaryAvailable(problem, policy, tasks, left, productive[index + 1]!));
-}
-
 export function operationalMealCandidates(
   problem: PlannerNextProblem,
   policy: OperationalMealPolicy,
@@ -169,16 +230,21 @@ export function operationalMealCandidates(
 ): ScheduledOperationalMeal[] {
   const candidates: ScheduledOperationalMeal[] = [];
   const productive = productiveTasks(policy, tasks);
-  const individualCoachMeal = isIndividualCoachMeal(problem, policy);
-  const boundaries = individualCoachMeal
-    ? Array.from({ length: Math.max(0, Math.floor((policy.window.end - policy.duration - policy.window.start) / 5) + 1) },
-      (_, index) => ({ start: policy.window.start + index * 5, preferred: false }))
-    : productive.slice(0, -1).flatMap((left, index) => {
-    const right = productive[index + 1]!;
-    const start = left.end;
-    return hardBoundaryAvailable(problem, policy, tasks, left, right) ? [{ start, preferred: left.blockKey !== undefined
-        && right.blockKey !== undefined && left.blockKey !== right.blockKey }] : [];
-    });
+  const grid = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
+  const free = operationalMealFreeIntervals(problem, policy, tasks);
+  const taskBoundaries = new Map(productive.slice(0, -1).flatMap((left, index) => {
+    const right = productive[index + 1]!, start = left.end;
+    return hardBoundaryAvailable(problem, policy, tasks, left, right) ? [[start, left.blockKey !== undefined
+      && right.blockKey !== undefined && left.blockKey !== right.blockKey] as const] : [];
+  }));
+  const starts = new Map<number, { start: number; preferred: boolean; taskBoundary: boolean }>();
+  for (const interval of free) {
+    const first = problem.day.start + Math.ceil((interval.start - problem.day.start) / grid) * grid;
+    for (let start = first; start + policy.duration <= interval.end; start += grid)
+      starts.set(start, { start, preferred: taskBoundaries.get(start) === true, taskBoundary: taskBoundaries.has(start) });
+  }
+  const boundaries = [...starts.values()].sort((a, b) => Number(b.preferred) - Number(a.preferred)
+    || Number(b.taskBoundary) - Number(a.taskBoundary) || a.start - b.start);
   for (const { start, preferred } of boundaries) {
     const end = start + policy.duration;
     if (!scopeAvailable(problem, policy, start, end)) continue;
@@ -194,9 +260,7 @@ export function operationalMealCandidates(
     if (placed.some((meal) => mealScopesOverlap(meal, candidate) && overlaps(meal, candidate))) continue;
     candidates.push(Object.assign(candidate, { preferredBoundary: preferred }));
   }
-  return candidates.sort((left, right) => Number(Boolean(right.preferredBoundary))
-    - Number(Boolean(left.preferredBoundary))
-    || left.start - right.start || left.id.localeCompare(right.id, "en"));
+  return candidates;
 }
 
 export function operationalMealWitnessFingerprint(meals: readonly ScheduledOperationalMeal[]): string {
