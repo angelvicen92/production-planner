@@ -120,9 +120,26 @@ test("analytic reservation and terminal materialization agree when a continuous 
 
 test("representable operational meal existence handles exact and misaligned interval boundaries arithmetically", () => {
   const grid = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
-  assert.equal(existsRepresentableOperationalMealStart({ start: 15, end: 90 }, 75, grid), true);
-  assert.equal(existsRepresentableOperationalMealStart({ start: 11, end: 90 }, 75, grid), true);
-  assert.equal(existsRepresentableOperationalMealStart({ start: 11, end: 86 }, 75, grid), false);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 15, end: 90 }, 75, 0, grid), true);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 11, end: 90 }, 75, 0, grid), true);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 11, end: 86 }, 75, 0, grid), false);
+});
+
+test("operational reservation and terminal candidates share the day-relative grid origin", () => {
+  const problem = boundaryPolicyProblem();
+  const policy = problem.operationalMealPolicies![0]!;
+  problem.day = { start: 2, end: 120 };
+  policy.window = { start: 3, end: 12 };
+  policy.duration = 5;
+
+  assert.equal(existsRepresentableOperationalMealStart(policy.window, policy.duration, problem.day.start,
+    PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES), true);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 3, end: 10 }, policy.duration, problem.day.start,
+    PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES), false);
+  const reservation = probeOperationalMealFutureFeasibility(problem, []).reservations[0];
+  assert.deepEqual(reservation, { policyId: policy.id, feasibleIntervals: [{ start: 3, end: 12 }],
+    witnessInterval: { start: 7, end: 12 } });
+  assert.deepEqual(operationalMealCandidates(problem, policy, [], []).map(({ start }) => start), [7]);
 });
 
 test("virtual witnesses stay on-grid, repair to another representable start, and prune after losing the last start", () => {
