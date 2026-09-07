@@ -121,17 +121,22 @@ const subtractWindows = (source: readonly Window[], occupied: readonly Window[])
   return free;
 };
 
-function firstRepresentableOperationalMealStart(interval: Window, effectiveGrid: number): number {
-  return Math.ceil(interval.start / effectiveGrid) * effectiveGrid;
+function firstRepresentableOperationalMealStart(
+  interval: Window,
+  gridOrigin: number,
+  effectiveGrid: number,
+): number {
+  return gridOrigin + Math.ceil((interval.start - gridOrigin) / effectiveGrid) * effectiveGrid;
 }
 
 /** Canonical, arithmetic existence authority for a grid-representable operational meal. */
 export function existsRepresentableOperationalMealStart(
   interval: Window,
   duration: number,
+  gridOrigin: number,
   effectiveGrid: number,
 ): boolean {
-  const firstAlignedStart = firstRepresentableOperationalMealStart(interval, effectiveGrid);
+  const firstAlignedStart = firstRepresentableOperationalMealStart(interval, gridOrigin, effectiveGrid);
   return firstAlignedStart + duration <= interval.end;
 }
 
@@ -156,7 +161,7 @@ export function operationalMealFreeIntervals(problem: PlannerNextProblem, policy
   tasks: readonly ScheduledTask[]): Window[] {
   return operationalMealRemainingIntervals(problem, policy, tasks)
     .filter((interval) => existsRepresentableOperationalMealStart(
-      interval, policy.duration, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES));
+      interval, policy.duration, problem.day.start, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES));
 }
 
 export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
@@ -175,7 +180,7 @@ export function probeOperationalMealFutureFeasibility(problem: PlannerNextProble
     const feasibleIntervals = operationalMealFreeIntervals(problem, policy, tasks);
     const first = feasibleIntervals[0];
     const witnessStart = first && firstRepresentableOperationalMealStart(
-      first, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES);
+      first, problem.day.start, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES);
     return first && witnessStart !== undefined
       ? { policyId: policy.id, feasibleIntervals,
         witnessInterval: { start: witnessStart, end: witnessStart + policy.duration } }
@@ -259,8 +264,8 @@ export function operationalMealCandidates(
   }));
   const starts = new Map<number, { start: number; preferred: boolean; taskBoundary: boolean }>();
   for (const interval of free) {
-    if (!existsRepresentableOperationalMealStart(interval, policy.duration, grid)) continue;
-    const first = firstRepresentableOperationalMealStart(interval, grid);
+    if (!existsRepresentableOperationalMealStart(interval, policy.duration, problem.day.start, grid)) continue;
+    const first = firstRepresentableOperationalMealStart(interval, problem.day.start, grid);
     for (let start = first; start + policy.duration <= interval.end; start += grid)
       starts.set(start, { start, preferred: taskBoundaries.get(start) === true, taskBoundary: taskBoundaries.has(start) });
   }
