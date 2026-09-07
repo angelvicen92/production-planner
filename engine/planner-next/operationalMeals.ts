@@ -121,6 +121,20 @@ const subtractWindows = (source: readonly Window[], occupied: readonly Window[])
   return free;
 };
 
+function firstRepresentableOperationalMealStart(interval: Window, effectiveGrid: number): number {
+  return Math.ceil(interval.start / effectiveGrid) * effectiveGrid;
+}
+
+/** Canonical, arithmetic existence authority for a grid-representable operational meal. */
+export function existsRepresentableOperationalMealStart(
+  interval: Window,
+  duration: number,
+  effectiveGrid: number,
+): boolean {
+  const firstAlignedStart = firstRepresentableOperationalMealStart(interval, effectiveGrid);
+  return firstAlignedStart + duration <= interval.end;
+}
+
 /** Complete branch-free interval authority for an operational meal reservation. */
 function operationalMealRemainingIntervals(problem: PlannerNextProblem, policy: OperationalMealPolicy,
   tasks: readonly ScheduledTask[]): Window[] {
@@ -141,7 +155,8 @@ function operationalMealRemainingIntervals(problem: PlannerNextProblem, policy: 
 export function operationalMealFreeIntervals(problem: PlannerNextProblem, policy: OperationalMealPolicy,
   tasks: readonly ScheduledTask[]): Window[] {
   return operationalMealRemainingIntervals(problem, policy, tasks)
-    .filter(({ start, end }) => end - start >= policy.duration);
+    .filter((interval) => existsRepresentableOperationalMealStart(
+      interval, policy.duration, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES));
 }
 
 export function probeOperationalMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[],
@@ -159,7 +174,12 @@ export function probeOperationalMealFutureFeasibility(problem: PlannerNextProble
   const reservations = checked.map((policy): OperationalMealReservation | null => {
     const feasibleIntervals = operationalMealFreeIntervals(problem, policy, tasks);
     const first = feasibleIntervals[0];
-    return first ? { policyId: policy.id, feasibleIntervals, witnessInterval: { start: first.start, end: first.start + policy.duration } } : null;
+    const witnessStart = first && firstRepresentableOperationalMealStart(
+      first, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES);
+    return first && witnessStart !== undefined
+      ? { policyId: policy.id, feasibleIntervals,
+        witnessInterval: { start: witnessStart, end: witnessStart + policy.duration } }
+      : null;
   });
   const blockingPolicies = checked.filter((_, index) => reservations[index] === null);
   const blocking = blockingPolicies.map(({ id }) => id);
@@ -239,7 +259,8 @@ export function operationalMealCandidates(
   }));
   const starts = new Map<number, { start: number; preferred: boolean; taskBoundary: boolean }>();
   for (const interval of free) {
-    const first = problem.day.start + Math.ceil((interval.start - problem.day.start) / grid) * grid;
+    if (!existsRepresentableOperationalMealStart(interval, policy.duration, grid)) continue;
+    const first = firstRepresentableOperationalMealStart(interval, grid);
     for (let start = first; start + policy.duration <= interval.end; start += grid)
       starts.set(start, { start, preferred: taskBoundaries.get(start) === true, taskBoundary: taskBoundaries.has(start) });
   }
@@ -331,8 +352,8 @@ export function assessOperationalMealFutureFeasibility(
     const domains = pending
       .map((policy) => ({ policy, candidates: operationalMealCandidates(problem, policy, tasks, placed) }))
       .sort((left, right) => left.candidates.length - right.candidates.length || byIdentity(left.policy, right.policy));
+    if (placed.length === 0) for (const domain of domains) counts[domain.policy.id] = domain.candidates.length;
     const selected = domains[0]!;
-    counts[selected.policy.id] = selected.candidates.length;
     if (selected.candidates.length === 0) {
       blockers.add(selected.policy.id);
       backtracks += 1;
