@@ -7,7 +7,10 @@ import type {
 } from "./contracts";
 import { constructExactItinerantPlan } from "./exactItinerantPlan";
 import { createExactSearchLedger } from "./exactMainAndFeederCore";
-import { exploreExactRoundSynchronizationPolicy } from "./exactRoundSynchronization";
+import {
+  exploreExactRoundSynchronizationPolicy,
+  probeExactRoundSynchronizationMacroDomain,
+} from "./exactRoundSynchronization";
 import { operationalMealCandidates } from "./operationalMeals";
 import {
   adaptEngineInputToPlannerNextProblem,
@@ -363,6 +366,60 @@ test("exact synchronization supports a residual round after the shorter lane fin
     result.scheduledRoundPreparations,
   );
   assert.equal(validation.hardValid, true, validation.reasonCodes.join(","));
+});
+
+test("a closed operational meal can occupy the 3/2 residual boundary", () => {
+  const problem = withRoundOperationalMeal(supportedProblem());
+  const policy = problem.roundSynchronizations![0]!;
+  const longerLane = policy.lanes[0]!;
+  const template = problem.tasks.find(({ id }) => id === longerLane.taskIds[0]);
+  assert.ok(template);
+  problem.tasks.push({ ...template, id: "task:residual-meal-round" });
+  longerLane.taskIds.push("task:residual-meal-round");
+  problem.operationalMealPolicies![0]!.window = { start: 545, end: 620 };
+  for (const spaceId of policy.lanes.map(({ spaceId }) => spaceId)) {
+    problem.spaces.find(({ id }) => id === spaceId)!.availability = [{ start: 480, end: 655 }];
+  }
+
+  const result = constructExactItinerantPlan(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  const meal = result.scheduledOperationalMeals[0]!;
+  const lanes = policy.lanes.map((lane) => result.scheduledTasks
+    .filter(({ id }) => lane.taskIds.includes(id)).sort((left, right) => left.start - right.start));
+  assert.equal(lanes[0]!.length, 3);
+  assert.equal(lanes[1]!.length, 2);
+  assert.equal(lanes[0]![0]!.start, lanes[1]![0]!.start);
+  assert.equal(lanes[0]![1]!.start, lanes[1]![1]!.start);
+  assert.equal(meal.start, lanes[0]![1]!.end);
+  assert.equal(meal.start, lanes[1]![1]!.end);
+  assert.ok(meal.end <= lanes[0]![2]!.start);
+  const residualPreparation = result.scheduledRoundPreparations.find(({ roundIndex }) => roundIndex === 3);
+  assert.ok(residualPreparation);
+  assert.ok(residualPreparation.start >= meal.end);
+  assert.equal(residualPreparation.end, lanes[0]![2]!.start);
+});
+
+test("round macro-domain probing is conservative and matching remains ledger-accounted", () => {
+  const problem = supportedProblem();
+  const policy = problem.roundSynchronizations![0]!;
+  const probe = probeExactRoundSynchronizationMacroDomain(problem, policy, [], [], [], []);
+  assert.ok(probe.domainSize > 0);
+  assert.equal(probe.domainExact, false);
+
+  const impossible = structuredClone(problem);
+  impossible.roundSynchronizations![0]!.lanes[0]!.taskIds.push("missing-task");
+  assert.equal(probeExactRoundSynchronizationMacroDomain(
+    impossible, impossible.roundSynchronizations![0]!, [], [], [], [],
+  ).domainSize, 0);
+
+  let consumed = 0;
+  const explored = exploreExactRoundSynchronizationPolicy(problem, policy, [], [], [], [], {
+    get remaining() { return 10_000 - consumed; },
+    consume: () => { consumed += 1; return true; },
+  }, () => "FOUND");
+  assert.equal(explored.outcome, "FOUND");
+  assert.equal(consumed, explored.evidence.assignmentBranches);
+  assert.equal(explored.evidence.matchingAttempts, explored.evidence.assignmentBranches);
 });
 
 test("round synchronization is deterministic under task and eligible-set order changes", () => {

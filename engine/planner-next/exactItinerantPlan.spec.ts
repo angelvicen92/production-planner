@@ -205,14 +205,15 @@ test("global macro MRV lets setup beat a broader synchronized round unit", () =>
   assert.equal(setup.matchingFeasibleCandidateCount, 1);
 });
 
-test("global macro MRV lets narrow rounds beat a flexible explicit-resource task", () => {
+test("global macro MRV exposes synchronized-round conservative estimates", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
   const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
     result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
-  assert.equal(round.domainSize, 1);
-  assert.ok(resource.domainSize > round.domainSize);
+  assert.ok(round.domainSize > 0);
+  assert.equal(round.domainExact, false);
+  assert.equal(round.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
+  assert.equal(resource.domainExact, true);
 });
 
 test("global macro MRV lets a scarce resource task beat broader rounds", () => {
