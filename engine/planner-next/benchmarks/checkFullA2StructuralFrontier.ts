@@ -14,6 +14,16 @@ type Result = {
       deepestPartialCoreTasksRemaining: number;
       standaloneCompleteLeafCount: number;
       lastExhaustionPhase: string | null;
+      operationalMealFutureChecks?: number;
+      operationalMealFutureAnalyticChecks?: number;
+      operationalMealFuturePrunes?: number;
+      operationalMealFutureBranchesExplored?: number;
+      operationalMealFutureFirstPrune?: null | {
+        policyId: string;
+        requiredDuration: number;
+        window: { start: number; end: number };
+        cause: string;
+      };
     };
   };
   publishedCanonicalObligations: number;
@@ -60,10 +70,31 @@ export function checkFullA2StructuralFrontier(value: unknown): void {
     && result.publishedCanonicalObligations === result.targetCanonicalObligations;
   if (completePublishedPlan) return;
 
-  if (!(evidence.coreCompleteLeafCount > 0
+  const historicalFrontier = evidence.coreCompleteLeafCount > 0
     && evidence.deepestPartialCoreTasksRemaining === 0
     && evidence.standaloneCompleteLeafCount > 0
-    && evidence.lastExhaustionPhase === "STANDALONE"))
+    && evidence.lastExhaustionPhase === "STANDALONE";
+  const firstPrune = evidence.operationalMealFutureFirstPrune;
+  const analyticallyCertifiedCoreFrontier = evidence.coreCompleteLeafCount > 0
+    && evidence.deepestPartialCoreTasksRemaining === 0
+    && evidence.standaloneBranches > 0
+    && evidence.standaloneCompleteLeafCount === 0
+    && evidence.lastExhaustionPhase === "CORE"
+    && integer(evidence.operationalMealFutureChecks) && evidence.operationalMealFutureChecks > 0
+    && integer(evidence.operationalMealFutureAnalyticChecks)
+    && evidence.operationalMealFutureAnalyticChecks === evidence.operationalMealFutureChecks
+    && integer(evidence.operationalMealFuturePrunes)
+    && evidence.operationalMealFuturePrunes === evidence.operationalMealFutureChecks
+    && evidence.operationalMealFutureBranchesExplored === 0
+    && firstPrune !== null && typeof firstPrune === "object"
+    && typeof firstPrune.policyId === "string" && firstPrune.policyId.trim().length > 0
+    && typeof firstPrune.requiredDuration === "number" && firstPrune.requiredDuration > 0
+    && typeof firstPrune.window === "object" && firstPrune.window !== null
+    && typeof firstPrune.window.start === "number" && typeof firstPrune.window.end === "number"
+    && firstPrune.window.start < firstPrune.window.end
+    && firstPrune.cause === "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL";
+
+  if (!(historicalFrontier || analyticallyCertifiedCoreFrontier))
     throw new Error("Full A2 structural frontier regressed");
 }
 
