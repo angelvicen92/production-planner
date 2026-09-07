@@ -20,8 +20,61 @@ const result = (overrides: Record<string, unknown> = {}) => ({
   maxBranchExpansions: frontier.branchesExplored,
   ...overrides,
 });
+const certifiedEvidence = () => ({
+  ...result().execution.evidence,
+  standaloneBranches: 5,
+  branchesExplored: frontier.coreBranches + 5,
+  standaloneCompleteLeafCount: 0,
+  lastExhaustionPhase: "CORE",
+  operationalMealFutureChecks: 7,
+  operationalMealFutureAnalyticChecks: 7,
+  operationalMealFuturePrunes: 7,
+  operationalMealFutureBranchesExplored: 0,
+  operationalMealFutureFirstPrune: {
+    policyId: "break:policy", requiredDuration: 30, window: { start: 10, end: 60 },
+    cause: "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL",
+  },
+});
+const certifiedResult = (evidenceOverrides: Record<string, unknown> = {}) => {
+  const evidence = { ...certifiedEvidence(), ...evidenceOverrides };
+  return result({ execution: { complete: false, evidence }, maxBranchExpansions: evidence.branchesExplored });
+};
 
 test("A2-FULL-023 structural frontier passes", () => assert.doesNotThrow(() => checkFullA2StructuralFrontier(result())));
+
+test("analytically certified core frontier passes", () => assert.doesNotThrow(() => checkFullA2StructuralFrontier(certifiedResult())));
+
+test("one prune among many checks does not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  operationalMealFuturePrunes: 1,
+})), /frontier regressed/));
+
+test("partial analytic coverage does not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  operationalMealFutureAnalyticChecks: 6,
+})), /frontier regressed/));
+
+test("probe branch exploration does not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  operationalMealFutureBranchesExplored: 1,
+})), /frontier regressed/));
+
+test("missing first prune does not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  operationalMealFutureFirstPrune: null,
+})), /frontier regressed/));
+
+test("wrong first-prune cause does not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  operationalMealFutureFirstPrune: { ...certifiedEvidence().operationalMealFutureFirstPrune, cause: "OTHER" },
+})), /frontier regressed/));
+
+test("zero standalone branches do not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  standaloneBranches: 0, branchesExplored: frontier.coreBranches,
+})), /frontier regressed/));
+
+test("zero core complete leaves do not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  coreCompleteLeafCount: 0,
+})), /frontier regressed/));
+
+test("an incomplete core does not certify the core frontier", () => assert.throws(() => checkFullA2StructuralFrontier(certifiedResult({
+  deepestPartialCoreTasksRemaining: 1,
+})), /frontier regressed/));
 
 test("regressive #758 shape fails", () => assert.throws(() => checkFullA2StructuralFrontier(result({
   execution: { complete: false, evidence: { ...result().execution.evidence,

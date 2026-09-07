@@ -42,7 +42,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
           feederSlotAnalyticChecks:number;feederSlotAnalyticPrunes:number;feederSlotAnalyticAbstentions:number;
           feederSlotMatchingEdgeChecks:number;feederSlotMatchingAugmentTraversals:number;
           feederSlotMatchingBranchesExplored:number;feederMatchingWitnessRepairs:number;
-          standaloneCompleteLeafCount:number;lastExhaustionPhase:string|null };
+          standaloneCompleteLeafCount:number;lastExhaustionPhase:string|null;
+          operationalMealFuturePrunes:number;operationalMealFutureAnalyticChecks:number;
+          operationalMealFutureBranchesExplored:number;operationalMealFutureFirstPrune:unknown };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
@@ -116,6 +118,10 @@ test("Full A2 first executable integration reports an atomic completion count", 
           coreCompleteLeafCount: executionEvidence.coreCompleteLeafCount,
           deepestPartialCoreTasksRemaining: executionEvidence.deepestPartialCoreTasksRemaining,
           standaloneCompleteLeafCount: executionEvidence.standaloneCompleteLeafCount,
+          operationalMealFuturePrunes: executionEvidence.operationalMealFuturePrunes,
+          operationalMealFutureAnalyticChecks: executionEvidence.operationalMealFutureAnalyticChecks,
+          operationalMealFutureBranchesExplored: executionEvidence.operationalMealFutureBranchesExplored,
+          operationalMealFutureFirstPrune: executionEvidence.operationalMealFutureFirstPrune,
           lastExhaustionPhase: executionEvidence.lastExhaustionPhase,
         },
       },

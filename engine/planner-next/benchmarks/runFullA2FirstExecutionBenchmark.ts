@@ -16,6 +16,7 @@ const PLAN_ID = 27001;
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
 const branchBudgetOverride = process.env.PLANNER_NEXT_FULL_A2_BRANCH_BUDGET;
 const branchBudget = branchBudgetOverride === undefined ? 300_000 : Number(branchBudgetOverride);
+const causalDiagnostic = process.env.PLANNER_NEXT_FULL_A2_CAUSAL_DIAGNOSTIC !== "false";
 if (!Number.isSafeInteger(branchBudget) || branchBudget <= 0)
   throw new Error("INVALID_PLANNER_NEXT_FULL_A2_BRANCH_BUDGET");
 
@@ -194,8 +195,9 @@ input.transportSettings = {
 
 const preflight = preflightEngineInputForPlannerNext(input);
 const adapted = adaptEngineInputToPlannerNextProblem(input);
-const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:true}) : null;
-const executionWithoutDiagnostic = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
+const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic}) : null;
+const executionWithoutDiagnostic = !causalDiagnostic ? execution
+  : adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
 const exactResultWithoutDiagnostic = executionWithoutDiagnostic?.kind === "EXACT_CONSTRUCTIVE" ? executionWithoutDiagnostic.result : null;
 const scheduledCanonicalObligations = exactResult
