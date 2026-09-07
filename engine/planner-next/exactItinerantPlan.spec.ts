@@ -206,7 +206,11 @@ test("global macro MRV lets setup beat a broader synchronized round unit", () =>
 });
 
 test("mixed macro policy lets a structurally narrow round beat a flexible exact resource task", () => {
-  const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] }));
+  const input = macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] });
+  input.resources.push(...["round-a", "round-b"].map((id) =>
+    ({ id: `resource-${id}`, availability: [{ start: 60, end: 70 }], presencePreference: "OFF" as const, transitionMinutes: 0 })));
+  for (const task of input.tasks.filter(({ id }) => id.startsWith("round-"))) task.requiredResourceIds = [`resource-${task.id}`];
+  const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
     result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
