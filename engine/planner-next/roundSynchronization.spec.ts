@@ -280,8 +280,10 @@ test("exact synchronized rounds reserve a common operational boundary for termin
   assert.ok(meal.end <= lanes[0]![1]!.start);
   assert.ok(result.scheduledRoundPreparations.every((preparation) =>
     preparation.end <= meal.start || meal.end <= preparation.start));
-  assert.deepEqual(operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, result.scheduledTasks, [])
-    .map(({ start, end }) => ({ start, end })), [{ start: meal.start, end: meal.end }]);
+  const mealCandidates = operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, result.scheduledTasks, []);
+  assert.deepEqual(mealCandidates[0] && { start: mealCandidates[0].start, end: mealCandidates[0].end },
+    { start: meal.start, end: meal.end });
+  assert.ok(mealCandidates.length > 1, "free-window fallbacks remain hard-valid alternatives");
   assert.deepEqual(problem, snapshot);
 });
 

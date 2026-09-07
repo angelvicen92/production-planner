@@ -6,7 +6,7 @@ import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputA
 import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";
 import { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
 import { resolveFlexibleOperationalMealPolicies } from "./integration/flexibleOperationalMealPolicies";
-import { operationalMealCandidates, probeOperationalMealFutureFeasibility } from "./operationalMeals";
+import { operationalMealCandidates, operationalMealFreeIntervals, probeOperationalMealFutureFeasibility } from "./operationalMeals";
 import { validatePlan } from "./validate";
 
 // Core-leaf validation intentionally precedes operational-meal materialization; this regression
@@ -89,7 +89,8 @@ test("future operational reservation prunes only when the last possible 75 minut
   const result = probeOperationalMealFutureFeasibility(problem, closed);
   assert.equal(result.feasible, false);
   assert.deepEqual(result.pruneProofs, [{ policyId: "operations", requiredDuration: 75,
-    window: { start: 10, end: 100 }, cause: "ALL_SCOPED_TASKS_FIXED_WITHOUT_VALID_BETWEEN_TASK_INTERVAL" }]);
+    window: { start: 10, end: 100 }, cause: "NO_VALID_OPERATIONAL_MEAL_INTERVAL",
+    longestRemainingFreeIntervalAfter: 74 }]);
   assert.equal(result.branchesExplored, 0);
 });
 
@@ -104,13 +105,13 @@ test("future operational reservation permits an exact interval and does not mate
   assert.equal("scheduled" in result, false);
 });
 
-test("future operational reservation is inconclusive until a future task can create the boundary", () => {
+test("future operational reservation is existential before any productive boundary exists", () => {
   const problem = boundaryPolicyProblem();
   const onlyLeft = [{ ...problem.tasks[0]!, start: 0, end: 10 }] as ScheduledTask[];
-  assert.deepEqual(operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, onlyLeft, []), []);
+  assert.ok(operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, onlyLeft, []).length > 0);
   const result = probeOperationalMealFutureFeasibility(problem, onlyLeft);
   assert.equal(result.feasible, true);
-  assert.deepEqual(result.checkedPolicyIds, []);
+  assert.deepEqual(result.checkedPolicyIds, ["operations"]);
 });
 
 test("future operational reservation ignores unrelated work and is deterministic under order reversal", () => {
@@ -131,8 +132,54 @@ test("future operational reservation never turns a non-terminal or coach grid fa
   const partial = [{ ...problem.tasks[0]!, start: 0, end: 10 }] as ScheduledTask[];
   const result = probeOperationalMealFutureFeasibility(problem, partial);
   assert.equal(result.feasible, true);
-  assert.deepEqual(result.checkedPolicyIds, []);
+  assert.deepEqual(result.checkedPolicyIds, ["operations"]);
   assert.deepEqual(result.blockingPolicyIds, []);
+});
+
+test("analytic reservation repairs its witness, handles exact and fragmented gaps, and never consumes branches", () => {
+  const problem = boundaryPolicyProblem(), policy = problem.operationalMealPolicies![0]!;
+  policy.duration = 20; policy.window = { start: 10, end: 100 };
+  const initial = probeOperationalMealFutureFeasibility(problem, []);
+  assert.deepEqual(initial.reservations[0]?.witnessInterval, { start: 10, end: 30 });
+  const moved = probeOperationalMealFutureFeasibility(problem,
+    [{ ...problem.tasks[0]!, start: 10, end: 35 }] as ScheduledTask[], undefined, initial.reservations);
+  assert.equal(moved.feasible, true); assert.equal(moved.repairs, 1);
+  assert.deepEqual(moved.reservations[0]?.witnessInterval, { start: 35, end: 55 });
+  assert.equal(moved.branchesExplored, 0);
+  const exact = [{ ...problem.tasks[0]!, start: 10, end: 40 }, { ...problem.tasks[1]!, start: 60, end: 100 }] as ScheduledTask[];
+  assert.deepEqual(operationalMealFreeIntervals(problem, policy, exact), [{ start: 40, end: 60 }]);
+  exact[1]!.start = 59;
+  assert.deepEqual(operationalMealFreeIntervals(problem, policy, exact), []);
+});
+
+test("reservation intersects every scoped availability and subtracts fragmented occupations", () => {
+  const problem = boundaryPolicyProblem(), policy = problem.operationalMealPolicies![0]!;
+  policy.duration = 10; policy.resourceIds = ["unit"]; policy.spaceIds = ["main", "meal-room"];
+  problem.resources[0]!.availability = [{ start: 15, end: 90 }];
+  problem.spaces.find(({ id }) => id === "main")!.availability = [{ start: 10, end: 80 }];
+  problem.spaces.find(({ id }) => id === "meal-room")!.availability = [{ start: 20, end: 70 }];
+  const occupied = [
+    { ...problem.tasks[0]!, spaceId: "main", start: 25, end: 30 },
+    { ...problem.tasks[1]!, requiredResourceIds: ["unit"], start: 40, end: 50 },
+  ] as ScheduledTask[];
+  assert.deepEqual(operationalMealFreeIntervals(problem, policy, occupied), [
+    { start: 30, end: 40 }, { start: 50, end: 70 },
+  ]);
+});
+
+test("terminal candidates prefer structural then task boundaries and retain safe free-window fallbacks", () => {
+  const problem = boundaryPolicyProblem(), policy = problem.operationalMealPolicies![0]!;
+  policy.duration = 10; policy.window = { start: 10, end: 70 };
+  const tasks = [
+    { ...problem.tasks[0]!, blockKey: "a", start: 10, end: 20 },
+    { ...problem.tasks[1]!, blockKey: "b", start: 30, end: 40 },
+    { ...problem.tasks[1]!, id: "third", blockKey: "b", start: 50, end: 60 },
+  ] as ScheduledTask[];
+  const candidates = operationalMealCandidates(problem, policy, tasks, []);
+  assert.equal(candidates[0]?.start, 20); assert.equal(candidates[0]?.preferredBoundary, true);
+  assert.equal(candidates[1]?.start, 40); assert.equal(candidates[1]?.preferredBoundary, false);
+  assert.ok(candidates.some(({ start }) => start === 60));
+  assert.ok(candidates.every((meal) => tasks.every((task) => !((task.start < meal.end) && (meal.start < task.end)))));
 });
 
 test("every between-task operational policy participates without opt-in while an individual coach stays terminal", () => {
