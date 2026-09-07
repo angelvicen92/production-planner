@@ -6,6 +6,9 @@ import type {
   ScheduledTask,
 } from "./contracts";
 import { constructExactItinerantPlan } from "./exactItinerantPlan";
+import { createExactSearchLedger } from "./exactMainAndFeederCore";
+import { exploreExactRoundSynchronizationPolicy } from "./exactRoundSynchronization";
+import { operationalMealCandidates } from "./operationalMeals";
 import {
   adaptEngineInputToPlannerNextProblem,
 } from "./integration/engineInputAdapter";
@@ -243,6 +246,83 @@ test("the exact route schedules synchronized rounds and explicit preparations", 
   assert.equal(validation.roundPreparationViolationCount, 0);
   assert.ok(result.evidence.roundSynchronizationAssignmentBranches > 0);
   assert.deepEqual(problem, snapshot);
+});
+
+function withRoundOperationalMeal(problem: PlannerNextProblem, duration = 75): PlannerNextProblem {
+  const copy = structuredClone(problem);
+  const policy = copy.roundSynchronizations![0]!;
+  copy.operationalMealPolicies = [{
+    id: "round-operations-meal",
+    window: { start: copy.day.start, end: copy.day.end },
+    duration,
+    resourceIds: [],
+    spaceIds: policy.lanes.map(({ spaceId }) => spaceId),
+  }];
+  return copy;
+}
+
+test("exact synchronized rounds reserve a common operational boundary for terminal materialization", () => {
+  const problem = withRoundOperationalMeal(supportedProblem());
+  const snapshot = structuredClone(problem);
+  const result = constructExactItinerantPlan(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledOperationalMeals.length, 1);
+  const meal = result.scheduledOperationalMeals[0]!;
+  const policy = problem.roundSynchronizations![0]!;
+  const lanes = policy.lanes.map((lane) => result.scheduledTasks.filter((task) => lane.taskIds.includes(task.id))
+    .sort((left, right) => left.start - right.start || left.id.localeCompare(right.id)));
+  assert.equal(lanes[0]![0]!.start, lanes[1]![0]!.start);
+  assert.equal(lanes[0]![1]!.start, lanes[1]![1]!.start);
+  assert.equal(meal.start, lanes[0]![0]!.end);
+  assert.ok(meal.end <= lanes[0]![1]!.start);
+  assert.ok(result.scheduledRoundPreparations.every((preparation) =>
+    preparation.end <= meal.start || meal.end <= preparation.start));
+  assert.deepEqual(operationalMealCandidates(problem, problem.operationalMealPolicies![0]!, result.scheduledTasks, [])
+    .map(({ start, end }) => ({ start, end })), [{ start: meal.start, end: meal.end }]);
+  assert.deepEqual(problem, snapshot);
+});
+
+test("round meal boundaries remain exact alternatives and partial macro scopes abstain", () => {
+  const problem = withRoundOperationalMeal(supportedProblem(), 45);
+  const policy = problem.roundSynchronizations![0]!;
+  for (const lane of policy.lanes) {
+    const template = problem.tasks.find(({ id }) => id === lane.taskIds[0]);
+    assert.ok(template);
+    const task = { ...template, id: `${template.id}:third`, participantId: `${template.participantId}:third` };
+    problem.tasks.push(task);
+    problem.participants.push({ id: task.participantId!, availability: [{ ...problem.day }] });
+    lane.taskIds.push(task.id);
+  }
+  const candidates: ScheduledTask[][] = [];
+  const explored = exploreExactRoundSynchronizationPolicy(problem, policy, [], [], [], [],
+    createExactSearchLedger(10_000), (candidate) => {
+      candidates.push(candidate.tasks);
+      return candidates.length >= 2 ? "FOUND" : "DEAD_END";
+    });
+  assert.equal(explored.outcome, "FOUND");
+  const mealStarts = candidates.map((tasks) => operationalMealCandidates(
+    problem, problem.operationalMealPolicies![0]!, tasks, [])[0]?.start);
+  assert.equal(new Set(mealStarts).size, 2);
+  assert.equal(explored.evidence.assignmentBranches, 2);
+
+  const partial = structuredClone(problem);
+  partial.tasks.push({ id: "external-scope-task", kind: "auxiliary", duration: 5,
+    spaceId: policy.lanes[0]!.spaceId, dependencies: [] });
+  const withoutReservation: ScheduledTask[][] = [];
+  exploreExactRoundSynchronizationPolicy(partial, partial.roundSynchronizations![0]!, [], [], [], [],
+    createExactSearchLedger(10_000), (candidate) => { withoutReservation.push(candidate.tasks); return "FOUND"; });
+  const firstLane = partial.roundSynchronizations![0]!.lanes[0]!;
+  const laneTasks = withoutReservation[0]!.filter((task) => firstLane.taskIds.includes(task.id))
+    .sort((left, right) => left.start - right.start);
+  assert.equal(laneTasks[1]!.start - laneTasks[0]!.end, firstLane.preparationMinutesBetweenRounds);
+});
+
+test("an unavailable operational window creates no false synchronized-round solution", () => {
+  const problem = withRoundOperationalMeal(supportedProblem());
+  problem.operationalMealPolicies![0]!.window = { start: problem.day.start, end: problem.day.start + 30 };
+  const result = constructExactItinerantPlan(problem);
+  assert.notEqual(result.status, "COMPLETE");
+  assert.equal(result.scheduledOperationalMeals.length, 0);
 });
 
 test("exact synchronization supports a residual round after the shorter lane finishes", () => {

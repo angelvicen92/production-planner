@@ -374,6 +374,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     scheduled,
     roundPreparations,
     meals,
+    operationalMeals,
   );
   const roundSynchronization = roundValidation.synchronizationViolationCount;
   const roundPreparation = roundValidation.preparationViolationCount;
