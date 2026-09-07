@@ -185,15 +185,15 @@ test("future operational reservation ignores unrelated work and is deterministic
   assert.deepEqual(probeOperationalMealFutureFeasibility(problem, [unrelated, ...scoped].reverse()), baseline);
 });
 
-test("future operational reservation never turns a non-terminal or coach grid failure into a prune", () => {
+test("resource-only coach policy participates in the analytic reservation", () => {
   const problem = boundaryPolicyProblem();
   problem.operationalMealPolicies!.push({ id: "coach-grid", window: { start: 10, end: 55 }, duration: 45,
     resourceIds: ["coach"], spaceIds: [] });
   const partial = [{ ...problem.tasks[0]!, start: 0, end: 10 }] as ScheduledTask[];
   const result = probeOperationalMealFutureFeasibility(problem, partial);
-  assert.equal(result.feasible, true);
-  assert.deepEqual(result.checkedPolicyIds, ["operations"]);
-  assert.deepEqual(result.blockingPolicyIds, []);
+  assert.equal(result.feasible, false);
+  assert.deepEqual(result.checkedPolicyIds, ["coach-grid", "operations"]);
+  assert.deepEqual(result.blockingPolicyIds, ["coach-grid"]);
 });
 
 test("analytic reservation repairs its witness, handles exact and fragmented gaps, and never consumes branches", () => {
@@ -242,7 +242,7 @@ test("terminal candidates prefer structural then task boundaries and retain safe
   assert.ok(candidates.every((meal) => tasks.every((task) => !((task.start < meal.end) && (meal.start < task.end)))));
 });
 
-test("every between-task operational policy participates without opt-in while an individual coach stays terminal", () => {
+test("every scoped operational policy participates without opt-in, including an individual coach", () => {
   const problem = boundaryPolicyProblem();
   problem.tasks.push(
     { id: "other-left", kind: "auxiliary", participantId: "core", duration: 10, spaceId: "meal-room", dependencies: [] },
@@ -257,9 +257,54 @@ test("every between-task operational policy participates without opt-in while an
     { ...problem.tasks[3]!, start: 0, end: 10 }, { ...problem.tasks[4]!, start: 85, end: 95 },
   ] as ScheduledTask[];
   const result = probeOperationalMealFutureFeasibility(problem, scheduled);
-  assert.deepEqual(result.checkedPolicyIds, ["operations", "other-operations"]);
-  assert.equal(result.feasible, true);
+  assert.deepEqual(result.checkedPolicyIds, ["coach-grid", "operations", "other-operations"]);
+  assert.equal(result.feasible, false);
   assert.equal(result.branchesExplored, 0);
+});
+
+test("coach meal and directional hard transition fit analytically without overlap", () => {
+  const problem = boundaryPolicyProblem();
+  problem.operationalMealPolicies = [{ id: "coach-meal", window: { start: 10, end: 100 }, duration: 45,
+    resourceIds: ["coach"], spaceIds: [] }];
+  problem.coaches[0]!.availability = [{ start: 0, end: 120 }];
+  problem.tasks = [
+    { ...problem.tasks[0]!, id: "route-left", coachId: "coach", spaceId: "vocal" },
+    { ...problem.tasks[1]!, id: "route-right", coachId: "coach", spaceId: "main" },
+  ];
+  problem.coachRouteTransitions = [{ coachId: "coach", fromSpaceId: "vocal", toSpaceId: "main", minutes: 30 }];
+  const scheduled = (rightStart: number) => [
+    { ...problem.tasks[0]!, start: 0, end: 10 },
+    { ...problem.tasks[1]!, start: rightStart, end: rightStart + 10 },
+  ] as ScheduledTask[];
+
+  const exact = probeOperationalMealFutureFeasibility(problem, scheduled(85));
+  assert.equal(exact.feasible, true);
+  assert.equal(exact.branchesExplored, 0);
+  assert.ok(operationalMealCandidates(problem, problem.operationalMealPolicies[0]!, scheduled(85), []).length > 0);
+  const short = probeOperationalMealFutureFeasibility(problem, scheduled(84));
+  assert.equal(short.feasible, false);
+  assert.equal(short.pruneProofs[0]?.applicableTransitionMinutes, 30);
+  assert.equal(operationalMealCandidates(problem, problem.operationalMealPolicies[0]!, scheduled(84), []).length, 0);
+});
+
+test("coach meal uses the effective direction-specific route and generic reverse margin", () => {
+  const problem = boundaryPolicyProblem();
+  problem.resourceTransitionMinutes = 5;
+  problem.operationalMealPolicies = [{ id: "coach-meal", window: { start: 10, end: 100 }, duration: 45,
+    resourceIds: ["coach"], spaceIds: [] }];
+  problem.coaches[0]!.availability = [{ start: 0, end: 120 }];
+  problem.tasks = [
+    { ...problem.tasks[0]!, id: "left", coachId: "coach", spaceId: "main" },
+    { ...problem.tasks[1]!, id: "right", coachId: "coach", spaceId: "vocal" },
+  ];
+  problem.coachRouteTransitions = [{ coachId: "coach", fromSpaceId: "vocal", toSpaceId: "main", minutes: 30 }];
+  const scheduled = [
+    { ...problem.tasks[0]!, start: 0, end: 10 },
+    { ...problem.tasks[1]!, start: 60, end: 70 },
+  ] as ScheduledTask[];
+  assert.equal(probeOperationalMealFutureFeasibility(problem, scheduled).feasible, true);
+  scheduled[1] = { ...scheduled[1]!, start: 59, end: 69 };
+  assert.equal(probeOperationalMealFutureFeasibility(problem, scheduled).feasible, false);
 });
 
 test("analytic proof matches terminal boundary authority for completely fixed schedules, including zero and one scoped task", () => {
