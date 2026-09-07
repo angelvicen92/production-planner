@@ -205,14 +205,21 @@ test("global macro MRV lets setup beat a broader synchronized round unit", () =>
   assert.equal(setup.matchingFeasibleCandidateCount, 1);
 });
 
-test("global macro MRV lets narrow rounds beat a flexible explicit-resource task", () => {
-  const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] }));
+test("mixed macro policy lets a structurally narrow round beat a flexible exact resource task", () => {
+  const input = macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] });
+  input.resources.push(...["round-a", "round-b"].map((id) =>
+    ({ id: `resource-${id}`, availability: [{ start: 60, end: 70 }], presencePreference: "OFF" as const, transitionMinutes: 0 })));
+  for (const task of input.tasks.filter(({ id }) => id.startsWith("round-"))) task.requiredResourceIds = [`resource-${task.id}`];
+  const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
   const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
     result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
-  assert.equal(round.domainSize, 1);
-  assert.ok(resource.domainSize > round.domainSize);
+  assert.ok(round.domainSize > 0);
+  assert.equal(round.domainExact, false);
+  assert.equal(round.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
+  assert.equal(resource.domainExact, true);
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "mixed-domain-semantic-policy");
 });
 
 test("global macro MRV lets a scarce resource task beat broader rounds", () => {

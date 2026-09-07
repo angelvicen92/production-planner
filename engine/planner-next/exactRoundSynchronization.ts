@@ -16,6 +16,10 @@ import {
 import { overlaps } from "./time";
 import { roundPreparationId } from "./roundSynchronization";
 import { findCanonicalPerfectMatching } from "./macroScheduling";
+import {
+  operationalMealBoundaryIntervalAvailable,
+  operationalMealPoliciesClosedByTaskIds,
+} from "./operationalMeals";
 
 export type ExactRoundSynchronizationOutcome =
   | "FOUND"
@@ -47,8 +51,9 @@ export interface ExactRoundSynchronizationSearchResult {
 
 export interface ExactRoundSynchronizationMacroDomain {
   domainSize: number;
-  structuralCandidateCount: number;
-  matchingFeasibleCandidateCount: number;
+  structuralCandidateCount?: number;
+  matchingFeasibleCandidateCount?: number;
+  domainExact: false;
 }
 
 interface Slot {
@@ -57,6 +62,37 @@ interface Slot {
   spaceId: string;
   start: number;
   end: number;
+}
+
+interface MealGapShape {
+  readonly durationByBoundary: ReadonlyMap<number, number>;
+  readonly boundaryByPolicyId: ReadonlyMap<string, number>;
+}
+
+function mealGapShapes(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy): MealGapShape[] {
+  const roundCount = Math.max(...policy.lanes.map((lane) => lane.taskIds.length));
+  const closed = operationalMealPoliciesClosedByTaskIds(problem, policy.lanes.flatMap((lane) => lane.taskIds));
+  if (closed.length === 0) return [{ durationByBoundary: new Map(), boundaryByPolicyId: new Map() }];
+  if (roundCount < 2) return [];
+  const shapes: MealGapShape[] = [];
+  const assign = (index: number, boundaries: number[]): void => {
+    if (index === closed.length) {
+      const durations = new Map<number, number>();
+      const boundaryByPolicyId = new Map<string, number>();
+      boundaries.forEach((boundary, policyIndex) => {
+        const mealPolicy = closed[policyIndex]!;
+        boundaryByPolicyId.set(mealPolicy.id, boundary);
+        durations.set(boundary, Math.max(durations.get(boundary) ?? 0, mealPolicy.duration));
+      });
+      shapes.push({ durationByBoundary: durations, boundaryByPolicyId });
+      return;
+    }
+    for (let boundary = 1; boundary < roundCount; boundary += 1) {
+      assign(index + 1, [...boundaries, boundary]);
+    }
+  };
+  assign(0, []);
+  return shapes;
 }
 
 const byId = <T extends { id: string }>(left: T, right: T): number =>
@@ -116,6 +152,7 @@ function buildSlots(
   setupPreparations: ScheduledSetupPreparation[],
   existingRoundPreparations: ScheduledRoundPreparation[],
   meals: ScheduledSpaceMeal[],
+  mealGap: MealGapShape,
 ): { slots: Slot[]; preparations: ScheduledRoundPreparation[] } | null {
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneSlots: Slot[][] = [];
@@ -131,7 +168,9 @@ function buildSlots(
     for (let index = 0; index < laneTasks.length; index += 1) {
       if (index > 0) {
         const previous = slots[index - 1]!;
-        const preparationStart = bridgeEnd(problem, lane.spaceId, previous.end, meals);
+        const boundary = index;
+        const gapDuration = mealGap.durationByBoundary.get(boundary) ?? 0;
+        const preparationStart = bridgeEnd(problem, lane.spaceId, previous.end + gapDuration, meals);
         if (lane.preparationMinutesBetweenRounds > 0) {
           const preparation: ScheduledRoundPreparation = {
             id: roundPreparationId(policy.id, lane.spaceId, index + 1),
@@ -181,43 +220,67 @@ function buildSlots(
   };
 }
 
-function materializeMatchingCandidate(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
-  firstStart: number, baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[],
-  existingRoundPreparations: ScheduledRoundPreparation[], meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationCandidate | null {
-  const shape = buildSlots(problem, policy, firstStart, baseTasks, setupPreparations, existingRoundPreparations, meals);
-  if (!shape) return null;
-  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
-  const laneTasks = policy.lanes.map((lane) => lane.taskIds.map((id) => taskById.get(id))
-    .filter((task): task is Task => Boolean(task)).sort(byId));
-  if (laneTasks.some((tasks, index) => tasks.length !== policy.lanes[index]!.taskIds.length)) return null;
-  const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
-  const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
-  const allTasks = laneTasks.flat(), taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
-  const matching = findCanonicalPerfectMatching([...slotById.keys()], allTasks.map(({ id }) => id), (taskId, key) => {
-    const task = taskByMatchingId.get(taskId)!, slot = slotById.get(key)!;
-    return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId) && canPlaceTask(problem, task, slot.start, baseTasks, meals);
+function gapShapeIsHardValid(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
+  firstStart: number, baseTasks: ScheduledTask[], shape: MealGapShape): boolean {
+  const closed = operationalMealPoliciesClosedByTaskIds(problem, policy.lanes.flatMap((lane) => lane.taskIds));
+  if (closed.length === 0) return true;
+  const duration = policy.lanes[0]?.taskIds.length
+    ? problem.tasks.find((task) => task.id === policy.lanes[0]!.taskIds[0])?.duration : undefined;
+  if (duration === undefined) return false;
+  const boundaryStarts = new Map<number, number>();
+  const roundCount = Math.max(...policy.lanes.map((lane) => lane.taskIds.length));
+  for (let boundary = 1; boundary < roundCount; boundary += 1) {
+    const continuingLane = policy.lanes.find((lane) => lane.taskIds.length > boundary);
+    if (!continuingLane) continue;
+    const start = firstStart + boundary * duration
+      + Array.from({ length: boundary - 1 }, (_, index) => continuingLane.preparationMinutesBetweenRounds
+        + (shape.durationByBoundary.get(index + 1) ?? 0)).reduce((sum, value) => sum + value, 0);
+    const gapDuration = shape.durationByBoundary.get(boundary) ?? 0;
+    if (gapDuration > 0) boundaryStarts.set(boundary, start);
+  }
+  return closed.every((mealPolicy) => {
+    const boundary = shape.boundaryByPolicyId.get(mealPolicy.id);
+    const start = boundary === undefined ? undefined : boundaryStarts.get(boundary);
+    return start !== undefined && operationalMealBoundaryIntervalAvailable(problem, mealPolicy, baseTasks, start);
   });
-  if (!matching) return null;
-  const scheduled = [...matching].map(([key, taskId]) => {
-    const slot = slotById.get(key)!;
-    return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
-  });
-  if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
-    [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) return null;
-  scheduled.sort((left, right) => left.start - right.start || byId(left, right));
-  return { tasks: scheduled, preparations: [...shape.preparations], selectionOrder: scheduled.map(({ id }) => id) };
 }
 
-/** Counts hard-valid synchronized temporal shapes without consuming the shared search ledger. */
+/**
+ * Conservative, branch-free MRV estimate. It deliberately does not build slots,
+ * call placement authorities, or run matching: those materially distinct choices
+ * are evaluated exactly once by exploreExactRoundSynchronizationPolicy.
+ */
 export function probeExactRoundSynchronizationMacroDomain(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
-  baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[], existingRoundPreparations: ScheduledRoundPreparation[],
-  meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationMacroDomain {
-  let structuralCandidateCount = 0, matchingFeasibleCandidateCount = 0;
-  for (let start = problem.day.start; start < problem.day.end; start += 5) {
-    if (buildSlots(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals)) structuralCandidateCount += 1;
-    if (materializeMatchingCandidate(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals)) matchingFeasibleCandidateCount += 1;
+  _baseTasks: ScheduledTask[], _setupPreparations: ScheduledSetupPreparation[], _existingRoundPreparations: ScheduledRoundPreparation[],
+  _meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationMacroDomain {
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const complete = policy.lanes.every((lane) => lane.taskIds.length > 0
+    && lane.taskIds.every((id) => taskById.has(id)));
+  if (!complete) return { domainSize: 0, domainExact: false };
+  let feasibleStartRanges = [{ start: problem.day.start, end: problem.day.end }];
+  for (const lane of policy.lanes) {
+    const duration = taskById.get(lane.taskIds[0]!)!.duration;
+    const minimumSpan = lane.taskIds.length * duration
+      + Math.max(0, lane.taskIds.length - 1) * lane.preparationMinutesBetweenRounds;
+    const laneRanges = (problem.spaces.find(({ id }) => id === lane.spaceId)?.availability ?? [])
+      .map(({ start, end }) => ({ start, end: end - minimumSpan }))
+      .filter(({ start, end }) => start <= end);
+    feasibleStartRanges = feasibleStartRanges.flatMap((current) => laneRanges.map((candidate) => ({
+      start: Math.max(current.start, candidate.start), end: Math.min(current.end, candidate.end),
+    })).filter(({ start, end }) => start <= end));
   }
-  return { domainSize: matchingFeasibleCandidateCount, structuralCandidateCount, matchingFeasibleCandidateCount };
+  const starts = feasibleStartRanges.reduce((sum, { start, end }) => {
+    const first = problem.day.start + Math.ceil((start - problem.day.start) / 5) * 5;
+    return sum + Math.max(0, Math.floor((end - first) / 5) + 1);
+  }, 0);
+  if (starts === 0) return { domainSize: 0, domainExact: false };
+  const boundaries = Math.max(...policy.lanes.map((lane) => lane.taskIds.length)) - 1;
+  const closedPolicyCount = operationalMealPoliciesClosedByTaskIds(
+    problem, policy.lanes.flatMap((lane) => lane.taskIds),
+  ).length;
+  const gapShapeUpperBound = closedPolicyCount === 0 ? 1 : Math.max(1, boundaries) ** closedPolicyCount;
+  const upperBound = starts * gapShapeUpperBound;
+  return { domainSize: upperBound, domainExact: false };
 }
 
 /**
@@ -254,58 +317,62 @@ export function exploreExactRoundSynchronizationPolicy(
 
   for (let firstStart = problem.day.start; firstStart < problem.day.end; firstStart += 5) {
     evidence.startCandidates += 1;
-    const shape = buildSlots(
-      problem,
-      policy,
-      firstStart,
-      baseTasks,
-      setupPreparations,
-      existingRoundPreparations,
-      meals,
-    );
-    if (!shape) continue;
+    for (const gap of mealGapShapes(problem, policy)) {
+      if (!gapShapeIsHardValid(problem, policy, firstStart, baseTasks, gap)) continue;
+      const shape = buildSlots(
+        problem,
+        policy,
+        firstStart,
+        baseTasks,
+        setupPreparations,
+        existingRoundPreparations,
+        meals,
+        gap,
+      );
+      if (!shape) continue;
 
-    const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
-    if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
-    evidence.assignmentBranches += 1;
-    evidence.matchingAttempts += 1;
-    const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
-    const allTasks = laneTasks.flat();
-    const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
-    const matching = findCanonicalPerfectMatching(
-      [...slotById.keys()],
-      allTasks.map(({ id }) => id),
-      (taskId, key) => {
-        evidence.assignmentChecks += 1;
-        const task = taskByMatchingId.get(taskId)!;
+      const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
+      if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
+      evidence.assignmentBranches += 1;
+      evidence.matchingAttempts += 1;
+      const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
+      const allTasks = laneTasks.flat();
+      const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
+      const matching = findCanonicalPerfectMatching(
+        [...slotById.keys()],
+        allTasks.map(({ id }) => id),
+        (taskId, key) => {
+          evidence.assignmentChecks += 1;
+          const task = taskByMatchingId.get(taskId)!;
+          const slot = slotById.get(key)!;
+          return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
+            && canPlaceTask(problem, task, slot.start, baseTasks, meals);
+        },
+      );
+      if (!matching) {
+        evidence.zeroAlternativePrunes += 1;
+        continue;
+      }
+      const scheduled = [...matching].map(([key, taskId]) => {
         const slot = slotById.get(key)!;
-        return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
-          && canPlaceTask(problem, task, slot.start, baseTasks, meals);
-      },
-    );
-    if (!matching) {
-      evidence.zeroAlternativePrunes += 1;
-      continue;
+        return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
+      });
+      if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
+        [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) {
+        evidence.zeroAlternativePrunes += 1;
+        continue;
+      }
+      evidence.matchingSuccesses += 1;
+      evidence.assignmentBranchesAvoided += Math.max(0, allTasks.length - 1);
+      evidence.completeAssignments += 1;
+      const outcome = continuation({
+        tasks: scheduled.sort((left, right) => left.start - right.start || byId(left, right)),
+        preparations: [...shape.preparations],
+        selectionOrder: scheduled.map(({ id }) => id),
+      });
+      if (outcome !== "DEAD_END") return { outcome, evidence };
+      evidence.backtracks += 1;
     }
-    const scheduled = [...matching].map(([key, taskId]) => {
-      const slot = slotById.get(key)!;
-      return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
-    });
-    if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
-      [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) {
-      evidence.zeroAlternativePrunes += 1;
-      continue;
-    }
-    evidence.matchingSuccesses += 1;
-    evidence.assignmentBranchesAvoided += Math.max(0, allTasks.length - 1);
-    evidence.completeAssignments += 1;
-    const outcome = continuation({
-      tasks: scheduled.sort((left, right) => left.start - right.start || byId(left, right)),
-      preparations: [...shape.preparations],
-      selectionOrder: scheduled.map(({ id }) => id),
-    });
-    if (outcome !== "DEAD_END") return { outcome, evidence };
-    evidence.backtracks += 1;
   }
 
   return { outcome: "DEAD_END", evidence };

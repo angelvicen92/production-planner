@@ -455,7 +455,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     ordinaryStaticDomainCache.set(task.id, domain);
     return domain;
   };
-  const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
+  const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number; domainExact?:boolean }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const capacityTask=(task:Task)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
     spaceId:task.spaceId,duration:task.duration,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
@@ -715,7 +715,9 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
     : unit.kind === "JOINT" ? unit.tasks.length : 0;
-  return { unit, id: unit.id, domainSize:measure.domainSize, domainMeasure:"hard-valid-top-level-macro-placements", domainExact:true,
+  return { unit, id: unit.id, domainSize:measure.domainSize,
+    domainMeasure:measure.domainExact === false ? "conservative-top-level-macro-domain-upper-bound" : "hard-valid-top-level-macro-placements",
+    domainExact:measure.domainExact !== false,
     structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
     hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
     exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
@@ -723,6 +725,8 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
 };
 const selectionReason = (selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): string => {
   const peers = candidates.filter(({ id }) => id !== selected.id);
+  if (selected.domainSize === 0) return "sound-zero-domain";
+  if (peers.some((item) => item.domainExact !== selected.domainExact)) return "mixed-domain-semantic-policy";
   if (peers.some((item) => item.domainSize !== selected.domainSize)) return "minimum-macro-domain";
   if (peers.some((item) => item.hardResourceAvailabilityMinutes !== selected.hardResourceAvailabilityMinutes)) return "resource-availability-tiebreak";
   if (peers.some((item) => item.exclusiveResourceCount !== selected.exclusiveResourceCount)) return "exclusive-resource-tiebreak";

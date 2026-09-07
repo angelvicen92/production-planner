@@ -51,7 +51,7 @@ function scopedResourceIds(task: ScheduledTask): readonly string[] {
     : [...(task.requiredResourceIds ?? []), task.coachId];
 }
 
-function taskConflictsWithPolicy(task: ScheduledTask, policy: OperationalMealPolicy): boolean {
+export function taskConflictsWithOperationalMealPolicy(task: ScheduledTask, policy: OperationalMealPolicy): boolean {
   return policy.spaceIds.includes(task.spaceId)
     || scopedResourceIds(task).some((id) => policy.resourceIds.includes(id));
 }
@@ -60,6 +60,23 @@ function sourceTaskConflictsWithPolicy(task: PlannerNextProblem["tasks"][number]
   return policy.spaceIds.includes(task.spaceId)
     || [...(task.requiredResourceIds ?? []), ...(task.coachId === undefined ? [] : [task.coachId])]
       .some((id) => policy.resourceIds.includes(id));
+}
+
+/**
+ * Returns boundary-based policies whose complete productive scope is owned by a
+ * macro.  A partially owned scope must remain inconclusive until its other tasks
+ * have been fixed by the exact search.
+ */
+export function operationalMealPoliciesClosedByTaskIds(
+  problem: PlannerNextProblem,
+  taskIds: readonly string[],
+): OperationalMealPolicy[] {
+  const owned = new Set(taskIds);
+  return [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
+    if (isIndividualCoachMeal(problem, policy)) return false;
+    const scoped = problem.tasks.filter((task) => sourceTaskConflictsWithPolicy(task, policy));
+    return scoped.length >= 2 && scoped.every((task) => owned.has(task.id));
+  }).sort(byIdentity);
 }
 
 function isIndividualCoachMeal(problem: PlannerNextProblem, policy: OperationalMealPolicy): boolean {
@@ -80,7 +97,7 @@ export function probeOperationalMealFutureFeasibility(problem: PlannerNextProble
 } {
   const scheduledIds = new Set(tasks.map(({ id }) => id));
   const checked = [...(problem.operationalMealPolicies ?? [])].filter((policy) => {
-    if (newlyFixed && !newlyFixed.some((task) => taskConflictsWithPolicy(task, policy))) return false;
+    if (newlyFixed && !newlyFixed.some((task) => taskConflictsWithOperationalMealPolicy(task, policy))) return false;
     if (isIndividualCoachMeal(problem, policy)) return false;
     const scoped = problem.tasks.filter((task) => sourceTaskConflictsWithPolicy(task, policy));
     return scoped.every(({ id }) => scheduledIds.has(id));
@@ -114,16 +131,27 @@ function scopeAvailable(problem: PlannerNextProblem, policy: OperationalMealPoli
 }
 
 function productiveTasks(policy: OperationalMealPolicy, tasks: readonly ScheduledTask[]): ScheduledTask[] {
-  return tasks.filter((task) => taskConflictsWithPolicy(task, policy))
+  return tasks.filter((task) => taskConflictsWithOperationalMealPolicy(task, policy))
     .sort((left, right) => left.start - right.start || left.end - right.end || left.id.localeCompare(right.id, "en"));
+}
+
+/** Canonical hard authority for a prospective between-task meal interval. */
+export function operationalMealBoundaryIntervalAvailable(
+  problem: PlannerNextProblem,
+  policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[],
+  start: number,
+): boolean {
+  const end = start + policy.duration;
+  return start >= policy.window.start && end <= policy.window.end
+    && scopeAvailable(problem, policy, start, end)
+    && !tasks.some((task) => taskConflictsWithOperationalMealPolicy(task, policy) && overlaps(task, { start, end }));
 }
 
 function hardBoundaryAvailable(problem: PlannerNextProblem, policy: OperationalMealPolicy,
   tasks: readonly ScheduledTask[], left: ScheduledTask, right: ScheduledTask): boolean {
   const start = left.end, end = start + policy.duration;
-  return start >= policy.window.start && end <= policy.window.end && end <= right.start
-    && scopeAvailable(problem, policy, start, end)
-    && !tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, { start, end }));
+  return end <= right.start && operationalMealBoundaryIntervalAvailable(problem, policy, tasks, start);
 }
 
 function hasOperationalMealBoundary(problem: PlannerNextProblem, policy: OperationalMealPolicy,
@@ -162,7 +190,7 @@ export function operationalMealCandidates(
       start,
       end,
     };
-    if (tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, candidate))) continue;
+    if (tasks.some((task) => taskConflictsWithOperationalMealPolicy(task, policy) && overlaps(task, candidate))) continue;
     if (placed.some((meal) => mealScopesOverlap(meal, candidate) && overlaps(meal, candidate))) continue;
     candidates.push(Object.assign(candidate, { preferredBoundary: preferred }));
   }
