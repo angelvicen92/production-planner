@@ -98,6 +98,8 @@ export interface ExactItinerantPlanEvidence {
     requiredDuration:number;window:Window;cause:string}|null;
   substantiveCompleteLeaves:number;participantMealComplete:number;operationalMealAttempts:number;
   operationalMealComplete:number;operationalMealInfeasible:number;terminalTransportAttempts:number;
+  operationalMealFirstTerminalAssessment:{candidateCountByPolicyId:Readonly<Record<string,number>>;
+    blockingPolicyIds:readonly string[];failureKind:"INDIVIDUAL"|"JOINT"|"NONE"}|null;
   terminalTransportSuccess:number;exactCoveragePassed:number;hardValidationAttempts:number;hardValidationPassed:number;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
@@ -496,7 +498,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealExactMaterializations+=1;evidence.participantMealLogicalGridStarts+=mealWitness.logicalGridStarts;evidence.participantMealActuallyEvaluatedStarts+=mealWitness.actuallyEvaluatedStarts;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(mealWitness.complete)evidence.participantMealComplete+=1;else evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
     const operationalMealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
     const operationalMealWitness=exactSubstantive?assessOperationalMealFutureFeasibility(problem,substantive,operationalMealBudget,"MATERIALIZE"):null;
-    if(operationalMealWitness){evidence.operationalMealAttempts+=1;if(operationalMealWitness.complete)evidence.operationalMealComplete+=1;else evidence.operationalMealInfeasible+=1;}
+    if(operationalMealWitness){evidence.operationalMealAttempts+=1;if(operationalMealWitness.complete)evidence.operationalMealComplete+=1;else evidence.operationalMealInfeasible+=1;
+      evidence.operationalMealFirstTerminalAssessment??={candidateCountByPolicyId:operationalMealWitness.candidateCountByPolicyId,
+        blockingPolicyIds:operationalMealWitness.blockingPolicyIds,failureKind:operationalMealWitness.complete?"NONE":
+          Object.values(operationalMealWitness.candidateCountByPolicyId).some(count=>count===0)?"INDIVIDUAL":"JOINT"};}
     if(operationalMealWitness?.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
@@ -987,7 +992,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     operationalMealReservationAnalyticChecks:0,operationalMealReservationBranchesExplored:0,
     operationalMealReservationRepairsByPolicy:{},operationalMealReservationPrunesByPolicy:{},
     substantiveCompleteLeaves:0,participantMealComplete:0,operationalMealAttempts:0,operationalMealComplete:0,
-    operationalMealInfeasible:0,terminalTransportAttempts:0,terminalTransportSuccess:0,exactCoveragePassed:0,
+    operationalMealInfeasible:0,operationalMealFirstTerminalAssessment:null,
+    terminalTransportAttempts:0,terminalTransportSuccess:0,exactCoveragePassed:0,
     hardValidationAttempts:0,hardValidationPassed:0,
     coreLeavesRejectedByStandalone: 0, coreStandaloneFrontierChecks:0,coreStandaloneFrontierPrunes:0,
     coreStandaloneFrontierIndividualDomainChecks:0,coreStandaloneFrontierCollectiveCapacityChecks:0,coreStandaloneFrontierJointChecks:0,

@@ -6,7 +6,9 @@ import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputA
 import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";
 import { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
 import { resolveFlexibleOperationalMealPolicies } from "./integration/flexibleOperationalMealPolicies";
-import { operationalMealCandidates, operationalMealFreeIntervals, probeOperationalMealFutureFeasibility } from "./operationalMeals";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
+import { existsRepresentableOperationalMealStart, operationalMealCandidates, operationalMealFreeIntervals,
+  probeOperationalMealFutureFeasibility } from "./operationalMeals";
 import { validatePlan } from "./validate";
 
 // Core-leaf validation intentionally precedes operational-meal materialization; this regression
@@ -103,6 +105,64 @@ test("future operational reservation permits an exact interval and does not mate
   assert.equal(result.feasible, true);
   assert.deepEqual(result.pruneProofs, []);
   assert.equal("scheduled" in result, false);
+});
+
+test("analytic reservation and terminal materialization agree when a continuous interval has no grid start", () => {
+  const problem = boundaryPolicyProblem();
+  const policy = problem.operationalMealPolicies![0]!;
+  policy.window = { start: 10, end: 86 };
+  const tasks = [{ ...problem.tasks[0]!, start: 10, end: 11 }] as ScheduledTask[];
+
+  assert.deepEqual(operationalMealFreeIntervals(problem, policy, tasks), []);
+  assert.equal(probeOperationalMealFutureFeasibility(problem, tasks).feasible, false);
+  assert.equal(operationalMealCandidates(problem, policy, tasks, []).length, 0);
+});
+
+test("representable operational meal existence handles exact and misaligned interval boundaries arithmetically", () => {
+  const grid = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
+  assert.equal(existsRepresentableOperationalMealStart({ start: 15, end: 90 }, 75, 0, grid), true);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 11, end: 90 }, 75, 0, grid), true);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 11, end: 86 }, 75, 0, grid), false);
+});
+
+test("operational reservation and terminal candidates share the day-relative grid origin", () => {
+  const problem = boundaryPolicyProblem();
+  const policy = problem.operationalMealPolicies![0]!;
+  problem.day = { start: 2, end: 120 };
+  policy.window = { start: 3, end: 12 };
+  policy.duration = 5;
+
+  assert.equal(existsRepresentableOperationalMealStart(policy.window, policy.duration, problem.day.start,
+    PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES), true);
+  assert.equal(existsRepresentableOperationalMealStart({ start: 3, end: 10 }, policy.duration, problem.day.start,
+    PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES), false);
+  const reservation = probeOperationalMealFutureFeasibility(problem, []).reservations[0];
+  assert.deepEqual(reservation, { policyId: policy.id, feasibleIntervals: [{ start: 3, end: 12 }],
+    witnessInterval: { start: 7, end: 12 } });
+  assert.deepEqual(operationalMealCandidates(problem, policy, [], []).map(({ start }) => start), [7]);
+});
+
+test("virtual witnesses stay on-grid, repair to another representable start, and prune after losing the last start", () => {
+  const problem = boundaryPolicyProblem();
+  const policy = problem.operationalMealPolicies![0]!;
+  policy.window = { start: 11, end: 95 };
+  const initial = probeOperationalMealFutureFeasibility(problem, []);
+  assert.deepEqual(initial.reservations[0]?.witnessInterval, { start: 15, end: 90 });
+  assert.equal(initial.reservations[0]!.witnessInterval.start % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES, 0);
+  assert.deepEqual(operationalMealCandidates(problem, policy, [], []).map(({ start }) => start), [15, 20]);
+
+  const occupiedWitness = [{ ...problem.tasks[0]!, start: 15, end: 20 }] as ScheduledTask[];
+  const repaired = probeOperationalMealFutureFeasibility(problem, occupiedWitness, undefined, initial.reservations);
+  assert.equal(repaired.feasible, true);
+  assert.equal(repaired.repairs, 1);
+  assert.deepEqual(repaired.reservations[0]?.witnessInterval, { start: 20, end: 95 });
+  assert.equal(repaired.branchesExplored, 0);
+
+  const lostLastStart = [{ ...problem.tasks[0]!, start: 15, end: 21 }] as ScheduledTask[];
+  const pruned = probeOperationalMealFutureFeasibility(problem, lostLastStart, undefined, initial.reservations);
+  assert.equal(pruned.feasible, false);
+  assert.deepEqual(pruned.blockingPolicyIds, [policy.id]);
+  assert.equal(pruned.branchesExplored, 0);
 });
 
 test("future operational reservation is existential before any productive boundary exists", () => {
