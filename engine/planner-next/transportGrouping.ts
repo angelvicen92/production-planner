@@ -238,7 +238,8 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
     .sort((a, b) => Math.abs(tasks.length / a - target) - Math.abs(tasks.length / b - target) || a - b);
 
   // In directional order a continuous arrival-prefix/departure-suffix domain becomes a prefix
-  // of this slot array.  Homogeneous duration is required so that capacity copies are equivalent.
+  // of this slot array. Homogeneous duration and hole-free domains let the canonical construction
+  // reason only from participant boundaries; otherwise the exact slot+matching authority decides.
   const monotone = new Set(tasks.map(({ duration }) => duration)).size === 1 && tasks.every((_, taskIndex) => {
     let sawIneligible = false;
     for (const slot of slots) {
@@ -285,20 +286,46 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   let groups: ScheduledTask[][] | null = null;
   if (monotone) {
     monotoneFastPathHits += 1;
-    for (const groupCount of groupCounts) {
-      const active: Slot[] = [];
-      for (const slot of slots) {
-        if (active.every((other) => Math.abs(slot.start - other.start) >= policy.minGapMinutes)) active.push(slot);
-        if (active.length === groupCount) break;
+    if (!consume()) exhausted = true;
+    else branchesExplored += 1;
+    if (!exhausted) {
+      if (!consume()) exhausted = true;
+      else branchesExplored += 1;
+    }
+    const sizes = exhausted ? null : transportContiguousGroupSizes(tasks.length, policy, direction);
+    if (sizes) {
+      const canonicalTasks: Task[][] = [];
+      let offset = 0;
+      for (const size of sizes) { canonicalTasks.push(tasks.slice(offset, offset + size)); offset += size; }
+      const canonical: (ScheduledTask[] | undefined)[] = canonicalTasks.map(() => undefined);
+      const scheduleAt = (index: number, limit: number): boolean => {
+        const members = canonicalTasks[index]!;
+        const possible = slots.filter((slot) => members.every((task) => slot.eligible[tasks.indexOf(task)]))
+          .map(({ start }) => start)
+          .filter((start) => direction === "arrival" ? start <= limit : start >= limit);
+        const start = possible.length === 0 ? undefined
+          : direction === "arrival" ? Math.max(...possible) : Math.min(...possible);
+        if (start === undefined) return false;
+        canonical[index] = scheduleTransportGroup(members, start);
+        return true;
+      };
+      let constructed = true;
+      if (direction === "arrival") {
+        let latest = Number.POSITIVE_INFINITY;
+        for (let index = canonicalTasks.length - 1; index >= 0; index -= 1) {
+          if (!scheduleAt(index, latest)) { constructed = false; break; }
+          latest = canonical[index]![0]!.start - policy.minGapMinutes;
+        }
+      } else {
+        let earliest = Number.NEGATIVE_INFINITY;
+        for (let index = 0; index < canonicalTasks.length; index += 1) {
+          if (!scheduleAt(index, earliest)) { constructed = false; break; }
+          earliest = canonical[index]![0]!.start + policy.minGapMinutes;
+        }
       }
-      if (active.length !== groupCount || !hasCumulativeCapacity(active)) continue;
-      if (!consume()) { exhausted = true; break; }
-      branchesExplored += 1;
-      if (!consume()) { exhausted = true; break; }
-      branchesExplored += 1;
-      slotAnalyticallyEliminatedStarts += Math.max(0, slots.length - active.length);
-      const candidate = match(active);
-      if (jointlyValid(candidate)) { groups = candidate; monotoneFastPathWitnesses += 1; break; }
+      const candidate = constructed ? canonical as ScheduledTask[][] : null;
+      slotAnalyticallyEliminatedStarts += candidate ? Math.max(0, slots.length - candidate.length) : 0;
+      if (jointlyValid(candidate)) { groups = candidate; monotoneFastPathWitnesses += 1; }
     }
     if (!groups) monotoneFastPathAbstentions += 1;
   } else monotoneFastPathAbstentions += 1;
