@@ -88,7 +88,7 @@ function arrivalWitnessStillValid(problem: PlannerNextProblem, tasks: readonly T
   const actual = groups.flat().map(({ id }) => id).sort();
   if (expected.length !== actual.length || expected.some((id, index) => id !== actual[index])) return false;
   const starts = groups.map((group) => group[0]?.start).filter((start): start is number => start !== undefined);
-  if (groups.some((group) => !group.length || group.length > policy.maximumGroupSize
+  if (groups.some((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize
     || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) return false;
   if (starts.some((start, index) => starts.some((other, otherIndex) => index !== otherIndex && Math.abs(start - other) < policy.minGapMinutes))) return false;
   const arrivalIds = new Set(expected);

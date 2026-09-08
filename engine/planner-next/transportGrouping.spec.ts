@@ -6,6 +6,9 @@ import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
   transportGroupCandidates,
   transportContiguousGroupSizes,
+  findTransportDirectionWitness,
+  materializeTerminalTransport,
+  transportGroupStarts,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -29,20 +32,51 @@ test("candidate partitions honor minimum, maximum, and never leave a small resid
 
 test("terminal contiguous grouping uses directional defaults and preserves explicit targets", () => {
   assert.deepEqual(transportContiguousGroupSizes(6, policy(1, 6), "arrival"), [3, 3]);
-  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 3, 1]);
-  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 3, 2]);
-  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 3, 1]);
+  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 4]);
+  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 5]);
+  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 4]);
   assert.deepEqual(transportContiguousGroupSizes(3, policy(1, 6), "departure"), [1, 1, 1]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 2 }, "arrival"), [2, 2, 2]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 3 }, "departure"), [3, 3]);
 });
 
-test("terminal validation permits a final group below the legacy compatibility minimum", () => {
+test("terminal validation enforces the configured hard minimum", () => {
   const problem = validationProblem(7);
   const [a, b, c, d, e, f, g] = problem.tasks;
   const groups = [a, b, c].map((task) => scheduled(task!, 600))
     .concat([d, e, f].map((task) => scheduled(task!, 620)), [scheduled(g!, 640)]);
-  assert.equal(validateTransportGrouping(problem, groups).violationCount, 0);
+  assert.ok(validateTransportGrouping(problem, groups).violationCount > 0);
+});
+
+test("exact witness eliminates impossible residuals while target only orders feasible group sizes", () => {
+  const problem = exactProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("arrival-"));
+  problem.transportPolicy!.arrival = { ...policy(2, 4, 0), targetGroupSize: 3, taskIds: arrivals.map(({ id }) => id) };
+  let consumed = 0;
+  const witness = findTransportDirectionWitness(problem, "arrival", arrivals, [], () => { consumed += 1; return true; });
+  assert.equal(witness.feasible, true);
+  assert.ok(witness.groups.every((group) => group.length >= 2 && group.length <= 4));
+  assert.equal(consumed, witness.branchesExplored);
+});
+
+test("transport starts use the canonical grid anchored at day.start", () => {
+  const problem = exactProblem(); problem.day = { start: 2, end: 32 };
+  const task = problem.tasks.find(({ id }) => id.startsWith("arrival-"))!; task.availability = undefined;
+  problem.participants.find(({ id }) => id === task.participantId)!.availability = [{ start: 2, end: 32 }];
+  problem.spaces.find(({ id }) => id === task.spaceId)!.availability = [{ start: 2, end: 32 }];
+  const single = { ...policy(1, 1, 0), taskIds: [task.id] };
+  assert.deepEqual(transportGroupStarts(problem, [task], [], [], single), [2, 7, 12, 17, 22]);
+});
+
+test("terminal exact authority reuses a valid arrival witness and reports ledger exhaustion distinctly", () => {
+  const problem = arrivalWorkStyleDepartureProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("in-"));
+  problem.transportPolicy!.departure.taskIds = [];
+  const reserved = [arrivals.map((task) => scheduled(task, 0))];
+  const reused = materializeTerminalTransport(problem, [], [], reserved, () => { throw new Error("valid reuse must be free"); });
+  assert.equal(reused.status, "FEASIBLE"); assert.equal(reused.arrivalReservedWitnessReused, true);
+  const invalid = reserved.map((group) => group.map((task) => ({ ...task, start: 1, end: 11 })));
+  const exhausted = materializeTerminalTransport(problem, [], [], invalid, () => false);
+  assert.equal(exhausted.status, "BUDGET_EXHAUSTED"); assert.equal(exhausted.arrivalRepaired, true);
+  assert.equal(exhausted.firstFailure?.reason, "BUDGET_EXHAUSTED");
 });
 
 function validationProblem(count = 7): PlannerNextProblem {

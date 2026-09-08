@@ -98,6 +98,11 @@ export interface ExactItinerantPlanEvidence {
     requiredDuration:number;window:Window;cause:string}|null;
   substantiveCompleteLeaves:number;participantMealComplete:number;operationalMealAttempts:number;
   operationalMealComplete:number;operationalMealInfeasible:number;terminalTransportAttempts:number;
+  terminalTransportArrivalAttempts:number;terminalTransportArrivalSuccess:number;terminalTransportArrivalBranches:number;
+  terminalTransportArrivalBacktracks:number;terminalTransportArrivalReservedWitnessReuses:number;terminalTransportArrivalRepairs:number;
+  terminalTransportDepartureAttempts:number;terminalTransportDepartureSuccess:number;terminalTransportDepartureBranches:number;
+  terminalTransportDepartureBacktracks:number;terminalTransportFirstFailure:{direction:"arrival"|"departure";remainingTaskIds:string[];
+    domainSummary:string;reason:"NO_WITNESS"|"BUDGET_EXHAUSTED"}|null;
   operationalMealFirstTerminalAssessment:{candidateCountByPolicyId:Readonly<Record<string,number>>;
     blockingPolicyIds:readonly string[];failureKind:"INDIVIDUAL"|"JOINT"|"NONE"}|null;
   terminalTransportSuccess:number;exactCoveragePassed:number;hardValidationAttempts:number;hardValidationPassed:number;
@@ -491,7 +496,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     evidence.standaloneLeafSearchBranches += 1;
     return true;
   };
-  const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
+  const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[], reservation:DeferredPrerequisiteReservation|null): StandaloneOutcome => {
     if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
     const substantive = orderScheduled([...coreTasks, ...placed]);
@@ -513,14 +518,23 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     if(mealWitness?.complete)evidence.terminalTransportAttempts+=1;
-    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled) : null;
-    if(transport!==null)evidence.terminalTransportSuccess+=1;
-    const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
+    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled,
+      reservation?.arrivalGroups ?? [],()=>ledger.consume("STANDALONE")) : null;
+    if(transport){evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.arrival.branchesExplored;
+      evidence.terminalTransportArrivalBacktracks+=transport.arrival.backtracks;if(transport.arrival.feasible)evidence.terminalTransportArrivalSuccess+=1;
+      if(transport.arrivalReservedWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;
+      if(transport.arrivalRepaired)evidence.terminalTransportArrivalRepairs+=1;
+      if(transport.arrival.feasible){evidence.terminalTransportDepartureAttempts+=1;evidence.terminalTransportDepartureBranches+=transport.departure.branchesExplored;
+        evidence.terminalTransportDepartureBacktracks+=transport.departure.backtracks;if(transport.departure.feasible)evidence.terminalTransportDepartureSuccess+=1;}
+      evidence.terminalTransportFirstFailure??=transport.firstFailure;}
+    if(transport?.status==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+    if(transport?.status==="FEASIBLE")evidence.terminalTransportSuccess+=1;
+    const candidate = transport?.status !== "FEASIBLE" ? substantive : orderScheduled([...substantive, ...transport.scheduled]);
     const actual = [...candidate].sort(byId).map(({ id }) => id);
     const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
     if(exact)evidence.exactCoveragePassed+=1;
     let hardValid=false;
-    if(transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete){evidence.hardValidationAttempts+=1;hardValid=validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness.scheduled]).hardValid;if(hardValid)evidence.hardValidationPassed+=1;}
+    if(transport?.status === "FEASIBLE" && exact && mealWitness?.complete && operationalMealWitness?.complete){evidence.hardValidationAttempts+=1;hardValid=validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness.scheduled]).hardValid;if(hardValid)evidence.hardValidationPassed+=1;}
     if (hardValid) {
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
@@ -543,7 +557,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], reservation:DeferredPrerequisiteReservation|null, operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
-      return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder);
+      return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder, reservation);
     }
     const alternatives: Positions[] = [];
     const allPlaced = [...coreTasks, ...placed];
@@ -1000,7 +1014,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     operationalMealReservationRepairsByPolicy:{},operationalMealReservationPrunesByPolicy:{},
     substantiveCompleteLeaves:0,participantMealComplete:0,operationalMealAttempts:0,operationalMealComplete:0,
     operationalMealInfeasible:0,operationalMealFirstTerminalAssessment:null,
-    terminalTransportAttempts:0,terminalTransportSuccess:0,exactCoveragePassed:0,
+    terminalTransportAttempts:0,terminalTransportSuccess:0,terminalTransportArrivalAttempts:0,terminalTransportArrivalSuccess:0,
+    terminalTransportArrivalBranches:0,terminalTransportArrivalBacktracks:0,terminalTransportArrivalReservedWitnessReuses:0,
+    terminalTransportArrivalRepairs:0,terminalTransportDepartureAttempts:0,terminalTransportDepartureSuccess:0,
+    terminalTransportDepartureBranches:0,terminalTransportDepartureBacktracks:0,terminalTransportFirstFailure:null,exactCoveragePassed:0,
     hardValidationAttempts:0,hardValidationPassed:0,
     coreLeavesRejectedByStandalone: 0, coreStandaloneFrontierChecks:0,coreStandaloneFrontierPrunes:0,
     coreStandaloneFrontierIndividualDomainChecks:0,coreStandaloneFrontierCollectiveCapacityChecks:0,coreStandaloneFrontierJointChecks:0,

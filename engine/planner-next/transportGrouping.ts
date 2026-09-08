@@ -64,70 +64,66 @@ export function transportContiguousGroupSizes(
 ): number[] | null {
   if (count < 0 || !Number.isInteger(count)) return null;
   const target = Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize);
-  const sizes: number[] = [];
-  let remaining = count;
-  while (remaining > 0) {
-    const size = Math.min(target, remaining);
-    sizes.push(size);
-    remaining -= size;
-  }
-  return sizes;
+  if (!canPartitionTransportCount(count, policy.minimumGroupSize, policy.maximumGroupSize)) return null;
+  const choose = (remaining: number): number[] | null => {
+    if (remaining === 0) return [];
+    const sizes = Array.from({ length: Math.min(policy.maximumGroupSize, remaining) - policy.minimumGroupSize + 1 },
+      (_, index) => policy.minimumGroupSize + index)
+      .filter((size) => canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
+      .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || right - left);
+    for (const size of sizes) { const residual = choose(remaining - size); if (residual) return [size, ...residual]; }
+    return null;
+  };
+  return choose(count);
 }
 
-/**
- * Deterministic terminal logistics. Membership is fixed by participant boundary order and
- * contiguous slicing; only the canonical latest-IN/earliest-OUT starts are considered.
- */
+/** Result of deterministic, exact terminal transport materialization. */
+export interface TerminalTransportMaterialization {
+  status: "FEASIBLE" | "NO_WITNESS" | "BUDGET_EXHAUSTED";
+  scheduled: ScheduledTask[];
+  arrival: TransportDirectionWitnessResult;
+  departure: TransportDirectionWitnessResult;
+  arrivalReservedWitnessReused: boolean;
+  arrivalRepaired: boolean;
+  firstFailure: null | { direction: TransportDirection; remainingTaskIds: string[]; domainSummary: string; reason: "NO_WITNESS" | "BUDGET_EXHAUSTED" };
+}
+
+/** Exact terminal authority. A preserved ARRIVAL witness is reused only after final-state validation. */
 export function materializeTerminalTransport(
   problem: PlannerNextProblem,
   substantive: readonly ScheduledTask[],
   participantMeals: readonly ScheduledParticipantMeal[] = [],
-): ScheduledTask[] | null {
-  if (!problem.transportPolicy) return [];
-  const transportIds = transportTaskIds(problem);
-  const obligationsFor = (participantId: string) => [
-    ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
-    ...participantMeals.filter((meal) => meal.participantId === participantId),
-  ];
-  const placed: ScheduledTask[] = [];
-  for (const direction of ["arrival", "departure"] as const) {
-    const policy = problem.transportPolicy[direction];
-    const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)
-      .sort((left, right) => {
-        const leftObligations = obligationsFor(left.participantId!);
-        const rightObligations = obligationsFor(right.participantId!);
-        const boundary = direction === "arrival"
-          ? (values: typeof leftObligations) => values.length ? Math.min(...values.map(({ start }) => start)) : problem.day.end
-          : (values: typeof leftObligations) => values.length ? Math.max(...values.map(({ end }) => end)) : problem.day.start;
-        return boundary(leftObligations) - boundary(rightObligations)
-          || left.participantId!.localeCompare(right.participantId!) || left.id.localeCompare(right.id);
-      });
-    const sizes = transportContiguousGroupSizes(tasks.length, policy, direction);
-    if (!sizes) return null;
-    let offset = 0;
-    const starts: number[] = [];
-    for (const size of sizes) {
-      const group = tasks.slice(offset, offset + size);
-      offset += size;
-      const boundary = direction === "arrival"
-        ? Math.min(...group.map((task) => {
-          const obligations = obligationsFor(task.participantId!);
-          return obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end;
-        }))
-        : Math.max(...group.map((task) => {
-          const obligations = obligationsFor(task.participantId!);
-          return obligations.length ? Math.max(...obligations.map(({ end }) => end)) : problem.day.start;
-        }));
-      const candidates = transportGroupStarts(problem, group, [...substantive, ...placed], starts, policy)
-        .filter((start) => direction === "arrival" ? start + group[0]!.duration <= boundary : start >= boundary)
-        .sort((left, right) => direction === "arrival" ? right - left : left - right);
-      const start = candidates[0];
-      if (start === undefined) return null;
-      placed.push(...scheduleTransportGroup(group, start));
-      starts.push(start);
-    }
+  reservedArrivalGroups: readonly (readonly ScheduledTask[])[] = [],
+  consume: () => boolean = () => true,
+): TerminalTransportMaterialization {
+  const empty: TransportDirectionWitnessResult = { feasible: true, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
+  if (!problem.transportPolicy) return { status: "FEASIBLE", scheduled: [], arrival: empty, departure: empty,
+    arrivalReservedWitnessReused: false, arrivalRepaired: false, firstFailure: null };
+  const tasks = (direction: TransportDirection) => problem.transportPolicy![direction].taskIds
+    .map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean);
+  const arrivals = tasks("arrival"), departures = tasks("departure");
+  const reserved = reservedArrivalGroups.map((group) => [...group]);
+  const reservedValid = reserved.length > 0
+    && validateDirectionWitness(problem, "arrival", arrivals, reserved, substantive, participantMeals);
+  const arrival = reservedValid ? { ...empty, groups: reserved } : findTransportDirectionWitness(problem, "arrival", arrivals,
+    substantive, consume, participantMeals);
+  if (!arrival.feasible) return failure("arrival", arrivals, arrival, !reservedValid && reserved.length > 0);
+  const arrivalScheduled = arrival.groups.flat();
+  const departure = findTransportDirectionWitness(problem, "departure", departures,
+    [...substantive, ...arrivalScheduled], consume, participantMeals);
+  if (!departure.feasible) return failure("departure", departures, departure, !reservedValid && reserved.length > 0, arrival);
+  return { status: "FEASIBLE", scheduled: [...arrivalScheduled, ...departure.groups.flat()], arrival, departure,
+    arrivalReservedWitnessReused: reservedValid, arrivalRepaired: !reservedValid && reserved.length > 0, firstFailure: null };
+
+  function failure(direction: TransportDirection, remaining: readonly Task[], result: TransportDirectionWitnessResult,
+    repaired: boolean, successfulArrival = result): TerminalTransportMaterialization {
+    const policy = problem.transportPolicy![direction];
+    const reason = result.exhausted ? "BUDGET_EXHAUSTED" : "NO_WITNESS";
+    return { status: reason, scheduled: [], arrival: direction === "arrival" ? result : successfulArrival,
+      departure: direction === "departure" ? result : empty, arrivalReservedWitnessReused: false, arrivalRepaired: repaired,
+      firstFailure: { direction, remainingTaskIds: remaining.map(({ id }) => id).sort(), reason,
+        domainSummary: `count=${remaining.length};min=${policy.minimumGroupSize};target=${policy.targetGroupSize ?? "default"};max=${policy.maximumGroupSize};gap=${policy.minGapMinutes}` } };
   }
-  return placed;
 }
 
 export function canPlaceTransportGroup(
@@ -165,12 +161,9 @@ export function transportGroupStarts(
   previousGroupStarts: readonly number[],
   policy: Readonly<TransportGroupingPolicy>,
 ): number[] {
-  const duration = tasks[0]?.duration ?? 0;
-  const starts: number[] = [];
-  for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) {
-    if (canPlaceTransportGroup(problem, tasks, start, placed, previousGroupStarts, policy)) starts.push(start);
-  }
-  return starts;
+  const domains = tasks.map((task) => new Set(exactTaskStartDomain(problem, task, placed).starts()));
+  return [...(domains[0] ?? [])].filter((start) => domains.every((domain) => domain.has(start))
+    && canPlaceTransportGroup(problem, tasks, start, placed, previousGroupStarts, policy));
 }
 
 export interface TransportDirectionWitnessResult {
@@ -183,7 +176,8 @@ export interface TransportDirectionWitnessResult {
 
 /** Exact, ledger-accounted grouped witness. It is read-only and does not materialize into the plan. */
 export function findTransportDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection,
-  relevantTasks: readonly Task[], externalPlaced: readonly ScheduledTask[], consume: () => boolean): TransportDirectionWitnessResult {
+  relevantTasks: readonly Task[], externalPlaced: readonly ScheduledTask[], consume: () => boolean,
+  participantMeals: readonly ScheduledParticipantMeal[] = []): TransportDirectionWitnessResult {
   const policy = problem.transportPolicy?.[direction];
   if (!policy || relevantTasks.length === 0)
     return { feasible: true, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
@@ -195,7 +189,8 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   const arrivalIds = new Set(relevant.map(({ id }) => id));
   const external = externalPlaced.filter(({ id }) => !arrivalIds.has(id));
   const boundary = (task: Task): number => {
-    const obligations = external.filter((placed) => placed.participantId === task.participantId);
+    const obligations = [...external.filter((placed) => placed.participantId === task.participantId),
+      ...participantMeals.filter((meal) => meal.participantId === task.participantId)];
     return direction === "arrival"
       ? Math.min(problem.day.end, ...obligations.map(({ start }) => start))
       : Math.max(problem.day.start, ...obligations.map(({ end }) => end));
@@ -205,12 +200,16 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   const search = (remaining: readonly Task[], groups: readonly ScheduledTask[][]): ScheduledTask[][] | null => {
     if (!remaining.length) return groups.map((group) => [...group]);
     const [first, ...rest] = remaining;
-    const sizes = Array.from({ length: Math.min(policy.maximumGroupSize, remaining.length) }, (_, index) => index + 1)
+    const sizes = Array.from({ length: Math.min(policy.maximumGroupSize, remaining.length) - policy.minimumGroupSize + 1 },
+      (_, index) => policy.minimumGroupSize + index)
+      .filter((size) => canPartitionTransportCount(remaining.length - size, policy.minimumGroupSize, policy.maximumGroupSize))
       .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || right - left);
-    for (const size of sizes) for (const tail of combinations(rest, size - 1)) {
+    // Keep the most constrained (boundary-ordered) task as the canonical anchor. The shared
+    // partition authority still removes every size whose residual cannot be completed.
+    const candidates = sizes.flatMap((size) => combinations(rest, size - 1).map((tail) => [first!, ...tail]));
+    for (const group of candidates) {
       if (!consume()) { exhausted = true; return null; }
       branchesExplored += 1;
-      const group = [first!, ...tail].sort(byId);
       const alreadyPlaced = [...external, ...groups.flat()];
       const domains = group.map((task) => new Set([...exactTaskStartDomain(problem, task, alreadyPlaced).starts()]));
       const starts = [...domains[0]!].filter((start) => domains.every((domain) => domain.has(start))
@@ -232,6 +231,25 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   };
   const groups = search(tasks, []);
   return { feasible: groups !== null, groups: groups ?? [], branchesExplored, backtracks, exhausted };
+}
+
+function validateDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection, tasks: readonly Task[],
+  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[]): boolean {
+  const policy = problem.transportPolicy?.[direction];
+  if (!policy) return tasks.length === 0;
+  const expected = tasks.map(({ id }) => id).sort(), actual = groups.flat().map(({ id }) => id).sort();
+  if (expected.length !== actual.length || expected.some((id, index) => id !== actual[index])) return false;
+  if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize)) return false;
+  return groups.every((group, index) => group.length >= policy.minimumGroupSize && group.length <= policy.maximumGroupSize
+    && group.every((item) => item.start === group[0]!.start && item.end === item.start + item.duration)
+    && canPlaceTransportGroup(problem, group.map(({ id }) => tasks.find((task) => task.id === id)!), group[0]!.start,
+      [...external, ...groups.filter((_, other) => other !== index).flat()], groups.slice(0, index).map((item) => item[0]!.start), policy)
+    && group.every((item) => {
+      const obligations = [...external.filter((task) => task.participantId === item.participantId),
+        ...meals.filter((meal) => meal.participantId === item.participantId)];
+      return direction === "arrival" ? item.end <= Math.min(problem.day.end, ...obligations.map(({ start }) => start))
+        : item.start >= Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+    }));
 }
 
 export interface TransportValidation {
@@ -282,7 +300,7 @@ export function validateTransportGrouping(
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    if (groups.some((group) => group.length === 0 || group.length > policy.maximumGroupSize
+    if (groups.some((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize
       || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) violationCount += 1;
     for (let index = 1; index < groups.length; index += 1) {
       if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;
