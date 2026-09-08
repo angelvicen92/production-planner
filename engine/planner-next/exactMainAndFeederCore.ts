@@ -205,6 +205,11 @@ export interface ExactFeederRunShape {
   readonly mealGap: Readonly<{ policyId: string; start: number; end: number; boundary: number }> | null;
 }
 
+export function exactFeederTerminalTransitionEarliestStart(shape:ExactFeederRunShape,
+  terminalEnd:number,feederCount:number):number {
+  return shape.mealGap?.boundary===feederCount?shape.blockEnd:terminalEnd;
+}
+
 /** Pure shape authority.  It deliberately returns every distinguishable aligned
  * boundary, plus the no-gap shape: a meal may have a witness outside this run. */
 export function exactFeederRunShapes(problem: PlannerNextProblem, coachId: string | undefined,
@@ -1250,7 +1255,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 const firstMainStart=slots[runEnd-rankedCohort.length]!;
                 const transition=effectiveCoachTransitionMinutes(problem,terminal.coachId,
                   terminal.spaceId,terminalChoice.task.spaceId);
-                if(terminal.end+transition>firstMainStart){
+                const transitionEarliestStart=exactFeederTerminalTransitionEarliestStart(
+                  shape,terminal.end,rankedCohort.length);
+                if(transitionEarliestStart+transition>firstMainStart){
                   jointlyValid=false;feederOrderAuthorityObserved=true;
                   feederRepairTrigger="RESIDUAL_MATCHING_DEAD_END";
                 }
@@ -1363,6 +1370,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             const nextScheduled=[...frame.scheduled,feeder];
             const nextRemaining=frame.remaining.filter(({choice:item})=>item.task.id!==choice.task.id);
             if(nextRemaining.length===0){
+              const transition=feeder.coachId===undefined?0:effectiveCoachTransitionMinutes(problem,
+                feeder.coachId,feeder.spaceId,choice.task.spaceId);
+              const transitionEarliestStart=exactFeederTerminalTransitionEarliestStart(
+                shape,feeder.end,rankedCohort.length);
+              if(transitionEarliestStart+transition>slots[runEnd-rankedCohort.length]!)continue;
               completeOrderAtStart=true;child=closeBlock(nextScheduled);
               if(child!=="DEAD_END")return child;
               evidence.backtracks++;continue;
