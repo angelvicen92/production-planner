@@ -4,6 +4,7 @@ import type { PlannerNextProblem, ScheduledTask, Task, TransportGroupingPolicy }
 import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
+  assessTransportFutureFeasibility,
   transportGroupCandidates,
   transportContiguousGroupSizes,
   findTransportDirectionWitness,
@@ -158,6 +159,46 @@ test("transport starts use the canonical grid anchored at day.start", () => {
   problem.spaces.find(({ id }) => id === task.spaceId)!.availability = [{ start: 2, end: 32 }];
   const single = { ...policy(1, 1, 0), taskIds: [task.id] };
   assert.deepEqual(transportGroupStarts(problem, [task], [], [], single), [2, 7, 12, 17, 22]);
+});
+
+test("analytic transport future capacity prunes only strict demand excess and enumerates no starts", () => {
+  const excess = canonicalBoundaryProblem("arrival", [20, 20, 20], 1, 15);
+  const pruned = assessTransportFutureFeasibility(excess.problem, excess.external);
+  assert.equal(pruned.feasible, false);
+  assert.equal(pruned.firstFailure?.reason, "CUMULATIVE_CAPACITY");
+  assert.equal(pruned.firstFailure?.maximumHardCapacity, 1);
+  assert.equal(pruned.capacityPrunes, 1);
+  assert.ok(pruned.intervalCalculations > 0);
+  assert.equal(pruned.enumeratedStarts, 0);
+
+  const equality = canonicalBoundaryProblem("arrival", [30, 30], 1, 20);
+  const open = assessTransportFutureFeasibility(equality.problem, equality.external);
+  assert.equal(open.feasible, true, "demand equal to the optimistic hard capacity stays open");
+  assert.equal(open.capacityPrunes, 0);
+  assert.equal(open.enumeratedStarts, 0);
+});
+
+test("analytic transport future capacity preserves holes and rounds minGap onto the canonical grid", () => {
+  const holes = canonicalBoundaryProblem("arrival", [100, 100], 1, 15);
+  for (const task of holes.problem.tasks) task.availability = [{ start: 0, end: 10 }, { start: 20, end: 30 }];
+  const holeResult = assessTransportFutureFeasibility(holes.problem, holes.external);
+  assert.equal(holeResult.feasible, true, "two separated static intervals provide two compatible starts");
+  assert.equal(holeResult.enumeratedStarts, 0);
+
+  const nonGridGap = canonicalBoundaryProblem("arrival", [30, 30, 30], 1, 6);
+  for (const task of nonGridGap.problem.tasks) task.availability = [{ start: 0, end: 30 }];
+  const gapResult = assessTransportFutureFeasibility(nonGridGap.problem, nonGridGap.external);
+  assert.equal(gapResult.feasible, true, "a six-minute gap permits canonical starts 0, 10, and 20");
+  assert.equal(gapResult.enumeratedStarts, 0);
+});
+
+test("analytic transport future certificate is deterministic under transport input order", () => {
+  const forward = canonicalBoundaryProblem("departure", [20, 20, 35, 35], 1, 20);
+  const reversed = canonicalBoundaryProblem("departure", [20, 20, 35, 35], 1, 20, true);
+  const left = assessTransportFutureFeasibility(forward.problem, forward.external);
+  const right = assessTransportFutureFeasibility(reversed.problem, reversed.external);
+  assert.deepEqual(left, right);
+  assert.equal(left.enumeratedStarts, 0);
 });
 
 test("terminal exact authority reuses a valid arrival witness and reports ledger exhaustion distinctly", () => {

@@ -1,5 +1,5 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { canPlaceTask, exactTaskStartDomain, exactTaskStaticStartDomain, type ExactStartInterval } from "./placement";
 
 export type TransportDirection = "arrival" | "departure";
 
@@ -41,9 +41,41 @@ export interface TransportFutureFeasibilityCertificate {
   feasible: boolean;
   conclusive: boolean;
   checks: number;
+  intervalCalculations: number;
+  enumeratedStarts: number;
   capacityPrunes: number;
   firstFailure: null | { direction: TransportDirection; reason: "EMPTY_DOMAIN" | "GROUP_COUNT" | "CUMULATIVE_CAPACITY";
     demand: number; maximumHardCapacity: number; taskIds: string[] };
+}
+
+const staticTransportDomains = new WeakMap<PlannerNextProblem, WeakMap<Task, readonly Readonly<ExactStartInterval>[]>>();
+
+function staticTransportIntervals(problem: PlannerNextProblem, task: Task): readonly Readonly<ExactStartInterval>[] {
+  let byTask = staticTransportDomains.get(problem);
+  if (!byTask) { byTask = new WeakMap(); staticTransportDomains.set(problem, byTask); }
+  let intervals = byTask.get(task);
+  if (!intervals) {
+    intervals = exactTaskStaticStartDomain(problem, task).intervals;
+    byTask.set(task, intervals);
+  }
+  return intervals;
+}
+
+const firstGridStartAtOrAfter = (anchor: number, start: number): number =>
+  anchor + Math.max(0, Math.ceil((start - anchor) / 5)) * 5;
+
+/** Maximum cardinality of a gap-compatible subset of the canonical grid in an interval union. */
+function maximumCompatibleGridStarts(problem: PlannerNextProblem, intervals: readonly Readonly<ExactStartInterval>[], minGapMinutes: number): number {
+  const step = Math.max(5, Math.ceil(minGapMinutes / 5) * 5);
+  let count = 0, next = problem.day.start;
+  for (const interval of intervals) {
+    const first = firstGridStartAtOrAfter(problem.day.start, Math.max(interval.start, next));
+    if (first > interval.end) continue;
+    const added = Math.floor((interval.end - first) / step) + 1;
+    count += added;
+    next = first + added * step;
+  }
+  return count;
 }
 
 /**
@@ -53,7 +85,10 @@ export interface TransportFutureFeasibilityCertificate {
  */
 export function assessTransportFutureFeasibility(problem: PlannerNextProblem,
   externalPlaced: readonly ScheduledTask[], participantMeals: readonly ScheduledParticipantMeal[] = []): TransportFutureFeasibilityCertificate {
-  let checks = 0;
+  let checks = 0, intervalCalculations = 0;
+  const certificate = (feasible: boolean, conclusive: boolean, capacityPrunes: number,
+    firstFailure: TransportFutureFeasibilityCertificate["firstFailure"]): TransportFutureFeasibilityCertificate =>
+    ({ feasible, conclusive, checks, intervalCalculations, enumeratedStarts: 0, capacityPrunes, firstFailure });
   const transportIds = transportTaskIds(problem);
   const substantive = externalPlaced.filter(({ id }) => !transportIds.has(id));
   const directions: readonly TransportDirection[] = ["arrival", "departure"];
@@ -63,37 +98,46 @@ export function assessTransportFutureFeasibility(problem: PlannerNextProblem,
     const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)).filter((task): task is Task => Boolean(task));
     checks += 1;
     if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize))
-      return { feasible: false, conclusive: true, checks, capacityPrunes: 1,
-        firstFailure: { direction, reason: "GROUP_COUNT", demand: tasks.length, maximumHardCapacity: 0, taskIds: tasks.map(({ id }) => id).sort() } };
+      return certificate(false, true, 1,
+        { direction, reason: "GROUP_COUNT", demand: tasks.length, maximumHardCapacity: 0, taskIds: tasks.map(({ id }) => id).sort() });
     const boundary = (task: Task): number => {
       const obligations = [...substantive.filter((placed) => placed.participantId === task.participantId),
         ...participantMeals.filter((meal) => meal.participantId === task.participantId)];
       return direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start))
         : Math.max(problem.day.start, ...obligations.map(({ end }) => end));
     };
-    const domains = tasks.map((task) => ({ task, boundary: boundary(task), starts: [...exactTaskStartDomain(problem, task,
-      substantive).starts()].filter((start) => direction === "arrival" ? start + task.duration <= boundary(task) : start >= boundary(task)) }));
-    const empty = domains.find(({ starts }) => starts.length === 0);
-    if (empty) return { feasible: false, conclusive: true, checks, capacityPrunes: 1,
-      firstFailure: { direction, reason: "EMPTY_DOMAIN", demand: 1, maximumHardCapacity: 0, taskIds: [empty.task.id] } };
+    const domains = tasks.map((task) => {
+      const effectiveBoundary = boundary(task);
+      const intervals = staticTransportIntervals(problem, task).flatMap((interval) => {
+        const start = direction === "arrival" ? interval.start : Math.max(interval.start, effectiveBoundary);
+        const end = direction === "arrival" ? Math.min(interval.end, effectiveBoundary - task.duration) : interval.end;
+        return start <= end ? [{ start, end }] : [];
+      });
+      intervalCalculations += 1;
+      return { task, boundary: effectiveBoundary, intervals };
+    });
+    const empty = domains.find(({ intervals }) => intervals.length === 0);
+    if (empty) return certificate(false, true, 1,
+      { direction, reason: "EMPTY_DOMAIN", demand: 1, maximumHardCapacity: 0, taskIds: [empty.task.id] });
     const orderedBoundaries = [...new Set(domains.map(({ boundary: value }) => value))].sort((a, b) => direction === "arrival" ? a - b : b - a);
     for (const limit of orderedBoundaries) {
       checks += 1;
       const forced = domains.filter(({ boundary: value }) => direction === "arrival" ? value <= limit : value >= limit);
-      const candidateStarts = [...new Set(forced.flatMap(({ starts }) => starts)
-        .filter((start) => direction === "arrival" ? start <= limit : start >= limit))]
-        .sort((a, b) => direction === "arrival" ? a - b : b - a);
-      let groups = 0, last: number | undefined;
-      for (const start of candidateStarts) if (last === undefined || Math.abs(start - last) >= policy.minGapMinutes) {
-        groups += 1; last = start;
-      }
-      const maximumHardCapacity = groups * policy.maximumGroupSize;
-      if (forced.length > maximumHardCapacity) return { feasible: false, conclusive: true, checks, capacityPrunes: 1,
-        firstFailure: { direction, reason: "CUMULATIVE_CAPACITY", demand: forced.length, maximumHardCapacity,
-          taskIds: forced.map(({ task }) => task.id).sort() } };
+      const union = forced.flatMap(({ intervals }) => intervals).sort((a, b) => a.start - b.start || a.end - b.end)
+        .reduce<ExactStartInterval[]>((merged, interval) => {
+          const previous = merged.at(-1);
+          if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+          else merged.push({ ...interval });
+          return merged;
+        }, []);
+      intervalCalculations += 1;
+      const maximumHardCapacity = maximumCompatibleGridStarts(problem, union, policy.minGapMinutes) * policy.maximumGroupSize;
+      if (forced.length > maximumHardCapacity) return certificate(false, true, 1,
+        { direction, reason: "CUMULATIVE_CAPACITY", demand: forced.length, maximumHardCapacity,
+          taskIds: forced.map(({ task }) => task.id).sort() });
     }
   }
-  return { feasible: true, conclusive: false, checks, capacityPrunes: 0, firstFailure: null };
+  return certificate(true, false, 0, null);
 }
 
 /** Canonical candidate groups containing the first remaining task; no invalid residual is emitted. */
