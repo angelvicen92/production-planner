@@ -179,12 +179,20 @@ export interface TransportDirectionWitnessResult {
   matchingEdgeChecks: number;
   matchingAugmentTraversals: number;
   equivalentMembershipsCollapsed: number;
+  monotoneFastPathChecks: number;
+  monotoneFastPathHits: number;
+  monotoneFastPathWitnesses: number;
+  monotoneFastPathAbstentions: number;
+  cumulativeCapacityChecks: number;
+  cumulativeCapacityPrunes: number;
 }
 
 const emptyWitness = (): TransportDirectionWitnessResult => ({ feasible: true, groups: [], branchesExplored: 0,
   backtracks: 0, exhausted: false, slotLogicalStarts: 0, slotAnalyticallyEliminatedStarts: 0,
   slotStartSetsEvaluated: 0, matchingChecks: 0, matchingEdgeChecks: 0, matchingAugmentTraversals: 0,
-  equivalentMembershipsCollapsed: 0 });
+  equivalentMembershipsCollapsed: 0, monotoneFastPathChecks: 0, monotoneFastPathHits: 0,
+  monotoneFastPathWitnesses: 0, monotoneFastPathAbstentions: 0, cumulativeCapacityChecks: 0,
+  cumulativeCapacityPrunes: 0 });
 
 /** Exact, ledger-accounted grouped witness. It is read-only and does not materialize into the plan. */
 export function findTransportDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection,
@@ -197,7 +205,10 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   if (relevant.length !== relevantTasks.length)
     return { ...emptyWitness(), feasible: false };
   let branchesExplored = 0, backtracks = 0, exhausted = false, slotStartSetsEvaluated = 0;
+  let slotAnalyticallyEliminatedStarts = 0;
   let matchingChecks = 0, matchingEdgeChecks = 0, matchingAugmentTraversals = 0;
+  let monotoneFastPathChecks = 1, monotoneFastPathHits = 0, monotoneFastPathWitnesses = 0;
+  let monotoneFastPathAbstentions = 0, cumulativeCapacityChecks = 0, cumulativeCapacityPrunes = 0;
   const arrivalIds = new Set(relevant.map(({ id }) => id));
   const external = externalPlaced.filter(({ id }) => !arrivalIds.has(id));
   const boundary = (task: Task): number => {
@@ -226,6 +237,17 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
     (_, index) => Math.ceil(tasks.length / policy.maximumGroupSize) + index)
     .sort((a, b) => Math.abs(tasks.length / a - target) - Math.abs(tasks.length / b - target) || a - b);
 
+  // In directional order a continuous arrival-prefix/departure-suffix domain becomes a prefix
+  // of this slot array.  Homogeneous duration is required so that capacity copies are equivalent.
+  const monotone = new Set(tasks.map(({ duration }) => duration)).size === 1 && tasks.every((_, taskIndex) => {
+    let sawIneligible = false;
+    for (const slot of slots) {
+      if (!slot.eligible[taskIndex]) sawIneligible = true;
+      else if (sawIneligible) return false;
+    }
+    return true;
+  });
+
   const match = (active: readonly Slot[]): ScheduledTask[][] | null => {
     matchingChecks += 1;
     const copies = active.flatMap((slot, slotIndex) => Array.from({ length: policy.maximumGroupSize }, (_, copy) => ({ slot, slotIndex, mandatory: copy < policy.minimumGroupSize })));
@@ -248,20 +270,56 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
       const item = left[leftIndex]; return copies[copyIndex]!.slotIndex === slotIndex && item && !item.dummy ? [item.task!] : [];
     }).map((task) => ({ ...task, start: slot.start, end: slot.start + task.duration })).sort((a, b) => byId(a, b)));
   };
+  const jointlyValid = (candidate: ScheduledTask[][] | null): candidate is ScheduledTask[][] => candidate !== null
+    && validateDirectionWitness(problem, direction, tasks, candidate, external, participantMeals);
+  const hasCumulativeCapacity = (active: readonly Slot[]): boolean => {
+    for (let prefix = 1; prefix <= slots.length; prefix += 1) {
+      cumulativeCapacityChecks += 1;
+      const demand = tasks.reduce((sum, _, taskIndex) => sum + (slots.slice(0, prefix).some((slot) => slot.eligible[taskIndex])
+        && !slots.slice(prefix).some((slot) => slot.eligible[taskIndex]) ? 1 : 0), 0);
+      const capacity = active.filter((slot) => slots.indexOf(slot) < prefix).length * policy.maximumGroupSize;
+      if (demand > capacity) { cumulativeCapacityPrunes += 1; return false; }
+    }
+    return true;
+  };
   let groups: ScheduledTask[][] | null = null;
+  if (monotone) {
+    monotoneFastPathHits += 1;
+    for (const groupCount of groupCounts) {
+      const active: Slot[] = [];
+      for (const slot of slots) {
+        if (active.every((other) => Math.abs(slot.start - other.start) >= policy.minGapMinutes)) active.push(slot);
+        if (active.length === groupCount) break;
+      }
+      if (active.length !== groupCount || !hasCumulativeCapacity(active)) continue;
+      if (!consume()) { exhausted = true; break; }
+      branchesExplored += 1;
+      if (!consume()) { exhausted = true; break; }
+      branchesExplored += 1;
+      slotAnalyticallyEliminatedStarts += Math.max(0, slots.length - active.length);
+      const candidate = match(active);
+      if (jointlyValid(candidate)) { groups = candidate; monotoneFastPathWitnesses += 1; break; }
+    }
+    if (!groups) monotoneFastPathAbstentions += 1;
+  } else monotoneFastPathAbstentions += 1;
   for (const groupCount of groupCounts) {
+    if (groups || exhausted) break;
     if (!consume()) { exhausted = true; break; }
     branchesExplored += 1;
     const choose = (from: number, active: readonly Slot[]): boolean => {
       if (active.length === groupCount) {
         if (!consume()) { exhausted = true; return true; }
-        branchesExplored += 1; slotStartSetsEvaluated += 1; groups = match(active); backtracks += groups ? 0 : 1;
+        branchesExplored += 1; slotStartSetsEvaluated += 1;
+        if (!hasCumulativeCapacity(active)) { backtracks += 1; return false; }
+        const candidate = match(active); groups = jointlyValid(candidate) ? candidate : null; backtracks += groups ? 0 : 1;
         return groups !== null;
       }
-      if (active.length + slots.length - from < groupCount) return false;
+      if (active.length + slots.length - from < groupCount) { cumulativeCapacityPrunes += 1; return false; }
       for (let index = from; index < slots.length; index += 1) {
         const slot = slots[index]!;
         if (active.some((other) => Math.abs(slot.start - other.start) < policy.minGapMinutes)) continue;
+        if (!consume()) { exhausted = true; return true; }
+        branchesExplored += 1;
         if (choose(index + 1, [...active, slot]) || exhausted) return true;
       }
       return false;
@@ -272,8 +330,10 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   for (const taskIndex of tasks.keys()) { const signature = slots.map((slot) => slot.eligible[taskIndex] ? "1" : "0").join(""); signatureCounts.set(signature, (signatureCounts.get(signature) ?? 0) + 1); }
   const equivalentMembershipsCollapsed = [...signatureCounts.values()].reduce((sum, count) => sum + Math.max(0, count - 1), 0);
   return { feasible: groups !== null, groups: groups ?? [], branchesExplored, backtracks, exhausted,
-    slotLogicalStarts: logicalStarts, slotAnalyticallyEliminatedStarts: 0, slotStartSetsEvaluated,
-    matchingChecks, matchingEdgeChecks, matchingAugmentTraversals, equivalentMembershipsCollapsed };
+    slotLogicalStarts: logicalStarts, slotAnalyticallyEliminatedStarts, slotStartSetsEvaluated,
+    matchingChecks, matchingEdgeChecks, matchingAugmentTraversals, equivalentMembershipsCollapsed,
+    monotoneFastPathChecks, monotoneFastPathHits, monotoneFastPathWitnesses, monotoneFastPathAbstentions,
+    cumulativeCapacityChecks, cumulativeCapacityPrunes };
 }
 
 function validateDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection, tasks: readonly Task[],

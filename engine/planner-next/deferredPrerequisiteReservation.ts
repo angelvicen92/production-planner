@@ -21,11 +21,15 @@ export interface DeferredPrerequisiteReservationResult {
   arrivalRepaired: boolean;
   arrivalPruned: boolean;
   transportEvidence: { slotLogicalStarts:number;slotAnalyticallyEliminatedStarts:number;slotStartSetsEvaluated:number;
-    matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number };
+    matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number;
+    monotoneFastPathChecks:number;monotoneFastPathHits:number;monotoneFastPathWitnesses:number;monotoneFastPathAbstentions:number;
+    cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number };
 }
 
 const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
-  matchingChecks:0,matchingEdgeChecks:0,matchingAugmentTraversals:0,equivalentMembershipsCollapsed:0 });
+  matchingChecks:0,matchingEdgeChecks:0,matchingAugmentTraversals:0,equivalentMembershipsCollapsed:0,
+  monotoneFastPathChecks:0,monotoneFastPathHits:0,monotoneFastPathWitnesses:0,monotoneFastPathAbstentions:0,
+  cumulativeCapacityChecks:0,cumulativeCapacityPrunes:0 });
 
 const byId = <T extends { id: string }>(left: T, right: T) => left.id.localeCompare(right.id);
 
@@ -137,6 +141,7 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
         return { taskIds, witness: [...witness].sort(byId), arrivalTaskIds, arrivalGroups: previous.arrivalGroups };
       const arrival = findTransportDirectionWitness(problem, "arrival", arrivals, [...placed, ...witness], consume);
       transportEvidence.slotLogicalStarts+=arrival.slotLogicalStarts;transportEvidence.slotAnalyticallyEliminatedStarts+=arrival.slotAnalyticallyEliminatedStarts;transportEvidence.slotStartSetsEvaluated+=arrival.slotStartSetsEvaluated;transportEvidence.matchingChecks+=arrival.matchingChecks;transportEvidence.matchingEdgeChecks+=arrival.matchingEdgeChecks;transportEvidence.matchingAugmentTraversals+=arrival.matchingAugmentTraversals;transportEvidence.equivalentMembershipsCollapsed+=arrival.equivalentMembershipsCollapsed;
+      transportEvidence.monotoneFastPathChecks+=arrival.monotoneFastPathChecks;transportEvidence.monotoneFastPathHits+=arrival.monotoneFastPathHits;transportEvidence.monotoneFastPathWitnesses+=arrival.monotoneFastPathWitnesses;transportEvidence.monotoneFastPathAbstentions+=arrival.monotoneFastPathAbstentions;transportEvidence.cumulativeCapacityChecks+=arrival.cumulativeCapacityChecks;transportEvidence.cumulativeCapacityPrunes+=arrival.cumulativeCapacityPrunes;
       branchesExplored += arrival.branchesExplored; arrivalBranchesExplored += arrival.branchesExplored;
       arrivalBacktracks += arrival.backtracks;
       if (arrival.exhausted) { exhausted = true; return null; }

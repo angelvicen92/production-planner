@@ -72,6 +72,20 @@ test("capacity matching collapses 19 equivalent memberships instead of enumerati
   assert.ok(result.groups.every((group) => group.length <= 3));
   assert.ok(result.equivalentMembershipsCollapsed >= 18);
   assert.ok(result.slotStartSetsEvaluated < 10, "membership identities must not create factorial branches");
+  assert.equal(result.monotoneFastPathHits, 1);
+  assert.equal(result.monotoneFastPathWitnesses, 1);
+  assert.ok(result.slotAnalyticallyEliminatedStarts > 0);
+});
+
+test("a transport domain with a hole makes the monotone authority abstain and uses accounted fallback", () => {
+  const problem = exactProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("arrival-"));
+  arrivals[0]!.availability = [{ start: 0, end: 10 }, { start: 40, end: 50 }];
+  problem.transportPolicy!.arrival = { ...policy(3, 3, 20), taskIds: arrivals.map(({ id }) => id) };
+  let consumed = 0;
+  const result = findTransportDirectionWitness(problem, "arrival", arrivals, [], () => { consumed += 1; return true; });
+  assert.equal(result.monotoneFastPathHits, 0);
+  assert.equal(result.monotoneFastPathAbstentions, 1);
+  assert.equal(result.branchesExplored, consumed);
 });
 
 test("transport starts use the canonical grid anchored at day.start", () => {
