@@ -11,6 +11,7 @@ import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
+import { operationalMealFreeIntervals } from "./operationalMeals";
 import { preflight, validatePlan } from "./validate";
 
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
@@ -66,6 +67,13 @@ export interface ExactMainAndFeederCoreEvidence {
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
+  feederMealShapesGenerated: number;
+  feederMealShapesAnalyticallyEliminated: number;
+  feederMealShapesEvaluated: number;
+  feederMealShapesSuccessful: number;
+  feederBlockStartLogicalCandidates: number;
+  feederBlockStartsAnalyticallyEliminated: number;
+  feederBlockStartsActuallyEvaluated: number;
   feederOrderFallbacks: number;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
@@ -185,6 +193,45 @@ interface MainChoice {
   feeder: Task;
   participantSlack: number;
   firstObligation: number;
+}
+
+/** Exact temporal geometry of one logical feeder run.  A resource-only meal may
+ * occupy a boundary between feeder positions without creating another run. */
+export interface ExactFeederRunShape {
+  readonly blockStart: number;
+  readonly feederStarts: readonly number[];
+  readonly blockEnd: number;
+  readonly mealGap: Readonly<{ policyId: string; start: number; end: number; boundary: number }> | null;
+}
+
+/** Pure shape authority.  It deliberately returns every distinguishable aligned
+ * boundary, plus the no-gap shape: a meal may have a witness outside this run. */
+export function exactFeederRunShapes(problem: PlannerNextProblem, coachId: string | undefined,
+  blockStart: number, feederDuration: number, feederCount: number): ExactFeederRunShape[] {
+  if (feederCount < 0 || !Number.isInteger(feederCount) || feederDuration <= 0) return [];
+  const shape = (boundary: number | null, policy?: NonNullable<PlannerNextProblem["operationalMealPolicies"]>[number]) => {
+    const gap = policy?.duration ?? 0;
+    const feederStarts = Array.from({ length: feederCount }, (_, ordinal) =>
+      blockStart + ordinal * feederDuration + (boundary !== null && ordinal >= boundary ? gap : 0));
+    const mealStart = boundary === null ? null : blockStart + boundary * feederDuration;
+    return { blockStart, feederStarts,
+      blockEnd: blockStart + feederCount * feederDuration + gap,
+      mealGap: mealStart === null || !policy ? null
+        : { policyId: policy.id, start: mealStart, end: mealStart + policy.duration, boundary } };
+  };
+  const result: ExactFeederRunShape[] = [];
+  if (coachId !== undefined) for (const policy of [...(problem.operationalMealPolicies ?? [])]
+    .filter(item => item.spaceIds.length === 0 && item.resourceIds.includes(coachId))
+    .sort((a,b)=>a.id.localeCompare(b.id))) {
+    const free = operationalMealFreeIntervals(problem, policy, []);
+    for (let boundary = 0; boundary <= feederCount; boundary++) {
+      const candidate = shape(boundary, policy), meal = candidate.mealGap!;
+      if ((meal.start - problem.day.start) % 5 === 0
+        && free.some(interval => meal.start >= interval.start && meal.end <= interval.end)) result.push(candidate);
+    }
+  }
+  result.push(shape(null));
+  return result;
 }
 
 interface ResidualMatchingEdge {
@@ -588,6 +635,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
+    feederMealShapesGenerated:0,feederMealShapesAnalyticallyEliminated:0,feederMealShapesEvaluated:0,
+    feederMealShapesSuccessful:0,feederBlockStartLogicalCandidates:0,feederBlockStartsAnalyticallyEliminated:0,
+    feederBlockStartsActuallyEvaluated:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -927,7 +977,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const feederPlacementAuthority=(task:Task)=>{const existing=feederPlacementAuthorities.get(task.id);if(existing)return existing;
           const prepared=prepareTaskPlacementAuthority(problem,task,fixedFeederSlotPlaced,blockMeals);
           feederPlacementAuthorities.set(task.id,prepared);return prepared;};
-        const feederSlotCertificate = (blockStart:number):FeederSlotCertificate => {
+        const feederSlotCertificate = (shape:ExactFeederRunShape):FeederSlotCertificate => {
+          const blockStart=shape.blockStart;
           const first=rankedCohort[0];
           if(!first)return {outcome:"NOT_APPLICABLE"};
           const duration=first.choice.feeder.duration;
@@ -947,8 +998,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if(rankedCohort.some(({choice})=>(choice.feeder.requiredResourceIds??[]).some(resourceId=>
             effectiveResourceTransitionMinutes(problem,resourceId)!==0)))return {outcome:"NOT_APPLICABLE"};
           evidence.feederSlotAnalyticChecks++;
-          const analytic=exactFeederSlotAnalyticCertificate(blockStart,duration,rankedCohort.length,
-            rankedCohort.map(({deadline,domain})=>({deadline,domain})));
+          const analytic=shape.mealGap===null
+            ?exactFeederSlotAnalyticCertificate(blockStart,duration,rankedCohort.length,
+              rankedCohort.map(({deadline,domain})=>({deadline,domain})))
+            :"NOT_APPLICABLE";
           if(analytic==="NO_PERFECT_MATCH"){
             evidence.feederSlotAnalyticPrunes++;
             return {outcome:"NO_PERFECT_MATCH"};
@@ -967,7 +1020,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                   return "BUDGET_EXHAUSTED";
                 evidence.feederSlotMatchingBranchesExplored++;
                 evidence.feederSlotMatchingEdgeChecks++;
-                const start=blockStart+ordinal*duration;
+                const start=shape.feederStarts[ordinal]!;
                 if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
                 if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
               }
@@ -1012,10 +1065,18 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             const authorityIntervals=intersectExactStartIntervals(
               feederPlacementAuthority(candidate.choice.feeder).baseDomain.intervals.map(interval=>({...interval})),
               candidate.domain.intervals.map(interval=>({...interval})));
+            const boundary=shape.mealGap?.boundary;
+            const segments=boundary===undefined
+              ?[{firstOrdinal:0,lastOrdinal:rankedCohort.length-1,offset:0}]
+              :[{firstOrdinal:0,lastOrdinal:boundary-1,offset:0},
+                {firstOrdinal:boundary,lastOrdinal:rankedCohort.length-1,offset:shape.mealGap!.end-shape.mealGap!.start}]
+                .filter(segment=>segment.firstOrdinal<=segment.lastOrdinal);
             const ranges=(candidate.domain.gridAnchor-blockStart)%5===0?authorityIntervals
-              .flatMap(interval=>{const first=Math.max(0,Math.ceil((interval.start-blockStart)/duration));
-                const last=Math.min(rankedCohort.length-1,Math.floor((Math.min(interval.end,limit)-blockStart)/duration));
-                return first<=last?[{first,last}]:[]}):[];
+              .flatMap(interval=>segments.flatMap(segment=>{
+                const origin=blockStart+segment.offset;
+                const first=Math.max(segment.firstOrdinal,Math.ceil((interval.start-origin)/duration));
+                const last=Math.min(segment.lastOrdinal,Math.floor((Math.min(interval.end,limit)-origin)/duration));
+                return first<=last?[{first,last}]:[];})):[];
             const merged:Array<{first:number;last:number}>=[];
             for(const range of ranges){const previous=merged.at(-1);if(previous&&range.first<=previous.last+1)previous.last=Math.max(previous.last,range.last);else merged.push({...range});}
             return {id:candidate.choice.feeder.id,ranges:merged};
@@ -1096,11 +1157,25 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               return child;
         };
 
+        evidence.feederBlockStartLogicalCandidates+=blockStartDomain.fullGridStartCount;
+        evidence.feederBlockStartsAnalyticallyEliminated+=blockStartDomain.fullGridStartCount-blockStartDomain.eligibleStartCount;
         blockStarts: for (const blockStart of blockStartDomain.starts()) {
+          const shapes=exactFeederRunShapes(problem,commonCoachId,blockStart,
+            rankedCohort[0]?.choice.feeder.duration??0,rankedCohort.length);
+          evidence.feederMealShapesGenerated+=shapes.length;
+          shapeCandidates: for(const shape of shapes){
+          const terminalMeal=shape.mealGap?.boundary===rankedCohort.length;
+          const terminalTransition=commonCoachId===undefined||rankedCohort.length===0?0
+            :Math.min(...rankedCohort.map(({choice})=>effectiveCoachTransitionMinutes(problem,commonCoachId,
+              choice.feeder.spaceId,choice.task.spaceId)));
+          if(terminalMeal&&shape.blockEnd+terminalTransition>slots[runEnd-rankedCohort.length]!) {
+            evidence.feederMealShapesAnalyticallyEliminated++;continue;
+          }
           if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",runEnd)) return "BUDGET_EXHAUSTED";
           evidence.feederCandidatesEvaluated++;evidence.constructiveFeederStartChecks++;
+          evidence.feederMealShapesEvaluated++;evidence.feederBlockStartsActuallyEvaluated++;
           if(feederRow)feederRow.startsEvaluated++;
-          const feederSlotMatching=feederSlotCertificate(blockStart);
+          const feederSlotMatching=feederSlotCertificate(shape);
           if(feederSlotMatching.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
           if(feederSlotMatching.outcome==="NO_PERFECT_MATCH"){
             evidence.feederSlotMatchingPrunes++;evidence.zeroAlternativePrunes++;continue;
@@ -1148,7 +1223,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               feederOrderAuthorityObserved=false;
               const scheduled=[...witness].sort((left,right)=>left[1]-right[1]).map(([feederId,ordinal])=>{
                 const feeder=byFeederId.get(feederId)!.choice.feeder;
-                const start=blockStart+ordinal*feeder.duration;
+                const start=shape.feederStarts[ordinal]!;
                 return {...feeder,start,end:start+feeder.duration};
               });
               let jointlyValid=true;
@@ -1161,6 +1236,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               }
               if(jointlyValid){
                 evidence.feederMatchingWitnessMaterializations++;
+                if(shape.mealGap!==null)evidence.feederMealShapesSuccessful++;
                 if(context)context.witnessMaterializations++;
                 if(feederRow)feederRow.valid++;
                 const child=closeBlock(scheduled);
@@ -1173,7 +1249,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                     row.rejectedWitnesses++;row.distinctOrderFingerprints=context.distinctOrderFingerprints;
                   }}
                 evidence.backtracks++;
-                if(!feederOrderAuthorityObserved)continue blockStarts;
+                if(!feederOrderAuthorityObserved)continue shapeCandidates;
+                if(feederRepairTrigger==="PARTIAL_CORE_REJECT"&&partialCoreCertificate?.authorityId
+                  &&(problem.operationalMealPolicies??[]).some(policy=>policy.id===partialCoreCertificate!.authorityId
+                    &&commonCoachId!==undefined&&policy.spaceIds.length===0&&policy.resourceIds.includes(commonCoachId)))
+                  continue shapeCandidates;
               }
               for(const [feederId,ordinal] of witness){
                 // Branch on the structural profile at this ordinal, not on a nominal
@@ -1270,6 +1350,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }
           if(feederRow){if(completeOrderAtStart)feederRow.valid++;else feederRow.invalid++;}
           if(orderBudgetExhausted)return "BUDGET_EXHAUSTED";
+          }
         }
         if(!validBlockFound)evidence.zeroAlternativePrunes++;
         return "DEAD_END";

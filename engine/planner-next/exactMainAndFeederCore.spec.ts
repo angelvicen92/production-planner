@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
-  exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
+  exactFeederRunShapes, exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
   subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
@@ -20,6 +20,32 @@ function syntheticProblem(tasks: Task[], participantIds: string[], spaceIds: str
     participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
     budget: { bestK: 1, maxBacktracks: 0, maxPatterns: 20, maxBranchExpansions: 20_000 } };
 }
+
+test("exact feeder shapes preserve the run and represent every meal boundary", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[{id:"coach-meal",window:{start:10,end:60},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const shapes=exactFeederRunShapes(problem,"coach",10,10,3);
+  assert.deepEqual(shapes.map(shape=>shape.mealGap?.boundary??null),[0,1,2,3,null]);
+  assert.deepEqual(shapes[2]!.feederStarts,[10,20,40]);
+  assert.equal(shapes[2]!.blockEnd,50);
+  assert.deepEqual(shapes.at(-1)!.feederStarts,[10,20,30]);
+});
+
+test("exact feeder meal shapes obey policy window, grid, and remain input-order invariant", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[
+    {id:"late",window:{start:30,end:50},duration:10,resourceIds:["coach"],spaceIds:[]},
+    {id:"early",window:{start:10,end:30},duration:10,resourceIds:["coach"],spaceIds:[]}];
+  const first=exactFeederRunShapes(problem,"coach",10,10,3);
+  problem.operationalMealPolicies.reverse();
+  assert.deepEqual(exactFeederRunShapes(problem,"coach",10,10,3),first);
+  assert.deepEqual(first.filter(shape=>shape.mealGap).map(shape=>[shape.mealGap!.policyId,shape.mealGap!.boundary]),
+    [["early",0],["early",1],["late",2],["late",3]]);
+  problem.operationalMealPolicies=[{id:"off-grid",window:{start:11,end:21},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  assert.deepEqual(exactFeederRunShapes(problem,"coach",11,10,1).map(shape=>shape.mealGap),[null]);
+});
 
 function mainBacktrackingProblem(): PlannerNextProblem {
   return syntheticProblem([

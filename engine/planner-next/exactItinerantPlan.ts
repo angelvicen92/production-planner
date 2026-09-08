@@ -233,6 +233,13 @@ export interface ExactItinerantPlanEvidence {
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
+  feederMealShapesGenerated: number;
+  feederMealShapesAnalyticallyEliminated: number;
+  feederMealShapesEvaluated: number;
+  feederMealShapesSuccessful: number;
+  feederBlockStartLogicalCandidates: number;
+  feederBlockStartsAnalyticallyEliminated: number;
+  feederBlockStartsActuallyEvaluated: number;
   feederOrderFallbacks: number;
   forcedMainSingletonChecks: number;
   forcedMainSingletonChoices: number;
@@ -1046,6 +1053,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
+    feederMealShapesGenerated:0,feederMealShapesAnalyticallyEliminated:0,feederMealShapesEvaluated:0,
+    feederMealShapesSuccessful:0,feederBlockStartLogicalCandidates:0,feederBlockStartsAnalyticallyEliminated:0,
+    feederBlockStartsActuallyEvaluated:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
     forcedMainSiblingAlternativesEliminated: 0, forcedMainSingletonDeadEnds: 0,
     mainCandidatesExploredBeforeCohort: {},
@@ -1160,7 +1170,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       if(!operationalProbe.feasible){evidence.operationalMealFuturePrunes+=1;evidence.operationalMealReservationPrunes+=1;
         for(const id of operationalProbe.blockingPolicyIds)evidence.operationalMealReservationPrunesByPolicy[id]=(evidence.operationalMealReservationPrunesByPolicy[id]??0)+1;
         const proof=operationalProbe.pruneProofs[0]!;evidence.operationalMealFutureFirstPrune??={...proof,causingTaskId:candidate.addedTasks[0]?.id??null,macroUnit:"CORE",depth:candidate.depth};
-        return "REJECT";
+        return {outcome:"REJECT",diagnosticCertificate:{authorityId:operationalProbe.blockingPolicyIds[0]??null,
+          demandMinutes:proof.requiredDuration,freeCapacityMinutes:proof.longestRemainingFreeIntervalAfter,
+          overloadTaskIds:candidate.addedTasks.map(({id})=>id).sort()}};
       }
     }
     if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return "REJECT";}}
@@ -1453,6 +1465,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederMatchingWitnessMaterializations=core.evidence.feederMatchingWitnessMaterializations;
   evidence.feederMatchingWitnessRepairs=core.evidence.feederMatchingWitnessRepairs;
   evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
+  evidence.feederMealShapesGenerated=core.evidence.feederMealShapesGenerated;
+  evidence.feederMealShapesAnalyticallyEliminated=core.evidence.feederMealShapesAnalyticallyEliminated;
+  evidence.feederMealShapesEvaluated=core.evidence.feederMealShapesEvaluated;
+  evidence.feederMealShapesSuccessful=core.evidence.feederMealShapesSuccessful;
+  evidence.feederBlockStartLogicalCandidates=core.evidence.feederBlockStartLogicalCandidates;
+  evidence.feederBlockStartsAnalyticallyEliminated=core.evidence.feederBlockStartsAnalyticallyEliminated;
+  evidence.feederBlockStartsActuallyEvaluated=core.evidence.feederBlockStartsActuallyEvaluated;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
   evidence.forcedMainSingletonChoices = core.evidence.forcedMainSingletonChoices;
