@@ -172,6 +172,19 @@ test("terminal exact authority reuses a valid arrival witness and reports ledger
   assert.equal(exhausted.firstFailure?.reason, "BUDGET_EXHAUSTED");
 });
 
+test("terminal authority reports when participant meals alone invalidate a reserved arrival witness", () => {
+  const problem = arrivalWorkStyleDepartureProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("in-"));
+  problem.transportPolicy!.departure.taskIds = [];
+  const reserved = [arrivals.map((task) => scheduled(task, 0))];
+  const participantId = arrivals[0]!.participantId!;
+  const result = materializeTerminalTransport(problem, [], [{ id: "meal", sourceTaskId: "meal-source", participantId,
+    start: 5, end: 15, duration: 10 }], reserved);
+  assert.equal(result.reservedArrivalValidation?.validBeforeParticipantMeals, true);
+  assert.equal(result.reservedArrivalValidation?.validAfterParticipantMeals, false);
+  assert.deepEqual(result.reservedArrivalValidation?.firstParticipantMealBoundaryConflict,
+    { arrivalTaskId: arrivals[0]!.id, participantId, arrivalEnd: 10, mealId: "meal", mealStart: 5, mealEnd: 15 });
+});
+
 function validationProblem(count = 7): PlannerNextProblem {
   const transportTasks = tasks(count);
   return {

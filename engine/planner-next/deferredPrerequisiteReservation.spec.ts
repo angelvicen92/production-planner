@@ -152,6 +152,15 @@ test("arrival remains reserved after its intervening non-transport predecessor m
   assert.deepEqual(afterMaterialization.reservation!.arrivalTaskIds, [arrival.id]);
 });
 
+test("reservation reports when its caller omits every previously reserved arrival", () => {
+  const input = arrivalFixture(1);
+  const first = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
+  const dropped = maintainDeferredPrerequisiteReservation(input.problem, [], input.core, [], first.reservation, () => true);
+  assert.equal(dropped.feasible, true);
+  assert.equal(dropped.arrivalWitnessDropped, true);
+  assert.deepEqual(dropped.reservation?.arrivalTaskIds, []);
+});
+
 test("zero-gap groups at one interval respect the effective synchronized maximum and use another start when available", () => {
   const run = (arrivalEnd: number) => {
     const input = arrivalFixture(4, { maximum: 2, target: 2, gap: 0, arrivalWindow: { start: 0, end: arrivalEnd } });

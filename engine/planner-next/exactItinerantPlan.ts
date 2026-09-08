@@ -100,6 +100,10 @@ export interface ExactItinerantPlanEvidence {
   operationalMealComplete:number;operationalMealInfeasible:number;terminalTransportAttempts:number;
   terminalTransportArrivalAttempts:number;terminalTransportArrivalSuccess:number;terminalTransportArrivalBranches:number;
   terminalTransportArrivalBacktracks:number;terminalTransportArrivalReservedWitnessReuses:number;terminalTransportArrivalRepairs:number;
+  terminalTransportReservedArrivalChecks:number;terminalTransportReservedArrivalValidBeforeParticipantMeals:number;
+  terminalTransportReservedArrivalInvalidatedByParticipantMeals:number;
+  terminalTransportReservedArrivalFirstMealConflict:{arrivalTaskId:string;participantId:string;arrivalEnd:number;
+    mealId:string;mealStart:number;mealEnd:number}|null;
   terminalTransportDepartureAttempts:number;terminalTransportDepartureSuccess:number;terminalTransportDepartureBranches:number;
   terminalTransportDepartureBacktracks:number;terminalTransportFirstFailure:{direction:"arrival"|"departure";remainingTaskIds:string[];
     domainSummary:string;reason:"NO_WITNESS"|"BUDGET_EXHAUSTED"}|null;
@@ -323,6 +327,7 @@ export interface ExactItinerantPlanEvidence {
   deferredPrerequisiteReservationFirstPrune:{causingTaskId:string;depth:number}|null;
   deferredArrivalWitnessChecks:number; deferredArrivalWitnessBranchesExplored:number; deferredArrivalWitnessBacktracks:number;
   deferredArrivalWitnessRepairs:number; deferredArrivalWitnessPrunes:number;
+  deferredArrivalWitnessDrops:number;deferredArrivalWitnessFirstDrop:{causingTaskId:string;depth:number}|null;
   transportSlotLogicalStarts:number;transportSlotAnalyticallyEliminatedStarts:number;transportSlotStartSetsEvaluated:number;
   transportMatchingChecks:number;transportMatchingEdgeChecks:number;transportMatchingAugmentTraversals:number;
   transportMatchingRepairs:number;transportEquivalentMembershipsCollapsed:number;
@@ -534,6 +539,11 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.terminalTransportArrivalBacktracks+=transport.arrival.backtracks;if(transport.arrival.feasible)evidence.terminalTransportArrivalSuccess+=1;
       if(transport.arrivalReservedWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;
       if(transport.arrivalRepaired)evidence.terminalTransportArrivalRepairs+=1;
+      if(transport.reservedArrivalValidation){evidence.terminalTransportReservedArrivalChecks+=1;
+        if(transport.reservedArrivalValidation.validBeforeParticipantMeals)evidence.terminalTransportReservedArrivalValidBeforeParticipantMeals+=1;
+        if(transport.reservedArrivalValidation.validBeforeParticipantMeals&&!transport.reservedArrivalValidation.validAfterParticipantMeals)
+          evidence.terminalTransportReservedArrivalInvalidatedByParticipantMeals+=1;
+        evidence.terminalTransportReservedArrivalFirstMealConflict??=transport.reservedArrivalValidation.firstParticipantMealBoundaryConflict;}
       if(transport.arrival.feasible){evidence.terminalTransportDepartureAttempts+=1;evidence.terminalTransportDepartureBranches+=transport.departure.branchesExplored;
         evidence.terminalTransportDepartureBacktracks+=transport.departure.backtracks;if(transport.departure.feasible)evidence.terminalTransportDepartureSuccess+=1;}
       evidence.terminalTransportFirstFailure??=transport.firstFailure;}
@@ -674,6 +684,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       const reserved=maintainDeferredPrerequisiteReservation(problem,ordinaryForwardObligations,provisionalPlaced,coreMeals,reservation,()=>ledger.consume("STANDALONE"));
       evidence.deferredPrerequisiteReservationBranchesExplored+=reserved.branchesExplored;
       evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
+      if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:choice.task.id,depth};}
       if(reserved.repaired)evidence.deferredPrerequisiteReservationRepairs+=1;
       if(reserved.exhausted)return "BUDGET_EXHAUSTED";
       if(!reserved.feasible){evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:choice.task.id,depth};evidence.standaloneBacktracks+=1;continue;}
@@ -907,6 +918,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     const reserved=maintainDeferredPrerequisiteReservation(problem,pendingForCheck,[...coreTasks,...placed,...tasks],coreMeals,reservation,()=>ledger.consume("STANDALONE"));
     evidence.deferredPrerequisiteReservationBranchesExplored+=reserved.branchesExplored;
     evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
+    if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:unit.id,depth};}
     if(reserved.repaired)evidence.deferredPrerequisiteReservationRepairs+=1;
     if(reserved.exhausted)return "BUDGET_EXHAUSTED";
     if(!reserved.feasible){evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
@@ -1027,6 +1039,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     terminalTransportAttempts:0,terminalTransportSuccess:0,terminalTransportArrivalAttempts:0,terminalTransportArrivalSuccess:0,
     terminalTransportArrivalBranches:0,terminalTransportArrivalBacktracks:0,terminalTransportArrivalReservedWitnessReuses:0,
     terminalTransportArrivalRepairs:0,terminalTransportDepartureAttempts:0,terminalTransportDepartureSuccess:0,
+    terminalTransportReservedArrivalChecks:0,terminalTransportReservedArrivalValidBeforeParticipantMeals:0,
+    terminalTransportReservedArrivalInvalidatedByParticipantMeals:0,terminalTransportReservedArrivalFirstMealConflict:null,
     terminalTransportDepartureBranches:0,terminalTransportDepartureBacktracks:0,terminalTransportFirstFailure:null,exactCoveragePassed:0,
     hardValidationAttempts:0,hardValidationPassed:0,
     coreLeavesRejectedByStandalone: 0, coreStandaloneFrontierChecks:0,coreStandaloneFrontierPrunes:0,
@@ -1115,7 +1129,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryIndividualForwardZeroDomainPrunes:0,ordinaryIndividualForwardUnrelatedSkips:0,
     ordinaryIndividualForwardWitnesses:0,ordinaryIndividualForwardCausingTaskCounts:{},
     ordinaryIndividualForwardBlockingTaskCounts:{},ordinaryIndividualForwardChecksByDepth:{},
-    ordinaryIndividualForwardFirstPrune:null,deferredPrerequisiteReservationChecks:0,deferredPrerequisiteReservationRepairs:0,deferredPrerequisiteReservationPrunes:0,deferredPrerequisiteReservationBranchesExplored:0,deferredPrerequisiteReservationFirstPrune:null,deferredArrivalWitnessChecks:0,deferredArrivalWitnessBranchesExplored:0,deferredArrivalWitnessBacktracks:0,deferredArrivalWitnessRepairs:0,deferredArrivalWitnessPrunes:0,transportSlotLogicalStarts:0,transportSlotAnalyticallyEliminatedStarts:0,transportSlotStartSetsEvaluated:0,transportMatchingChecks:0,transportMatchingEdgeChecks:0,transportMatchingAugmentTraversals:0,transportMatchingRepairs:0,transportEquivalentMembershipsCollapsed:0,transportMonotoneFastPathChecks:0,transportMonotoneFastPathHits:0,transportMonotoneFastPathWitnesses:0,transportMonotoneFastPathAbstentions:0,transportCumulativeCapacityChecks:0,transportCumulativeCapacityPrunes:0,
+    ordinaryIndividualForwardFirstPrune:null,deferredPrerequisiteReservationChecks:0,deferredPrerequisiteReservationRepairs:0,deferredPrerequisiteReservationPrunes:0,deferredPrerequisiteReservationBranchesExplored:0,deferredPrerequisiteReservationFirstPrune:null,deferredArrivalWitnessChecks:0,deferredArrivalWitnessBranchesExplored:0,deferredArrivalWitnessBacktracks:0,deferredArrivalWitnessRepairs:0,deferredArrivalWitnessPrunes:0,deferredArrivalWitnessDrops:0,deferredArrivalWitnessFirstDrop:null,transportSlotLogicalStarts:0,transportSlotAnalyticallyEliminatedStarts:0,transportSlotStartSetsEvaluated:0,transportMatchingChecks:0,transportMatchingEdgeChecks:0,transportMatchingAugmentTraversals:0,transportMatchingRepairs:0,transportEquivalentMembershipsCollapsed:0,transportMonotoneFastPathChecks:0,transportMonotoneFastPathHits:0,transportMonotoneFastPathWitnesses:0,transportMonotoneFastPathAbstentions:0,transportCumulativeCapacityChecks:0,transportCumulativeCapacityPrunes:0,
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };

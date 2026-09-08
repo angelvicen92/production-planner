@@ -85,6 +85,14 @@ export interface TerminalTransportMaterialization {
   departure: TransportDirectionWitnessResult;
   arrivalReservedWitnessReused: boolean;
   arrivalRepaired: boolean;
+  reservedArrivalValidation: null | {
+    validBeforeParticipantMeals: boolean;
+    validAfterParticipantMeals: boolean;
+    firstParticipantMealBoundaryConflict: null | {
+      arrivalTaskId: string; participantId: string; arrivalEnd: number;
+      mealId: string; mealStart: number; mealEnd: number;
+    };
+  };
   firstFailure: null | { direction: TransportDirection; remainingTaskIds: string[]; domainSummary: string; reason: "NO_WITNESS" | "BUDGET_EXHAUSTED" };
 }
 
@@ -98,13 +106,27 @@ export function materializeTerminalTransport(
 ): TerminalTransportMaterialization {
   const empty: TransportDirectionWitnessResult = emptyWitness();
   if (!problem.transportPolicy) return { status: "FEASIBLE", scheduled: [], arrival: empty, departure: empty,
-    arrivalReservedWitnessReused: false, arrivalRepaired: false, firstFailure: null };
+    arrivalReservedWitnessReused: false, arrivalRepaired: false, reservedArrivalValidation: null, firstFailure: null };
   const tasks = (direction: TransportDirection) => problem.transportPolicy![direction].taskIds
     .map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean);
   const arrivals = tasks("arrival"), departures = tasks("departure");
   const reserved = reservedArrivalGroups.map((group) => [...group]);
+  const reservedValidBeforeParticipantMeals = reserved.length > 0
+    && validateDirectionWitness(problem, "arrival", arrivals, reserved, substantive, []);
   const reservedValid = reserved.length > 0
     && validateDirectionWitness(problem, "arrival", arrivals, reserved, substantive, participantMeals);
+  const firstParticipantMealBoundaryConflict = reservedValidBeforeParticipantMeals && !reservedValid
+    ? reserved.flat().sort(byId).flatMap((arrival) => participantMeals
+      .filter((meal) => meal.participantId === arrival.participantId && meal.start < arrival.end)
+      .sort((left, right) => left.start - right.start || left.id.localeCompare(right.id))
+      .map((meal) => ({ arrivalTaskId: arrival.id, participantId: arrival.participantId!, arrivalEnd: arrival.end,
+        mealId: meal.id, mealStart: meal.start, mealEnd: meal.end })))[0] ?? null
+    : null;
+  const reservedArrivalValidation = reserved.length === 0 ? null : {
+    validBeforeParticipantMeals: reservedValidBeforeParticipantMeals,
+    validAfterParticipantMeals: reservedValid,
+    firstParticipantMealBoundaryConflict,
+  };
   const arrival = reservedValid ? { ...empty, groups: reserved } : findTransportDirectionWitness(problem, "arrival", arrivals,
     substantive, consume, participantMeals);
   if (!arrival.feasible) return failure("arrival", arrivals, arrival, !reservedValid && reserved.length > 0);
@@ -113,7 +135,8 @@ export function materializeTerminalTransport(
     [...substantive, ...arrivalScheduled], consume, participantMeals);
   if (!departure.feasible) return failure("departure", departures, departure, !reservedValid && reserved.length > 0, arrival);
   return { status: "FEASIBLE", scheduled: [...arrivalScheduled, ...departure.groups.flat()], arrival, departure,
-    arrivalReservedWitnessReused: reservedValid, arrivalRepaired: !reservedValid && reserved.length > 0, firstFailure: null };
+    arrivalReservedWitnessReused: reservedValid, arrivalRepaired: !reservedValid && reserved.length > 0,
+    reservedArrivalValidation, firstFailure: null };
 
   function failure(direction: TransportDirection, remaining: readonly Task[], result: TransportDirectionWitnessResult,
     repaired: boolean, successfulArrival = result): TerminalTransportMaterialization {
@@ -121,6 +144,7 @@ export function materializeTerminalTransport(
     const reason = result.exhausted ? "BUDGET_EXHAUSTED" : "NO_WITNESS";
     return { status: reason, scheduled: [], arrival: direction === "arrival" ? result : successfulArrival,
       departure: direction === "departure" ? result : empty, arrivalReservedWitnessReused: false, arrivalRepaired: repaired,
+      reservedArrivalValidation,
       firstFailure: { direction, remainingTaskIds: remaining.map(({ id }) => id).sort(), reason,
         domainSummary: `count=${remaining.length};min=${policy.minimumGroupSize};target=${policy.targetGroupSize ?? "default"};max=${policy.maximumGroupSize};gap=${policy.minGapMinutes}` } };
   }

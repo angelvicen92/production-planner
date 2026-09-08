@@ -20,6 +20,7 @@ export interface DeferredPrerequisiteReservationResult {
   arrivalBacktracks: number;
   arrivalRepaired: boolean;
   arrivalPruned: boolean;
+  arrivalWitnessDropped: boolean;
   transportEvidence: { slotLogicalStarts:number;slotAnalyticallyEliminatedStarts:number;slotStartSetsEvaluated:number;
     matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number;
     monotoneFastPathChecks:number;monotoneFastPathHits:number;monotoneFastPathWitnesses:number;monotoneFastPathAbstentions:number;
@@ -128,6 +129,7 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     && arrivalWitnessStillValid(problem, arrivals, previous.arrivalGroups, [...placed, ...previous.witness]))
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
       arrivalChecks: 1, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
+      arrivalWitnessDropped: false,
       transportEvidence:noTransportEvidence() };
   let branchesExplored = 0, exhausted = false, arrivalChecks = 0, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   let arrivalFailed = false;
@@ -169,5 +171,6 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   const reservation = search(tasks, []);
   return { feasible: reservation !== null, reservation, repaired: previous !== null, branchesExplored, exhausted,
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
-    arrivalPruned: !exhausted && reservation === null && arrivalFailed, transportEvidence };
+    arrivalPruned: !exhausted && reservation === null && arrivalFailed,
+    arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence };
 }
