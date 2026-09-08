@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
-  exactFeederRunShapes, exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
+  exactFeederRunShapes, exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion,
+  exactFeederTerminalTransitionEarliestStart, mergedClippedIntervals, runExactMainAndFeederSearch,
   subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
@@ -64,6 +65,20 @@ test("exact feeder meal shapes observe branch-local CORE occupations", () => {
     dependencies:[],start:10,end:20};
   assert.equal(exactFeederRunShapes(problem,"coach",10,10,1,[occupation])
     .some(shape=>shape.mealGap!==null),false);
+});
+
+test("terminal meal transition geometry starts after the meal without double-counting internal meals",()=>{
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[{id:"meal",window:{start:10,end:60},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const shapes=exactFeederRunShapes(problem,"coach",10,10,2);
+  const terminal=shapes.find(shape=>shape.mealGap?.boundary===2)!;
+  assert.equal(exactFeederTerminalTransitionEarliestStart(terminal,terminal.feederStarts[1]!+10,2),terminal.blockEnd);
+  assert.equal(terminal.blockEnd+5,45,"meal plus the real transition exactly fills the available gap");
+  assert.ok(terminal.blockEnd+5>44,"one minute less is invalid");
+  const internal=shapes.find(shape=>shape.mealGap?.boundary===1)!;
+  const internalTerminalEnd=internal.feederStarts[1]!+10;
+  assert.equal(exactFeederTerminalTransitionEarliestStart(internal,internalTerminalEnd,2),internalTerminalEnd);
 });
 
 function mainBacktrackingProblem(): PlannerNextProblem {
@@ -305,6 +320,40 @@ test("feeder-slot matching is invariant to IDs and input order",()=>{
     prunes:baseline.evidence.feederSlotMatchingPrunes,edges:baseline.evidence.feederSlotMatchingEdgeChecks,
     augments:baseline.evidence.feederSlotMatchingAugmentTraversals,order:baseline.evidence.feederOrderBranches});
   assertFeederSlotAccounting(permuted);
+});
+
+function terminalFeederMealTransitionProblem(slowMinutes:number, fastMinutes=5, reverseInput=false):PlannerNextProblem{
+  const tasks:Task[]=[
+    {id:"feeder-slow",kind:"vocal",participantId:"slow",coachId:"coach",duration:10,spaceId:"feed-slow",dependencies:[]},
+    {id:"main-slow",kind:"main",participantId:"slow",coachId:"coach",duration:10,spaceId:"main",
+      dependencies:["feeder-slow"],blockKey:"coach",availability:[{start:95,end:105}]},
+    {id:"feeder-fast",kind:"vocal",participantId:"fast",coachId:"coach",duration:10,spaceId:"feed-fast",dependencies:[]},
+    {id:"main-fast",kind:"main",participantId:"fast",coachId:"coach",duration:10,spaceId:"main",
+      dependencies:["feeder-fast"],blockKey:"coach",availability:[{start:85,end:95}]},
+  ];
+  const problem=syntheticProblem(tasks,["slow","fast"],["feed-slow","feed-fast"]);
+  problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=105;
+  problem.operationalMealPolicies=[{id:"coach-meal",window:{start:70,end:80},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  problem.coachRouteTransitions=[
+    {coachId:"coach",fromSpaceId:"feed-slow",toSpaceId:"main",minutes:slowMinutes},
+    {coachId:"coach",fromSpaceId:"feed-fast",toSpaceId:"main",minutes:fastMinutes},
+  ];
+  if(reverseInput){problem.tasks.reverse();problem.participants.reverse();problem.spaces.reverse();}
+  return problem;
+}
+
+test("a terminal feeder meal uses the selected transition and repairs an invalid first terminal",()=>{
+  const problem=terminalFeederMealTransitionProblem(15),snapshot=structuredClone(problem);
+  const result=constructExactMainAndFeederCore(problem);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start).reduce((runs,task,index,ordered)=>
+    runs+(index===0||ordered[index-1]!.end!==task.start?1:0),0),1);
+  assert.equal(result.scheduledTasks.filter(task=>task.kind==="vocal").sort((a,b)=>a.start-b.start).at(-1)!.id,"feeder-fast");
+  assert.deepEqual(problem,snapshot);
+  const reversed=constructExactMainAndFeederCore(terminalFeederMealTransitionProblem(15,5,true));
+  assert.equal(reversed.status,result.status);
+  assert.deepEqual(reversed.scheduledTasks,result.scheduledTasks);
 });
 
 test("feeder-slot matching exhausts the shared budget without hidden branches",()=>{
