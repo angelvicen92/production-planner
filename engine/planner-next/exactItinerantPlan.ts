@@ -532,7 +532,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     if(mealWitness?.complete)evidence.terminalTransportAttempts+=1;
     const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled,
-      reservation?.arrivalGroups ?? [],()=>ledger.consume("STANDALONE")) : null;
+      [],()=>ledger.consume("STANDALONE")) : null;
     if(transport){evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.arrival.branchesExplored;
       for(const result of [transport.arrival,transport.departure]){evidence.transportSlotLogicalStarts+=result.slotLogicalStarts;evidence.transportSlotAnalyticallyEliminatedStarts+=result.slotAnalyticallyEliminatedStarts;evidence.transportSlotStartSetsEvaluated+=result.slotStartSetsEvaluated;evidence.transportMatchingChecks+=result.matchingChecks;evidence.transportMatchingEdgeChecks+=result.matchingEdgeChecks;evidence.transportMatchingAugmentTraversals+=result.matchingAugmentTraversals;evidence.transportEquivalentMembershipsCollapsed+=result.equivalentMembershipsCollapsed;}
       for(const result of [transport.arrival,transport.departure]){evidence.transportMonotoneFastPathChecks+=result.monotoneFastPathChecks;evidence.transportMonotoneFastPathHits+=result.monotoneFastPathHits;evidence.transportMonotoneFastPathWitnesses+=result.monotoneFastPathWitnesses;evidence.transportMonotoneFastPathAbstentions+=result.monotoneFastPathAbstentions;evidence.transportCumulativeCapacityChecks+=result.cumulativeCapacityChecks;evidence.transportCumulativeCapacityPrunes+=result.cumulativeCapacityPrunes;}

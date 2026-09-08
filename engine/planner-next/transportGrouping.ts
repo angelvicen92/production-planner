@@ -37,6 +37,65 @@ export function canPartitionTransportCount(count: number, minimum: number, maxim
   return minimumGroups <= maximumGroups;
 }
 
+export interface TransportFutureFeasibilityCertificate {
+  feasible: boolean;
+  conclusive: boolean;
+  checks: number;
+  capacityPrunes: number;
+  firstFailure: null | { direction: TransportDirection; reason: "EMPTY_DOMAIN" | "GROUP_COUNT" | "CUMULATIVE_CAPACITY";
+    demand: number; maximumHardCapacity: number; taskIds: string[] };
+}
+
+/**
+ * Necessary-only, preterminal transport check.  It deliberately does not choose groups or
+ * retain starts: every capacity value is an optimistic upper bound, so an inconclusive check
+ * keeps the branch open and only a proved hard-capacity deficit is pruned.
+ */
+export function assessTransportFutureFeasibility(problem: PlannerNextProblem,
+  externalPlaced: readonly ScheduledTask[], participantMeals: readonly ScheduledParticipantMeal[] = []): TransportFutureFeasibilityCertificate {
+  let checks = 0;
+  const transportIds = transportTaskIds(problem);
+  const substantive = externalPlaced.filter(({ id }) => !transportIds.has(id));
+  const directions: readonly TransportDirection[] = ["arrival", "departure"];
+  for (const direction of directions) {
+    const policy = problem.transportPolicy?.[direction];
+    if (!policy) continue;
+    const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)).filter((task): task is Task => Boolean(task));
+    checks += 1;
+    if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize))
+      return { feasible: false, conclusive: true, checks, capacityPrunes: 1,
+        firstFailure: { direction, reason: "GROUP_COUNT", demand: tasks.length, maximumHardCapacity: 0, taskIds: tasks.map(({ id }) => id).sort() } };
+    const boundary = (task: Task): number => {
+      const obligations = [...substantive.filter((placed) => placed.participantId === task.participantId),
+        ...participantMeals.filter((meal) => meal.participantId === task.participantId)];
+      return direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start))
+        : Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+    };
+    const domains = tasks.map((task) => ({ task, boundary: boundary(task), starts: [...exactTaskStartDomain(problem, task,
+      substantive).starts()].filter((start) => direction === "arrival" ? start + task.duration <= boundary(task) : start >= boundary(task)) }));
+    const empty = domains.find(({ starts }) => starts.length === 0);
+    if (empty) return { feasible: false, conclusive: true, checks, capacityPrunes: 1,
+      firstFailure: { direction, reason: "EMPTY_DOMAIN", demand: 1, maximumHardCapacity: 0, taskIds: [empty.task.id] } };
+    const orderedBoundaries = [...new Set(domains.map(({ boundary: value }) => value))].sort((a, b) => direction === "arrival" ? a - b : b - a);
+    for (const limit of orderedBoundaries) {
+      checks += 1;
+      const forced = domains.filter(({ boundary: value }) => direction === "arrival" ? value <= limit : value >= limit);
+      const candidateStarts = [...new Set(forced.flatMap(({ starts }) => starts)
+        .filter((start) => direction === "arrival" ? start <= limit : start >= limit))]
+        .sort((a, b) => direction === "arrival" ? a - b : b - a);
+      let groups = 0, last: number | undefined;
+      for (const start of candidateStarts) if (last === undefined || Math.abs(start - last) >= policy.minGapMinutes) {
+        groups += 1; last = start;
+      }
+      const maximumHardCapacity = groups * policy.maximumGroupSize;
+      if (forced.length > maximumHardCapacity) return { feasible: false, conclusive: true, checks, capacityPrunes: 1,
+        firstFailure: { direction, reason: "CUMULATIVE_CAPACITY", demand: forced.length, maximumHardCapacity,
+          taskIds: forced.map(({ task }) => task.id).sort() } };
+    }
+  }
+  return { feasible: true, conclusive: false, checks, capacityPrunes: 0, firstFailure: null };
+}
+
 /** Canonical candidate groups containing the first remaining task; no invalid residual is emitted. */
 export function transportGroupCandidates(
   tasks: readonly Task[],
