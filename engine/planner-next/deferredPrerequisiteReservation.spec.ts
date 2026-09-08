@@ -152,13 +152,39 @@ test("arrival remains reserved after its intervening non-transport predecessor m
   assert.deepEqual(afterMaterialization.reservation!.arrivalTaskIds, [arrival.id]);
 });
 
-test("reservation reports when its caller omits every previously reserved arrival", () => {
+test("reservation preserves a hard-predecessor arrival omitted from the standalone pending frontier", () => {
   const input = arrivalFixture(1);
   const first = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  const dropped = maintainDeferredPrerequisiteReservation(input.problem, [], input.core, [], first.reservation, () => true);
-  assert.equal(dropped.feasible, true);
-  assert.equal(dropped.arrivalWitnessDropped, true);
-  assert.deepEqual(dropped.reservation?.arrivalTaskIds, []);
+  const preserved = maintainDeferredPrerequisiteReservation(input.problem, [], input.core, [], first.reservation, () => true);
+  assert.equal(preserved.feasible, true);
+  assert.equal(preserved.arrivalWitnessDropped, false);
+  assert.deepEqual(preserved.reservation?.arrivalTaskIds, [input.pending[0]!.id]);
+  assert.deepEqual(preserved.reservation?.arrivalGroups, first.reservation?.arrivalGroups);
+});
+
+test("an unrelated configured arrival omitted from pending is not reserved", () => {
+  const input = arrivalFixture(1);
+  const unrelated: Task = { ...input.pending[0]!, id: "unrelated-arrival", participantId: "unrelated-p" };
+  input.problem.tasks.push(unrelated);
+  input.problem.participants.push({ id: "unrelated-p", availability: interval });
+  input.problem.transportPolicy!.arrival.taskIds = [...input.problem.transportPolicy!.arrival.taskIds, unrelated.id];
+  const result = maintainDeferredPrerequisiteReservation(input.problem, [], input.core, [], null, () => true);
+  assert.deepEqual(result.reservation?.arrivalTaskIds, [input.pending[0]!.id]);
+});
+
+test("an already materialized configured arrival is not reserved again", () => {
+  const input = arrivalFixture(1); const arrival = input.pending[0]!;
+  const result = maintainDeferredPrerequisiteReservation(input.problem, [arrival],
+    [...input.core, { ...arrival, start: 0, end: arrival.duration }], [], null, () => true);
+  assert.deepEqual(result.reservation?.arrivalTaskIds, []);
+  assert.deepEqual(result.reservation?.arrivalGroups, []);
+});
+
+test("arrival propagation leaves problem, pending, and placed inputs immutable", () => {
+  const input = arrivalFixture(2);
+  const before = JSON.stringify(input);
+  maintainDeferredPrerequisiteReservation(input.problem, [], input.core, [], null, () => true);
+  assert.equal(JSON.stringify(input), before);
 });
 
 test("zero-gap groups at one interval respect the effective synchronized maximum and use another start when available", () => {

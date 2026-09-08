@@ -35,20 +35,26 @@ const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyElimina
 const byId = <T extends { id: string }>(left: T, right: T) => left.id.localeCompare(right.id);
 
 function pendingHardPredecessors(problem: PlannerNextProblem, pending: readonly Task[], placed: readonly ScheduledTask[]): Task[] {
-  const pendingById = new Map(pending.map((task) => [task.id, task]));
+  const placedIds = new Set(placed.map(({ id }) => id));
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const eligibleById = new Map(pending.map((task) => [task.id, task]));
+  for (const id of problem.transportPolicy?.arrival.taskIds ?? []) {
+    const task = taskById.get(id);
+    if (placedIds.has(id)) eligibleById.delete(id);
+    else if (task) eligibleById.set(id, task);
+  }
   const result = new Set<string>(), visited = new Set<string>();
   const visit = (id: string): void => {
     if (visited.has(id)) return;
     visited.add(id);
     const task = taskById.get(id);
     for (const dependency of task?.dependencies ?? []) {
-      if (pendingById.has(dependency)) result.add(dependency);
+      if (eligibleById.has(dependency)) result.add(dependency);
       visit(dependency);
     }
   };
   for (const task of placed) visit(task.id);
-  return [...result].map((id) => pendingById.get(id)!).sort(byId);
+  return [...result].map((id) => eligibleById.get(id)!).sort(byId);
 }
 
 function predecessorDeadlines(problem: PlannerNextProblem, reserved: readonly Task[], placed: readonly ScheduledTask[]): Map<string, number> {
