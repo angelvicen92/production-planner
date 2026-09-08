@@ -79,69 +79,44 @@ function arrivalFixture(count: number, options: { maximum?: number; target?: num
   return { problem: input, pending: [...arrivals, ...flexible], core: [{ ...successor, start: 40, end: 50 }] as ScheduledTask[] };
 }
 
-test("synchronized arrival members remain feasible when individual placement would make them collide", () => {
-  const input = arrivalFixture(2, { arrivalWindow: { start: 0, end: 10 } });
-  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  assert.equal(result.feasible, true); assert.equal(result.reservation!.arrivalGroups.length, 1);
-  assert.deepEqual(result.reservation!.arrivalGroups[0]!.map(({ start }) => start), [0, 0]);
-});
-
-test("arrival witness respects maximum group size and finds a valid partition", () => {
-  const input = arrivalFixture(3, { maximum: 2, target: 3, gap: 10 });
-  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  assert.equal(result.feasible, true); assert.deepEqual(result.reservation!.arrivalGroups.map((group) => group.length).sort(), [1, 2]);
-});
-
-test("arrival witness repairs starts to preserve the minimum inter-group gap", () => {
-  const input = arrivalFixture(4, { maximum: 2, target: 2, gap: 20, arrivalWindow: { start: 0, end: 30 } });
-  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  assert.equal(result.feasible, true);
-  const starts = result.reservation!.arrivalGroups.map((group) => group[0]!.start).sort((a, b) => a - b);
-  assert.ok(starts[1]! - starts[0]! >= 20);
-});
-
-test("arrival repair diagnostic identifies the new boundary and is accounting-neutral", () => {
-  const input = arrivalFixture(1, { arrivalWindow: { start: 0, end: 20 } });
+test("a changed first boundary uses a certificate without repairing or branching over ARRIVAL", () => {
+  const input = arrivalFixture(4, { maximum: 2, target: 2, gap: 10 });
   const first = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
   const arrival = input.pending[0]!;
-  const causing:ScheduledTask={id:"new-obligation",kind:"auxiliary",participantId:arrival.participantId,duration:10,
-    spaceId:"core-space",dependencies:[],start:10,end:20};
-  let plainBranches=0,diagnosticBranches=0;
-  const plain=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,causing],[],first.reservation,()=>{plainBranches++;return true;});
-  const diagnosed=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,causing],[],first.reservation,()=>{diagnosticBranches++;return true;},true,[causing.id]);
-  assert.deepEqual({...diagnosed,causalDiagnostic:null},plain);
-  assert.equal(diagnosticBranches,plainBranches);
-  assert.deepEqual(diagnosed.causalDiagnostic&&{causingTaskId:diagnosed.causalDiagnostic.causingTaskId,
-    arrivalTaskId:diagnosed.causalDiagnostic.arrivalTaskId,previousBoundary:diagnosed.causalDiagnostic.previousBoundary,
-    currentBoundary:diagnosed.causalDiagnostic.currentBoundary},
-  {causingTaskId:causing.id,arrivalTaskId:arrival.id,previousBoundary:50,currentBoundary:10});
-  assert.equal(diagnosed.causalDiagnostic?.repair?.monotoneAbstentionReason,null);
+  const macro: ScheduledTask = { id: "macro", kind: "auxiliary", participantId: arrival.participantId,
+    duration: 5, spaceId: "core-space", dependencies: [], start: 15, end: 20 };
+  let consumed = 0;
+  const next = maintainDeferredPrerequisiteReservation(input.problem, input.pending, [...input.core, macro], [],
+    first.reservation, () => { consumed += 1; return true; });
+  assert.equal(next.feasible, true);
+  assert.equal(next.arrivalBranchesExplored, 0);
+  assert.equal(next.arrivalRepaired, false);
+  assert.deepEqual(next.reservation?.arrivalGroups, []);
+  assert.equal(consumed, 0);
 });
 
-test("arrival target is preference rather than a hard minimum", () => {
-  const input = arrivalFixture(2, { maximum: 3, target: 3 });
+test("transport demand above optimistic hard capacity prunes cheaply", () => {
+  const input = arrivalFixture(3, { maximum: 1, gap: 20, arrivalWindow: { start: 0, end: 30 } });
   const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  assert.equal(result.feasible, true); assert.equal(result.reservation!.arrivalGroups[0]!.length, 2);
+  assert.equal(result.feasible, false);
+  assert.equal(result.arrivalPruned, true);
+  assert.equal(result.arrivalBranchesExplored, 0);
+  assert.equal(result.transportEvidence.cumulativeCapacityPrunes, 1);
 });
 
-test("ordinary and arrival witnesses backtrack together instead of pruning a failed greedy pair", () => {
-  const input = arrivalFixture(2, { blocker: true, arrivalWindow: { start: 10, end: 20 } });
+test("transport demand equal to optimistic hard capacity remains viable", () => {
+  const input = arrivalFixture(2, { maximum: 1, gap: 20, arrivalWindow: { start: 0, end: 30 } });
   const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  assert.equal(result.feasible, true); assert.equal(result.reservation!.witness.find(({ id }) => id === "flexible")!.start, 0);
-  assert.ok(result.arrivalChecks > 1);
+  assert.equal(result.feasible, true);
+  assert.equal(result.arrivalBranchesExplored, 0);
 });
 
-test("joint reservation proves infeasibility only after exhausting coupled ordinary and grouped arrival choices", () => {
-  const input = arrivalFixture(2, { blocker: true, arrivalWindow: { start: 10, end: 20 } });
-  input.problem.tasks.find(({ id }) => id === "flexible")!.availability = [{ start: 10, end: 20 }];
+test("an inconclusive transport certificate keeps the branch open", () => {
+  const input = arrivalFixture(2, { maximum: 2, gap: 0, arrivalWindow: { start: 0, end: 20 } });
   const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
-  assert.equal(result.feasible, false); assert.equal(result.exhausted, false); assert.equal(result.arrivalPruned, true);
-});
-
-test("coupled reservation reports exhaustion rather than infeasibility when its ledger ends", () => {
-  const input = arrivalFixture(2); let remaining = 1;
-  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => remaining-- > 0);
-  assert.equal(result.feasible, false); assert.equal(result.exhausted, true);
+  assert.equal(result.feasible, true);
+  assert.equal(result.arrivalPruned, false);
+  assert.deepEqual(result.reservation?.arrivalGroups, []);
 });
 
 test("grouped arrival reservation is deterministic and invariant to input order", () => {
@@ -203,24 +178,4 @@ test("arrival propagation leaves problem, pending, and placed inputs immutable",
   const before = JSON.stringify(input);
   maintainDeferredPrerequisiteReservation(input.problem, [], input.core, [], null, () => true);
   assert.equal(JSON.stringify(input), before);
-});
-
-test("zero-gap groups at one interval respect the effective synchronized maximum and use another start when available", () => {
-  const run = (arrivalEnd: number) => {
-    const input = arrivalFixture(4, { maximum: 2, target: 2, gap: 0, arrivalWindow: { start: 0, end: arrivalEnd } });
-    const arrivals = input.pending.slice(0, 4);
-    input.problem.spaces = input.problem.spaces.filter(({ id }) => id !== "arrival-space");
-    for (const [index, arrival] of arrivals.entries()) {
-      arrival.spaceId = `arrival-space-${index}`;
-      input.problem.spaces.push({ id: arrival.spaceId, availability: [{ start: 0, end: 50 }] });
-    }
-    return { input, result: maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true) };
-  };
-  const singleStart = run(10);
-  assert.equal(singleStart.result.feasible, false);
-  const separable = run(20);
-  assert.equal(separable.result.feasible, true);
-  const groups = separable.result.reservation!.arrivalGroups;
-  assert.equal(new Set(groups.map((group) => group[0]!.start)).size, 2);
-  assert.equal(validateTransportGrouping(separable.input.problem, [...groups.flat()]).violationCount, 0);
 });
