@@ -30,14 +30,21 @@ export interface DeferredPrerequisiteReservationResult {
   transportEvidence: { slotLogicalStarts:number;slotAnalyticallyEliminatedStarts:number;slotStartSetsEvaluated:number;
     matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number;
     monotoneFastPathChecks:number;monotoneFastPathHits:number;monotoneFastPathWitnesses:number;monotoneFastPathAbstentions:number;
-    cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number };
+    cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number;futureChecks:number;futureIntervalCalculations:number;
+    futureEnumeratedStarts:number;futureCapacityPrunes:number };
   causalDiagnostic:DeferredArrivalCausalCertificate|null;
 }
 
 const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
   matchingChecks:0,matchingEdgeChecks:0,matchingAugmentTraversals:0,equivalentMembershipsCollapsed:0,
   monotoneFastPathChecks:0,monotoneFastPathHits:0,monotoneFastPathWitnesses:0,monotoneFastPathAbstentions:0,
-  cumulativeCapacityChecks:0,cumulativeCapacityPrunes:0 });
+  cumulativeCapacityChecks:0,cumulativeCapacityPrunes:0,futureChecks:0,futureIntervalCalculations:0,
+  futureEnumeratedStarts:0,futureCapacityPrunes:0 });
+
+const futureEvidence = (future: ReturnType<typeof assessTransportFutureFeasibility>) => ({
+  futureChecks: future.checks, futureIntervalCalculations: future.intervalCalculations,
+  futureEnumeratedStarts: future.enumeratedStarts, futureCapacityPrunes: future.capacityPrunes,
+});
 
 const byId = <T extends { id: string }>(left: T, right: T) => left.id.localeCompare(right.id);
 
@@ -120,17 +127,17 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     branchesExplored: 0, exhausted: false, arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0,
     arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
     transportEvidence: { ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
-      cumulativeCapacityPrunes: futureTransport.capacityPrunes }, causalDiagnostic: null };
+      cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null };
   if (sameIds && previous.arrivalGroups.length === 0
     && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines))
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
       arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
       arrivalWitnessDropped: false,
-      transportEvidence:noTransportEvidence(),causalDiagnostic:null };
+      transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null };
   let branchesExplored = 0, exhausted = false;
   const arrivalChecks = futureTransport.checks, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   const transportEvidence={ ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
-    cumulativeCapacityPrunes: futureTransport.capacityPrunes };
+    cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) };
   void causalDiagnostic; void causingTaskIds;
   const reservedIds = new Set(taskIds);
   const search = (remaining: readonly Task[], witness: readonly ScheduledTask[]): DeferredPrerequisiteReservation | null => {
