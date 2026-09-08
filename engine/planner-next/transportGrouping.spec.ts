@@ -88,6 +88,69 @@ test("a transport domain with a hole makes the monotone authority abstain and us
   assert.equal(result.branchesExplored, consumed);
 });
 
+function canonicalBoundaryProblem(direction: "arrival" | "departure", boundaries: readonly number[],
+  targetGroupSize: number, minGapMinutes: number, reverse = false) {
+  const window = [{ start: 0, end: 100 }];
+  const transportTasks = boundaries.map((_, index): Task => ({ id: `${direction}-${index}`, kind: "auxiliary",
+    participantId: `p-${index}`, duration: 10, spaceId: `space-${index}`, dependencies: [] }));
+  const problem: PlannerNextProblem = {
+    day: { start: 0, end: 100 }, protectedMeal: { start: 95, end: 100 }, resources: [],
+    spaces: transportTasks.map(({ spaceId }) => ({ id: spaceId, availability: window })),
+    participants: transportTasks.map(({ participantId }) => ({ id: participantId!, availability: window })), coaches: [],
+    tasks: transportTasks, mainFlow: { spaceId: "unused", preferredEnd: 90, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 20_000 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
+    transportPolicy: {
+      arrival: { ...policy(1, targetGroupSize, minGapMinutes), targetGroupSize, taskIds: direction === "arrival" ? transportTasks.map(({ id }) => id) : [] },
+      departure: { ...policy(1, targetGroupSize, minGapMinutes), targetGroupSize, taskIds: direction === "departure" ? transportTasks.map(({ id }) => id) : [] },
+    },
+  };
+  const external = boundaries.map((boundary, index): ScheduledTask => ({ id: `obligation-${index}`, kind: "auxiliary",
+    participantId: `p-${index}`, duration: 5, spaceId: `obligation-space-${index}`, dependencies: [],
+    start: direction === "arrival" ? boundary : boundary - 5, end: direction === "arrival" ? boundary + 5 : boundary }));
+  if (reverse) { problem.tasks.reverse(); problem.participants.reverse(); problem.spaces.reverse(); problem.transportPolicy![direction].taskIds.reverse(); }
+  return { problem, external };
+}
+
+test("canonical IN propagates latest starts backwards between consecutive boundary groups", () => {
+  const { problem, external } = canonicalBoundaryProblem("arrival", [30, 30, 55, 55], 2, 30);
+  const result = findTransportDirectionWitness(problem, "arrival", problem.tasks, external, () => true);
+  assert.equal(result.monotoneFastPathWitnesses, 1);
+  assert.deepEqual(result.groups.map((group) => group[0]!.start), [15, 45]);
+});
+
+test("canonical OUT propagates earliest starts forwards and target one departs individually", () => {
+  const grouped = canonicalBoundaryProblem("departure", [20, 20, 35, 35], 2, 30);
+  const result = findTransportDirectionWitness(grouped.problem, "departure", grouped.problem.tasks, grouped.external, () => true);
+  assert.equal(result.monotoneFastPathWitnesses, 1);
+  assert.deepEqual(result.groups.map((group) => group[0]!.start), [20, 50]);
+
+  const individual = canonicalBoundaryProblem("departure", [20, 35], 1, 0);
+  const individualResult = findTransportDirectionWitness(individual.problem, "departure", individual.problem.tasks, individual.external, () => true);
+  assert.deepEqual(individualResult.groups.map((group) => group[0]!.start), [20, 35]);
+});
+
+test("canonical grouping keeps a below-target residual, hard maximum, and input-order invariance", () => {
+  const first = canonicalBoundaryProblem("departure", [10, 10, 10, 20, 20, 20, 30], 3, 0);
+  const reversed = canonicalBoundaryProblem("departure", [10, 10, 10, 20, 20, 20, 30], 3, 0, true);
+  const witness = findTransportDirectionWitness(first.problem, "departure", first.problem.tasks, first.external, () => true);
+  const reversedWitness = findTransportDirectionWitness(reversed.problem, "departure", reversed.problem.tasks, reversed.external, () => true);
+  assert.deepEqual(witness.groups.map((group) => group.length), [3, 3, 1]);
+  assert.ok(witness.groups.every((group) => group.length <= first.problem.transportPolicy!.departure.maximumGroupSize));
+  const starts = (groups: readonly ScheduledTask[][]) => groups.flat().map(({ id, start }) => [id, start]).sort();
+  assert.deepEqual(starts(witness.groups), starts(reversedWitness.groups));
+});
+
+test("joint authority rejects coincident canonical groups and exact fallback repairs them", () => {
+  const { problem, external } = canonicalBoundaryProblem("arrival", [100, 100, 100, 100], 2, 0);
+  const result = findTransportDirectionWitness(problem, "arrival", problem.tasks, external, () => true);
+  assert.equal(result.monotoneFastPathAbstentions, 1);
+  assert.equal(result.feasible, true);
+  assert.equal(new Set(result.groups.map((group) => group[0]!.start)).size, 2);
+  assert.equal(validateTransportGrouping(problem, result.groups.flat()).violationCount, 0);
+});
+
 test("transport starts use the canonical grid anchored at day.start", () => {
   const problem = exactProblem(); problem.day = { start: 2, end: 32 };
   const task = problem.tasks.find(({ id }) => id.startsWith("arrival-"))!; task.availability = undefined;
