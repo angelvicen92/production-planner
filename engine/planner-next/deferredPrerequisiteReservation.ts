@@ -20,7 +20,12 @@ export interface DeferredPrerequisiteReservationResult {
   arrivalBacktracks: number;
   arrivalRepaired: boolean;
   arrivalPruned: boolean;
+  transportEvidence: { slotLogicalStarts:number;slotAnalyticallyEliminatedStarts:number;slotStartSetsEvaluated:number;
+    matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number };
 }
+
+const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
+  matchingChecks:0,matchingEdgeChecks:0,matchingAugmentTraversals:0,equivalentMembershipsCollapsed:0 });
 
 const byId = <T extends { id: string }>(left: T, right: T) => left.id.localeCompare(right.id);
 
@@ -118,9 +123,11 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   if (sameIds && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines)
     && arrivalWitnessStillValid(problem, arrivals, previous.arrivalGroups, [...placed, ...previous.witness]))
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
-      arrivalChecks: 1, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false };
+      arrivalChecks: 1, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
+      transportEvidence:noTransportEvidence() };
   let branchesExplored = 0, exhausted = false, arrivalChecks = 0, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   let arrivalFailed = false;
+  const transportEvidence=noTransportEvidence();
   const reservedIds = new Set(taskIds);
   const search = (remaining: readonly Task[], witness: readonly ScheduledTask[]): DeferredPrerequisiteReservation | null => {
     if (!remaining.length) {
@@ -129,6 +136,7 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
         && arrivalWitnessStillValid(problem, arrivals, previous.arrivalGroups, [...placed, ...witness]))
         return { taskIds, witness: [...witness].sort(byId), arrivalTaskIds, arrivalGroups: previous.arrivalGroups };
       const arrival = findTransportDirectionWitness(problem, "arrival", arrivals, [...placed, ...witness], consume);
+      transportEvidence.slotLogicalStarts+=arrival.slotLogicalStarts;transportEvidence.slotAnalyticallyEliminatedStarts+=arrival.slotAnalyticallyEliminatedStarts;transportEvidence.slotStartSetsEvaluated+=arrival.slotStartSetsEvaluated;transportEvidence.matchingChecks+=arrival.matchingChecks;transportEvidence.matchingEdgeChecks+=arrival.matchingEdgeChecks;transportEvidence.matchingAugmentTraversals+=arrival.matchingAugmentTraversals;transportEvidence.equivalentMembershipsCollapsed+=arrival.equivalentMembershipsCollapsed;
       branchesExplored += arrival.branchesExplored; arrivalBranchesExplored += arrival.branchesExplored;
       arrivalBacktracks += arrival.backtracks;
       if (arrival.exhausted) { exhausted = true; return null; }
@@ -156,5 +164,5 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   const reservation = search(tasks, []);
   return { feasible: reservation !== null, reservation, repaired: previous !== null, branchesExplored, exhausted,
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
-    arrivalPruned: !exhausted && reservation === null && arrivalFailed };
+    arrivalPruned: !exhausted && reservation === null && arrivalFailed, transportEvidence };
 }

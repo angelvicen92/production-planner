@@ -58,6 +58,22 @@ test("exact witness eliminates impossible residuals while target only orders fea
   assert.equal(consumed, witness.branchesExplored);
 });
 
+test("capacity matching collapses 19 equivalent memberships instead of enumerating permutations", () => {
+  const problem = validationProblem(19);
+  const window = [{ start: 0, end: 220 }];
+  problem.day = { start: 0, end: 220 };
+  problem.participants = problem.tasks.map((task) => ({ id: task.participantId!, availability: window }));
+  problem.spaces = problem.tasks.map((task) => ({ id: task.spaceId, availability: window }));
+  problem.transportPolicy!.arrival = { ...policy(1, 3, 20), targetGroupSize: 3,
+    taskIds: problem.tasks.map(({ id }) => id) };
+  const result = findTransportDirectionWitness(problem, "arrival", problem.tasks, [], () => true);
+  assert.equal(result.feasible, true);
+  assert.equal(result.groups.length, 7);
+  assert.ok(result.groups.every((group) => group.length <= 3));
+  assert.ok(result.equivalentMembershipsCollapsed >= 18);
+  assert.ok(result.slotStartSetsEvaluated < 10, "membership identities must not create factorial branches");
+});
+
 test("transport starts use the canonical grid anchored at day.start", () => {
   const problem = exactProblem(); problem.day = { start: 2, end: 32 };
   const task = problem.tasks.find(({ id }) => id.startsWith("arrival-"))!; task.availability = undefined;
