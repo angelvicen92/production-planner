@@ -209,6 +209,15 @@ export interface TransportDirectionWitnessResult {
   monotoneFastPathAbstentions: number;
   cumulativeCapacityChecks: number;
   cumulativeCapacityPrunes: number;
+  causalDiagnostic: TransportWitnessCausalDiagnostic | null;
+}
+
+export interface TransportWitnessCausalDiagnostic {
+  monotoneAbstentionReason: "NOT_MONOTONE" | "NO_CONTIGUOUS_SIZES" | "PACKET_NO_COMMON_START" | "CANDIDATE_VALIDATION_FAILED" | null;
+  canonicalCandidateFingerprint: string | null;
+  canonicalCandidateSummary: readonly { start:number; taskIds:string[] }[] | null;
+  firstValidationFailure: null | { reason:"BOUNDARY"|"DEPENDENCY"|"PLACEMENT_RESOURCE_SPACE"|"GROUP_SIZE"|"MIN_GAP"|"MEMBERSHIP"|"SYNCHRONIZATION";taskId:string|null;participantId:string|null;boundary:number|null;start:number|null;end:number|null };
+  firstCumulativeCapacityPrune: null | { prefix:number; demand:number; capacity:number; activeSlots:number[]; participantIds:string[]; taskIds:string[] };
 }
 
 const emptyWitness = (): TransportDirectionWitnessResult => ({ feasible: true, groups: [], branchesExplored: 0,
@@ -216,12 +225,12 @@ const emptyWitness = (): TransportDirectionWitnessResult => ({ feasible: true, g
   slotStartSetsEvaluated: 0, matchingChecks: 0, matchingEdgeChecks: 0, matchingAugmentTraversals: 0,
   equivalentMembershipsCollapsed: 0, monotoneFastPathChecks: 0, monotoneFastPathHits: 0,
   monotoneFastPathWitnesses: 0, monotoneFastPathAbstentions: 0, cumulativeCapacityChecks: 0,
-  cumulativeCapacityPrunes: 0 });
+  cumulativeCapacityPrunes: 0, causalDiagnostic:null });
 
 /** Exact, ledger-accounted grouped witness. It is read-only and does not materialize into the plan. */
 export function findTransportDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection,
   relevantTasks: readonly Task[], externalPlaced: readonly ScheduledTask[], consume: () => boolean,
-  participantMeals: readonly ScheduledParticipantMeal[] = []): TransportDirectionWitnessResult {
+  participantMeals: readonly ScheduledParticipantMeal[] = [], causalDiagnostic = false): TransportDirectionWitnessResult {
   const policy = problem.transportPolicy?.[direction];
   if (!policy || relevantTasks.length === 0) return emptyWitness();
   const policyIds = new Set(policy.taskIds);
@@ -233,6 +242,8 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   let matchingChecks = 0, matchingEdgeChecks = 0, matchingAugmentTraversals = 0;
   let monotoneFastPathChecks = 1, monotoneFastPathHits = 0, monotoneFastPathWitnesses = 0;
   let monotoneFastPathAbstentions = 0, cumulativeCapacityChecks = 0, cumulativeCapacityPrunes = 0;
+  const diagnostic:TransportWitnessCausalDiagnostic|null=causalDiagnostic?{monotoneAbstentionReason:null,
+    canonicalCandidateFingerprint:null,canonicalCandidateSummary:null,firstValidationFailure:null,firstCumulativeCapacityPrune:null}:null;
   const arrivalIds = new Set(relevant.map(({ id }) => id));
   const external = externalPlaced.filter(({ id }) => !arrivalIds.has(id));
   const boundary = (task: Task): number => {
@@ -296,14 +307,14 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
     }).map((task) => ({ ...task, start: slot.start, end: slot.start + task.duration })).sort((a, b) => byId(a, b)));
   };
   const jointlyValid = (candidate: ScheduledTask[][] | null): candidate is ScheduledTask[][] => candidate !== null
-    && validateDirectionWitness(problem, direction, tasks, candidate, external, participantMeals);
+    && validateDirectionWitness(problem, direction, tasks, candidate, external, participantMeals,diagnostic);
   const hasCumulativeCapacity = (active: readonly Slot[]): boolean => {
     for (let prefix = 1; prefix <= slots.length; prefix += 1) {
       cumulativeCapacityChecks += 1;
       const demand = tasks.reduce((sum, _, taskIndex) => sum + (slots.slice(0, prefix).some((slot) => slot.eligible[taskIndex])
         && !slots.slice(prefix).some((slot) => slot.eligible[taskIndex]) ? 1 : 0), 0);
       const capacity = active.filter((slot) => slots.indexOf(slot) < prefix).length * policy.maximumGroupSize;
-      if (demand > capacity) { cumulativeCapacityPrunes += 1; return false; }
+      if (demand > capacity) { cumulativeCapacityPrunes += 1;if(diagnostic&&!diagnostic.firstCumulativeCapacityPrune){const forced=tasks.filter((_,taskIndex)=>slots.slice(0,prefix).some(slot=>slot.eligible[taskIndex])&&!slots.slice(prefix).some(slot=>slot.eligible[taskIndex]));diagnostic.firstCumulativeCapacityPrune={prefix,demand,capacity,activeSlots:active.filter(slot=>slots.indexOf(slot)<prefix).map(slot=>slot.start),participantIds:[...new Set(forced.map(task=>task.participantId).filter((id):id is string=>Boolean(id)))].sort(),taskIds:forced.map(task=>task.id).sort()};} return false; }
     }
     return true;
   };
@@ -317,6 +328,7 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
       else branchesExplored += 1;
     }
     const sizes = exhausted ? null : transportContiguousGroupSizes(tasks.length, policy, direction);
+    if(!sizes&&diagnostic)diagnostic.monotoneAbstentionReason="NO_CONTIGUOUS_SIZES";
     if (sizes) {
       const canonicalTasks: Task[][] = [];
       let offset = 0;
@@ -337,22 +349,24 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
       if (direction === "arrival") {
         let latest = Number.POSITIVE_INFINITY;
         for (let index = canonicalTasks.length - 1; index >= 0; index -= 1) {
-          if (!scheduleAt(index, latest)) { constructed = false; break; }
+          if (!scheduleAt(index, latest)) { constructed = false;if(diagnostic)diagnostic.monotoneAbstentionReason="PACKET_NO_COMMON_START"; break; }
           latest = canonical[index]![0]!.start - policy.minGapMinutes;
         }
       } else {
         let earliest = Number.NEGATIVE_INFINITY;
         for (let index = 0; index < canonicalTasks.length; index += 1) {
-          if (!scheduleAt(index, earliest)) { constructed = false; break; }
+          if (!scheduleAt(index, earliest)) { constructed = false;if(diagnostic)diagnostic.monotoneAbstentionReason="PACKET_NO_COMMON_START"; break; }
           earliest = canonical[index]![0]!.start + policy.minGapMinutes;
         }
       }
       const candidate = constructed ? canonical as ScheduledTask[][] : null;
+      if(candidate&&diagnostic){diagnostic.canonicalCandidateSummary=candidate.map(group=>({start:group[0]!.start,taskIds:group.map(task=>task.id).sort()}));diagnostic.canonicalCandidateFingerprint=diagnostic.canonicalCandidateSummary.map(group=>`${group.start}:${group.taskIds.join(",")}`).join("|");}
       slotAnalyticallyEliminatedStarts += candidate ? Math.max(0, slots.length - candidate.length) : 0;
       if (jointlyValid(candidate)) { groups = candidate; monotoneFastPathWitnesses += 1; }
+      else if(candidate&&diagnostic)diagnostic.monotoneAbstentionReason="CANDIDATE_VALIDATION_FAILED";
     }
     if (!groups) monotoneFastPathAbstentions += 1;
-  } else monotoneFastPathAbstentions += 1;
+  } else {monotoneFastPathAbstentions += 1;if(diagnostic)diagnostic.monotoneAbstentionReason="NOT_MONOTONE";}
   for (const groupCount of groupCounts) {
     if (groups || exhausted) break;
     if (!consume()) { exhausted = true; break; }
@@ -384,26 +398,34 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
     slotLogicalStarts: logicalStarts, slotAnalyticallyEliminatedStarts, slotStartSetsEvaluated,
     matchingChecks, matchingEdgeChecks, matchingAugmentTraversals, equivalentMembershipsCollapsed,
     monotoneFastPathChecks, monotoneFastPathHits, monotoneFastPathWitnesses, monotoneFastPathAbstentions,
-    cumulativeCapacityChecks, cumulativeCapacityPrunes };
+    cumulativeCapacityChecks, cumulativeCapacityPrunes,causalDiagnostic:diagnostic };
 }
 
 function validateDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection, tasks: readonly Task[],
-  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[]): boolean {
+  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[],diagnostic:TransportWitnessCausalDiagnostic|null=null): boolean {
   const policy = problem.transportPolicy?.[direction];
   if (!policy) return tasks.length === 0;
   const expected = tasks.map(({ id }) => id).sort(), actual = groups.flat().map(({ id }) => id).sort();
-  if (expected.length !== actual.length || expected.some((id, index) => id !== actual[index])) return false;
-  if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize)) return false;
-  return groups.every((group, index) => group.length >= policy.minimumGroupSize && group.length <= policy.maximumGroupSize
-    && group.every((item) => item.start === group[0]!.start && item.end === item.start + item.duration)
-    && canPlaceTransportGroup(problem, group.map(({ id }) => tasks.find((task) => task.id === id)!), group[0]!.start,
-      [...external, ...groups.filter((_, other) => other !== index).flat()], groups.slice(0, index).map((item) => item[0]!.start), policy)
-    && group.every((item) => {
+  const fail=(reason:NonNullable<TransportWitnessCausalDiagnostic["firstValidationFailure"]>["reason"],item?:ScheduledTask,boundaryValue:number|null=null)=>{if(diagnostic&&!diagnostic.firstValidationFailure)diagnostic.firstValidationFailure={reason,taskId:item?.id??null,participantId:item?.participantId??null,boundary:boundaryValue,start:item?.start??null,end:item?.end??null};return false;};
+  if (expected.length !== actual.length || expected.some((id, index) => id !== actual[index])) return fail("MEMBERSHIP");
+  if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize)) return fail("GROUP_SIZE");
+  return groups.every((group, index) => {
+    if(group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize)return fail("GROUP_SIZE",group[0]);
+    if(group.some(item=>item.start!==group[0]!.start||item.end!==item.start+item.duration))return fail("SYNCHRONIZATION",group.find(item=>item.start!==group[0]!.start||item.end!==item.start+item.duration));
+    if(groups.slice(0,index).some(other=>Math.abs(group[0]!.start-other[0]!.start)<policy.minGapMinutes))return fail("MIN_GAP",group[0]);
+    const definitions=group.map(({id})=>tasks.find(task=>task.id===id)!);const placed=[...external,...groups.filter((_,other)=>other!==index).flat()];
+    const dependencyFailure=definitions.find(task=>task.dependencies.some(id=>{const dependency=placed.find(item=>item.id===id);return !dependency||dependency.end>group[0]!.start;}));
+    if(dependencyFailure)return fail("DEPENDENCY",group.find(item=>item.id===dependencyFailure.id));
+    const boundariesValid=group.every((item) => {
       const obligations = [...external.filter((task) => task.participantId === item.participantId),
         ...meals.filter((meal) => meal.participantId === item.participantId)];
-      return direction === "arrival" ? item.end <= Math.min(problem.day.end, ...obligations.map(({ start }) => start))
-        : item.start >= Math.max(problem.day.start, ...obligations.map(({ end }) => end));
-    }));
+      const limit=direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start)):Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+      return (direction === "arrival" ? item.end <= limit:item.start >= limit)||fail("BOUNDARY",item,limit);
+    });
+    if(!boundariesValid)return false;
+    return canPlaceTransportGroup(problem,definitions,group[0]!.start,placed,groups.slice(0,index).map(item=>item[0]!.start),policy)
+      ||fail("PLACEMENT_RESOURCE_SPACE",group[0]);
+  });
 }
 
 export interface TransportValidation {

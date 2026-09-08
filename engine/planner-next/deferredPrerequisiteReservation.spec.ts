@@ -100,6 +100,24 @@ test("arrival witness repairs starts to preserve the minimum inter-group gap", (
   assert.ok(starts[1]! - starts[0]! >= 20);
 });
 
+test("arrival repair diagnostic identifies the new boundary and is accounting-neutral", () => {
+  const input = arrivalFixture(1, { arrivalWindow: { start: 0, end: 20 } });
+  const first = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
+  const arrival = input.pending[0]!;
+  const causing:ScheduledTask={id:"new-obligation",kind:"auxiliary",participantId:arrival.participantId,duration:10,
+    spaceId:"core-space",dependencies:[],start:10,end:20};
+  let plainBranches=0,diagnosticBranches=0;
+  const plain=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,causing],[],first.reservation,()=>{plainBranches++;return true;});
+  const diagnosed=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,causing],[],first.reservation,()=>{diagnosticBranches++;return true;},true,[causing.id]);
+  assert.deepEqual({...diagnosed,causalDiagnostic:null},plain);
+  assert.equal(diagnosticBranches,plainBranches);
+  assert.deepEqual(diagnosed.causalDiagnostic&&{causingTaskId:diagnosed.causalDiagnostic.causingTaskId,
+    arrivalTaskId:diagnosed.causalDiagnostic.arrivalTaskId,previousBoundary:diagnosed.causalDiagnostic.previousBoundary,
+    currentBoundary:diagnosed.causalDiagnostic.currentBoundary},
+  {causingTaskId:causing.id,arrivalTaskId:arrival.id,previousBoundary:50,currentBoundary:10});
+  assert.equal(diagnosed.causalDiagnostic?.repair?.monotoneAbstentionReason,null);
+});
+
 test("arrival target is preference rather than a hard minimum", () => {
   const input = arrivalFixture(2, { maximum: 3, target: 3 });
   const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);

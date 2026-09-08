@@ -1,6 +1,12 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
-import { canPlaceTransportGroup, findTransportDirectionWitness } from "./transportGrouping";
+import { canPlaceTransportGroup, findTransportDirectionWitness, type TransportWitnessCausalDiagnostic } from "./transportGrouping";
+
+export interface DeferredArrivalCausalCertificate {
+  causingTaskId:string|null;arrivalTaskId:string;participantId:string|null;previousBoundary:number;currentBoundary:number;
+  previousWitnessFingerprint:string;previousWitnessSummary:readonly {start:number;taskIds:string[]}[];
+  repair:TransportWitnessCausalDiagnostic|null;
+}
 
 export interface DeferredPrerequisiteReservation {
   taskIds: readonly string[];
@@ -25,6 +31,7 @@ export interface DeferredPrerequisiteReservationResult {
     matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number;
     monotoneFastPathChecks:number;monotoneFastPathHits:number;monotoneFastPathWitnesses:number;monotoneFastPathAbstentions:number;
     cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number };
+  causalDiagnostic:DeferredArrivalCausalCertificate|null;
 }
 
 const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
@@ -122,7 +129,7 @@ function arrivalWitnessStillValid(problem: PlannerNextProblem, tasks: readonly T
 /** Maintains one virtual, branch-local joint witness for ordinary predecessors and grouped ARRIVAL. */
 export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProblem, pending: readonly Task[],
   placed: readonly ScheduledTask[], meals: readonly ScheduledSpaceMeal[], previous: DeferredPrerequisiteReservation | null,
-  consume: () => boolean): DeferredPrerequisiteReservationResult {
+  consume: () => boolean, causalDiagnostic=false, causingTaskIds:readonly string[]=[]): DeferredPrerequisiteReservationResult {
   const predecessors = pendingHardPredecessors(problem, pending, placed);
   const arrivalIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const arrivals = predecessors.filter(({ id }) => arrivalIds.has(id));
@@ -136,10 +143,14 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
       arrivalChecks: 1, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
       arrivalWitnessDropped: false,
-      transportEvidence:noTransportEvidence() };
+      transportEvidence:noTransportEvidence(),causalDiagnostic:null };
   let branchesExplored = 0, exhausted = false, arrivalChecks = 0, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   let arrivalFailed = false;
   const transportEvidence=noTransportEvidence();
+  let arrivalCausalDiagnostic:DeferredArrivalCausalCertificate|null=null;
+  if(causalDiagnostic&&previous&&sameIds){const causingIds=new Set(causingTaskIds);const before=placed.filter(task=>!causingIds.has(task.id));
+    const invalid=previous.arrivalGroups.flat().sort(byId).find(arrival=>{const oldBoundary=Math.min(problem.day.end,...before.filter(task=>task.participantId===arrival.participantId).map(task=>task.start));const currentBoundary=Math.min(problem.day.end,...placed.filter(task=>task.participantId===arrival.participantId).map(task=>task.start));return arrival.end<=oldBoundary&&arrival.end>currentBoundary;});
+    if(invalid){const previousBoundary=Math.min(problem.day.end,...before.filter(task=>task.participantId===invalid.participantId).map(task=>task.start));const currentBoundary=Math.min(problem.day.end,...placed.filter(task=>task.participantId===invalid.participantId).map(task=>task.start));const causing=placed.filter(task=>causingIds.has(task.id)&&task.participantId===invalid.participantId&&task.start===currentBoundary).sort(byId)[0];const summary=previous.arrivalGroups.map(group=>({start:group[0]!.start,taskIds:group.map(task=>task.id).sort()}));arrivalCausalDiagnostic={causingTaskId:causing?.id??null,arrivalTaskId:invalid.id,participantId:invalid.participantId??null,previousBoundary,currentBoundary,previousWitnessSummary:summary,previousWitnessFingerprint:summary.map(group=>`${group.start}:${group.taskIds.join(",")}`).join("|"),repair:null};}}
   const reservedIds = new Set(taskIds);
   const search = (remaining: readonly Task[], witness: readonly ScheduledTask[]): DeferredPrerequisiteReservation | null => {
     if (!remaining.length) {
@@ -147,7 +158,8 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
       if (previous && JSON.stringify(previous.arrivalTaskIds) === JSON.stringify(arrivalTaskIds)
         && arrivalWitnessStillValid(problem, arrivals, previous.arrivalGroups, [...placed, ...witness]))
         return { taskIds, witness: [...witness].sort(byId), arrivalTaskIds, arrivalGroups: previous.arrivalGroups };
-      const arrival = findTransportDirectionWitness(problem, "arrival", arrivals, [...placed, ...witness], consume);
+      const arrival = findTransportDirectionWitness(problem, "arrival", arrivals, [...placed, ...witness], consume,[],causalDiagnostic);
+      if(arrivalCausalDiagnostic&&!arrivalCausalDiagnostic.repair)arrivalCausalDiagnostic.repair=arrival.causalDiagnostic;
       transportEvidence.slotLogicalStarts+=arrival.slotLogicalStarts;transportEvidence.slotAnalyticallyEliminatedStarts+=arrival.slotAnalyticallyEliminatedStarts;transportEvidence.slotStartSetsEvaluated+=arrival.slotStartSetsEvaluated;transportEvidence.matchingChecks+=arrival.matchingChecks;transportEvidence.matchingEdgeChecks+=arrival.matchingEdgeChecks;transportEvidence.matchingAugmentTraversals+=arrival.matchingAugmentTraversals;transportEvidence.equivalentMembershipsCollapsed+=arrival.equivalentMembershipsCollapsed;
       transportEvidence.monotoneFastPathChecks+=arrival.monotoneFastPathChecks;transportEvidence.monotoneFastPathHits+=arrival.monotoneFastPathHits;transportEvidence.monotoneFastPathWitnesses+=arrival.monotoneFastPathWitnesses;transportEvidence.monotoneFastPathAbstentions+=arrival.monotoneFastPathAbstentions;transportEvidence.cumulativeCapacityChecks+=arrival.cumulativeCapacityChecks;transportEvidence.cumulativeCapacityPrunes+=arrival.cumulativeCapacityPrunes;
       branchesExplored += arrival.branchesExplored; arrivalBranchesExplored += arrival.branchesExplored;
@@ -178,5 +190,5 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   return { feasible: reservation !== null, reservation, repaired: previous !== null, branchesExplored, exhausted,
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
     arrivalPruned: !exhausted && reservation === null && arrivalFailed,
-    arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence };
+    arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:arrivalCausalDiagnostic };
 }

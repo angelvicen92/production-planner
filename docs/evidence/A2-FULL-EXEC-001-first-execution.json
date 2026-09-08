@@ -7,7 +7,7 @@
     "participantCount": 19,
     "sourceHumanTimesUsed": false,
     "searchBudgetIsTechnicalExecutionConfiguration": true,
-    "maxBranchExpansions": 300000,
+    "maxBranchExpansions": 20000,
     "genericTransitionMinutes": {
       "participant": 0,
       "resource": 5
@@ -167,7 +167,7 @@
     "status": "SUPPORTED",
     "reasonCodes": [],
     "issues": [],
-    "problemFingerprint": "f2816cb318f13dc91ee20e8830208ae90b9aec9636efb38828589ec62c7bae93"
+    "problemFingerprint": "daba15bc8970a40064f4ca0e4b8e63870aa4a0779a702f92584850527e9b8e07"
   },
   "execution": {
     "kind": "EXACT_CONSTRUCTIVE",
@@ -385,9 +385,9 @@
       "task:10269"
     ],
     "evidence": {
-      "branchesExplored": 300000,
+      "branchesExplored": 20000,
       "coreBranches": 1599,
-      "standaloneBranches": 298401,
+      "standaloneBranches": 18401,
       "standaloneStartChecks": 0,
       "jointGroupFullGridStarts": 0,
       "jointGroupAnalyticEligibleStarts": 0,
@@ -409,10 +409,10 @@
       "technicalChainDeferredQueuePeak": 0,
       "technicalChainDeferredPushes": 0,
       "technicalChainDeferredPops": 0,
-      "technicalChainMacroDomainQueries": 0,
-      "technicalChainMacroDomainCandidates": 0,
+      "technicalChainMacroDomainQueries": 1,
+      "technicalChainMacroDomainCandidates": 98,
       "technicalChainMacroDomainCacheHits": 0,
-      "technicalChainMacroDomainCacheMisses": 0,
+      "technicalChainMacroDomainCacheMisses": 1,
       "technicalChainRootStartsConsidered": 0,
       "technicalChainRootStartsFeasible": 0,
       "technicalChainBranchesExplored": 0,
@@ -422,9 +422,9 @@
       "standaloneMaximumDepth": 0,
       "standaloneCompleteLeafCount": 0,
       "coreCompleteLeavesEvaluated": 1,
-      "operationalMealFutureChecks": 11,
+      "operationalMealFutureChecks": 12,
       "operationalMealFuturePrunes": 9,
-      "operationalMealFutureAnalyticChecks": 43,
+      "operationalMealFutureAnalyticChecks": 44,
       "operationalMealFutureBranchesExplored": 0,
       "operationalMealFutureFirstPrune": {
         "policyId": "break:coach-jose-maria-individual",
@@ -441,16 +441,17 @@
         "macroUnit": "CORE",
         "depth": 19
       },
-      "operationalMealReservationChecks": 12,
-      "operationalMealReservationRepairs": 4,
+      "operationalMealReservationChecks": 13,
+      "operationalMealReservationRepairs": 5,
       "operationalMealReservationPrunes": 9,
-      "operationalMealReservationAnalyticChecks": 51,
+      "operationalMealReservationAnalyticChecks": 52,
       "operationalMealReservationBranchesExplored": 0,
       "operationalMealReservationRepairsByPolicy": {
         "break:coach-lucia-individual": 1,
         "break:estudio-7-operations": 1,
         "break:reality-unit-a-operations": 1,
-        "break:coach-jose-maria-individual": 1
+        "break:coach-jose-maria-individual": 1,
+        "break:totales-operations": 1
       },
       "operationalMealReservationPrunesByPolicy": {
         "break:coach-jose-maria-individual": 9
@@ -471,6 +472,10 @@
       "terminalTransportArrivalRepairs": 0,
       "terminalTransportDepartureAttempts": 0,
       "terminalTransportDepartureSuccess": 0,
+      "terminalTransportReservedArrivalChecks": 0,
+      "terminalTransportReservedArrivalValidBeforeParticipantMeals": 0,
+      "terminalTransportReservedArrivalInvalidatedByParticipantMeals": 0,
+      "terminalTransportReservedArrivalFirstMealConflict": null,
       "terminalTransportDepartureBranches": 0,
       "terminalTransportDepartureBacktracks": 0,
       "terminalTransportFirstFailure": null,
@@ -1387,43 +1392,913 @@
       "setupFamilyOrderCandidateCountsBySpaceId": {},
       "selectedSetupFamilySequenceBySpaceId": {},
       "selectedSetupPreparationIds": [],
-      "roundSynchronizationSearchInvocations": 0,
-      "roundSynchronizationStartCandidates": 0,
-      "roundSynchronizationAssignmentBranches": 0,
-      "roundSynchronizationAssignmentChecks": 0,
-      "roundSynchronizationCompleteAssignments": 0,
-      "roundSynchronizationBacktracks": 0,
+      "roundSynchronizationSearchInvocations": 1,
+      "roundSynchronizationStartCandidates": 5,
+      "roundSynchronizationAssignmentBranches": 13,
+      "roundSynchronizationAssignmentChecks": 4693,
+      "roundSynchronizationCompleteAssignments": 13,
+      "roundSynchronizationBacktracks": 12,
       "roundSynchronizationZeroAlternativePrunes": 0,
       "selectedRoundPreparationIds": [],
-      "totalesMacroCandidates": 0,
-      "totalesMatchingAttempts": 0,
-      "totalesMatchingSuccesses": 0,
-      "totalesAssignmentBranchesAvoided": 0,
+      "totalesMacroCandidates": 5,
+      "totalesMatchingAttempts": 13,
+      "totalesMatchingSuccesses": 13,
+      "totalesAssignmentBranchesAvoided": 234,
       "criticalResourceBranches": 0,
       "criticalResourceMacroCandidates": 0,
       "criticalResourceAssignments": 0,
-      "macroUnitsSelected": 0,
-      "macroSelectionOrder": [],
-      "macroSelectionReason": [],
-      "macroDomainSizes": {},
-      "macroSelectionSteps": [],
-      "macroPendingPrerequisiteForwardChecks": 0,
-      "macroPendingPrerequisiteTasksChecked": 0,
-      "macroPendingPrerequisiteIndividualDomainChecks": 0,
-      "macroPendingPrerequisiteCollectiveCapacityChecks": 0,
-      "macroPendingPrerequisiteObligationsChecked": 0,
-      "macroPendingPrerequisiteCollectiveCapacityPrunes": 0,
+      "macroUnitsSelected": 1,
+      "macroSelectionOrder": [
+        "ROUND_SYNCHRONIZATION:round:round-synchronization:a2-totales-rounds"
+      ],
+      "macroSelectionReason": [
+        "mixed-domain-semantic-policy"
+      ],
+      "macroDomainSizes": {
+        "round:round-synchronization:a2-totales-rounds": 684
+      },
+      "macroSelectionSteps": [
+        {
+          "selected": "round:round-synchronization:a2-totales-rounds",
+          "reason": "mixed-domain-semantic-policy",
+          "candidates": [
+            {
+              "id": "joint:joint-group:joint.alfombra-roja.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 99,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 20,
+              "affectedTaskCount": 2
+            },
+            {
+              "id": "joint:joint-group:joint.totales-post.C06-C10",
+              "kind": "JOINT",
+              "domainSize": 104,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 2
+            },
+            {
+              "id": "resource:task:10001",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 63,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10008",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 66,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10012",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 66,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10015",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10016",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10023",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10025",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10029",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 104,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 15,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10030",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10036",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10038",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10041",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 69,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 2880,
+              "totalDuration": 15,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10042",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10049",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10051",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10054",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10055",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10062",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 104,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10070",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10071",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10079",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10081",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 62,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 2160,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10082",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10086",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10087",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10094",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10096",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10100",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 15,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10101",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 101,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10107",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 104,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10111",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 104,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10114",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10115",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10122",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10124",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 71,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 1440,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10125",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10130",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10137",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10139",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 1440,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10140",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10145",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10146",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10152",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10154",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 57,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 2160,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10155",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10159",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10160",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10167",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10169",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 54,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 2880,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10170",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10173",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 69,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 2880,
+              "totalDuration": 15,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10174",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10182",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10184",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10188",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10189",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10196",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10198",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10201",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10202",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10209",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10211",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10216",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10217",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10223",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10225",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10228",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10235",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10237",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 79,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 1440,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10238",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10241",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10242",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10248",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10250",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10254",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10255",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 107,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 10,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10261",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10263",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 66,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 1440,
+              "totalDuration": 30,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "resource:task:10264",
+              "kind": "RESOURCE_TASK",
+              "domainSize": 110,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 5,
+              "affectedTaskCount": 1
+            },
+            {
+              "id": "round:round-synchronization:a2-totales-rounds",
+              "kind": "ROUND_SYNCHRONIZATION",
+              "domainSize": 684,
+              "domainMeasure": "conservative-top-level-macro-domain-upper-bound",
+              "domainExact": false,
+              "hardResourceAvailabilityMinutes": 1440,
+              "totalDuration": 570,
+              "affectedTaskCount": 19
+            },
+            {
+              "id": "setup:space:3009",
+              "kind": "SETUP_GROUP",
+              "domainSize": 191,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 720,
+              "totalDuration": 85,
+              "affectedTaskCount": 17,
+              "structuralCandidateCount": 144,
+              "matchingFeasibleCandidateCount": 191
+            },
+            {
+              "id": "technical-chain:task:10268",
+              "kind": "TECHNICAL_CHAIN",
+              "domainSize": 98,
+              "domainMeasure": "hard-valid-top-level-macro-placements",
+              "domainExact": true,
+              "hardResourceAvailabilityMinutes": 2880,
+              "totalDuration": 30,
+              "affectedTaskCount": 3
+            }
+          ]
+        }
+      ],
+      "macroPendingPrerequisiteForwardChecks": 13,
+      "macroPendingPrerequisiteTasksChecked": 1651,
+      "macroPendingPrerequisiteIndividualDomainChecks": 1555,
+      "macroPendingPrerequisiteCollectiveCapacityChecks": 113,
+      "macroPendingPrerequisiteObligationsChecked": 1865,
+      "macroPendingPrerequisiteCollectiveCapacityPrunes": 6,
       "macroPendingPrerequisiteJointChecks": 0,
       "macroPendingPrerequisiteCacheHits": 0,
-      "macroPendingPrerequisiteCacheMisses": 0,
-      "macroPendingPrerequisitePrunes": 0,
-      "macroPendingPrerequisiteIndividualZeroDomainPrunes": 0,
+      "macroPendingPrerequisiteCacheMisses": 13,
+      "macroPendingPrerequisitePrunes": 12,
+      "macroPendingPrerequisiteIndividualZeroDomainPrunes": 6,
       "macroPendingPrerequisiteJointInfeasiblePrunes": 0,
       "macroPendingPrerequisiteWitnesses": 0,
-      "macroPendingPrerequisiteChecksByDepth": {},
-      "macroPendingPrerequisiteBlockingTaskCounts": {},
-      "macroPendingPrerequisiteCausingMacroUnitCounts": {},
-      "macroPendingPrerequisiteFirstPrune": null,
+      "macroPendingPrerequisiteChecksByDepth": {
+        "0": 13
+      },
+      "macroPendingPrerequisiteBlockingTaskCounts": {
+        "task:10230": 12
+      },
+      "macroPendingPrerequisiteCausingMacroUnitCounts": {
+        "round:round-synchronization:a2-totales-rounds": 12
+      },
+      "macroPendingPrerequisiteFirstPrune": {
+        "causingMacroUnitId": "round:round-synchronization:a2-totales-rounds",
+        "blockingTaskId": "task:10230",
+        "macroDepth": 0,
+        "deadline": 540,
+        "failure": "INDIVIDUAL_ZERO_DOMAIN",
+        "authorityId": null,
+        "demandMinutes": null,
+        "freeCapacityMinutes": null
+      },
       "ordinaryDomainQueries": 0,
       "ordinaryAnalyticDomainBuilds": 0,
       "ordinaryAnalyticEligibleStarts": 0,
@@ -1445,16 +2320,32 @@
       "ordinaryIndividualForwardBlockingTaskCounts": {},
       "ordinaryIndividualForwardChecksByDepth": {},
       "ordinaryIndividualForwardFirstPrune": null,
-      "deferredPrerequisiteReservationChecks": 1,
-      "deferredPrerequisiteReservationRepairs": 0,
-      "deferredPrerequisiteReservationPrunes": 1,
-      "deferredPrerequisiteReservationBranchesExplored": 298223,
+      "deferredPrerequisiteReservationChecks": 2,
+      "deferredPrerequisiteReservationRepairs": 1,
+      "deferredPrerequisiteReservationPrunes": 0,
+      "deferredPrerequisiteReservationBranchesExplored": 18210,
       "deferredPrerequisiteReservationFirstPrune": null,
-      "deferredArrivalWitnessChecks": 1,
-      "deferredArrivalWitnessBranchesExplored": 298204,
-      "deferredArrivalWitnessBacktracks": 2339,
-      "deferredArrivalWitnessRepairs": 0,
+      "deferredArrivalWitnessChecks": 2,
+      "deferredArrivalWitnessBranchesExplored": 18172,
+      "deferredArrivalWitnessBacktracks": 1,
+      "deferredArrivalWitnessRepairs": 1,
       "deferredArrivalWitnessPrunes": 0,
+      "deferredArrivalWitnessDrops": 0,
+      "deferredArrivalWitnessFirstDrop": null,
+      "transportSlotLogicalStarts": 98,
+      "transportSlotAnalyticallyEliminatedStarts": 54,
+      "transportSlotStartSetsEvaluated": 1,
+      "transportMatchingChecks": 0,
+      "transportMatchingEdgeChecks": 0,
+      "transportMatchingAugmentTraversals": 0,
+      "transportMatchingRepairs": 0,
+      "transportEquivalentMembershipsCollapsed": 4,
+      "transportMonotoneFastPathChecks": 2,
+      "transportMonotoneFastPathHits": 2,
+      "transportMonotoneFastPathWitnesses": 1,
+      "transportMonotoneFastPathAbstentions": 1,
+      "transportCumulativeCapacityChecks": 16,
+      "transportCumulativeCapacityPrunes": 8516,
       "standaloneBlockingTaskDetails": {},
       "participantMealBranchesExplored": 0,
       "participantMealFutureFeasibilityChecks": 2,
@@ -1473,14 +2364,3194 @@
       "participantMealAcceptedWitnessFingerprint": null,
       "participantMealFinalSelectionOrder": [],
       "participantMealAttemptedSelectionTrace": [],
-      "causalDiagnostic": null
+      "causalDiagnostic": {
+        "standaloneFrontier": {
+          "totalRejections": 0,
+          "certificates": [],
+          "examples": []
+        },
+        "feederMatching": {
+          "contexts": [
+            {
+              "fingerprint": "e093e080df83591eb0477e29fda8ce3d855c6f04ace4f7492b7435c7549a2dda",
+              "depth": 8,
+              "runEnd": 8,
+              "blockStart": 545,
+              "cohortSize": 8,
+              "distinctFeederProfiles": 8,
+              "edgeCount": 64,
+              "domainSizes": [
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 0,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": []
+            },
+            {
+              "fingerprint": "93ad211a7110dd2099d8e906576e0280003480a2211c5bfdd812cb2b68b3a130",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 695,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 0,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "28b89a685ea27f526d8d8af259cd58cf162083f2dd1c72ed91ba4ca6a66a38d3",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 690,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 5,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "d48545d26d6cded75e3d90912cc4daa53544ca0d408736dbe2900e478d5964db",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 685,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 10,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "4b9396c7c978518747850e93df2aa11e1fe767e8e7fccb079073f92822d95a2f",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 680,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 15,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "fd352f48e198fa3e0ce9808f0d143d38e6eb2876799b00d02f7d2eb8ffe8b2fd",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 675,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 20,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "33bfc70bc25dd2f53069aff11b8612aa7ef64f2bf48eef35fa0077ca4348fc7f",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 670,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 25,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "ed4d200ee8f7ccbfc0ea4ba62ef9f1e4007df88feab097ac5efa2ea98d5ee7d4",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 665,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 30,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "771d51c63ac1622c9eb899520050fbfc04f96895dbf3e87c778d431e648f9062",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 660,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 35,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "afb855d01e3d122f87469a7427c81cfc9150045ef69824d50b8e7d9cd59eb48c",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 655,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 1,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": [
+                {
+                  "certificate": {
+                    "authorityId": "break:coach-jose-maria-individual",
+                    "demandMinutes": 45,
+                    "freeCapacityMinutes": 40,
+                    "overloadTaskIds": [
+                      "task:10056",
+                      "task:10063",
+                      "task:10064",
+                      "task:10065",
+                      "task:10072",
+                      "task:10080",
+                      "task:10088",
+                      "task:10095",
+                      "task:10102",
+                      "task:10108",
+                      "task:10109",
+                      "task:10110",
+                      "task:10116",
+                      "task:10123",
+                      "task:10131",
+                      "task:10138",
+                      "task:10147",
+                      "task:10153",
+                      "task:10218",
+                      "task:10224",
+                      "task:10229",
+                      "task:10236",
+                      "task:10243",
+                      "task:10249",
+                      "task:10256",
+                      "task:10262"
+                    ]
+                  },
+                  "rejectedWitnesses": 1,
+                  "repairAttempts": 0,
+                  "augmentTraversals": 0,
+                  "distinctOrderFingerprints": 1
+                }
+              ]
+            },
+            {
+              "fingerprint": "ef854adae28b035903c8d4054cc8bcb86a09bdef9859539dc4582c3b40d8ad25",
+              "depth": 19,
+              "runEnd": 19,
+              "blockStart": 650,
+              "cohortSize": 11,
+              "distinctFeederProfiles": 11,
+              "edgeCount": 121,
+              "domainSizes": [
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11
+              ],
+              "witnessMaterializations": 1,
+              "rejectedWitnesses": 0,
+              "repairAttempts": 0,
+              "successfulRepairs": 0,
+              "failedRepairs": 0,
+              "augmentTraversals": 0,
+              "equivalentOrdersCollapsed": 0,
+              "distinctOrderFingerprints": 1,
+              "repairsByTrigger": {
+                "RESIDUAL_MATCHING_DEAD_END": 0,
+                "PARTIAL_CORE_REJECT": 0,
+                "CHILD_DEAD_END": 0
+              },
+              "partialCoreRejects": []
+            }
+          ],
+          "overflowContexts": 0
+        },
+        "macroPendingPrerequisiteCapacityCertificates": [
+          {
+            "frequency": 3,
+            "authorityId": "space:3018",
+            "demandMinutes": 20,
+            "freeCapacityMinutes": 10,
+            "overloadTaskIds": [
+              "task:10230",
+              "task:10257"
+            ],
+            "blockingTaskId": "task:10230",
+            "causingMacroUnitId": "round:round-synchronization:a2-totales-rounds",
+            "macroDepth": 0,
+            "overloadTasks": [
+              {
+                "taskId": "task:10230",
+                "participantId": "participant:217",
+                "kind": "auxiliary",
+                "spaceId": "space:3018",
+                "duration": 10,
+                "requiredResourceIds": []
+              },
+              {
+                "taskId": "task:10257",
+                "participantId": "participant:219",
+                "kind": "auxiliary",
+                "spaceId": "space:3018",
+                "duration": 10,
+                "requiredResourceIds": []
+              }
+            ],
+            "candidatePlacement": {
+              "macroUnitId": "round:round-synchronization:a2-totales-rounds",
+              "taskIds": [
+                "task:10014",
+                "task:10028",
+                "task:10040",
+                "task:10053",
+                "task:10068",
+                "task:10084",
+                "task:10099",
+                "task:10113",
+                "task:10128",
+                "task:10143",
+                "task:10158",
+                "task:10172",
+                "task:10187",
+                "task:10200",
+                "task:10214",
+                "task:10227",
+                "task:10240",
+                "task:10253",
+                "task:10266"
+              ],
+              "participantId": null,
+              "kind": "auxiliary",
+              "start": 550,
+              "end": 970,
+              "spaceId": "MIXED",
+              "requiredResourceIds": [
+                "plan-resource:4006",
+                "plan-resource:4007"
+              ],
+              "tasks": [
+                {
+                  "taskId": "task:10014",
+                  "participantId": "participant:201",
+                  "kind": "auxiliary",
+                  "start": 870,
+                  "end": 900,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10028",
+                  "participantId": "participant:202",
+                  "kind": "auxiliary",
+                  "start": 905,
+                  "end": 935,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10040",
+                  "participantId": "participant:203",
+                  "kind": "auxiliary",
+                  "start": 690,
+                  "end": 720,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10053",
+                  "participantId": "participant:204",
+                  "kind": "auxiliary",
+                  "start": 690,
+                  "end": 720,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10068",
+                  "participantId": "participant:205",
+                  "kind": "auxiliary",
+                  "start": 725,
+                  "end": 755,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10084",
+                  "participantId": "participant:206",
+                  "kind": "auxiliary",
+                  "start": 870,
+                  "end": 900,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10099",
+                  "participantId": "participant:207",
+                  "kind": "auxiliary",
+                  "start": 760,
+                  "end": 790,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10113",
+                  "participantId": "participant:208",
+                  "kind": "auxiliary",
+                  "start": 655,
+                  "end": 685,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10128",
+                  "participantId": "participant:209",
+                  "kind": "auxiliary",
+                  "start": 905,
+                  "end": 935,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10143",
+                  "participantId": "participant:210",
+                  "kind": "auxiliary",
+                  "start": 760,
+                  "end": 790,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10158",
+                  "participantId": "participant:211",
+                  "kind": "auxiliary",
+                  "start": 620,
+                  "end": 650,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10172",
+                  "participantId": "participant:212",
+                  "kind": "auxiliary",
+                  "start": 655,
+                  "end": 685,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10187",
+                  "participantId": "participant:213",
+                  "kind": "auxiliary",
+                  "start": 585,
+                  "end": 615,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10200",
+                  "participantId": "participant:214",
+                  "kind": "auxiliary",
+                  "start": 725,
+                  "end": 755,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10214",
+                  "participantId": "participant:215",
+                  "kind": "auxiliary",
+                  "start": 940,
+                  "end": 970,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10227",
+                  "participantId": "participant:216",
+                  "kind": "auxiliary",
+                  "start": 620,
+                  "end": 650,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10240",
+                  "participantId": "participant:217",
+                  "kind": "auxiliary",
+                  "start": 550,
+                  "end": 580,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10253",
+                  "participantId": "participant:218",
+                  "kind": "auxiliary",
+                  "start": 585,
+                  "end": 615,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10266",
+                  "participantId": "participant:219",
+                  "kind": "auxiliary",
+                  "start": 550,
+                  "end": 580,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                }
+              ]
+            },
+            "priorRelevantPlacements": [],
+            "beforeCandidate": {
+              "evaluated": true,
+              "authorityId": "space:3018",
+              "overloaded": false,
+              "demandMinutes": 20,
+              "freeCapacityMinutes": 380,
+              "overloadTaskIds": [
+                "task:10230",
+                "task:10257"
+              ]
+            },
+            "afterCandidate": {
+              "evaluated": true,
+              "authorityId": "space:3018",
+              "overloaded": true,
+              "demandMinutes": 20,
+              "freeCapacityMinutes": 10,
+              "overloadTaskIds": [
+                "task:10230",
+                "task:10257"
+              ]
+            },
+            "afterMatchesNormalCertificate": true,
+            "causalAssessment": "INTRODUCED_BY_CANDIDATE",
+            "candidateIntroducesCertificate": true
+          },
+          {
+            "frequency": 3,
+            "authorityId": "space:3018",
+            "demandMinutes": 20,
+            "freeCapacityMinutes": 15,
+            "overloadTaskIds": [
+              "task:10230",
+              "task:10257"
+            ],
+            "blockingTaskId": "task:10230",
+            "causingMacroUnitId": "round:round-synchronization:a2-totales-rounds",
+            "macroDepth": 0,
+            "overloadTasks": [
+              {
+                "taskId": "task:10230",
+                "participantId": "participant:217",
+                "kind": "auxiliary",
+                "spaceId": "space:3018",
+                "duration": 10,
+                "requiredResourceIds": []
+              },
+              {
+                "taskId": "task:10257",
+                "participantId": "participant:219",
+                "kind": "auxiliary",
+                "spaceId": "space:3018",
+                "duration": 10,
+                "requiredResourceIds": []
+              }
+            ],
+            "candidatePlacement": {
+              "macroUnitId": "round:round-synchronization:a2-totales-rounds",
+              "taskIds": [
+                "task:10014",
+                "task:10028",
+                "task:10040",
+                "task:10053",
+                "task:10068",
+                "task:10084",
+                "task:10099",
+                "task:10113",
+                "task:10128",
+                "task:10143",
+                "task:10158",
+                "task:10172",
+                "task:10187",
+                "task:10200",
+                "task:10214",
+                "task:10227",
+                "task:10240",
+                "task:10253",
+                "task:10266"
+              ],
+              "participantId": null,
+              "kind": "auxiliary",
+              "start": 555,
+              "end": 975,
+              "spaceId": "MIXED",
+              "requiredResourceIds": [
+                "plan-resource:4006",
+                "plan-resource:4007"
+              ],
+              "tasks": [
+                {
+                  "taskId": "task:10014",
+                  "participantId": "participant:201",
+                  "kind": "auxiliary",
+                  "start": 875,
+                  "end": 905,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10028",
+                  "participantId": "participant:202",
+                  "kind": "auxiliary",
+                  "start": 695,
+                  "end": 725,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10040",
+                  "participantId": "participant:203",
+                  "kind": "auxiliary",
+                  "start": 695,
+                  "end": 725,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10053",
+                  "participantId": "participant:204",
+                  "kind": "auxiliary",
+                  "start": 910,
+                  "end": 940,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10068",
+                  "participantId": "participant:205",
+                  "kind": "auxiliary",
+                  "start": 910,
+                  "end": 940,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10084",
+                  "participantId": "participant:206",
+                  "kind": "auxiliary",
+                  "start": 875,
+                  "end": 905,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10099",
+                  "participantId": "participant:207",
+                  "kind": "auxiliary",
+                  "start": 730,
+                  "end": 760,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10113",
+                  "participantId": "participant:208",
+                  "kind": "auxiliary",
+                  "start": 660,
+                  "end": 690,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10128",
+                  "participantId": "participant:209",
+                  "kind": "auxiliary",
+                  "start": 765,
+                  "end": 795,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10143",
+                  "participantId": "participant:210",
+                  "kind": "auxiliary",
+                  "start": 765,
+                  "end": 795,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10158",
+                  "participantId": "participant:211",
+                  "kind": "auxiliary",
+                  "start": 625,
+                  "end": 655,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10172",
+                  "participantId": "participant:212",
+                  "kind": "auxiliary",
+                  "start": 660,
+                  "end": 690,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10187",
+                  "participantId": "participant:213",
+                  "kind": "auxiliary",
+                  "start": 590,
+                  "end": 620,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10200",
+                  "participantId": "participant:214",
+                  "kind": "auxiliary",
+                  "start": 730,
+                  "end": 760,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10214",
+                  "participantId": "participant:215",
+                  "kind": "auxiliary",
+                  "start": 945,
+                  "end": 975,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10227",
+                  "participantId": "participant:216",
+                  "kind": "auxiliary",
+                  "start": 625,
+                  "end": 655,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10240",
+                  "participantId": "participant:217",
+                  "kind": "auxiliary",
+                  "start": 555,
+                  "end": 585,
+                  "spaceId": "space:3020",
+                  "requiredResourceIds": [
+                    "plan-resource:4006"
+                  ]
+                },
+                {
+                  "taskId": "task:10253",
+                  "participantId": "participant:218",
+                  "kind": "auxiliary",
+                  "start": 590,
+                  "end": 620,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                },
+                {
+                  "taskId": "task:10266",
+                  "participantId": "participant:219",
+                  "kind": "auxiliary",
+                  "start": 555,
+                  "end": 585,
+                  "spaceId": "space:3021",
+                  "requiredResourceIds": [
+                    "plan-resource:4007"
+                  ]
+                }
+              ]
+            },
+            "priorRelevantPlacements": [],
+            "beforeCandidate": {
+              "evaluated": true,
+              "authorityId": "space:3018",
+              "overloaded": false,
+              "demandMinutes": 20,
+              "freeCapacityMinutes": 380,
+              "overloadTaskIds": [
+                "task:10230",
+                "task:10257"
+              ]
+            },
+            "afterCandidate": {
+              "evaluated": true,
+              "authorityId": "space:3018",
+              "overloaded": true,
+              "demandMinutes": 20,
+              "freeCapacityMinutes": 15,
+              "overloadTaskIds": [
+                "task:10230",
+                "task:10257"
+              ]
+            },
+            "afterMatchesNormalCertificate": true,
+            "causalAssessment": "INTRODUCED_BY_CANDIDATE",
+            "candidateIntroducesCertificate": true
+          }
+        ],
+        "macroPendingPrerequisiteCapacityCertificateOverflow": 0,
+        "deferredArrivalFirstRepair": {
+          "causingTaskId": "task:10158",
+          "arrivalTaskId": "task:10150",
+          "participantId": "participant:211",
+          "previousBoundary": 740,
+          "currentBoundary": 630,
+          "previousWitnessSummary": [
+            {
+              "start": 540,
+              "taskIds": [
+                "task:10006",
+                "task:10021",
+                "task:10034"
+              ]
+            },
+            {
+              "start": 585,
+              "taskIds": [
+                "task:10047",
+                "task:10165",
+                "task:10180"
+              ]
+            },
+            {
+              "start": 630,
+              "taskIds": [
+                "task:10060",
+                "task:10194",
+                "task:10207"
+              ]
+            },
+            {
+              "start": 660,
+              "taskIds": [
+                "task:10077",
+                "task:10092",
+                "task:10105"
+              ]
+            },
+            {
+              "start": 705,
+              "taskIds": [
+                "task:10120",
+                "task:10135",
+                "task:10150"
+              ]
+            },
+            {
+              "start": 750,
+              "taskIds": [
+                "task:10221",
+                "task:10233",
+                "task:10246"
+              ]
+            },
+            {
+              "start": 840,
+              "taskIds": [
+                "task:10259"
+              ]
+            }
+          ],
+          "previousWitnessFingerprint": "540:task:10006,task:10021,task:10034|585:task:10047,task:10165,task:10180|630:task:10060,task:10194,task:10207|660:task:10077,task:10092,task:10105|705:task:10120,task:10135,task:10150|750:task:10221,task:10233,task:10246|840:task:10259",
+          "repair": {
+            "monotoneAbstentionReason": "PACKET_NO_COMMON_START",
+            "canonicalCandidateFingerprint": null,
+            "canonicalCandidateSummary": null,
+            "firstValidationFailure": null,
+            "firstCumulativeCapacityPrune": {
+              "prefix": 16,
+              "demand": 10,
+              "capacity": 9,
+              "activeSlots": [
+                540,
+                570,
+                600
+              ],
+              "participantIds": [
+                "participant:201",
+                "participant:202",
+                "participant:203",
+                "participant:204",
+                "participant:211",
+                "participant:212",
+                "participant:213",
+                "participant:216",
+                "participant:217",
+                "participant:218"
+              ],
+              "taskIds": [
+                "task:10006",
+                "task:10021",
+                "task:10034",
+                "task:10047",
+                "task:10150",
+                "task:10165",
+                "task:10180",
+                "task:10221",
+                "task:10233",
+                "task:10246"
+              ]
+            }
+          }
+        }
+      }
     },
-    "diagnosticReport": null,
+    "diagnosticReport": {
+      "waterfallByDepth": {
+        "0": {
+          "mainCandidate": 0,
+          "feederStart": 0,
+          "residualMatching": 306,
+          "continuation": 0,
+          "participantMeal": 0,
+          "standaloneForward": 0,
+          "other": 19232,
+          "total": 19538
+        },
+        "8": {
+          "mainCandidate": 0,
+          "feederStart": 7,
+          "residualMatching": 198,
+          "continuation": 1,
+          "participantMeal": 0,
+          "standaloneForward": 74,
+          "other": 0,
+          "total": 280
+        },
+        "19": {
+          "mainCandidate": 0,
+          "feederStart": 77,
+          "residualMatching": 0,
+          "continuation": 1,
+          "participantMeal": 0,
+          "standaloneForward": 104,
+          "other": 0,
+          "total": 182
+        }
+      },
+      "waterfallReconciles": true,
+      "feederByDepth": {
+        "8": {
+          "startsConsidered": 41,
+          "startsCoachEliminated": 18,
+          "startsEvaluated": 7,
+          "valid": 1,
+          "invalid": 0,
+          "mainChoicesReachingFeeder": 1,
+          "mainChoicesWithValidFeeder": 1
+        },
+        "19": {
+          "startsConsidered": 89,
+          "startsCoachEliminated": 27,
+          "startsEvaluated": 77,
+          "valid": 10,
+          "invalid": 0,
+          "mainChoicesReachingFeeder": 1,
+          "mainChoicesWithValidFeeder": 1
+        }
+      },
+      "futureFeasibility": {
+        "totalEvaluations": 178,
+        "uniqueAuthorityStates": 178,
+        "repeatedEvaluations": 0,
+        "authorityResultCollisions": 0,
+        "negativeEvaluations": 0,
+        "repeatedNegativeEvaluations": 0,
+        "rejectsWithCertifiedBackjumpTarget": 0,
+        "evaluationsByDepth": {
+          "8": 74,
+          "19": 104
+        },
+        "repeatedByDepth": {},
+        "negativeByDepth": {}
+      },
+      "standaloneFrontier": {
+        "totalRejections": 0,
+        "certificates": [],
+        "examples": []
+      },
+      "feederMatching": {
+        "contexts": [
+          {
+            "fingerprint": "e093e080df83591eb0477e29fda8ce3d855c6f04ace4f7492b7435c7549a2dda",
+            "depth": 8,
+            "runEnd": 8,
+            "blockStart": 545,
+            "cohortSize": 8,
+            "distinctFeederProfiles": 8,
+            "edgeCount": 64,
+            "domainSizes": [
+              8,
+              8,
+              8,
+              8,
+              8,
+              8,
+              8,
+              8
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 0,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": []
+          },
+          {
+            "fingerprint": "93ad211a7110dd2099d8e906576e0280003480a2211c5bfdd812cb2b68b3a130",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 695,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 0,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "28b89a685ea27f526d8d8af259cd58cf162083f2dd1c72ed91ba4ca6a66a38d3",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 690,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 5,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "d48545d26d6cded75e3d90912cc4daa53544ca0d408736dbe2900e478d5964db",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 685,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 10,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "4b9396c7c978518747850e93df2aa11e1fe767e8e7fccb079073f92822d95a2f",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 680,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 15,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "fd352f48e198fa3e0ce9808f0d143d38e6eb2876799b00d02f7d2eb8ffe8b2fd",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 675,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 20,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "33bfc70bc25dd2f53069aff11b8612aa7ef64f2bf48eef35fa0077ca4348fc7f",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 670,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 25,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "ed4d200ee8f7ccbfc0ea4ba62ef9f1e4007df88feab097ac5efa2ea98d5ee7d4",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 665,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 30,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "771d51c63ac1622c9eb899520050fbfc04f96895dbf3e87c778d431e648f9062",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 660,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 35,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "afb855d01e3d122f87469a7427c81cfc9150045ef69824d50b8e7d9cd59eb48c",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 655,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 1,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": [
+              {
+                "certificate": {
+                  "authorityId": "break:coach-jose-maria-individual",
+                  "demandMinutes": 45,
+                  "freeCapacityMinutes": 40,
+                  "overloadTaskIds": [
+                    "task:10056",
+                    "task:10063",
+                    "task:10064",
+                    "task:10065",
+                    "task:10072",
+                    "task:10080",
+                    "task:10088",
+                    "task:10095",
+                    "task:10102",
+                    "task:10108",
+                    "task:10109",
+                    "task:10110",
+                    "task:10116",
+                    "task:10123",
+                    "task:10131",
+                    "task:10138",
+                    "task:10147",
+                    "task:10153",
+                    "task:10218",
+                    "task:10224",
+                    "task:10229",
+                    "task:10236",
+                    "task:10243",
+                    "task:10249",
+                    "task:10256",
+                    "task:10262"
+                  ]
+                },
+                "rejectedWitnesses": 1,
+                "repairAttempts": 0,
+                "augmentTraversals": 0,
+                "distinctOrderFingerprints": 1
+              }
+            ]
+          },
+          {
+            "fingerprint": "ef854adae28b035903c8d4054cc8bcb86a09bdef9859539dc4582c3b40d8ad25",
+            "depth": 19,
+            "runEnd": 19,
+            "blockStart": 650,
+            "cohortSize": 11,
+            "distinctFeederProfiles": 11,
+            "edgeCount": 121,
+            "domainSizes": [
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11,
+              11
+            ],
+            "witnessMaterializations": 1,
+            "rejectedWitnesses": 0,
+            "repairAttempts": 0,
+            "successfulRepairs": 0,
+            "failedRepairs": 0,
+            "augmentTraversals": 0,
+            "equivalentOrdersCollapsed": 0,
+            "distinctOrderFingerprints": 1,
+            "repairsByTrigger": {
+              "RESIDUAL_MATCHING_DEAD_END": 0,
+              "PARTIAL_CORE_REJECT": 0,
+              "CHILD_DEAD_END": 0
+            },
+            "partialCoreRejects": []
+          }
+        ],
+        "overflowContexts": 0
+      },
+      "macroPendingPrerequisiteCapacityCertificates": [
+        {
+          "frequency": 3,
+          "authorityId": "space:3018",
+          "demandMinutes": 20,
+          "freeCapacityMinutes": 10,
+          "overloadTaskIds": [
+            "task:10230",
+            "task:10257"
+          ],
+          "blockingTaskId": "task:10230",
+          "causingMacroUnitId": "round:round-synchronization:a2-totales-rounds",
+          "macroDepth": 0,
+          "overloadTasks": [
+            {
+              "taskId": "task:10230",
+              "participantId": "participant:217",
+              "kind": "auxiliary",
+              "spaceId": "space:3018",
+              "duration": 10,
+              "requiredResourceIds": []
+            },
+            {
+              "taskId": "task:10257",
+              "participantId": "participant:219",
+              "kind": "auxiliary",
+              "spaceId": "space:3018",
+              "duration": 10,
+              "requiredResourceIds": []
+            }
+          ],
+          "candidatePlacement": {
+            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
+            "taskIds": [
+              "task:10014",
+              "task:10028",
+              "task:10040",
+              "task:10053",
+              "task:10068",
+              "task:10084",
+              "task:10099",
+              "task:10113",
+              "task:10128",
+              "task:10143",
+              "task:10158",
+              "task:10172",
+              "task:10187",
+              "task:10200",
+              "task:10214",
+              "task:10227",
+              "task:10240",
+              "task:10253",
+              "task:10266"
+            ],
+            "participantId": null,
+            "kind": "auxiliary",
+            "start": 550,
+            "end": 970,
+            "spaceId": "MIXED",
+            "requiredResourceIds": [
+              "plan-resource:4006",
+              "plan-resource:4007"
+            ],
+            "tasks": [
+              {
+                "taskId": "task:10014",
+                "participantId": "participant:201",
+                "kind": "auxiliary",
+                "start": 870,
+                "end": 900,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10028",
+                "participantId": "participant:202",
+                "kind": "auxiliary",
+                "start": 905,
+                "end": 935,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10040",
+                "participantId": "participant:203",
+                "kind": "auxiliary",
+                "start": 690,
+                "end": 720,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10053",
+                "participantId": "participant:204",
+                "kind": "auxiliary",
+                "start": 690,
+                "end": 720,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10068",
+                "participantId": "participant:205",
+                "kind": "auxiliary",
+                "start": 725,
+                "end": 755,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10084",
+                "participantId": "participant:206",
+                "kind": "auxiliary",
+                "start": 870,
+                "end": 900,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10099",
+                "participantId": "participant:207",
+                "kind": "auxiliary",
+                "start": 760,
+                "end": 790,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10113",
+                "participantId": "participant:208",
+                "kind": "auxiliary",
+                "start": 655,
+                "end": 685,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10128",
+                "participantId": "participant:209",
+                "kind": "auxiliary",
+                "start": 905,
+                "end": 935,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10143",
+                "participantId": "participant:210",
+                "kind": "auxiliary",
+                "start": 760,
+                "end": 790,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10158",
+                "participantId": "participant:211",
+                "kind": "auxiliary",
+                "start": 620,
+                "end": 650,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10172",
+                "participantId": "participant:212",
+                "kind": "auxiliary",
+                "start": 655,
+                "end": 685,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10187",
+                "participantId": "participant:213",
+                "kind": "auxiliary",
+                "start": 585,
+                "end": 615,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10200",
+                "participantId": "participant:214",
+                "kind": "auxiliary",
+                "start": 725,
+                "end": 755,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10214",
+                "participantId": "participant:215",
+                "kind": "auxiliary",
+                "start": 940,
+                "end": 970,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10227",
+                "participantId": "participant:216",
+                "kind": "auxiliary",
+                "start": 620,
+                "end": 650,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10240",
+                "participantId": "participant:217",
+                "kind": "auxiliary",
+                "start": 550,
+                "end": 580,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10253",
+                "participantId": "participant:218",
+                "kind": "auxiliary",
+                "start": 585,
+                "end": 615,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10266",
+                "participantId": "participant:219",
+                "kind": "auxiliary",
+                "start": 550,
+                "end": 580,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              }
+            ]
+          },
+          "priorRelevantPlacements": [],
+          "beforeCandidate": {
+            "evaluated": true,
+            "authorityId": "space:3018",
+            "overloaded": false,
+            "demandMinutes": 20,
+            "freeCapacityMinutes": 380,
+            "overloadTaskIds": [
+              "task:10230",
+              "task:10257"
+            ]
+          },
+          "afterCandidate": {
+            "evaluated": true,
+            "authorityId": "space:3018",
+            "overloaded": true,
+            "demandMinutes": 20,
+            "freeCapacityMinutes": 10,
+            "overloadTaskIds": [
+              "task:10230",
+              "task:10257"
+            ]
+          },
+          "afterMatchesNormalCertificate": true,
+          "causalAssessment": "INTRODUCED_BY_CANDIDATE",
+          "candidateIntroducesCertificate": true
+        },
+        {
+          "frequency": 3,
+          "authorityId": "space:3018",
+          "demandMinutes": 20,
+          "freeCapacityMinutes": 15,
+          "overloadTaskIds": [
+            "task:10230",
+            "task:10257"
+          ],
+          "blockingTaskId": "task:10230",
+          "causingMacroUnitId": "round:round-synchronization:a2-totales-rounds",
+          "macroDepth": 0,
+          "overloadTasks": [
+            {
+              "taskId": "task:10230",
+              "participantId": "participant:217",
+              "kind": "auxiliary",
+              "spaceId": "space:3018",
+              "duration": 10,
+              "requiredResourceIds": []
+            },
+            {
+              "taskId": "task:10257",
+              "participantId": "participant:219",
+              "kind": "auxiliary",
+              "spaceId": "space:3018",
+              "duration": 10,
+              "requiredResourceIds": []
+            }
+          ],
+          "candidatePlacement": {
+            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
+            "taskIds": [
+              "task:10014",
+              "task:10028",
+              "task:10040",
+              "task:10053",
+              "task:10068",
+              "task:10084",
+              "task:10099",
+              "task:10113",
+              "task:10128",
+              "task:10143",
+              "task:10158",
+              "task:10172",
+              "task:10187",
+              "task:10200",
+              "task:10214",
+              "task:10227",
+              "task:10240",
+              "task:10253",
+              "task:10266"
+            ],
+            "participantId": null,
+            "kind": "auxiliary",
+            "start": 555,
+            "end": 975,
+            "spaceId": "MIXED",
+            "requiredResourceIds": [
+              "plan-resource:4006",
+              "plan-resource:4007"
+            ],
+            "tasks": [
+              {
+                "taskId": "task:10014",
+                "participantId": "participant:201",
+                "kind": "auxiliary",
+                "start": 875,
+                "end": 905,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10028",
+                "participantId": "participant:202",
+                "kind": "auxiliary",
+                "start": 695,
+                "end": 725,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10040",
+                "participantId": "participant:203",
+                "kind": "auxiliary",
+                "start": 695,
+                "end": 725,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10053",
+                "participantId": "participant:204",
+                "kind": "auxiliary",
+                "start": 910,
+                "end": 940,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10068",
+                "participantId": "participant:205",
+                "kind": "auxiliary",
+                "start": 910,
+                "end": 940,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10084",
+                "participantId": "participant:206",
+                "kind": "auxiliary",
+                "start": 875,
+                "end": 905,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10099",
+                "participantId": "participant:207",
+                "kind": "auxiliary",
+                "start": 730,
+                "end": 760,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10113",
+                "participantId": "participant:208",
+                "kind": "auxiliary",
+                "start": 660,
+                "end": 690,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10128",
+                "participantId": "participant:209",
+                "kind": "auxiliary",
+                "start": 765,
+                "end": 795,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10143",
+                "participantId": "participant:210",
+                "kind": "auxiliary",
+                "start": 765,
+                "end": 795,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10158",
+                "participantId": "participant:211",
+                "kind": "auxiliary",
+                "start": 625,
+                "end": 655,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10172",
+                "participantId": "participant:212",
+                "kind": "auxiliary",
+                "start": 660,
+                "end": 690,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10187",
+                "participantId": "participant:213",
+                "kind": "auxiliary",
+                "start": 590,
+                "end": 620,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10200",
+                "participantId": "participant:214",
+                "kind": "auxiliary",
+                "start": 730,
+                "end": 760,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10214",
+                "participantId": "participant:215",
+                "kind": "auxiliary",
+                "start": 945,
+                "end": 975,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10227",
+                "participantId": "participant:216",
+                "kind": "auxiliary",
+                "start": 625,
+                "end": 655,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10240",
+                "participantId": "participant:217",
+                "kind": "auxiliary",
+                "start": 555,
+                "end": 585,
+                "spaceId": "space:3020",
+                "requiredResourceIds": [
+                  "plan-resource:4006"
+                ]
+              },
+              {
+                "taskId": "task:10253",
+                "participantId": "participant:218",
+                "kind": "auxiliary",
+                "start": 590,
+                "end": 620,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              },
+              {
+                "taskId": "task:10266",
+                "participantId": "participant:219",
+                "kind": "auxiliary",
+                "start": 555,
+                "end": 585,
+                "spaceId": "space:3021",
+                "requiredResourceIds": [
+                  "plan-resource:4007"
+                ]
+              }
+            ]
+          },
+          "priorRelevantPlacements": [],
+          "beforeCandidate": {
+            "evaluated": true,
+            "authorityId": "space:3018",
+            "overloaded": false,
+            "demandMinutes": 20,
+            "freeCapacityMinutes": 380,
+            "overloadTaskIds": [
+              "task:10230",
+              "task:10257"
+            ]
+          },
+          "afterCandidate": {
+            "evaluated": true,
+            "authorityId": "space:3018",
+            "overloaded": true,
+            "demandMinutes": 20,
+            "freeCapacityMinutes": 15,
+            "overloadTaskIds": [
+              "task:10230",
+              "task:10257"
+            ]
+          },
+          "afterMatchesNormalCertificate": true,
+          "causalAssessment": "INTRODUCED_BY_CANDIDATE",
+          "candidateIntroducesCertificate": true
+        }
+      ],
+      "macroPendingPrerequisiteCapacityCertificateOverflow": 0,
+      "macroPendingPrerequisiteCapacityCertificateReconciles": true,
+      "deferredArrivalFirstRepair": {
+        "causingTaskId": "task:10158",
+        "arrivalTaskId": "task:10150",
+        "participantId": "participant:211",
+        "previousBoundary": 740,
+        "currentBoundary": 630,
+        "previousWitnessSummary": [
+          {
+            "start": 540,
+            "taskIds": [
+              "task:10006",
+              "task:10021",
+              "task:10034"
+            ]
+          },
+          {
+            "start": 585,
+            "taskIds": [
+              "task:10047",
+              "task:10165",
+              "task:10180"
+            ]
+          },
+          {
+            "start": 630,
+            "taskIds": [
+              "task:10060",
+              "task:10194",
+              "task:10207"
+            ]
+          },
+          {
+            "start": 660,
+            "taskIds": [
+              "task:10077",
+              "task:10092",
+              "task:10105"
+            ]
+          },
+          {
+            "start": 705,
+            "taskIds": [
+              "task:10120",
+              "task:10135",
+              "task:10150"
+            ]
+          },
+          {
+            "start": 750,
+            "taskIds": [
+              "task:10221",
+              "task:10233",
+              "task:10246"
+            ]
+          },
+          {
+            "start": 840,
+            "taskIds": [
+              "task:10259"
+            ]
+          }
+        ],
+        "previousWitnessFingerprint": "540:task:10006,task:10021,task:10034|585:task:10047,task:10165,task:10180|630:task:10060,task:10194,task:10207|660:task:10077,task:10092,task:10105|705:task:10120,task:10135,task:10150|750:task:10221,task:10233,task:10246|840:task:10259",
+        "repair": {
+          "monotoneAbstentionReason": "PACKET_NO_COMMON_START",
+          "canonicalCandidateFingerprint": null,
+          "canonicalCandidateSummary": null,
+          "firstValidationFailure": null,
+          "firstCumulativeCapacityPrune": {
+            "prefix": 16,
+            "demand": 10,
+            "capacity": 9,
+            "activeSlots": [
+              540,
+              570,
+              600
+            ],
+            "participantIds": [
+              "participant:201",
+              "participant:202",
+              "participant:203",
+              "participant:204",
+              "participant:211",
+              "participant:212",
+              "participant:213",
+              "participant:216",
+              "participant:217",
+              "participant:218"
+            ],
+            "taskIds": [
+              "task:10006",
+              "task:10021",
+              "task:10034",
+              "task:10047",
+              "task:10150",
+              "task:10165",
+              "task:10180",
+              "task:10221",
+              "task:10233",
+              "task:10246"
+            ]
+          }
+        }
+      },
+      "criticalDepth": 19,
+      "criticalRejectionReasons": [
+        {
+          "id": "TRANSITION_COACH",
+          "count": 83
+        },
+        {
+          "id": "OVERLAP_COACH",
+          "count": 76
+        }
+      ],
+      "topMainTasks": [
+        {
+          "id": "task:10056",
+          "count": 27
+        },
+        {
+          "id": "task:10072",
+          "count": 27
+        },
+        {
+          "id": "task:10088",
+          "count": 24
+        },
+        {
+          "id": "task:10102",
+          "count": 18
+        },
+        {
+          "id": "task:10116",
+          "count": 18
+        },
+        {
+          "id": "task:10131",
+          "count": 15
+        },
+        {
+          "id": "task:10147",
+          "count": 12
+        },
+        {
+          "id": "task:10218",
+          "count": 9
+        },
+        {
+          "id": "task:10229",
+          "count": 6
+        },
+        {
+          "id": "task:10243",
+          "count": 3
+        }
+      ],
+      "topFeederTasks": [
+        {
+          "id": "task:10063",
+          "count": 27
+        },
+        {
+          "id": "task:10080",
+          "count": 27
+        },
+        {
+          "id": "task:10095",
+          "count": 24
+        },
+        {
+          "id": "task:10108",
+          "count": 18
+        },
+        {
+          "id": "task:10123",
+          "count": 18
+        },
+        {
+          "id": "task:10138",
+          "count": 15
+        },
+        {
+          "id": "task:10153",
+          "count": 12
+        },
+        {
+          "id": "task:10224",
+          "count": 9
+        },
+        {
+          "id": "task:10236",
+          "count": 6
+        },
+        {
+          "id": "task:10249",
+          "count": 3
+        }
+      ],
+      "topBlockingPlacedTasks": [
+        {
+          "id": "task:10256",
+          "count": 102
+        },
+        {
+          "id": "task:10243",
+          "count": 18
+        },
+        {
+          "id": "task:10229",
+          "count": 15
+        },
+        {
+          "id": "task:10147",
+          "count": 9
+        },
+        {
+          "id": "task:10218",
+          "count": 9
+        },
+        {
+          "id": "task:10131",
+          "count": 6
+        }
+      ],
+      "topFeederBlockerPairs": [
+        {
+          "id": "task:10063 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10080 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10095 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10108 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10123 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10138 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10153 + task:10256",
+          "count": 12
+        },
+        {
+          "id": "task:10224 + task:10256",
+          "count": 9
+        },
+        {
+          "id": "task:10236 + task:10256",
+          "count": 6
+        },
+        {
+          "id": "task:10063 + task:10131",
+          "count": 3
+        }
+      ],
+      "criticalRejectionCount": 159,
+      "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10256, which accounts for 102 of 159 (64.2%) depth-19 feeder rejections, while preserving every hard constraint and the 20,000-branch budget."
+    },
     "searchInvariance": {
       "diagnosticOn": {
-        "branchesExplored": 300000,
+        "branchesExplored": 20000,
         "coreBranches": 1599,
-        "standaloneBranches": 298401,
+        "standaloneBranches": 18401,
         "coreCompleteLeafCount": 1,
         "coreCompleteLeavesEvaluated": 1,
         "coreStandaloneFrontierChecks": 1,
@@ -1493,9 +5564,9 @@
         "lastExhaustionPhase": "STANDALONE"
       },
       "diagnosticOff": {
-        "branchesExplored": 300000,
+        "branchesExplored": 20000,
         "coreBranches": 1599,
-        "standaloneBranches": 298401,
+        "standaloneBranches": 18401,
         "coreCompleteLeafCount": 1,
         "coreCompleteLeavesEvaluated": 1,
         "coreStandaloneFrontierChecks": 1,
@@ -1534,7 +5605,7 @@
       "standaloneMaximumDepth": 0,
       "standaloneCompleteLeafCount": 0,
       "coreBranches": 1599,
-      "standaloneBranches": 298401,
+      "standaloneBranches": 18401,
       "lastExhaustionPhase": "STANDALONE"
     }
   },
