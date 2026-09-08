@@ -47,6 +47,25 @@ test("exact feeder meal shapes obey policy window, grid, and remain input-order 
   assert.deepEqual(exactFeederRunShapes(problem,"coach",11,10,1).map(shape=>shape.mealGap),[null]);
 });
 
+test("exact feeder meal alignment is relative to day start, not absolute clock zero", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.day={start:1,end:121};
+  problem.operationalMealPolicies=[{id:"relative-grid",window:{start:6,end:16},duration:5,
+    resourceIds:["coach"],spaceIds:[]}];
+  assert.deepEqual(exactFeederRunShapes(problem,"coach",6,10,1)
+    .filter(shape=>shape.mealGap).map(shape=>shape.mealGap!.start),[6]);
+});
+
+test("exact feeder meal shapes observe branch-local CORE occupations", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[{id:"occupied",window:{start:10,end:20},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const occupation={id:"fixed-core",kind:"main" as const,duration:10,spaceId:"main",coachId:"coach",
+    dependencies:[],start:10,end:20};
+  assert.equal(exactFeederRunShapes(problem,"coach",10,10,1,[occupation])
+    .some(shape=>shape.mealGap!==null),false);
+});
+
 function mainBacktrackingProblem(): PlannerNextProblem {
   return syntheticProblem([
     { id: "vocal-a-flex", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },

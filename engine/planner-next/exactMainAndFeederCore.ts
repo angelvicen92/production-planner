@@ -12,6 +12,7 @@ import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./co
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { operationalMealFreeIntervals } from "./operationalMeals";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES as TIME_GRID } from "./integration/plannerNextCapabilities";
 import { preflight, validatePlan } from "./validate";
 
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
@@ -207,7 +208,8 @@ export interface ExactFeederRunShape {
 /** Pure shape authority.  It deliberately returns every distinguishable aligned
  * boundary, plus the no-gap shape: a meal may have a witness outside this run. */
 export function exactFeederRunShapes(problem: PlannerNextProblem, coachId: string | undefined,
-  blockStart: number, feederDuration: number, feederCount: number): ExactFeederRunShape[] {
+  blockStart: number, feederDuration: number, feederCount: number,
+  branchTasks: readonly ScheduledTask[] = []): ExactFeederRunShape[] {
   if (feederCount < 0 || !Number.isInteger(feederCount) || feederDuration <= 0) return [];
   const shape = (boundary: number | null, policy?: NonNullable<PlannerNextProblem["operationalMealPolicies"]>[number]) => {
     const gap = policy?.duration ?? 0;
@@ -223,10 +225,11 @@ export function exactFeederRunShapes(problem: PlannerNextProblem, coachId: strin
   if (coachId !== undefined) for (const policy of [...(problem.operationalMealPolicies ?? [])]
     .filter(item => item.spaceIds.length === 0 && item.resourceIds.includes(coachId))
     .sort((a,b)=>a.id.localeCompare(b.id))) {
-    const free = operationalMealFreeIntervals(problem, policy, []);
+    // Positive shape authority: unlike future-feasibility relaxations, it observes branch-local occupations.
+    const free = operationalMealFreeIntervals(problem, policy, branchTasks);
     for (let boundary = 0; boundary <= feederCount; boundary++) {
       const candidate = shape(boundary, policy), meal = candidate.mealGap!;
-      if ((meal.start - problem.day.start) % 5 === 0
+      if ((meal.start - problem.day.start) % TIME_GRID === 0
         && free.some(interval => meal.start >= interval.start && meal.end <= interval.end)) result.push(candidate);
     }
   }
@@ -364,7 +367,7 @@ export function exactFeederSlotAnalyticCertificate(blockStart:number,duration:nu
     ||slotCount<0||candidates.length!==slotCount)return "NOT_APPLICABLE";
   const ranges:Array<{low:number;high:number}>=[];
   for(const {deadline,domain} of candidates){
-    if(!Number.isFinite(deadline)||(domain.gridAnchor-blockStart)%5!==0||duration%5!==0)return "NOT_APPLICABLE";
+    if(!Number.isFinite(deadline)||(domain.gridAnchor-blockStart)%TIME_GRID!==0||duration%TIME_GRID!==0)return "NOT_APPLICABLE";
     const clipped=domain.intervals.flatMap(interval=>{
       const low=Math.max(0,Math.ceil((interval.start-blockStart)/duration));
       const high=Math.min(slotCount-1,Math.floor((Math.min(interval.end,deadline-duration)-blockStart)/duration));
@@ -388,13 +391,13 @@ export function exactFeederSlotAnalyticCertificate(blockStart:number,duration:nu
 /** Pure negative-domain membership test. Membership only means that the start was
  * not disproved by this domain; canonical placement remains authoritative. */
 export function isExactFeederStartInDomain(domain: ExactFeederStartDomain, start: number): boolean {
-  if (!Number.isFinite(start) || (domain.gridAnchor - start) % 5 !== 0) return false;
+  if (!Number.isFinite(start) || (domain.gridAnchor - start) % TIME_GRID !== 0) return false;
   return domain.intervals.some((interval) => start >= interval.start && start <= interval.end);
 }
 
 const gridCountInInterval = (latestStart: number, interval: ExactFeederStartInterval): number => {
-  const firstIndex = Math.max(0, Math.ceil((latestStart - interval.end) / 5));
-  const lastIndex = Math.floor((latestStart - interval.start) / 5);
+  const firstIndex = Math.max(0, Math.ceil((latestStart - interval.end) / TIME_GRID));
+  const lastIndex = Math.floor((latestStart - interval.start) / TIME_GRID);
   return Math.max(0, lastIndex - firstIndex + 1);
 };
 const gridCountInClosedRange = (latestStart:number, intervals:readonly ExactFeederStartInterval[], start:number, end:number):number =>
@@ -442,13 +445,13 @@ export function exactFeederStartDomain(problem: PlannerNextProblem, feeder: Task
       let nextUnaccountedGridIndex = 0;
       for (let index = intervals.length - 1; index >= 0; index--) {
         const interval = intervals[index]!;
-        const firstGridIndex = Math.max(0, Math.ceil((gridAnchor - interval.end) / 5));
-        const lastGridIndex = Math.floor((gridAnchor - interval.start) / 5);
+        const firstGridIndex = Math.max(0, Math.ceil((gridAnchor - interval.end) / TIME_GRID));
+        const lastGridIndex = Math.floor((gridAnchor - interval.start) / TIME_GRID);
         for (let gridIndex = firstGridIndex; gridIndex <= lastGridIndex; gridIndex++) {
           const considered = gridIndex - nextUnaccountedGridIndex + 1;
           onProgress?.(considered, considered - 1);
           nextUnaccountedGridIndex = gridIndex + 1;
-          yield gridAnchor - 5 * gridIndex;
+          yield gridAnchor - TIME_GRID * gridIndex;
         }
       }
       const trailingEliminated = fullGridStartCount - nextUnaccountedGridIndex;
@@ -470,26 +473,26 @@ export function exactFeederStartDomainUnion(dayStart:number, latestBlockStart:nu
   domains:readonly ExactFeederStartDomain[], maximumStart=latestBlockStart,
   allowedIntervals:readonly ExactFeederStartInterval[]=[{start:dayStart,end:maximumStart}]):ExactFeederStartUnion {
   const fullGridStartCount=latestBlockStart<dayStart?0:gridCountInInterval(latestBlockStart,{start:dayStart,end:latestBlockStart});
-  const projected=domains.flatMap(domain=>(domain.gridAnchor-latestBlockStart)%5===0?domain.intervals.flatMap(interval=>allowedIntervals.flatMap(allowed=>{
+  const projected=domains.flatMap(domain=>(domain.gridAnchor-latestBlockStart)%TIME_GRID===0?domain.intervals.flatMap(interval=>allowedIntervals.flatMap(allowed=>{
     const clippedStart=Math.max(dayStart,interval.start,allowed.start),clippedEnd=Math.min(latestBlockStart,maximumStart,interval.end,allowed.end);
-    const firstGridIndex=Math.max(0,Math.ceil((latestBlockStart-clippedEnd)/5));
-    const lastGridIndex=Math.floor((latestBlockStart-clippedStart)/5);
+    const firstGridIndex=Math.max(0,Math.ceil((latestBlockStart-clippedEnd)/TIME_GRID));
+    const lastGridIndex=Math.floor((latestBlockStart-clippedStart)/TIME_GRID);
     return firstGridIndex<=lastGridIndex?[{
-      start:latestBlockStart-lastGridIndex*5,end:latestBlockStart-firstGridIndex*5,
+      start:latestBlockStart-lastGridIndex*TIME_GRID,end:latestBlockStart-firstGridIndex*TIME_GRID,
     }]:[];
   })):[]).sort((a,b)=>a.start-b.start||a.end-b.end);
   const intervals:ExactFeederStartInterval[]=[];
   for(const interval of projected){
     const previous=intervals.at(-1);
-    if(previous&&interval.start<=previous.end+5)intervals[intervals.length-1]={start:previous.start,end:Math.max(previous.end,interval.end)};
+    if(previous&&interval.start<=previous.end+TIME_GRID)intervals[intervals.length-1]={start:previous.start,end:Math.max(previous.end,interval.end)};
     else intervals.push(interval);
   }
   const eligibleStartCount=intervals.reduce((sum,interval)=>sum+gridCountInInterval(latestBlockStart,interval),0);
   return {fullGridStartCount,eligibleStartCount,domainEliminatedStartCount:fullGridStartCount-eligibleStartCount,
     *starts(){for(let index=intervals.length-1;index>=0;index--){const interval=intervals[index]!;
-      const first=Math.max(0,Math.ceil((latestBlockStart-interval.end)/5));
-      const last=Math.floor((latestBlockStart-interval.start)/5);
-      for(let gridIndex=first;gridIndex<=last;gridIndex++)yield latestBlockStart-gridIndex*5;
+      const first=Math.max(0,Math.ceil((latestBlockStart-interval.end)/TIME_GRID));
+      const last=Math.floor((latestBlockStart-interval.start)/TIME_GRID);
+      for(let gridIndex=first;gridIndex<=last;gridIndex++)yield latestBlockStart-gridIndex*TIME_GRID;
     }}
   };
 }
@@ -1071,7 +1074,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               :[{firstOrdinal:0,lastOrdinal:boundary-1,offset:0},
                 {firstOrdinal:boundary,lastOrdinal:rankedCohort.length-1,offset:shape.mealGap!.end-shape.mealGap!.start}]
                 .filter(segment=>segment.firstOrdinal<=segment.lastOrdinal);
-            const ranges=(candidate.domain.gridAnchor-blockStart)%5===0?authorityIntervals
+            const ranges=(candidate.domain.gridAnchor-blockStart)%TIME_GRID===0?authorityIntervals
               .flatMap(interval=>segments.flatMap(segment=>{
                 const origin=blockStart+segment.offset;
                 const first=Math.max(segment.firstOrdinal,Math.ceil((interval.start-origin)/duration));
@@ -1161,7 +1164,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         evidence.feederBlockStartsAnalyticallyEliminated+=blockStartDomain.fullGridStartCount-blockStartDomain.eligibleStartCount;
         blockStarts: for (const blockStart of blockStartDomain.starts()) {
           const shapes=exactFeederRunShapes(problem,commonCoachId,blockStart,
-            rankedCohort[0]?.choice.feeder.duration??0,rankedCohort.length);
+            rankedCohort[0]?.choice.feeder.duration??0,rankedCohort.length,
+            [...blockPlaced,...blockOperations]);
           evidence.feederMealShapesGenerated+=shapes.length;
           shapeCandidates: for(const shape of shapes){
           const terminalMeal=shape.mealGap?.boundary===rankedCohort.length;
@@ -1196,6 +1200,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 availability:feeder.availability??null,
                 participantAvailability:problem.participants.find(item=>item.id===feeder.participantId)?.availability??null,
                 resources:[...(feeder.requiredResourceIds??[])].sort(),dependencies:feeder.dependencies.map(dependencyProfile),
+                main:{spaceId:choice.task.spaceId,coachId:choice.task.coachId??null,
+                  availability:choice.task.availability??null,
+                  resources:[...(choice.task.requiredResourceIds??[])].sort(),
+                  dependencies:choice.task.dependencies.map(dependencyProfile)},
                 deadline,domain:domain.intervals,future});};
             const feederProfileById=new Map([...byFeederId.keys()].map(id=>[id,feederContextSignature(id)]));
             const contextFingerprint=createHash("sha256").update(JSON.stringify({runEnd,blockStart,
@@ -1232,6 +1240,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 const candidate=byFeederId.get(feeder.id)!;
                 if(!checkFeederTask(candidate.choice,feeder,[...blockPlaced,...blockOperations,...scheduled.slice(0,index)],blockMeals,runEnd)){
                   jointlyValid=false;break;
+                }
+              }
+              // Matching uses an optimistic transition until the terminal feeder identity is known.
+              // A rejected terminal edge is repaired below rather than rejecting the whole shape.
+              const terminal=scheduled.at(-1);
+              if(jointlyValid&&terminal?.coachId!==undefined){
+                const terminalChoice=byFeederId.get(terminal.id)!.choice;
+                const firstMainStart=slots[runEnd-rankedCohort.length]!;
+                const transition=effectiveCoachTransitionMinutes(problem,terminal.coachId,
+                  terminal.spaceId,terminalChoice.task.spaceId);
+                if(terminal.end+transition>firstMainStart){
+                  jointlyValid=false;feederOrderAuthorityObserved=true;
+                  feederRepairTrigger="RESIDUAL_MATCHING_DEAD_END";
                 }
               }
               if(jointlyValid){
