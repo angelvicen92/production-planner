@@ -1,6 +1,7 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
-import { assessTransportFutureFeasibility } from "./transportGrouping";
+import { assessAnonymousPostInCompletions, assessTransportFutureFeasibility,
+  type AnonymousPostInCompletionAssessment } from "./transportGrouping";
 
 export interface DeferredArrivalCausalCertificate {
   causingTaskId:string|null;arrivalTaskId:string;participantId:string|null;previousBoundary:number;currentBoundary:number;
@@ -33,6 +34,8 @@ export interface DeferredPrerequisiteReservationResult {
     cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number;futureChecks:number;futureIntervalCalculations:number;
     futureEnumeratedStarts:number;futureCapacityPrunes:number };
   causalDiagnostic:DeferredArrivalCausalCertificate|null;
+  pendingArrivalDeadline: AnonymousPostInCompletionAssessment;
+  exactPrerequisiteSearchesAvoided: number;
   /** The canonical necessary-only transport proof, forwarded without reinterpretation. */
   transportFailure: ReturnType<typeof assessTransportFutureFeasibility>["firstFailure"];
 }
@@ -120,24 +123,32 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   const arrivalIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const arrivals = predecessors.filter(({ id }) => arrivalIds.has(id));
   const tasks = predecessors.filter(({ id }) => !arrivalIds.has(id));
-  const deadlines = predecessorDeadlines(problem, tasks, placed);
+  const deadlines = predecessorDeadlines(problem, predecessors, placed);
+  const completionDeadlineByParticipant = new Map(arrivals.flatMap((task) => task.participantId
+    ? [[task.participantId, deadlines.get(task.id) ?? problem.day.end] as const] : []));
+  const pendingArrivalDeadline = assessAnonymousPostInCompletions(problem, completionDeadlineByParticipant);
   const taskIds = tasks.map(({ id }) => id), arrivalTaskIds = arrivals.map(({ id }) => id);
   const sameIds = previous && JSON.stringify(previous.taskIds) === JSON.stringify(taskIds)
     && JSON.stringify(previous.arrivalTaskIds) === JSON.stringify(arrivalTaskIds);
+  if (!pendingArrivalDeadline.feasible) return { feasible: false, reservation: null, repaired: previous !== null,
+    branchesExplored: 0, exhausted: false, arrivalChecks: 0, arrivalBranchesExplored: 0,
+    arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
+    transportEvidence: noTransportEvidence(), causalDiagnostic: null, transportFailure: null,
+    pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 1 };
   const futureTransport = assessTransportFutureFeasibility(problem, placed);
   if (!futureTransport.feasible) return { feasible: false, reservation: null, repaired: previous !== null,
     branchesExplored: 0, exhausted: false, arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0,
     arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
     transportEvidence: { ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
       cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null,
-    transportFailure:futureTransport.firstFailure };
+    transportFailure:futureTransport.firstFailure, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0 };
   if (sameIds && previous.arrivalGroups.length === 0
     && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines))
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
       arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
       arrivalWitnessDropped: false,
       transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null,
-      transportFailure:null };
+      transportFailure:null, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0 };
   let branchesExplored = 0, exhausted = false;
   const arrivalChecks = futureTransport.checks, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   const transportEvidence={ ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
@@ -171,5 +182,5 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
     arrivalPruned: false,
     arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:null,
-    transportFailure:null };
+    transportFailure:null, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0 };
 }

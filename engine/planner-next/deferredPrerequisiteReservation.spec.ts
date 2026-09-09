@@ -95,15 +95,20 @@ test("a changed first boundary uses a certificate without repairing or branching
   assert.equal(consumed, 0);
 });
 
-test("transport demand above optimistic hard capacity prunes cheaply", () => {
+test("ordinary reservation prunes a pending-IN deadline deficit before exact DFS", () => {
   const input = arrivalFixture(3, { maximum: 1, gap: 20, arrivalWindow: { start: 0, end: 30 } });
-  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
+  let consumed = 0;
+  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null,
+    () => { consumed += 1; return true; });
   assert.equal(result.feasible, false);
   assert.equal(result.arrivalPruned, true);
   assert.equal(result.arrivalBranchesExplored, 0);
-  assert.equal(result.transportEvidence.cumulativeCapacityPrunes, 1);
-  assert.deepEqual(result.transportFailure, { direction: "arrival", reason: "CUMULATIVE_CAPACITY", demand: 3,
-    maximumHardCapacity: 2, taskIds: ["arrival-0", "arrival-1", "arrival-2"] });
+  assert.equal(result.branchesExplored, 0);
+  assert.equal(consumed, 0);
+  assert.equal(result.pendingArrivalDeadline.prunes, 1);
+  assert.equal(result.exactPrerequisiteSearchesAvoided, 1);
+  assert.deepEqual(result.pendingArrivalDeadline.firstCertificate, { cutoff: 40, demand: 3,
+    maximumPossible: 2, participantIds: ["arrival-p-0", "arrival-p-1", "arrival-p-2"] });
 });
 
 test("transport demand equal to optimistic hard capacity remains viable", () => {
@@ -111,6 +116,7 @@ test("transport demand equal to optimistic hard capacity remains viable", () => 
   const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);
   assert.equal(result.feasible, true);
   assert.equal(result.arrivalBranchesExplored, 0);
+  assert.equal(result.pendingArrivalDeadline.prunes, 0);
 });
 
 test("an inconclusive transport certificate keeps the branch open", () => {
