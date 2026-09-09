@@ -33,7 +33,7 @@ import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey,
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
-import { maintainDeferredPrerequisiteReservation, type DeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
+import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -514,7 +514,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     evidence.standaloneLeafSearchBranches += 1;
     return true;
   };
-  const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[], reservation:DeferredPrerequisiteReservation|null): StandaloneOutcome => {
+  const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
     if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
     const substantive = orderScheduled([...coreTasks, ...placed]);
@@ -580,10 +580,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     return "DEAD_END";
   };
   let completeAfterOrdinary = completeLeaf;
-  const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], reservation:DeferredPrerequisiteReservation|null, operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
+  const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
-      return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder, reservation);
+      return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder);
     }
     const alternatives: Positions[] = [];
     const allPlaced = [...coreTasks, ...placed];
@@ -718,13 +718,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         nextOperationalReservations=operationalProbe.reservations;
       }
       evidence.deferredPrerequisiteReservationChecks+=1;
-      const reserved=maintainDeferredPrerequisiteReservation(problem,ordinaryForwardObligations,provisionalPlaced,coreMeals,reservation,()=>ledger.consume("STANDALONE"),arrivalDiagnostic.enabled,[choice.task.id]);
+      const reserved=maintainDeferredPrerequisiteReservation(problem,ordinaryForwardObligations,provisionalPlaced);
       addPendingArrivalDeadlineEvidence(evidence,reserved.pendingArrivalDeadline,reserved.exactPrerequisiteSearchesAvoided);
       arrivalDiagnostic.first??=reserved.causalDiagnostic;
       evidence.deferredPrerequisiteReservationBranchesExplored+=reserved.branchesExplored;
       evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
       if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:choice.task.id,depth};}
-      if(reserved.repaired)evidence.deferredPrerequisiteReservationRepairs+=1;
       if(reserved.exhausted){if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
       if(!reserved.feasible){if(diagnosticAttempt){
           const after=reserved.transportFailure,before=assessTransportFutureFeasibility(problem,allPlaced);
@@ -743,7 +742,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         }evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:choice.task.id,depth};evidence.standaloneBacktracks+=1;continue;}
       if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
-        [...selectionOrder, choice.task.id],reserved.reservation,nextOperationalReservations);
+        [...selectionOrder, choice.task.id],nextOperationalReservations);
       if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
     }
@@ -897,8 +896,8 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
   return true;
 };
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
-  roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], reservation:DeferredPrerequisiteReservation|null, operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
-  if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder,reservation,operationalReservations);
+  roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
+  if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder,operationalReservations);
   const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
   const selected = selectMostConstrainedUnit(constrained)!;
   const diagnosticFrontier=macroCapacityDiagnostic.enabled&&placed.length>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1)
@@ -981,16 +980,15 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       nextOperationalReservations=operationalProbe.reservations;
     }
     evidence.deferredPrerequisiteReservationChecks+=1;
-    const reserved=maintainDeferredPrerequisiteReservation(problem,pendingForCheck,[...coreTasks,...placed,...tasks],coreMeals,reservation,()=>ledger.consume("STANDALONE"),arrivalDiagnostic.enabled,tasks.map(task=>task.id));
+    const reserved=maintainDeferredPrerequisiteReservation(problem,pendingForCheck,[...coreTasks,...placed,...tasks]);
     addPendingArrivalDeadlineEvidence(evidence,reserved.pendingArrivalDeadline,reserved.exactPrerequisiteSearchesAvoided);
     arrivalDiagnostic.first??=reserved.causalDiagnostic;
     evidence.deferredPrerequisiteReservationBranchesExplored+=reserved.branchesExplored;
     evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
     if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:unit.id,depth};}
-    if(reserved.repaired)evidence.deferredPrerequisiteReservationRepairs+=1;
     if(reserved.exhausted){if(attempt)Object.assign(attempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
     if(!reserved.feasible){if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
-    return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],reserved.reservation,nextOperationalReservations);
+    return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],nextOperationalReservations);
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
     const duration = unit.tasks[0]!.duration;
@@ -1047,14 +1045,14 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   return "DEAD_END";
 };
 evidence.deferredPrerequisiteReservationChecks+=1;
-const initialReservation=maintainDeferredPrerequisiteReservation(problem,pending,coreTasks,coreMeals,null,()=>ledger.consume("STANDALONE"),arrivalDiagnostic.enabled);
+const initialReservation=maintainDeferredPrerequisiteReservation(problem,pending,coreTasks);
 addPendingArrivalDeadlineEvidence(evidence,initialReservation.pendingArrivalDeadline,initialReservation.exactPrerequisiteSearchesAvoided);
 evidence.deferredPrerequisiteReservationBranchesExplored+=initialReservation.branchesExplored;
 evidence.deferredArrivalWitnessChecks+=initialReservation.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=initialReservation.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=initialReservation.arrivalBacktracks;addTransportEvidence(evidence,initialReservation.transportEvidence);if(initialReservation.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
 if(!initialReservation.feasible)evidence.deferredPrerequisiteReservationPrunes+=1;
 const initialOperationalReservation=probeOperationalMealFutureFeasibility(problem,coreTasks);
 evidence.operationalMealReservationChecks+=1;evidence.operationalMealReservationAnalyticChecks+=initialOperationalReservation.checkedPolicyIds.length;
-const searchOutcome = initialReservation.exhausted?"BUDGET_EXHAUSTED":!initialReservation.feasible||!initialOperationalReservation.feasible?"DEAD_END":searchMacroUnits(macroUnits, [], [], [], 0, [],initialReservation.reservation,initialOperationalReservation.reservations);
+const searchOutcome = initialReservation.exhausted?"BUDGET_EXHAUSTED":!initialReservation.feasible||!initialOperationalReservation.feasible?"DEAD_END":searchMacroUnits(macroUnits, [], [], [], 0, [],initialOperationalReservation.reservations);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
 }

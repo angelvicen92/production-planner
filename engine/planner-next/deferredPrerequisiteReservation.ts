@@ -1,5 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { assessAnonymousPostInCompletions, assessTransportFutureFeasibility,
   type AnonymousPostInCompletionAssessment } from "./transportGrouping";
 
@@ -9,17 +8,8 @@ export interface DeferredArrivalCausalCertificate {
   repair:import("./transportGrouping").TransportWitnessCausalDiagnostic|null;
 }
 
-export interface DeferredPrerequisiteReservation {
-  taskIds: readonly string[];
-  witness: readonly ScheduledTask[];
-  arrivalTaskIds: readonly string[];
-  arrivalGroups: readonly (readonly ScheduledTask[])[];
-}
-
 export interface DeferredPrerequisiteReservationResult {
   feasible: boolean;
-  reservation: DeferredPrerequisiteReservation | null;
-  repaired: boolean;
   branchesExplored: number;
   exhausted: boolean;
   arrivalChecks: number;
@@ -103,84 +93,34 @@ function predecessorDeadlines(problem: PlannerNextProblem, reserved: readonly Ta
   return memo;
 }
 
-function ordinaryWitnessStillValid(problem: PlannerNextProblem, tasks: readonly Task[], witness: readonly ScheduledTask[],
-  placed: readonly ScheduledTask[], meals: readonly ScheduledSpaceMeal[], deadlines: ReadonlyMap<string, number>): boolean {
-  const witnessIds = new Set(tasks.map(({ id }) => id));
-  if (witness.length !== tasks.length || witness.some((item) => !witnessIds.has(item.id))) return false;
-  for (const scheduled of witness) {
-    const task = tasks.find(({ id }) => id === scheduled.id)!;
-    if (scheduled.end > (deadlines.get(task.id) ?? problem.day.end)) return false;
-    if (!canPlaceTask(problem, task, scheduled.start, [...placed, ...witness.filter(({ id }) => id !== scheduled.id)], [...meals])) return false;
-  }
-  return true;
-}
-
-/** Maintains an exact ordinary-predecessor witness plus a necessary-only transport certificate. */
+/** Applies necessary-only future-feasibility checks without selecting or materializing future task starts. */
 export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProblem, pending: readonly Task[],
-  placed: readonly ScheduledTask[], meals: readonly ScheduledSpaceMeal[], previous: DeferredPrerequisiteReservation | null,
-  consume: () => boolean, causalDiagnostic=false, causingTaskIds:readonly string[]=[]): DeferredPrerequisiteReservationResult {
+  placed: readonly ScheduledTask[]): DeferredPrerequisiteReservationResult {
   const predecessors = pendingHardPredecessors(problem, pending, placed);
   const arrivalIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const arrivals = predecessors.filter(({ id }) => arrivalIds.has(id));
-  const tasks = predecessors.filter(({ id }) => !arrivalIds.has(id));
   const deadlines = predecessorDeadlines(problem, predecessors, placed);
   const completionDeadlineByParticipant = new Map(arrivals.flatMap((task) => task.participantId
     ? [[task.participantId, deadlines.get(task.id) ?? problem.day.end] as const] : []));
   const pendingArrivalDeadline = assessAnonymousPostInCompletions(problem, completionDeadlineByParticipant);
-  const taskIds = tasks.map(({ id }) => id), arrivalTaskIds = arrivals.map(({ id }) => id);
-  const sameIds = previous && JSON.stringify(previous.taskIds) === JSON.stringify(taskIds)
-    && JSON.stringify(previous.arrivalTaskIds) === JSON.stringify(arrivalTaskIds);
-  if (!pendingArrivalDeadline.feasible) return { feasible: false, reservation: null, repaired: previous !== null,
+  if (!pendingArrivalDeadline.feasible) return { feasible: false,
     branchesExplored: 0, exhausted: false, arrivalChecks: 0, arrivalBranchesExplored: 0,
     arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
     transportEvidence: noTransportEvidence(), causalDiagnostic: null, transportFailure: null,
     pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 1 };
   const futureTransport = assessTransportFutureFeasibility(problem, placed);
-  if (!futureTransport.feasible) return { feasible: false, reservation: null, repaired: previous !== null,
+  if (!futureTransport.feasible) return { feasible: false,
     branchesExplored: 0, exhausted: false, arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0,
     arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
     transportEvidence: { ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
       cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null,
     transportFailure:futureTransport.firstFailure, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0 };
-  if (sameIds && previous.arrivalGroups.length === 0
-    && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines))
-    return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
-      arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
-      arrivalWitnessDropped: false,
-      transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null,
-      transportFailure:null, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0 };
-  let branchesExplored = 0, exhausted = false;
   const arrivalChecks = futureTransport.checks, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   const transportEvidence={ ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
     cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) };
-  void causalDiagnostic; void causingTaskIds;
-  const reservedIds = new Set(taskIds);
-  const search = (remaining: readonly Task[], witness: readonly ScheduledTask[]): DeferredPrerequisiteReservation | null => {
-    if (!remaining.length) {
-      return { taskIds, witness: [...witness].sort(byId), arrivalTaskIds,
-        arrivalGroups: [] };
-    }
-    const ready = remaining.filter((task) => task.dependencies
-      .filter((id) => reservedIds.has(id)).every((id) => witness.some((item) => item.id === id)));
-    if (!ready.length) return null;
-    const choices = ready.map((task) => ({ task, starts: [...exactTaskStartDomain(problem, task, [...placed, ...witness], [...meals]).starts()]
-      .filter((start) => start + task.duration <= (deadlines.get(task.id) ?? problem.day.end)).sort((a, b) => b - a) }))
-      .sort((left, right) => left.starts.length - right.starts.length || left.task.id.localeCompare(right.task.id));
-    const choice = choices[0]!;
-    for (const start of choice.starts) {
-      if (!consume()) { exhausted = true; return null; }
-      branchesExplored += 1;
-      if (!canPlaceTask(problem, choice.task, start, [...placed, ...witness], [...meals])) continue;
-      const scheduled: ScheduledTask = { ...choice.task, start, end: start + choice.task.duration };
-      const found = search(remaining.filter(({ id }) => id !== choice.task.id), [...witness, scheduled]);
-      if (found || exhausted) return found;
-    }
-    return null;
-  };
-  const reservation = search(tasks, []);
-  return { feasible: reservation !== null, reservation, repaired: previous !== null, branchesExplored, exhausted,
-    arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
+  return { feasible: true, branchesExplored: 0, exhausted: false,
+    arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: false,
     arrivalPruned: false,
-    arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:null,
+    arrivalWitnessDropped: false, transportEvidence,causalDiagnostic:null,
     transportFailure:null, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0 };
 }

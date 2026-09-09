@@ -113,6 +113,7 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.ok(result.evidence.ordinaryExactStartChecks < 2 * 23,
     "only the selected task domain is checked exactly, not every task over the full grid");
   assert.ok(result.evidence.ordinaryAnalyticDomainBuilds >= 2);
+  assert.equal(result.evidence.deferredPrerequisiteReservationBranchesExplored, 0);
 });
 
 function ordinaryForwardProblem(tasks: Task[]): PlannerNextProblem {
