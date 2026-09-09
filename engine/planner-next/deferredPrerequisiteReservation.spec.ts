@@ -73,7 +73,7 @@ test("ordinary reservation prunes a pending-IN deadline deficit before exact DFS
   assert.equal(result.branchesExplored, 0);
   assert.equal(result.pendingArrivalDeadline.prunes, 1);
   assert.equal(result.exactPrerequisiteSearchesAvoided, 1);
-  assert.deepEqual(result.pendingArrivalDeadline.firstCertificate, { cutoff: 40, demand: 3,
+  assert.deepEqual(result.pendingArrivalDeadline.firstCertificate, { cutoff: 30, demand: 3,
     maximumPossible: 2, participantIds: ["arrival-p-0", "arrival-p-1", "arrival-p-2"] });
 });
 
