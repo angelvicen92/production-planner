@@ -13,7 +13,7 @@ import {
   type ExactMacroCapacityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
+import { exploreExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
@@ -267,6 +267,8 @@ export interface ExactItinerantPlanEvidence {
   setupBlockBranchesExplored: number;
   setupBlockSearchInvocations: number;
   setupBlockStartsExplored: number;
+  setupBlockCandidatesYielded: number;
+  setupBlockCandidatesEntered: number;
   setupBlockCompleteCandidateCount: number;
   setupBlockBudgetExhaustions: number;
   setupBlockMatchingAttempts: number;
@@ -1013,19 +1015,22 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
-    const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
-    evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
-    evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
-    evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
-    evidence.setupBlockMatchingAttempts += generated.evidence.matchingAttempts;
-    evidence.setupBlockMatchingSuccesses += generated.evidence.matchingSuccesses;
-    evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
-    mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
-    if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
-    for (const candidate of generated.candidates) {
+    const explored = exploreExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger, (candidate) => {
       const child = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
-      if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
-    }
+      if (child === "DEAD_END") evidence.standaloneBacktracks += 1;
+      return child;
+    });
+    evidence.setupBlockBranchesExplored += explored.evidence.branchesExplored;
+    evidence.setupBlockStartsExplored += explored.evidence.startsExplored;
+    evidence.setupBlockCandidatesYielded += explored.evidence.candidatesYielded;
+    evidence.setupBlockCandidatesEntered += explored.evidence.candidatesEntered;
+    evidence.setupBlockCompleteCandidateCount += explored.evidence.completeCandidateCount;
+    evidence.setupBlockMatchingAttempts += explored.evidence.matchingAttempts;
+    evidence.setupBlockMatchingSuccesses += explored.evidence.matchingSuccesses;
+    evidence.setupBlockPermutationBranchesAvoided += explored.evidence.permutationBranchesAvoided;
+    mergeSetupOrderCounts(unit.spaceId, explored.evidence.familyOrderCandidateCounts);
+    if (explored.outcome === "BUDGET_EXHAUSTED") evidence.setupBlockBudgetExhaustions += 1;
+    if (explored.outcome !== "DEAD_END") return explored.outcome;
   } else if (unit.kind === "ROUND_SYNCHRONIZATION") {
     evidence.roundSynchronizationSearchInvocations += 1;
     const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
@@ -1172,6 +1177,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
     firstCompleteQuality: null, selectedCompleteQuality: null,
     setupBlockBranchesExplored: 0, setupBlockSearchInvocations: 0, setupBlockStartsExplored: 0,
+    setupBlockCandidatesYielded: 0, setupBlockCandidatesEntered: 0,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
     setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockPermutationBranchesAvoided: 0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},

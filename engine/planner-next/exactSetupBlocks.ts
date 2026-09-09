@@ -35,11 +35,20 @@ export interface ExactSetupBlockGenerationEvidence {
   matchingAttempts: number;
   matchingSuccesses: number;
   permutationBranchesAvoided: number;
+  candidatesYielded: number;
+  candidatesEntered: number;
 }
 
 export interface ExactSetupBlockGenerationResult {
   outcome: "COMPLETE" | "BUDGET_EXHAUSTED";
   candidates: ExactSetupBlockCandidate[];
+  evidence: ExactSetupBlockGenerationEvidence;
+}
+
+export type ExactSetupBlockSearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
+
+export interface ExactSetupBlockSearchResult {
+  outcome: ExactSetupBlockSearchOutcome;
   evidence: ExactSetupBlockGenerationEvidence;
 }
 
@@ -68,22 +77,21 @@ const candidateSignature = (candidate: ExactSetupBlockCandidate): string => [
  * ledger. No beam, bestK truncation, fallback, or implicit order selection is
  * allowed here.
  */
-export function generateExactSetupBlockCandidates(
+export function exploreExactSetupBlockCandidates(
   problem: PlannerNextProblem,
   tasks: Task[],
   placed: ScheduledTask[],
   preparations: ScheduledSetupPreparation[],
   meals: ScheduledSpaceMeal[],
   ledger: ExactSearchLedger,
-  countOnly = false,
-): ExactSetupBlockGenerationResult {
+  enterCandidate: (candidate: ExactSetupBlockCandidate) => ExactSetupBlockSearchOutcome,
+): ExactSetupBlockSearchResult {
   const ordered = [...tasks].sort(byId);
   const spaceId = ordered[0]?.spaceId;
   const space = spaceId === undefined
     ? undefined
     : problem.spaces.find((candidate) => candidate.id === spaceId);
   const policy = space?.setupPolicy;
-  const complete: ExactSetupBlockCandidate[] = [];
   const familyOrderCandidateCounts: Record<string, number> = {};
   let branchesExplored = 0;
   let startsExplored = 0;
@@ -91,17 +99,15 @@ export function generateExactSetupBlockCandidates(
   let matchingAttempts = 0;
   let matchingSuccesses = 0;
   let permutationBranchesAvoided = 0;
+  let candidatesYielded = 0;
+  let candidatesEntered = 0;
+  let terminalOutcome: ExactSetupBlockSearchOutcome | null = null;
 
   const finish = (
-    outcome: ExactSetupBlockGenerationResult["outcome"],
-  ): ExactSetupBlockGenerationResult => {
-    complete.sort((left, right) =>
-      left.cost - right.cost
-      || (right.tasks[0]?.start ?? 0) - (left.tasks[0]?.start ?? 0)
-      || candidateSignature(left).localeCompare(candidateSignature(right)));
+    outcome: ExactSetupBlockSearchOutcome,
+  ): ExactSetupBlockSearchResult => {
     return {
       outcome,
-      candidates: complete,
       evidence: {
         branchesExplored,
         startsExplored,
@@ -111,6 +117,8 @@ export function generateExactSetupBlockCandidates(
         matchingAttempts,
         matchingSuccesses,
         permutationBranchesAvoided,
+        candidatesYielded,
+        candidatesEntered,
       },
     };
   };
@@ -118,7 +126,7 @@ export function generateExactSetupBlockCandidates(
   if (!spaceId || !space || !policy || ordered.length === 0
     || ordered.some((task) => task.spaceId !== spaceId
       || task.setupFamilyId === undefined)) {
-    return finish("COMPLETE");
+    return finish("DEAD_END");
   }
 
   let exhausted = false;
@@ -130,7 +138,7 @@ export function generateExactSetupBlockCandidates(
     cost: number,
     depth: number,
   ): void => {
-    if (exhausted) return;
+    if (exhausted || terminalOutcome) return;
     maximumDepth = Math.max(maximumDepth, depth);
     if (remaining.length === 0) {
       const candidate = {
@@ -138,10 +146,13 @@ export function generateExactSetupBlockCandidates(
         preparations: partialPreparations,
         cost,
       };
-      if (!countOnly) complete.push(candidate);
       const key = setupFamilySequence(partialTasks).join(">");
       familyOrderCandidateCounts[key] =
         (familyOrderCandidateCounts[key] ?? 0) + 1;
+      candidatesYielded += 1;
+      candidatesEntered += 1;
+      const outcome = enterCandidate(candidate);
+      if (outcome !== "DEAD_END") terminalOutcome = outcome;
       return;
     }
 
@@ -244,7 +255,7 @@ export function generateExactSetupBlockCandidates(
           familyTasks.find(({ id }) => id === task.id)!, task.start, priorTasks).cost, 0),
         depth + scheduledFamily.length,
       );
-      if (exhausted) return;
+      if (exhausted || terminalOutcome) return;
     }
   };
 
@@ -256,8 +267,38 @@ export function generateExactSetupBlockCandidates(
     startsExplored += 1;
     visit(canonicalStart, ordered, [], [], 0, 0);
     if (exhausted) return finish("BUDGET_EXHAUSTED");
+    if (terminalOutcome) return finish(terminalOutcome);
   }
-  return finish("COMPLETE");
+  return finish("DEAD_END");
+}
+
+/** Compatibility collector for callers that require the complete exact domain. */
+export function generateExactSetupBlockCandidates(
+  problem: PlannerNextProblem,
+  tasks: Task[],
+  placed: ScheduledTask[],
+  preparations: ScheduledSetupPreparation[],
+  meals: ScheduledSpaceMeal[],
+  ledger: ExactSearchLedger,
+  countOnly = false,
+): ExactSetupBlockGenerationResult {
+  const candidates: ExactSetupBlockCandidate[] = [];
+  const explored = exploreExactSetupBlockCandidates(
+    problem, tasks, placed, preparations, meals, ledger,
+    (candidate) => {
+      if (!countOnly) candidates.push(candidate);
+      return "DEAD_END";
+    },
+  );
+  candidates.sort((left, right) =>
+    left.cost - right.cost
+    || (right.tasks[0]?.start ?? 0) - (left.tasks[0]?.start ?? 0)
+    || candidateSignature(left).localeCompare(candidateSignature(right)));
+  return {
+    outcome: explored.outcome === "BUDGET_EXHAUSTED" ? "BUDGET_EXHAUSTED" : "COMPLETE",
+    candidates,
+    evidence: explored.evidence,
+  };
 }
 
 /** Exact count-only projection of the canonical setup generator; it consumes no search-tree budget. */

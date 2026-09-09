@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createExactSearchLedger } from "./exactMainAndFeederCore";
-import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
+import {
+  exploreExactSetupBlockCandidates,
+  generateExactSetupBlockCandidates,
+} from "./exactSetupBlocks";
 import { executePlannerNext } from "./executePlannerNext";
 import { setupFamilySequence } from "./setupGrouping";
 import { validatePlan } from "./validate";
@@ -105,6 +108,26 @@ function executeFixture(
   };
 }
 
+function setupFixture(input = createSpec10020FlexibleSetupOrderEngineInputFixture()) {
+  const adapter = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(adapter.status, "SUPPORTED");
+  assert.ok(adapter.problem);
+  const space = adapter.problem.spaces.find((candidate) => candidate.setupPolicy !== undefined);
+  assert.ok(space);
+  return {
+    problem: adapter.problem,
+    tasks: adapter.problem.tasks.filter((task) => task.spaceId === space.id),
+  };
+}
+
+const setupCandidateSignature = (candidate: {
+  tasks: Array<{ id: string; start: number; end: number }>;
+  preparations: Array<{ id: string; start: number; end: number }>;
+}): string => [
+  ...candidate.tasks.map(({ id, start, end }) => `${id}@${start}-${end}`).sort(),
+  ...candidate.preparations.map(({ id, start, end }) => `${id}@${start}-${end}`).sort(),
+].join("|");
+
 test("EXACT_CONSTRUCTIVE explores both flexible setup orders and publishes preparation", () => {
   const baseline = executeFixture(
     createSpec10020FlexibleSetupOrderEngineInputFixture(),
@@ -163,6 +186,75 @@ test("exact setup enumeration is atomic on shared-ledger exhaustion", () => {
   assert.equal(generated.outcome, "BUDGET_EXHAUSTED");
   assert.equal(ledger.branchesExplored, 1);
   assert.equal(generated.evidence.branchesExplored, 1);
+});
+
+test("incremental setup exploration stops before later siblings when its first child succeeds", () => {
+  const { problem, tasks } = setupFixture();
+  const ledger = createExactSearchLedger(100_000);
+  const entered: string[] = [];
+  const explored = exploreExactSetupBlockCandidates(
+    problem, tasks, [], [], [], ledger,
+    (candidate) => {
+      entered.push(setupCandidateSignature(candidate));
+      return "FOUND";
+    },
+  );
+  assert.equal(explored.outcome, "FOUND");
+  assert.equal(explored.evidence.candidatesYielded, 1);
+  assert.equal(explored.evidence.candidatesEntered, 1);
+  assert.equal(entered.length, 1);
+  assert.ok(explored.evidence.startsExplored > 0);
+  assert.ok(explored.evidence.startsExplored
+    < Math.ceil((problem.day.end - problem.day.start) / 5));
+});
+
+test("reject-all incremental setup exploration is exact, complete, and input-order deterministic", () => {
+  const collect = (input: ReturnType<typeof createSpec10020FlexibleSetupOrderEngineInputFixture>) => {
+    const { problem, tasks } = setupFixture(input);
+    const ledger = createExactSearchLedger(100_000);
+    const candidates: string[] = [];
+    const explored = exploreExactSetupBlockCandidates(
+      problem, tasks, [], [], [], ledger,
+      (candidate) => {
+        candidates.push(setupCandidateSignature(candidate));
+        return "DEAD_END";
+      },
+    );
+    assert.equal(explored.outcome, "DEAD_END");
+    assert.equal(explored.evidence.candidatesYielded, candidates.length);
+    assert.equal(explored.evidence.candidatesEntered, candidates.length);
+    return { candidates: candidates.sort(), evidence: explored.evidence };
+  };
+
+  const baselineInput = createSpec10020FlexibleSetupOrderEngineInputFixture();
+  const baseline = collect(baselineInput);
+  const generatedContext = setupFixture(baselineInput);
+  const generated = generateExactSetupBlockCandidates(
+    generatedContext.problem, generatedContext.tasks, [], [], [],
+    createExactSearchLedger(100_000),
+  );
+  assert.equal(generated.outcome, "COMPLETE");
+  assert.deepEqual(
+    baseline.candidates,
+    generated.candidates.map(setupCandidateSignature).sort(),
+  );
+  assert.deepEqual(collect(invertedFixture()), baseline);
+  assert.equal(Object.keys(baseline.evidence.familyOrderCandidateCounts).length, 2);
+});
+
+test("incremental setup ledger exhaustion reports only actually explored work", () => {
+  const { problem, tasks } = setupFixture();
+  const ledger = createExactSearchLedger(1);
+  let entered = 0;
+  const explored = exploreExactSetupBlockCandidates(
+    problem, tasks, [], [], [], ledger,
+    () => { entered += 1; return "DEAD_END"; },
+  );
+  assert.equal(explored.outcome, "BUDGET_EXHAUSTED");
+  assert.equal(ledger.branchesExplored, 1);
+  assert.equal(explored.evidence.branchesExplored, 1);
+  assert.equal(explored.evidence.candidatesYielded, 0);
+  assert.equal(explored.evidence.candidatesEntered, entered);
 });
 
 test("full A2 has no remaining implementation representability blockers", () => {
