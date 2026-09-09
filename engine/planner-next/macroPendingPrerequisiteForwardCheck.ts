@@ -3,6 +3,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from
 import { canPlaceTask, exactStartDomainFromIntervals, exactTaskStartDomain, type ExactStartInterval } from "./placement";
 import { tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { assessAnonymousPostInCompletions, type AnonymousPostInCompletionAssessment } from "./transportGrouping";
+import { createPendingCompletionDeadlineAuthority } from "./pendingCompletionDeadlineAuthority";
 
 export interface MacroPendingPrerequisiteForwardCheckResult {
   feasible: boolean;
@@ -40,15 +41,6 @@ const byId=<T extends{id:string}>(a:T,b:T)=>a.id.localeCompare(b.id);
 const mergeIntervals=(intervals:ExactStartInterval[]):ExactStartInterval[]=>{const merged:ExactStartInterval[]=[];for(const interval of [...intervals].sort((a,b)=>a.start-b.start||a.end-b.end)){const previous=merged.at(-1);if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);else merged.push({...interval});}return merged;};
 const intervalMinutes=(intervals:ExactStartInterval[])=>mergeIntervals(intervals).reduce((sum,{start,end})=>sum+Math.max(0,end-start),0);
 const exclusiveAuthorities=(task:Task)=>[{key:`space:${task.spaceId}`,id:task.spaceId},...(task.requiredResourceIds??[]).map(id=>({key:`resource:${id}`,id}))].sort((a,b)=>a.key.localeCompare(b.key));
-const deadlineAuthority=(problem:PlannerNextProblem,pending:readonly Task[],provisional:readonly ScheduledTask[])=>{
-  const pendingById=new Map(pending.map(task=>[task.id,task])),successors=new Map<string,string[]>();
-  for(const task of problem.tasks)for(const dependency of task.dependencies)successors.set(dependency,[...(successors.get(dependency)??[]),task.id]);
-  const placedById=new Map(provisional.map(task=>[task.id,task])),memo=new Map<string,number>();
-  const deadline=(id:string,visiting=new Set<string>()):number=>{const hit=memo.get(id);if(hit!==undefined)return hit;if(visiting.has(id))return problem.day.end;
-    const next=new Set(visiting).add(id),values=(successors.get(id)??[]).flatMap(successorId=>{const placed=placedById.get(successorId);if(placed)return[placed.start];const successor=pendingById.get(successorId);return successor?[deadline(successorId,next)-successor.duration]:[];});
-    const value=Math.min(problem.day.end,...values);memo.set(id,value);return value;};
-  return{pendingById,deadline};
-};
 const collectiveOccupation=(problem:PlannerNextProblem,task:Task,provisional:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],deadline:number,
   domain?:ReturnType<typeof exactTaskStartDomain>)=>mergeIntervals(domain?.intervals.map(interval=>({start:interval.start,end:interval.end+task.duration}))
     ??exactTaskStartDomain(problem,task,provisional,[...meals]).intervals.flatMap(interval=>{const end=Math.min(interval.end,deadline-task.duration);return interval.start<=end?[{start:interval.start,end:end+task.duration}]:[]}));
@@ -67,7 +59,7 @@ const evaluateCollectiveTasks=(problem:PlannerNextProblem,tasks:readonly Task[],
 /** Diagnostic-only replay of one exact collective-capacity identity. It does not use a cache or a search ledger. */
 export function evaluateTargetCollectiveCapacityCertificate(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
   candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],authorityId:string,overloadTaskIds:readonly string[]):TargetCollectiveCapacityCertificateEvaluation{
-  const ids=[...overloadTaskIds].sort(),provisional=[...previouslyPlaced,...candidate].sort(byId),{pendingById,deadline}=deadlineAuthority(problem,pending,provisional);
+  const ids=[...overloadTaskIds].sort(),provisional=[...previouslyPlaced,...candidate].sort(byId),authority=createPendingCompletionDeadlineAuthority(problem,pending,provisional,meals),{pendingById}=authority,deadline=authority.completionDeadline;
   const tasks=ids.map(id=>pendingById.get(id));
   if(!ids.length||tasks.some(task=>!task))return{evaluated:false,overloaded:false,authorityId,demandMinutes:null,freeCapacityMinutes:null,overloadTaskIds:ids};
   const authorityKeys=[...new Set(exclusiveAuthorities(tasks[0]!).filter(authority=>authority.id===authorityId).map(authority=>authority.key))]
@@ -84,7 +76,7 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   const inputPendingIds=new Set(pending.map(({id})=>id));
   const pendingWithArrivals=[...pending,...(problem.transportPolicy?.arrival.taskIds??[])
     .filter(id=>!inputPendingIds.has(id)&&!placedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task))];
-  const {pendingById,deadline}=deadlineAuthority(problem,pendingWithArrivals,provisional);
+  const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals),{pendingById}=authority,deadline=authority.completionDeadline;
   const pendingIds=new Set(pendingWithArrivals.map(({id})=>id)),arrivalDeadlineByParticipant=new Map<string,number>();
   for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
     if(!pendingIds.has(arrivalId))continue;

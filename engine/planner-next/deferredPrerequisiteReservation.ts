@@ -1,6 +1,7 @@
-import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { assessAnonymousPostInCompletions, assessTransportFutureFeasibility,
   type AnonymousPostInCompletionAssessment } from "./transportGrouping";
+import { createPendingCompletionDeadlineAuthority } from "./pendingCompletionDeadlineAuthority";
 
 export interface DeferredArrivalCausalCertificate {
   causingTaskId:string|null;arrivalTaskId:string;participantId:string|null;previousBoundary:number;currentBoundary:number;
@@ -66,42 +67,15 @@ function pendingHardPredecessors(problem: PlannerNextProblem, pending: readonly 
   return [...result].map((id) => eligibleById.get(id)!).sort(byId);
 }
 
-function predecessorDeadlines(problem: PlannerNextProblem, reserved: readonly Task[], placed: readonly ScheduledTask[]): Map<string, number> {
-  const reservedIds = new Set(reserved.map(({ id }) => id));
-  const placedById = new Map(placed.map((task) => [task.id, task]));
-  const successors = new Map<string, string[]>();
-  for (const task of problem.tasks) for (const dependency of task.dependencies)
-    successors.set(dependency, [...(successors.get(dependency) ?? []), task.id]);
-  const taskById = new Map(reserved.map((task) => [task.id, task]));
-  const memo = new Map<string, number>();
-  const deadline = (id: string, visiting = new Set<string>()): number => {
-    const cached = memo.get(id);
-    if (cached !== undefined) return cached;
-    if (visiting.has(id)) return problem.day.end;
-    const next = new Set(visiting).add(id);
-    const limits = (successors.get(id) ?? []).flatMap((successorId) => {
-      const fixed = placedById.get(successorId);
-      if (fixed) return [fixed.start];
-      const successor = taskById.get(successorId);
-      return successor && reservedIds.has(successorId) ? [deadline(successorId, next) - successor.duration] : [];
-    });
-    const value = Math.min(problem.day.end, ...limits);
-    memo.set(id, value);
-    return value;
-  };
-  for (const task of reserved) deadline(task.id);
-  return memo;
-}
-
 /** Applies necessary-only future-feasibility checks without selecting or materializing future task starts. */
 export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProblem, pending: readonly Task[],
-  placed: readonly ScheduledTask[]): DeferredPrerequisiteReservationResult {
+  placed: readonly ScheduledTask[], meals: readonly ScheduledSpaceMeal[] = []): DeferredPrerequisiteReservationResult {
   const predecessors = pendingHardPredecessors(problem, pending, placed);
   const arrivalIds = new Set(problem.transportPolicy?.arrival.taskIds ?? []);
   const arrivals = predecessors.filter(({ id }) => arrivalIds.has(id));
-  const deadlines = predecessorDeadlines(problem, predecessors, placed);
+  const deadlines = createPendingCompletionDeadlineAuthority(problem, predecessors, placed, meals);
   const completionDeadlineByParticipant = new Map(arrivals.flatMap((task) => task.participantId
-    ? [[task.participantId, deadlines.get(task.id) ?? problem.day.end] as const] : []));
+    ? [[task.participantId, deadlines.completionDeadline(task.id)] as const] : []));
   const pendingArrivalDeadline = assessAnonymousPostInCompletions(problem, completionDeadlineByParticipant);
   if (!pendingArrivalDeadline.feasible) return { feasible: false,
     branchesExplored: 0, exhausted: false, arrivalChecks: 0, arrivalBranchesExplored: 0,

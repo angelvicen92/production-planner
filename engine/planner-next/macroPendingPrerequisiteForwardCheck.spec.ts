@@ -17,6 +17,20 @@ test("collective capacity distinguishes one shared hole from two holes before jo
  second.availability=[{start:30,end:40}];const two=checkMacroPendingPrerequisites(p,[first,second],[scheduled(successor,50)],[scheduled(task("trigger",5),70)]);assert.equal(two.feasible,true);
 });
 
+test("pending successors' latest hard starts expose collective overload while exact capacity stays open",()=>{
+ const first=task("first",15),second=task("second",15),firstSuccessor=task("first-successor",10,[first.id],[{start:20,end:30}]),secondSuccessor=task("second-successor",10,[second.id],[{start:20,end:30}]);
+ firstSuccessor.spaceId="other";firstSuccessor.participantId="other";secondSuccessor.spaceId="successor-space";secondSuccessor.participantId="successor-person";
+ const p=problem([first,second,firstSuccessor,secondSuccessor]);
+ p.spaces.push({id:"successor-space",availability:[{start:0,end:100}]});p.participants.push({id:"successor-person",availability:[{start:0,end:100}]});
+ const overloaded=checkStandaloneCoreFrontier(p,[first,second,firstSuccessor,secondSuccessor],[],[],"ANALYTIC_CAPACITY_ONLY");
+ assert.equal(overloaded.failure,"COLLECTIVE_CAPACITY");assert.equal(overloaded.demandMinutes,30);assert.equal(overloaded.freeCapacityMinutes,20);
+ first.duration=second.duration=10;
+ const exact=checkStandaloneCoreFrontier(p,[first,second,firstSuccessor,secondSuccessor],[],[],"ANALYTIC_CAPACITY_ONLY");
+ assert.equal(exact.feasible,true);assert.equal(exact.collectiveCapacityPrunes,0);
+ secondSuccessor.availability=[{start:20,end:60}];
+ assert.equal(checkStandaloneCoreFrontier(p,[first,second,firstSuccessor,secondSuccessor],[],[],"ANALYTIC_CAPACITY_ONLY").feasible,true);
+});
+
 test("fragmented exact intervals prove overload without admitting unrelated obligations",()=>{const first=task("first",10,[],[{start:0,end:10},{start:20,end:30}]),second=task("second",10,[],[{start:0,end:10},{start:20,end:30}]),third=task("third",10,[],[{start:0,end:10},{start:20,end:30}]),successor=task("successor",10,[first.id,second.id,third.id]),unrelated=task("unrelated",50,[],[{start:0,end:50}]);unrelated.spaceId="other";unrelated.participantId="other";const unrelatedSuccessor=task("unrelated-successor",10,[unrelated.id]);unrelatedSuccessor.spaceId="other";unrelatedSuccessor.participantId="other";const p=problem([first,second,third,successor,unrelated,unrelatedSuccessor]);const result=checkMacroPendingPrerequisites(p,[first,second,third,unrelated],[scheduled(successor,50),scheduled(unrelatedSuccessor,60)],[scheduled(task("trigger",5),70)]);assert.equal(result.failure,"COLLECTIVE_CAPACITY");assert.equal(result.demandMinutes,30);assert.equal(result.freeCapacityMinutes,20);assert.equal(result.obligationsChecked,3);
 });
 
@@ -42,14 +56,14 @@ test("CORE frontier proves collective standalone overload and abstains when capa
  assert.equal(checkStandaloneCoreFrontier(p,[first,second],[]).feasible,true);
 });
 
-test("analytic CORE frontier abstains before joint DFS while FULL preserves the joint proof",()=>{
+test("domain-aware CORE frontier proves an impossible pending precedence before joint DFS",()=>{
  const first=task("first",10,[],[{start:20,end:30}]),second=task("second",10,[first.id],[{start:0,end:10}]);
  first.spaceId="room";first.participantId="person";second.spaceId="other";second.participantId="other";
  const p=problem([first,second]);
  const full=checkStandaloneCoreFrontier(p,[first,second],[]);
- assert.equal(full.failure,"JOINT_INFEASIBLE");assert.equal(full.jointChecks,1);
+ assert.equal(full.failure,"INDIVIDUAL_ZERO_DOMAIN");assert.equal(full.jointChecks,0);
  const analytic=checkStandaloneCoreFrontier(p,[first,second],[],[],"ANALYTIC_CAPACITY_ONLY");
- assert.equal(analytic.feasible,true);assert.equal(analytic.failure,null);assert.equal(analytic.jointChecks,0);
+ assert.equal(analytic.feasible,false);assert.equal(analytic.failure,"INDIVIDUAL_ZERO_DOMAIN");assert.equal(analytic.jointChecks,0);
 });
 
 test("target collective-capacity replay compares the same authority and overload tasks before and after",()=>{
@@ -95,7 +109,7 @@ test("pending IN deadlines use anonymous POST-IN hard capacity before exact prer
  assert.equal(pruned.failure,"PENDING_ARRIVAL_DEADLINE");assert.equal(pruned.jointChecks,0);
  assert.equal(pruned.exactPrerequisiteSearchesAvoided,1);
  assert.deepEqual(pruned.pendingArrivalDeadline?.firstCertificate,
-  {cutoff:34,demand:4,maximumPossible:3,participantIds:["p-0","p-1","p-2","p-3"]});
+  {cutoff:30,demand:4,maximumPossible:3,participantIds:["p-0","p-1","p-2","p-3"]});
 });
 
 test("pending IN capacity uses hard maximum and heterogeneous equivalent-before-cutoff domains",()=>{
