@@ -731,6 +731,33 @@ test("block-closed future diagnostics are neutral, deterministic, and authority-
   assert.notDeepEqual(changedRows.map(row=>row.authoritySignature),diagnostic.assessments.map(row=>row.authoritySignature));
 });
 
+test("deepest standalone transport rejection records the exact before/after causal certificate", () => {
+  const candidate=auxiliary("candidate","arrival-1",[{start:20,end:30}]);
+  const input=problem([candidate]);input.protectedMeal=undefined;input.mainFlow.preferredEnd=40;
+  input.participants.push({id:"arrival-0",availability:[{start:0,end:120}]});
+  input.spaces.push({id:"transport",availability:[{start:0,end:120}]});
+  const arrivals:Task[]=[0,1].map(index=>({id:`arrival-${index}`,kind:"auxiliary",participantId:`arrival-${index}`,
+    duration:10,spaceId:"transport",dependencies:[],availability:[{start:0,end:80}]}));
+  input.tasks.push(...arrivals);const vocal=input.tasks.find(({id})=>id==="vocal")!;vocal.participantId="arrival-0";
+  vocal.availability=[{start:20,end:30}];const main=input.tasks.find(({id})=>id==="main")!;main.participantId="arrival-0";main.availability=[{start:30,end:40}];
+  input.transportPolicy={arrival:{taskIds:arrivals.map(({id})=>id),minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:50,groupingWeight:1},
+    departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:0,groupingWeight:1}};
+  const disabled=runExactItinerantPlanSearch(structuredClone(input));
+  const enabled=runExactItinerantPlanSearch(structuredClone(input),{causalDiagnostic:true});
+  assert.deepEqual({...enabled.evidence,causalDiagnostic:null},disabled.evidence);
+  const frontier=enabled.evidence.causalDiagnostic!.deepestStandaloneFrontier!;
+  const attempt=frontier.candidatePlacements.find(row=>row.firstRejectionReason==="TRANSPORT_FUTURE_FEASIBILITY")!;
+  assert.deepEqual(attempt.transportFailure,attempt.transportCausalCertificate?.failure);
+  assert.equal(attempt.transportCausalCertificate?.beforeFeasible,true);
+  assert.equal(attempt.transportCausalCertificate?.afterFeasible,false);
+  assert.equal(attempt.transportCausalCertificate?.participantId,"arrival-1");
+  assert.equal(attempt.transportCausalCertificate?.direction,"arrival");
+  assert.equal(attempt.transportCausalCertificate?.boundaryKind,"IN");
+  assert.equal(attempt.transportCausalCertificate?.boundaryBefore,120);
+  assert.equal(attempt.transportCausalCertificate?.boundaryAfter,20);
+  assert.deepEqual(frontier.dynamicDomainEliminations,[]);
+});
+
 test("complete quality replaces only a strictly dominating incumbent", () => {
   const incumbent = { maximumParticipantIdleMinutes: 20, maximumSingleGapMinutes: 15, totalIdleMinutes: 30,
     totalGapCount: 2, totalSpaceChangeCount: 4 };

@@ -28,7 +28,7 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
+import { assessTransportFutureFeasibility, materializeTerminalTransport, transportTaskIds, type TransportDirection } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
@@ -602,7 +602,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         if(macroCapacityDiagnostic.enabled&&depth>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1))
           macroCapacityDiagnostic.deepestStandaloneFrontier={depth,fingerprint:causalHash([...placed].sort(byId).map(({id,start,end})=>({id,start,end}))),
             placedTasks:[...placed].sort(byId).map(({id,start,end})=>({id,start,end})),remainingTaskIds:remaining.map(({id})=>id).sort(),
-            nextSelectedUnit:{id:`ordinary:${task.id}`,kind:"ORDINARY",domainSize:0,domainMeasure:"hard-valid-dynamic-starts",domainExact:true},candidatePlacements:[],
+            nextSelectedUnit:{id:`ordinary:${task.id}`,kind:"ORDINARY",domainSize:0,domainMeasure:"hard-valid-dynamic-starts",domainExact:true},candidatePlacements:[],dynamicDomainEliminations:[],
             causalParentDecision:selectionOrder.length===0?null:{depth:depth-1,taskId:selectionOrder.at(-1)!}};
         evidence.standaloneZeroAlternativePrunes += 1;
         recordBlockingTask(task);
@@ -625,10 +625,25 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.standaloneStartChecks += 1;
       return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals);
     });
+    const domainEliminations=()=>{
+      const rows=new Map<string,{reason:NonNullable<ReturnType<typeof diagnoseTaskPlacement>["firstRejectionReason"]>;authorityId:string|null;blockingTaskId:string|null;startsEliminated:number}>();
+      for(const start of ordinaryStaticDomain(choice.task).starts()){
+        const diagnosis=diagnoseTaskPlacement(problem,choice.task,start,allPlaced,coreMeals);
+        if(diagnosis.valid||!diagnosis.firstRejectionReason)continue;
+        const reason=diagnosis.firstRejectionReason,blockingTaskId=diagnosis.blockingPlacedTaskId;
+        const authorityId=reason.includes("PARTICIPANT")?choice.task.participantId??null:reason.includes("COACH")?choice.task.coachId??null:
+          reason.includes("SPACE")?choice.task.spaceId:reason.includes("RESOURCE")?(choice.task.requiredResourceIds??[]).join(",")||null:
+          reason==="DEPENDENCY_TIMING"?blockingTaskId:null;
+        const key=JSON.stringify([reason,authorityId,blockingTaskId]);const prior=rows.get(key);
+        if(prior)prior.startsEliminated++;else rows.set(key,{reason,authorityId,blockingTaskId,startsEliminated:1});
+      }
+      return [...rows.values()].sort((a,b)=>a.reason.localeCompare(b.reason)||(a.authorityId??"").localeCompare(b.authorityId??"")||(a.blockingTaskId??"").localeCompare(b.blockingTaskId??""));
+    };
     const ordinaryDiagnostic=macroCapacityDiagnostic.enabled&&depth>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1)
       ?{depth,fingerprint:causalHash([...placed].sort(byId).map(({id,start,end})=>({id,start,end}))),
         placedTasks:[...placed].sort(byId).map(({id,start,end})=>({id,start,end})),remainingTaskIds:remaining.map(({id})=>id).sort(),
         nextSelectedUnit:{id:`ordinary:${choice.task.id}`,kind:"ORDINARY",domainSize:feasibleStarts.length,domainMeasure:"hard-valid-dynamic-starts",domainExact:true},candidatePlacements:[],
+        dynamicDomainEliminations:domainEliminations(),
         causalParentDecision:selectionOrder.length===0?null:{depth:depth-1,taskId:selectionOrder.at(-1)!}}:null;
     if(ordinaryDiagnostic)macroCapacityDiagnostic.deepestStandaloneFrontier=ordinaryDiagnostic;
     if (feasibleStarts.length === 0) {
@@ -644,7 +659,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       .sort(byId);
     for (const { scheduled } of orderedStarts) {
       const diagnosticAttempt=ordinaryDiagnostic?{taskIds:[scheduled.id],starts:[scheduled.start],ends:[scheduled.end],outcome:"ENTERED" as const,
-        firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null}:null;
+        firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null,transportFailure:null,transportCausalCertificate:null}:null;
       if(diagnosticAttempt)ordinaryDiagnostic!.candidatePlacements.push(diagnosticAttempt);
       if (!consumeLeafBranch()) {if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
       evidence.ordinaryBranchesExplored += 1;
@@ -706,7 +721,21 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:choice.task.id,depth};}
       if(reserved.repaired)evidence.deferredPrerequisiteReservationRepairs+=1;
       if(reserved.exhausted){if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
-      if(!reserved.feasible){if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY"});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:choice.task.id,depth};evidence.standaloneBacktracks+=1;continue;}
+      if(!reserved.feasible){if(diagnosticAttempt){
+          const after=reserved.transportFailure,before=assessTransportFutureFeasibility(problem,allPlaced);
+          const direction=after?.direction;const boundary=(items:readonly ScheduledTask[],participantId:string|null,side:TransportDirection)=>{
+            const obligations=items.filter(task=>task.participantId===participantId&&!dynamicTransportIds.has(task.id));
+            return side==="arrival"?Math.min(problem.day.end,...obligations.map(({start})=>start)):Math.max(problem.day.start,...obligations.map(({end})=>end));
+          };
+          let firstInfeasibleDecision:null|{depth:number;taskId:string}=null;
+          if(after&&before.feasible===false){let prefix=[...coreTasks];let was=assessTransportFutureFeasibility(problem,prefix).feasible;
+            for(let index=0;index<selectionOrder.length;index++){const task=placed.find(({id})=>id===selectionOrder[index]);if(!task)continue;prefix=[...prefix,task];const now=assessTransportFutureFeasibility(problem,prefix).feasible;if(was&&!now){firstInfeasibleDecision={depth:index,taskId:task.id};break;}was=now;}}
+          Object.assign(diagnosticAttempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:after,
+            transportCausalCertificate:after&&direction?{participantId:scheduled.participantId??null,direction,
+              boundaryKind:direction==="arrival"?"IN" as const:"OUT" as const,
+              boundaryBefore:boundary(allPlaced,scheduled.participantId??null,direction),boundaryAfter:boundary(provisionalPlaced,scheduled.participantId??null,direction),
+              beforeFeasible:before.feasible,afterFeasible:false,firstInfeasibleDecision,failure:after}:null});
+        }evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:choice.task.id,depth};evidence.standaloneBacktracks+=1;continue;}
       if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id],reserved.reservation,nextOperationalReservations);
@@ -872,14 +901,14 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       placedTasks:[...placed].sort(byId).map(({id,start,end})=>({id,start,end})),
       remainingTaskIds:[...new Set([...remainingUnits.flatMap(item=>item.tasks),...ordinaryPending].map(({id})=>id))].sort(),
       nextSelectedUnit:{id:selected.id,kind:selected.unit.kind,domainSize:selected.domainSize,domainMeasure:selected.domainMeasure,domainExact:selected.domainExact},
-      candidatePlacements:[],causalParentDecision:selectionOrder.length===0?null:{depth:placed.length-1,taskId:selectionOrder.at(-1)!}}
+      candidatePlacements:[],dynamicDomainEliminations:[],causalParentDecision:selectionOrder.length===0?null:{depth:placed.length-1,taskId:selectionOrder.at(-1)!}}
     :null;
   if(diagnosticFrontier)macroCapacityDiagnostic.deepestStandaloneFrontier=diagnosticFrontier;
   recordMacroDecision(depth, selected, constrained);
   const unit = selected.unit;
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
-    const attempt=diagnosticFrontier&&diagnosticFrontier.candidatePlacements.length<256?{taskIds:[...tasks].sort(byId).map(({id})=>id),starts:[...tasks].sort(byId).map(({start})=>start),ends:[...tasks].sort(byId).map(({end})=>end),outcome:"ENTERED" as const,firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null}:null;
+    const attempt=diagnosticFrontier&&diagnosticFrontier.candidatePlacements.length<256?{taskIds:[...tasks].sort(byId).map(({id})=>id),starts:[...tasks].sort(byId).map(({start})=>start),ends:[...tasks].sort(byId).map(({end})=>end),outcome:"ENTERED" as const,firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null,transportFailure:null,transportCausalCertificate:null}:null;
     if(attempt)diagnosticFrontier!.candidatePlacements.push(attempt);
     let nextOperationalReservations=operationalReservations;
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
@@ -952,7 +981,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:unit.id,depth};}
     if(reserved.repaired)evidence.deferredPrerequisiteReservationRepairs+=1;
     if(reserved.exhausted){if(attempt)Object.assign(attempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
-    if(!reserved.feasible){if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY"});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
+    if(!reserved.feasible){if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
     return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],reserved.reservation,nextOperationalReservations);
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {

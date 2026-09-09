@@ -102,6 +102,8 @@ test("transport demand above optimistic hard capacity prunes cheaply", () => {
   assert.equal(result.arrivalPruned, true);
   assert.equal(result.arrivalBranchesExplored, 0);
   assert.equal(result.transportEvidence.cumulativeCapacityPrunes, 1);
+  assert.deepEqual(result.transportFailure, { direction: "arrival", reason: "CUMULATIVE_CAPACITY", demand: 3,
+    maximumHardCapacity: 2, taskIds: ["arrival-0", "arrival-1", "arrival-2"] });
 });
 
 test("transport demand equal to optimistic hard capacity remains viable", () => {

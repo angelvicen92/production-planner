@@ -180,7 +180,13 @@ export interface ExactMacroCapacityCertificate {
 export interface ExactDeepestStandaloneFrontier {
   depth:number; fingerprint:string; placedTasks:Array<{id:string;start:number;end:number}>; remainingTaskIds:string[];
   nextSelectedUnit:null|{id:string;kind:string;domainSize:number;domainMeasure:string;domainExact:boolean};
-  candidatePlacements:Array<{taskIds:string[];starts:number[];ends:number[];outcome:"ENTERED"|"REJECTED"|"BUDGET_EXHAUSTED";firstRejectionReason:string|null;authorityId:string|null;blockingTaskId:string|null}>;
+  candidatePlacements:Array<{taskIds:string[];starts:number[];ends:number[];outcome:"ENTERED"|"REJECTED"|"BUDGET_EXHAUSTED";firstRejectionReason:string|null;authorityId:string|null;blockingTaskId:string|null;
+    transportFailure:import("./transportGrouping").TransportFutureFeasibilityCertificate["firstFailure"];
+    transportCausalCertificate:null|{participantId:string|null;direction:import("./transportGrouping").TransportDirection;
+      boundaryKind:"IN"|"OUT";
+      boundaryBefore:number;boundaryAfter:number;beforeFeasible:boolean;afterFeasible:boolean;
+      firstInfeasibleDecision:null|{depth:number;taskId:string};failure:NonNullable<import("./transportGrouping").TransportFutureFeasibilityCertificate["firstFailure"]>}}>;
+  dynamicDomainEliminations:Array<{reason:import("./placement").PlacementRejectionReason;authorityId:string|null;blockingTaskId:string|null;startsEliminated:number}>;
   causalParentDecision:null|{depth:number;taskId:string};
 }
 export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary;deepestStandaloneFrontier:ExactDeepestStandaloneFrontier|null;macroPendingPrerequisiteCapacityCertificates:ExactMacroCapacityCertificate[];macroPendingPrerequisiteCapacityCertificateOverflow:number;deferredArrivalFirstRepair:import("./deferredPrerequisiteReservation").DeferredArrivalCausalCertificate|null }

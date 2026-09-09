@@ -33,6 +33,8 @@ export interface DeferredPrerequisiteReservationResult {
     cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number;futureChecks:number;futureIntervalCalculations:number;
     futureEnumeratedStarts:number;futureCapacityPrunes:number };
   causalDiagnostic:DeferredArrivalCausalCertificate|null;
+  /** The canonical necessary-only transport proof, forwarded without reinterpretation. */
+  transportFailure: ReturnType<typeof assessTransportFutureFeasibility>["firstFailure"];
 }
 
 const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
@@ -127,13 +129,15 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     branchesExplored: 0, exhausted: false, arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0,
     arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
     transportEvidence: { ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
-      cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null };
+      cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null,
+    transportFailure:futureTransport.firstFailure };
   if (sameIds && previous.arrivalGroups.length === 0
     && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines))
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
       arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
       arrivalWitnessDropped: false,
-      transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null };
+      transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null,
+      transportFailure:null };
   let branchesExplored = 0, exhausted = false;
   const arrivalChecks = futureTransport.checks, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   const transportEvidence={ ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
@@ -166,5 +170,6 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   return { feasible: reservation !== null, reservation, repaired: previous !== null, branchesExplored, exhausted,
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
     arrivalPruned: false,
-    arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:null };
+    arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:null,
+    transportFailure:null };
 }
