@@ -39027,7 +39027,49 @@
               "outcome": "REJECTED",
               "firstRejectionReason": "TRANSPORT_FUTURE_FEASIBILITY",
               "authorityId": null,
-              "blockingTaskId": null
+              "blockingTaskId": null,
+              "transportFailure": {
+                "direction": "arrival",
+                "reason": "EMPTY_DOMAIN",
+                "demand": 1,
+                "maximumHardCapacity": 0,
+                "taskIds": [
+                  "task:10165"
+                ]
+              },
+              "transportCausalCertificate": {
+                "participantId": "participant:212",
+                "direction": "arrival",
+                "boundaryKind": "IN",
+                "boundaryBefore": 550,
+                "boundaryAfter": 540,
+                "beforeFeasible": true,
+                "afterFeasible": false,
+                "firstInfeasibleDecision": null,
+                "failure": {
+                  "direction": "arrival",
+                  "reason": "EMPTY_DOMAIN",
+                  "demand": 1,
+                  "maximumHardCapacity": 0,
+                  "taskIds": [
+                    "task:10165"
+                  ]
+                }
+              }
+            }
+          ],
+          "dynamicDomainEliminations": [
+            {
+              "reason": "DEPENDENCY_TIMING",
+              "authorityId": "task:10161",
+              "blockingTaskId": "task:10161",
+              "startsEliminated": 76
+            },
+            {
+              "reason": "DEPENDENCY_TIMING",
+              "authorityId": "task:10169",
+              "blockingTaskId": "task:10169",
+              "startsEliminated": 38
             }
           ],
           "causalParentDecision": {
@@ -44077,7 +44119,49 @@
             "outcome": "REJECTED",
             "firstRejectionReason": "TRANSPORT_FUTURE_FEASIBILITY",
             "authorityId": null,
-            "blockingTaskId": null
+            "blockingTaskId": null,
+            "transportFailure": {
+              "direction": "arrival",
+              "reason": "EMPTY_DOMAIN",
+              "demand": 1,
+              "maximumHardCapacity": 0,
+              "taskIds": [
+                "task:10165"
+              ]
+            },
+            "transportCausalCertificate": {
+              "participantId": "participant:212",
+              "direction": "arrival",
+              "boundaryKind": "IN",
+              "boundaryBefore": 550,
+              "boundaryAfter": 540,
+              "beforeFeasible": true,
+              "afterFeasible": false,
+              "firstInfeasibleDecision": null,
+              "failure": {
+                "direction": "arrival",
+                "reason": "EMPTY_DOMAIN",
+                "demand": 1,
+                "maximumHardCapacity": 0,
+                "taskIds": [
+                  "task:10165"
+                ]
+              }
+            }
+          }
+        ],
+        "dynamicDomainEliminations": [
+          {
+            "reason": "DEPENDENCY_TIMING",
+            "authorityId": "task:10161",
+            "blockingTaskId": "task:10161",
+            "startsEliminated": 76
+          },
+          {
+            "reason": "DEPENDENCY_TIMING",
+            "authorityId": "task:10169",
+            "blockingTaskId": "task:10169",
+            "startsEliminated": 38
           }
         ],
         "causalParentDecision": {
