@@ -625,25 +625,11 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.standaloneStartChecks += 1;
       return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals);
     });
-    const domainEliminations=()=>{
-      const rows=new Map<string,{reason:NonNullable<ReturnType<typeof diagnoseTaskPlacement>["firstRejectionReason"]>;authorityId:string|null;blockingTaskId:string|null;startsEliminated:number}>();
-      for(const start of ordinaryStaticDomain(choice.task).starts()){
-        const diagnosis=diagnoseTaskPlacement(problem,choice.task,start,allPlaced,coreMeals);
-        if(diagnosis.valid||!diagnosis.firstRejectionReason)continue;
-        const reason=diagnosis.firstRejectionReason,blockingTaskId=diagnosis.blockingPlacedTaskId;
-        const authorityId=reason.includes("PARTICIPANT")?choice.task.participantId??null:reason.includes("COACH")?choice.task.coachId??null:
-          reason.includes("SPACE")?choice.task.spaceId:reason.includes("RESOURCE")?(choice.task.requiredResourceIds??[]).join(",")||null:
-          reason==="DEPENDENCY_TIMING"?blockingTaskId:null;
-        const key=JSON.stringify([reason,authorityId,blockingTaskId]);const prior=rows.get(key);
-        if(prior)prior.startsEliminated++;else rows.set(key,{reason,authorityId,blockingTaskId,startsEliminated:1});
-      }
-      return [...rows.values()].sort((a,b)=>a.reason.localeCompare(b.reason)||(a.authorityId??"").localeCompare(b.authorityId??"")||(a.blockingTaskId??"").localeCompare(b.blockingTaskId??""));
-    };
     const ordinaryDiagnostic=macroCapacityDiagnostic.enabled&&depth>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1)
       ?{depth,fingerprint:causalHash([...placed].sort(byId).map(({id,start,end})=>({id,start,end}))),
         placedTasks:[...placed].sort(byId).map(({id,start,end})=>({id,start,end})),remainingTaskIds:remaining.map(({id})=>id).sort(),
         nextSelectedUnit:{id:`ordinary:${choice.task.id}`,kind:"ORDINARY",domainSize:feasibleStarts.length,domainMeasure:"hard-valid-dynamic-starts",domainExact:true},candidatePlacements:[],
-        dynamicDomainEliminations:domainEliminations(),
+        dynamicDomainEliminations:[],
         causalParentDecision:selectionOrder.length===0?null:{depth:depth-1,taskId:selectionOrder.at(-1)!}}:null;
     if(ordinaryDiagnostic)macroCapacityDiagnostic.deepestStandaloneFrontier=ordinaryDiagnostic;
     if (feasibleStarts.length === 0) {

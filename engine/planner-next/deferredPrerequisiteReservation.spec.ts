@@ -147,6 +147,66 @@ test("arrival remains reserved after its intervening non-transport predecessor m
   assert.deepEqual(afterMaterialization.reservation!.arrivalTaskIds, [arrival.id]);
 });
 
+function arrivalThenStylingFixture(laterStart: number): { problem: PlannerNextProblem; pending: Task[]; placed: ScheduledTask[] } {
+  const availability = [{ start: 0, end: 30 }];
+  const arrival: Task = { id: "in", kind: "auxiliary", participantId: "talent", duration: 5,
+    spaceId: "transport", dependencies: [], availability };
+  const styling: Task = { id: "styling", kind: "auxiliary", participantId: "talent", duration: 10,
+    spaceId: "styling-space", dependencies: [arrival.id], availability };
+  const later: Task = { id: "later", kind: "auxiliary", participantId: "other", duration: 5,
+    spaceId: "later-space", dependencies: [styling.id], availability };
+  const problem: PlannerNextProblem = { day: { start: 0, end: 30 },
+    spaces: ["transport", "styling-space", "later-space"].map((id) => ({ id, availability })), resources: [],
+    participants: ["talent", "other"].map((id) => ({ id, availability })), coaches: [], tasks: [arrival, styling, later],
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    auxiliaryPolicy: { participantPresencePreference: "OFF" },
+    budget: { bestK: 1, maxBacktracks: 0, maxPatterns: 1, maxBranchExpansions: 10_000 },
+    searchPolicy: "EXACT_CONSTRUCTIVE",
+    transportPolicy: { arrival: { taskIds: [arrival.id], minimumGroupSize: 1, maximumGroupSize: 1,
+      targetGroupSize: 1, minGapMinutes: 0, groupingWeight: 1 }, departure: { taskIds: [], minimumGroupSize: 1,
+      maximumGroupSize: 1, targetGroupSize: 1, minGapMinutes: 0, groupingWeight: 1 } } };
+  return { problem, pending: [arrival, styling], placed: [{ ...later, start: laterStart, end: laterStart + later.duration }] };
+}
+
+test("joint arrival and ordinary witness rejects IN 5 plus styling 10 before a 09:10 obligation", () => {
+  const input = arrivalThenStylingFixture(10);
+  const before = structuredClone(input); let consumed = 0;
+  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.placed, [], null,
+    () => { consumed += 1; return true; });
+  assert.equal(result.feasible, false);
+  assert.equal(result.branchesExplored, consumed);
+  assert.ok(result.transportEvidence.futureChecks > 0);
+  assert.deepEqual(input, before);
+});
+
+test("joint arrival and ordinary witness keeps IN 09:00-09:05 plus styling 09:05-09:15", () => {
+  const input = arrivalThenStylingFixture(15);
+  const first = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.placed, [], null, () => true);
+  const second = maintainDeferredPrerequisiteReservation(structuredClone(input.problem), structuredClone(input.pending),
+    structuredClone(input.placed), [], null, () => true);
+  assert.equal(first.feasible, true);
+  assert.deepEqual(first.reservation?.witness.map(({ id, start, end }) => ({ id, start, end })),
+    [{ id: "styling", start: 5, end: 15 }]);
+  assert.deepEqual(second, first);
+});
+
+test("an IN-invalid first witness start is rejected before trying the next exact start", () => {
+  const input = arrivalThenStylingFixture(20);
+  input.problem.tasks.find(({ id }) => id === "in")!.duration = 10;
+  const other: Task = { id: "x", kind: "auxiliary", participantId: "x-participant", duration: 5,
+    spaceId: "styling-space", dependencies: [], availability: [{ start: 0, end: 5 }, { start: 15, end: 20 }] };
+  input.problem.tasks.push(other);
+  input.problem.participants.push({ id: "x-participant", availability: [{ start: 0, end: 30 }] });
+  input.problem.tasks.find(({ id }) => id === "later")!.dependencies.push(other.id);
+  input.pending.push(other);
+  const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.placed, [], null, () => true);
+  assert.equal(result.feasible, true);
+  assert.deepEqual(result.reservation?.witness.map(({ id, start }) => ({ id, start })),
+    [{ id: "styling", start: 10 }, { id: "x", start: 0 }]);
+  assert.ok(result.branchesExplored >= 2);
+  assert.ok(result.transportEvidence.futureCapacityPrunes >= 1);
+});
+
 test("reservation preserves a hard-predecessor arrival omitted from the standalone pending frontier", () => {
   const input = arrivalFixture(1);
   const first = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core, [], null, () => true);

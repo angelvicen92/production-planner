@@ -1,6 +1,6 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
-import { assessTransportFutureFeasibility } from "./transportGrouping";
+import { assessTransportFutureFeasibility, transportTaskIds } from "./transportGrouping";
 
 export interface DeferredArrivalCausalCertificate {
   causingTaskId:string|null;arrivalTaskId:string;participantId:string|null;previousBoundary:number;currentBoundary:number;
@@ -131,17 +131,40 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     transportEvidence: { ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
       cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null,
     transportFailure:futureTransport.firstFailure };
-  if (sameIds && previous.arrivalGroups.length === 0
-    && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines))
-    return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
-      arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
-      arrivalWitnessDropped: false,
-      transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null,
-      transportFailure:null };
   let branchesExplored = 0, exhausted = false;
-  const arrivalChecks = futureTransport.checks, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
+  let arrivalChecks = futureTransport.checks;
+  const arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   const transportEvidence={ ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
     cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) };
+  const addFutureTransportEvidence = (future: ReturnType<typeof assessTransportFutureFeasibility>): void => {
+    arrivalChecks += future.checks;
+    transportEvidence.cumulativeCapacityChecks += future.checks;
+    transportEvidence.cumulativeCapacityPrunes += future.capacityPrunes;
+    transportEvidence.futureChecks += future.checks;
+    transportEvidence.futureIntervalCalculations += future.intervalCalculations;
+    transportEvidence.futureEnumeratedStarts += future.enumeratedStarts;
+    transportEvidence.futureCapacityPrunes += future.capacityPrunes;
+  };
+  const transportIds = transportTaskIds(problem);
+  const advancesFirstObligation = (scheduled: ScheduledTask, context: readonly ScheduledTask[]): boolean =>
+    scheduled.participantId !== null && scheduled.participantId !== undefined && !transportIds.has(scheduled.id)
+      && scheduled.start < Math.min(problem.day.end, ...context
+        .filter((item) => item.participantId === scheduled.participantId && !transportIds.has(item.id))
+        .map(({ start }) => start));
+  let jointTransportFailure: DeferredPrerequisiteReservationResult["transportFailure"] = null;
+  if (sameIds && previous.arrivalGroups.length === 0
+    && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines)) {
+    const affectsArrivalBoundary = previous.witness.some((scheduled) =>
+      advancesFirstObligation(scheduled, [...placed, ...previous.witness.filter(({ id }) => id !== scheduled.id)]));
+    const jointTransport = affectsArrivalBoundary
+      ? assessTransportFutureFeasibility(problem, [...placed, ...previous.witness]) : null;
+    if (jointTransport) addFutureTransportEvidence(jointTransport);
+    if (!jointTransport || jointTransport.feasible)
+      return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
+        arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: false, arrivalPruned: false,
+        arrivalWitnessDropped: false, transportEvidence, causalDiagnostic:null, transportFailure:null };
+    jointTransportFailure = jointTransport.firstFailure;
+  }
   void causalDiagnostic; void causingTaskIds;
   const reservedIds = new Set(taskIds);
   const search = (remaining: readonly Task[], witness: readonly ScheduledTask[]): DeferredPrerequisiteReservation | null => {
@@ -161,6 +184,11 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
       branchesExplored += 1;
       if (!canPlaceTask(problem, choice.task, start, [...placed, ...witness], [...meals])) continue;
       const scheduled: ScheduledTask = { ...choice.task, start, end: start + choice.task.duration };
+      if (advancesFirstObligation(scheduled, [...placed, ...witness])) {
+        const jointTransport = assessTransportFutureFeasibility(problem, [...placed, ...witness, scheduled]);
+        addFutureTransportEvidence(jointTransport);
+        if (!jointTransport.feasible) { jointTransportFailure = jointTransport.firstFailure; continue; }
+      }
       const found = search(remaining.filter(({ id }) => id !== choice.task.id), [...witness, scheduled]);
       if (found || exhausted) return found;
     }
@@ -169,7 +197,7 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
   const reservation = search(tasks, []);
   return { feasible: reservation !== null, reservation, repaired: previous !== null, branchesExplored, exhausted,
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
-    arrivalPruned: false,
+    arrivalPruned: reservation === null && jointTransportFailure !== null,
     arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:null,
-    transportFailure:null };
+    transportFailure:reservation === null ? jointTransportFailure : null };
 }
