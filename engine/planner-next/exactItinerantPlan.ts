@@ -272,6 +272,8 @@ export interface ExactItinerantPlanEvidence {
   setupBlockMatchingAttempts: number;
   setupBlockMatchingSuccesses: number;
   setupBlockPermutationBranchesAvoided: number;
+  setupCandidateOutcomeCertificates:ExactCoreCausalDiagnostic["setupCandidateOutcomeCertificates"];
+  setupCandidateOutcomeCertificateOverflow:number;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -496,6 +498,14 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number; domainExact?:boolean }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
+  type SetupRejection={depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null};
+  let activeSetupCandidate:null|{baseDepth:number;maximumDepth:number;first:SetupRejection|null;deepest:SetupRejection|null}=null;
+  const recordSetupRejection=(depth:number,failureKind:string,authorityId:string|null=null,blockingTaskId:string|null=null):void=>{
+    if(!activeSetupCandidate)return;
+    const rejection={depth,failureKind,authorityId,blockingTaskId};
+    activeSetupCandidate.first??=rejection;
+    if(!activeSetupCandidate.deepest||depth>activeSetupCandidate.deepest.depth)activeSetupCandidate.deepest=rejection;
+  };
   const capacityTask=(task:Task)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
     spaceId:task.spaceId,duration:task.duration,requiredResourceIds:[...(task.requiredResourceIds??[])].sort()});
   const capacityPlacement=(task:ScheduledTask)=>({taskId:task.id,participantId:task.participantId??null,kind:task.kind,
@@ -581,6 +591,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   let completeAfterOrdinary = completeLeaf;
   const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
+    if(activeSetupCandidate)activeSetupCandidate.maximumDepth=Math.max(activeSetupCandidate.maximumDepth,depth);
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
       return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder);
@@ -684,6 +695,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         else { zeroDomainObligation = obligation; break; }
       }
       if (zeroDomainObligation) {
+        recordSetupRejection(depth+1,"ZERO_DYNAMIC_DOMAIN",null,zeroDomainObligation.id);
         if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"REJECTED",firstRejectionReason:"ZERO_DYNAMIC_DOMAIN",blockingTaskId:zeroDomainObligation.id});
         evidence.ordinaryIndividualForwardZeroDomainPrunes += 1;
         evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id]
@@ -707,6 +719,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         evidence.operationalMealReservationRepairs+=operationalProbe.repairs;
         for(const reservation of operationalProbe.reservations){const prior=operationalReservations.find(({policyId})=>policyId===reservation.policyId);if(prior&&!reservation.feasibleIntervals.some(({start,end})=>start<=prior.witnessInterval.start&&prior.witnessInterval.end<=end))evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]=(evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]??0)+1;}
         if(!operationalProbe.feasible){
+          recordSetupRejection(depth+1,"OPERATIONAL_MEAL",operationalProbe.blockingPolicyIds[0]??null);
           if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"REJECTED",firstRejectionReason:"OPERATIONAL_MEAL",authorityId:operationalProbe.blockingPolicyIds[0]??null});
           evidence.operationalMealFuturePrunes+=1;
           evidence.operationalMealReservationPrunes+=1;for(const id of operationalProbe.blockingPolicyIds)evidence.operationalMealReservationPrunesByPolicy[id]=(evidence.operationalMealReservationPrunesByPolicy[id]??0)+1;
@@ -725,7 +738,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
       if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:choice.task.id,depth};}
       if(reserved.exhausted){if(diagnosticAttempt)Object.assign(diagnosticAttempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
-      if(!reserved.feasible){if(diagnosticAttempt){
+      if(!reserved.feasible){recordSetupRejection(depth+1,"TRANSPORT_FUTURE_FEASIBILITY",reserved.transportFailure?.direction??null,reserved.transportFailure?.taskId??null);if(diagnosticAttempt){
           const after=reserved.transportFailure,before=assessTransportFutureFeasibility(problem,allPlaced);
           const direction=after?.direction;const boundary=(items:readonly ScheduledTask[],participantId:string|null,side:TransportDirection)=>{
             const obligations=items.filter(task=>task.participantId===participantId&&!dynamicTransportIds.has(task.id));
@@ -740,7 +753,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
               boundaryBefore:boundary(allPlaced,scheduled.participantId??null,direction),boundaryAfter:boundary(provisionalPlaced,scheduled.participantId??null,direction),
               beforeFeasible:before.feasible,afterFeasible:false,firstInfeasibleDecision,failure:after}:null});
         }evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:choice.task.id,depth};evidence.standaloneBacktracks+=1;continue;}
-      if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
+      if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){recordSetupRejection(depth+1,"PARTICIPANT_MEAL",null,mealProbe.blockingMealTaskIds[0]??null);evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id],nextOperationalReservations);
       if (child !== "DEAD_END") return child;
@@ -897,6 +910,7 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
 };
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
   roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
+  if(activeSetupCandidate)activeSetupCandidate.maximumDepth=Math.max(activeSetupCandidate.maximumDepth,placed.length);
   if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder,operationalReservations);
   const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
   const selected = selectMostConstrainedUnit(constrained)!;
@@ -924,7 +938,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.macroPendingPrerequisiteCollectiveCapacityChecks+=checked.collectiveCapacityChecks;evidence.macroPendingPrerequisiteObligationsChecked+=checked.obligationsChecked;evidence.macroPendingPrerequisiteCollectiveCapacityPrunes+=checked.collectiveCapacityPrunes;
     evidence.macroPendingPrerequisiteWitnesses+=checked.witnesses;evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]=(evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]??0)+1;
     if(checked.cacheHit)evidence.macroPendingPrerequisiteCacheHits+=1;else evidence.macroPendingPrerequisiteCacheMisses+=1;
-    if(!checked.feasible){if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,authorityId:checked.authorityId,blockingTaskId:checked.blockingTaskId});evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
+    if(!checked.feasible){recordSetupRejection(placed.length+tasks.length,`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,checked.authorityId,checked.blockingTaskId);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,authorityId:checked.authorityId,blockingTaskId:checked.blockingTaskId});evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
       evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};
@@ -970,6 +984,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       evidence.operationalMealReservationBranchesExplored+=operationalProbe.branchesExplored;evidence.operationalMealReservationRepairs+=operationalProbe.repairs;
       for(const reservation of operationalProbe.reservations){const prior=operationalReservations.find(({policyId})=>policyId===reservation.policyId);if(prior&&!reservation.feasibleIntervals.some(({start,end})=>start<=prior.witnessInterval.start&&prior.witnessInterval.end<=end))evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]=(evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]??0)+1;}
       if(!operationalProbe.feasible){
+        recordSetupRejection(placed.length+tasks.length,"OPERATIONAL_MEAL",operationalProbe.blockingPolicyIds[0]??null);
         if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"OPERATIONAL_MEAL",authorityId:operationalProbe.blockingPolicyIds[0]??null});
         evidence.operationalMealFuturePrunes+=1;
         evidence.operationalMealReservationPrunes+=1;for(const id of operationalProbe.blockingPolicyIds)evidence.operationalMealReservationPrunesByPolicy[id]=(evidence.operationalMealReservationPrunesByPolicy[id]??0)+1;
@@ -987,7 +1002,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
     if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:unit.id,depth};}
     if(reserved.exhausted){if(attempt)Object.assign(attempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
-    if(!reserved.feasible){if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
+    if(!reserved.feasible){recordSetupRejection(placed.length+tasks.length,"TRANSPORT_FUTURE_FEASIBILITY",reserved.transportFailure?.direction??null,reserved.transportFailure?.taskId??null);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
     return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],nextOperationalReservations);
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
@@ -1023,7 +1038,25 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
     if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
     for (const candidate of generated.candidates) {
+      const orderedTasks=[...candidate.tasks].sort((left,right)=>left.start-right.start||byId(left,right));
+      const familyOrder=setupFamilySequence(orderedTasks);
+      const familyBounds=familyOrder.map(family=>{const familyTasks=orderedTasks.filter(task=>task.setupFamilyId===family);return {start:Math.min(...familyTasks.map(task=>task.start)),end:Math.max(...familyTasks.map(task=>task.end))};});
+      const priorActive=activeSetupCandidate;
+      const tracker={baseDepth:placed.length+candidate.tasks.length,maximumDepth:placed.length+candidate.tasks.length,first:null as SetupRejection|null,deepest:null as SetupRejection|null};
+      if(macroCapacityDiagnostic.enabled)activeSetupCandidate=tracker;
       const child = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
+      activeSetupCandidate=priorActive;
+      if(macroCapacityDiagnostic.enabled){
+        const immediateOutcome=child==="BUDGET_EXHAUSTED"?"BUDGET_EXHAUSTED":tracker.maximumDepth>tracker.baseDepth?"ENTERED_DESCENDANTS":"REJECTED_IMMEDIATELY";
+        const terminal=tracker.deepest??tracker.first;
+        const failureKind=terminal?.failureKind??(child==="BUDGET_EXHAUSTED"?"BUDGET_EXHAUSTED":"DESCENDANT_DEAD_END");
+        const classKey=[familyOrder.join(">"),immediateOutcome,failureKind,terminal?.authorityId??"none",terminal?.blockingTaskId??"none"].join("|");
+        const rows=evidence.setupCandidateOutcomeCertificates;
+        let row=rows.find(item=>item.classKey===classKey);
+        if(!row&&rows.length<64){row={classKey,frequency:0,immediateOutcome,maximumDescendantDepth:tracker.maximumDepth,failureKind,authorityId:terminal?.authorityId??null,blockingTaskId:terminal?.blockingTaskId??null,samples:[]};rows.push(row);}
+        if(row){row.frequency+=1;row.maximumDescendantDepth=Math.max(row.maximumDescendantDepth,tracker.maximumDepth);if(row.samples.length<3)row.samples.push({familyOrder,start:Math.min(...orderedTasks.map(task=>task.start)),end:Math.max(...orderedTasks.map(task=>task.end)),interFamilyGap:familyBounds.length>1?familyBounds[1]!.start-familyBounds[0]!.end:0,firstRejection:tracker.first,deepestRejection:tracker.deepest});}
+        else evidence.setupCandidateOutcomeCertificateOverflow+=1;
+      }
       if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
     }
   } else if (unit.kind === "ROUND_SYNCHRONIZATION") {
@@ -1041,6 +1074,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       if(explorer.exhausted){ledger.consume("STANDALONE");return "BUDGET_EXHAUSTED";}
       if(!candidate)break;const child=recurse(candidate.tasks);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
   }
+  recordSetupRejection(placed.length,"NO_HARD_VALID_MACRO_CANDIDATE",unit.id,unit.tasks[0]?.id??null);
   for (const task of unit.tasks) recordBlockingTask(task);
   return "DEAD_END";
 };
@@ -1174,6 +1208,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockBranchesExplored: 0, setupBlockSearchInvocations: 0, setupBlockStartsExplored: 0,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
     setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockPermutationBranchesAvoided: 0,
+    setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],
     roundSynchronizationSearchInvocations: 0, roundSynchronizationStartCandidates: 0,
@@ -1478,7 +1513,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   if(evidence.causalDiagnostic)evidence.causalDiagnostic.standaloneFrontier=standaloneFrontierDiagnostic;
   if(evidence.causalDiagnostic)evidence.causalDiagnostic.deepestStandaloneFrontier=macroCapacityDiagnostic.deepestStandaloneFrontier;
   if(evidence.causalDiagnostic){evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificates=macroCapacityDiagnostic.certificates;
-    evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificateOverflow=macroCapacityDiagnostic.overflow;}
+    evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificateOverflow=macroCapacityDiagnostic.overflow;
+    evidence.causalDiagnostic.setupCandidateOutcomeCertificates=evidence.setupCandidateOutcomeCertificates;
+    evidence.causalDiagnostic.setupCandidateOutcomeCertificateOverflow=evidence.setupCandidateOutcomeCertificateOverflow;}
   if(evidence.causalDiagnostic){const summary=evidence.causalDiagnostic.futureFeasibility;const states=[...futureAssessments.values()];summary.assessments=states.flatMap(state=>[...state.rows.values()]).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature)||a.resultSignature.localeCompare(b.resultSignature));
     summary.collisions=states.filter(state=>state.rows.size>1).map(state=>{const row=state.rows.values().next().value!;return {depth:row.depth,taskId:row.taskId,authoritySignature:row.authoritySignature,resultSignatures:[...state.rows.keys()].sort()}}).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature));summary.authorityResultCollisions=summary.collisions.length;
     for(const state of states){const row=state.rows.values().next().value!;summary.totalEvaluations+=state.occurrences;summary.uniqueAuthorityStates+=1;summary.repeatedEvaluations+=state.occurrences-1;
