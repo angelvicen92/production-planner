@@ -72,7 +72,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(evidence.engineInput.mainFlowBlockPolicy.projectedTechnicalMaximum>2);
     assert.deepEqual({target:evidence.engineInput.projectedArrivalTransportPolicy.targetGroupSize,minimum:evidence.engineInput.projectedArrivalTransportPolicy.minimumGroupSize,
       maximum:evidence.engineInput.projectedArrivalTransportPolicy.maximumGroupSize,gap:evidence.engineInput.projectedArrivalTransportPolicy.minGapMinutes},
-      {target:3,minimum:1,maximum:6,gap:30});
+      {target:3,minimum:1,maximum:3,gap:30});
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);

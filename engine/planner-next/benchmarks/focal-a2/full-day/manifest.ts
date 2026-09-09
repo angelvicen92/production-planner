@@ -264,9 +264,9 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
         scope: "coach",
       },
       inTransport: {
-        targetGroupSize: 3, maximumGroupSize: 6, minGapMinutes: 30, groupingWeight: 3,
+        targetGroupSize: 3, maximumGroupSize: 3, minGapMinutes: 30, groupingWeight: 3,
       },
-      outTransport: { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 },
+      outTransport: { targetGroupSize: 1, maximumGroupSize: 3, minGapMinutes: 20, groupingWeight: 3 },
       ignoredEditorialNotes: ["NO_P15", "instrument", "wardrobe", "prop"],
     },
   });

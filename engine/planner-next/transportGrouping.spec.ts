@@ -4,8 +4,12 @@ import type { PlannerNextProblem, ScheduledTask, Task, TransportGroupingPolicy }
 import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
+  assessTransportFutureFeasibility,
   transportGroupCandidates,
   transportContiguousGroupSizes,
+  findTransportDirectionWitness,
+  materializeTerminalTransport,
+  transportGroupStarts,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -29,20 +33,197 @@ test("candidate partitions honor minimum, maximum, and never leave a small resid
 
 test("terminal contiguous grouping uses directional defaults and preserves explicit targets", () => {
   assert.deepEqual(transportContiguousGroupSizes(6, policy(1, 6), "arrival"), [3, 3]);
-  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 3, 1]);
-  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 3, 2]);
-  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 3, 1]);
+  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 4]);
+  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 5]);
+  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 4]);
   assert.deepEqual(transportContiguousGroupSizes(3, policy(1, 6), "departure"), [1, 1, 1]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 2 }, "arrival"), [2, 2, 2]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 3 }, "departure"), [3, 3]);
 });
 
-test("terminal validation permits a final group below the legacy compatibility minimum", () => {
+test("terminal validation enforces the configured hard minimum", () => {
   const problem = validationProblem(7);
   const [a, b, c, d, e, f, g] = problem.tasks;
   const groups = [a, b, c].map((task) => scheduled(task!, 600))
     .concat([d, e, f].map((task) => scheduled(task!, 620)), [scheduled(g!, 640)]);
-  assert.equal(validateTransportGrouping(problem, groups).violationCount, 0);
+  assert.ok(validateTransportGrouping(problem, groups).violationCount > 0);
+});
+
+test("exact witness eliminates impossible residuals while target only orders feasible group sizes", () => {
+  const problem = exactProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("arrival-"));
+  problem.transportPolicy!.arrival = { ...policy(2, 4, 0), targetGroupSize: 3, taskIds: arrivals.map(({ id }) => id) };
+  let consumed = 0;
+  const witness = findTransportDirectionWitness(problem, "arrival", arrivals, [], () => { consumed += 1; return true; });
+  assert.equal(witness.feasible, true);
+  assert.ok(witness.groups.every((group) => group.length >= 2 && group.length <= 4));
+  assert.equal(consumed, witness.branchesExplored);
+});
+
+test("capacity matching collapses 19 equivalent memberships instead of enumerating permutations", () => {
+  const problem = validationProblem(19);
+  const window = [{ start: 0, end: 220 }];
+  problem.day = { start: 0, end: 220 };
+  problem.participants = problem.tasks.map((task) => ({ id: task.participantId!, availability: window }));
+  problem.spaces = problem.tasks.map((task) => ({ id: task.spaceId, availability: window }));
+  problem.transportPolicy!.arrival = { ...policy(1, 3, 20), targetGroupSize: 3,
+    taskIds: problem.tasks.map(({ id }) => id) };
+  const result = findTransportDirectionWitness(problem, "arrival", problem.tasks, [], () => true);
+  assert.equal(result.feasible, true);
+  assert.equal(result.groups.length, 7);
+  assert.ok(result.groups.every((group) => group.length <= 3));
+  assert.ok(result.equivalentMembershipsCollapsed >= 18);
+  assert.ok(result.slotStartSetsEvaluated < 10, "membership identities must not create factorial branches");
+  assert.equal(result.monotoneFastPathHits, 1);
+  assert.equal(result.monotoneFastPathWitnesses, 1);
+  assert.ok(result.slotAnalyticallyEliminatedStarts > 0);
+});
+
+test("a transport domain with a hole makes the monotone authority abstain and uses accounted fallback", () => {
+  const problem = exactProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("arrival-"));
+  arrivals[0]!.availability = [{ start: 0, end: 10 }, { start: 40, end: 50 }];
+  problem.transportPolicy!.arrival = { ...policy(3, 3, 20), taskIds: arrivals.map(({ id }) => id) };
+  let consumed = 0;
+  const result = findTransportDirectionWitness(problem, "arrival", arrivals, [], () => { consumed += 1; return true; });
+  assert.equal(result.monotoneFastPathHits, 0);
+  assert.equal(result.monotoneFastPathAbstentions, 1);
+  assert.equal(result.branchesExplored, consumed);
+});
+
+function canonicalBoundaryProblem(direction: "arrival" | "departure", boundaries: readonly number[],
+  targetGroupSize: number, minGapMinutes: number, reverse = false) {
+  const window = [{ start: 0, end: 100 }];
+  const transportTasks = boundaries.map((_, index): Task => ({ id: `${direction}-${index}`, kind: "auxiliary",
+    participantId: `p-${index}`, duration: 10, spaceId: `space-${index}`, dependencies: [] }));
+  const problem: PlannerNextProblem = {
+    day: { start: 0, end: 100 }, protectedMeal: { start: 95, end: 100 }, resources: [],
+    spaces: transportTasks.map(({ spaceId }) => ({ id: spaceId, availability: window })),
+    participants: transportTasks.map(({ participantId }) => ({ id: participantId!, availability: window })), coaches: [],
+    tasks: transportTasks, mainFlow: { spaceId: "unused", preferredEnd: 90, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    budget: { bestK: 1, maxBacktracks: 100, maxPatterns: 20, maxBranchExpansions: 20_000 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
+    transportPolicy: {
+      arrival: { ...policy(1, targetGroupSize, minGapMinutes), targetGroupSize, taskIds: direction === "arrival" ? transportTasks.map(({ id }) => id) : [] },
+      departure: { ...policy(1, targetGroupSize, minGapMinutes), targetGroupSize, taskIds: direction === "departure" ? transportTasks.map(({ id }) => id) : [] },
+    },
+  };
+  const external = boundaries.map((boundary, index): ScheduledTask => ({ id: `obligation-${index}`, kind: "auxiliary",
+    participantId: `p-${index}`, duration: 5, spaceId: `obligation-space-${index}`, dependencies: [],
+    start: direction === "arrival" ? boundary : boundary - 5, end: direction === "arrival" ? boundary + 5 : boundary }));
+  if (reverse) { problem.tasks.reverse(); problem.participants.reverse(); problem.spaces.reverse(); problem.transportPolicy![direction].taskIds.reverse(); }
+  return { problem, external };
+}
+
+test("canonical IN propagates latest starts backwards between consecutive boundary groups", () => {
+  const { problem, external } = canonicalBoundaryProblem("arrival", [30, 30, 55, 55], 2, 30);
+  const result = findTransportDirectionWitness(problem, "arrival", problem.tasks, external, () => true);
+  assert.equal(result.monotoneFastPathWitnesses, 1);
+  assert.deepEqual(result.groups.map((group) => group[0]!.start), [15, 45]);
+});
+
+test("canonical OUT propagates earliest starts forwards and target one departs individually", () => {
+  const grouped = canonicalBoundaryProblem("departure", [20, 20, 35, 35], 2, 30);
+  const result = findTransportDirectionWitness(grouped.problem, "departure", grouped.problem.tasks, grouped.external, () => true);
+  assert.equal(result.monotoneFastPathWitnesses, 1);
+  assert.deepEqual(result.groups.map((group) => group[0]!.start), [20, 50]);
+
+  const individual = canonicalBoundaryProblem("departure", [20, 35], 1, 0);
+  const individualResult = findTransportDirectionWitness(individual.problem, "departure", individual.problem.tasks, individual.external, () => true);
+  assert.deepEqual(individualResult.groups.map((group) => group[0]!.start), [20, 35]);
+});
+
+test("canonical grouping keeps a below-target residual, hard maximum, and input-order invariance", () => {
+  const first = canonicalBoundaryProblem("departure", [10, 10, 10, 20, 20, 20, 30], 3, 0);
+  const reversed = canonicalBoundaryProblem("departure", [10, 10, 10, 20, 20, 20, 30], 3, 0, true);
+  const witness = findTransportDirectionWitness(first.problem, "departure", first.problem.tasks, first.external, () => true);
+  const reversedWitness = findTransportDirectionWitness(reversed.problem, "departure", reversed.problem.tasks, reversed.external, () => true);
+  assert.deepEqual(witness.groups.map((group) => group.length), [3, 3, 1]);
+  assert.ok(witness.groups.every((group) => group.length <= first.problem.transportPolicy!.departure.maximumGroupSize));
+  const starts = (groups: readonly ScheduledTask[][]) => groups.flat().map(({ id, start }) => [id, start]).sort();
+  assert.deepEqual(starts(witness.groups), starts(reversedWitness.groups));
+});
+
+test("joint authority rejects coincident canonical groups and exact fallback repairs them", () => {
+  const { problem, external } = canonicalBoundaryProblem("arrival", [100, 100, 100, 100], 2, 0);
+  const result = findTransportDirectionWitness(problem, "arrival", problem.tasks, external, () => true);
+  assert.equal(result.monotoneFastPathAbstentions, 1);
+  assert.equal(result.feasible, true);
+  assert.equal(new Set(result.groups.map((group) => group[0]!.start)).size, 2);
+  assert.equal(validateTransportGrouping(problem, result.groups.flat()).violationCount, 0);
+});
+
+test("transport starts use the canonical grid anchored at day.start", () => {
+  const problem = exactProblem(); problem.day = { start: 2, end: 32 };
+  const task = problem.tasks.find(({ id }) => id.startsWith("arrival-"))!; task.availability = undefined;
+  problem.participants.find(({ id }) => id === task.participantId)!.availability = [{ start: 2, end: 32 }];
+  problem.spaces.find(({ id }) => id === task.spaceId)!.availability = [{ start: 2, end: 32 }];
+  const single = { ...policy(1, 1, 0), taskIds: [task.id] };
+  assert.deepEqual(transportGroupStarts(problem, [task], [], [], single), [2, 7, 12, 17, 22]);
+});
+
+test("analytic transport future capacity prunes only strict demand excess and enumerates no starts", () => {
+  const excess = canonicalBoundaryProblem("arrival", [20, 20, 20], 1, 15);
+  const pruned = assessTransportFutureFeasibility(excess.problem, excess.external);
+  assert.equal(pruned.feasible, false);
+  assert.equal(pruned.firstFailure?.reason, "CUMULATIVE_CAPACITY");
+  assert.equal(pruned.firstFailure?.maximumHardCapacity, 1);
+  assert.equal(pruned.capacityPrunes, 1);
+  assert.ok(pruned.intervalCalculations > 0);
+  assert.equal(pruned.enumeratedStarts, 0);
+
+  const equality = canonicalBoundaryProblem("arrival", [30, 30], 1, 20);
+  const open = assessTransportFutureFeasibility(equality.problem, equality.external);
+  assert.equal(open.feasible, true, "demand equal to the optimistic hard capacity stays open");
+  assert.equal(open.capacityPrunes, 0);
+  assert.equal(open.enumeratedStarts, 0);
+});
+
+test("analytic transport future capacity preserves holes and rounds minGap onto the canonical grid", () => {
+  const holes = canonicalBoundaryProblem("arrival", [100, 100], 1, 15);
+  for (const task of holes.problem.tasks) task.availability = [{ start: 0, end: 10 }, { start: 20, end: 30 }];
+  const holeResult = assessTransportFutureFeasibility(holes.problem, holes.external);
+  assert.equal(holeResult.feasible, true, "two separated static intervals provide two compatible starts");
+  assert.equal(holeResult.enumeratedStarts, 0);
+
+  const nonGridGap = canonicalBoundaryProblem("arrival", [30, 30, 30], 1, 6);
+  for (const task of nonGridGap.problem.tasks) task.availability = [{ start: 0, end: 30 }];
+  const gapResult = assessTransportFutureFeasibility(nonGridGap.problem, nonGridGap.external);
+  assert.equal(gapResult.feasible, true, "a six-minute gap permits canonical starts 0, 10, and 20");
+  assert.equal(gapResult.enumeratedStarts, 0);
+});
+
+test("analytic transport future certificate is deterministic under transport input order", () => {
+  const forward = canonicalBoundaryProblem("departure", [20, 20, 35, 35], 1, 20);
+  const reversed = canonicalBoundaryProblem("departure", [20, 20, 35, 35], 1, 20, true);
+  const left = assessTransportFutureFeasibility(forward.problem, forward.external);
+  const right = assessTransportFutureFeasibility(reversed.problem, reversed.external);
+  assert.deepEqual(left, right);
+  assert.equal(left.enumeratedStarts, 0);
+});
+
+test("terminal exact authority reuses a valid arrival witness and reports ledger exhaustion distinctly", () => {
+  const problem = arrivalWorkStyleDepartureProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("in-"));
+  problem.transportPolicy!.departure.taskIds = [];
+  const reserved = [arrivals.map((task) => scheduled(task, 0))];
+  const reused = materializeTerminalTransport(problem, [], [], reserved, () => { throw new Error("valid reuse must be free"); });
+  assert.equal(reused.status, "FEASIBLE"); assert.equal(reused.arrivalReservedWitnessReused, true);
+  const invalid = reserved.map((group) => group.map((task) => ({ ...task, start: 1, end: 11 })));
+  const exhausted = materializeTerminalTransport(problem, [], [], invalid, () => false);
+  assert.equal(exhausted.status, "BUDGET_EXHAUSTED"); assert.equal(exhausted.arrivalRepaired, true);
+  assert.equal(exhausted.firstFailure?.reason, "BUDGET_EXHAUSTED");
+});
+
+test("terminal authority reports when participant meals alone invalidate a reserved arrival witness", () => {
+  const problem = arrivalWorkStyleDepartureProblem(); const arrivals = problem.tasks.filter(({ id }) => id.startsWith("in-"));
+  problem.transportPolicy!.departure.taskIds = [];
+  const reserved = [arrivals.map((task) => scheduled(task, 0))];
+  const participantId = arrivals[0]!.participantId!;
+  const result = materializeTerminalTransport(problem, [], [{ id: "meal", sourceTaskId: "meal-source", participantId,
+    start: 5, end: 15, duration: 10 }], reserved);
+  assert.equal(result.reservedArrivalValidation?.validBeforeParticipantMeals, true);
+  assert.equal(result.reservedArrivalValidation?.validAfterParticipantMeals, false);
+  assert.deepEqual(result.reservedArrivalValidation?.firstParticipantMealBoundaryConflict,
+    { arrivalTaskId: arrivals[0]!.id, participantId, arrivalEnd: 10, mealId: "meal", mealStart: 5, mealEnd: 15 });
 });
 
 function validationProblem(count = 7): PlannerNextProblem {
