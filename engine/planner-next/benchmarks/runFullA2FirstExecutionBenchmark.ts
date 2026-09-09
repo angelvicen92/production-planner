@@ -247,6 +247,8 @@ const diagnosticReport = diagnostic ? {
   feederMatching: diagnostic.feederMatching,
   macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
   macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
+  setupCandidateOutcomeCertificates:exactResult!.evidence.setupCandidateOutcomeCertificates,
+  setupCandidateOutcomeCertificateOverflow:exactResult!.evidence.setupCandidateOutcomeCertificateOverflow,
   macroPendingPrerequisiteCapacityCertificateReconciles:diagnostic.macroPendingPrerequisiteCapacityCertificates.reduce((sum,row)=>sum+row.frequency,0)
     +diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow===exactResult!.evidence.macroPendingPrerequisiteCollectiveCapacityPrunes,
   deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair,
@@ -275,6 +277,8 @@ const persistedEvidence=exactResult?{...exactResult.evidence,
   causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,deepestStandaloneFrontier:diagnostic.deepestStandaloneFrontier,feederMatching:diagnostic.feederMatching,
     macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
     macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
+    setupCandidateOutcomeCertificates:exactResult.evidence.setupCandidateOutcomeCertificates,
+    setupCandidateOutcomeCertificateOverflow:exactResult.evidence.setupCandidateOutcomeCertificateOverflow,
     deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair}:null}:null;
 
 const evidence = {
