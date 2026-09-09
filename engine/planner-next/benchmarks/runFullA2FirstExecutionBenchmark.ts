@@ -243,11 +243,13 @@ const diagnosticReport = diagnostic ? {
     collisions: undefined,
   },
   standaloneFrontier: diagnostic.standaloneFrontier,
+  deepestStandaloneFrontier: diagnostic.deepestStandaloneFrontier,
   feederMatching: diagnostic.feederMatching,
   macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
   macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
   macroPendingPrerequisiteCapacityCertificateReconciles:diagnostic.macroPendingPrerequisiteCapacityCertificates.reduce((sum,row)=>sum+row.frequency,0)
     +diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow===exactResult!.evidence.macroPendingPrerequisiteCollectiveCapacityPrunes,
+  deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair,
   criticalDepth,
   criticalRejectionReasons: top((row)=>row.reason),
   topMainTasks: top((row)=>row.mainTaskId),
@@ -270,9 +272,10 @@ const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
 }:null;
 if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
 const persistedEvidence=exactResult?{...exactResult.evidence,
-  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,feederMatching:diagnostic.feederMatching,
+  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,deepestStandaloneFrontier:diagnostic.deepestStandaloneFrontier,feederMatching:diagnostic.feederMatching,
     macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
-    macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow}:null}:null;
+    macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
+    deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair}:null}:null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
