@@ -243,6 +243,7 @@ const diagnosticReport = diagnostic ? {
     collisions: undefined,
   },
   standaloneFrontier: diagnostic.standaloneFrontier,
+  deepestStandaloneFrontier: diagnostic.deepestStandaloneFrontier,
   feederMatching: diagnostic.feederMatching,
   macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
   macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
@@ -271,7 +272,7 @@ const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
 }:null;
 if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
 const persistedEvidence=exactResult?{...exactResult.evidence,
-  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,feederMatching:diagnostic.feederMatching,
+  causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,deepestStandaloneFrontier:diagnostic.deepestStandaloneFrontier,feederMatching:diagnostic.feederMatching,
     macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
     macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
     deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair}:null}:null;
