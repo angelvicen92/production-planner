@@ -23,7 +23,7 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
   failure: "PENDING_ARRIVAL_DEADLINE" | "INDIVIDUAL_ZERO_DOMAIN" | "COLLECTIVE_CAPACITY" | "JOINT_INFEASIBLE" | null;
   cacheHit: boolean;
   pendingArrivalDeadline?: AnonymousPostInCompletionAssessment;
-  exactPrerequisiteBranchesAvoided?: number;
+  exactPrerequisiteSearchesAvoided?: number;
 }
 
 export type MacroPendingPrerequisiteForwardCheckMode = "FULL" | "ANALYTIC_CAPACITY_ONLY";
@@ -95,7 +95,7 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   if(!pendingArrivalDeadline.feasible)return{feasible:false,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,
     obligationsChecked:pendingArrivalDeadline.firstCertificate?.demand??0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,
     freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:pendingArrivalDeadline.firstCertificate?.cutoff??null,
-    failure:"PENDING_ARRIVAL_DEADLINE",cacheHit:false,pendingArrivalDeadline,exactPrerequisiteBranchesAvoided:1};
+    failure:"PENDING_ARRIVAL_DEADLINE",cacheHit:false,pendingArrivalDeadline,exactPrerequisiteSearchesAvoided:1};
   const arrivalTaskIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
   const candidateIds=new Set(candidate.map(task=>task.id)),ancestors=new Set<string>();
   const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
