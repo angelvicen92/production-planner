@@ -6,7 +6,7 @@ import type {
   Task,
 } from "./contracts";
 import type { ExactSearchLedger } from "./exactMainAndFeederCore";
-import { canPlaceTask } from "./placement";
+import { prepareTaskPlacementAuthority } from "./placement";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { eligibleSetupTasksForPolicy, setupFamilySequence } from "./setupGrouping";
 import {
@@ -209,11 +209,16 @@ export function generateExactSetupBlockCandidates(
       const durations = [...new Set(familyTasks.map((task) => task.duration))];
       if (durations.length !== 1) continue;
       const slotIds = familyTasks.map((_task, index) => `${familyId}:${index}`);
+      const placementAuthorities = new Map(familyTasks.map((task) => [
+        task.id,
+        prepareTaskPlacementAuthority(problem, task, priorTasks, meals),
+      ]));
       matchingAttempts += 1;
       const matching = findCanonicalPerfectMatching(slotIds, familyTasks.map(({ id }) => id), (taskId, slotId) => {
         const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
         const task = familyTasks.find(({ id }) => id === taskId)!;
-        return canPlaceTask(problem, task, start + index * task.duration, priorTasks, meals);
+        const authority = placementAuthorities.get(task.id)!;
+        return authority.accepts(start + index * task.duration, authority.baseDomain);
       });
       if (!matching) continue;
       const scheduledFamily = [...matching].map(([slotId, taskId]) => {
@@ -221,8 +226,11 @@ export function generateExactSetupBlockCandidates(
         const task = familyTasks.find(({ id }) => id === taskId)!;
         return scoreAuxiliaryTask(problem, task, start + index * task.duration, priorTasks).scheduled;
       }).sort((a, b) => a.start - b.start || byId(a, b));
-      if (scheduledFamily.some((task) => !canPlaceTask(problem, task, task.start,
-        [...priorTasks, ...scheduledFamily.filter(({ id }) => id !== task.id)], meals))) continue;
+      if (scheduledFamily.some((task) => {
+        const authority = placementAuthorities.get(task.id)!;
+        const peerDomain = authority.domain(scheduledFamily.filter(({ id }) => id !== task.id));
+        return !authority.accepts(task.start, peerDomain);
+      })) continue;
       matchingSuccesses += 1;
       permutationBranchesAvoided += Math.max(0, familyTasks.length - 1);
       visit(
