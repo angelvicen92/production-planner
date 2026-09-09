@@ -34,7 +34,6 @@ import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalCh
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
 import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
-import { deriveSharedResourceStructures, exploreSharedResourceStructure } from "./sharedResourceStructures";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -290,12 +289,6 @@ export interface ExactItinerantPlanEvidence {
   criticalResourceBranches: number;
   criticalResourceMacroCandidates: number;
   criticalResourceAssignments: number;
-  sharedResourceStructureBranches: number;
-  preferredCompactRunsTried: number;
-  preferredCompactRunsSucceeded: number;
-  flexibleRunGapInsertions: number;
-  maximumRunFragments: number;
-  resourceStructureCandidates: number;
   macroUnitsSelected: number;
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
@@ -789,22 +782,15 @@ const dynamicTransportIds = transportTaskIds(problem);
 const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
-const sharedStructures = deriveSharedResourceStructures(pending.filter((task) =>
-  !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && !dynamicTransportIds.has(task.id)));
-const sharedItems = sharedStructures.map((structure) => ({ id: structure.id, kind: "SHARED_RESOURCE_STRUCTURE" as const,
-  tasks: structure.tasks, structure }));
-const sharedTaskIds = new Set(sharedItems.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
-  && !dynamicTransportIds.has(task.id) && !sharedTaskIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
+  && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
 const roundItems = roundPolicies.map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
   tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
-const setupItems = setupGroups.filter((group) => group.tasks.some(({ id }) => !sharedTaskIds.has(id)))
-  .map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group,
-    tasks: group.tasks.filter(({ id }) => !sharedTaskIds.has(id)) }));
+const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
 type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
-  | typeof roundItems[number] | typeof setupItems[number] | typeof sharedItems[number];
-const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems, ...sharedItems]
+  | typeof roundItems[number] | typeof setupItems[number];
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
@@ -834,7 +820,6 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
     else if(unit.kind==="ROUND_SYNCHRONIZATION")measure=probeExactRoundSynchronizationMacroDomain(problem,unit.policy,allPlaced,preparations,roundPreparations,coreMeals);
     else if(unit.kind==="SETUP_GROUP")measure=probeExactSetupMacroDomain(problem,unit.tasks,allPlaced,preparations,coreMeals);
-    else if(unit.kind==="SHARED_RESOURCE_STRUCTURE") measure={domainSize: Math.max(1, problem.day.end-problem.day.start-unit.tasks.reduce((sum, task) => sum+task.duration, 0)), domainExact:false};
     else measure={domainSize:probeExactTechnicalChainMacroDomain(problem,unit.tasks,allPlaced,technicalChainStartDomainMode,coreMeals)};
     if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);macroDomainCache.set(macroSignature,measure);
   }
@@ -1026,19 +1011,6 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       evidence.criticalResourceMacroCandidates += 1; evidence.criticalResourceAssignments += scheduled.length;
       const child = recurse(scheduled); if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
     }
-  } else if (unit.kind === "SHARED_RESOURCE_STRUCTURE") {
-    const explored = exploreSharedResourceStructure(problem, unit.structure, [...coreTasks, ...placed], preparations, coreMeals, ledger,
-      (candidate) => recurse(candidate.tasks, candidate.preparations));
-    evidence.sharedResourceStructureBranches += explored.evidence.branches;
-    evidence.preferredCompactRunsTried += explored.evidence.compactRunsTried;
-    evidence.preferredCompactRunsSucceeded += explored.evidence.compactRunsSucceeded;
-    evidence.flexibleRunGapInsertions += explored.evidence.gapInsertions;
-    evidence.maximumRunFragments = Math.max(evidence.maximumRunFragments, explored.evidence.maximumFragments);
-    evidence.resourceStructureCandidates += explored.evidence.candidates;
-    evidence.setupBlockMatchingAttempts += explored.evidence.matchingAttempts;
-    evidence.setupBlockMatchingSuccesses += explored.evidence.matchingSuccesses;
-    evidence.setupBlockPermutationBranchesAvoided += explored.evidence.permutationsAvoided;
-    return explored.outcome;
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
     const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
@@ -1221,8 +1193,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryDomainQueries:0,ordinaryAnalyticDomainBuilds:0,ordinaryAnalyticEligibleStarts:0,
     ordinaryExactStartEnumerations:0,ordinaryExactStartChecks:0,ordinaryDomainCacheHits:0,
     ordinaryDomainCacheMisses:0,ordinaryDomainRecomputations:0,ordinaryMRVSelections:0,ordinaryBranchesExplored:0,
-    sharedResourceStructureBranches:0,preferredCompactRunsTried:0,preferredCompactRunsSucceeded:0,
-    flexibleRunGapInsertions:0,maximumRunFragments:0,resourceStructureCandidates:0,
     ordinaryIndividualForwardChecks:0,ordinaryIndividualForwardTasksChecked:0,
     ordinaryIndividualForwardExactDomainChecks:0,ordinaryIndividualForwardStartsChecked:0,
     ordinaryIndividualForwardZeroDomainPrunes:0,ordinaryIndividualForwardUnrelatedSkips:0,
