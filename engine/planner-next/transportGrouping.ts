@@ -48,6 +48,21 @@ export interface TransportFutureFeasibilityCertificate {
     demand: number; maximumHardCapacity: number; taskIds: string[] };
 }
 
+export interface AnonymousPostInCompletionCertificate {
+  cutoff: number;
+  demand: number;
+  maximumPossible: number;
+  participantIds: string[];
+}
+
+export interface AnonymousPostInCompletionAssessment {
+  feasible: boolean;
+  checked: boolean;
+  checks: number;
+  prunes: number;
+  firstCertificate: AnonymousPostInCompletionCertificate | null;
+}
+
 const staticTransportDomains = new WeakMap<PlannerNextProblem, WeakMap<Task, readonly Readonly<ExactStartInterval>[]>>();
 
 function staticTransportIntervals(problem: PlannerNextProblem, task: Task): readonly Readonly<ExactStartInterval>[] {
@@ -76,6 +91,52 @@ function maximumCompatibleGridStarts(problem: PlannerNextProblem, intervals: rea
     next = first + added * step;
   }
   return count;
+}
+
+/**
+ * Applies the canonical hard transport domain/gap/capacity authority to anonymous
+ * POST-IN completion deadlines. No start, group, or participant membership is chosen.
+ * Each cutoff uses the union of the forced arrivals' static domains. This can admit
+ * starts which are unavailable to some forced participants, so its capacity is an
+ * optimistic upper bound and remains safe for a necessary-only prune.
+ */
+export function assessAnonymousPostInCompletions(problem: PlannerNextProblem,
+  completionDeadlineByParticipant: ReadonlyMap<string, number>): AnonymousPostInCompletionAssessment {
+  const abstain = (): AnonymousPostInCompletionAssessment =>
+    ({ feasible: true, checked: false, checks: 0, prunes: 0, firstCertificate: null });
+  const policy = problem.transportPolicy?.arrival;
+  if (!policy || completionDeadlineByParticipant.size === 0) return abstain();
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const arrivals = policy.taskIds.map((id) => taskById.get(id)).filter((task): task is Task => Boolean(task));
+  if (arrivals.length !== policy.taskIds.length || arrivals.some((task) => !task.participantId)) return abstain();
+  const participantIds = arrivals.map((task) => task.participantId!);
+  if (new Set(participantIds).size !== participantIds.length) return abstain();
+  const arrivalByParticipant = new Map(arrivals.map((task) => [task.participantId!, task]));
+  const configuredParticipants = new Set(participantIds);
+  if ([...completionDeadlineByParticipant].some(([id]) => !configuredParticipants.has(id))) return abstain();
+
+  let checks = 0;
+  for (const cutoff of [...new Set(completionDeadlineByParticipant.values())].sort((left, right) => left - right)) {
+    checks += 1;
+    const forcedParticipants = [...completionDeadlineByParticipant]
+      .filter(([, deadline]) => deadline <= cutoff).map(([id]) => id).sort();
+    const union = forcedParticipants.flatMap((participantId) => {
+      const task = arrivalByParticipant.get(participantId)!;
+      const latestStart = cutoff - task.duration;
+      return staticTransportIntervals(problem, task).flatMap((interval) => interval.start <= Math.min(interval.end, latestStart)
+        ? [{ start: interval.start, end: Math.min(interval.end, latestStart) }] : []);
+    }).sort((left, right) => left.start - right.start || left.end - right.end)
+      .reduce<ExactStartInterval[]>((merged, interval) => {
+        const previous = merged.at(-1);
+        if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+        else merged.push({ ...interval });
+        return merged;
+      }, []);
+    const maximumPossible = maximumCompatibleGridStarts(problem, union, policy.minGapMinutes) * policy.maximumGroupSize;
+    if (forcedParticipants.length > maximumPossible) return { feasible: false, checked: true, checks, prunes: 1,
+      firstCertificate: { cutoff, demand: forcedParticipants.length, maximumPossible, participantIds: forcedParticipants } };
+  }
+  return { feasible: true, checked: true, checks, prunes: 0, firstCertificate: null };
 }
 
 /**
