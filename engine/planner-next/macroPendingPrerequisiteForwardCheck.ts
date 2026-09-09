@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactStartDomainFromIntervals, exactTaskStartDomain, type ExactStartInterval } from "./placement";
 import { tasksCanAffectEachOther } from "./exactItinerantPlan";
-import { assessArrivalReadiness, type ArrivalReadinessAssessment } from "./arrivalReadiness";
+import { assessAnonymousPostInCompletions, type AnonymousPostInCompletionAssessment } from "./transportGrouping";
 
 export interface MacroPendingPrerequisiteForwardCheckResult {
   feasible: boolean;
@@ -20,9 +20,10 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
   witnesses: number;
   blockingTaskId: string | null;
   deadline: number | null;
-  failure: "ARRIVAL_READINESS" | "INDIVIDUAL_ZERO_DOMAIN" | "COLLECTIVE_CAPACITY" | "JOINT_INFEASIBLE" | null;
+  failure: "PENDING_ARRIVAL_DEADLINE" | "INDIVIDUAL_ZERO_DOMAIN" | "COLLECTIVE_CAPACITY" | "JOINT_INFEASIBLE" | null;
   cacheHit: boolean;
-  arrivalReadiness?:ArrivalReadinessAssessment;
+  pendingArrivalDeadline?: AnonymousPostInCompletionAssessment;
+  exactPrerequisiteBranchesAvoided?: number;
 }
 
 export type MacroPendingPrerequisiteForwardCheckMode = "FULL" | "ANALYTIC_CAPACITY_ONLY";
@@ -79,27 +80,39 @@ export function evaluateTargetCollectiveCapacityCertificate(problem:PlannerNextP
 export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
   candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],cache?:MacroPendingPrerequisiteForwardCache,
   scope:"AFFECTED_PREREQUISITES"|"ALL_PENDING"="AFFECTED_PREREQUISITES",mode:MacroPendingPrerequisiteForwardCheckMode="FULL"):MacroPendingPrerequisiteForwardCheckResult{
-  const provisional=[...previouslyPlaced,...candidate].sort(byId),{pendingById,deadline}=deadlineAuthority(problem,pending,provisional);
-  const arrivalReadiness=assessArrivalReadiness(problem,provisional);
-  if(!arrivalReadiness.feasible)return{feasible:false,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,
-    obligationsChecked:arrivalReadiness.firstCertificate?.demand??0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,
-    freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:arrivalReadiness.firstCertificate?.cutoff??null,
-    failure:"ARRIVAL_READINESS",cacheHit:false,arrivalReadiness};
+  const provisional=[...previouslyPlaced,...candidate].sort(byId),placedIds=new Set(provisional.map(({id})=>id));
+  const inputPendingIds=new Set(pending.map(({id})=>id));
+  const pendingWithArrivals=[...pending,...(problem.transportPolicy?.arrival.taskIds??[])
+    .filter(id=>!inputPendingIds.has(id)&&!placedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task))];
+  const {pendingById,deadline}=deadlineAuthority(problem,pendingWithArrivals,provisional);
+  const pendingIds=new Set(pendingWithArrivals.map(({id})=>id)),arrivalDeadlineByParticipant=new Map<string,number>();
+  for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
+    if(!pendingIds.has(arrivalId))continue;
+    const arrival=pendingById.get(arrivalId),cutoff=deadline(arrivalId);
+    if(arrival?.participantId&&cutoff<problem.day.end)arrivalDeadlineByParticipant.set(arrival.participantId,cutoff);
+  }
+  const pendingArrivalDeadline=assessAnonymousPostInCompletions(problem,arrivalDeadlineByParticipant);
+  if(!pendingArrivalDeadline.feasible)return{feasible:false,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,
+    obligationsChecked:pendingArrivalDeadline.firstCertificate?.demand??0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,
+    freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:pendingArrivalDeadline.firstCertificate?.cutoff??null,
+    failure:"PENDING_ARRIVAL_DEADLINE",cacheHit:false,pendingArrivalDeadline,exactPrerequisiteBranchesAvoided:1};
+  const arrivalTaskIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
   const candidateIds=new Set(candidate.map(task=>task.id)),ancestors=new Set<string>();
   const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
   for(const id of candidateIds)visitAncestors(id);
-  const allRequired=scope==="ALL_PENDING"?[...pending]:[...pending].filter(task=>deadline(task.id)<problem.day.end);
+  const allRequired=(scope==="ALL_PENDING"?[...pending]:[...pending].filter(task=>deadline(task.id)<problem.day.end))
+    .filter(task=>!arrivalTaskIds.has(task.id));
   const affected=scope==="ALL_PENDING"?new Set(allRequired.map(task=>task.id)):new Set([...ancestors,...allRequired.filter(task=>candidate.some(item=>tasksCanAffectEachOther(task,item))).map(task=>task.id)]);
   const relevant=allRequired.filter(task=>affected.has(task.id)).sort(byId);
-  if(!relevant.length)return{feasible:true,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,obligationsChecked:0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:null,failure:null,cacheHit:false};
+  if(!relevant.length)return{feasible:true,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,obligationsChecked:0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:null,failure:null,cacheHit:false,pendingArrivalDeadline};
   const affectedAuthorities=new Set(relevant.flatMap(exclusiveAuthorities).map(item=>item.key));
   const collectiveTasks=[...pending].filter(task=>exclusiveAuthorities(task).some(({key})=>affectedAuthorities.has(key))).sort(byId);
   const key=createHash("sha256").update(JSON.stringify({mode,tasks:relevant.map(task=>({id:task.id,deadline:deadline(task.id)})),collectiveTasks:collectiveTasks.map(task=>({id:task.id,deadline:deadline(task.id)})),placed:provisional.map(task=>({id:task.id,start:task.start,end:task.end,spaceId:task.spaceId,participantId:task.participantId??null,coachId:task.coachId??null,resources:[...(task.requiredResourceIds??[])].sort()})),meals:[...meals].sort(byId)})).digest("hex");
-  const cached=cache?.get(key);if(cached)return{...cached,cacheHit:true};
+  const cached=cache?.get(key);if(cached)return{...cached,cacheHit:true,pendingArrivalDeadline};
   let individualDomainChecks=0,collectiveCapacityChecks=0,obligationsChecked=0,jointChecks=0,witnesses=0;
   const domains=new Map<string,ReturnType<typeof exactTaskStartDomain>>();
   for(const task of relevant){individualDomainChecks+=1;const limit=deadline(task.id)-task.duration;const domain=exactStartDomainFromIntervals(problem,exactTaskStartDomain(problem,task,provisional,[...meals]).intervals.flatMap(interval=>interval.start<=Math.min(interval.end,limit)?[{start:interval.start,end:Math.min(interval.end,limit)}]:[]));domains.set(task.id,domain);
-    if(!domain.eligibleStartCount){const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:task.id,deadline:deadline(task.id),failure:"INDIVIDUAL_ZERO_DOMAIN" as const};cache?.set(key,result);return{...result,cacheHit:false};}}
+    if(!domain.eligibleStartCount){const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:task.id,deadline:deadline(task.id),failure:"INDIVIDUAL_ZERO_DOMAIN" as const};cache?.set(key,result);return{...result,cacheHit:false,pendingArrivalDeadline};}}
   // Necessary energetic certificate: every obligation whose complete dynamic domain is
   // inside a cut must consume its full duration from the shared exclusive authority.
   // Domain intervals are converted to possible occupation intervals without scanning starts.
@@ -109,9 +122,9 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
     // Evaluate each deterministic confined subset through the same target authority used by diagnostics.
     const occupation=new Map(entry.tasks.map(task=>[task.id,collectiveOccupation(problem,task,provisional,meals,deadline(task.id),domains.get(task.id))]));
     const endpoints=[...new Set([...occupation.values()].flatMap(intervals=>intervals.flatMap(({start,end})=>[start,end])))].sort((a,b)=>a-b);
-    for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;const confined=entry.tasks.filter(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end));if(confined.length<2)continue;const target=evaluateCollectiveTasks(problem,confined,provisional,meals,deadline,domains);if(target.overloaded){const blocker=confined[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:1,authorityId:entry.id,demandMinutes:target.demandMinutes,freeCapacityMinutes:target.freeCapacityMinutes,overloadTaskIds:target.overloadTaskIds,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"COLLECTIVE_CAPACITY" as const};cache?.set(key,result);return{...result,cacheHit:false};}}
+    for(let left=0;left<endpoints.length;left++)for(let right=left+1;right<endpoints.length;right++){const start=endpoints[left]!,end=endpoints[right]!;const confined=entry.tasks.filter(task=>occupation.get(task.id)!.every(interval=>interval.start>=start&&interval.end<=end));if(confined.length<2)continue;const target=evaluateCollectiveTasks(problem,confined,provisional,meals,deadline,domains);if(target.overloaded){const blocker=confined[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:1,authorityId:entry.id,demandMinutes:target.demandMinutes,freeCapacityMinutes:target.freeCapacityMinutes,overloadTaskIds:target.overloadTaskIds,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"COLLECTIVE_CAPACITY" as const};cache?.set(key,result);return{...result,cacheHit:false,pendingArrivalDeadline};}}
   }
-  if(mode==="ANALYTIC_CAPACITY_ONLY"){const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false};}
+  if(mode==="ANALYTIC_CAPACITY_ONLY"){const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false,pendingArrivalDeadline};}
   const remaining=new Set(relevant.map(task=>task.id));const components:Task[][]=[];
   while(remaining.size){const seed=[...remaining].sort()[0]!,component=new Set([seed]),queue=[seed];remaining.delete(seed);while(queue.length){const id=queue.shift()!,task=pendingById.get(id)!;for(const otherId of [...remaining]){const other=pendingById.get(otherId)!;if(tasksCanAffectEachOther(task,other)){remaining.delete(otherId);component.add(otherId);queue.push(otherId);}}}components.push([...component].map(id=>pendingById.get(id)!).sort(byId));}
   for(const component of components){if(component.length<2){witnesses+=1;continue;}
@@ -120,8 +133,8 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
     const search=(left:Task[],placed:ScheduledTask[]):boolean=>{if(!left.length)return true;const ready=left.filter(task=>task.dependencies.filter(id=>ids.has(id)).every(id=>placed.some(item=>item.id===id)));
       const choices=(ready.length?ready:left).map(task=>({task,starts:[...exactTaskStartDomain(problem,task,[...provisional,...placed],[...meals]).starts()].filter(start=>start+task.duration<=deadline(task.id)&&canPlaceTask(problem,task,start,[...provisional,...placed],[...meals]))})).sort((a,b)=>a.starts.length-b.starts.length||a.task.id.localeCompare(b.task.id));
       const choice=choices[0];if(!choice||!choice.starts.length)return false;for(const start of choice.starts)if(search(left.filter(task=>task.id!==choice.task.id),[...placed,{...choice.task,start,end:start+choice.task.duration}]))return true;return false;};
-    if(!search(component,[])){const blocker=component[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"JOINT_INFEASIBLE" as const};cache?.set(key,result);return{...result,cacheHit:false};}witnesses+=1;}
-  const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false};
+    if(!search(component,[])){const blocker=component[0]!;const result={feasible:false,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:blocker.id,deadline:deadline(blocker.id),failure:"JOINT_INFEASIBLE" as const};cache?.set(key,result);return{...result,cacheHit:false,pendingArrivalDeadline};}witnesses+=1;}
+  const result={feasible:true,tasksChecked:relevant.length,individualDomainChecks,collectiveCapacityChecks,obligationsChecked,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks,witnesses,blockingTaskId:null,deadline:null,failure:null};cache?.set(key,result);return{...result,cacheHit:false,pendingArrivalDeadline};
 }
 
 /** Read-only necessary/exact feasibility certificate at a hard-valid CORE leaf. */

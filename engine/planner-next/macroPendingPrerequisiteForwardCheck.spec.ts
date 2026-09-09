@@ -67,3 +67,46 @@ test("target replay reports a preexisting overload and abstains when the exact t
  assert.deepEqual(evaluateTargetCollectiveCapacityCertificate(p,[first],[],[],[],"room",["first","second"]),
    {evaluated:false,overloaded:false,authorityId:"room",demandMinutes:null,freeCapacityMinutes:null,overloadTaskIds:["first","second"]});
 });
+
+function pendingArrivalFixture(count=4,{maximum=3,target=3,heterogeneous=false}:{maximum?:number;target?:number;heterogeneous?:boolean}={}){
+ const day=[{start:0,end:120}];
+ const arrivals=Array.from({length:count},(_,index):Task=>({id:`in-${index}`,kind:"auxiliary",participantId:`p-${index}`,
+  duration:5,spaceId:"arrival",dependencies:[],availability:heterogeneous&&index===count-1?[{start:10,end:120}]:day}));
+ const previous=arrivals.map((arrival,index):Task=>({id:`previous-${index}`,kind:"auxiliary",participantId:arrival.participantId,
+  duration:5,spaceId:`work-${index}`,dependencies:[arrival.id],availability:day}));
+ const anchors=previous.map((item,index):Task=>({id:`anchor-${index}`,kind:"auxiliary",participantId:item.participantId,
+  duration:5,spaceId:"work",dependencies:[item.id],availability:day}));
+ const p:PlannerNextProblem={...problem([...arrivals,...previous,...anchors]),day:{start:0,end:120},
+  spaces:[{id:"arrival",availability:day},{id:"work",availability:day},{id:"other",availability:day},
+   ...previous.map((_,index)=>({id:`work-${index}`,availability:day}))],
+  participants:arrivals.map(item=>({id:item.participantId!,availability:day})),
+  transportPolicy:{arrival:{taskIds:arrivals.map(({id})=>id),minimumGroupSize:1,maximumGroupSize:maximum,targetGroupSize:target,minGapMinutes:30,groupingWeight:1},
+   departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,minGapMinutes:0,groupingWeight:1}}};
+ const check=(cutoffs:number[])=>checkMacroPendingPrerequisites(p,[...arrivals,...previous],
+  anchors.map((item,index)=>scheduled(item,cutoffs[index]!+5)),[],[],undefined,"ALL_PENDING");
+ return{p,arrivals,previous,anchors,check};
+}
+
+test("pending IN deadlines use anonymous POST-IN hard capacity before exact prerequisite DFS",()=>{
+ const f=pendingArrivalFixture();
+ assert.equal(f.check([5,5,5,35]).feasible,true);
+ const pruned=f.check([5,5,5,34]);
+ assert.equal(pruned.failure,"PENDING_ARRIVAL_DEADLINE");assert.equal(pruned.jointChecks,0);
+ assert.equal(pruned.exactPrerequisiteBranchesAvoided,1);
+ assert.deepEqual(pruned.pendingArrivalDeadline?.firstCertificate,
+  {cutoff:34,demand:4,maximumPossible:3,participantIds:["p-0","p-1","p-2","p-3"]});
+});
+
+test("pending IN capacity uses hard maximum, is identity invariant, and abstains on heterogeneity",()=>{
+ const target=pendingArrivalFixture(3,{maximum:3,target:1});assert.equal(target.check([5,5,5]).feasible,true);
+ const permuted=pendingArrivalFixture();const first=permuted.check([5,5,5,34]);
+ permuted.p.tasks.reverse();permuted.p.transportPolicy!.arrival.taskIds.reverse();
+ assert.deepEqual(permuted.check([34,5,5,5]).pendingArrivalDeadline?.firstCertificate,first.pendingArrivalDeadline?.firstCertificate);
+ const heterogeneous=pendingArrivalFixture(4,{heterogeneous:true}).check([5,5,5,34]);
+ assert.equal(heterogeneous.feasible,true);assert.equal(heterogeneous.pendingArrivalDeadline?.checked,false);
+});
+
+test("pending IN deadlines follow only explicit dependency IDs, never task names or kinds",()=>{
+ const f=pendingArrivalFixture();for(const item of f.previous)item.dependencies=[];
+ const result=f.check([5,5,5,34]);assert.equal(result.feasible,true);assert.equal(result.pendingArrivalDeadline?.checked,false);
+});
