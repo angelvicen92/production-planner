@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactStartDomainFromIntervals, exactTaskStartDomain, type ExactStartInterval } from "./placement";
 import { tasksCanAffectEachOther } from "./exactItinerantPlan";
+import { assessArrivalReadiness, type ArrivalReadinessAssessment } from "./arrivalReadiness";
 
 export interface MacroPendingPrerequisiteForwardCheckResult {
   feasible: boolean;
@@ -19,8 +20,9 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
   witnesses: number;
   blockingTaskId: string | null;
   deadline: number | null;
-  failure: "INDIVIDUAL_ZERO_DOMAIN" | "COLLECTIVE_CAPACITY" | "JOINT_INFEASIBLE" | null;
+  failure: "ARRIVAL_READINESS" | "INDIVIDUAL_ZERO_DOMAIN" | "COLLECTIVE_CAPACITY" | "JOINT_INFEASIBLE" | null;
   cacheHit: boolean;
+  arrivalReadiness?:ArrivalReadinessAssessment;
 }
 
 export type MacroPendingPrerequisiteForwardCheckMode = "FULL" | "ANALYTIC_CAPACITY_ONLY";
@@ -78,6 +80,11 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],cache?:MacroPendingPrerequisiteForwardCache,
   scope:"AFFECTED_PREREQUISITES"|"ALL_PENDING"="AFFECTED_PREREQUISITES",mode:MacroPendingPrerequisiteForwardCheckMode="FULL"):MacroPendingPrerequisiteForwardCheckResult{
   const provisional=[...previouslyPlaced,...candidate].sort(byId),{pendingById,deadline}=deadlineAuthority(problem,pending,provisional);
+  const arrivalReadiness=assessArrivalReadiness(problem,provisional);
+  if(!arrivalReadiness.feasible)return{feasible:false,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,
+    obligationsChecked:arrivalReadiness.firstCertificate?.demand??0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,
+    freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:arrivalReadiness.firstCertificate?.cutoff??null,
+    failure:"ARRIVAL_READINESS",cacheHit:false,arrivalReadiness};
   const candidateIds=new Set(candidate.map(task=>task.id)),ancestors=new Set<string>();
   const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
   for(const id of candidateIds)visitAncestors(id);

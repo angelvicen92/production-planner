@@ -1,6 +1,7 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
 import { assessTransportFutureFeasibility } from "./transportGrouping";
+import { assessArrivalReadiness, type ArrivalReadinessCertificate } from "./arrivalReadiness";
 
 export interface DeferredArrivalCausalCertificate {
   causingTaskId:string|null;arrivalTaskId:string;participantId:string|null;previousBoundary:number;currentBoundary:number;
@@ -35,6 +36,8 @@ export interface DeferredPrerequisiteReservationResult {
   causalDiagnostic:DeferredArrivalCausalCertificate|null;
   /** The canonical necessary-only transport proof, forwarded without reinterpretation. */
   transportFailure: ReturnType<typeof assessTransportFutureFeasibility>["firstFailure"];
+  arrivalReadinessChecks:number;arrivalReadinessPrunes:number;logicalSlots:number;analyticallyDerivedSlots:number;
+  arrivalReadinessFirstCertificate:ArrivalReadinessCertificate|null;
 }
 
 const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
@@ -130,14 +133,22 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: true, arrivalWitnessDropped: false,
     transportEvidence: { ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
       cumulativeCapacityPrunes: futureTransport.capacityPrunes, ...futureEvidence(futureTransport) }, causalDiagnostic: null,
-    transportFailure:futureTransport.firstFailure };
+    transportFailure:futureTransport.firstFailure,arrivalReadinessChecks:0,arrivalReadinessPrunes:0,
+    logicalSlots:0,analyticallyDerivedSlots:0,arrivalReadinessFirstCertificate:null };
+  const readiness=assessArrivalReadiness(problem,placed);
+  if(!readiness.feasible)return{feasible:false,reservation:null,repaired:previous!==null,branchesExplored:0,exhausted:false,
+    arrivalChecks:futureTransport.checks,arrivalBranchesExplored:0,arrivalBacktracks:0,arrivalRepaired:false,arrivalPruned:true,
+    arrivalWitnessDropped:false,transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null,transportFailure:null,
+    arrivalReadinessChecks:readiness.checks,arrivalReadinessPrunes:readiness.prunes,logicalSlots:readiness.logicalSlots,
+    analyticallyDerivedSlots:readiness.analyticallyDerivedSlots,arrivalReadinessFirstCertificate:readiness.firstCertificate};
   if (sameIds && previous.arrivalGroups.length === 0
     && ordinaryWitnessStillValid(problem, tasks, previous.witness, placed, meals, deadlines))
     return { feasible: true, reservation: previous, repaired: false, branchesExplored: 0, exhausted: false,
       arrivalChecks: futureTransport.checks, arrivalBranchesExplored: 0, arrivalBacktracks: 0, arrivalRepaired: false, arrivalPruned: false,
       arrivalWitnessDropped: false,
       transportEvidence:{...noTransportEvidence(),...futureEvidence(futureTransport)},causalDiagnostic:null,
-      transportFailure:null };
+      transportFailure:null,arrivalReadinessChecks:readiness.checks,arrivalReadinessPrunes:0,logicalSlots:readiness.logicalSlots,
+      analyticallyDerivedSlots:readiness.analyticallyDerivedSlots,arrivalReadinessFirstCertificate:null };
   let branchesExplored = 0, exhausted = false;
   const arrivalChecks = futureTransport.checks, arrivalBranchesExplored = 0, arrivalBacktracks = 0;
   const transportEvidence={ ...noTransportEvidence(), cumulativeCapacityChecks: futureTransport.checks,
@@ -171,5 +182,6 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     arrivalChecks, arrivalBranchesExplored, arrivalBacktracks, arrivalRepaired: previous !== null && arrivalBranchesExplored > 0,
     arrivalPruned: false,
     arrivalWitnessDropped: (previous?.arrivalTaskIds.length ?? 0) > 0 && arrivalTaskIds.length === 0, transportEvidence,causalDiagnostic:null,
-    transportFailure:null };
+    transportFailure:null,arrivalReadinessChecks:readiness.checks,arrivalReadinessPrunes:0,logicalSlots:readiness.logicalSlots,
+    analyticallyDerivedSlots:readiness.analyticallyDerivedSlots,arrivalReadinessFirstCertificate:null };
 }
