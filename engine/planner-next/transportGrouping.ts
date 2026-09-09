@@ -1,5 +1,5 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { canPlaceTask, exactTaskStartDomain, exactTaskStaticStartDomain, type ExactStartInterval } from "./placement";
 
 export type TransportDirection = "arrival" | "departure";
 
@@ -35,6 +35,170 @@ export function canPartitionTransportCount(count: number, minimum: number, maxim
   const minimumGroups = Math.ceil(count / maximum);
   const maximumGroups = Math.floor(count / minimum);
   return minimumGroups <= maximumGroups;
+}
+
+export interface TransportFutureFeasibilityCertificate {
+  feasible: boolean;
+  conclusive: boolean;
+  checks: number;
+  intervalCalculations: number;
+  enumeratedStarts: number;
+  capacityPrunes: number;
+  firstFailure: null | { direction: TransportDirection; reason: "EMPTY_DOMAIN" | "GROUP_COUNT" | "CUMULATIVE_CAPACITY";
+    demand: number; maximumHardCapacity: number; taskIds: string[] };
+}
+
+export interface AnonymousPostInCompletionCertificate {
+  cutoff: number;
+  demand: number;
+  maximumPossible: number;
+  participantIds: string[];
+}
+
+export interface AnonymousPostInCompletionAssessment {
+  feasible: boolean;
+  checked: boolean;
+  checks: number;
+  prunes: number;
+  firstCertificate: AnonymousPostInCompletionCertificate | null;
+}
+
+const staticTransportDomains = new WeakMap<PlannerNextProblem, WeakMap<Task, readonly Readonly<ExactStartInterval>[]>>();
+
+function staticTransportIntervals(problem: PlannerNextProblem, task: Task): readonly Readonly<ExactStartInterval>[] {
+  let byTask = staticTransportDomains.get(problem);
+  if (!byTask) { byTask = new WeakMap(); staticTransportDomains.set(problem, byTask); }
+  let intervals = byTask.get(task);
+  if (!intervals) {
+    intervals = exactTaskStaticStartDomain(problem, task).intervals;
+    byTask.set(task, intervals);
+  }
+  return intervals;
+}
+
+const firstGridStartAtOrAfter = (anchor: number, start: number): number =>
+  anchor + Math.max(0, Math.ceil((start - anchor) / 5)) * 5;
+
+/** Maximum cardinality of a gap-compatible subset of the canonical grid in an interval union. */
+function maximumCompatibleGridStarts(problem: PlannerNextProblem, intervals: readonly Readonly<ExactStartInterval>[], minGapMinutes: number): number {
+  const step = Math.max(5, Math.ceil(minGapMinutes / 5) * 5);
+  let count = 0, next = problem.day.start;
+  for (const interval of intervals) {
+    const first = firstGridStartAtOrAfter(problem.day.start, Math.max(interval.start, next));
+    if (first > interval.end) continue;
+    const added = Math.floor((interval.end - first) / step) + 1;
+    count += added;
+    next = first + added * step;
+  }
+  return count;
+}
+
+/**
+ * Applies the canonical hard transport domain/gap/capacity authority to anonymous
+ * POST-IN completion deadlines. No start, group, or participant membership is chosen.
+ * Each cutoff uses the union of the forced arrivals' static domains. This can admit
+ * starts which are unavailable to some forced participants, so its capacity is an
+ * optimistic upper bound and remains safe for a necessary-only prune.
+ */
+export function assessAnonymousPostInCompletions(problem: PlannerNextProblem,
+  completionDeadlineByParticipant: ReadonlyMap<string, number>): AnonymousPostInCompletionAssessment {
+  const abstain = (): AnonymousPostInCompletionAssessment =>
+    ({ feasible: true, checked: false, checks: 0, prunes: 0, firstCertificate: null });
+  const policy = problem.transportPolicy?.arrival;
+  if (!policy || completionDeadlineByParticipant.size === 0) return abstain();
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const arrivals = policy.taskIds.map((id) => taskById.get(id)).filter((task): task is Task => Boolean(task));
+  if (arrivals.length !== policy.taskIds.length || arrivals.some((task) => !task.participantId)) return abstain();
+  const participantIds = arrivals.map((task) => task.participantId!);
+  if (new Set(participantIds).size !== participantIds.length) return abstain();
+  const arrivalByParticipant = new Map(arrivals.map((task) => [task.participantId!, task]));
+  const configuredParticipants = new Set(participantIds);
+  if ([...completionDeadlineByParticipant].some(([id]) => !configuredParticipants.has(id))) return abstain();
+
+  let checks = 0;
+  for (const cutoff of [...new Set(completionDeadlineByParticipant.values())].sort((left, right) => left - right)) {
+    checks += 1;
+    const forcedParticipants = [...completionDeadlineByParticipant]
+      .filter(([, deadline]) => deadline <= cutoff).map(([id]) => id).sort();
+    const union = forcedParticipants.flatMap((participantId) => {
+      const task = arrivalByParticipant.get(participantId)!;
+      const latestStart = cutoff - task.duration;
+      return staticTransportIntervals(problem, task).flatMap((interval) => interval.start <= Math.min(interval.end, latestStart)
+        ? [{ start: interval.start, end: Math.min(interval.end, latestStart) }] : []);
+    }).sort((left, right) => left.start - right.start || left.end - right.end)
+      .reduce<ExactStartInterval[]>((merged, interval) => {
+        const previous = merged.at(-1);
+        if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+        else merged.push({ ...interval });
+        return merged;
+      }, []);
+    const maximumPossible = maximumCompatibleGridStarts(problem, union, policy.minGapMinutes) * policy.maximumGroupSize;
+    if (forcedParticipants.length > maximumPossible) return { feasible: false, checked: true, checks, prunes: 1,
+      firstCertificate: { cutoff, demand: forcedParticipants.length, maximumPossible, participantIds: forcedParticipants } };
+  }
+  return { feasible: true, checked: true, checks, prunes: 0, firstCertificate: null };
+}
+
+/**
+ * Necessary-only, preterminal transport check.  It deliberately does not choose groups or
+ * retain starts: every capacity value is an optimistic upper bound, so an inconclusive check
+ * keeps the branch open and only a proved hard-capacity deficit is pruned.
+ */
+export function assessTransportFutureFeasibility(problem: PlannerNextProblem,
+  externalPlaced: readonly ScheduledTask[], participantMeals: readonly ScheduledParticipantMeal[] = []): TransportFutureFeasibilityCertificate {
+  let checks = 0, intervalCalculations = 0;
+  const certificate = (feasible: boolean, conclusive: boolean, capacityPrunes: number,
+    firstFailure: TransportFutureFeasibilityCertificate["firstFailure"]): TransportFutureFeasibilityCertificate =>
+    ({ feasible, conclusive, checks, intervalCalculations, enumeratedStarts: 0, capacityPrunes, firstFailure });
+  const transportIds = transportTaskIds(problem);
+  const substantive = externalPlaced.filter(({ id }) => !transportIds.has(id));
+  const directions: readonly TransportDirection[] = ["arrival", "departure"];
+  for (const direction of directions) {
+    const policy = problem.transportPolicy?.[direction];
+    if (!policy) continue;
+    const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)).filter((task): task is Task => Boolean(task));
+    checks += 1;
+    if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize))
+      return certificate(false, true, 1,
+        { direction, reason: "GROUP_COUNT", demand: tasks.length, maximumHardCapacity: 0, taskIds: tasks.map(({ id }) => id).sort() });
+    const boundary = (task: Task): number => {
+      const obligations = [...substantive.filter((placed) => placed.participantId === task.participantId),
+        ...participantMeals.filter((meal) => meal.participantId === task.participantId)];
+      return direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start))
+        : Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+    };
+    const domains = tasks.map((task) => {
+      const effectiveBoundary = boundary(task);
+      const intervals = staticTransportIntervals(problem, task).flatMap((interval) => {
+        const start = direction === "arrival" ? interval.start : Math.max(interval.start, effectiveBoundary);
+        const end = direction === "arrival" ? Math.min(interval.end, effectiveBoundary - task.duration) : interval.end;
+        return start <= end ? [{ start, end }] : [];
+      });
+      intervalCalculations += 1;
+      return { task, boundary: effectiveBoundary, intervals };
+    });
+    const empty = domains.find(({ intervals }) => intervals.length === 0);
+    if (empty) return certificate(false, true, 1,
+      { direction, reason: "EMPTY_DOMAIN", demand: 1, maximumHardCapacity: 0, taskIds: [empty.task.id] });
+    const orderedBoundaries = [...new Set(domains.map(({ boundary: value }) => value))].sort((a, b) => direction === "arrival" ? a - b : b - a);
+    for (const limit of orderedBoundaries) {
+      checks += 1;
+      const forced = domains.filter(({ boundary: value }) => direction === "arrival" ? value <= limit : value >= limit);
+      const union = forced.flatMap(({ intervals }) => intervals).sort((a, b) => a.start - b.start || a.end - b.end)
+        .reduce<ExactStartInterval[]>((merged, interval) => {
+          const previous = merged.at(-1);
+          if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+          else merged.push({ ...interval });
+          return merged;
+        }, []);
+      intervalCalculations += 1;
+      const maximumHardCapacity = maximumCompatibleGridStarts(problem, union, policy.minGapMinutes) * policy.maximumGroupSize;
+      if (forced.length > maximumHardCapacity) return certificate(false, true, 1,
+        { direction, reason: "CUMULATIVE_CAPACITY", demand: forced.length, maximumHardCapacity,
+          taskIds: forced.map(({ task }) => task.id).sort() });
+    }
+  }
+  return certificate(true, false, 0, null);
 }
 
 /** Canonical candidate groups containing the first remaining task; no invalid residual is emitted. */
@@ -85,6 +249,14 @@ export interface TerminalTransportMaterialization {
   departure: TransportDirectionWitnessResult;
   arrivalReservedWitnessReused: boolean;
   arrivalRepaired: boolean;
+  reservedArrivalValidation: null | {
+    validBeforeParticipantMeals: boolean;
+    validAfterParticipantMeals: boolean;
+    firstParticipantMealBoundaryConflict: null | {
+      arrivalTaskId: string; participantId: string; arrivalEnd: number;
+      mealId: string; mealStart: number; mealEnd: number;
+    };
+  };
   firstFailure: null | { direction: TransportDirection; remainingTaskIds: string[]; domainSummary: string; reason: "NO_WITNESS" | "BUDGET_EXHAUSTED" };
 }
 
@@ -96,15 +268,29 @@ export function materializeTerminalTransport(
   reservedArrivalGroups: readonly (readonly ScheduledTask[])[] = [],
   consume: () => boolean = () => true,
 ): TerminalTransportMaterialization {
-  const empty: TransportDirectionWitnessResult = { feasible: true, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
+  const empty: TransportDirectionWitnessResult = emptyWitness();
   if (!problem.transportPolicy) return { status: "FEASIBLE", scheduled: [], arrival: empty, departure: empty,
-    arrivalReservedWitnessReused: false, arrivalRepaired: false, firstFailure: null };
+    arrivalReservedWitnessReused: false, arrivalRepaired: false, reservedArrivalValidation: null, firstFailure: null };
   const tasks = (direction: TransportDirection) => problem.transportPolicy![direction].taskIds
     .map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean);
   const arrivals = tasks("arrival"), departures = tasks("departure");
   const reserved = reservedArrivalGroups.map((group) => [...group]);
+  const reservedValidBeforeParticipantMeals = reserved.length > 0
+    && validateDirectionWitness(problem, "arrival", arrivals, reserved, substantive, []);
   const reservedValid = reserved.length > 0
     && validateDirectionWitness(problem, "arrival", arrivals, reserved, substantive, participantMeals);
+  const firstParticipantMealBoundaryConflict = reservedValidBeforeParticipantMeals && !reservedValid
+    ? reserved.flat().sort(byId).flatMap((arrival) => participantMeals
+      .filter((meal) => meal.participantId === arrival.participantId && meal.start < arrival.end)
+      .sort((left, right) => left.start - right.start || left.id.localeCompare(right.id))
+      .map((meal) => ({ arrivalTaskId: arrival.id, participantId: arrival.participantId!, arrivalEnd: arrival.end,
+        mealId: meal.id, mealStart: meal.start, mealEnd: meal.end })))[0] ?? null
+    : null;
+  const reservedArrivalValidation = reserved.length === 0 ? null : {
+    validBeforeParticipantMeals: reservedValidBeforeParticipantMeals,
+    validAfterParticipantMeals: reservedValid,
+    firstParticipantMealBoundaryConflict,
+  };
   const arrival = reservedValid ? { ...empty, groups: reserved } : findTransportDirectionWitness(problem, "arrival", arrivals,
     substantive, consume, participantMeals);
   if (!arrival.feasible) return failure("arrival", arrivals, arrival, !reservedValid && reserved.length > 0);
@@ -113,7 +299,8 @@ export function materializeTerminalTransport(
     [...substantive, ...arrivalScheduled], consume, participantMeals);
   if (!departure.feasible) return failure("departure", departures, departure, !reservedValid && reserved.length > 0, arrival);
   return { status: "FEASIBLE", scheduled: [...arrivalScheduled, ...departure.groups.flat()], arrival, departure,
-    arrivalReservedWitnessReused: reservedValid, arrivalRepaired: !reservedValid && reserved.length > 0, firstFailure: null };
+    arrivalReservedWitnessReused: reservedValid, arrivalRepaired: !reservedValid && reserved.length > 0,
+    reservedArrivalValidation, firstFailure: null };
 
   function failure(direction: TransportDirection, remaining: readonly Task[], result: TransportDirectionWitnessResult,
     repaired: boolean, successfulArrival = result): TerminalTransportMaterialization {
@@ -121,6 +308,7 @@ export function materializeTerminalTransport(
     const reason = result.exhausted ? "BUDGET_EXHAUSTED" : "NO_WITNESS";
     return { status: reason, scheduled: [], arrival: direction === "arrival" ? result : successfulArrival,
       departure: direction === "departure" ? result : empty, arrivalReservedWitnessReused: false, arrivalRepaired: repaired,
+      reservedArrivalValidation,
       firstFailure: { direction, remainingTaskIds: remaining.map(({ id }) => id).sort(), reason,
         domainSummary: `count=${remaining.length};min=${policy.minimumGroupSize};target=${policy.targetGroupSize ?? "default"};max=${policy.maximumGroupSize};gap=${policy.minGapMinutes}` } };
   }
@@ -172,20 +360,54 @@ export interface TransportDirectionWitnessResult {
   branchesExplored: number;
   backtracks: number;
   exhausted: boolean;
+  slotLogicalStarts: number;
+  slotAnalyticallyEliminatedStarts: number;
+  slotStartSetsEvaluated: number;
+  matchingChecks: number;
+  matchingEdgeChecks: number;
+  matchingAugmentTraversals: number;
+  equivalentMembershipsCollapsed: number;
+  monotoneFastPathChecks: number;
+  monotoneFastPathHits: number;
+  monotoneFastPathWitnesses: number;
+  monotoneFastPathAbstentions: number;
+  cumulativeCapacityChecks: number;
+  cumulativeCapacityPrunes: number;
+  causalDiagnostic: TransportWitnessCausalDiagnostic | null;
 }
+
+export interface TransportWitnessCausalDiagnostic {
+  monotoneAbstentionReason: "NOT_MONOTONE" | "NO_CONTIGUOUS_SIZES" | "PACKET_NO_COMMON_START" | "CANDIDATE_VALIDATION_FAILED" | null;
+  canonicalCandidateFingerprint: string | null;
+  canonicalCandidateSummary: readonly { start:number; taskIds:string[] }[] | null;
+  firstValidationFailure: null | { reason:"BOUNDARY"|"DEPENDENCY"|"PLACEMENT_RESOURCE_SPACE"|"GROUP_SIZE"|"MIN_GAP"|"MEMBERSHIP"|"SYNCHRONIZATION";taskId:string|null;participantId:string|null;boundary:number|null;start:number|null;end:number|null };
+  firstCumulativeCapacityPrune: null | { prefix:number; demand:number; capacity:number; activeSlots:number[]; participantIds:string[]; taskIds:string[] };
+}
+
+const emptyWitness = (): TransportDirectionWitnessResult => ({ feasible: true, groups: [], branchesExplored: 0,
+  backtracks: 0, exhausted: false, slotLogicalStarts: 0, slotAnalyticallyEliminatedStarts: 0,
+  slotStartSetsEvaluated: 0, matchingChecks: 0, matchingEdgeChecks: 0, matchingAugmentTraversals: 0,
+  equivalentMembershipsCollapsed: 0, monotoneFastPathChecks: 0, monotoneFastPathHits: 0,
+  monotoneFastPathWitnesses: 0, monotoneFastPathAbstentions: 0, cumulativeCapacityChecks: 0,
+  cumulativeCapacityPrunes: 0, causalDiagnostic:null });
 
 /** Exact, ledger-accounted grouped witness. It is read-only and does not materialize into the plan. */
 export function findTransportDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection,
   relevantTasks: readonly Task[], externalPlaced: readonly ScheduledTask[], consume: () => boolean,
-  participantMeals: readonly ScheduledParticipantMeal[] = []): TransportDirectionWitnessResult {
+  participantMeals: readonly ScheduledParticipantMeal[] = [], causalDiagnostic = false): TransportDirectionWitnessResult {
   const policy = problem.transportPolicy?.[direction];
-  if (!policy || relevantTasks.length === 0)
-    return { feasible: true, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
+  if (!policy || relevantTasks.length === 0) return emptyWitness();
   const policyIds = new Set(policy.taskIds);
   const relevant = relevantTasks.filter(({ id }) => policyIds.has(id));
   if (relevant.length !== relevantTasks.length)
-    return { feasible: false, groups: [], branchesExplored: 0, backtracks: 0, exhausted: false };
-  let branchesExplored = 0, backtracks = 0, exhausted = false;
+    return { ...emptyWitness(), feasible: false };
+  let branchesExplored = 0, backtracks = 0, exhausted = false, slotStartSetsEvaluated = 0;
+  let slotAnalyticallyEliminatedStarts = 0;
+  let matchingChecks = 0, matchingEdgeChecks = 0, matchingAugmentTraversals = 0;
+  let monotoneFastPathChecks = 1, monotoneFastPathHits = 0, monotoneFastPathWitnesses = 0;
+  let monotoneFastPathAbstentions = 0, cumulativeCapacityChecks = 0, cumulativeCapacityPrunes = 0;
+  const diagnostic:TransportWitnessCausalDiagnostic|null=causalDiagnostic?{monotoneAbstentionReason:null,
+    canonicalCandidateFingerprint:null,canonicalCandidateSummary:null,firstValidationFailure:null,firstCumulativeCapacityPrune:null}:null;
   const arrivalIds = new Set(relevant.map(({ id }) => id));
   const external = externalPlaced.filter(({ id }) => !arrivalIds.has(id));
   const boundary = (task: Task): number => {
@@ -197,59 +419,177 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   };
   const tasks = [...relevant].sort((left, right) => boundary(left) - boundary(right) || byId(left, right));
   const target = Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize);
-  const search = (remaining: readonly Task[], groups: readonly ScheduledTask[][]): ScheduledTask[][] | null => {
-    if (!remaining.length) return groups.map((group) => [...group]);
-    const [first, ...rest] = remaining;
-    const sizes = Array.from({ length: Math.min(policy.maximumGroupSize, remaining.length) - policy.minimumGroupSize + 1 },
-      (_, index) => policy.minimumGroupSize + index)
-      .filter((size) => canPartitionTransportCount(remaining.length - size, policy.minimumGroupSize, policy.maximumGroupSize))
-      .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || right - left);
-    // Keep the most constrained (boundary-ordered) task as the canonical anchor. The shared
-    // partition authority still removes every size whose residual cannot be completed.
-    const candidates = sizes.flatMap((size) => combinations(rest, size - 1).map((tail) => [first!, ...tail]));
-    for (const group of candidates) {
-      if (!consume()) { exhausted = true; return null; }
-      branchesExplored += 1;
-      const alreadyPlaced = [...external, ...groups.flat()];
-      const domains = group.map((task) => new Set([...exactTaskStartDomain(problem, task, alreadyPlaced).starts()]));
-      const starts = [...domains[0]!].filter((start) => domains.every((domain) => domain.has(start))
-        && group.every((task) => direction === "arrival" ? start + task.duration <= boundary(task) : start >= boundary(task)))
-        .sort((left, right) => direction === "arrival" ? right - left : left - right);
-      for (const start of starts) {
-        if (!consume()) { exhausted = true; return null; }
-        branchesExplored += 1;
-        if (!canPlaceTransportGroup(problem, group, start, alreadyPlaced,
-          groups.map((placedGroup) => placedGroup[0]!.start), policy)) continue;
-        const scheduled = scheduleTransportGroup(group, start);
-        const memberIds = new Set(group.map(({ id }) => id));
-        const found = search(remaining.filter(({ id }) => !memberIds.has(id)), [...groups, scheduled]);
-        if (found || exhausted) return found;
-        backtracks += 1;
-      }
+  type Slot = { start: number; duration: number; eligible: boolean[] };
+  const slotByKey = new Map<string, Slot>();
+  for (const [taskIndex, task] of tasks.entries()) for (const start of exactTaskStartDomain(problem, task, external).starts()) {
+    if (direction === "arrival" ? start + task.duration > boundary(task) : start < boundary(task)) continue;
+    if (!canPlaceTransportGroup(problem, [task], start, external, [], policy)) continue;
+    const key = `${start}:${task.duration}`;
+    const slot = slotByKey.get(key) ?? { start, duration: task.duration, eligible: tasks.map(() => false) };
+    slot.eligible[taskIndex] = true; slotByKey.set(key, slot);
+  }
+  // Boundary-safe order is also the cumulative-capacity order: early ARRIVAL slots can serve
+  // every later deadline, while late DEPARTURE slots can serve every earlier release boundary.
+  const slots = [...slotByKey.values()].sort((a, b) => direction === "arrival" ? a.start - b.start || a.duration - b.duration : b.start - a.start || a.duration - b.duration);
+  const logicalStarts = slots.length;
+  const groupCounts = Array.from({ length: Math.floor(tasks.length / policy.minimumGroupSize) - Math.ceil(tasks.length / policy.maximumGroupSize) + 1 },
+    (_, index) => Math.ceil(tasks.length / policy.maximumGroupSize) + index)
+    .sort((a, b) => Math.abs(tasks.length / a - target) - Math.abs(tasks.length / b - target) || a - b);
+
+  // In directional order a continuous arrival-prefix/departure-suffix domain becomes a prefix
+  // of this slot array. Homogeneous duration and hole-free domains let the canonical construction
+  // reason only from participant boundaries; otherwise the exact slot+matching authority decides.
+  const monotone = new Set(tasks.map(({ duration }) => duration)).size === 1 && tasks.every((_, taskIndex) => {
+    let sawIneligible = false;
+    for (const slot of slots) {
+      if (!slot.eligible[taskIndex]) sawIneligible = true;
+      else if (sawIneligible) return false;
     }
-    return null;
+    return true;
+  });
+
+  const match = (active: readonly Slot[]): ScheduledTask[][] | null => {
+    matchingChecks += 1;
+    const copies = active.flatMap((slot, slotIndex) => Array.from({ length: policy.maximumGroupSize }, (_, copy) => ({ slot, slotIndex, mandatory: copy < policy.minimumGroupSize })));
+    const dummyCount = copies.length - tasks.length;
+    if (dummyCount < 0 || dummyCount > active.length * (policy.maximumGroupSize - policy.minimumGroupSize)) return null;
+    const left = [...tasks.map((task, taskIndex) => ({ task, taskIndex, dummy: false })),
+      ...Array.from({ length: dummyCount }, (_, taskIndex) => ({ task: undefined, taskIndex, dummy: true }))];
+    const owner = copies.map(() => -1);
+    const augment = (leftIndex: number, seen: Set<number>): boolean => {
+      for (let copyIndex = 0; copyIndex < copies.length; copyIndex += 1) {
+        matchingEdgeChecks += 1; const copy = copies[copyIndex]!; const item = left[leftIndex]!;
+        if (seen.has(copyIndex) || (item.dummy ? copy.mandatory : !copy.slot.eligible[item.taskIndex])) continue;
+        seen.add(copyIndex); matchingAugmentTraversals += 1;
+        if (owner[copyIndex] < 0 || augment(owner[copyIndex]!, seen)) { owner[copyIndex] = leftIndex; return true; }
+      }
+      return false;
+    };
+    if (!left.every((_, index) => augment(index, new Set()))) return null;
+    return active.map((slot, slotIndex) => owner.flatMap((leftIndex, copyIndex) => {
+      const item = left[leftIndex]; return copies[copyIndex]!.slotIndex === slotIndex && item && !item.dummy ? [item.task!] : [];
+    }).map((task) => ({ ...task, start: slot.start, end: slot.start + task.duration })).sort((a, b) => byId(a, b)));
   };
-  const groups = search(tasks, []);
-  return { feasible: groups !== null, groups: groups ?? [], branchesExplored, backtracks, exhausted };
+  const jointlyValid = (candidate: ScheduledTask[][] | null): candidate is ScheduledTask[][] => candidate !== null
+    && validateDirectionWitness(problem, direction, tasks, candidate, external, participantMeals,diagnostic);
+  const hasCumulativeCapacity = (active: readonly Slot[]): boolean => {
+    for (let prefix = 1; prefix <= slots.length; prefix += 1) {
+      cumulativeCapacityChecks += 1;
+      const demand = tasks.reduce((sum, _, taskIndex) => sum + (slots.slice(0, prefix).some((slot) => slot.eligible[taskIndex])
+        && !slots.slice(prefix).some((slot) => slot.eligible[taskIndex]) ? 1 : 0), 0);
+      const capacity = active.filter((slot) => slots.indexOf(slot) < prefix).length * policy.maximumGroupSize;
+      if (demand > capacity) { cumulativeCapacityPrunes += 1;if(diagnostic&&!diagnostic.firstCumulativeCapacityPrune){const forced=tasks.filter((_,taskIndex)=>slots.slice(0,prefix).some(slot=>slot.eligible[taskIndex])&&!slots.slice(prefix).some(slot=>slot.eligible[taskIndex]));diagnostic.firstCumulativeCapacityPrune={prefix,demand,capacity,activeSlots:active.filter(slot=>slots.indexOf(slot)<prefix).map(slot=>slot.start),participantIds:[...new Set(forced.map(task=>task.participantId).filter((id):id is string=>Boolean(id)))].sort(),taskIds:forced.map(task=>task.id).sort()};} return false; }
+    }
+    return true;
+  };
+  let groups: ScheduledTask[][] | null = null;
+  if (monotone) {
+    monotoneFastPathHits += 1;
+    if (!consume()) exhausted = true;
+    else branchesExplored += 1;
+    if (!exhausted) {
+      if (!consume()) exhausted = true;
+      else branchesExplored += 1;
+    }
+    const sizes = exhausted ? null : transportContiguousGroupSizes(tasks.length, policy, direction);
+    if(!sizes&&diagnostic)diagnostic.monotoneAbstentionReason="NO_CONTIGUOUS_SIZES";
+    if (sizes) {
+      const canonicalTasks: Task[][] = [];
+      let offset = 0;
+      for (const size of sizes) { canonicalTasks.push(tasks.slice(offset, offset + size)); offset += size; }
+      const canonical: (ScheduledTask[] | undefined)[] = canonicalTasks.map(() => undefined);
+      const scheduleAt = (index: number, limit: number): boolean => {
+        const members = canonicalTasks[index]!;
+        const possible = slots.filter((slot) => members.every((task) => slot.eligible[tasks.indexOf(task)]))
+          .map(({ start }) => start)
+          .filter((start) => direction === "arrival" ? start <= limit : start >= limit);
+        const start = possible.length === 0 ? undefined
+          : direction === "arrival" ? Math.max(...possible) : Math.min(...possible);
+        if (start === undefined) return false;
+        canonical[index] = scheduleTransportGroup(members, start);
+        return true;
+      };
+      let constructed = true;
+      if (direction === "arrival") {
+        let latest = Number.POSITIVE_INFINITY;
+        for (let index = canonicalTasks.length - 1; index >= 0; index -= 1) {
+          if (!scheduleAt(index, latest)) { constructed = false;if(diagnostic)diagnostic.monotoneAbstentionReason="PACKET_NO_COMMON_START"; break; }
+          latest = canonical[index]![0]!.start - policy.minGapMinutes;
+        }
+      } else {
+        let earliest = Number.NEGATIVE_INFINITY;
+        for (let index = 0; index < canonicalTasks.length; index += 1) {
+          if (!scheduleAt(index, earliest)) { constructed = false;if(diagnostic)diagnostic.monotoneAbstentionReason="PACKET_NO_COMMON_START"; break; }
+          earliest = canonical[index]![0]!.start + policy.minGapMinutes;
+        }
+      }
+      const candidate = constructed ? canonical as ScheduledTask[][] : null;
+      if(candidate&&diagnostic){diagnostic.canonicalCandidateSummary=candidate.map(group=>({start:group[0]!.start,taskIds:group.map(task=>task.id).sort()}));diagnostic.canonicalCandidateFingerprint=diagnostic.canonicalCandidateSummary.map(group=>`${group.start}:${group.taskIds.join(",")}`).join("|");}
+      slotAnalyticallyEliminatedStarts += candidate ? Math.max(0, slots.length - candidate.length) : 0;
+      if (jointlyValid(candidate)) { groups = candidate; monotoneFastPathWitnesses += 1; }
+      else if(candidate&&diagnostic)diagnostic.monotoneAbstentionReason="CANDIDATE_VALIDATION_FAILED";
+    }
+    if (!groups) monotoneFastPathAbstentions += 1;
+  } else {monotoneFastPathAbstentions += 1;if(diagnostic)diagnostic.monotoneAbstentionReason="NOT_MONOTONE";}
+  for (const groupCount of groupCounts) {
+    if (groups || exhausted) break;
+    if (!consume()) { exhausted = true; break; }
+    branchesExplored += 1;
+    const choose = (from: number, active: readonly Slot[]): boolean => {
+      if (active.length === groupCount) {
+        if (!consume()) { exhausted = true; return true; }
+        branchesExplored += 1; slotStartSetsEvaluated += 1;
+        if (!hasCumulativeCapacity(active)) { backtracks += 1; return false; }
+        const candidate = match(active); groups = jointlyValid(candidate) ? candidate : null; backtracks += groups ? 0 : 1;
+        return groups !== null;
+      }
+      if (active.length + slots.length - from < groupCount) { cumulativeCapacityPrunes += 1; return false; }
+      for (let index = from; index < slots.length; index += 1) {
+        const slot = slots[index]!;
+        if (active.some((other) => Math.abs(slot.start - other.start) < policy.minGapMinutes)) continue;
+        if (!consume()) { exhausted = true; return true; }
+        branchesExplored += 1;
+        if (choose(index + 1, [...active, slot]) || exhausted) return true;
+      }
+      return false;
+    };
+    if (choose(0, []) || exhausted) break;
+  }
+  const signatureCounts = new Map<string, number>();
+  for (const taskIndex of tasks.keys()) { const signature = slots.map((slot) => slot.eligible[taskIndex] ? "1" : "0").join(""); signatureCounts.set(signature, (signatureCounts.get(signature) ?? 0) + 1); }
+  const equivalentMembershipsCollapsed = [...signatureCounts.values()].reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  return { feasible: groups !== null, groups: groups ?? [], branchesExplored, backtracks, exhausted,
+    slotLogicalStarts: logicalStarts, slotAnalyticallyEliminatedStarts, slotStartSetsEvaluated,
+    matchingChecks, matchingEdgeChecks, matchingAugmentTraversals, equivalentMembershipsCollapsed,
+    monotoneFastPathChecks, monotoneFastPathHits, monotoneFastPathWitnesses, monotoneFastPathAbstentions,
+    cumulativeCapacityChecks, cumulativeCapacityPrunes,causalDiagnostic:diagnostic };
 }
 
 function validateDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection, tasks: readonly Task[],
-  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[]): boolean {
+  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[],diagnostic:TransportWitnessCausalDiagnostic|null=null): boolean {
   const policy = problem.transportPolicy?.[direction];
   if (!policy) return tasks.length === 0;
   const expected = tasks.map(({ id }) => id).sort(), actual = groups.flat().map(({ id }) => id).sort();
-  if (expected.length !== actual.length || expected.some((id, index) => id !== actual[index])) return false;
-  if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize)) return false;
-  return groups.every((group, index) => group.length >= policy.minimumGroupSize && group.length <= policy.maximumGroupSize
-    && group.every((item) => item.start === group[0]!.start && item.end === item.start + item.duration)
-    && canPlaceTransportGroup(problem, group.map(({ id }) => tasks.find((task) => task.id === id)!), group[0]!.start,
-      [...external, ...groups.filter((_, other) => other !== index).flat()], groups.slice(0, index).map((item) => item[0]!.start), policy)
-    && group.every((item) => {
+  const fail=(reason:NonNullable<TransportWitnessCausalDiagnostic["firstValidationFailure"]>["reason"],item?:ScheduledTask,boundaryValue:number|null=null)=>{if(diagnostic&&!diagnostic.firstValidationFailure)diagnostic.firstValidationFailure={reason,taskId:item?.id??null,participantId:item?.participantId??null,boundary:boundaryValue,start:item?.start??null,end:item?.end??null};return false;};
+  if (expected.length !== actual.length || expected.some((id, index) => id !== actual[index])) return fail("MEMBERSHIP");
+  if (!canPartitionTransportCount(tasks.length, policy.minimumGroupSize, policy.maximumGroupSize)) return fail("GROUP_SIZE");
+  return groups.every((group, index) => {
+    if(group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize)return fail("GROUP_SIZE",group[0]);
+    if(group.some(item=>item.start!==group[0]!.start||item.end!==item.start+item.duration))return fail("SYNCHRONIZATION",group.find(item=>item.start!==group[0]!.start||item.end!==item.start+item.duration));
+    if(groups.slice(0,index).some(other=>Math.abs(group[0]!.start-other[0]!.start)<policy.minGapMinutes))return fail("MIN_GAP",group[0]);
+    const definitions=group.map(({id})=>tasks.find(task=>task.id===id)!);const placed=[...external,...groups.filter((_,other)=>other!==index).flat()];
+    const dependencyFailure=definitions.find(task=>task.dependencies.some(id=>{const dependency=placed.find(item=>item.id===id);return !dependency||dependency.end>group[0]!.start;}));
+    if(dependencyFailure)return fail("DEPENDENCY",group.find(item=>item.id===dependencyFailure.id));
+    const boundariesValid=group.every((item) => {
       const obligations = [...external.filter((task) => task.participantId === item.participantId),
         ...meals.filter((meal) => meal.participantId === item.participantId)];
-      return direction === "arrival" ? item.end <= Math.min(problem.day.end, ...obligations.map(({ start }) => start))
-        : item.start >= Math.max(problem.day.start, ...obligations.map(({ end }) => end));
-    }));
+      const limit=direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start)):Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+      return (direction === "arrival" ? item.end <= limit:item.start >= limit)||fail("BOUNDARY",item,limit);
+    });
+    if(!boundariesValid)return false;
+    return canPlaceTransportGroup(problem,definitions,group[0]!.start,placed,groups.slice(0,index).map(item=>item[0]!.start),policy)
+      ||fail("PLACEMENT_RESOURCE_SPACE",group[0]);
+  });
 }
 
 export interface TransportValidation {
