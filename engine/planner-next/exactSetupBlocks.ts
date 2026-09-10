@@ -351,14 +351,16 @@ export function createExactSetupBlockExplorer(
       }
     }
 
-    // FAST/PREFERRED: every compact start before any gapped geometry. Cost remains
-    // the first historical ranking key when callers materialize the full domain.
+    // FAST/PREFERRED: try every canonical compact geometry before spending branches
+    // on compact matching repairs, then repeat those two passes for gapped geometry.
+    // Cost remains the first historical ranking key when callers materialize the full domain.
     for (const fallback of options.compactOnly ? [false] : [false, true]) {
-      for (let start = problem.day.start; start < problem.day.end; start += 5) {
-        evidence.startsExplored += 1;
-        yield* visit(start, ordered, [], [], 0, fallback, 0, false, false);
-        if (!options.canonicalOnly) yield* visit(start, ordered, [], [], 0, fallback, 0, true, false);
-        if (budgetExhausted) return;
+      for (const repairsEnabled of options.canonicalOnly ? [false] : [false, true]) {
+        for (let start = problem.day.start; start < problem.day.end; start += 5) {
+          evidence.startsExplored += 1;
+          yield* visit(start, ordered, [], [], 0, fallback, 0, repairsEnabled, false);
+          if (budgetExhausted) return;
+        }
       }
     }
   }

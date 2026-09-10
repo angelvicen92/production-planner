@@ -35,24 +35,53 @@ test("lazy setup matching repairs a canonical witness and is input-order determi
   const baseline=collect();const reversed=collect(true);assert.notEqual(baseline.seen[0],baseline.seen[1]);assert.ok(baseline.repairs>0);assert.deepEqual(reversed,baseline);
 });
 
-test("downstream dead end repairs the same compact geometry before any gapped geometry",()=>{
-  const problem=oneFamily();
+test("canonical compact geometries advance before repairs, while an earlier repair remains reachable and accounted",()=>{
+  const problem=oneFamily();problem.day.end=555;problem.spaces[0]!.availability=[problem.day];
+  for(const participant of problem.participants)participant.availability=[problem.day];
   const explorer=createExactSetupBlockExplorer(problem,problem.tasks,[],[],[],createExactSearchLedger(1000));
-  const canonical=explorer.nextCandidate()!;
-  assert.equal(canonical.geometryIdleMinutes,0);
-  assert.equal(canonical.matchingRepairIndex,0);
+  const firstCanonical=explorer.nextCandidate()!;
+  assert.equal(firstCanonical.geometryIdleMinutes,0);
+  assert.equal(firstCanonical.matchingRepairIndex,0);
+  assert.equal(Math.min(...firstCanonical.tasks.map(task=>task.start)),540);
   explorer.recordCandidateOutcome(false); // Fixture's canonical assignment is rejected by its downstream child.
-  const repaired=explorer.nextCandidate()!;
+  const secondCanonical=explorer.nextCandidate()!;
+  assert.equal(secondCanonical.matchingRepairIndex,0);
+  assert.equal(Math.min(...secondCanonical.tasks.map(task=>task.start)),545);
+  assert.equal(explorer.evidence.matchingRepairs,0);
+  explorer.recordCandidateOutcome(false); // G2 canonical is tried before any repair of G1.
+  let repaired=explorer.nextCandidate()!;
+  while(repaired.matchingRepairIndex===0){explorer.recordCandidateOutcome(false);repaired=explorer.nextCandidate()!;}
   assert.equal(repaired.geometryIdleMinutes,0);
-  assert.equal(repaired.geometrySpanMinutes,canonical.geometrySpanMinutes);
+  assert.equal(Math.min(...repaired.tasks.map(task=>task.start)),540);
   assert.equal(repaired.matchingRepairIndex,1);
-  assert.notEqual(sig(repaired.tasks),sig(canonical.tasks));
-  assert.equal(explorer.evidence.maximumIdleMinutes,0);
+  assert.notEqual(sig(repaired.tasks),sig(firstCanonical.tasks));
   assert.equal(explorer.evidence.compactGeometryMatchingRepairs,1);
+  assert.equal(explorer.evidence.branchesExplored,explorer.evidence.matchingAttempts+explorer.evidence.matchingRepairs);
   explorer.recordCandidateOutcome(true);
   assert.deepEqual(explorer.evidence.firstSuccessfulGeometry,{idleMinutes:0,spanMinutes:10});
   assert.equal(explorer.evidence.firstSuccessfulMatchingRepairIndex,1);
   assert.equal(validatePlan(problem,repaired.tasks,repaired.preparations).hardValid,true);
+});
+
+test("all compact canonical and repair candidates precede every gapped candidate deterministically",()=>{
+  const collect=(reverse:boolean)=>{const problem=oneFamily();problem.day.end=560;problem.spaces[0]!.availability=[problem.day];
+    for(const participant of problem.participants)participant.availability=[problem.day];
+    const ledger=createExactSearchLedger(10_000);
+    const explorer=createExactSetupBlockExplorer({...problem,tasks:reverse?[...problem.tasks].reverse():problem.tasks},
+      reverse?[...problem.tasks].reverse():problem.tasks,[],[],[],ledger);
+    const seen:{idle:number;repair:number;signature:string}[]=[];
+    for(let candidate=explorer.nextCandidate();candidate;candidate=explorer.nextCandidate()){
+      seen.push({idle:candidate.geometryIdleMinutes,repair:candidate.matchingRepairIndex,signature:sig(candidate.tasks)});
+      explorer.recordCandidateOutcome(false);
+    }
+    assert.equal(explorer.evidence.branchesExplored,ledger.standaloneBranches);
+    return {seen,evidence:explorer.evidence};};
+  const forward=collect(false),reversed=collect(true);
+  const firstGapped=forward.seen.findIndex(candidate=>candidate.idle>0);
+  assert.ok(firstGapped>0);
+  assert.ok(forward.seen.slice(0,firstGapped).every(candidate=>candidate.idle===0));
+  assert.ok(forward.seen.slice(0,firstGapped).some(candidate=>candidate.repair>0));
+  assert.deepEqual(reversed,forward);
 });
 
 test("setup preparation occupies exactly the inter-family interval",()=>{
