@@ -283,6 +283,8 @@ export interface ExactItinerantPlanEvidence {
   setupBlockMatchingSearchSteps: number;
   setupCandidateOutcomeCertificates:ExactCoreCausalDiagnostic["setupCandidateOutcomeCertificates"];
   setupCandidateOutcomeCertificateOverflow:number;
+  setupGeometryMatchingOutcomeCertificates:ExactCoreCausalDiagnostic["setupGeometryMatchingOutcomeCertificates"];
+  setupGeometryMatchingOutcomeCertificateOverflow:number;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -507,11 +509,11 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number; domainExact?:boolean }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
-  type SetupRejection={depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null};
+  type SetupRejection={depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null;participantId:string|null};
   let activeSetupCandidate:null|{baseDepth:number;maximumDepth:number;first:SetupRejection|null;deepest:SetupRejection|null}=null;
-  const recordSetupRejection=(depth:number,failureKind:string,authorityId:string|null=null,blockingTaskId:string|null=null):void=>{
+  const recordSetupRejection=(depth:number,failureKind:string,authorityId:string|null=null,blockingTaskId:string|null=null,participantId:string|null=null):void=>{
     if(!activeSetupCandidate)return;
-    const rejection={depth,failureKind,authorityId,blockingTaskId};
+    const rejection={depth,failureKind,authorityId,blockingTaskId,participantId};
     activeSetupCandidate.first??=rejection;
     if(!activeSetupCandidate.deepest||depth>activeSetupCandidate.deepest.depth)activeSetupCandidate.deepest=rejection;
   };
@@ -947,7 +949,10 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.macroPendingPrerequisiteCollectiveCapacityChecks+=checked.collectiveCapacityChecks;evidence.macroPendingPrerequisiteObligationsChecked+=checked.obligationsChecked;evidence.macroPendingPrerequisiteCollectiveCapacityPrunes+=checked.collectiveCapacityPrunes;
     evidence.macroPendingPrerequisiteWitnesses+=checked.witnesses;evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]=(evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]??0)+1;
     if(checked.cacheHit)evidence.macroPendingPrerequisiteCacheHits+=1;else evidence.macroPendingPrerequisiteCacheMisses+=1;
-    if(!checked.feasible){recordSetupRejection(placed.length+tasks.length,`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,checked.authorityId,checked.blockingTaskId);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,authorityId:checked.authorityId,blockingTaskId:checked.blockingTaskId});evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
+    if(!checked.feasible){const affectedParticipantId=checked.pendingArrivalDeadline?.firstCertificate?.participantIds[0]??(checked.blockingTaskId?problem.tasks.find(task=>task.id===checked.blockingTaskId)?.participantId:null)??null;
+      const arrivalBlocker=checked.failure==="PENDING_ARRIVAL_DEADLINE"&&affectedParticipantId
+        ?problem.transportPolicy?.arrival.taskIds.map(id=>problem.tasks.find(task=>task.id===id)).find(task=>task?.participantId===affectedParticipantId)?.id??null:null;
+      recordSetupRejection(placed.length+tasks.length,`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,checked.authorityId,checked.blockingTaskId??arrivalBlocker,affectedParticipantId);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,authorityId:checked.authorityId,blockingTaskId:checked.blockingTaskId});evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
       evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};
@@ -1058,6 +1063,28 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         if(!row&&rows.length<64){row={classKey,frequency:0,immediateOutcome,maximumDescendantDepth:tracker.maximumDepth,failureKind,authorityId:terminal?.authorityId??null,blockingTaskId:terminal?.blockingTaskId??null,samples:[]};rows.push(row);}
         if(row){row.frequency+=1;row.maximumDescendantDepth=Math.max(row.maximumDescendantDepth,tracker.maximumDepth);if(row.samples.length<3)row.samples.push({familyOrder,start:Math.min(...orderedTasks.map(task=>task.start)),end:Math.max(...orderedTasks.map(task=>task.end)),interFamilyGap:familyBounds.length>1?familyBounds[1]!.start-familyBounds[0]!.end:0,firstRejection:tracker.first,deepestRejection:tracker.deepest});}
         else evidence.setupCandidateOutcomeCertificateOverflow+=1;
+        const start=Math.min(...orderedTasks.map(task=>task.start));
+        const end=Math.max(...orderedTasks.map(task=>task.end));
+        const geometryKey=[start,end,candidate.geometryIdleMinutes,candidate.geometrySpanMinutes,familyOrder.join(">")].join("|");
+        let geometry=evidence.setupGeometryMatchingOutcomeCertificates.find(item=>item.geometryKey===geometryKey);
+        if(!geometry&&evidence.setupGeometryMatchingOutcomeCertificates.length<64){geometry={geometryKey,start,end,familyOrder,
+          idleMinutes:candidate.geometryIdleMinutes,spanMinutes:candidate.geometrySpanMinutes,matchingsDeliveredToChild:0,outcomes:[]};
+          evidence.setupGeometryMatchingOutcomeCertificates.push(geometry);}
+        if(geometry){
+          geometry.matchingsDeliveredToChild+=1;
+          const first=tracker.first;
+          const firstRejectionKind=first?.failureKind??(child==="BUDGET_EXHAUSTED"?"BUDGET_EXHAUSTED":"DESCENDANT_DEAD_END");
+          const authorityId=first?.authorityId??null,blockingTaskId=first?.blockingTaskId??null;
+          const participantId=first?.participantId??(blockingTaskId?problem.tasks.find(task=>task.id===blockingTaskId)?.participantId??null:null);
+          const rejectionSignature=[immediateOutcome,firstRejectionKind,authorityId??"none",blockingTaskId??"none",participantId??"none"].join("|");
+          let outcome=geometry.outcomes.find(item=>item.rejectionSignature===rejectionSignature);
+          if(!outcome&&geometry.outcomes.length<64){outcome={rejectionSignature,frequency:0,percentage:0,immediateOutcome,
+            firstRejectionKind,authorityId,blockingTaskId,participantId,samples:[]};geometry.outcomes.push(outcome);}
+          if(outcome){outcome.frequency+=1;if(outcome.samples.length<3)outcome.samples.push({repairIndex:candidate.matchingRepairIndex,
+            maximumDescendantDepth:tracker.maximumDepth});}
+          else evidence.setupGeometryMatchingOutcomeCertificateOverflow+=1;
+          for(const item of geometry.outcomes)item.percentage=Number((item.frequency/geometry.matchingsDeliveredToChild*100).toFixed(3));
+        } else evidence.setupGeometryMatchingOutcomeCertificateOverflow+=1;
       }
       explorer.recordCandidateOutcome(child === "FOUND");
       if (child !== "DEAD_END") { mergeExplorerEvidence(); return child; } evidence.standaloneBacktracks += 1;
@@ -1218,6 +1245,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockGeometriesAbandonedAfterMatchingExhaustion: 0, setupBlockFirstSuccessfulGeometry: null,
     setupBlockFirstSuccessfulMatchingRepairIndex: null, setupBlockMatchingSearchSteps: 0,
     setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,
+    setupGeometryMatchingOutcomeCertificates:[],setupGeometryMatchingOutcomeCertificateOverflow:0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],
     roundSynchronizationSearchInvocations: 0, roundSynchronizationStartCandidates: 0,
@@ -1524,7 +1552,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   if(evidence.causalDiagnostic){evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificates=macroCapacityDiagnostic.certificates;
     evidence.causalDiagnostic.macroPendingPrerequisiteCapacityCertificateOverflow=macroCapacityDiagnostic.overflow;
     evidence.causalDiagnostic.setupCandidateOutcomeCertificates=evidence.setupCandidateOutcomeCertificates;
-    evidence.causalDiagnostic.setupCandidateOutcomeCertificateOverflow=evidence.setupCandidateOutcomeCertificateOverflow;}
+    evidence.causalDiagnostic.setupCandidateOutcomeCertificateOverflow=evidence.setupCandidateOutcomeCertificateOverflow;
+    evidence.causalDiagnostic.setupGeometryMatchingOutcomeCertificates=evidence.setupGeometryMatchingOutcomeCertificates;
+    evidence.causalDiagnostic.setupGeometryMatchingOutcomeCertificateOverflow=evidence.setupGeometryMatchingOutcomeCertificateOverflow;}
   if(evidence.causalDiagnostic){const summary=evidence.causalDiagnostic.futureFeasibility;const states=[...futureAssessments.values()];summary.assessments=states.flatMap(state=>[...state.rows.values()]).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature)||a.resultSignature.localeCompare(b.resultSignature));
     summary.collisions=states.filter(state=>state.rows.size>1).map(state=>{const row=state.rows.values().next().value!;return {depth:row.depth,taskId:row.taskId,authoritySignature:row.authoritySignature,resultSignatures:[...state.rows.keys()].sort()}}).sort((a,b)=>a.depth-b.depth||a.taskId.localeCompare(b.taskId)||a.authoritySignature.localeCompare(b.authoritySignature));summary.authorityResultCollisions=summary.collisions.length;
     for(const state of states){const row=state.rows.values().next().value!;summary.totalEvaluations+=state.occurrences;summary.uniqueAuthorityStates+=1;summary.repeatedEvaluations+=state.occurrences-1;

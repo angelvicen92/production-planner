@@ -249,6 +249,10 @@ const diagnosticReport = diagnostic ? {
   macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
   setupCandidateOutcomeCertificates:exactResult!.evidence.setupCandidateOutcomeCertificates,
   setupCandidateOutcomeCertificateOverflow:exactResult!.evidence.setupCandidateOutcomeCertificateOverflow,
+  setupGeometryMatchingOutcomeCertificates:diagnostic.setupGeometryMatchingOutcomeCertificates,
+  setupGeometryMatchingOutcomeCertificateOverflow:diagnostic.setupGeometryMatchingOutcomeCertificateOverflow,
+  setupGeometryMatchingOutcomeReconciles:diagnostic.setupGeometryMatchingOutcomeCertificates.reduce((sum,row)=>sum+row.matchingsDeliveredToChild,0)
+    +diagnostic.setupGeometryMatchingOutcomeCertificateOverflow===exactResult!.evidence.setupBlockCompleteCandidateCount,
   macroPendingPrerequisiteCapacityCertificateReconciles:diagnostic.macroPendingPrerequisiteCapacityCertificates.reduce((sum,row)=>sum+row.frequency,0)
     +diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow===exactResult!.evidence.macroPendingPrerequisiteCollectiveCapacityPrunes,
   deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair,
@@ -264,7 +268,7 @@ const diagnosticReport = diagnostic ? {
 const invariantEvidenceKeys = ["branchesExplored","coreBranches","standaloneBranches","coreCompleteLeafCount",
   "coreCompleteLeavesEvaluated","coreStandaloneFrontierChecks","coreStandaloneFrontierPrunes","causalBacktracks",
   "causalBacktrackTargetDepthCounts","standaloneSearchInvocations","standaloneMaximumDepth","standaloneCompleteLeafCount",
-  "lastExhaustionPhase"] as const;
+  "coreMaximumDepth","coreFingerprint","fullFingerprint","lastExhaustionPhase"] as const;
 const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
   diagnosticOn:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResult.evidence[key]])),
   diagnosticOff:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResultWithoutDiagnostic.evidence[key]])),
@@ -279,6 +283,8 @@ const persistedEvidence=exactResult?{...exactResult.evidence,
     macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
     setupCandidateOutcomeCertificates:exactResult.evidence.setupCandidateOutcomeCertificates,
     setupCandidateOutcomeCertificateOverflow:exactResult.evidence.setupCandidateOutcomeCertificateOverflow,
+    setupGeometryMatchingOutcomeCertificates:diagnostic.setupGeometryMatchingOutcomeCertificates,
+    setupGeometryMatchingOutcomeCertificateOverflow:diagnostic.setupGeometryMatchingOutcomeCertificateOverflow,
     deferredArrivalFirstRepair:diagnostic.deferredArrivalFirstRepair}:null}:null;
 
 const evidence = {
