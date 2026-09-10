@@ -24,7 +24,7 @@ const compareSemanticConstrainedness = (a: MacroUnitConstrainedness, b: MacroUni
  * pressure. A sound zero remains stronger than either policy.
  */
 export function selectMostConstrainedUnit<T extends MacroUnitConstrainedness>(units: readonly T[]): T | undefined {
-  const zeros = units.filter(({ domainSize }) => domainSize === 0).sort(compareSemanticConstrainedness);
+  const zeros = units.filter(({ domainSize, domainExact }) => domainSize === 0 && domainExact).sort(compareSemanticConstrainedness);
   if (zeros.length > 0) return zeros[0] as T;
   const exact = units.filter(({ domainExact }) => domainExact).sort((a, b) =>
     a.domainSize - b.domainSize || compareSemanticConstrainedness(a, b));

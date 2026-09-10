@@ -63,11 +63,20 @@ test("an exact singleton wins mixed selection regardless of semantic pressure", 
   assert.equal(selectMostConstrainedUnit([constrainedInexact, singleton])?.id, "singleton");
 });
 
-test("a sound zero wins independently of exactness and input order", () => {
+test("an exact zero always wins and selection remains input-order invariant", () => {
   const base = { hardResourceAvailabilityMinutes: 100, exclusiveResourceCount: 0,
     synchronizedSlotCount: 0, totalDuration: 10, affectedTaskCount: 1 };
   const candidates = [{ ...base, id: "positive", domainSize: 1, domainExact: true },
-    { ...base, id: "zero", domainSize: 0, domainExact: false }];
-  assert.equal(selectMostConstrainedUnit(candidates)?.id, "zero");
-  assert.equal(selectMostConstrainedUnit([...candidates].reverse())?.id, "zero");
+    { ...base, id: "exact-zero", domainSize: 0, domainExact: true },
+    { ...base, id: "inexact-zero", domainSize: 0, domainExact: false, hardResourceAvailabilityMinutes: 1 }];
+  assert.equal(selectMostConstrainedUnit(candidates)?.id, "exact-zero");
+  assert.equal(selectMostConstrainedUnit([...candidates].reverse())?.id, "exact-zero");
+});
+
+test("an inexact zero participates through semantic pressure rather than hard-zero priority", () => {
+  const base = { exclusiveResourceCount: 0, synchronizedSlotCount: 0, totalDuration: 10, affectedTaskCount: 1 };
+  const candidates = [{ ...base, id: "exact-positive", domainSize: 2, domainExact: true, hardResourceAvailabilityMinutes: 10 },
+    { ...base, id: "inexact-zero", domainSize: 0, domainExact: false, hardResourceAvailabilityMinutes: 100 }];
+  assert.equal(selectMostConstrainedUnit(candidates)?.id, "exact-positive");
+  assert.equal(selectMostConstrainedUnit([...candidates].reverse())?.id, "exact-positive");
 });
