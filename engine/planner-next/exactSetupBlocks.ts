@@ -59,8 +59,8 @@ export interface ExactSetupMacroDomain {
   domainSize: number;
   structuralCandidateCount: number;
   matchingFeasibleCandidateCount: number;
-  /** Exact for the legacy compact/canonical MRV projection, not for the fallback search domain. */
-  domainExact: true;
+  /** The compact/canonical projection is only a heuristic for the gap-complete hard domain. */
+  domainExact: false;
 }
 
 export interface ExactSetupBlockExplorer {
@@ -342,5 +342,5 @@ export function probeExactSetupMacroDomain(
   while (explorer.nextCandidate()) explorer.recordCandidateOutcome(false);
   return { domainSize: explorer.evidence.completeCandidateCount,
     structuralCandidateCount: explorer.evidence.startsExplored,
-    matchingFeasibleCandidateCount: explorer.evidence.completeCandidateCount, domainExact: true };
+    matchingFeasibleCandidateCount: explorer.evidence.completeCandidateCount, domainExact: false };
 }

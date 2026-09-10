@@ -860,7 +860,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
 };
 const selectionReason = (selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): string => {
   const peers = candidates.filter(({ id }) => id !== selected.id);
-  if (selected.domainSize === 0) return "sound-zero-domain";
+  if (selected.domainSize === 0 && selected.domainExact) return "sound-zero-domain";
   if (peers.some((item) => item.domainExact !== selected.domainExact)) return "mixed-domain-semantic-policy";
   if (peers.some((item) => item.domainSize !== selected.domainSize)) return "minimum-macro-domain";
   if (peers.some((item) => item.hardResourceAvailabilityMinutes !== selected.hardResourceAvailabilityMinutes)) return "resource-availability-tiebreak";

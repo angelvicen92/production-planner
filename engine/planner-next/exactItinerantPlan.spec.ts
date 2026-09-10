@@ -194,16 +194,29 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
-test("global macro MRV lets setup beat a broader synchronized round unit", () => {
+test("mixed macro policy compares setup's compact projection semantically with a synchronized round", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ setup: [60, 70], rounds: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^SETUP_GROUP:/);
   assert.ok(result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "ROUND_SYNCHRONIZATION"));
   const setup = result.evidence.macroSelectionSteps[0]!.candidates.find(({ kind }) => kind === "SETUP_GROUP")!;
   assert.equal(setup.domainSize, 1);
-  assert.equal(setup.domainMeasure, "hard-valid-top-level-macro-placements");
-  assert.equal(setup.domainExact, true);
+  assert.equal(setup.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
+  assert.equal(setup.domainExact, false);
   assert.equal(setup.matchingFeasibleCandidateCount, 1);
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "minimum-macro-domain");
+});
+
+test("an inexact zero compact setup probe does not prune its sole gapped hard-domain solution", () => {
+  const input=macroCompetitionProblem({setup:[60,75]});
+  input.participants.find(({id})=>id==="setup-person")!.availability=[{start:60,end:65}];
+  input.participants.find(({id})=>id==="setup-person-2")!.availability=[{start:70,end:75}];
+  const result=constructExactItinerantPlan(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  const setup=result.evidence.macroSelectionSteps[0]!.candidates.find(({kind})=>kind==="SETUP_GROUP")!;
+  assert.equal(setup.domainSize,0);assert.equal(setup.domainExact,false);
+  assert.notEqual(result.evidence.macroSelectionSteps[0]!.reason,"sound-zero-domain");
+  assert.ok(result.evidence.setupBlockSearchInvocations>0);assert.ok(result.evidence.setupBlockBranchesExplored>0);
+  assert.equal(result.evidence.setupBlockMinimumIdleMinutes,5);
 });
 
 test("mixed macro policy lets a structurally narrow round beat a flexible exact resource task", () => {
