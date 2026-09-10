@@ -137,7 +137,7 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
-  assert.ok(["COLLECTIVE_CAPACITY", "INDIVIDUAL_ZERO_DOMAIN"].includes(result.evidence.coreStandaloneFrontierFirstPrune?.failure ?? ""));
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "INDIVIDUAL_ZERO_DOMAIN");
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
@@ -236,7 +236,6 @@ test("member constrainedness is recalculated while the selected operational unit
   ]);
   assert.equal(result.evidence.operationalUnitsDerived, 2);
   assert.equal(result.evidence.operationalUnitMemberCounts[result.evidence.operationalUnitSelectionOrder[0]!],2);
-  assert.equal(result.evidence.topLevelResourceTaskSelections, 0);
 });
 
 test("a smaller domain in another unit cannot interrupt an already selected resource unit",()=>{
@@ -251,8 +250,6 @@ test("a smaller domain in another unit cannot interrupt an already selected reso
   assert.deepEqual(result.evidence.macroSelectionOrder.slice(0,3),[
     "RESOURCE_TASK:resource:a","RESOURCE_TASK:resource:b","RESOURCE_TASK:resource:c",
   ]);
-  assert.equal(result.evidence.operationalUnitInterleavings,0);
-  assert.equal(result.evidence.topLevelResourceTaskSelections,0);
   assert.equal(result.evidence.operationalUnitMemberCounts[result.evidence.operationalUnitSelectionOrder[0]!],2);
 });
 

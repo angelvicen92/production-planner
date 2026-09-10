@@ -2,6 +2,7 @@ import type { Task } from "./contracts";
 
 export interface PostCoreWorkItem {
   readonly id: string;
+  readonly kind?: string;
   readonly tasks: readonly Task[];
 }
 
@@ -11,38 +12,26 @@ export interface PostCoreOperationalUnit<T extends PostCoreWorkItem> {
   readonly memberCount: number;
 }
 
-/**
- * Derives connected components exclusively from explicit hard authorities. An
- * itinerant-unit authority or a required resource shared by any member joins
- * whole work items; the transitive closure deliberately preserves that
- * structural relationship without inferring one from names or spaces.
- */
+const canonicalResourceSignature = (item: PostCoreWorkItem): string =>
+  [...new Set(item.tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort().join("\u0000");
+
+/** Derives identity groups without confusing resource conflicts with identity. */
 export function derivePostCoreOperationalUnits<T extends PostCoreWorkItem>(items: readonly T[]): PostCoreOperationalUnit<T>[] {
   const ordered = [...items].sort((a, b) => a.id.localeCompare(b.id, "en"));
-  const parent = ordered.map((_, index) => index);
-  const root = (index: number): number => parent[index] === index ? index : (parent[index] = root(parent[index]!));
-  const join = (left: number, right: number): void => {
-    const a = root(left), b = root(right);
-    if (a !== b) parent[Math.max(a, b)] = Math.min(a, b);
-  };
-  const owners = new Map<string, number>();
-  ordered.forEach((item, index) => {
-    const authorities = new Set<string>();
-    for (const task of item.tasks) {
-      if (task.itinerantUnitId !== undefined) authorities.add(`itinerant:${task.itinerantUnitId}`);
-      for (const resourceId of task.requiredResourceIds ?? []) authorities.add(`resource:${resourceId}`);
-    }
-    for (const authority of [...authorities].sort()) {
-      const owner = owners.get(authority);
-      if (owner === undefined) owners.set(authority, index); else join(index, owner);
-    }
-  });
-  const components = new Map<number, T[]>();
-  ordered.forEach((item, index) => {
-    const component = components.get(root(index)) ?? [];
-    component.push(item); components.set(root(index), component);
-  });
-  return [...components.values()].map((workItems) => {
+  const groups = new Map<string, T[]>();
+  for (const item of ordered) {
+    const itinerantIds = [...new Set(item.tasks.flatMap((task) =>
+      task.itinerantUnitId === undefined ? [] : [task.itinerantUnitId]))].sort();
+    const identity = itinerantIds.length === 1
+      ? `itinerant:${itinerantIds[0]}`
+      : item.kind === "RESOURCE_TASK" && itinerantIds.length === 0
+        ? `resource-signature:${canonicalResourceSignature(item)}`
+        : `structural:${item.id}`;
+    const group = groups.get(identity) ?? [];
+    group.push(item);
+    groups.set(identity, group);
+  }
+  return [...groups.values()].map((workItems) => {
     workItems.sort((a, b) => a.id.localeCompare(b.id, "en"));
     return { id: `operational:${workItems.map(({ id }) => id).join("+")}`, workItems,
       memberCount: workItems.reduce((count, item) => count + item.tasks.length, 0) };

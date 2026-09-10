@@ -297,9 +297,7 @@ export interface ExactItinerantPlanEvidence {
   operationalUnitsSelected:number;
   operationalUnitSelectionOrder:string[];
   operationalUnitMemberCounts:Record<string,number>;
-  topLevelResourceTaskSelections:number;
   operationalUnitSwitches:number;
-  operationalUnitInterleavings:number;
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
   macroDomainSizes: Record<string, number>;
@@ -1250,7 +1248,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],
     operationalUnitsDerived:0,operationalUnitsSelected:0,operationalUnitSelectionOrder:[],operationalUnitMemberCounts:{},
-    topLevelResourceTaskSelections:0,operationalUnitSwitches:0,operationalUnitInterleavings:0,
+    operationalUnitSwitches:0,
     macroPendingPrerequisiteForwardChecks:0,macroPendingPrerequisiteTasksChecked:0,macroPendingPrerequisiteIndividualDomainChecks:0,
     macroPendingPrerequisiteCollectiveCapacityChecks:0,macroPendingPrerequisiteObligationsChecked:0,macroPendingPrerequisiteCollectiveCapacityPrunes:0,
     macroPendingPrerequisiteJointChecks:0,macroPendingPrerequisiteCacheHits:0,macroPendingPrerequisiteCacheMisses:0,
