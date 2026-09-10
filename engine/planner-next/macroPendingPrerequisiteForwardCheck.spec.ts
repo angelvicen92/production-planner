@@ -17,6 +17,17 @@ test("collective capacity distinguishes one shared hole from two holes before jo
  second.availability=[{start:30,end:40}];const two=checkMacroPendingPrerequisites(p,[first,second],[scheduled(successor,50)],[scheduled(task("trigger",5),70)]);assert.equal(two.feasible,true);
 });
 
+test("terminal deadline bounds do not materialize productive occupations",()=>{
+ const prerequisite=task("prerequisite",10,[],[{start:0,end:10}]);
+ const competitor=task("competitor",10,[],[{start:20,end:30}]);
+ const terminal=task("terminal",20,[prerequisite.id]);
+ const p=problem([prerequisite,competitor,terminal]);
+ const result=checkMacroPendingPrerequisites(p,[prerequisite,competitor],[],[],[],undefined,
+   "AFFECTED_PREREQUISITES","ANALYTIC_CAPACITY_ONLY",new Map([[terminal.id,20]]));
+ assert.equal(result.feasible,true);
+ assert.equal(result.individualDomainChecks,1);
+});
+
 test("pending successors' latest hard starts expose collective overload while exact capacity stays open",()=>{
  const first=task("first",15),second=task("second",15),firstSuccessor=task("first-successor",10,[first.id],[{start:20,end:30}]),secondSuccessor=task("second-successor",10,[second.id],[{start:20,end:30}]);
  firstSuccessor.spaceId="other";firstSuccessor.participantId="other";secondSuccessor.spaceId="successor-space";secondSuccessor.participantId="successor-person";

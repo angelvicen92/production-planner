@@ -12,19 +12,6 @@ test("exact slot matching reports absence of complete coverage", () => {
   assert.equal(findCanonicalPerfectMatching(["A", "B"], ["P1", "P2"], (_person, slot) => slot === "A"), null);
 });
 
-test("partial feasibility prunes a jointly impossible canonical branch but preserves an alternative", () => {
-  const evidence={edgeChecks:0,augmentingPaths:0,partialFeasibilityChecks:0,partialFeasibilityPrunes:0};
-  const matching=findCanonicalPerfectMatching(["A","B"],["P1","P2"],()=>true,evidence,(partial)=>
-    !(partial.get("A")==="P2"&&partial.get("B")==="P1"));
-  assert.deepEqual([...matching!],[["A","P1"],["B","P2"]]);
-  assert.ok(evidence.partialFeasibilityPrunes>0);
-});
-
-test("an inconclusive partial authority never prunes and remains input-order invariant", () => {
-  const run=(slots:string[],items:string[])=>findCanonicalPerfectMatching(slots,items,()=>true,undefined,()=>true);
-  assert.deepEqual(run(["A","B"],["P1","P2"]),run(["B","A"],["P2","P1"]));
-});
-
 test("MRV selector is deterministic and input-order invariant", () => {
   const flexible = { id: "flexible", domainSize: 8, domainExact: true, hardResourceAvailabilityMinutes: 60, exclusiveResourceCount: 0, synchronizedSlotCount: 0, totalDuration: 10, affectedTaskCount: 2 };
   const scarce = { id: "scarce", domainSize: 2, domainExact: true, hardResourceAvailabilityMinutes: 20, exclusiveResourceCount: 1, synchronizedSlotCount: 0, totalDuration: 10, affectedTaskCount: 1 };

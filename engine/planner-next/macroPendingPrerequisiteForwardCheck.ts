@@ -71,12 +71,13 @@ export function evaluateTargetCollectiveCapacityCertificate(problem:PlannerNextP
 /** Exact, read-only existence proof for pending ancestors affected by one provisional macro placement. */
 export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
   candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],cache?:MacroPendingPrerequisiteForwardCache,
-  scope:"AFFECTED_PREREQUISITES"|"ALL_PENDING"="AFFECTED_PREREQUISITES",mode:MacroPendingPrerequisiteForwardCheckMode="FULL"):MacroPendingPrerequisiteForwardCheckResult{
+  scope:"AFFECTED_PREREQUISITES"|"ALL_PENDING"="AFFECTED_PREREQUISITES",mode:MacroPendingPrerequisiteForwardCheckMode="FULL",
+  terminalStartBounds:ReadonlyMap<string,number>=new Map()):MacroPendingPrerequisiteForwardCheckResult{
   const provisional=[...previouslyPlaced,...candidate].sort(byId),placedIds=new Set(provisional.map(({id})=>id));
   const inputPendingIds=new Set(pending.map(({id})=>id));
   const pendingWithArrivals=[...pending,...(problem.transportPolicy?.arrival.taskIds??[])
     .filter(id=>!inputPendingIds.has(id)&&!placedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task))];
-  const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals),{pendingById}=authority,deadline=authority.completionDeadline;
+  const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals,terminalStartBounds),{pendingById}=authority,deadline=authority.completionDeadline;
   const pendingIds=new Set(pendingWithArrivals.map(({id})=>id)),arrivalDeadlineByParticipant=new Map<string,number>();
   for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
     if(!pendingIds.has(arrivalId))continue;
@@ -89,7 +90,7 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
     freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:pendingArrivalDeadline.firstCertificate?.cutoff??null,
     failure:"PENDING_ARRIVAL_DEADLINE",cacheHit:false,pendingArrivalDeadline,exactPrerequisiteSearchesAvoided:1};
   const arrivalTaskIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
-  const candidateIds=new Set(candidate.map(task=>task.id)),ancestors=new Set<string>();
+  const candidateIds=new Set([...candidate.map(task=>task.id),...terminalStartBounds.keys()]),ancestors=new Set<string>();
   const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
   for(const id of candidateIds)visitAncestors(id);
   const allRequired=(scope==="ALL_PENDING"?[...pending]:[...pending].filter(task=>deadline(task.id)<problem.day.end))
@@ -99,7 +100,7 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   if(!relevant.length)return{feasible:true,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,obligationsChecked:0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:null,failure:null,cacheHit:false,pendingArrivalDeadline};
   const affectedAuthorities=new Set(relevant.flatMap(exclusiveAuthorities).map(item=>item.key));
   const collectiveTasks=[...pending].filter(task=>exclusiveAuthorities(task).some(({key})=>affectedAuthorities.has(key))).sort(byId);
-  const key=createHash("sha256").update(JSON.stringify({mode,tasks:relevant.map(task=>({id:task.id,deadline:deadline(task.id)})),collectiveTasks:collectiveTasks.map(task=>({id:task.id,deadline:deadline(task.id)})),placed:provisional.map(task=>({id:task.id,start:task.start,end:task.end,spaceId:task.spaceId,participantId:task.participantId??null,coachId:task.coachId??null,resources:[...(task.requiredResourceIds??[])].sort()})),meals:[...meals].sort(byId)})).digest("hex");
+  const key=createHash("sha256").update(JSON.stringify({mode,tasks:relevant.map(task=>({id:task.id,deadline:deadline(task.id)})),collectiveTasks:collectiveTasks.map(task=>({id:task.id,deadline:deadline(task.id)})),terminalStartBounds:[...terminalStartBounds].sort(([a],[b])=>a.localeCompare(b)),placed:provisional.map(task=>({id:task.id,start:task.start,end:task.end,spaceId:task.spaceId,participantId:task.participantId??null,coachId:task.coachId??null,resources:[...(task.requiredResourceIds??[])].sort()})),meals:[...meals].sort(byId)})).digest("hex");
   const cached=cache?.get(key);if(cached)return{...cached,cacheHit:true,pendingArrivalDeadline};
   let individualDomainChecks=0,collectiveCapacityChecks=0,obligationsChecked=0,jointChecks=0,witnesses=0;
   const domains=new Map<string,ReturnType<typeof exactTaskStartDomain>>();

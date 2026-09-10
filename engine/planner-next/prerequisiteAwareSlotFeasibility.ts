@@ -9,7 +9,7 @@ export type PrerequisiteAwareSlotAuthority = ((
   task: Task,
   start: number,
 ) => PrerequisiteAwareSlotVerdict) & {
-  jointlyFeasible?(assignments: readonly { task: Task; start: number }[]): PrerequisiteAwareSlotVerdict;
+  geometryFeasible?(latestCompatibleStarts: readonly { task: Task; start: number }[]): PrerequisiteAwareSlotVerdict;
 };
 
 /**
@@ -36,23 +36,22 @@ export function createPrerequisiteAwareSlotAuthority(problem:PlannerNextProblem,
     const verdict=assessment.feasible?"NOT_PROVEN_IMPOSSIBLE":"PROVEN_IMPOSSIBLE";
     verdicts.set(key,verdict);return verdict;
   }) as PrerequisiteAwareSlotAuthority;
-  const jointVerdicts=new Map<string,PrerequisiteAwareSlotVerdict>();
-  authority.jointlyFeasible=(assignments)=>{
-    const ordered=[...assignments].sort((a,b)=>a.task.id.localeCompare(b.task.id)||a.start-b.start);
-    if(ordered.length<2)return "NOT_PROVEN_IMPOSSIBLE";
+  const geometryVerdicts=new Map<string,PrerequisiteAwareSlotVerdict>();
+  authority.geometryFeasible=(bounds)=>{
+    const ordered=[...bounds].sort((a,b)=>a.task.id.localeCompare(b.task.id)||a.start-b.start);
+    if(!ordered.length)return "NOT_PROVEN_IMPOSSIBLE";
     const key=ordered.map(({task,start})=>`${task.id}@${start}`).join("|");
-    const cached=jointVerdicts.get(key);if(cached)return cached;
+    const cached=geometryVerdicts.get(key);if(cached)return cached;
     const ancestorIds=new Set<string>();
     const visit=(id:string):void=>{const candidate=pendingById.get(id);if(!candidate)return;
       for(const dependency of candidate.dependencies)if(!ancestorIds.has(dependency)){ancestorIds.add(dependency);visit(dependency);}};
     for(const {task} of ordered)visit(task.id);
-    const assignedIds=new Set(ordered.map(({task})=>task.id));
-    const remaining=orderedPending.filter(task=>ancestorIds.has(task.id)&&!assignedIds.has(task.id));
-    const scheduled=ordered.map(({task,start})=>scoreAuxiliaryTask(problem,task,start,placed).scheduled);
-    const assessment=checkMacroPendingPrerequisites(problem,remaining,placed,scheduled,meals,cache,
-      "AFFECTED_PREREQUISITES","ANALYTIC_CAPACITY_ONLY");
+    const terminalStartBounds=new Map(ordered.map(({task,start})=>[task.id,start]));
+    const remaining=orderedPending.filter(task=>ancestorIds.has(task.id)&&!terminalStartBounds.has(task.id));
+    const assessment=checkMacroPendingPrerequisites(problem,remaining,placed,[],meals,cache,
+      "AFFECTED_PREREQUISITES","ANALYTIC_CAPACITY_ONLY",terminalStartBounds);
     const verdict=assessment.feasible?"NOT_PROVEN_IMPOSSIBLE":"PROVEN_IMPOSSIBLE";
-    jointVerdicts.set(key,verdict);return verdict;
+    geometryVerdicts.set(key,verdict);return verdict;
   };
   return authority;
 }

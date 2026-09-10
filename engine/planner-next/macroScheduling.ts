@@ -38,8 +38,6 @@ export function selectMostConstrainedUnit<T extends MacroUnitConstrainedness>(un
 export interface ExactSlotMatchingEvidence {
   edgeChecks: number;
   augmentingPaths: number;
-  partialFeasibilityChecks?: number;
-  partialFeasibilityPrunes?: number;
 }
 
 /**
@@ -51,7 +49,6 @@ export function findCanonicalPerfectMatching(
   itemIds: readonly string[],
   compatible: (itemId: string, slotId: string) => boolean,
   evidence?: ExactSlotMatchingEvidence,
-  partialFeasible?: (assignments: ReadonlyMap<string, string>) => boolean,
 ): ReadonlyMap<string, string> | null {
   const slots = [...slotIds].sort((a, b) => a.localeCompare(b, "en"));
   const items = [...itemIds].sort((a, b) => a.localeCompare(b, "en"));
@@ -75,27 +72,5 @@ export function findCanonicalPerfectMatching(
     return false;
   };
   for (const item of items) if (!augment(item, new Set())) return null;
-  const canonical=new Map([...slotToItem].sort(([a], [b]) => a.localeCompare(b, "en")));
-  if (!partialFeasible) return canonical;
-  const canonicalPrefix=new Map<string,string>();
-  let canonicalSurvives=true;
-  for(const item of items){const slot=[...canonical].find(([,owner])=>owner===item)![0];canonicalPrefix.set(slot,item);
-    if(evidence)evidence.partialFeasibilityChecks=(evidence.partialFeasibilityChecks??0)+1;
-    if(!partialFeasible(canonicalPrefix)){if(evidence)evidence.partialFeasibilityPrunes=(evidence.partialFeasibilityPrunes??0)+1;canonicalSurvives=false;break;}}
-  if(canonicalSurvives)return canonical;
-  const assigned = new Map<string, string>(),usedSlots = new Set<string>();
-  const search = (index: number): ReadonlyMap<string, string> | null => {
-    if (index === items.length) return new Map([...assigned].sort(([a], [b]) => a.localeCompare(b, "en")));
-    const item = items[index]!;
-    for (const slot of edges.get(item) ?? []) {
-      if (usedSlots.has(slot)) continue;
-      assigned.set(slot, item); usedSlots.add(slot);
-      if (evidence) evidence.partialFeasibilityChecks = (evidence.partialFeasibilityChecks ?? 0) + 1;
-      if (partialFeasible(assigned)) { const result = search(index + 1); if (result) return result; }
-      else if (evidence) evidence.partialFeasibilityPrunes = (evidence.partialFeasibilityPrunes ?? 0) + 1;
-      assigned.delete(slot); usedSlots.delete(slot);
-    }
-    return null;
-  };
-  return search(0);
+  return new Map([...slotToItem].sort(([a], [b]) => a.localeCompare(b, "en")));
 }

@@ -39,10 +39,10 @@ export interface ExactRoundSynchronizationEvidence {
   assignmentBranchesAvoided: number;
   prerequisiteAwareGeometriesEliminated: number;
   firstPrerequisiteAwareStart: number | null;
-  jointPrerequisiteChecks: number;
-  jointPrerequisitePrunes: number;
-  matchingBranchesAvoidedByJointPrerequisites: number;
-  firstJointlyFeedableCompactStart: number | null;
+  geometryPrerequisiteEnvelopeChecks: number;
+  geometryPrerequisiteEnvelopePrunes: number;
+  logicalMatchingCandidatesAvoidedByEnvelope: number;
+  firstFeedableCompactStart: number | null;
 }
 
 export interface ExactRoundSynchronizationCandidate {
@@ -317,8 +317,8 @@ export function exploreExactRoundSynchronizationPolicy(
     assignmentBranchesAvoided: 0,
     prerequisiteAwareGeometriesEliminated: 0,
     firstPrerequisiteAwareStart: null,
-    jointPrerequisiteChecks: 0, jointPrerequisitePrunes: 0,
-    matchingBranchesAvoidedByJointPrerequisites: 0, firstJointlyFeedableCompactStart: null,
+    geometryPrerequisiteEnvelopeChecks: 0, geometryPrerequisiteEnvelopePrunes: 0,
+    logicalMatchingCandidatesAvoidedByEnvelope: 0, firstFeedableCompactStart: null,
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
@@ -348,30 +348,39 @@ export function exploreExactRoundSynchronizationPolicy(
       const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
       const allTasks = laneTasks.flat();
       const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
-      const matchingEvidence={edgeChecks:0,augmentingPaths:0,partialFeasibilityChecks:0,partialFeasibilityPrunes:0};
+      const compatibleEdges=new Map<string,boolean>();
+      const compatible=(taskId:string,key:string):boolean=>{
+        const edgeKey=`${taskId}\u0000${key}`,cached=compatibleEdges.get(edgeKey);if(cached!==undefined)return cached;
+        evidence.assignmentChecks+=1;const task=taskByMatchingId.get(taskId)!,slot=slotById.get(key)!;
+        const accepted=laneTasks[slot.laneIndex]!.some(({id})=>id===taskId)
+          &&canPlaceTask(problem,task,slot.start,baseTasks,meals)
+          &&prerequisiteAwareSlot?.(task,slot.start)!=="PROVEN_IMPOSSIBLE";
+        compatibleEdges.set(edgeKey,accepted);return accepted;
+      };
+      const compatibleStarts=new Map(allTasks.map(task=>[task.id,[...slotById]
+        .filter(([key])=>compatible(task.id,key)).map(([,slot])=>slot.start)]));
+      if(prerequisiteAwareSlot?.geometryFeasible&&[...compatibleStarts.values()].every(domain=>domain.length)){
+        evidence.geometryPrerequisiteEnvelopeChecks+=1;
+        const bounds=allTasks.map(task=>({task,start:Math.max(...compatibleStarts.get(task.id)!)}));
+        if(prerequisiteAwareSlot.geometryFeasible(bounds)==="PROVEN_IMPOSSIBLE"){
+          evidence.geometryPrerequisiteEnvelopePrunes+=1;
+          evidence.logicalMatchingCandidatesAvoidedByEnvelope+=1;
+          evidence.prerequisiteAwareGeometriesEliminated+=1;
+          continue;
+        }
+        if(evidence.firstFeedableCompactStart===null)evidence.firstFeedableCompactStart=firstStart;
+      }
       const matching = findCanonicalPerfectMatching(
         [...slotById.keys()],
         allTasks.map(({ id }) => id),
-        (taskId, key) => {
-          evidence.assignmentChecks += 1;
-          const task = taskByMatchingId.get(taskId)!;
-          const slot = slotById.get(key)!;
-          return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
-            && canPlaceTask(problem, task, slot.start, baseTasks, meals)
-            && prerequisiteAwareSlot?.(task, slot.start) !== "PROVEN_IMPOSSIBLE";
-        },matchingEvidence,prerequisiteAwareSlot?.jointlyFeasible?(assignment)=>prerequisiteAwareSlot.jointlyFeasible!(
-          [...assignment].map(([key,taskId])=>({task:taskByMatchingId.get(taskId)!,start:slotById.get(key)!.start})))!=="PROVEN_IMPOSSIBLE":undefined,
+        compatible,
       );
-      evidence.jointPrerequisiteChecks+=matchingEvidence.partialFeasibilityChecks;
-      evidence.jointPrerequisitePrunes+=matchingEvidence.partialFeasibilityPrunes;
-      evidence.matchingBranchesAvoidedByJointPrerequisites+=matchingEvidence.partialFeasibilityPrunes;
       if (!matching) {
         evidence.zeroAlternativePrunes += 1;
         evidence.prerequisiteAwareGeometriesEliminated += 1;
         continue;
       }
       if (evidence.firstPrerequisiteAwareStart === null) evidence.firstPrerequisiteAwareStart = firstStart;
-      if (evidence.firstJointlyFeedableCompactStart === null) evidence.firstJointlyFeedableCompactStart = firstStart;
       if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
       evidence.assignmentBranches += 1;
       const scheduled = [...matching].map(([key, taskId]) => {
