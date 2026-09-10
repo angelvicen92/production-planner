@@ -1,0 +1,65 @@
+{
+  "hypothesis": "Use the already-materialized CORE Main order as the preferred first witness for SETUP_GROUP slot matching.",
+  "baseHead": "b9348a4dabb91a50c708cb75a4778243ce8f3d7c",
+  "precondition": {
+    "test": "singleton ordinary candidate that destroys the last analytic prerequisite domain is pruned immediately",
+    "base766Head": "8989ad29cbc20f642e31dc809fa21657c3f07d57",
+    "base766": {
+      "passed": false,
+      "actualFailure": "INDIVIDUAL_ZERO_DOMAIN",
+      "expectedFailure": "COLLECTIVE_CAPACITY"
+    },
+    "currentHead": {
+      "passed": false,
+      "actualFailure": "INDIVIDUAL_ZERO_DOMAIN",
+      "expectedFailure": "COLLECTIVE_CAPACITY"
+    },
+    "classification": "PREEXISTING_AT_766"
+  },
+  "fullA2": {
+    "branchBudget": 5000,
+    "causalDiagnostic": false,
+    "baseline": {
+      "setupBlockSearchInvocations": 1,
+      "setupBlockBranchesExplored": 3223,
+      "setupBlockMatchingRepairs": 3217,
+      "setupBlockMatchingSearchSteps": 40169,
+      "setupBlockCompactGeometriesTried": 6,
+      "setupBlockCompactGeometryMatchingRepairs": 3217,
+      "matchingRepairIndex": null,
+      "standaloneMaximumDepth": 0,
+      "deepestBlocker": null,
+      "lastExhaustionPhase": "STANDALONE",
+      "runtimeMs": 64470
+    },
+    "candidate": {
+      "setupBlockSearchInvocations": 1,
+      "setupBlockBranchesExplored": 3223,
+      "setupBlockMatchingRepairs": 3217,
+      "setupBlockMatchingSearchSteps": 40163,
+      "setupBlockCompactGeometriesTried": 6,
+      "setupBlockCompactGeometryMatchingRepairs": 3217,
+      "mainSequencePreferredMatchingUses": 6,
+      "mainSequenceResidualChecks": 51,
+      "firstWitnessMainInversions": 0,
+      "canonicalFirstWitnessMainInversions": 45,
+      "mainSequencePreferredFallbacks": 0,
+      "matchingRepairIndex": null,
+      "standaloneMaximumDepth": 0,
+      "deepestBlocker": null,
+      "lastExhaustionPhase": "STANDALONE",
+      "runtimeMs": 62139
+    }
+  },
+  "gate": {
+    "setupActuallyExecuted": true,
+    "materialBranchOrRepairReduction": false,
+    "exceededReferenceDepth123": false,
+    "passed": false,
+    "decision": "REVERT_PREFERENCE",
+    "reason": "The preferred witness removed all measured Main inversions but did not reduce SETUP_GROUP branches or repairs and did not improve structural depth. No 20k or 100k run is warranted."
+  },
+  "implementationRetained": false,
+  "humanScheduleUsed": false,
+  "benchmarkSpecificIdsUsedByProductionLogic": false
+}
