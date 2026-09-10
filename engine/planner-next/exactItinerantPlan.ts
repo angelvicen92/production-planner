@@ -285,6 +285,10 @@ export interface ExactItinerantPlanEvidence {
   setupBlockPrerequisiteAwareGeometriesEliminated:number;
   setupBlockPrerequisiteAwareMatchingRepairsAvoided:number;
   setupBlockFirstPrerequisiteAwareCompactStart:number|null;
+  jointPrerequisiteChecks:number;
+  jointPrerequisitePrunes:number;
+  matchingBranchesAvoidedByJointPrerequisites:number;
+  firstJointlyFeedableCompactStart:number|null;
   setupCandidateOutcomeCertificates:ExactCoreCausalDiagnostic["setupCandidateOutcomeCertificates"];
   setupCandidateOutcomeCertificateOverflow:number;
   setupGeometryMatchingOutcomeCertificates:ExactCoreCausalDiagnostic["setupGeometryMatchingOutcomeCertificates"];
@@ -804,6 +808,11 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.roundSynchronizationBacktracks += delta.backtracks;
   evidence.roundSynchronizationZeroAlternativePrunes += delta.zeroAlternativePrunes;
   evidence.roundSynchronizationPrerequisiteAwareGeometriesEliminated += delta.prerequisiteAwareGeometriesEliminated;
+  evidence.jointPrerequisiteChecks+=delta.jointPrerequisiteChecks;
+  evidence.jointPrerequisitePrunes+=delta.jointPrerequisitePrunes;
+  evidence.matchingBranchesAvoidedByJointPrerequisites+=delta.matchingBranchesAvoidedByJointPrerequisites;
+  if(evidence.firstJointlyFeedableCompactStart===null&&delta.firstJointlyFeedableCompactStart!==null)
+    evidence.firstJointlyFeedableCompactStart=delta.firstJointlyFeedableCompactStart;
   if(evidence.roundSynchronizationFirstPrerequisiteAwareStart===null&&delta.firstPrerequisiteAwareStart!==null)
     evidence.roundSynchronizationFirstPrerequisiteAwareStart=delta.firstPrerequisiteAwareStart;
   evidence.totalesMacroCandidates += delta.startCandidates;
@@ -1057,7 +1066,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.setupBlockSearchInvocations += 1;
     const explorer = createExactSetupBlockExplorer(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger,
       {prerequisiteAwareSlot});
-    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;evidence.setupBlockCompactGeometriesTried+=generated.compactGeometriesTried;evidence.setupBlockCompactGeometryMatchingRepairs+=generated.compactGeometryMatchingRepairs;evidence.setupBlockGeometriesAbandonedAfterMatchingExhaustion+=generated.geometriesAbandonedAfterMatchingExhaustion;evidence.setupBlockMatchingSearchSteps+=generated.matchingSearchSteps;evidence.setupBlockPrerequisiteAwareGeometriesEliminated+=generated.prerequisiteAwareGeometriesEliminated;evidence.setupBlockPrerequisiteAwareMatchingRepairsAvoided+=generated.prerequisiteAwareMatchingRepairsAvoided;if(evidence.setupBlockFirstPrerequisiteAwareCompactStart===null&&generated.firstPrerequisiteAwareCompactStart!==null)evidence.setupBlockFirstPrerequisiteAwareCompactStart=generated.firstPrerequisiteAwareCompactStart;if(evidence.setupBlockFirstSuccessfulGeometry===null&&generated.firstSuccessfulGeometry!==null){evidence.setupBlockFirstSuccessfulGeometry=generated.firstSuccessfulGeometry;evidence.setupBlockFirstSuccessfulMatchingRepairIndex=generated.firstSuccessfulMatchingRepairIndex;}if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
+    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;evidence.setupBlockCompactGeometriesTried+=generated.compactGeometriesTried;evidence.setupBlockCompactGeometryMatchingRepairs+=generated.compactGeometryMatchingRepairs;evidence.setupBlockGeometriesAbandonedAfterMatchingExhaustion+=generated.geometriesAbandonedAfterMatchingExhaustion;evidence.setupBlockMatchingSearchSteps+=generated.matchingSearchSteps;evidence.setupBlockPrerequisiteAwareGeometriesEliminated+=generated.prerequisiteAwareGeometriesEliminated;evidence.setupBlockPrerequisiteAwareMatchingRepairsAvoided+=generated.prerequisiteAwareMatchingRepairsAvoided;evidence.jointPrerequisiteChecks+=generated.jointPrerequisiteChecks;evidence.jointPrerequisitePrunes+=generated.jointPrerequisitePrunes;evidence.matchingBranchesAvoidedByJointPrerequisites+=generated.matchingBranchesAvoidedByJointPrerequisites;if(evidence.firstJointlyFeedableCompactStart===null&&generated.firstJointlyFeedableCompactStart!==null)evidence.firstJointlyFeedableCompactStart=generated.firstJointlyFeedableCompactStart;if(evidence.setupBlockFirstPrerequisiteAwareCompactStart===null&&generated.firstPrerequisiteAwareCompactStart!==null)evidence.setupBlockFirstPrerequisiteAwareCompactStart=generated.firstPrerequisiteAwareCompactStart;if(evidence.setupBlockFirstSuccessfulGeometry===null&&generated.firstSuccessfulGeometry!==null){evidence.setupBlockFirstSuccessfulGeometry=generated.firstSuccessfulGeometry;evidence.setupBlockFirstSuccessfulMatchingRepairIndex=generated.firstSuccessfulMatchingRepairIndex;}if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
     for (let candidate=explorer.nextCandidate();candidate;candidate=explorer.nextCandidate()) {
       const orderedTasks=[...candidate.tasks].sort((left,right)=>left.start-right.start||byId(left,right));
       const familyOrder=setupFamilySequence(orderedTasks);
@@ -1260,6 +1269,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockFirstSuccessfulMatchingRepairIndex: null, setupBlockMatchingSearchSteps: 0,
     setupBlockPrerequisiteAwareGeometriesEliminated:0,setupBlockPrerequisiteAwareMatchingRepairsAvoided:0,
     setupBlockFirstPrerequisiteAwareCompactStart:null,
+    jointPrerequisiteChecks:0,jointPrerequisitePrunes:0,matchingBranchesAvoidedByJointPrerequisites:0,
+    firstJointlyFeedableCompactStart:null,
     setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,
     setupGeometryMatchingOutcomeCertificates:[],setupGeometryMatchingOutcomeCertificateOverflow:0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},

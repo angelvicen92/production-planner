@@ -51,6 +51,10 @@ export interface ExactSetupBlockGenerationEvidence {
   prerequisiteAwareGeometriesEliminated: number;
   prerequisiteAwareMatchingRepairsAvoided: number;
   firstPrerequisiteAwareCompactStart: number | null;
+  jointPrerequisiteChecks: number;
+  jointPrerequisitePrunes: number;
+  matchingBranchesAvoidedByJointPrerequisites: number;
+  firstJointlyFeedableCompactStart: number | null;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -91,6 +95,8 @@ function* constrainedMatchings(
   taskIds: string[],
   compatible: (taskId: string, slotId: string) => boolean,
   onSearch: () => void,
+  partialFeasible?: (assignments: ReadonlyMap<string, string>) => boolean,
+  onPartial?: (checks: number, prunes: number) => void,
 ): Generator<ReadonlyMap<string, string>> {
   const frontier: Set<string>[] = [new Set()];
   const seenConstraints = new Set([""]);
@@ -98,8 +104,10 @@ function* constrainedMatchings(
   while (frontier.length > 0) {
     const forbidden = frontier.shift()!;
     onSearch();
+    const partialEvidence={edgeChecks:0,augmentingPaths:0,partialFeasibilityChecks:0,partialFeasibilityPrunes:0};
     const matching = findCanonicalPerfectMatching(slotIds, taskIds,
-      (taskId, slotId) => !forbidden.has(edgeKey(slotId, taskId)) && compatible(taskId, slotId));
+      (taskId, slotId) => !forbidden.has(edgeKey(slotId, taskId)) && compatible(taskId, slotId),partialEvidence,partialFeasible);
+    onPartial?.(partialEvidence.partialFeasibilityChecks,partialEvidence.partialFeasibilityPrunes);
     if (!matching) continue;
     const signature = matchingSignature(matching);
     if (!seenMatchings.has(signature)) {
@@ -166,6 +174,8 @@ export function createExactSetupBlockExplorer(
     firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0,
     prerequisiteAwareGeometriesEliminated: 0, prerequisiteAwareMatchingRepairsAvoided: 0,
     firstPrerequisiteAwareCompactStart: null,
+    jointPrerequisiteChecks: 0, jointPrerequisitePrunes: 0,
+    matchingBranchesAvoidedByJointPrerequisites: 0, firstJointlyFeedableCompactStart: null,
   };
   let budgetExhausted = false;
   let pendingOutcome: ExactSetupBlockCandidate | null = null;
@@ -237,21 +247,38 @@ export function createExactSetupBlockExplorer(
             return authority.accepts(starts[index]!, authority.baseDomain)
               && options.prerequisiteAwareSlot?.(task, starts[index]!) !== "PROVEN_IMPOSSIBLE";
           };
+          const matchingEvidence={edgeChecks:0,augmentingPaths:0,partialFeasibilityChecks:0,partialFeasibilityPrunes:0};
+          const partialFeasible=(assignment:ReadonlyMap<string,string>):boolean=>options.prerequisiteAwareSlot?.jointlyFeasible
+            ?options.prerequisiteAwareSlot.jointlyFeasible([...assignment].map(([slotId,taskId])=>({
+              task:familyTasks.find(candidate=>candidate.id===taskId)!,
+              start:starts[Number(slotId.slice(slotId.lastIndexOf(":")+1))]!,
+            })))!=="PROVEN_IMPOSSIBLE":true;
           // Establish that the complete geometry has a prerequisite-aware assignment
           // before opening the exact repair frontier.  An abstaining authority keeps
           // the edge, so this can only remove analytically certified dead geometries.
           evidence.matchingSearchSteps += 1;
-          if (!findCanonicalPerfectMatching(slotIds, familyTasks.map(({ id }) => id), compatible)) {
+          if (!findCanonicalPerfectMatching(slotIds, familyTasks.map(({ id }) => id), compatible,matchingEvidence,
+            options.prerequisiteAwareSlot?.jointlyFeasible?partialFeasible:undefined)) {
+            evidence.jointPrerequisiteChecks+=matchingEvidence.partialFeasibilityChecks;
+            evidence.jointPrerequisitePrunes+=matchingEvidence.partialFeasibilityPrunes;
+            evidence.matchingBranchesAvoidedByJointPrerequisites+=matchingEvidence.partialFeasibilityPrunes;
             evidence.prerequisiteAwareGeometriesEliminated += 1;
             evidence.prerequisiteAwareMatchingRepairsAvoided += 1;
             continue;
           }
+          evidence.jointPrerequisiteChecks+=matchingEvidence.partialFeasibilityChecks;
+          evidence.jointPrerequisitePrunes+=matchingEvidence.partialFeasibilityPrunes;
+          evidence.matchingBranchesAvoidedByJointPrerequisites+=matchingEvidence.partialFeasibilityPrunes;
+          if(compact&&evidence.firstJointlyFeedableCompactStart===null)evidence.firstJointlyFeedableCompactStart=starts[0]!;
           if (compact && evidence.firstPrerequisiteAwareCompactStart === null)
             evidence.firstPrerequisiteAwareCompactStart = starts[0]!;
           let matchingIndex = 0;
           let yieldedForGeometry = false;
           for (const matching of constrainedMatchings(slotIds, familyTasks.map(({ id }) => id), compatible,
-            () => { evidence.matchingSearchSteps += 1; })) {
+            () => { evidence.matchingSearchSteps += 1; },options.prerequisiteAwareSlot?.jointlyFeasible?partialFeasible:undefined,(checks,prunes)=>{
+              evidence.jointPrerequisiteChecks+=checks;evidence.jointPrerequisitePrunes+=prunes;
+              evidence.matchingBranchesAvoidedByJointPrerequisites+=prunes;
+            })) {
             if ((options.canonicalOnly || !repairsEnabled) && matchingIndex > 0) break;
             if (matchingIndex > 0) {
               if (!ledger.consume("STANDALONE")) { budgetExhausted = true; return; }

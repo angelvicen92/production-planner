@@ -82,6 +82,30 @@ test("prerequisite-aware setup matching starts at the first feedable compact geo
   assert.equal(explorer.evidence.matchingRepairs,0);
 });
 
+test("joint setup matching prunes individually viable assignments that saturate a shared prerequisite authority",()=>{
+  const problem=oneFamily();problem.day.end=580;
+  for(const space of problem.spaces)space.availability=[{...problem.day}];
+  for(const participant of problem.participants)participant.availability=[{...problem.day}];
+  const setup=[...problem.tasks].sort((a,b)=>a.id.localeCompare(b.id));
+  problem.spaces.push({id:"shared-prerequisite-room",availability:[{start:540,end:560}]});
+  for(const [index,task] of setup.entries()){
+    const prerequisite={id:`shared-prerequisite:${index}`,kind:"auxiliary" as const,participantId:task.participantId,
+      duration:10,spaceId:"shared-prerequisite-room",dependencies:[],availability:[{start:540,end:560}]};
+    task.dependencies=[prerequisite.id];problem.tasks.push(prerequisite);
+  }
+  const authority=createPrerequisiteAwareSlotAuthority(problem,problem.tasks,[]);
+  assert.equal(authority(setup[0]!,555),"NOT_PROVEN_IMPOSSIBLE");
+  assert.equal(authority(setup[1]!,560),"NOT_PROVEN_IMPOSSIBLE");
+  const explorer=createExactSetupBlockExplorer(problem,setup,[],[],[],createExactSearchLedger(10_000),
+    {prerequisiteAwareSlot:authority});
+  const candidate=explorer.nextCandidate()!;
+  assert.equal(Math.min(...candidate.tasks.map(task=>task.start)),560);
+  assert.ok(explorer.evidence.jointPrerequisiteChecks>0);
+  assert.ok(explorer.evidence.jointPrerequisitePrunes>0);
+  assert.ok(explorer.evidence.matchingBranchesAvoidedByJointPrerequisites>0);
+  assert.equal(explorer.evidence.firstJointlyFeedableCompactStart,560);
+});
+
 test("placed participant work shifts prerequisite-aware setup geometry deterministically",()=>{
   const collect=(reverse:boolean)=>{const {problem,setup,pending}=withPendingChains([550,560]);
     problem.day.end=580;for(const space of problem.spaces)space.availability=[{...problem.day}];

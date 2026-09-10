@@ -39,6 +39,10 @@ export interface ExactRoundSynchronizationEvidence {
   assignmentBranchesAvoided: number;
   prerequisiteAwareGeometriesEliminated: number;
   firstPrerequisiteAwareStart: number | null;
+  jointPrerequisiteChecks: number;
+  jointPrerequisitePrunes: number;
+  matchingBranchesAvoidedByJointPrerequisites: number;
+  firstJointlyFeedableCompactStart: number | null;
 }
 
 export interface ExactRoundSynchronizationCandidate {
@@ -313,6 +317,8 @@ export function exploreExactRoundSynchronizationPolicy(
     assignmentBranchesAvoided: 0,
     prerequisiteAwareGeometriesEliminated: 0,
     firstPrerequisiteAwareStart: null,
+    jointPrerequisiteChecks: 0, jointPrerequisitePrunes: 0,
+    matchingBranchesAvoidedByJointPrerequisites: 0, firstJointlyFeedableCompactStart: null,
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
@@ -342,6 +348,7 @@ export function exploreExactRoundSynchronizationPolicy(
       const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
       const allTasks = laneTasks.flat();
       const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
+      const matchingEvidence={edgeChecks:0,augmentingPaths:0,partialFeasibilityChecks:0,partialFeasibilityPrunes:0};
       const matching = findCanonicalPerfectMatching(
         [...slotById.keys()],
         allTasks.map(({ id }) => id),
@@ -352,14 +359,19 @@ export function exploreExactRoundSynchronizationPolicy(
           return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
             && canPlaceTask(problem, task, slot.start, baseTasks, meals)
             && prerequisiteAwareSlot?.(task, slot.start) !== "PROVEN_IMPOSSIBLE";
-        },
+        },matchingEvidence,prerequisiteAwareSlot?.jointlyFeasible?(assignment)=>prerequisiteAwareSlot.jointlyFeasible!(
+          [...assignment].map(([key,taskId])=>({task:taskByMatchingId.get(taskId)!,start:slotById.get(key)!.start})))!=="PROVEN_IMPOSSIBLE":undefined,
       );
+      evidence.jointPrerequisiteChecks+=matchingEvidence.partialFeasibilityChecks;
+      evidence.jointPrerequisitePrunes+=matchingEvidence.partialFeasibilityPrunes;
+      evidence.matchingBranchesAvoidedByJointPrerequisites+=matchingEvidence.partialFeasibilityPrunes;
       if (!matching) {
         evidence.zeroAlternativePrunes += 1;
         evidence.prerequisiteAwareGeometriesEliminated += 1;
         continue;
       }
       if (evidence.firstPrerequisiteAwareStart === null) evidence.firstPrerequisiteAwareStart = firstStart;
+      if (evidence.firstJointlyFeedableCompactStart === null) evidence.firstJointlyFeedableCompactStart = firstStart;
       if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
       evidence.assignmentBranches += 1;
       const scheduled = [...matching].map(([key, taskId]) => {
