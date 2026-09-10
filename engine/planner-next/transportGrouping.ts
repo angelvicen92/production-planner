@@ -80,7 +80,7 @@ const firstGridStartAtOrAfter = (anchor: number, start: number): number =>
   anchor + Math.max(0, Math.ceil((start - anchor) / 5)) * 5;
 
 /** Maximum cardinality of a gap-compatible subset of the canonical grid in an interval union. */
-function maximumCompatibleGridStarts(problem: PlannerNextProblem, intervals: readonly Readonly<ExactStartInterval>[], minGapMinutes: number): number {
+export function maximumCompatibleGridStarts(problem: PlannerNextProblem, intervals: readonly Readonly<ExactStartInterval>[], minGapMinutes: number): number {
   const step = Math.max(5, Math.ceil(minGapMinutes / 5) * 5);
   let count = 0, next = problem.day.start;
   for (const interval of intervals) {
@@ -91,6 +91,36 @@ function maximumCompatibleGridStarts(problem: PlannerNextProblem, intervals: rea
     next = first + added * step;
   }
   return count;
+}
+
+export interface AnonymousArrivalCapacityBound { checked: boolean; maximumPossible: number }
+
+/** Optimistic shared ARRIVAL capacity through a cutoff, without choosing groups or starts. */
+export function maximumAnonymousArrivalCapacity(problem: PlannerNextProblem, cutoff: number,
+  eligibleParticipantIds?: ReadonlySet<string>): AnonymousArrivalCapacityBound {
+  const policy = problem.transportPolicy?.arrival;
+  if (!policy) return { checked: false, maximumPossible: 0 };
+  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const arrivals = policy.taskIds.map((id) => taskById.get(id)).filter((task): task is Task => Boolean(task));
+  if (arrivals.length !== policy.taskIds.length || arrivals.some((task) => !task.participantId))
+    return { checked: false, maximumPossible: 0 };
+  const participantIds = arrivals.map((task) => task.participantId!);
+  if (new Set(participantIds).size !== participantIds.length
+    || (eligibleParticipantIds && [...eligibleParticipantIds].some((id) => !participantIds.includes(id))))
+    return { checked: false, maximumPossible: 0 };
+  const eligible = eligibleParticipantIds ? arrivals.filter((task) => eligibleParticipantIds.has(task.participantId!)) : arrivals;
+  const union = eligible.flatMap((task) => staticTransportIntervals(problem, task).flatMap((interval) => {
+    const end = Math.min(interval.end, cutoff - task.duration);
+    return interval.start <= end ? [{ start: interval.start, end }] : [];
+  })).sort((left, right) => left.start - right.start || left.end - right.end)
+    .reduce<ExactStartInterval[]>((merged, interval) => {
+      const previous = merged.at(-1);
+      if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+      else merged.push({ ...interval });
+      return merged;
+    }, []);
+  return { checked: true,
+    maximumPossible: maximumCompatibleGridStarts(problem, union, policy.minGapMinutes) * policy.maximumGroupSize };
 }
 
 /**
@@ -120,19 +150,9 @@ export function assessAnonymousPostInCompletions(problem: PlannerNextProblem,
     checks += 1;
     const forcedParticipants = [...completionDeadlineByParticipant]
       .filter(([, deadline]) => deadline <= cutoff).map(([id]) => id).sort();
-    const union = forcedParticipants.flatMap((participantId) => {
-      const task = arrivalByParticipant.get(participantId)!;
-      const latestStart = cutoff - task.duration;
-      return staticTransportIntervals(problem, task).flatMap((interval) => interval.start <= Math.min(interval.end, latestStart)
-        ? [{ start: interval.start, end: Math.min(interval.end, latestStart) }] : []);
-    }).sort((left, right) => left.start - right.start || left.end - right.end)
-      .reduce<ExactStartInterval[]>((merged, interval) => {
-        const previous = merged.at(-1);
-        if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
-        else merged.push({ ...interval });
-        return merged;
-      }, []);
-    const maximumPossible = maximumCompatibleGridStarts(problem, union, policy.minGapMinutes) * policy.maximumGroupSize;
+    const capacity = maximumAnonymousArrivalCapacity(problem, cutoff, new Set(forcedParticipants));
+    if (!capacity.checked) return abstain();
+    const maximumPossible = capacity.maximumPossible;
     if (forcedParticipants.length > maximumPossible) return { feasible: false, checked: true, checks, prunes: 1,
       firstCertificate: { cutoff, demand: forcedParticipants.length, maximumPossible, participantIds: forcedParticipants } };
   }

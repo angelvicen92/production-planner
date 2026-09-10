@@ -1404,6 +1404,11 @@
       "geometryPrerequisiteEnvelopePrunes": 78,
       "logicalMatchingCandidatesAvoidedByEnvelope": 78,
       "firstFeedableCompactStart": 635,
+      "arrivalInjectiveEnvelopeChecks": 4,
+      "arrivalInjectiveEnvelopePrunes": 0,
+      "arrivalInjectiveEdgeDeadlineChecks": 266,
+      "arrivalInjectiveMaxMatchingChecks": 76,
+      "firstArrivalInjectiveCertificate": null,
       "setupCandidateOutcomeCertificates": [
         {
           "classKey": "setup-family:3009:sillon>setup-family:3009:estrellas|REJECTED_IMMEDIATELY|MACRO_PENDING_PREREQUISITE:PENDING_ARRIVAL_DEADLINE|none|task:10006",

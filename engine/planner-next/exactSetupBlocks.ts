@@ -55,6 +55,11 @@ export interface ExactSetupBlockGenerationEvidence {
   geometryPrerequisiteEnvelopePrunes: number;
   logicalMatchingCandidatesAvoidedByEnvelope: number;
   firstFeedableCompactStart: number | null;
+  arrivalInjectiveEnvelopeChecks: number;
+  arrivalInjectiveEnvelopePrunes: number;
+  arrivalInjectiveEdgeDeadlineChecks: number;
+  arrivalInjectiveMaxMatchingChecks: number;
+  firstArrivalInjectiveCertificate: { cutoff: number; minimumDemand: number; maximumPossible: number } | null;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -172,6 +177,9 @@ export function createExactSetupBlockExplorer(
     firstPrerequisiteAwareCompactStart: null,
     geometryPrerequisiteEnvelopeChecks: 0, geometryPrerequisiteEnvelopePrunes: 0,
     logicalMatchingCandidatesAvoidedByEnvelope: 0, firstFeedableCompactStart: null,
+    arrivalInjectiveEnvelopeChecks: 0, arrivalInjectiveEnvelopePrunes: 0,
+    arrivalInjectiveEdgeDeadlineChecks: 0, arrivalInjectiveMaxMatchingChecks: 0,
+    firstArrivalInjectiveCertificate: null,
   };
   let budgetExhausted = false;
   let pendingOutcome: ExactSetupBlockCandidate | null = null;
@@ -257,6 +265,23 @@ export function createExactSetupBlockExplorer(
               continue;
             }
             if(compact&&evidence.firstFeedableCompactStart===null)evidence.firstFeedableCompactStart=starts[0]!;
+          }
+          if(options.prerequisiteAwareSlot?.arrivalInjectiveFeasible){
+            const edges=familyTasks.flatMap(task=>slotIds.filter(slotId=>compatible(task.id,slotId)).map(slotId=>({
+              task,slotId,start:starts[Number(slotId.slice(slotId.lastIndexOf(":")+1))]!,
+            })));
+            const assessment=options.prerequisiteAwareSlot.arrivalInjectiveFeasible(edges);
+            evidence.arrivalInjectiveEdgeDeadlineChecks+=assessment.edgeDeadlineChecks;
+            evidence.arrivalInjectiveMaxMatchingChecks+=assessment.maxMatchingChecks;
+            if(assessment.checked)evidence.arrivalInjectiveEnvelopeChecks+=1;
+            if(assessment.verdict==="PROVEN_IMPOSSIBLE"){
+              evidence.arrivalInjectiveEnvelopePrunes+=1;
+              evidence.firstArrivalInjectiveCertificate??=assessment.firstCertificate;
+              evidence.logicalMatchingCandidatesAvoidedByEnvelope+=1;
+              evidence.prerequisiteAwareGeometriesEliminated+=1;
+              evidence.prerequisiteAwareMatchingRepairsAvoided+=1;
+              continue;
+            }
           }
           evidence.matchingSearchSteps += 1;
           if (!findCanonicalPerfectMatching(slotIds, familyTasks.map(({ id }) => id), compatible)) {

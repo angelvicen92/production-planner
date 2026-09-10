@@ -130,3 +130,83 @@ test("an inconclusive prerequisite authority preserves compact and minimum-gap a
     {prerequisiteAwareSlot:()=>"NOT_PROVEN_IMPOSSIBLE"}).nextCandidate()!;
   assert.equal(only.geometryIdleMinutes,5);
 });
+
+function injectiveFixture(setupCount:number,arrivalWindow:{start:number;end:number},prerequisiteDurations?:number[]){
+  const problem=oneFamily();problem.day={start:540,end:700};problem.protectedMeal=undefined;
+  const setupSpace=problem.spaces[0]!;setupSpace.availability=[problem.day];
+  const prerequisiteSpace={id:"prerequisite-room",availability:[problem.day]};
+  const arrivalSpace={id:"arrival-room",availability:[problem.day]};
+  const participantIds=Array.from({length:setupCount+1},(_,index)=>`injective-participant:${index}`);
+  problem.participants=participantIds.map(id=>({id,availability:[problem.day]}));
+  const arrivals=participantIds.map((participantId,index)=>({id:`injective-arrival:${index}`,kind:"auxiliary" as const,
+    participantId,duration:5,spaceId:arrivalSpace.id,dependencies:[],availability:[arrivalWindow]}));
+  const prerequisites=participantIds.slice(0,setupCount).map((participantId,index)=>({id:`injective-prerequisite:${index}`,
+    kind:"auxiliary" as const,participantId,duration:prerequisiteDurations?.[index]??10,spaceId:prerequisiteSpace.id,
+    dependencies:[arrivals[index]!.id]}));
+  const setup=participantIds.slice(0,setupCount).map((participantId,index)=>({id:`injective-setup:${index}`,
+    kind:"auxiliary" as const,participantId,duration:5,spaceId:setupSpace.id,setupFamilyId:"family-a",
+    dependencies:[prerequisites[index]!.id]}));
+  problem.tasks=[...arrivals,...prerequisites,...setup];problem.spaces=[setupSpace,prerequisiteSpace,arrivalSpace];
+  problem.transportPolicy={arrival:{taskIds:arrivals.map(({id})=>id),minimumGroupSize:1,maximumGroupSize:1,
+    targetGroupSize:1,minGapMinutes:5,groupingWeight:0},departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,
+    targetGroupSize:1,minGapMinutes:0,groupingWeight:0}};
+  return {problem,setup,pending:problem.tasks,forcedParticipantId:participantIds.at(-1)!};
+}
+
+const injectiveEdges=(tasks:ReturnType<typeof injectiveFixture>["setup"],starts:number[])=>tasks.flatMap(task=>starts.map((start,index)=>({task,slotId:`slot:${index}`,start})));
+
+test("injective arrival envelope finds an obligation hidden by individually safe latest slots",()=>{
+  const fixture=injectiveFixture(2,{start:540,end:545});
+  const placed=[{...fixture.setup[0]!,id:"already-forced",participantId:fixture.forcedParticipantId,start:550,end:555}];
+  const authority=createPrerequisiteAwareSlotAuthority(fixture.problem,fixture.pending,placed);
+  const result=authority.arrivalInjectiveFeasible!(injectiveEdges(fixture.setup,[570,575]));
+  assert.equal(result.verdict,"PROVEN_IMPOSSIBLE");
+  assert.deepEqual(result.firstCertificate,{cutoff:540,minimumDemand:1,maximumPossible:0});
+  assert.equal(result.maxMatchingChecks,1);assert.equal(result.edgeDeadlineChecks,4);
+});
+
+test("injective 13-over-12 certificate prunes without enumerating perfect matchings",()=>{
+  const fixture=injectiveFixture(15,{start:570,end:645});
+  const placed=[{...fixture.setup[0]!,id:"deadline-anchor",participantId:fixture.forcedParticipantId,spaceId:"forced-space",start:640,end:645}];
+  const authority=createPrerequisiteAwareSlotAuthority(fixture.problem,fixture.pending,placed);
+  const result=authority.arrivalInjectiveFeasible!(injectiveEdges(fixture.setup,[670,675]));
+  assert.equal(result.verdict,"PROVEN_IMPOSSIBLE");
+  assert.deepEqual(result.firstCertificate,{cutoff:630,minimumDemand:13,maximumPossible:12});
+  assert.equal(result.edgeDeadlineChecks,30);
+});
+
+test("injective arrival envelope keeps sufficient SAFE alternatives and abstains on incomplete identity",()=>{
+  const safe=injectiveFixture(2,{start:540,end:650},[10,5]);
+  assert.equal(createPrerequisiteAwareSlotAuthority(safe.problem,safe.pending,[])
+    .arrivalInjectiveFeasible!(injectiveEdges(safe.setup,[570,575])).verdict,"NOT_PROVEN_IMPOSSIBLE");
+  const incomplete=injectiveFixture(2,{start:540,end:545});delete incomplete.setup[0]!.participantId;
+  const abstained=createPrerequisiteAwareSlotAuthority(incomplete.problem,incomplete.pending,[])
+    .arrivalInjectiveFeasible!(injectiveEdges(incomplete.setup,[570,575]));
+  assert.equal(abstained.checked,false);assert.equal(abstained.verdict,"NOT_PROVEN_IMPOSSIBLE");
+});
+
+test("forced participants are not counted twice and injective evidence is input-order invariant",()=>{
+  const fixture=injectiveFixture(1,{start:540,end:545});
+  const placed=[{...fixture.setup[0]!,id:"forced-work",start:550,end:555}];
+  const authority=createPrerequisiteAwareSlotAuthority(fixture.problem,fixture.pending,placed);
+  const edges=injectiveEdges(fixture.setup,[570,575]);
+  const forward=authority.arrivalInjectiveFeasible!(edges);
+  const reverse=authority.arrivalInjectiveFeasible!([...edges].reverse());
+  assert.equal(forward.verdict,"NOT_PROVEN_IMPOSSIBLE");assert.deepEqual(reverse,forward);
+});
+
+test("injective certificate rejects a geometry before exact matching enumeration",()=>{
+  const problem=oneFamily();
+  const authority=((_task:typeof problem.tasks[number],_start:number)=>"NOT_PROVEN_IMPOSSIBLE" as const)
+    as ReturnType<typeof createPrerequisiteAwareSlotAuthority>;
+  authority.arrivalInjectiveFeasible=(edges)=>({verdict:"PROVEN_IMPOSSIBLE",checked:true,
+    edgeDeadlineChecks:edges.length,maxMatchingChecks:1,
+    firstCertificate:{cutoff:550,minimumDemand:2,maximumPossible:1}});
+  const explorer=createExactSetupBlockExplorer(problem,problem.tasks,[],[],[],createExactSearchLedger(1000),
+    {compactOnly:true,canonicalOnly:true,prerequisiteAwareSlot:authority});
+  assert.equal(explorer.nextCandidate(),null);
+  assert.ok(explorer.evidence.arrivalInjectiveEnvelopePrunes>0);
+  assert.equal(explorer.evidence.matchingSearchSteps,0);
+  assert.deepEqual(explorer.evidence.firstArrivalInjectiveCertificate,
+    {cutoff:550,minimumDemand:2,maximumPossible:1});
+});

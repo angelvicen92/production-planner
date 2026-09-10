@@ -40,6 +40,39 @@ export interface ExactSlotMatchingEvidence {
   augmentingPaths: number;
 }
 
+/** Maximum bipartite cardinality by deterministic augmenting paths; it never enumerates matchings. */
+export function maximumBipartiteMatchingCardinality(
+  itemIds: readonly string[],
+  slotIds: readonly string[],
+  compatible: (itemId: string, slotId: string) => boolean,
+  evidence?: ExactSlotMatchingEvidence,
+): number {
+  const items = [...itemIds].sort((a, b) => a.localeCompare(b, "en"));
+  const slots = [...slotIds].sort((a, b) => a.localeCompare(b, "en"));
+  if (new Set(items).size !== items.length || new Set(slots).size !== slots.length) return 0;
+  const edges = new Map(items.map((item) => [item, slots.filter((slot) => {
+    if (evidence) evidence.edgeChecks += 1;
+    return compatible(item, slot);
+  })]));
+  const slotToItem = new Map<string, string>();
+  const augment = (item: string, seen: Set<string>): boolean => {
+    for (const slot of edges.get(item) ?? []) {
+      if (seen.has(slot)) continue;
+      seen.add(slot);
+      const incumbent = slotToItem.get(slot);
+      if (incumbent === undefined || augment(incumbent, seen)) {
+        slotToItem.set(slot, item);
+        if (evidence) evidence.augmentingPaths += 1;
+        return true;
+      }
+    }
+    return false;
+  };
+  let cardinality = 0;
+  for (const item of items) if (augment(item, new Set())) cardinality += 1;
+  return cardinality;
+}
+
 /**
  * Canonical exact bipartite matching. Augmenting paths preserve completeness
  * (unlike first-fit greedy) without enumerating participant permutations.
