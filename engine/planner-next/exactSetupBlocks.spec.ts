@@ -46,7 +46,6 @@ test("downstream dead end repairs the same compact geometry before any gapped ge
   assert.notEqual(sig(repaired.tasks),sig(canonical.tasks));
   assert.equal(explorer.evidence.maximumIdleMinutes,0);
   assert.equal(explorer.evidence.compactGeometryMatchingRepairs,1);
-  assert.equal(explorer.evidence.hiddenMatchingSearchSteps,0);
   explorer.recordCandidateOutcome(true);
   assert.deepEqual(explorer.evidence.firstSuccessfulGeometry,{idleMinutes:0,spanMinutes:10});
   assert.equal(explorer.evidence.firstSuccessfulMatchingRepairIndex,1);

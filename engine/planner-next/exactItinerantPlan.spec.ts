@@ -548,6 +548,20 @@ test("the global branch threshold completes at B and B-1 exhausts exactly", () =
   assert.deepEqual(exhausted.scheduledTasks, []);
 });
 
+test("setup Evidence never records BUDGET_EXHAUSTED as a successful geometry", () => {
+  const completeInput=macroCompetitionProblem({setup:[20,40]});
+  const complete=constructExactItinerantPlan(completeInput);assert.equal(complete.status,"COMPLETE");
+  let low=1,high=complete.evidence.branchesExplored;
+  while(low<high){const middle=Math.floor((low+high)/2);const probe=macroCompetitionProblem({setup:[20,40]});probe.budget.maxBranchExpansions=middle;
+    if(constructExactItinerantPlan(probe).status==="COMPLETE")high=middle;else low=middle+1;}
+  const exhaustedInput=macroCompetitionProblem({setup:[20,40]});
+  exhaustedInput.budget.maxBranchExpansions=low-1;
+  const exhausted=constructExactItinerantPlan(exhaustedInput);
+  assert.equal(exhausted.status,"BRANCH_BUDGET_EXHAUSTED");
+  assert.equal(exhausted.evidence.setupBlockFirstSuccessfulGeometry,null);
+  assert.equal(exhausted.evidence.setupBlockFirstSuccessfulMatchingRepairIndex,null);
+});
+
 test("results are deterministic and invariant to input collection order", () => {
   const create = () => problem([auxiliary("a", "a", [{ start: 0, end: 20 }]), auxiliary("b", "b", [{ start: 20, end: 40 }])]);
   const first = constructExactItinerantPlan(create()), second = constructExactItinerantPlan(create()), reversedInput = create();

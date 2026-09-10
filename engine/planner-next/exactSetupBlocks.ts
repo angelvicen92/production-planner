@@ -47,7 +47,6 @@ export interface ExactSetupBlockGenerationEvidence {
   firstSuccessfulGeometry: { idleMinutes: number; spanMinutes: number } | null;
   firstSuccessfulMatchingRepairIndex: number | null;
   matchingSearchSteps: number;
-  hiddenMatchingSearchSteps: 0;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -159,7 +158,7 @@ export function createExactSetupBlockExplorer(
     matchingRepairs: 0, permutationBranchesAvoided: 0, minimumIdleMinutes: null, maximumIdleMinutes: null,
     compactGeometriesTried: 0, compactGeometryMatchingRepairs: 0,
     geometriesAbandonedAfterMatchingExhaustion: 0, firstSuccessfulGeometry: null,
-    firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0, hiddenMatchingSearchSteps: 0,
+    firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0,
   };
   let budgetExhausted = false;
   let pendingOutcome: ExactSetupBlockCandidate | null = null;

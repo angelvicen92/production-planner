@@ -281,7 +281,6 @@ export interface ExactItinerantPlanEvidence {
   setupBlockFirstSuccessfulGeometry: { idleMinutes: number; spanMinutes: number } | null;
   setupBlockFirstSuccessfulMatchingRepairIndex: number | null;
   setupBlockMatchingSearchSteps: number;
-  setupBlockHiddenMatchingSearchSteps: number;
   setupCandidateOutcomeCertificates:ExactCoreCausalDiagnostic["setupCandidateOutcomeCertificates"];
   setupCandidateOutcomeCertificateOverflow:number;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
@@ -1039,7 +1038,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
     const explorer = createExactSetupBlockExplorer(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
-    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;evidence.setupBlockCompactGeometriesTried+=generated.compactGeometriesTried;evidence.setupBlockCompactGeometryMatchingRepairs+=generated.compactGeometryMatchingRepairs;evidence.setupBlockGeometriesAbandonedAfterMatchingExhaustion+=generated.geometriesAbandonedAfterMatchingExhaustion;evidence.setupBlockMatchingSearchSteps+=generated.matchingSearchSteps;evidence.setupBlockHiddenMatchingSearchSteps+=generated.hiddenMatchingSearchSteps;if(evidence.setupBlockFirstSuccessfulGeometry===null&&generated.firstSuccessfulGeometry!==null){evidence.setupBlockFirstSuccessfulGeometry=generated.firstSuccessfulGeometry;evidence.setupBlockFirstSuccessfulMatchingRepairIndex=generated.firstSuccessfulMatchingRepairIndex;}if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
+    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;evidence.setupBlockCompactGeometriesTried+=generated.compactGeometriesTried;evidence.setupBlockCompactGeometryMatchingRepairs+=generated.compactGeometryMatchingRepairs;evidence.setupBlockGeometriesAbandonedAfterMatchingExhaustion+=generated.geometriesAbandonedAfterMatchingExhaustion;evidence.setupBlockMatchingSearchSteps+=generated.matchingSearchSteps;if(evidence.setupBlockFirstSuccessfulGeometry===null&&generated.firstSuccessfulGeometry!==null){evidence.setupBlockFirstSuccessfulGeometry=generated.firstSuccessfulGeometry;evidence.setupBlockFirstSuccessfulMatchingRepairIndex=generated.firstSuccessfulMatchingRepairIndex;}if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
     for (let candidate=explorer.nextCandidate();candidate;candidate=explorer.nextCandidate()) {
       const orderedTasks=[...candidate.tasks].sort((left,right)=>left.start-right.start||byId(left,right));
       const familyOrder=setupFamilySequence(orderedTasks);
@@ -1060,7 +1059,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         if(row){row.frequency+=1;row.maximumDescendantDepth=Math.max(row.maximumDescendantDepth,tracker.maximumDepth);if(row.samples.length<3)row.samples.push({familyOrder,start:Math.min(...orderedTasks.map(task=>task.start)),end:Math.max(...orderedTasks.map(task=>task.end)),interFamilyGap:familyBounds.length>1?familyBounds[1]!.start-familyBounds[0]!.end:0,firstRejection:tracker.first,deepestRejection:tracker.deepest});}
         else evidence.setupCandidateOutcomeCertificateOverflow+=1;
       }
-      explorer.recordCandidateOutcome(child !== "DEAD_END");
+      explorer.recordCandidateOutcome(child === "FOUND");
       if (child !== "DEAD_END") { mergeExplorerEvidence(); return child; } evidence.standaloneBacktracks += 1;
     }
     mergeExplorerEvidence();
@@ -1218,7 +1217,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockCompactGeometriesTried: 0, setupBlockCompactGeometryMatchingRepairs: 0,
     setupBlockGeometriesAbandonedAfterMatchingExhaustion: 0, setupBlockFirstSuccessfulGeometry: null,
     setupBlockFirstSuccessfulMatchingRepairIndex: null, setupBlockMatchingSearchSteps: 0,
-    setupBlockHiddenMatchingSearchSteps: 0,
     setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],
