@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createExactSearchLedger } from "./exactMainAndFeederCore";
-import { createExactSetupBlockExplorer, generateExactSetupBlockCandidates } from "./exactSetupBlocks";
+import { createExactSetupBlockExplorer, generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { setupBlockCounts, hasSetupReentry } from "./setupGrouping";
 import { setupGroupingScenario } from "./scenarios/setupGroupingScenario";
 import { validatePlan } from "./validate";
@@ -20,6 +20,8 @@ test("exact setup keeps compact first, then admits the only one-idle solution wi
   const compact=oneFamily();const compactResult=generateExactSetupBlockCandidates(compact,compact.tasks,[],[],[],createExactSearchLedger(1000));
   assert.equal(compactResult.outcome,"COMPLETE");assert.equal(compactResult.evidence.minimumIdleMinutes,0);assert.equal(compactResult.candidates[0]!.tasks[1]!.start-compactResult.candidates[0]!.tasks[0]!.end,0);
   const gapped=oneFamily({"participant-e":[{start:540,end:545}],"participant-f":[{start:550,end:555}]});
+  const probe=probeExactSetupMacroDomain(gapped,gapped.tasks,[],[],[]);
+  assert.equal(probe.domainSize,0);assert.equal(probe.domainExact,false);
   const ledger=createExactSearchLedger(1000);const generated=generateExactSetupBlockCandidates(gapped,gapped.tasks,[],[],[],ledger);
   assert.ok(generated.candidates.length>0);assert.equal(generated.evidence.minimumIdleMinutes,5);assert.equal(generated.evidence.branchesExplored,ledger.standaloneBranches);
   assert.equal(setupBlockCounts(generated.candidates[0]!.tasks)["family-a"],1);assert.equal(hasSetupReentry(generated.candidates[0]!.tasks),false);
@@ -46,7 +48,6 @@ test("downstream dead end repairs the same compact geometry before any gapped ge
   assert.notEqual(sig(repaired.tasks),sig(canonical.tasks));
   assert.equal(explorer.evidence.maximumIdleMinutes,0);
   assert.equal(explorer.evidence.compactGeometryMatchingRepairs,1);
-  assert.equal(explorer.evidence.hiddenMatchingSearchSteps,0);
   explorer.recordCandidateOutcome(true);
   assert.deepEqual(explorer.evidence.firstSuccessfulGeometry,{idleMinutes:0,spanMinutes:10});
   assert.equal(explorer.evidence.firstSuccessfulMatchingRepairIndex,1);

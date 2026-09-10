@@ -47,7 +47,6 @@ export interface ExactSetupBlockGenerationEvidence {
   firstSuccessfulGeometry: { idleMinutes: number; spanMinutes: number } | null;
   firstSuccessfulMatchingRepairIndex: number | null;
   matchingSearchSteps: number;
-  hiddenMatchingSearchSteps: 0;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -60,8 +59,8 @@ export interface ExactSetupMacroDomain {
   domainSize: number;
   structuralCandidateCount: number;
   matchingFeasibleCandidateCount: number;
-  /** Exact for the legacy compact/canonical MRV projection, not for the fallback search domain. */
-  domainExact: true;
+  /** The compact/canonical projection is only a heuristic for the gap-complete hard domain. */
+  domainExact: false;
 }
 
 export interface ExactSetupBlockExplorer {
@@ -159,7 +158,7 @@ export function createExactSetupBlockExplorer(
     matchingRepairs: 0, permutationBranchesAvoided: 0, minimumIdleMinutes: null, maximumIdleMinutes: null,
     compactGeometriesTried: 0, compactGeometryMatchingRepairs: 0,
     geometriesAbandonedAfterMatchingExhaustion: 0, firstSuccessfulGeometry: null,
-    firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0, hiddenMatchingSearchSteps: 0,
+    firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0,
   };
   let budgetExhausted = false;
   let pendingOutcome: ExactSetupBlockCandidate | null = null;
@@ -343,5 +342,5 @@ export function probeExactSetupMacroDomain(
   while (explorer.nextCandidate()) explorer.recordCandidateOutcome(false);
   return { domainSize: explorer.evidence.completeCandidateCount,
     structuralCandidateCount: explorer.evidence.startsExplored,
-    matchingFeasibleCandidateCount: explorer.evidence.completeCandidateCount, domainExact: true };
+    matchingFeasibleCandidateCount: explorer.evidence.completeCandidateCount, domainExact: false };
 }
