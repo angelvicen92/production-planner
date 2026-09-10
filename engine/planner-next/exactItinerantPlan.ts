@@ -13,7 +13,7 @@ import {
   type ExactMacroCapacityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
+import { createExactSetupBlockExplorer, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
@@ -271,7 +271,10 @@ export interface ExactItinerantPlanEvidence {
   setupBlockBudgetExhaustions: number;
   setupBlockMatchingAttempts: number;
   setupBlockMatchingSuccesses: number;
+  setupBlockMatchingRepairs: number;
   setupBlockPermutationBranchesAvoided: number;
+  setupBlockMinimumIdleMinutes: number | null;
+  setupBlockMaximumIdleMinutes: number | null;
   setupCandidateOutcomeCertificates:ExactCoreCausalDiagnostic["setupCandidateOutcomeCertificates"];
   setupCandidateOutcomeCertificateOverflow:number;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
@@ -1028,16 +1031,9 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
-    const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
-    evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
-    evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
-    evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
-    evidence.setupBlockMatchingAttempts += generated.evidence.matchingAttempts;
-    evidence.setupBlockMatchingSuccesses += generated.evidence.matchingSuccesses;
-    evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
-    mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
-    if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
-    for (const candidate of generated.candidates) {
+    const explorer = createExactSetupBlockExplorer(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
+    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
+    for (let candidate=explorer.nextCandidate();candidate;candidate=explorer.nextCandidate()) {
       const orderedTasks=[...candidate.tasks].sort((left,right)=>left.start-right.start||byId(left,right));
       const familyOrder=setupFamilySequence(orderedTasks);
       const familyBounds=familyOrder.map(family=>{const familyTasks=orderedTasks.filter(task=>task.setupFamilyId===family);return {start:Math.min(...familyTasks.map(task=>task.start)),end:Math.max(...familyTasks.map(task=>task.end))};});
@@ -1057,8 +1053,10 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         if(row){row.frequency+=1;row.maximumDescendantDepth=Math.max(row.maximumDescendantDepth,tracker.maximumDepth);if(row.samples.length<3)row.samples.push({familyOrder,start:Math.min(...orderedTasks.map(task=>task.start)),end:Math.max(...orderedTasks.map(task=>task.end)),interFamilyGap:familyBounds.length>1?familyBounds[1]!.start-familyBounds[0]!.end:0,firstRejection:tracker.first,deepestRejection:tracker.deepest});}
         else evidence.setupCandidateOutcomeCertificateOverflow+=1;
       }
-      if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
+      if (child !== "DEAD_END") { mergeExplorerEvidence(); return child; } evidence.standaloneBacktracks += 1;
     }
+    mergeExplorerEvidence();
+    if (explorer.exhausted) { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
   } else if (unit.kind === "ROUND_SYNCHRONIZATION") {
     evidence.roundSynchronizationSearchInvocations += 1;
     const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
@@ -1207,7 +1205,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     firstCompleteQuality: null, selectedCompleteQuality: null,
     setupBlockBranchesExplored: 0, setupBlockSearchInvocations: 0, setupBlockStartsExplored: 0,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
-    setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockPermutationBranchesAvoided: 0,
+    setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockMatchingRepairs: 0, setupBlockPermutationBranchesAvoided: 0,
+    setupBlockMinimumIdleMinutes: null, setupBlockMaximumIdleMinutes: null,
     setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],

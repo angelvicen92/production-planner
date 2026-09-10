@@ -518,6 +518,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     if ([...counts.values()].some((count) => count > problem.mainFlow.maxBlocksByKey)) block += 1;
   }
   for (const space of requiredSecondarySpaces(problem)) {
+    // Setup continuity is family continuity (no reentry), not temporal
+    // adjacency. Internal idle remains hard-valid and is checked below by the
+    // setup authority; preparations alone govern family transitions.
+    if (space.setupPolicy !== undefined) continue;
     const expected = secondaryTasks(problem.tasks, space.id);
     const actual = secondaryTasks(scheduled, space.id);
     const occupations = spaceOccupations(actual, preparations, space.id, meals);
