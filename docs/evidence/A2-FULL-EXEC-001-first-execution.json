@@ -1404,11 +1404,19 @@
       "geometryPrerequisiteEnvelopePrunes": 78,
       "logicalMatchingCandidatesAvoidedByEnvelope": 78,
       "firstFeedableCompactStart": 635,
-      "arrivalInjectiveEnvelopeChecks": 4,
+      "arrivalInjectiveEnvelopeChecks": 2,
       "arrivalInjectiveEnvelopePrunes": 0,
-      "arrivalInjectiveEdgeDeadlineChecks": 266,
-      "arrivalInjectiveMaxMatchingChecks": 76,
+      "arrivalInjectiveFixedPrefixTasksChecked": 0,
+      "arrivalInjectiveEdgeDeadlineChecks": 150,
+      "arrivalInjectiveMaxMatchingChecks": 38,
       "firstArrivalInjectiveCertificate": null,
+      "firstArrivalInjectiveCertificateFixedPrefixTaskCount": null,
+      "firstArrivalInjectiveAbstention": {
+        "reason": "REPEATED_PARTICIPANT",
+        "taskCount": 17,
+        "distinctParticipantCount": 11,
+        "fixedPrefixTaskCount": 9
+      },
       "setupCandidateOutcomeCertificates": [
         {
           "classKey": "setup-family:3009:sillon>setup-family:3009:estrellas|REJECTED_IMMEDIATELY|MACRO_PENDING_PREREQUISITE:PENDING_ARRIVAL_DEADLINE|none|task:10006",

@@ -22,6 +22,9 @@ export interface ArrivalInjectiveEnvelopeAssessment {
   edgeDeadlineChecks: number;
   maxMatchingChecks: number;
   firstCertificate: { cutoff: number; minimumDemand: number; maximumPossible: number } | null;
+  abstention?: { reason: "NO_EDGES" | "TASK_IDENTITY_INCOMPLETE" | "REPEATED_PARTICIPANT"
+    | "ARRIVAL_IDENTITY_INCOMPLETE" | "ARRIVAL_CAPACITY_INCONCLUSIVE";
+    taskCount: number; distinctParticipantCount: number } | null;
 }
 
 /**
@@ -68,18 +71,24 @@ export function createPrerequisiteAwareSlotAuthority(problem:PlannerNextProblem,
     geometryVerdicts.set(key,verdict);return verdict;
   };
   authority.arrivalInjectiveFeasible=(edges)=>{
-    const abstain=():ArrivalInjectiveEnvelopeAssessment=>({verdict:"NOT_PROVEN_IMPOSSIBLE",checked:false,
-      edgeDeadlineChecks:0,maxMatchingChecks:0,firstCertificate:null});
-    if(!edges.length)return abstain();
+    const abstain=(reason:NonNullable<ArrivalInjectiveEnvelopeAssessment["abstention"]>["reason"],taskCount=0,
+      distinctParticipantCount=0):ArrivalInjectiveEnvelopeAssessment=>({verdict:"NOT_PROVEN_IMPOSSIBLE",checked:false,
+      edgeDeadlineChecks:0,maxMatchingChecks:0,firstCertificate:null,
+      abstention:{reason,taskCount,distinctParticipantCount}});
+    if(!edges.length)return abstain("NO_EDGES");
     const taskIds=[...new Set(edges.map(({task})=>task.id))];
     const slotIds=[...new Set(edges.map(({slotId})=>slotId))];
     const tasks=taskIds.map(id=>pendingById.get(id)).filter((task):task is Task=>Boolean(task));
-    if(tasks.length!==taskIds.length||tasks.some(task=>!task.participantId)
-      ||new Set(tasks.map(task=>task.participantId)).size!==tasks.length)return abstain();
+    const distinctParticipantCount=new Set(tasks.flatMap(task=>task.participantId?[task.participantId]:[])).size;
+    if(tasks.length!==taskIds.length||tasks.some(task=>!task.participantId))
+      return abstain("TASK_IDENTITY_INCOMPLETE",taskIds.length,distinctParticipantCount);
+    if(distinctParticipantCount!==tasks.length)
+      return abstain("REPEATED_PARTICIPANT",taskIds.length,distinctParticipantCount);
     const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
     const arrivalByParticipant=new Map(problem.tasks.filter(task=>arrivalIds.has(task.id)&&task.participantId)
       .map(task=>[task.participantId!,task]));
-    if(tasks.some(task=>!arrivalByParticipant.has(task.participantId!)))return abstain();
+    if(tasks.some(task=>!arrivalByParticipant.has(task.participantId!)))
+      return abstain("ARRIVAL_IDENTITY_INCOMPLETE",taskIds.length,distinctParticipantCount);
     const edgeDeadlines=new Map<string,number>();
     for(const edge of [...edges].sort((a,b)=>a.task.id.localeCompare(b.task.id)||a.slotId.localeCompare(b.slotId))){
       const cacheKey=`${edge.task.id}\u0000${edge.start}`;
@@ -108,12 +117,13 @@ export function createPrerequisiteAwareSlotAuthority(problem:PlannerNextProblem,
       const minimumDemand=baseForced.size+(taskIds.length-cardinality);
       let capacity=arrivalCapacityByCutoff.get(cutoff);
       if(!capacity){capacity=maximumAnonymousArrivalCapacity(problem,cutoff);arrivalCapacityByCutoff.set(cutoff,capacity);}
-      if(!capacity.checked)return abstain();
+      if(!capacity.checked)return abstain("ARRIVAL_CAPACITY_INCONCLUSIVE",taskIds.length,distinctParticipantCount);
       if(minimumDemand>capacity.maximumPossible)return {verdict:"PROVEN_IMPOSSIBLE",checked:true,
         edgeDeadlineChecks:edges.length,maxMatchingChecks,
-        firstCertificate:{cutoff,minimumDemand,maximumPossible:capacity.maximumPossible}};
+        firstCertificate:{cutoff,minimumDemand,maximumPossible:capacity.maximumPossible},abstention:null};
     }
-    return {verdict:"NOT_PROVEN_IMPOSSIBLE",checked:true,edgeDeadlineChecks:edges.length,maxMatchingChecks,firstCertificate:null};
+    return {verdict:"NOT_PROVEN_IMPOSSIBLE",checked:true,edgeDeadlineChecks:edges.length,maxMatchingChecks,
+      firstCertificate:null,abstention:null};
   };
   return authority;
 }

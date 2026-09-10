@@ -20,6 +20,7 @@ import {
 } from "./setupPreparation";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import type { PrerequisiteAwareSlotAuthority } from "./prerequisiteAwareSlotFeasibility";
+import type { ArrivalInjectiveEnvelopeAssessment } from "./prerequisiteAwareSlotFeasibility";
 
 export interface ExactSetupBlockCandidate {
   tasks: ScheduledTask[];
@@ -57,9 +58,14 @@ export interface ExactSetupBlockGenerationEvidence {
   firstFeedableCompactStart: number | null;
   arrivalInjectiveEnvelopeChecks: number;
   arrivalInjectiveEnvelopePrunes: number;
+  arrivalInjectiveFixedPrefixTasksChecked: number;
   arrivalInjectiveEdgeDeadlineChecks: number;
   arrivalInjectiveMaxMatchingChecks: number;
   firstArrivalInjectiveCertificate: { cutoff: number; minimumDemand: number; maximumPossible: number } | null;
+  firstArrivalInjectiveCertificateFixedPrefixTaskCount: number | null;
+  firstArrivalInjectiveAbstention: (NonNullable<ArrivalInjectiveEnvelopeAssessment["abstention"]> & {
+    fixedPrefixTaskCount: number;
+  }) | null;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -178,8 +184,10 @@ export function createExactSetupBlockExplorer(
     geometryPrerequisiteEnvelopeChecks: 0, geometryPrerequisiteEnvelopePrunes: 0,
     logicalMatchingCandidatesAvoidedByEnvelope: 0, firstFeedableCompactStart: null,
     arrivalInjectiveEnvelopeChecks: 0, arrivalInjectiveEnvelopePrunes: 0,
+    arrivalInjectiveFixedPrefixTasksChecked: 0,
     arrivalInjectiveEdgeDeadlineChecks: 0, arrivalInjectiveMaxMatchingChecks: 0,
-    firstArrivalInjectiveCertificate: null,
+    firstArrivalInjectiveCertificate: null, firstArrivalInjectiveCertificateFixedPrefixTaskCount: null,
+    firstArrivalInjectiveAbstention: null,
   };
   let budgetExhausted = false;
   let pendingOutcome: ExactSetupBlockCandidate | null = null;
@@ -267,16 +275,32 @@ export function createExactSetupBlockExplorer(
             if(compact&&evidence.firstFeedableCompactStart===null)evidence.firstFeedableCompactStart=starts[0]!;
           }
           if(options.prerequisiteAwareSlot?.arrivalInjectiveFeasible){
-            const edges=familyTasks.flatMap(task=>slotIds.filter(slotId=>compatible(task.id,slotId)).map(slotId=>({
+            const occupiedSlotIds=new Set(slotIds);
+            const fixedPrefixEdges=partial.map((task,index)=>{
+              let slotId=`fixed-prefix:${index}`;
+              while(occupiedSlotIds.has(slotId))slotId=`fixed-prefix:${slotId}`;
+              occupiedSlotIds.add(slotId);
+              return {task,slotId,start:task.start};
+            });
+            const edges=[...fixedPrefixEdges,...familyTasks.flatMap(task=>slotIds.filter(slotId=>compatible(task.id,slotId)).map(slotId=>({
               task,slotId,start:starts[Number(slotId.slice(slotId.lastIndexOf(":")+1))]!,
-            })));
+            })))];
             const assessment=options.prerequisiteAwareSlot.arrivalInjectiveFeasible(edges);
+            if(!assessment.checked&&assessment.abstention&&evidence.firstArrivalInjectiveAbstention===null)
+              evidence.firstArrivalInjectiveAbstention={...assessment.abstention,
+                fixedPrefixTaskCount:fixedPrefixEdges.length};
             evidence.arrivalInjectiveEdgeDeadlineChecks+=assessment.edgeDeadlineChecks;
             evidence.arrivalInjectiveMaxMatchingChecks+=assessment.maxMatchingChecks;
-            if(assessment.checked)evidence.arrivalInjectiveEnvelopeChecks+=1;
+            if(assessment.checked){
+              evidence.arrivalInjectiveEnvelopeChecks+=1;
+              evidence.arrivalInjectiveFixedPrefixTasksChecked+=fixedPrefixEdges.length;
+            }
             if(assessment.verdict==="PROVEN_IMPOSSIBLE"){
               evidence.arrivalInjectiveEnvelopePrunes+=1;
-              evidence.firstArrivalInjectiveCertificate??=assessment.firstCertificate;
+              if(evidence.firstArrivalInjectiveCertificate===null){
+                evidence.firstArrivalInjectiveCertificate=assessment.firstCertificate;
+                evidence.firstArrivalInjectiveCertificateFixedPrefixTaskCount=fixedPrefixEdges.length;
+              }
               evidence.logicalMatchingCandidatesAvoidedByEnvelope+=1;
               evidence.prerequisiteAwareGeometriesEliminated+=1;
               evidence.prerequisiteAwareMatchingRepairsAvoided+=1;

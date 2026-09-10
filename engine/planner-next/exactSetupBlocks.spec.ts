@@ -183,6 +183,14 @@ test("injective arrival envelope keeps sufficient SAFE alternatives and abstains
   const abstained=createPrerequisiteAwareSlotAuthority(incomplete.problem,incomplete.pending,[])
     .arrivalInjectiveFeasible!(injectiveEdges(incomplete.setup,[570,575]));
   assert.equal(abstained.checked,false);assert.equal(abstained.verdict,"NOT_PROVEN_IMPOSSIBLE");
+  assert.equal(abstained.abstention?.reason,"TASK_IDENTITY_INCOMPLETE");
+  const repeated=injectiveFixture(2,{start:540,end:545});
+  repeated.setup[1]!.participantId=repeated.setup[0]!.participantId;
+  const repeatedAssessment=createPrerequisiteAwareSlotAuthority(repeated.problem,repeated.pending,[])
+    .arrivalInjectiveFeasible!(injectiveEdges(repeated.setup,[570,575]));
+  assert.deepEqual(repeatedAssessment.abstention,
+    {reason:"REPEATED_PARTICIPANT",taskCount:2,distinctParticipantCount:1});
+  assert.equal(repeatedAssessment.verdict,"NOT_PROVEN_IMPOSSIBLE");
 });
 
 test("forced participants are not counted twice and injective evidence is input-order invariant",()=>{
@@ -197,8 +205,7 @@ test("forced participants are not counted twice and injective evidence is input-
 
 test("injective certificate rejects a geometry before exact matching enumeration",()=>{
   const problem=oneFamily();
-  const authority=((_task:typeof problem.tasks[number],_start:number)=>"NOT_PROVEN_IMPOSSIBLE" as const)
-    as ReturnType<typeof createPrerequisiteAwareSlotAuthority>;
+  const authority=((_task:typeof problem.tasks[number],_start:number)=>"NOT_PROVEN_IMPOSSIBLE" as const) as ReturnType<typeof createPrerequisiteAwareSlotAuthority>;
   authority.arrivalInjectiveFeasible=(edges)=>({verdict:"PROVEN_IMPOSSIBLE",checked:true,
     edgeDeadlineChecks:edges.length,maxMatchingChecks:1,
     firstCertificate:{cutoff:550,minimumDemand:2,maximumPossible:1}});
@@ -209,4 +216,59 @@ test("injective certificate rejects a geometry before exact matching enumeration
   assert.equal(explorer.evidence.matchingSearchSteps,0);
   assert.deepEqual(explorer.evidence.firstArrivalInjectiveCertificate,
     {cutoff:550,minimumDemand:2,maximumPossible:1});
+});
+
+test("injective envelope combines a fixed setup-family prefix with the next family deterministically",()=>{
+  const problem=setupGroupingScenario();problem.day={start:540,end:570};problem.protectedMeal=undefined;
+  const space=problem.spaces.find(candidate=>candidate.id==="setup-room")!;
+  space.availability=[problem.day];space.setupPolicy={familyOrder:["family-a","family-b"],reentry:"FORBIDDEN"};
+  const setup=["family-a","family-b"].map(familyId=>{
+    const task=problem.tasks.find(candidate=>candidate.setupFamilyId===familyId)!;
+    return {...task,duration:5};
+  });
+  problem.tasks=setup;problem.participants=problem.participants.filter(participant=>
+    setup.some(task=>task.participantId===participant.id)).map(participant=>({...participant,availability:[problem.day]}));
+  problem.coaches=[];problem.spaces=[space];problem.mainFlow={...problem.mainFlow,spaceId:"unused"};
+
+  const assessed:string[][]=[];
+  const authority=((_task:typeof setup[number],_start:number)=>"NOT_PROVEN_IMPOSSIBLE" as const) as ReturnType<typeof createPrerequisiteAwareSlotAuthority>;
+  authority.arrivalInjectiveFeasible=(edges)=>{
+    const families=[...new Set(edges.map(edge=>edge.task.setupFamilyId!))].sort();
+    assessed.push(families);
+    const impossible=families.length===2&&Math.max(...edges.map(edge=>edge.start))<555;
+    return {verdict:impossible?"PROVEN_IMPOSSIBLE":"NOT_PROVEN_IMPOSSIBLE",checked:true,
+      edgeDeadlineChecks:edges.length,maxMatchingChecks:1,
+      firstCertificate:impossible?{cutoff:550,minimumDemand:2,maximumPossible:1}:null};
+  };
+  for(const task of setup){
+    const isolated=createExactSetupBlockExplorer({...problem,tasks:[task]},[task],[],[],[],createExactSearchLedger(100),
+      {compactOnly:true,canonicalOnly:true,prerequisiteAwareSlot:authority});
+    assert.equal(isolated.nextCandidate()!.tasks[0]!.start,540);
+    assert.equal(isolated.evidence.arrivalInjectiveEnvelopePrunes,0);
+  }
+  const collect=(reverse:boolean)=>{
+    assessed.length=0;
+    const tasks=reverse?[...setup].reverse():setup;
+    const explorer=createExactSetupBlockExplorer({...problem,tasks},tasks,[],[],[],createExactSearchLedger(100),
+      {compactOnly:true,canonicalOnly:true,prerequisiteAwareSlot:authority});
+    const candidate=explorer.nextCandidate()!;
+    return {signature:sig(candidate.tasks),evidence:{...explorer.evidence},assessed:structuredClone(assessed)};
+  };
+  const forward=collect(false),reversed=collect(true);
+  assert.equal(Math.min(...forward.signature.split("|").map(item=>Number(item.split("@")[1]))),550);
+  assert.ok(forward.assessed.some(families=>families.length===1));
+  assert.ok(forward.assessed.some(families=>families.join(">")==="family-a>family-b"));
+  assert.equal(forward.evidence.arrivalInjectiveEnvelopePrunes,2);
+  assert.equal(forward.evidence.firstArrivalInjectiveCertificateFixedPrefixTaskCount,1);
+  assert.ok(forward.evidence.arrivalInjectiveFixedPrefixTasksChecked>=3);
+  assert.deepEqual(reversed,forward);
+
+  const inconclusive=((_task:typeof setup[number],_start:number)=>"NOT_PROVEN_IMPOSSIBLE" as const) as ReturnType<typeof createPrerequisiteAwareSlotAuthority>;
+  inconclusive.arrivalInjectiveFeasible=()=>({verdict:"NOT_PROVEN_IMPOSSIBLE",checked:false,
+    edgeDeadlineChecks:0,maxMatchingChecks:0,firstCertificate:null});
+  const preserved=createExactSetupBlockExplorer(problem,setup,[],[],[],createExactSearchLedger(100),
+    {compactOnly:true,canonicalOnly:true,prerequisiteAwareSlot:inconclusive});
+  assert.equal(Math.min(...preserved.nextCandidate()!.tasks.map(task=>task.start)),540);
+  assert.equal(preserved.evidence.arrivalInjectiveEnvelopePrunes,0);
+  assert.equal(preserved.evidence.arrivalInjectiveFixedPrefixTasksChecked,0);
 });
