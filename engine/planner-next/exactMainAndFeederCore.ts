@@ -193,10 +193,18 @@ export interface ExactSetupCandidateOutcomeCertificate {
   classKey:string;frequency:number;immediateOutcome:"REJECTED_IMMEDIATELY"|"ENTERED_DESCENDANTS"|"BUDGET_EXHAUSTED";
   maximumDescendantDepth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null;
   samples:Array<{familyOrder:string[];start:number;end:number;interFamilyGap:number;
-    firstRejection:{depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null}|null;
-    deepestRejection:{depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null}|null}>;
+    firstRejection:{depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null;participantId:string|null}|null;
+    deepestRejection:{depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null;participantId:string|null}|null}>;
 }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary;deepestStandaloneFrontier:ExactDeepestStandaloneFrontier|null;macroPendingPrerequisiteCapacityCertificates:ExactMacroCapacityCertificate[];macroPendingPrerequisiteCapacityCertificateOverflow:number;deferredArrivalFirstRepair:import("./deferredPrerequisiteReservation").DeferredArrivalCausalCertificate|null;setupCandidateOutcomeCertificates:ExactSetupCandidateOutcomeCertificate[];setupCandidateOutcomeCertificateOverflow:number }
+export interface ExactSetupGeometryMatchingOutcomeCertificate {
+  geometryKey:string;start:number;end:number;familyOrder:string[];idleMinutes:number;spanMinutes:number;
+  matchingsDeliveredToChild:number;
+  outcomes:Array<{rejectionSignature:string;frequency:number;percentage:number;
+    immediateOutcome:"REJECTED_IMMEDIATELY"|"ENTERED_DESCENDANTS"|"BUDGET_EXHAUSTED";
+    firstRejectionKind:string;authorityId:string|null;blockingTaskId:string|null;participantId:string|null;
+    samples:Array<{repairIndex:number;maximumDescendantDepth:number}>}>;
+}
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; feederMatching:ExactFeederMatchingCausalSummary; futureFeasibility:ExactFutureFeasibilityCausalSummary; standaloneFrontier:ExactStandaloneFrontierCausalSummary;deepestStandaloneFrontier:ExactDeepestStandaloneFrontier|null;macroPendingPrerequisiteCapacityCertificates:ExactMacroCapacityCertificate[];macroPendingPrerequisiteCapacityCertificateOverflow:number;deferredArrivalFirstRepair:import("./deferredPrerequisiteReservation").DeferredArrivalCausalCertificate|null;setupCandidateOutcomeCertificates:ExactSetupCandidateOutcomeCertificate[];setupCandidateOutcomeCertificateOverflow:number;setupGeometryMatchingOutcomeCertificates:ExactSetupGeometryMatchingOutcomeCertificate[];setupGeometryMatchingOutcomeCertificateOverflow:number }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -697,7 +705,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],feederMatching:{contexts:[],overflowContexts:0},futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]},standaloneFrontier:{totalRejections:0,certificates:[],examples:[]},deepestStandaloneFrontier:null,macroPendingPrerequisiteCapacityCertificates:[],macroPendingPrerequisiteCapacityCertificateOverflow:0,deferredArrivalFirstRepair:null,setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],feederMatching:{contexts:[],overflowContexts:0},futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]},standaloneFrontier:{totalRejections:0,certificates:[],examples:[]},deepestStandaloneFrontier:null,macroPendingPrerequisiteCapacityCertificates:[],macroPendingPrerequisiteCapacityCertificateOverflow:0,deferredArrivalFirstRepair:null,setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,setupGeometryMatchingOutcomeCertificates:[],setupGeometryMatchingOutcomeCertificateOverflow:0}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   evidence.causalDiagnostic=diagnostic;
