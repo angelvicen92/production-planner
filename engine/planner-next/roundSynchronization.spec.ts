@@ -440,6 +440,21 @@ test("round synchronization is deterministic under task and eligible-set order c
   assert.deepEqual(again.scheduledRoundPreparations, baseline.scheduledRoundPreparations);
 });
 
+test("synchronized geometries are prerequisite-filtered before assignment branching",()=>{
+  const run=(reverse:boolean)=>{const problem=structuredClone(supportedProblem());const policy=problem.roundSynchronizations![0]!;
+    if(reverse){problem.tasks.reverse();for(const lane of policy.lanes)lane.taskIds.reverse();}
+    const first=problem.day.start+20;
+    return exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],createExactSearchLedger(10_000),
+      ()=>"FOUND",(_task,start)=>start<first?"PROVEN_IMPOSSIBLE":"NOT_PROVEN_IMPOSSIBLE");};
+  const baseline=run(false),reversed=run(true);
+  assert.equal(baseline.outcome,"FOUND");
+  assert.equal(baseline.evidence.firstPrerequisiteAwareStart,baseline.evidence.startCandidates>1
+    ? supportedProblem().day.start+20:null);
+  assert.equal(baseline.evidence.assignmentBranches,1);
+  assert.equal(baseline.evidence.prerequisiteAwareGeometriesEliminated,4);
+  assert.deepEqual(reversed,baseline);
+});
+
 test("round synchronization exhausts the shared budget atomically", () => {
   const complete = constructExactItinerantPlan(structuredClone(supportedProblem()));
   assert.equal(complete.status, "COMPLETE");

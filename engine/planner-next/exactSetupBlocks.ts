@@ -19,6 +19,7 @@ import {
   spaceOccupations,
 } from "./setupPreparation";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
+import type { PrerequisiteAwareSlotAuthority } from "./prerequisiteAwareSlotFeasibility";
 
 export interface ExactSetupBlockCandidate {
   tasks: ScheduledTask[];
@@ -47,6 +48,9 @@ export interface ExactSetupBlockGenerationEvidence {
   firstSuccessfulGeometry: { idleMinutes: number; spanMinutes: number } | null;
   firstSuccessfulMatchingRepairIndex: number | null;
   matchingSearchSteps: number;
+  prerequisiteAwareGeometriesEliminated: number;
+  prerequisiteAwareMatchingRepairsAvoided: number;
+  firstPrerequisiteAwareCompactStart: number | null;
 }
 
 export interface ExactSetupBlockGenerationResult {
@@ -146,7 +150,8 @@ export function createExactSetupBlockExplorer(
   preparations: ScheduledSetupPreparation[],
   meals: ScheduledSpaceMeal[],
   ledger: ExactSearchLedger,
-  options: { compactOnly?: boolean; canonicalOnly?: boolean } = {},
+  options: { compactOnly?: boolean; canonicalOnly?: boolean;
+    prerequisiteAwareSlot?: PrerequisiteAwareSlotAuthority } = {},
 ): ExactSetupBlockExplorer {
   const ordered = [...tasks].sort(byId);
   const spaceId = ordered[0]?.spaceId;
@@ -159,6 +164,8 @@ export function createExactSetupBlockExplorer(
     compactGeometriesTried: 0, compactGeometryMatchingRepairs: 0,
     geometriesAbandonedAfterMatchingExhaustion: 0, firstSuccessfulGeometry: null,
     firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0,
+    prerequisiteAwareGeometriesEliminated: 0, prerequisiteAwareMatchingRepairsAvoided: 0,
+    firstPrerequisiteAwareCompactStart: null,
   };
   let budgetExhausted = false;
   let pendingOutcome: ExactSetupBlockCandidate | null = null;
@@ -223,13 +230,28 @@ export function createExactSetupBlockExplorer(
           if (compact) evidence.compactGeometriesTried += 1;
           const slotIds = starts.map((_start, index) => `${familyId}:${index}`);
           evidence.matchingAttempts += 1;
+          const compatible = (taskId: string, slotId: string): boolean => {
+            const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
+            const task = familyTasks.find((candidate) => candidate.id === taskId)!;
+            const authority = authorities.get(taskId)!;
+            return authority.accepts(starts[index]!, authority.baseDomain)
+              && options.prerequisiteAwareSlot?.(task, starts[index]!) !== "PROVEN_IMPOSSIBLE";
+          };
+          // Establish that the complete geometry has a prerequisite-aware assignment
+          // before opening the exact repair frontier.  An abstaining authority keeps
+          // the edge, so this can only remove analytically certified dead geometries.
+          evidence.matchingSearchSteps += 1;
+          if (!findCanonicalPerfectMatching(slotIds, familyTasks.map(({ id }) => id), compatible)) {
+            evidence.prerequisiteAwareGeometriesEliminated += 1;
+            evidence.prerequisiteAwareMatchingRepairsAvoided += 1;
+            continue;
+          }
+          if (compact && evidence.firstPrerequisiteAwareCompactStart === null)
+            evidence.firstPrerequisiteAwareCompactStart = starts[0]!;
           let matchingIndex = 0;
           let yieldedForGeometry = false;
-          for (const matching of constrainedMatchings(slotIds, familyTasks.map(({ id }) => id), (taskId, slotId) => {
-            const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
-            const authority = authorities.get(taskId)!;
-            return authority.accepts(starts[index]!, authority.baseDomain);
-          }, () => { evidence.matchingSearchSteps += 1; })) {
+          for (const matching of constrainedMatchings(slotIds, familyTasks.map(({ id }) => id), compatible,
+            () => { evidence.matchingSearchSteps += 1; })) {
             if ((options.canonicalOnly || !repairsEnabled) && matchingIndex > 0) break;
             if (matchingIndex > 0) {
               if (!ledger.consume("STANDALONE")) { budgetExhausted = true; return; }

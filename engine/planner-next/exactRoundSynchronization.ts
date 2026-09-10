@@ -20,6 +20,7 @@ import {
   operationalMealBoundaryIntervalAvailable,
   operationalMealPoliciesClosedByTaskIds,
 } from "./operationalMeals";
+import type { PrerequisiteAwareSlotAuthority } from "./prerequisiteAwareSlotFeasibility";
 
 export type ExactRoundSynchronizationOutcome =
   | "FOUND"
@@ -36,6 +37,8 @@ export interface ExactRoundSynchronizationEvidence {
   matchingAttempts: number;
   matchingSuccesses: number;
   assignmentBranchesAvoided: number;
+  prerequisiteAwareGeometriesEliminated: number;
+  firstPrerequisiteAwareStart: number | null;
 }
 
 export interface ExactRoundSynchronizationCandidate {
@@ -296,6 +299,7 @@ export function exploreExactRoundSynchronizationPolicy(
   meals: ScheduledSpaceMeal[],
   ledger: ExactSearchLedger,
   continuation: (candidate: ExactRoundSynchronizationCandidate) => ExactRoundSynchronizationOutcome,
+  prerequisiteAwareSlot?: PrerequisiteAwareSlotAuthority,
 ): ExactRoundSynchronizationSearchResult {
   const evidence: ExactRoundSynchronizationEvidence = {
     startCandidates: 0,
@@ -307,6 +311,8 @@ export function exploreExactRoundSynchronizationPolicy(
     matchingAttempts: 0,
     matchingSuccesses: 0,
     assignmentBranchesAvoided: 0,
+    prerequisiteAwareGeometriesEliminated: 0,
+    firstPrerequisiteAwareStart: null,
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
@@ -332,8 +338,6 @@ export function exploreExactRoundSynchronizationPolicy(
       if (!shape) continue;
 
       const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
-      if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
-      evidence.assignmentBranches += 1;
       evidence.matchingAttempts += 1;
       const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
       const allTasks = laneTasks.flat();
@@ -346,13 +350,18 @@ export function exploreExactRoundSynchronizationPolicy(
           const task = taskByMatchingId.get(taskId)!;
           const slot = slotById.get(key)!;
           return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
-            && canPlaceTask(problem, task, slot.start, baseTasks, meals);
+            && canPlaceTask(problem, task, slot.start, baseTasks, meals)
+            && prerequisiteAwareSlot?.(task, slot.start) !== "PROVEN_IMPOSSIBLE";
         },
       );
       if (!matching) {
         evidence.zeroAlternativePrunes += 1;
+        evidence.prerequisiteAwareGeometriesEliminated += 1;
         continue;
       }
+      if (evidence.firstPrerequisiteAwareStart === null) evidence.firstPrerequisiteAwareStart = firstStart;
+      if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
+      evidence.assignmentBranches += 1;
       const scheduled = [...matching].map(([key, taskId]) => {
         const slot = slotById.get(key)!;
         return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;

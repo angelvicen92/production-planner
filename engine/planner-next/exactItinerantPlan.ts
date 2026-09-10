@@ -33,6 +33,7 @@ import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey,
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
+import { createPrerequisiteAwareSlotAuthority } from "./prerequisiteAwareSlotFeasibility";
 import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
@@ -281,6 +282,9 @@ export interface ExactItinerantPlanEvidence {
   setupBlockFirstSuccessfulGeometry: { idleMinutes: number; spanMinutes: number } | null;
   setupBlockFirstSuccessfulMatchingRepairIndex: number | null;
   setupBlockMatchingSearchSteps: number;
+  setupBlockPrerequisiteAwareGeometriesEliminated:number;
+  setupBlockPrerequisiteAwareMatchingRepairsAvoided:number;
+  setupBlockFirstPrerequisiteAwareCompactStart:number|null;
   setupCandidateOutcomeCertificates:ExactCoreCausalDiagnostic["setupCandidateOutcomeCertificates"];
   setupCandidateOutcomeCertificateOverflow:number;
   setupGeometryMatchingOutcomeCertificates:ExactCoreCausalDiagnostic["setupGeometryMatchingOutcomeCertificates"];
@@ -295,6 +299,8 @@ export interface ExactItinerantPlanEvidence {
   roundSynchronizationCompleteAssignments: number;
   roundSynchronizationBacktracks: number;
   roundSynchronizationZeroAlternativePrunes: number;
+  roundSynchronizationPrerequisiteAwareGeometriesEliminated:number;
+  roundSynchronizationFirstPrerequisiteAwareStart:number|null;
   totalesMacroCandidates: number;
   totalesMatchingAttempts: number;
   totalesMatchingSuccesses: number;
@@ -797,6 +803,9 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.roundSynchronizationCompleteAssignments += delta.completeAssignments;
   evidence.roundSynchronizationBacktracks += delta.backtracks;
   evidence.roundSynchronizationZeroAlternativePrunes += delta.zeroAlternativePrunes;
+  evidence.roundSynchronizationPrerequisiteAwareGeometriesEliminated += delta.prerequisiteAwareGeometriesEliminated;
+  if(evidence.roundSynchronizationFirstPrerequisiteAwareStart===null&&delta.firstPrerequisiteAwareStart!==null)
+    evidence.roundSynchronizationFirstPrerequisiteAwareStart=delta.firstPrerequisiteAwareStart;
   evidence.totalesMacroCandidates += delta.startCandidates;
   evidence.totalesMatchingAttempts += delta.matchingAttempts;
   evidence.totalesMatchingSuccesses += delta.matchingSuccesses;
@@ -936,6 +945,10 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   recordMacroDecision(depth, selected, constrained);
   const unit = selected.unit;
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
+  const pendingAtEdges=[...ordinaryPending,...rest.flatMap(item=>item.tasks),...unit.tasks]
+    .filter((item,index,array)=>array.findIndex(candidate=>candidate.id===item.id)===index);
+  const prerequisiteAwareSlot=createPrerequisiteAwareSlotAuthority(problem,pendingAtEdges,[...coreTasks,...placed],coreMeals,
+    macroPendingPrerequisiteCache);
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
     const attempt=diagnosticFrontier&&diagnosticFrontier.candidatePlacements.length<256?{taskIds:[...tasks].sort(byId).map(({id})=>id),starts:[...tasks].sort(byId).map(({start})=>start),ends:[...tasks].sort(byId).map(({end})=>end),outcome:"ENTERED" as const,firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null,transportFailure:null,transportCausalCertificate:null}:null;
     if(attempt)diagnosticFrontier!.candidatePlacements.push(attempt);
@@ -1042,8 +1055,9 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
-    const explorer = createExactSetupBlockExplorer(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
-    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;evidence.setupBlockCompactGeometriesTried+=generated.compactGeometriesTried;evidence.setupBlockCompactGeometryMatchingRepairs+=generated.compactGeometryMatchingRepairs;evidence.setupBlockGeometriesAbandonedAfterMatchingExhaustion+=generated.geometriesAbandonedAfterMatchingExhaustion;evidence.setupBlockMatchingSearchSteps+=generated.matchingSearchSteps;if(evidence.setupBlockFirstSuccessfulGeometry===null&&generated.firstSuccessfulGeometry!==null){evidence.setupBlockFirstSuccessfulGeometry=generated.firstSuccessfulGeometry;evidence.setupBlockFirstSuccessfulMatchingRepairIndex=generated.firstSuccessfulMatchingRepairIndex;}if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
+    const explorer = createExactSetupBlockExplorer(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger,
+      {prerequisiteAwareSlot});
+    const mergeExplorerEvidence=()=>{const generated=explorer.evidence;evidence.setupBlockBranchesExplored+=generated.branchesExplored;evidence.setupBlockStartsExplored+=generated.startsExplored;evidence.setupBlockCompleteCandidateCount+=generated.completeCandidateCount;evidence.setupBlockMatchingAttempts+=generated.matchingAttempts;evidence.setupBlockMatchingSuccesses+=generated.matchingSuccesses;evidence.setupBlockMatchingRepairs+=generated.matchingRepairs;evidence.setupBlockPermutationBranchesAvoided+=generated.permutationBranchesAvoided;evidence.setupBlockCompactGeometriesTried+=generated.compactGeometriesTried;evidence.setupBlockCompactGeometryMatchingRepairs+=generated.compactGeometryMatchingRepairs;evidence.setupBlockGeometriesAbandonedAfterMatchingExhaustion+=generated.geometriesAbandonedAfterMatchingExhaustion;evidence.setupBlockMatchingSearchSteps+=generated.matchingSearchSteps;evidence.setupBlockPrerequisiteAwareGeometriesEliminated+=generated.prerequisiteAwareGeometriesEliminated;evidence.setupBlockPrerequisiteAwareMatchingRepairsAvoided+=generated.prerequisiteAwareMatchingRepairsAvoided;if(evidence.setupBlockFirstPrerequisiteAwareCompactStart===null&&generated.firstPrerequisiteAwareCompactStart!==null)evidence.setupBlockFirstPrerequisiteAwareCompactStart=generated.firstPrerequisiteAwareCompactStart;if(evidence.setupBlockFirstSuccessfulGeometry===null&&generated.firstSuccessfulGeometry!==null){evidence.setupBlockFirstSuccessfulGeometry=generated.firstSuccessfulGeometry;evidence.setupBlockFirstSuccessfulMatchingRepairIndex=generated.firstSuccessfulMatchingRepairIndex;}if(generated.minimumIdleMinutes!==null)evidence.setupBlockMinimumIdleMinutes=Math.min(evidence.setupBlockMinimumIdleMinutes??generated.minimumIdleMinutes,generated.minimumIdleMinutes);if(generated.maximumIdleMinutes!==null)evidence.setupBlockMaximumIdleMinutes=Math.max(evidence.setupBlockMaximumIdleMinutes??generated.maximumIdleMinutes,generated.maximumIdleMinutes);mergeSetupOrderCounts(unit.spaceId,generated.familyOrderCandidateCounts);};
     for (let candidate=explorer.nextCandidate();candidate;candidate=explorer.nextCandidate()) {
       const orderedTasks=[...candidate.tasks].sort((left,right)=>left.start-right.start||byId(left,right));
       const familyOrder=setupFamilySequence(orderedTasks);
@@ -1095,7 +1109,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.roundSynchronizationSearchInvocations += 1;
     const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
       roundPreparations, coreMeals, ledger, (candidate) => recurse(candidate.tasks, preparations,
-        [...roundPreparations, ...candidate.preparations]));
+        [...roundPreparations, ...candidate.preparations]),prerequisiteAwareSlot);
     mergeRoundEvidence(explored.evidence);
     return explored.outcome;
   } else {
@@ -1244,6 +1258,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockCompactGeometriesTried: 0, setupBlockCompactGeometryMatchingRepairs: 0,
     setupBlockGeometriesAbandonedAfterMatchingExhaustion: 0, setupBlockFirstSuccessfulGeometry: null,
     setupBlockFirstSuccessfulMatchingRepairIndex: null, setupBlockMatchingSearchSteps: 0,
+    setupBlockPrerequisiteAwareGeometriesEliminated:0,setupBlockPrerequisiteAwareMatchingRepairsAvoided:0,
+    setupBlockFirstPrerequisiteAwareCompactStart:null,
     setupCandidateOutcomeCertificates:[],setupCandidateOutcomeCertificateOverflow:0,
     setupGeometryMatchingOutcomeCertificates:[],setupGeometryMatchingOutcomeCertificateOverflow:0,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
@@ -1251,7 +1267,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     roundSynchronizationSearchInvocations: 0, roundSynchronizationStartCandidates: 0,
     roundSynchronizationAssignmentBranches: 0, roundSynchronizationAssignmentChecks: 0,
     roundSynchronizationCompleteAssignments: 0, roundSynchronizationBacktracks: 0,
-    roundSynchronizationZeroAlternativePrunes: 0, selectedRoundPreparationIds: [],
+    roundSynchronizationZeroAlternativePrunes: 0,roundSynchronizationPrerequisiteAwareGeometriesEliminated:0,
+    roundSynchronizationFirstPrerequisiteAwareStart:null, selectedRoundPreparationIds: [],
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],

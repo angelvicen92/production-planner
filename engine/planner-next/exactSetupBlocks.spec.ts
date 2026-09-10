@@ -5,6 +5,7 @@ import { createExactSetupBlockExplorer, generateExactSetupBlockCandidates, probe
 import { setupBlockCounts, hasSetupReentry } from "./setupGrouping";
 import { setupGroupingScenario } from "./scenarios/setupGroupingScenario";
 import { validatePlan } from "./validate";
+import { createPrerequisiteAwareSlotAuthority } from "./prerequisiteAwareSlotFeasibility";
 
 function oneFamily(windows?: Record<string,{start:number;end:number}[]>){
   const problem=setupGroupingScenario(); problem.day={start:540,end:570}; problem.protectedMeal=undefined;
@@ -59,4 +60,48 @@ test("setup preparation occupies exactly the inter-family interval",()=>{
   const tasks=problem.tasks.filter(t=>t.setupFamilyId==="family-a"||t.setupFamilyId==="family-b").map(t=>({...t,duration:5}));
   const explorer=createExactSetupBlockExplorer(problem,tasks,[],[],[],createExactSearchLedger(10000));const candidate=explorer.nextCandidate()!;const ordered=candidate.tasks.slice().sort((a,b)=>a.start-b.start);const firstFamily=ordered[0]!.setupFamilyId;const lastFirst=Math.max(...ordered.filter(t=>t.setupFamilyId===firstFamily).map(t=>t.end));const firstSecond=Math.min(...ordered.filter(t=>t.setupFamilyId!==firstFamily).map(t=>t.start));
   assert.equal(candidate.preparations.length,1);assert.deepEqual([candidate.preparations[0]!.start,candidate.preparations[0]!.end],[lastFirst,firstSecond]);assert.equal(firstSecond-lastFirst,10);
+});
+
+function withPendingChains(readiness:number[]){
+  const problem=oneFamily();
+  const setup=[...problem.tasks].sort((a,b)=>a.id.localeCompare(b.id));
+  setup.forEach((task,index)=>{const spaceId=`prerequisite-room:${index}`;problem.spaces.push({id:spaceId,availability:[problem.day]});
+    const prerequisite={id:`prerequisite:${index}`,kind:"auxiliary" as const,participantId:task.participantId,duration:readiness[index]!-problem.day.start,spaceId,dependencies:[]};
+    task.dependencies=[prerequisite.id];problem.tasks.push(prerequisite);});
+  return{problem,setup,pending:problem.tasks};
+}
+
+test("prerequisite-aware setup matching starts at the first feedable compact geometry",()=>{
+  const {problem,setup,pending}=withPendingChains([550,560]);
+  const explorer=createExactSetupBlockExplorer(problem,setup,[],[],[],createExactSearchLedger(1000),
+    {prerequisiteAwareSlot:createPrerequisiteAwareSlotAuthority(problem,pending,[])});
+  const candidate=explorer.nextCandidate()!;
+  assert.equal(Math.min(...candidate.tasks.map(task=>task.start)),560);
+  assert.ok(explorer.evidence.prerequisiteAwareGeometriesEliminated>0);
+  assert.equal(explorer.evidence.firstPrerequisiteAwareCompactStart,560);
+  assert.equal(explorer.evidence.matchingRepairs,0);
+});
+
+test("placed participant work shifts prerequisite-aware setup geometry deterministically",()=>{
+  const collect=(reverse:boolean)=>{const {problem,setup,pending}=withPendingChains([550,560]);
+    problem.day.end=580;for(const space of problem.spaces)space.availability=[{...problem.day}];
+    for(const participant of problem.participants)participant.availability=[{...problem.day}];
+    const blocker={...setup[0]!,id:"placed:blocker",start:555,end:565,duration:10,setupFamilyId:undefined,dependencies:[]};
+    const ordered=reverse?[...setup].reverse():setup;
+    const explorer=createExactSetupBlockExplorer({...problem,tasks:reverse?[...problem.tasks].reverse():problem.tasks},ordered,[blocker],[],[],createExactSearchLedger(1000),
+      {prerequisiteAwareSlot:createPrerequisiteAwareSlotAuthority(problem,pending,[blocker])});
+    return{start:Math.min(...explorer.nextCandidate()!.tasks.map(task=>task.start)),evidence:explorer.evidence};};
+  const forward=collect(false),reverse=collect(true);
+  assert.equal(forward.start,565);assert.deepEqual(reverse,forward);
+});
+
+test("an inconclusive prerequisite authority preserves compact and minimum-gap alternatives",()=>{
+  const compact=oneFamily();
+  const first=createExactSetupBlockExplorer(compact,compact.tasks,[],[],[],createExactSearchLedger(1000),
+    {prerequisiteAwareSlot:()=>"NOT_PROVEN_IMPOSSIBLE"}).nextCandidate()!;
+  assert.equal(first.geometryIdleMinutes,0);
+  const gapped=oneFamily({"participant-e":[{start:540,end:545}],"participant-f":[{start:550,end:555}]});
+  const only=createExactSetupBlockExplorer(gapped,gapped.tasks,[],[],[],createExactSearchLedger(1000),
+    {prerequisiteAwareSlot:()=>"NOT_PROVEN_IMPOSSIBLE"}).nextCandidate()!;
+  assert.equal(only.geometryIdleMinutes,5);
 });
