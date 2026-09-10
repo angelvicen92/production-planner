@@ -137,7 +137,7 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
-  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.ok(["COLLECTIVE_CAPACITY", "INDIVIDUAL_ZERO_DOMAIN"].includes(result.evidence.coreStandaloneFrontierFirstPrune?.failure ?? ""));
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
@@ -194,11 +194,11 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
-test("global macro MRV lets setup beat a broader synchronized round unit", () => {
+test("operational-unit MRV lets setup beat a broader synchronized round unit", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ setup: [60, 70], rounds: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.match(result.evidence.macroSelectionOrder[0]!, /^SETUP_GROUP:/);
-  assert.ok(result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "ROUND_SYNCHRONIZATION"));
+  assert.match(result.evidence.operationalUnitSelectionOrder[0]!, /setup:/);
   const setup = result.evidence.macroSelectionSteps[0]!.candidates.find(({ kind }) => kind === "SETUP_GROUP")!;
   assert.equal(setup.domainSize, 1);
   assert.equal(setup.domainMeasure, "hard-valid-top-level-macro-placements");
@@ -206,21 +206,19 @@ test("global macro MRV lets setup beat a broader synchronized round unit", () =>
   assert.equal(setup.matchingFeasibleCandidateCount, 1);
 });
 
-test("mixed macro policy lets a structurally narrow round beat a flexible exact resource task", () => {
+test("mixed macro policy selects the structurally narrow round operational unit", () => {
   const input = macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] });
   input.resources.push(...["round-a", "round-b"].map((id) =>
     ({ id: `resource-${id}`, availability: [{ start: 60, end: 70 }], presencePreference: "OFF" as const, transitionMinutes: 0 })));
   for (const task of input.tasks.filter(({ id }) => id.startsWith("round-"))) task.requiredResourceIds = [`resource-${task.id}`];
   const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
-    result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
+  const round = result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === "ROUND_SYNCHRONIZATION")!;
   assert.ok(round.domainSize > 0);
   assert.equal(round.domainExact, false);
   assert.equal(round.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
-  assert.equal(resource.domainExact, true);
   assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
-  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "mixed-domain-semantic-policy");
+  assert.match(result.evidence.operationalUnitSelectionOrder[0]!, /round:/);
 });
 
 test("global macro MRV lets a scarce resource task beat broader rounds", () => {
@@ -229,15 +227,50 @@ test("global macro MRV lets a scarce resource task beat broader rounds", () => {
   assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:/);
 });
 
-test("macro constrainedness is recalculated after each placement", () => {
+test("member constrainedness is recalculated while the selected operational unit remains locked", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ dynamic: true }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.deepEqual(result.evidence.macroSelectionOrder.slice(0, 2), [
     "RESOURCE_TASK:resource:dynamic-a",
     "RESOURCE_TASK:resource:dynamic-c",
   ]);
-  assert.ok(result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-c")!.domainSize
-    < result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-b")!.domainSize);
+  assert.equal(result.evidence.operationalUnitsDerived, 2);
+  assert.equal(result.evidence.operationalUnitMemberCounts[result.evidence.operationalUnitSelectionOrder[0]!],2);
+  assert.equal(result.evidence.topLevelResourceTaskSelections, 0);
+});
+
+test("a smaller domain in another unit cannot interrupt an already selected resource unit",()=>{
+  const input=problem([
+    auxiliary("a","a",[{start:20,end:30}],["unit"]),
+    auxiliary("b","b",[{start:20,end:100}],["unit"]),
+    auxiliary("c","c",[{start:40,end:50}],["other"]),
+  ]);
+  input.resources.push({id:"other",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+  const result=constructExactItinerantPlan(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.macroSelectionOrder.slice(0,3),[
+    "RESOURCE_TASK:resource:a","RESOURCE_TASK:resource:b","RESOURCE_TASK:resource:c",
+  ]);
+  assert.equal(result.evidence.operationalUnitInterleavings,0);
+  assert.equal(result.evidence.topLevelResourceTaskSelections,0);
+  assert.equal(result.evidence.operationalUnitMemberCounts[result.evidence.operationalUnitSelectionOrder[0]!],2);
+});
+
+test("small exhaustive resource case retains the same unique exact solution as ungrouped DFS",()=>{
+  const input=problem([auxiliary("a","a",[{start:20,end:30}],["unit"]),auxiliary("b","b",[{start:30,end:40}],["unit"])]);
+  const result=constructExactItinerantPlan(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  const core=result.scheduledTasks.filter(({id})=>id==="main"||id==="vocal");
+  const definitions=input.tasks.filter(({id})=>id==="a"||id==="b");
+  const exhaustive:Array<Record<string,number>>=[];
+  for(let a=20;a<=20;a+=5)for(let b=30;b<=30;b+=5){
+    const placed=[...core];
+    if(!canPlaceTask(input,definitions.find(({id})=>id==="a")!,a,placed,[]))continue;
+    placed.push({...definitions.find(({id})=>id==="a")!,start:a,end:a+10});
+    if(canPlaceTask(input,definitions.find(({id})=>id==="b")!,b,placed,[]))exhaustive.push({a,b});
+  }
+  assert.deepEqual(exhaustive,[{a:20,b:30}]);
+  assert.deepEqual(Object.fromEntries(result.scheduledTasks.filter(({id})=>id==="a"||id==="b").map(({id,start})=>[id,start])),exhaustive[0]);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {

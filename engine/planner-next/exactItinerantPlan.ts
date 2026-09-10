@@ -34,6 +34,7 @@ import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalCh
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
 import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
+import { derivePostCoreOperationalUnits } from "./postCoreOperationalUnits";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -292,6 +293,13 @@ export interface ExactItinerantPlanEvidence {
   criticalResourceMacroCandidates: number;
   criticalResourceAssignments: number;
   macroUnitsSelected: number;
+  operationalUnitsDerived:number;
+  operationalUnitsSelected:number;
+  operationalUnitSelectionOrder:string[];
+  operationalUnitMemberCounts:Record<string,number>;
+  topLevelResourceTaskSelections:number;
+  operationalUnitSwitches:number;
+  operationalUnitInterleavings:number;
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
   macroDomainSizes: Record<string, number>;
@@ -805,6 +813,11 @@ type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typ
   | typeof roundItems[number] | typeof setupItems[number];
 const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
   .sort((left, right) => left.id.localeCompare(right.id));
+const operationalUnits = derivePostCoreOperationalUnits(macroUnits);
+const operationalUnitByWorkItem = new Map(operationalUnits.flatMap((unit) =>
+  unit.workItems.map((item) => [item.id, unit] as const)));
+evidence.operationalUnitsDerived += operationalUnits.length;
+for (const unit of operationalUnits) evidence.operationalUnitMemberCounts[unit.id] = unit.memberCount;
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
 const resourceAvailabilityMinutes = (tasks: readonly Task[]): number => {
@@ -909,10 +922,26 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
   return true;
 };
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
-  roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
+  roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[],
+  activeOperationalUnitId:string|null=null): StandaloneOutcome => {
   if(activeSetupCandidate)activeSetupCandidate.maximumDepth=Math.max(activeSetupCandidate.maximumDepth,placed.length);
   if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder,operationalReservations);
-  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
+  const allConstrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
+  let selectedOperationalUnitId=activeOperationalUnitId;
+  if(selectedOperationalUnitId===null){
+    const operationalCandidates=operationalUnits.filter((operational)=>operational.workItems.some((item)=>remainingUnits.some(({id})=>id===item.id)))
+      .map((operational)=>{
+        const members=allConstrained.filter(({id})=>operational.workItems.some((item)=>item.id===id));
+        const representative=selectMostConstrainedUnit(members)!;
+        return {...representative,id:operational.id,operational};
+      });
+    selectedOperationalUnitId=selectMostConstrainedUnit(operationalCandidates)!.operational.id;
+    const selectedOperational=operationalUnitByWorkItem.get(remainingUnits.find((item)=>operationalUnitByWorkItem.get(item.id)!.id===selectedOperationalUnitId)!.id)!;
+    evidence.operationalUnitsSelected+=1;
+    if(evidence.operationalUnitSelectionOrder.length>0)evidence.operationalUnitSwitches+=1;
+    evidence.operationalUnitSelectionOrder.push(selectedOperational.id);
+  }
+  const constrained=allConstrained.filter(({id})=>operationalUnitByWorkItem.get(id)!.id===selectedOperationalUnitId);
   const selected = selectMostConstrainedUnit(constrained)!;
   const diagnosticFrontier=macroCapacityDiagnostic.enabled&&placed.length>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1)
     ?{depth:placed.length,fingerprint:causalHash([...placed].sort(byId).map(({id,start,end})=>({id,start,end}))),
@@ -1003,7 +1032,9 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:unit.id,depth};}
     if(reserved.exhausted){if(attempt)Object.assign(attempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
     if(!reserved.feasible){recordSetupRejection(placed.length+tasks.length,"TRANSPORT_FUTURE_FEASIBILITY",reserved.transportFailure?.direction??null,reserved.transportFailure?.taskId??null);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
-    return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],nextOperationalReservations);
+    const unitStillOpen=rest.some((item)=>operationalUnitByWorkItem.get(item.id)!.id===selectedOperationalUnitId);
+    return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],nextOperationalReservations,
+      unitStillOpen?selectedOperationalUnitId:null);
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
     const duration = unit.tasks[0]!.duration;
@@ -1218,6 +1249,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],
+    operationalUnitsDerived:0,operationalUnitsSelected:0,operationalUnitSelectionOrder:[],operationalUnitMemberCounts:{},
+    topLevelResourceTaskSelections:0,operationalUnitSwitches:0,operationalUnitInterleavings:0,
     macroPendingPrerequisiteForwardChecks:0,macroPendingPrerequisiteTasksChecked:0,macroPendingPrerequisiteIndividualDomainChecks:0,
     macroPendingPrerequisiteCollectiveCapacityChecks:0,macroPendingPrerequisiteObligationsChecked:0,macroPendingPrerequisiteCollectiveCapacityPrunes:0,
     macroPendingPrerequisiteJointChecks:0,macroPendingPrerequisiteCacheHits:0,macroPendingPrerequisiteCacheMisses:0,
