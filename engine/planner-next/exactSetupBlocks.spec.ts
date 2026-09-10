@@ -32,6 +32,27 @@ test("lazy setup matching repairs a canonical witness and is input-order determi
   const baseline=collect();const reversed=collect(true);assert.notEqual(baseline.seen[0],baseline.seen[1]);assert.ok(baseline.repairs>0);assert.deepEqual(reversed,baseline);
 });
 
+test("downstream dead end repairs the same compact geometry before any gapped geometry",()=>{
+  const problem=oneFamily();
+  const explorer=createExactSetupBlockExplorer(problem,problem.tasks,[],[],[],createExactSearchLedger(1000));
+  const canonical=explorer.nextCandidate()!;
+  assert.equal(canonical.geometryIdleMinutes,0);
+  assert.equal(canonical.matchingRepairIndex,0);
+  explorer.recordCandidateOutcome(false); // Fixture's canonical assignment is rejected by its downstream child.
+  const repaired=explorer.nextCandidate()!;
+  assert.equal(repaired.geometryIdleMinutes,0);
+  assert.equal(repaired.geometrySpanMinutes,canonical.geometrySpanMinutes);
+  assert.equal(repaired.matchingRepairIndex,1);
+  assert.notEqual(sig(repaired.tasks),sig(canonical.tasks));
+  assert.equal(explorer.evidence.maximumIdleMinutes,0);
+  assert.equal(explorer.evidence.compactGeometryMatchingRepairs,1);
+  assert.equal(explorer.evidence.hiddenMatchingSearchSteps,0);
+  explorer.recordCandidateOutcome(true);
+  assert.deepEqual(explorer.evidence.firstSuccessfulGeometry,{idleMinutes:0,spanMinutes:10});
+  assert.equal(explorer.evidence.firstSuccessfulMatchingRepairIndex,1);
+  assert.equal(validatePlan(problem,repaired.tasks,repaired.preparations).hardValid,true);
+});
+
 test("setup preparation occupies exactly the inter-family interval",()=>{
   const problem=setupGroupingScenario();const space=problem.spaces.find(s=>s.id==="setup-room")!;space.setupPolicy={familyOrder:["family-a","family-b"],reentry:"FORBIDDEN",flexibleFamilyOrder:true,preparationMinutesBetweenFamilies:10};
   const tasks=problem.tasks.filter(t=>t.setupFamilyId==="family-a"||t.setupFamilyId==="family-b").map(t=>({...t,duration:5}));

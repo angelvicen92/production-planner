@@ -1,104 +1,347 @@
-import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type {
+  PlannerNextProblem,
+  ScheduledSetupPreparation,
+  ScheduledSpaceMeal,
+  ScheduledTask,
+  Task,
+} from "./contracts";
 import type { ExactSearchLedger } from "./exactMainAndFeederCore";
+import { findCanonicalPerfectMatching } from "./macroScheduling";
 import { prepareTaskPlacementAuthority } from "./placement";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { eligibleSetupTasksForPolicy, setupFamilySequence } from "./setupGrouping";
-import { createSetupPreparation, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationDuration, spaceOccupations } from "./setupPreparation";
+import {
+  createSetupPreparation,
+  preparationAvoidsOccupations,
+  preparationWithinAvailability,
+  preparationWithinDay,
+  setupPreparationDuration,
+  spaceOccupations,
+} from "./setupPreparation";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
-import { findCanonicalPerfectMatching } from "./macroScheduling";
 
-export interface ExactSetupBlockCandidate { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; cost: number; }
+export interface ExactSetupBlockCandidate {
+  tasks: ScheduledTask[];
+  preparations: ScheduledSetupPreparation[];
+  cost: number;
+  geometryIdleMinutes: number;
+  geometrySpanMinutes: number;
+  matchingRepairIndex: number;
+}
+
 export interface ExactSetupBlockGenerationEvidence {
-  branchesExplored: number; startsExplored: number; maximumDepth: number; completeCandidateCount: number;
-  familyOrderCandidateCounts: Record<string, number>; matchingAttempts: number; matchingSuccesses: number;
-  matchingRepairs: number; permutationBranchesAvoided: number; minimumIdleMinutes: number | null; maximumIdleMinutes: number | null;
+  branchesExplored: number;
+  startsExplored: number;
+  maximumDepth: number;
+  completeCandidateCount: number;
+  familyOrderCandidateCounts: Record<string, number>;
+  matchingAttempts: number;
+  matchingSuccesses: number;
+  matchingRepairs: number;
+  permutationBranchesAvoided: number;
+  minimumIdleMinutes: number | null;
+  maximumIdleMinutes: number | null;
+  compactGeometriesTried: number;
+  compactGeometryMatchingRepairs: number;
+  geometriesAbandonedAfterMatchingExhaustion: number;
+  firstSuccessfulGeometry: { idleMinutes: number; spanMinutes: number } | null;
+  firstSuccessfulMatchingRepairIndex: number | null;
+  matchingSearchSteps: number;
+  hiddenMatchingSearchSteps: 0;
 }
-export interface ExactSetupBlockGenerationResult { outcome: "COMPLETE" | "BUDGET_EXHAUSTED"; candidates: ExactSetupBlockCandidate[]; evidence: ExactSetupBlockGenerationEvidence; }
-export interface ExactSetupMacroDomain { domainSize: number; structuralCandidateCount: number; matchingFeasibleCandidateCount: number; domainExact: false; }
-export interface ExactSetupBlockExplorer { nextCandidate(): ExactSetupBlockCandidate | null; readonly exhausted: boolean; readonly evidence: ExactSetupBlockGenerationEvidence; }
 
-const byId = <T extends { id: string }>(a: T, b: T) => a.id.localeCompare(b.id);
-const signature = (c: ExactSetupBlockCandidate) => [...c.tasks.slice().sort(byId).map(t=>`${t.id}@${t.start}-${t.end}`),...c.preparations.slice().sort(byId).map(t=>`${t.id}@${t.start}-${t.end}`)].join("|");
+export interface ExactSetupBlockGenerationResult {
+  outcome: "COMPLETE" | "BUDGET_EXHAUSTED";
+  candidates: ExactSetupBlockCandidate[];
+  evidence: ExactSetupBlockGenerationEvidence;
+}
 
-function* slotGeometries(start: number, duration: number, count: number, dayEnd: number): Generator<number[]> {
-  // Iterative deepening by span makes the compact geometry the first witness,
-  // then exposes internal idle monotonically without pre-building combinations.
-  const compactSpan=count*duration;
-  for(let span=compactSpan;start+span<=dayEnd;span+=5){
-    const last=start+span-duration;
-    function* choose(prefix:number[]):Generator<number[]>{
-      if(prefix.length===count-1){yield [...prefix,last];return;}
-      const floor=prefix.at(-1)!+duration;
-      const remaining=count-1-prefix.length;
-      for(let next=floor;next+remaining*duration<=last;next+=5)yield* choose([...prefix,next]);
+export interface ExactSetupMacroDomain {
+  domainSize: number;
+  structuralCandidateCount: number;
+  matchingFeasibleCandidateCount: number;
+  /** Exact for the legacy compact/canonical MRV projection, not for the fallback search domain. */
+  domainExact: true;
+}
+
+export interface ExactSetupBlockExplorer {
+  nextCandidate(): ExactSetupBlockCandidate | null;
+  recordCandidateOutcome(successful: boolean): void;
+  readonly exhausted: boolean;
+  readonly evidence: ExactSetupBlockGenerationEvidence;
+}
+
+const byId = <T extends { id: string }>(left: T, right: T): number => left.id.localeCompare(right.id);
+const edgeKey = (slotId: string, taskId: string): string => `${slotId}\u0000${taskId}`;
+const matchingSignature = (matching: ReadonlyMap<string, string>): string => [...matching]
+  .sort(([left], [right]) => left.localeCompare(right))
+  .map(([slotId, taskId]) => `${slotId}:${taskId}`)
+  .join("|");
+const candidateSignature = (candidate: ExactSetupBlockCandidate): string => [
+  ...candidate.tasks.slice().sort(byId).map((task) => `${task.id}@${task.start}-${task.end}`),
+  ...candidate.preparations.slice().sort(byId).map((item) => `${item.id}@${item.start}-${item.end}`),
+].join("|");
+
+/** Enumerates a matching frontier by deterministic edge exclusions, never by permutation DFS. */
+function* constrainedMatchings(
+  slotIds: string[],
+  taskIds: string[],
+  compatible: (taskId: string, slotId: string) => boolean,
+  onSearch: () => void,
+): Generator<ReadonlyMap<string, string>> {
+  const frontier: Set<string>[] = [new Set()];
+  const seenConstraints = new Set([""]);
+  const seenMatchings = new Set<string>();
+  while (frontier.length > 0) {
+    const forbidden = frontier.shift()!;
+    onSearch();
+    const matching = findCanonicalPerfectMatching(slotIds, taskIds,
+      (taskId, slotId) => !forbidden.has(edgeKey(slotId, taskId)) && compatible(taskId, slotId));
+    if (!matching) continue;
+    const signature = matchingSignature(matching);
+    if (!seenMatchings.has(signature)) {
+      seenMatchings.add(signature);
+      yield matching;
     }
-    if(count===1)yield[start]; else yield* choose([start]);
+    for (const [slotId, taskId] of [...matching].sort(([left], [right]) => left.localeCompare(right))) {
+      const next = new Set(forbidden);
+      next.add(edgeKey(slotId, taskId));
+      const constraintSignature = [...next].sort().join("|");
+      if (!seenConstraints.has(constraintSignature)) {
+        seenConstraints.add(constraintSignature);
+        frontier.push(next);
+      }
+    }
   }
 }
 
-function* allMatchings(slotIds:string[], taskIds:string[], compatible:(task:string,slot:string)=>boolean):Generator<ReadonlyMap<string,string>>{
-  const canonical=findCanonicalPerfectMatching(slotIds,taskIds,compatible);
-  if(!canonical)return;
-  yield canonical;
-  const canonicalKey=[...canonical].map(([s,t])=>`${s}:${t}`).join("|");
-  const orderedSlots=[...slotIds].sort(); const orderedTasks=[...taskIds].sort();
-  function* assign(index:number,remaining:string[],pairs:[string,string][]):Generator<ReadonlyMap<string,string>>{
-    if(index===orderedSlots.length){const result=new Map(pairs);const key=[...result].map(([s,t])=>`${s}:${t}`).join("|");if(key!==canonicalKey)yield result;return;}
-    const slot=orderedSlots[index]!;
-    for(const task of remaining)if(compatible(task,slot))yield* assign(index+1,remaining.filter(id=>id!==task),[...pairs,[slot,task]]);
+function* slotGeometries(
+  start: number,
+  duration: number,
+  count: number,
+  dayEnd: number,
+  fallback: boolean,
+): Generator<number[]> {
+  const compactSpan = count * duration;
+  for (let span = fallback ? compactSpan + 5 : compactSpan; start + span <= dayEnd; span += 5) {
+    if (!fallback && span > compactSpan) return;
+    const last = start + span - duration;
+    function* choose(prefix: number[]): Generator<number[]> {
+      if (prefix.length === count - 1) {
+        yield [...prefix, last];
+        return;
+      }
+      const floor = prefix.at(-1)! + duration;
+      const remaining = count - 1 - prefix.length;
+      for (let next = floor; next + remaining * duration <= last; next += 5) yield* choose([...prefix, next]);
+    }
+    if (count === 1) yield [start];
+    else yield* choose([start]);
   }
-  yield* assign(0,orderedTasks,[]);
 }
 
-export function createExactSetupBlockExplorer(problem:PlannerNextProblem,tasks:Task[],placed:ScheduledTask[],preparations:ScheduledSetupPreparation[],meals:ScheduledSpaceMeal[],ledger:ExactSearchLedger):ExactSetupBlockExplorer{
-  const ordered=[...tasks].sort(byId); const spaceId=ordered[0]?.spaceId; const space=problem.spaces.find(s=>s.id===spaceId); const policy=space?.setupPolicy;
-  const evidence:ExactSetupBlockGenerationEvidence={branchesExplored:0,startsExplored:0,maximumDepth:0,completeCandidateCount:0,familyOrderCandidateCounts:{},matchingAttempts:0,matchingSuccesses:0,matchingRepairs:0,permutationBranchesAvoided:0,minimumIdleMinutes:null,maximumIdleMinutes:null};
-  let budgetExhausted=false;
-  function* candidates():Generator<ExactSetupBlockCandidate>{
-    if(!spaceId||!space||!policy||!ordered.length||ordered.some(t=>t.spaceId!==spaceId||t.setupFamilyId===undefined))return;
-    function* visit(canonicalStart:number,remaining:Task[],partial:ScheduledTask[],partialPreparations:ScheduledSetupPreparation[],cost:number,repairPhase:boolean,repaired:boolean):Generator<ExactSetupBlockCandidate>{
-      evidence.maximumDepth=Math.max(evidence.maximumDepth,partial.length);
-      if(!remaining.length){if(repairPhase&&!repaired)return;const candidate={tasks:partial,preparations:partialPreparations,cost};const key=setupFamilySequence(partial).join(">");evidence.familyOrderCandidateCounts[key]=(evidence.familyOrderCandidateCounts[key]??0)+1;evidence.completeCandidateCount+=1;const idle=partial.reduce((sum,t,i,a)=>i&&a[i-1]!.setupFamilyId===t.setupFamilyId?sum+t.start-a[i-1]!.end:sum,0);evidence.minimumIdleMinutes=Math.min(evidence.minimumIdleMinutes??idle,idle);evidence.maximumIdleMinutes=Math.max(evidence.maximumIdleMinutes??idle,idle);yield candidate;return;}
-      const families=[...new Set(eligibleSetupTasksForPolicy(remaining,partial,policy).map(t=>t.setupFamilyId!))].sort();
-      for(const familyId of families){
-        const familyTasks=remaining.filter(t=>t.setupFamilyId===familyId).sort(byId); const durations=[...new Set(familyTasks.map(t=>t.duration))];if(durations.length!==1)continue;
-        const cursor=partial.at(-1)?.end??canonicalStart; const prepDuration=setupPreparationDuration(policy,familyId,partial.length>0);
-        const preparation=prepDuration===undefined?undefined:createSetupPreparation(spaceId,familyId,1,prepDuration,cursor);
-        const earliest=preparation?.end??cursor; const priorTasks=[...placed,...partial];const priorPreparations=[...preparations,...partialPreparations];
-        if(preparation&&(!preparationWithinDay(problem,preparation)||!preparationWithinAvailability(space.availability,preparation)||!occupationAvoidsProtectedMeal(problem,spaceId,preparation.start,preparation.end)||!preparationAvoidsOccupations(preparation,spaceOccupations(priorTasks,priorPreparations,spaceId,meals))))continue;
-        const authorities=new Map(familyTasks.map(t=>[t.id,prepareTaskPlacementAuthority(problem,t,priorTasks,meals)]));
-        for(const starts of slotGeometries(earliest,durations[0]!,familyTasks.length,problem.day.end)){
-          if(!ledger.consume("STANDALONE")){budgetExhausted=true;return;} evidence.branchesExplored+=1;
-          const slotIds=starts.map((_,i)=>`${familyId}:${i}`); evidence.matchingAttempts+=1;
-          let witness=0;
-          for(const matching of allMatchings(slotIds,familyTasks.map(t=>t.id),(taskId,slotId)=>authorities.get(taskId)!.accepts(starts[Number(slotId.slice(slotId.lastIndexOf(":")+1))]!,authorities.get(taskId)!.baseDomain))){
-            if(!repairPhase&&witness>0)break;
-            if(witness>0){if(!ledger.consume("STANDALONE")){budgetExhausted=true;return;}evidence.branchesExplored+=1;evidence.matchingRepairs+=1;}witness+=1;evidence.matchingSuccesses+=1;
-            const scheduled=[...matching].map(([slotId,taskId])=>{const task=familyTasks.find(t=>t.id===taskId)!;return scoreAuxiliaryTask(problem,task,starts[Number(slotId.slice(slotId.lastIndexOf(":")+1))]!,priorTasks).scheduled;}).sort((a,b)=>a.start-b.start||byId(a,b));
-            if(scheduled.some(task=>!authorities.get(task.id)!.accepts(task.start,authorities.get(task.id)!.domain(scheduled.filter(peer=>peer.id!==task.id)))))continue;
-            evidence.permutationBranchesAvoided+=Math.max(0,familyTasks.length-1);
-            yield* visit(canonicalStart,remaining.filter(t=>t.setupFamilyId!==familyId),[...partial,...scheduled],preparation?[...partialPreparations,preparation]:partialPreparations,cost+scheduled.reduce((sum,t)=>sum+scoreAuxiliaryTask(problem,familyTasks.find(x=>x.id===t.id)!,t.start,priorTasks).cost,0),repairPhase,repaired||witness>1);
-            if(budgetExhausted)return;
+export function createExactSetupBlockExplorer(
+  problem: PlannerNextProblem,
+  tasks: Task[],
+  placed: ScheduledTask[],
+  preparations: ScheduledSetupPreparation[],
+  meals: ScheduledSpaceMeal[],
+  ledger: ExactSearchLedger,
+  options: { compactOnly?: boolean; canonicalOnly?: boolean } = {},
+): ExactSetupBlockExplorer {
+  const ordered = [...tasks].sort(byId);
+  const spaceId = ordered[0]?.spaceId;
+  const space = problem.spaces.find((candidate) => candidate.id === spaceId);
+  const policy = space?.setupPolicy;
+  const evidence: ExactSetupBlockGenerationEvidence = {
+    branchesExplored: 0, startsExplored: 0, maximumDepth: 0, completeCandidateCount: 0,
+    familyOrderCandidateCounts: {}, matchingAttempts: 0, matchingSuccesses: 0,
+    matchingRepairs: 0, permutationBranchesAvoided: 0, minimumIdleMinutes: null, maximumIdleMinutes: null,
+    compactGeometriesTried: 0, compactGeometryMatchingRepairs: 0,
+    geometriesAbandonedAfterMatchingExhaustion: 0, firstSuccessfulGeometry: null,
+    firstSuccessfulMatchingRepairIndex: null, matchingSearchSteps: 0, hiddenMatchingSearchSteps: 0,
+  };
+  let budgetExhausted = false;
+  let pendingOutcome: ExactSetupBlockCandidate | null = null;
+
+  function* candidates(): Generator<ExactSetupBlockCandidate> {
+    if (!spaceId || !space || !policy || ordered.length === 0
+      || ordered.some((task) => task.spaceId !== spaceId || task.setupFamilyId === undefined)) return;
+
+    function* visit(
+      canonicalStart: number,
+      remaining: Task[],
+      partial: ScheduledTask[],
+      partialPreparations: ScheduledSetupPreparation[],
+      cost: number,
+      fallback: boolean,
+      repairIndex: number,
+      repairsEnabled: boolean,
+      repaired: boolean,
+    ): Generator<ExactSetupBlockCandidate> {
+      evidence.maximumDepth = Math.max(evidence.maximumDepth, partial.length);
+      if (remaining.length === 0) {
+        if (repairsEnabled && !repaired) return;
+        const start = Math.min(...partial.map((task) => task.start));
+        const end = Math.max(...partial.map((task) => task.end));
+        const idleMinutes = partial.reduce((sum, task, index, all) => index > 0
+          && all[index - 1]!.setupFamilyId === task.setupFamilyId ? sum + task.start - all[index - 1]!.end : sum, 0);
+        const candidate = { tasks: partial, preparations: partialPreparations, cost,
+          geometryIdleMinutes: idleMinutes, geometrySpanMinutes: end - start, matchingRepairIndex: repairIndex };
+        const key = setupFamilySequence(partial).join(">");
+        evidence.familyOrderCandidateCounts[key] = (evidence.familyOrderCandidateCounts[key] ?? 0) + 1;
+        evidence.completeCandidateCount += 1;
+        evidence.minimumIdleMinutes = Math.min(evidence.minimumIdleMinutes ?? idleMinutes, idleMinutes);
+        evidence.maximumIdleMinutes = Math.max(evidence.maximumIdleMinutes ?? idleMinutes, idleMinutes);
+        yield candidate;
+        return;
+      }
+
+      const families = [...new Set(eligibleSetupTasksForPolicy(remaining, partial, policy)
+        .map((task) => task.setupFamilyId!))].sort();
+      for (const familyId of families) {
+        const familyTasks = remaining.filter((task) => task.setupFamilyId === familyId).sort(byId);
+        const durations = [...new Set(familyTasks.map((task) => task.duration))];
+        if (durations.length !== 1) continue;
+        const cursor = partial.at(-1)?.end ?? canonicalStart;
+        const preparationDuration = setupPreparationDuration(policy, familyId, partial.length > 0);
+        const preparation = preparationDuration === undefined ? undefined
+          : createSetupPreparation(spaceId, familyId, 1, preparationDuration, cursor);
+        const earliest = preparation?.end ?? cursor;
+        const priorTasks = [...placed, ...partial];
+        const priorPreparations = [...preparations, ...partialPreparations];
+        if (preparation && (!preparationWithinDay(problem, preparation)
+          || !preparationWithinAvailability(space.availability, preparation)
+          || !occupationAvoidsProtectedMeal(problem, spaceId, preparation.start, preparation.end)
+          || !preparationAvoidsOccupations(preparation, spaceOccupations(priorTasks, priorPreparations, spaceId, meals)))) continue;
+        const authorities = new Map(familyTasks.map((task) => [task.id,
+          prepareTaskPlacementAuthority(problem, task, priorTasks, meals)]));
+
+        for (const starts of slotGeometries(earliest, durations[0]!, familyTasks.length, problem.day.end, fallback)) {
+          if (!ledger.consume("STANDALONE")) { budgetExhausted = true; return; }
+          evidence.branchesExplored += 1;
+          const compact = starts.at(-1)! + durations[0]! - starts[0]! === familyTasks.length * durations[0]!;
+          if (compact) evidence.compactGeometriesTried += 1;
+          const slotIds = starts.map((_start, index) => `${familyId}:${index}`);
+          evidence.matchingAttempts += 1;
+          let matchingIndex = 0;
+          let yieldedForGeometry = false;
+          for (const matching of constrainedMatchings(slotIds, familyTasks.map(({ id }) => id), (taskId, slotId) => {
+            const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
+            const authority = authorities.get(taskId)!;
+            return authority.accepts(starts[index]!, authority.baseDomain);
+          }, () => { evidence.matchingSearchSteps += 1; })) {
+            if ((options.canonicalOnly || !repairsEnabled) && matchingIndex > 0) break;
+            if (matchingIndex > 0) {
+              if (!ledger.consume("STANDALONE")) { budgetExhausted = true; return; }
+              evidence.branchesExplored += 1;
+              evidence.matchingRepairs += 1;
+              if (compact) evidence.compactGeometryMatchingRepairs += 1;
+            }
+            evidence.matchingSuccesses += 1;
+            const currentRepairIndex = matchingIndex;
+            matchingIndex += 1;
+            const scheduled = [...matching].map(([slotId, taskId]) => {
+              const task = familyTasks.find((candidate) => candidate.id === taskId)!;
+              const index = Number(slotId.slice(slotId.lastIndexOf(":") + 1));
+              return scoreAuxiliaryTask(problem, task, starts[index]!, priorTasks).scheduled;
+            }).sort((left, right) => left.start - right.start || byId(left, right));
+            if (scheduled.some((task) => !authorities.get(task.id)!.accepts(task.start,
+              authorities.get(task.id)!.domain(scheduled.filter((peer) => peer.id !== task.id))))) continue;
+            yieldedForGeometry = true;
+            evidence.permutationBranchesAvoided += Math.max(0, familyTasks.length - 1);
+            yield* visit(canonicalStart, remaining.filter((task) => task.setupFamilyId !== familyId),
+              [...partial, ...scheduled], preparation ? [...partialPreparations, preparation] : partialPreparations,
+              cost + scheduled.reduce((sum, task) => sum + scoreAuxiliaryTask(problem,
+                familyTasks.find((candidate) => candidate.id === task.id)!, task.start, priorTasks).cost, 0),
+              fallback, Math.max(repairIndex, currentRepairIndex), repairsEnabled,
+              repaired || currentRepairIndex > 0);
+            if (budgetExhausted) return;
           }
+          if (yieldedForGeometry) evidence.geometriesAbandonedAfterMatchingExhaustion += 1;
         }
       }
     }
-    for(const repairPhase of [false,true])for(let start=problem.day.start;start<problem.day.end;start+=5){evidence.startsExplored+=1;yield* visit(start,ordered,[],[],0,repairPhase,false);if(budgetExhausted)return;}
+
+    // FAST/PREFERRED: every compact start before any gapped geometry. Cost remains
+    // the first historical ranking key when callers materialize the full domain.
+    for (const fallback of options.compactOnly ? [false] : [false, true]) {
+      for (let start = problem.day.start; start < problem.day.end; start += 5) {
+        evidence.startsExplored += 1;
+        yield* visit(start, ordered, [], [], 0, fallback, 0, false, false);
+        if (!options.canonicalOnly) yield* visit(start, ordered, [], [], 0, fallback, 0, true, false);
+        if (budgetExhausted) return;
+      }
+    }
   }
-  const iterator=candidates(); let done=false;
-  return {get exhausted(){return budgetExhausted;},evidence,nextCandidate(){if(done)return null;const next=iterator.next();done=Boolean(next.done);return next.done?null:next.value;}};
+
+  const iterator = candidates();
+  let done = false;
+  return {
+    get exhausted() { return budgetExhausted; },
+    evidence,
+    nextCandidate() {
+      if (done) return null;
+      pendingOutcome = null;
+      const next = iterator.next();
+      done = Boolean(next.done);
+      if (next.done) return null;
+      pendingOutcome = next.value;
+      return next.value;
+    },
+    recordCandidateOutcome(successful) {
+      if (!pendingOutcome) return;
+      if (successful && evidence.firstSuccessfulGeometry === null) {
+        evidence.firstSuccessfulGeometry = {
+          idleMinutes: pendingOutcome.geometryIdleMinutes,
+          spanMinutes: pendingOutcome.geometrySpanMinutes,
+        };
+        evidence.firstSuccessfulMatchingRepairIndex = pendingOutcome.matchingRepairIndex;
+      }
+      pendingOutcome = null;
+    },
+  };
 }
 
-export function generateExactSetupBlockCandidates(problem:PlannerNextProblem,tasks:Task[],placed:ScheduledTask[],preparations:ScheduledSetupPreparation[],meals:ScheduledSpaceMeal[],ledger:ExactSearchLedger,countOnly=false):ExactSetupBlockGenerationResult{
-  const explorer=createExactSetupBlockExplorer(problem,tasks,placed,preparations,meals,ledger);const candidates:ExactSetupBlockCandidate[]=[];for(let c=explorer.nextCandidate();c;c=explorer.nextCandidate())if(!countOnly)candidates.push(c);
-  candidates.sort((a,b)=>a.cost-b.cost||(b.tasks[0]?.start??0)-(a.tasks[0]?.start??0)||signature(a).localeCompare(signature(b)));
-  return {outcome:explorer.exhausted?"BUDGET_EXHAUSTED":"COMPLETE",candidates,evidence:explorer.evidence};
+export function generateExactSetupBlockCandidates(
+  problem: PlannerNextProblem,
+  tasks: Task[],
+  placed: ScheduledTask[],
+  preparations: ScheduledSetupPreparation[],
+  meals: ScheduledSpaceMeal[],
+  ledger: ExactSearchLedger,
+  countOnly = false,
+): ExactSetupBlockGenerationResult {
+  const explorer = createExactSetupBlockExplorer(problem, tasks, placed, preparations, meals, ledger);
+  const candidates: ExactSetupBlockCandidate[] = [];
+  for (let candidate = explorer.nextCandidate(); candidate; candidate = explorer.nextCandidate()) {
+    if (!countOnly) candidates.push(candidate);
+    explorer.recordCandidateOutcome(false);
+  }
+  candidates.sort((left, right) => left.geometryIdleMinutes - right.geometryIdleMinutes
+    || left.geometrySpanMinutes - right.geometrySpanMinutes
+    || left.cost - right.cost
+    || (right.tasks[0]?.start ?? 0) - (left.tasks[0]?.start ?? 0)
+    || candidateSignature(left).localeCompare(candidateSignature(right)));
+  return { outcome: explorer.exhausted ? "BUDGET_EXHAUSTED" : "COMPLETE", candidates, evidence: explorer.evidence };
 }
-export function probeExactSetupMacroDomain(problem:PlannerNextProblem,tasks:Task[],placed:ScheduledTask[],preparations:ScheduledSetupPreparation[],meals:ScheduledSpaceMeal[]):ExactSetupMacroDomain{
-  // Gapped geometries are combinatorial. MRV only needs a conservative class
-  // measure here; exact enumeration belongs to the shared-ledger child explorer.
-  const starts=Math.max(0,Math.floor((problem.day.end-problem.day.start)/5));
-  const families=new Set(tasks.flatMap(t=>t.setupFamilyId?[t.setupFamilyId]:[])).size;
-  const orders=problem.spaces.find(s=>s.id===tasks[0]?.spaceId)?.setupPolicy?.flexibleFamilyOrder?Math.max(1,families):1;
-  return{domainSize:starts*orders,structuralCandidateCount:starts,matchingFeasibleCandidateCount:0,domainExact:false};
+
+/** Preserves the base HEAD compact/canonical constrainedness without claiming the gapped domain is exact. */
+export function probeExactSetupMacroDomain(
+  problem: PlannerNextProblem,
+  tasks: Task[],
+  placed: ScheduledTask[],
+  preparations: ScheduledSetupPreparation[],
+  meals: ScheduledSpaceMeal[],
+): ExactSetupMacroDomain {
+  const ledger: ExactSearchLedger = {
+    limit: Number.POSITIVE_INFINITY, branchesExplored: 0, coreBranches: 0,
+    standaloneBranches: 0, lastExhaustionPhase: null, consume: () => true,
+  };
+  const explorer = createExactSetupBlockExplorer(problem, tasks, placed, preparations, meals, ledger,
+    { compactOnly: true, canonicalOnly: true });
+  while (explorer.nextCandidate()) explorer.recordCandidateOutcome(false);
+  return { domainSize: explorer.evidence.completeCandidateCount,
+    structuralCandidateCount: explorer.evidence.startsExplored,
+    matchingFeasibleCandidateCount: explorer.evidence.completeCandidateCount, domainExact: true };
 }
