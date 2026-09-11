@@ -244,6 +244,7 @@ const diagnosticReport = diagnostic ? {
   },
   standaloneFrontier: diagnostic.standaloneFrontier,
   deepestStandaloneFrontier: diagnostic.deepestStandaloneFrontier,
+  macroParticipantMeals: diagnostic.macroParticipantMeals,
   feederMatching: diagnostic.feederMatching,
   macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
   macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
@@ -268,7 +269,8 @@ const diagnosticReport = diagnostic ? {
 const invariantEvidenceKeys = ["branchesExplored","coreBranches","standaloneBranches","coreCompleteLeafCount",
   "coreCompleteLeavesEvaluated","coreStandaloneFrontierChecks","coreStandaloneFrontierPrunes","causalBacktracks",
   "causalBacktrackTargetDepthCounts","standaloneSearchInvocations","standaloneMaximumDepth","standaloneCompleteLeafCount",
-  "coreMaximumDepth","coreFingerprint","fullFingerprint","lastExhaustionPhase"] as const;
+  "coreMaximumDepth","deepestCoreDepthReached","deepestPartialScheduledTaskCount","deepestPartialFrontierFingerprint",
+  "macroSelectionOrder","macroSelectionReason","coreFingerprint","selectedCoreFingerprint","fullFingerprint","lastExhaustionPhase"] as const;
 const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
   diagnosticOn:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResult.evidence[key]])),
   diagnosticOff:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResultWithoutDiagnostic.evidence[key]])),
@@ -279,6 +281,7 @@ const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
 if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
 const persistedEvidence=exactResult?{...exactResult.evidence,
   causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,deepestStandaloneFrontier:diagnostic.deepestStandaloneFrontier,feederMatching:diagnostic.feederMatching,
+    macroParticipantMeals:diagnostic.macroParticipantMeals,
     macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
     macroPendingPrerequisiteCapacityCertificateOverflow:diagnostic.macroPendingPrerequisiteCapacityCertificateOverflow,
     setupCandidateOutcomeCertificates:exactResult.evidence.setupCandidateOutcomeCertificates,

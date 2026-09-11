@@ -254,6 +254,26 @@ test("macro constrainedness is recalculated after each placement", () => {
     < result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-b")!.domainSize);
 });
 
+test("macro participant-meal diagnostic identifies the first destructive candidate without changing search", () => {
+  const input=macroCompetitionProblem({resource:[60,80]});input.protectedMeal=undefined;
+  const task=input.tasks.find(({id})=>id==="resource-task")!;task.duration=20;
+  input.participantMeals=[{id:"meal:resource",sourceTaskId:"meal-task:resource",participantId:"resource-person",
+    duration:20,window:{start:60,end:80},status:"pending"}];
+  input.participantMealCapacity={maxSimultaneous:1};
+  const disabled=runExactItinerantPlanSearch(structuredClone(input));
+  const enabled=runExactItinerantPlanSearch(structuredClone(input),{causalDiagnostic:true});
+  assert.deepEqual({...enabled.evidence,causalDiagnostic:null},disabled.evidence);
+  assert.deepEqual(enabled.scheduledTasks,disabled.scheduledTasks);assert.equal(enabled.status,disabled.status);
+  const diagnostic=enabled.evidence.causalDiagnostic!.macroParticipantMeals;
+  assert.deepEqual(diagnostic.firstDestruction?.blockingMealTaskIds,["meal-task:resource"]);
+  assert.equal(diagnostic.firstDestruction?.macroUnitId,"resource:resource-task");
+  assert.equal(diagnostic.firstDestruction?.macroKind,"RESOURCE_TASK");
+  assert.deepEqual(diagnostic.firstDestruction?.blockedObligations,
+    [{mealTaskId:"meal-task:resource",participantId:"resource-person"}]);
+  assert.deepEqual(runExactItinerantPlanSearch(structuredClone(input),{causalDiagnostic:true})
+    .evidence.causalDiagnostic!.macroParticipantMeals,diagnostic);
+});
+
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
   const input = problem([
     { ...auxiliary("joint-a", "a", [{ start: 20, end: 40 }], ["unit"]), spaceId: "joint", jointGroupId: "group" },

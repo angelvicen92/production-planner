@@ -511,6 +511,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
   technicalChainStartDomainMode:TechnicalChainStartDomainMode,
   macroCapacityDiagnostic:{enabled:boolean;certificates:ExactMacroCapacityCertificate[];overflow:number;deepestStandaloneFrontier:ExactCoreCausalDiagnostic["deepestStandaloneFrontier"]},
+  macroParticipantMealDiagnostic:ExactCoreCausalDiagnostic["macroParticipantMeals"],
   arrivalDiagnostic:{enabled:boolean;first:import("./deferredPrerequisiteReservation").DeferredArrivalCausalCertificate|null}): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
@@ -969,6 +970,33 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
     const attempt=diagnosticFrontier&&diagnosticFrontier.candidatePlacements.length<256?{taskIds:[...tasks].sort(byId).map(({id})=>id),starts:[...tasks].sort(byId).map(({start})=>start),ends:[...tasks].sort(byId).map(({end})=>end),outcome:"ENTERED" as const,firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null,transportFailure:null,transportCausalCertificate:null}:null;
     if(attempt)diagnosticFrontier!.candidatePlacements.push(attempt);
+    if(macroCapacityDiagnostic.enabled&&(problem.participantMeals?.length??0)>0){
+      // Diagnostic-only probes intentionally use no production cache, ledger, or evidence counters.
+      const before=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed]);
+      const candidateTasks=[...coreTasks,...placed,...tasks];
+      const after=probeParticipantMealFutureFeasibility(problem,candidateTasks);
+      const diagnostic=macroParticipantMealDiagnostic;
+      const macroDepth=depth+1,frontierDepth=placed.length+tasks.length,key=`${unit.kind}:${macroDepth}`;
+      const aggregate=diagnostic.aggregatesByKindDepth[key]??={candidates:0,feasible:0,infeasible:0,firstDestructions:0};
+      aggregate.candidates+=1;aggregate[after.feasible?"feasible":"infeasible"]+=1;
+      const frontierFingerprint=causalHash(candidateTasks.sort(byId).map(({id,start,end})=>({id,start,end})));
+      if(after.feasible){const prior=diagnostic.deepestFeasibleFrontier;
+        if(!prior||macroDepth>prior.macroDepth||(macroDepth===prior.macroDepth&&frontierFingerprint<prior.frontierFingerprint))
+          diagnostic.deepestFeasibleFrontier={macroDepth,frontierDepth,macroUnitId:unit.id,macroKind:unit.kind,
+            remainingMacroUnitIds:rest.map(({id})=>id).sort(),branchesExplored:ledger.branchesExplored,frontierFingerprint};
+      }else if(before.feasible){aggregate.firstDestructions+=1;
+        if(!diagnostic.firstDestruction){const blocked=new Set(after.blockingMealTaskIds);
+          diagnostic.firstDestruction={macroDepth,frontierDepth,macroUnitId:unit.id,macroKind:unit.kind,
+            addedTasks:[...tasks].sort(byId).map(({id,start,end,participantId,kind})=>({id,start,end,participantId:participantId??null,kind})),
+            blockingMealTaskIds:[...after.blockingMealTaskIds],blockedObligations:(problem.participantMeals??[])
+              .filter(({sourceTaskId})=>blocked.has(sourceTaskId)).sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId))
+              .map(({sourceTaskId,participantId})=>({mealTaskId:sourceTaskId,participantId})),reasonCodes:[...after.reasonCodes],
+            candidateCountByTaskId:{...after.candidateCountByTaskId},remainingMacroUnits:rest.map(({id,kind})=>({id,kind})).sort((a,b)=>a.id.localeCompare(b.id)),
+            branchesExplored:ledger.branchesExplored,frontierFingerprint};
+        }
+      }
+      diagnostic.aggregatesByKindDepth[key]=aggregate;
+    }
     let nextOperationalReservations=operationalReservations;
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
     const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache);
@@ -1327,6 +1355,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const macroCapacityDiagnostic={enabled:Boolean(options.causalDiagnostic),certificates:[] as ExactMacroCapacityCertificate[],overflow:0,
     deepestStandaloneFrontier:null as ExactCoreCausalDiagnostic["deepestStandaloneFrontier"]};
+  const macroParticipantMealDiagnostic:ExactCoreCausalDiagnostic["macroParticipantMeals"]={
+    firstDestruction:null,aggregatesByKindDepth:{},deepestFeasibleFrontier:null};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
   const standaloneFrontierDiagnostic:ExactCoreCausalDiagnostic["standaloneFrontier"]={totalRejections:0,certificates:[],examples:[]};
   const arrivalDiagnostic={enabled:Boolean(options.causalDiagnostic),first:null as import("./deferredPrerequisiteReservation").DeferredArrivalCausalCertificate|null};
@@ -1568,7 +1598,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",macroCapacityDiagnostic,arrivalDiagnostic);
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN",macroCapacityDiagnostic,macroParticipantMealDiagnostic,arrivalDiagnostic);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -1585,6 +1615,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
+  if(evidence.causalDiagnostic)evidence.causalDiagnostic.macroParticipantMeals=macroParticipantMealDiagnostic;
   if(evidence.causalDiagnostic)evidence.causalDiagnostic.deferredArrivalFirstRepair=arrivalDiagnostic.first;
   if(evidence.causalDiagnostic)evidence.causalDiagnostic.standaloneFrontier=standaloneFrontierDiagnostic;
   if(evidence.causalDiagnostic)evidence.causalDiagnostic.deepestStandaloneFrontier=macroCapacityDiagnostic.deepestStandaloneFrontier;
