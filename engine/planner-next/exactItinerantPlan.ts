@@ -313,6 +313,12 @@ export interface ExactItinerantPlanEvidence {
   roundSynchronizationZeroAlternativePrunes: number;
   roundSynchronizationPrerequisiteAwareGeometriesEliminated:number;
   roundSynchronizationFirstPrerequisiteAwareStart:number|null;
+  roundSynchronizationArrivalInjectiveChecks:number;
+  roundSynchronizationArrivalInjectivePrunes:number;
+  roundSynchronizationEdgeDeadlineChecks:number;
+  roundSynchronizationMaxMatchingChecks:number;
+  roundSynchronizationFirstCertificate:{cutoff:number;minimumDemand:number;maximumPossible:number}|null;
+  roundSynchronizationFirstAbstention:{reason:string;taskCount:number;distinctParticipantCount:number}|null;
   totalesMacroCandidates: number;
   totalesMatchingAttempts: number;
   totalesMatchingSuccesses: number;
@@ -823,6 +829,14 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
     evidence.firstFeedableCompactStart=delta.firstFeedableCompactStart;
   if(evidence.roundSynchronizationFirstPrerequisiteAwareStart===null&&delta.firstPrerequisiteAwareStart!==null)
     evidence.roundSynchronizationFirstPrerequisiteAwareStart=delta.firstPrerequisiteAwareStart;
+  evidence.roundSynchronizationArrivalInjectiveChecks+=delta.arrivalInjectiveChecks;
+  evidence.roundSynchronizationArrivalInjectivePrunes+=delta.arrivalInjectivePrunes;
+  evidence.roundSynchronizationEdgeDeadlineChecks+=delta.edgeDeadlineChecks;
+  evidence.roundSynchronizationMaxMatchingChecks+=delta.maxMatchingChecks;
+  if(evidence.roundSynchronizationFirstCertificate===null&&delta.firstCertificate!==null)
+    evidence.roundSynchronizationFirstCertificate=delta.firstCertificate;
+  if(evidence.roundSynchronizationFirstAbstention===null&&delta.firstAbstention!==null)
+    evidence.roundSynchronizationFirstAbstention=delta.firstAbstention;
   evidence.totalesMacroCandidates += delta.startCandidates;
   evidence.totalesMatchingAttempts += delta.matchingAttempts;
   evidence.totalesMatchingSuccesses += delta.matchingSuccesses;
@@ -1291,6 +1305,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     roundSynchronizationCompleteAssignments: 0, roundSynchronizationBacktracks: 0,
     roundSynchronizationZeroAlternativePrunes: 0,roundSynchronizationPrerequisiteAwareGeometriesEliminated:0,
     roundSynchronizationFirstPrerequisiteAwareStart:null, selectedRoundPreparationIds: [],
+    roundSynchronizationArrivalInjectiveChecks:0,roundSynchronizationArrivalInjectivePrunes:0,
+    roundSynchronizationEdgeDeadlineChecks:0,roundSynchronizationMaxMatchingChecks:0,
+    roundSynchronizationFirstCertificate:null,roundSynchronizationFirstAbstention:null,
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],

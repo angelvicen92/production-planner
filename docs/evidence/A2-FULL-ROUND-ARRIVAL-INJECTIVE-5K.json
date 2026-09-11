@@ -1,0 +1,26 @@
+{
+  "evidenceId": "A2-FULL-ROUND-ARRIVAL-INJECTIVE-5K",
+  "branchBudget": 5000,
+  "status": "BUDGET_EXHAUSTED",
+  "nextSelectedUnit": {
+    "id": "setup:space:3009",
+    "kind": "SETUP_GROUP"
+  },
+  "depth": 0,
+  "placedTaskCount": 0,
+  "rejectionClasses": {
+    "MACRO_PENDING_PREREQUISITE:PENDING_ARRIVAL_DEADLINE": 3142
+  },
+  "firstCertificate": {
+    "cutoff": 650,
+    "demand": 13,
+    "maximumPossible": 12
+  },
+  "roundArrivalInjective": {
+    "checks": 0,
+    "prunes": 0,
+    "firstCertificate": null,
+    "firstAbstention": null
+  },
+  "gate": "ROUND_SYNCHRONIZATION_NOT_REACHED"
+}

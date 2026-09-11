@@ -7,6 +7,7 @@ import type {
 } from "./contracts";
 import { constructExactItinerantPlan } from "./exactItinerantPlan";
 import { createExactSearchLedger } from "./exactMainAndFeederCore";
+import type { PrerequisiteAwareSlotAuthority } from "./prerequisiteAwareSlotFeasibility";
 import {
   exploreExactRoundSynchronizationPolicy,
   probeExactRoundSynchronizationMacroDomain,
@@ -75,6 +76,79 @@ function roundPreparations(problem: PlannerNextProblem): ScheduledRoundPreparati
     end: 875,
   }));
 }
+
+function roundArrivalAuthority(
+  verdict: "PROVEN_IMPOSSIBLE" | "NOT_PROVEN_IMPOSSIBLE",
+  checked = true,
+): PrerequisiteAwareSlotAuthority {
+  const authority = (() => "NOT_PROVEN_IMPOSSIBLE") as PrerequisiteAwareSlotAuthority;
+  authority.arrivalInjectiveFeasible = (edges) => ({
+    verdict,
+    checked,
+    edgeDeadlineChecks: checked ? edges.length : 0,
+    maxMatchingChecks: checked ? 1 : 0,
+    firstCertificate: verdict === "PROVEN_IMPOSSIBLE"
+      ? { cutoff: 800, minimumDemand: 2, maximumPossible: 1 }
+      : null,
+    abstention: checked ? null : {
+      reason: "ARRIVAL_CAPACITY_INCONCLUSIVE",
+      taskCount: new Set(edges.map(({ task }) => task.id)).size,
+      distinctParticipantCount: new Set(edges.map(({ task }) => task.participantId)).size,
+    },
+  });
+  return authority;
+}
+
+test("round arrival capacity prunes a jointly impossible geometry before matching and branching", () => {
+  const problem = supportedProblem();
+  const policy = problem.roundSynchronizations![0]!;
+  const snapshot = structuredClone(problem);
+  const ledger = createExactSearchLedger(10_000);
+  const result = exploreExactRoundSynchronizationPolicy(problem, policy, [], [], [], [], ledger,
+    () => assert.fail("a certified impossible geometry must not reach the assignment continuation"),
+    roundArrivalAuthority("PROVEN_IMPOSSIBLE"));
+  assert.equal(result.outcome, "DEAD_END");
+  assert.ok(result.evidence.arrivalInjectiveChecks > 0);
+  assert.ok(result.evidence.arrivalInjectivePrunes > 0);
+  assert.equal(result.evidence.matchingAttempts, 0);
+  assert.equal(result.evidence.assignmentBranches, 0);
+  assert.equal(ledger.branchesExplored, 0);
+  assert.deepEqual(result.evidence.firstCertificate,
+    { cutoff: 800, minimumDemand: 2, maximumPossible: 1 });
+  assert.deepEqual(problem, snapshot);
+});
+
+test("round arrival capacity preserves sufficient and inconclusive geometries with intact accounting", () => {
+  const problem = supportedProblem();
+  const policy = problem.roundSynchronizations![0]!;
+  for (const [authority, expectedChecks] of [
+    [roundArrivalAuthority("NOT_PROVEN_IMPOSSIBLE"), 1],
+    [roundArrivalAuthority("NOT_PROVEN_IMPOSSIBLE", false), 0],
+  ] as const) {
+    const ledger = createExactSearchLedger(10_000);
+    const result = exploreExactRoundSynchronizationPolicy(problem, policy, [], [], [], [], ledger,
+      () => "FOUND", authority);
+    assert.equal(result.outcome, "FOUND");
+    assert.equal(result.evidence.arrivalInjectiveChecks, expectedChecks);
+    assert.equal(result.evidence.arrivalInjectivePrunes, 0);
+    assert.equal(result.evidence.matchingAttempts, 1);
+    assert.equal(result.evidence.assignmentBranches, 1);
+    assert.equal(ledger.branchesExplored, 1);
+    if (!expectedChecks) assert.deepEqual(result.evidence.firstAbstention, {
+      reason: "ARRIVAL_CAPACITY_INCONCLUSIVE", taskCount: 4, distinctParticipantCount: 4,
+    });
+  }
+});
+
+test("round arrival pruning evidence is invariant to task input order", () => {
+  const run = (problem: PlannerNextProblem) => exploreExactRoundSynchronizationPolicy(
+    problem, problem.roundSynchronizations![0]!, [], [], [], [], createExactSearchLedger(10_000),
+    () => "FOUND", roundArrivalAuthority("PROVEN_IMPOSSIBLE"),
+  ).evidence;
+  const problem = supportedProblem();
+  const reversed = { ...problem, tasks: [...problem.tasks].reverse() };
+  assert.deepEqual(run(reversed), run(problem));
+});
 
 test("EngineInput projects the generic two-lane round contract deterministically", () => {
   const input = createSpec10021RoundSynchronizationEngineInputFixture();

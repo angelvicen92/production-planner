@@ -43,6 +43,12 @@ export interface ExactRoundSynchronizationEvidence {
   geometryPrerequisiteEnvelopePrunes: number;
   logicalMatchingCandidatesAvoidedByEnvelope: number;
   firstFeedableCompactStart: number | null;
+  arrivalInjectiveChecks: number;
+  arrivalInjectivePrunes: number;
+  edgeDeadlineChecks: number;
+  maxMatchingChecks: number;
+  firstCertificate: { cutoff: number; minimumDemand: number; maximumPossible: number } | null;
+  firstAbstention: { reason: string; taskCount: number; distinctParticipantCount: number } | null;
 }
 
 export interface ExactRoundSynchronizationCandidate {
@@ -319,6 +325,8 @@ export function exploreExactRoundSynchronizationPolicy(
     firstPrerequisiteAwareStart: null,
     geometryPrerequisiteEnvelopeChecks: 0, geometryPrerequisiteEnvelopePrunes: 0,
     logicalMatchingCandidatesAvoidedByEnvelope: 0, firstFeedableCompactStart: null,
+    arrivalInjectiveChecks: 0, arrivalInjectivePrunes: 0, edgeDeadlineChecks: 0, maxMatchingChecks: 0,
+    firstCertificate: null, firstAbstention: null,
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
@@ -344,7 +352,6 @@ export function exploreExactRoundSynchronizationPolicy(
       if (!shape) continue;
 
       const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
-      evidence.matchingAttempts += 1;
       const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
       const allTasks = laneTasks.flat();
       const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
@@ -370,6 +377,25 @@ export function exploreExactRoundSynchronizationPolicy(
         }
         if(evidence.firstFeedableCompactStart===null)evidence.firstFeedableCompactStart=firstStart;
       }
+      if(prerequisiteAwareSlot?.arrivalInjectiveFeasible){
+        const edges=allTasks.flatMap(task=>[...slotById]
+          .filter(([key])=>compatible(task.id,key))
+          .map(([slotId,slot])=>({task,slotId,start:slot.start})));
+        const assessment=prerequisiteAwareSlot.arrivalInjectiveFeasible(edges);
+        evidence.edgeDeadlineChecks+=assessment.edgeDeadlineChecks;
+        evidence.maxMatchingChecks+=assessment.maxMatchingChecks;
+        if(assessment.checked)evidence.arrivalInjectiveChecks+=1;
+        else if(assessment.abstention&&evidence.firstAbstention===null)
+          evidence.firstAbstention={...assessment.abstention};
+        if(assessment.verdict==="PROVEN_IMPOSSIBLE"){
+          evidence.arrivalInjectivePrunes+=1;
+          evidence.prerequisiteAwareGeometriesEliminated+=1;
+          evidence.logicalMatchingCandidatesAvoidedByEnvelope+=1;
+          if(evidence.firstCertificate===null)evidence.firstCertificate=assessment.firstCertificate;
+          continue;
+        }
+      }
+      evidence.matchingAttempts += 1;
       const matching = findCanonicalPerfectMatching(
         [...slotById.keys()],
         allTasks.map(({ id }) => id),
