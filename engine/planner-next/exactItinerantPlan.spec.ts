@@ -137,7 +137,7 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
-  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "INDIVIDUAL_ZERO_DOMAIN");
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
@@ -219,7 +219,7 @@ test("an inexact zero compact setup probe does not prune its sole gapped hard-do
   assert.equal(result.evidence.setupBlockMinimumIdleMinutes,5);
 });
 
-test("mixed macro policy lets a structurally narrow round beat a flexible exact resource task", () => {
+test("mixed macro policy selects exact MRV first without dropping the inexact alternative", () => {
   const input = macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] });
   input.resources.push(...["round-a", "round-b"].map((id) =>
     ({ id: `resource-${id}`, availability: [{ start: 60, end: 70 }], presencePreference: "OFF" as const, transitionMinutes: 0 })));
@@ -232,8 +232,9 @@ test("mixed macro policy lets a structurally narrow round beat a flexible exact 
   assert.equal(round.domainExact, false);
   assert.equal(round.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
   assert.equal(resource.domainExact, true);
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
-  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "mixed-domain-semantic-policy");
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:/);
+  assert.ok(result.evidence.macroSelectionOrder.some((id) => id.startsWith("ROUND_SYNCHRONIZATION:")));
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "mixed-domain-exact-mrv");
 });
 
 test("global macro MRV lets a scarce resource task beat broader rounds", () => {

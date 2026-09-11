@@ -18,10 +18,9 @@ const compareSemanticConstrainedness = (a: MacroUnitConstrainedness, b: MacroUni
   || a.id.localeCompare(b.id, "en");
 
 /**
- * Exact domains use MRV. For mixed measures, each class elects its own candidate
- * before a class policy is applied: a certified singleton remains forced;
- * otherwise the winners from each measurement class are compared by semantic
- * pressure. A sound zero remains stronger than either policy.
+ * Exact domains use MRV and take precedence over inexact measurements. Inexact
+ * domains use semantic pressure only when no exact domain remains. A sound zero
+ * remains stronger than either policy.
  */
 export function selectMostConstrainedUnit<T extends MacroUnitConstrainedness>(units: readonly T[]): T | undefined {
   const zeros = units.filter(({ domainSize, domainExact }) => domainSize === 0 && domainExact).sort(compareSemanticConstrainedness);
@@ -30,9 +29,7 @@ export function selectMostConstrainedUnit<T extends MacroUnitConstrainedness>(un
     a.domainSize - b.domainSize || compareSemanticConstrainedness(a, b));
   const inexact = units.filter(({ domainExact }) => !domainExact).sort(compareSemanticConstrainedness);
   if (exact.length === 0) return inexact[0] as T | undefined;
-  if (inexact.length === 0) return exact[0] as T;
-  if (exact[0]!.domainSize === 1) return exact[0] as T;
-  return compareSemanticConstrainedness(exact[0]!, inexact[0]!) <= 0 ? exact[0] as T : inexact[0] as T;
+  return exact[0] as T;
 }
 
 export interface ExactSlotMatchingEvidence {

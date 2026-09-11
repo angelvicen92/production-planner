@@ -36,13 +36,13 @@ test("inexact domains use semantic pressure rather than numeric upper-bound size
   assert.equal(selectMostConstrainedUnit([constrained, flexible])?.id, "large-upper-bound");
 });
 
-test("a semantically narrow inexact domain beats a clearly flexible exact domain", () => {
+test("mixed exact and inexact domains select the exact MRV winner deterministically", () => {
   const exact = { id: "flexible-exact", domainSize: 2, domainExact: true, hardResourceAvailabilityMinutes: 100,
     exclusiveResourceCount: 0, synchronizedSlotCount: 0, totalDuration: 10, affectedTaskCount: 1 };
   const narrowRound = { id: "narrow-round", domainSize: 80, domainExact: false, hardResourceAvailabilityMinutes: 20,
     exclusiveResourceCount: 0, synchronizedSlotCount: 4, totalDuration: 80, affectedTaskCount: 4 };
-  assert.equal(selectMostConstrainedUnit([exact, narrowRound])?.id, "narrow-round");
-  assert.equal(selectMostConstrainedUnit([narrowRound, exact])?.id, "narrow-round");
+  assert.equal(selectMostConstrainedUnit([exact, narrowRound])?.id, "flexible-exact");
+  assert.equal(selectMostConstrainedUnit([narrowRound, exact])?.id, "flexible-exact");
 });
 
 test("a scarce exact domain beats a semantically less constrained inexact domain", () => {
