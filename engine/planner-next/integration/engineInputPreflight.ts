@@ -294,6 +294,7 @@ function sourceProjection(input: EngineInput): unknown {
       startReal: task.startReal, endReal: task.endReal, breakId: task.breakId, breakKind: task.breakKind,
       mealOccupiesSpace: task.mealOccupiesSpace, operationalRole: task.operationalRole,
       ...(task.status !== "cancelled" ? { plannerNextKind: task.plannerNextKind } : {}),
+      ...(task.participantBoundaryRole == null ? {} : { participantBoundaryRole: task.participantBoundaryRole }),
       blocksSpace: task.blocksSpace, allowsSpaceOverlap: task.allowsSpaceOverlap, spaceOccupancyMode: task.spaceOccupancyMode,
       transportGroupCapacityPresent: task.transportGroupCapacity != null,
       transportGroupingTargetPresent: task.transportGroupingTarget != null,
@@ -480,6 +481,18 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       ...(details ? { details: stableValue(details) as Record<string, unknown> } : {}),
     });
   };
+
+  for (const task of input.tasks) {
+    const role = (task as unknown as Record<string, unknown>).participantBoundaryRole;
+    if (role !== undefined && role !== "ENTRY_PREREQUISITE" && role !== "EXIT_PREREQUISITE") {
+      addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `tasks.${task.id}.participantBoundaryRole`,
+        "Participant boundary role must use a supported explicit identity.", { participantBoundaryRole: role });
+    }
+    if (role !== undefined && (task.contestantId == null || task.plannerNextKind === "technical")) {
+      addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `tasks.${task.id}.participantBoundaryRole`,
+        "Participant boundary tasks require a participant and cannot be technical.", { participantBoundaryRole: role });
+    }
+  }
 
   const addIdentity = (
     namespace: EngineInputIdentityNamespace,

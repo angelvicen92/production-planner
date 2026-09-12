@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "275534f0ce385315576b1f3a561570323b4e6e52a86f6d11617078c13fac5e2a",
-  "expansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
+  "manifestFingerprint": "33f07eb6ad13fcfd677ed72fc922ebe5b8eecf05b461666558b1702049e5da48",
+  "expansionFingerprint": "9bb50e7af27393cf1674de3f07a142755d3ea04126c76373a322c758612fb77b",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1204,13 +1204,13 @@
     "transportPolicy": {
       "arrival": {
         "targetGroupSize": 3,
-        "maximumGroupSize": 6,
+        "maximumGroupSize": 3,
         "minGapMinutes": 30,
         "groupingWeight": 3
       },
       "departure": {
         "targetGroupSize": 1,
-        "maximumGroupSize": 6,
+        "maximumGroupSize": 3,
         "minGapMinutes": 20,
         "groupingWeight": 3
       }
@@ -1433,8 +1433,8 @@
     ],
     "observedBothOrders": true,
     "selectedFamilySequence": [
-      "setup-family:304:sillon",
-      "setup-family:304:estrellas"
+      "setup-family:304:estrellas",
+      "setup-family:304:sillon"
     ],
     "selectedPreparationCount": 1,
     "selectedPreparationMinutes": 10,
@@ -1444,7 +1444,7 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "d1e54041a723ff1273e0adf0b9cf3f7b0f5e5c14f629195350e91b5113cb92fe"
+    "fullFingerprint": "6c70ec9a59116b27afac0b80f36200ce8282a6ade4d5aae0467f2e7ebb2a4d18"
   },
   "flexibleSetupOrderCapabilityProven": true,
   "roundSynchronizationProbe": {
@@ -1470,7 +1470,7 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "890d5f394e1db87340232bb565fb2689bc66cc921949dc0263a158d21302e076"
+    "fullFingerprint": "89296bd8df35cda2a35c1f9c3eacbbce6d71405320ea59f1c065b06faa745d3e"
   },
   "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
@@ -1612,8 +1612,8 @@
         ],
         "observedBothOrders": true,
         "selectedFamilySequence": [
-          "setup-family:304:sillon",
-          "setup-family:304:estrellas"
+          "setup-family:304:estrellas",
+          "setup-family:304:sillon"
         ],
         "selectedPreparationCount": 1,
         "selectedPreparationMinutes": 10,
@@ -1623,7 +1623,7 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "d1e54041a723ff1273e0adf0b9cf3f7b0f5e5c14f629195350e91b5113cb92fe"
+        "fullFingerprint": "6c70ec9a59116b27afac0b80f36200ce8282a6ade4d5aae0467f2e7ebb2a4d18"
       },
       "flexibleSetupOrderCapabilityProven": true,
       "roundSynchronizationProbe": {
@@ -1649,7 +1649,7 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "890d5f394e1db87340232bb565fb2689bc66cc921949dc0263a158d21302e076"
+        "fullFingerprint": "89296bd8df35cda2a35c1f9c3eacbbce6d71405320ea59f1c065b06faa745d3e"
       },
       "roundSynchronizationCapabilityProven": true
     },
@@ -1666,7 +1666,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
+    "shuffledExpansionFingerprint": "9bb50e7af27393cf1674de3f07a142755d3ea04126c76373a322c758612fb77b",
     "matches": true
   },
   "inputImmutable": {

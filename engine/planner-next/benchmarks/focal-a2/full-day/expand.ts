@@ -91,6 +91,8 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
       jointGroupId,
       anchoredOperationId: operation?.kind === "anchored" ? `anchored.reality-plato.${participantId}` : undefined,
       itinerantUnitId: operation?.itinerantUnitId,
+      participantBoundaryRole: type === "ESTILISMO_ENTRADA" ? "ENTRY_PREREQUISITE"
+        : type === "ESTILISMO_SALIDA" ? "EXIT_PREREQUISITE" : undefined,
       meal: type === "SODEXO" ? { kind: "participant_meal", duration: 40, occupiesExclusiveSpace: false } : undefined,
       transport: type === "IN" ? { direction: "arrival" } : type === "OUT" ? { direction: "departure" } : undefined,
       isAnchoredSegment: type === "REALITY_PLATO_ANTES" || type === "REALITY_PLATO_DESPUES" ? true : undefined,

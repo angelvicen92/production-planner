@@ -85,6 +85,8 @@ interface BaseTask {
   requiredResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;
+  /** Real task deferred until terminal participant-boundary materialization. */
+  participantBoundaryRole?: "ENTRY_PREREQUISITE" | "EXIT_PREREQUISITE";
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";

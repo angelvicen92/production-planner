@@ -34,6 +34,7 @@ import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalCh
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, preparePendingArrivalFeedingAuthority, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
 import { maintainDeferredPrerequisiteReservation, type DeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
+import { materializeParticipantBoundaries } from "./participantBoundaryMaterialization";
 
 export function resourceAvailabilityMinutes(problem: PlannerNextProblem, tasks: readonly Task[]): number {
   const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();
@@ -592,6 +593,9 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   technicalChainStartDomainMode:TechnicalChainStartDomainMode,
   macroCapacityDiagnostic:{enabled:boolean;certificates:ExactMacroCapacityCertificate[];overflow:number;deepestStandaloneFrontier:ExactCoreCausalDiagnostic["deepestStandaloneFrontier"]},
   arrivalDiagnostic:{enabled:boolean;first:import("./deferredPrerequisiteReservation").DeferredArrivalCausalCertificate|null}): StandaloneSearchResult {
+  const boundaryPending = pending.filter(task => task.participantBoundaryRole !== undefined).sort(byId);
+  const productivePending = pending.filter(task => task.participantBoundaryRole === undefined).sort(byId);
+  pending = productivePending;
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -638,7 +642,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     evidence.standaloneCompleteLeafCount += 1;
     const substantive = orderScheduled([...coreTasks, ...placed]);
     const expected = [...problem.tasks].sort(byId).map(({ id }) => id);
-    const expectedSubstantive = problem.tasks.filter(({ id }) => !transportTaskIds(problem).has(id)).sort(byId).map(({ id }) => id);
+    const expectedSubstantive = problem.tasks.filter(task => !transportTaskIds(problem).has(task.id) && task.participantBoundaryRole === undefined).sort(byId).map(({ id }) => id);
     const actualSubstantive = [...substantive].sort(byId).map(({ id }) => id);
     const exactSubstantive = actualSubstantive.length === expectedSubstantive.length && actualSubstantive.every((id, index) => id === expectedSubstantive[index]);
     if(exactSubstantive)evidence.substantiveCompleteLeaves+=1;
@@ -655,23 +659,14 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     if(mealWitness?.complete)evidence.terminalTransportAttempts+=1;
-    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled,
-      arrivalReservation.groups,()=>ledger.consume("STANDALONE")) : null;
-    if(transport){evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.arrival.branchesExplored;
-      for(const result of [transport.arrival,transport.departure]){evidence.transportSlotLogicalStarts+=result.slotLogicalStarts;evidence.transportSlotAnalyticallyEliminatedStarts+=result.slotAnalyticallyEliminatedStarts;evidence.transportSlotStartSetsEvaluated+=result.slotStartSetsEvaluated;evidence.transportMatchingChecks+=result.matchingChecks;evidence.transportMatchingEdgeChecks+=result.matchingEdgeChecks;evidence.transportMatchingAugmentTraversals+=result.matchingAugmentTraversals;evidence.transportEquivalentMembershipsCollapsed+=result.equivalentMembershipsCollapsed;}
-      for(const result of [transport.arrival,transport.departure]){evidence.transportMonotoneFastPathChecks+=result.monotoneFastPathChecks;evidence.transportMonotoneFastPathHits+=result.monotoneFastPathHits;evidence.transportMonotoneFastPathWitnesses+=result.monotoneFastPathWitnesses;evidence.transportMonotoneFastPathAbstentions+=result.monotoneFastPathAbstentions;evidence.transportCumulativeCapacityChecks+=result.cumulativeCapacityChecks;evidence.transportCumulativeCapacityPrunes+=result.cumulativeCapacityPrunes;}
-      if(transport.arrivalRepaired)evidence.transportMatchingRepairs+=1;
-      evidence.terminalTransportArrivalBacktracks+=transport.arrival.backtracks;if(transport.arrival.feasible)evidence.terminalTransportArrivalSuccess+=1;
-      if(transport.arrivalReservedWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;
-      if(transport.arrivalRepaired)evidence.terminalTransportArrivalRepairs+=1;
-      if(transport.reservedArrivalValidation){evidence.terminalTransportReservedArrivalChecks+=1;
-        if(transport.reservedArrivalValidation.validBeforeParticipantMeals)evidence.terminalTransportReservedArrivalValidBeforeParticipantMeals+=1;
-        if(transport.reservedArrivalValidation.validBeforeParticipantMeals&&!transport.reservedArrivalValidation.validAfterParticipantMeals)
-          evidence.terminalTransportReservedArrivalInvalidatedByParticipantMeals+=1;
-        evidence.terminalTransportReservedArrivalFirstMealConflict??=transport.reservedArrivalValidation.firstParticipantMealBoundaryConflict;}
-      if(transport.arrival.feasible){evidence.terminalTransportDepartureAttempts+=1;evidence.terminalTransportDepartureBranches+=transport.departure.branchesExplored;
-        evidence.terminalTransportDepartureBacktracks+=transport.departure.backtracks;if(transport.departure.feasible)evidence.terminalTransportDepartureSuccess+=1;}
-      evidence.terminalTransportFirstFailure??=transport.firstFailure;}
+    const transport = mealWitness?.complete ? (boundaryPending.length
+      ? materializeParticipantBoundaries(problem, substantive, mealWitness.scheduled,coreMeals,arrivalReservation.groups,()=>ledger.consume("STANDALONE"))
+      : (()=>{const legacy=materializeTerminalTransport(problem,substantive,mealWitness.scheduled,arrivalReservation.groups,()=>ledger.consume("STANDALONE"));return {
+        status:legacy.status,scheduled:legacy.scheduled,entryBranches:legacy.arrival.branchesExplored,
+        exitBranches:legacy.departure.branchesExplored,arrivalWitnessReused:legacy.arrivalReservedWitnessReused};})()) : null;
+    if(transport){evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.entryBranches;
+      evidence.terminalTransportDepartureBranches+=transport.exitBranches;
+      if(transport.arrivalWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;}
     if(transport?.status==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
     if(transport?.status==="FEASIBLE")evidence.terminalTransportSuccess+=1;
     const candidate = transport?.status !== "FEASIBLE" ? substantive : orderScheduled([...substantive, ...transport.scheduled]);
@@ -840,7 +835,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         nextOperationalReservations=operationalProbe.reservations;
       }
       evidence.deferredPrerequisiteReservationChecks+=1;
-      const reserved=maintainDeferredPrerequisiteReservation(problem,ordinaryForwardObligations,provisionalPlaced,coreMeals,arrivalReservation,()=>ledger.consume("STANDALONE"),choice.task.id);
+      const reserved=maintainDeferredPrerequisiteReservation(problem,[...ordinaryForwardObligations,...boundaryPending],provisionalPlaced,coreMeals,arrivalReservation,()=>ledger.consume("STANDALONE"),choice.task.id);
       if(reserved.arrivalRepaired)evidence.deferredPrerequisiteReservationRepairs+=1;
       else if(reserved.arrivalBranchesExplored===0&&reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationReuses+=1;
       else if(reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
@@ -1173,7 +1168,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       nextOperationalReservations=operationalProbe.reservations;
     }
     evidence.deferredPrerequisiteReservationChecks+=1;
-    const reserved=maintainDeferredPrerequisiteReservation(problem,pendingForCheck,[...coreTasks,...basePlaced,...tasks],coreMeals,baseArrival,()=>ledger.consume("STANDALONE"),unit.id);
+    const reserved=maintainDeferredPrerequisiteReservation(problem,[...pendingForCheck,...boundaryPending],[...coreTasks,...basePlaced,...tasks],coreMeals,baseArrival,()=>ledger.consume("STANDALONE"),unit.id);
     if(reserved.arrivalRepaired)evidence.deferredPrerequisiteReservationRepairs+=1;
     else if(reserved.arrivalBranchesExplored===0&&reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationReuses+=1;
     else if(reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
@@ -1326,7 +1321,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   return "DEAD_END";
 };
 evidence.deferredPrerequisiteReservationChecks+=1;
-const initialReservation=maintainDeferredPrerequisiteReservation(problem,pending,coreTasks,coreMeals);
+const initialReservation=maintainDeferredPrerequisiteReservation(problem,[...pending,...boundaryPending],coreTasks,coreMeals);
 if(initialReservation.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
 addPendingArrivalDeadlineEvidence(evidence,initialReservation.pendingArrivalDeadline,initialReservation.exactPrerequisiteSearchesAvoided);
 evidence.deferredPrerequisiteReservationBranchesExplored+=initialReservation.branchesExplored;

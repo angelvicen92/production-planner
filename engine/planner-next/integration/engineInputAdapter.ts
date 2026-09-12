@@ -81,6 +81,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
       ...(entry.requiredResourceIds ? { requiredResourceIds: [...entry.requiredResourceIds].sort(compare) } : {}),
       ...(entry.availability ? { availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) } : {}),
       ...(entry.setupFamilyId ? { setupFamilyId: entry.setupFamilyId } : {}),
+      ...(entry.participantBoundaryRole ? { participantBoundaryRole: entry.participantBoundaryRole } : {}),
     })),
     ...(problem.participantMeals ? { participantMeals: sorted(problem.participantMeals, (entry) => `${entry.participantId}\0${entry.sourceTaskId}`).map((entry) => ({ ...entry, ...(entry.dependencies ? { dependencies: [...entry.dependencies].sort(compare) } : {}) })) } : {}),
     ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
@@ -174,6 +175,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
       ...(fixed ? { availability: [window(fixed)] } : {}),
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
+      ...(source.participantBoundaryRole != null ? { participantBoundaryRole: source.participantBoundaryRole } : {}),
     };
     if (source.plannerNextKind === "technical") return { ...base, kind: "technical" as const };
     if (source.plannerNextKind === "main" || source.plannerNextKind === "vocal") {
