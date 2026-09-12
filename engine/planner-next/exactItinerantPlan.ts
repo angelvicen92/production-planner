@@ -35,6 +35,24 @@ import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
 import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
 
+export function resourceAvailabilityMinutes(problem: PlannerNextProblem, tasks: readonly Task[]): number {
+  const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();
+  if (ids.length === 0) return problem.day.end - problem.day.start;
+  return Math.min(...ids.map((id) => {
+    const intervals = (problem.resources.find((resource) => resource.id === id)?.availability ?? [])
+      .map(({ start, end }) => ({ start: Math.max(start, problem.day.start), end: Math.min(end, problem.day.end) }))
+      .filter(({ start, end }) => start < end)
+      .sort((left, right) => left.start - right.start || left.end - right.end);
+    let minutes = 0, coveredUntil = problem.day.start;
+    for (const interval of intervals) {
+      if (interval.end <= coveredUntil) continue;
+      minutes += interval.end - Math.max(interval.start, coveredUntil);
+      coveredUntil = interval.end;
+    }
+    return minutes;
+  }));
+}
+
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
   "maximumParticipantIdleMinutes" | "maximumSingleGapMinutes" | "totalIdleMinutes" | "totalGapCount" | "totalSpaceChangeCount">;
@@ -818,12 +836,6 @@ const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceIt
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
-const resourceAvailabilityMinutes = (tasks: readonly Task[]): number => {
-  const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();
-  if (ids.length === 0) return problem.day.end - problem.day.start;
-  return ids.flatMap((id) => problem.resources.find((resource) => resource.id === id)?.availability ?? [])
-    .reduce((sum, interval) => sum + interval.end - interval.start, 0);
-};
 const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], roundPreparations: ScheduledRoundPreparation[] = []) => {
   const allPlaced = [...coreTasks, ...placed];
   const taskDomain = (task:Task) => {
@@ -856,7 +868,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
     domainMeasure:measure.domainExact === false ? "conservative-top-level-macro-domain-upper-bound" : "hard-valid-top-level-macro-placements",
     domainExact:measure.domainExact !== false,
     structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
-    hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
+    hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(problem, unit.tasks),
     exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
     totalDuration: unit.tasks.reduce((sum, task) => sum + task.duration, 0), affectedTaskCount: unit.tasks.length };
 };

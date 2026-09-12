@@ -4,7 +4,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
-  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature } from "./exactItinerantPlan";
+  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature, resourceAvailabilityMinutes } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -240,6 +240,50 @@ test("global macro MRV lets a scarce resource task beat broader rounds", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [20, 100], resource: [60, 70] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:/);
+});
+
+test("macro resource scarcity uses the minimum unioned availability deterministically", () => {
+  const create = (reverse = false) => {
+    const input = macroCompetitionProblem({ resource: [20, 100] });
+    input.resources.push(
+      { id: "overlapping", availability: [{ start: 0, end: 50 }, { start: 20, end: 80 }], presencePreference: "OFF", transitionMinutes: 0 },
+      { id: "bottleneck", availability: [{ start: 10, end: 30 }], presencePreference: "OFF", transitionMinutes: 0 },
+    );
+    const task = input.tasks.find(({ id }) => id === "resource-task")!;
+    task.requiredResourceIds = reverse ? ["bottleneck", "overlapping"] : ["overlapping", "bottleneck"];
+    if (reverse) input.resources.reverse();
+    return input;
+  };
+  const first = constructExactItinerantPlan(create());
+  const reversed = constructExactItinerantPlan(create(true));
+  const candidate = first.evidence.macroSelectionSteps[0]!.candidates.find(({ id }) => id === "resource:resource-task")!;
+  assert.equal(candidate.hardResourceAvailabilityMinutes, 20,
+    "overlaps are counted once and the narrowest required resource governs");
+  assert.deepEqual(reversed.evidence.macroSelectionOrder, first.evidence.macroSelectionOrder);
+  assert.deepEqual(reversed.evidence.macroSelectionReason, first.evidence.macroSelectionReason);
+});
+
+test("macro resource scarcity reports zero for an unavailable required resource", () => {
+  const input = macroCompetitionProblem({ resource: [20, 100] });
+  input.resources.push({ id: "unavailable", availability: [], presencePreference: "OFF", transitionMinutes: 0 });
+  const task = input.tasks.find(({ id }) => id === "resource-task")!;
+  task.requiredResourceIds = ["unavailable"];
+  assert.equal(resourceAvailabilityMinutes(input, [task]), 0);
+  assert.equal(resourceAvailabilityMinutes(input, [{ ...task, requiredResourceIds: [] }]), 120);
+});
+
+test("mixed resource macros select the task with the bottleneck resource", () => {
+  const input = macroCompetitionProblem({ resource: [20, 100] });
+  input.resources.push({ id: "bottleneck", availability: [{ start: 0, end: 30 }], presencePreference: "OFF", transitionMinutes: 0 });
+  const original = input.tasks.find(({ id }) => id === "resource-task")!;
+  original.requiredResourceIds = ["unit"];
+  input.participants.push({ id: "mixed-person", availability: [{ start: 20, end: 100 }] });
+  input.spaces.push({ id: "space-mixed", availability: [{ start: 0, end: 120 }] });
+  input.tasks.push({ ...original, id: "mixed", participantId: "mixed-person", spaceId: "space-mixed",
+    requiredResourceIds: ["unit", "bottleneck"] });
+  const result = constructExactItinerantPlan(input);
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:resource:mixed$/);
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "minimum-macro-domain");
 });
 
 test("macro constrainedness is recalculated after each placement", () => {
