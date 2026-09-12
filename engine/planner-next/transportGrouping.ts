@@ -394,7 +394,8 @@ const emptyWitness = (): TransportDirectionWitnessResult => ({ feasible: true, g
 /** Exact, ledger-accounted grouped witness. It is read-only and does not materialize into the plan. */
 export function findTransportDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection,
   relevantTasks: readonly Task[], externalPlaced: readonly ScheduledTask[], consume: () => boolean,
-  participantMeals: readonly ScheduledParticipantMeal[] = [], causalDiagnostic = false): TransportDirectionWitnessResult {
+  participantMeals: readonly ScheduledParticipantMeal[] = [], causalDiagnostic = false,
+  virtualBoundaryByTaskId: ReadonlyMap<string, number> = new Map()): TransportDirectionWitnessResult {
   const policy = problem.transportPolicy?.[direction];
   if (!policy || relevantTasks.length === 0) return emptyWitness();
   const policyIds = new Set(policy.taskIds);
@@ -413,9 +414,12 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
   const boundary = (task: Task): number => {
     const obligations = [...external.filter((placed) => placed.participantId === task.participantId),
       ...participantMeals.filter((meal) => meal.participantId === task.participantId)];
-    return direction === "arrival"
+    const materialized = direction === "arrival"
       ? Math.min(problem.day.end, ...obligations.map(({ start }) => start))
       : Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+    const virtual = virtualBoundaryByTaskId.get(task.id);
+    return virtual === undefined ? materialized : direction === "arrival"
+      ? Math.min(materialized, virtual) : Math.max(materialized, virtual);
   };
   const tasks = [...relevant].sort((left, right) => boundary(left) - boundary(right) || byId(left, right));
   const target = Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize);
@@ -471,7 +475,7 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
     }).map((task) => ({ ...task, start: slot.start, end: slot.start + task.duration })).sort((a, b) => byId(a, b)));
   };
   const jointlyValid = (candidate: ScheduledTask[][] | null): candidate is ScheduledTask[][] => candidate !== null
-    && validateDirectionWitness(problem, direction, tasks, candidate, external, participantMeals,diagnostic);
+    && validateDirectionWitness(problem, direction, tasks, candidate, external, participantMeals,diagnostic,virtualBoundaryByTaskId);
   const hasCumulativeCapacity = (active: readonly Slot[]): boolean => {
     for (let prefix = 1; prefix <= slots.length; prefix += 1) {
       cumulativeCapacityChecks += 1;
@@ -565,8 +569,9 @@ export function findTransportDirectionWitness(problem: PlannerNextProblem, direc
     cumulativeCapacityChecks, cumulativeCapacityPrunes,causalDiagnostic:diagnostic };
 }
 
-function validateDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection, tasks: readonly Task[],
-  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[],diagnostic:TransportWitnessCausalDiagnostic|null=null): boolean {
+export function validateDirectionWitness(problem: PlannerNextProblem, direction: TransportDirection, tasks: readonly Task[],
+  groups: readonly (readonly ScheduledTask[])[], external: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[],
+  diagnostic:TransportWitnessCausalDiagnostic|null=null,virtualBoundaryByTaskId:ReadonlyMap<string,number>=new Map()): boolean {
   const policy = problem.transportPolicy?.[direction];
   if (!policy) return tasks.length === 0;
   const expected = tasks.map(({ id }) => id).sort(), actual = groups.flat().map(({ id }) => id).sort();
@@ -583,7 +588,8 @@ function validateDirectionWitness(problem: PlannerNextProblem, direction: Transp
     const boundariesValid=group.every((item) => {
       const obligations = [...external.filter((task) => task.participantId === item.participantId),
         ...meals.filter((meal) => meal.participantId === item.participantId)];
-      const limit=direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start)):Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+      const materialized=direction === "arrival" ? Math.min(problem.day.end, ...obligations.map(({ start }) => start)):Math.max(problem.day.start, ...obligations.map(({ end }) => end));
+      const virtual=virtualBoundaryByTaskId.get(item.id);const limit=virtual===undefined?materialized:direction==="arrival"?Math.min(materialized,virtual):Math.max(materialized,virtual);
       return (direction === "arrival" ? item.end <= limit:item.start >= limit)||fail("BOUNDARY",item,limit);
     });
     if(!boundariesValid)return false;
