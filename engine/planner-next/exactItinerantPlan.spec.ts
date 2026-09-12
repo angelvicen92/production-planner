@@ -327,6 +327,36 @@ test("RESOURCE_TASK visits the hard-valid placement preserving more REQUIRED mea
   assert.equal(reversed.evidence.fullFingerprint, result.evidence.fullFingerprint);
 });
 
+function feedingAwareResourceProblem(reverse=false):PlannerNextProblem {
+  const input=problem([]);input.protectedMeal=undefined;input.day={start:0,end:120};
+  input.resources.push({id:"scarce",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+  input.spaces.push({id:"arrival",availability:[{start:20,end:120}]},{id:"preparation",availability:[{start:0,end:120}]},{id:"resource",availability:[{start:0,end:120}]});
+  input.participants.push({id:"entrant",availability:[{start:0,end:120}]});
+  input.tasks.push(
+    {id:"arrival",kind:"auxiliary",participantId:"entrant",duration:5,spaceId:"arrival",dependencies:[],availability:[{start:20,end:120}]},
+    {id:"preparation",kind:"auxiliary",participantId:"entrant",duration:10,spaceId:"preparation",dependencies:["arrival"],availability:[{start:0,end:120}]},
+    {id:"resource",kind:"auxiliary",participantId:"entrant",duration:5,spaceId:"resource",dependencies:["preparation"],availability:[{start:0,end:50}],requiredResourceIds:["scarce"]},
+  );
+  input.transportPolicy={arrival:{taskIds:["arrival"],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:30,groupingWeight:1},
+    departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,minGapMinutes:0,groupingWeight:1}};
+  if(reverse){input.tasks.reverse();input.participants.reverse();input.spaces.reverse();input.resources.reverse();}
+  return input;
+}
+
+test("RESOURCE_TASK constructive domain removes only analytically impossible arrival-fed starts",()=>{
+ const result=runExactItinerantPlanSearch(feedingAwareResourceProblem());
+ assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+ assert.ok(result.scheduledTasks.find(({id})=>id==="resource")!.start>=35,"IN and preparation must feed the resource task");
+ assert.equal(result.evidence.macroDomainSizes["resource:resource"],3,"35, 40 and 45 survive from the raw ten starts");
+ assert.equal(result.evidence.resourceTaskDomainLogicalStarts,10);
+ assert.equal(result.evidence.resourceTaskDomainFeedingChecks,10);
+ assert.equal(result.evidence.resourceTaskDomainAnalyticallyEliminatedByArrival,7);
+ assert.equal(result.evidence.resourceTaskDomainKeptStarts,3);
+ const reversed=runExactItinerantPlanSearch(feedingAwareResourceProblem(true));
+ assert.equal(reversed.evidence.fullFingerprint,result.evidence.fullFingerprint);
+ assert.equal(reversed.evidence.macroDomainSizes["resource:resource"],3);
+});
+
 test("operational meal freedom uses worst margin, then total, and ignores unaffected policies", () => {
   const input = mealFreedomProblem();
   const task = input.tasks.find(({id})=>id==="resource-task")!;

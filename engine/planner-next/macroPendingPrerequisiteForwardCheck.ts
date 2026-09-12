@@ -30,6 +30,12 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
 export type MacroPendingPrerequisiteForwardCheckMode = "FULL" | "ANALYTIC_CAPACITY_ONLY";
 
 export type MacroPendingPrerequisiteForwardCache = Map<string, Omit<MacroPendingPrerequisiteForwardCheckResult,"cacheHit">>;
+export interface PendingArrivalFeedingAssessment {
+  feasible: boolean;
+  conclusive: boolean;
+  failure: "PENDING_ARRIVAL_DEADLINE" | null;
+  pendingArrivalDeadline: AnonymousPostInCompletionAssessment;
+}
 export interface TargetCollectiveCapacityCertificateEvaluation {
   evaluated:boolean;overloaded:boolean;authorityId:string;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];
 }
@@ -41,6 +47,32 @@ const byId=<T extends{id:string}>(a:T,b:T)=>a.id.localeCompare(b.id);
 const mergeIntervals=(intervals:ExactStartInterval[]):ExactStartInterval[]=>{const merged:ExactStartInterval[]=[];for(const interval of [...intervals].sort((a,b)=>a.start-b.start||a.end-b.end)){const previous=merged.at(-1);if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);else merged.push({...interval});}return merged;};
 const intervalMinutes=(intervals:ExactStartInterval[])=>mergeIntervals(intervals).reduce((sum,{start,end})=>sum+Math.max(0,end-start),0);
 const exclusiveAuthorities=(task:Task)=>[{key:`space:${task.spaceId}`,id:task.spaceId},...(task.requiredResourceIds??[]).map(id=>({key:`resource:${id}`,id}))].sort((a,b)=>a.key.localeCompare(b.key));
+
+/**
+ * Necessary-only feeding authority for a provisional placement. It propagates
+ * the canonical bidirectional pending-completion deadlines and asks the
+ * anonymous POST-IN capacity authority whether every forced arrival can still
+ * complete in time. A positive or unavailable proof always abstains from
+ * pruning; only the shared negative certificate is conclusive.
+ */
+export function assessPendingArrivalFeeding(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
+  candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],reusableOwnLatestCompletions:ReadonlyMap<string,number>=new Map()):PendingArrivalFeedingAssessment{
+  const provisional=[...previouslyPlaced,...candidate].sort(byId),placedIds=new Set(provisional.map(({id})=>id));
+  const inputPendingIds=new Set(pending.map(({id})=>id));
+  const pendingWithArrivals=[...pending,...(problem.transportPolicy?.arrival.taskIds??[])
+    .filter(id=>!inputPendingIds.has(id)&&!placedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task))];
+  const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals,reusableOwnLatestCompletions);
+  const pendingIds=new Set(pendingWithArrivals.map(({id})=>id)),arrivalDeadlineByParticipant=new Map<string,number>();
+  for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
+    if(!pendingIds.has(arrivalId))continue;
+    const arrival=authority.pendingById.get(arrivalId),cutoff=authority.completionDeadline(arrivalId);
+    if(arrival?.participantId&&cutoff<problem.day.end)arrivalDeadlineByParticipant.set(arrival.participantId,cutoff);
+  }
+  const pendingArrivalDeadline=assessAnonymousPostInCompletions(problem,arrivalDeadlineByParticipant);
+  return pendingArrivalDeadline.feasible
+    ?{feasible:true,conclusive:false,failure:null,pendingArrivalDeadline}
+    :{feasible:false,conclusive:true,failure:"PENDING_ARRIVAL_DEADLINE",pendingArrivalDeadline};
+}
 const collectiveOccupation=(problem:PlannerNextProblem,task:Task,provisional:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],deadline:number,
   domain?:ReturnType<typeof exactTaskStartDomain>)=>mergeIntervals(domain?.intervals.map(interval=>({start:interval.start,end:interval.end+task.duration}))
     ??exactTaskStartDomain(problem,task,provisional,[...meals]).intervals.flatMap(interval=>{const end=Math.min(interval.end,deadline-task.duration);return interval.start<=end?[{start:interval.start,end:end+task.duration}]:[]}));
@@ -77,14 +109,9 @@ export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pendin
   const pendingWithArrivals=[...pending,...(problem.transportPolicy?.arrival.taskIds??[])
     .filter(id=>!inputPendingIds.has(id)&&!placedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task))];
   const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals),{pendingById}=authority,deadline=authority.completionDeadline;
-  const pendingIds=new Set(pendingWithArrivals.map(({id})=>id)),arrivalDeadlineByParticipant=new Map<string,number>();
-  for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
-    if(!pendingIds.has(arrivalId))continue;
-    const arrival=pendingById.get(arrivalId),cutoff=deadline(arrivalId);
-    if(arrival?.participantId&&cutoff<problem.day.end)arrivalDeadlineByParticipant.set(arrival.participantId,cutoff);
-  }
-  const pendingArrivalDeadline=assessAnonymousPostInCompletions(problem,arrivalDeadlineByParticipant);
-  if(!pendingArrivalDeadline.feasible)return{feasible:false,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,
+  const feeding=assessPendingArrivalFeeding(problem,pending,previouslyPlaced,candidate,meals);
+  const pendingArrivalDeadline=feeding.pendingArrivalDeadline;
+  if(feeding.conclusive&&!feeding.feasible)return{feasible:false,tasksChecked:0,individualDomainChecks:0,collectiveCapacityChecks:0,
     obligationsChecked:pendingArrivalDeadline.firstCertificate?.demand??0,collectiveCapacityPrunes:0,authorityId:null,demandMinutes:null,
     freeCapacityMinutes:null,jointChecks:0,witnesses:0,blockingTaskId:null,deadline:pendingArrivalDeadline.firstCertificate?.cutoff??null,
     failure:"PENDING_ARRIVAL_DEADLINE",cacheHit:false,pendingArrivalDeadline,exactPrerequisiteSearchesAvoided:1};

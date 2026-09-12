@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate } from "./macroPendingPrerequisiteForwardCheck";
+import { assessPendingArrivalFeeding, checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate } from "./macroPendingPrerequisiteForwardCheck";
 import { assessAnonymousPostInCompletions } from "./transportGrouping";
 
 const task=(id:string,duration:number,dependencies:string[]=[],availability?:Array<{start:number;end:number}>):Task=>({id,kind:"auxiliary",participantId:"person",duration,spaceId:"room",dependencies,...(availability?{availability}: {})});
@@ -110,6 +110,22 @@ test("pending IN deadlines use anonymous POST-IN hard capacity before exact prer
  assert.equal(pruned.exactPrerequisiteSearchesAvoided,1);
  assert.deepEqual(pruned.pendingArrivalDeadline?.firstCertificate,
   {cutoff:30,demand:4,maximumPossible:3,participantIds:["p-0","p-1","p-2","p-3"]});
+});
+
+test("feeding authority and macro check share the exact PENDING_ARRIVAL_DEADLINE certificate",()=>{
+ const f=pendingArrivalFixture();
+ const candidate=f.anchors.map((item,index)=>scheduled(item,[10,10,10,39][index]!));
+ const feeding=assessPendingArrivalFeeding(f.p,[...f.arrivals,...f.previous],[],candidate);
+ const macro=checkMacroPendingPrerequisites(f.p,[...f.arrivals,...f.previous],[],candidate,[],undefined,"ALL_PENDING");
+ assert.equal(feeding.conclusive,true);assert.equal(feeding.failure,"PENDING_ARRIVAL_DEADLINE");
+ assert.equal(macro.failure,feeding.failure);
+ assert.deepEqual(macro.pendingArrivalDeadline,feeding.pendingArrivalDeadline);
+});
+
+test("feeding authority abstains when arrival membership is incomplete",()=>{
+ const f=pendingArrivalFixture();f.arrivals[0]!.participantId=undefined;
+ const result=assessPendingArrivalFeeding(f.p,[...f.arrivals,...f.previous],[],f.anchors.map(item=>scheduled(item,10)));
+ assert.equal(result.feasible,true);assert.equal(result.conclusive,false);assert.equal(result.pendingArrivalDeadline.checked,false);
 });
 
 test("pending IN capacity uses hard maximum and heterogeneous equivalent-before-cutoff domains",()=>{

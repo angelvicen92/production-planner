@@ -32,7 +32,7 @@ import { assessTransportFutureFeasibility, materializeTerminalTransport, transpo
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
+import { assessPendingArrivalFeeding, checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
 import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
 
 export function resourceAvailabilityMinutes(problem: PlannerNextProblem, tasks: readonly Task[]): number {
@@ -396,6 +396,8 @@ export interface ExactItinerantPlanEvidence {
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
   macroDomainSizes: Record<string, number>;
+  resourceTaskDomainLogicalStarts:number;resourceTaskDomainFeedingChecks:number;
+  resourceTaskDomainAnalyticallyEliminatedByArrival:number;resourceTaskDomainInconclusiveStarts:number;resourceTaskDomainKeptStarts:number;
   macroSelectionSteps: Array<{ selected: string; reason: string; candidates: Array<{ id: string; kind: string; domainSize: number; domainMeasure: string; domainExact: boolean; hardResourceAvailabilityMinutes: number; totalDuration: number; affectedTaskCount: number; structuralCandidateCount?: number; matchingFeasibleCandidateCount?: number }> }>;
   macroPendingPrerequisiteForwardChecks:number;macroPendingPrerequisiteTasksChecked:number;macroPendingPrerequisiteIndividualDomainChecks:number;
   macroPendingPrerequisiteCollectiveCapacityChecks:number;macroPendingPrerequisiteObligationsChecked:number;macroPendingPrerequisiteCollectiveCapacityPrunes:number;
@@ -597,7 +599,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     ordinaryStaticDomainCache.set(task.id, domain);
     return domain;
   };
-  const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number; domainExact?:boolean }>();
+  const macroDomainCache = new Map<string, { domainSize:number; feedingSafeStarts?:number[]; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number; domainExact?:boolean }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   type SetupRejection={depth:number;failureKind:string;authorityId:string|null;blockingTaskId:string|null;participantId:string|null};
   let activeSetupCandidate:null|{baseDepth:number;maximumDepth:number;first:SetupRejection|null;deepest:SetupRejection|null}=null;
@@ -908,23 +910,41 @@ const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceIt
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
-const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], roundPreparations: ScheduledRoundPreparation[] = []) => {
+const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], roundPreparations: ScheduledRoundPreparation[] = [],
+  sharedOwnLatestCompletions:ReadonlyMap<string,number>=new Map()) => {
   const allPlaced = [...coreTasks, ...placed];
   const taskDomain = (task:Task) => {
     let staticDomain=staticMacroDomains.get(task.id);
     if(!staticDomain){staticDomain=standaloneForwardStaticDomain(problem,task,coreMeals);staticMacroDomains.set(task.id,staticDomain);}
     const signature=standaloneForwardAuthoritySignature(problem,task,allPlaced,coreMeals,staticDomain,"STATIC_DOMAIN");
-    const cached=macroDomainCache.get(`task:${signature}`);if(cached!==undefined)return cached.domainSize;
-    const count=standaloneForwardDynamicDomain(problem,task,allPlaced,staticDomain).eligibleStartCount;
+    const cached=macroDomainCache.get(`task:${signature}`);if(cached!==undefined)return cached;
+    const raw=[...standaloneForwardDynamicDomain(problem,task,allPlaced,staticDomain).starts()];
+    evidence.resourceTaskDomainLogicalStarts+=raw.length;
+    const pendingForDomain=pending.filter(item=>item.id!==task.id&&!allPlaced.some(placedTask=>placedTask.id===item.id));
+    const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+    const pendingWithArrivals=[...pendingForDomain,...problem.tasks.filter(item=>arrivalIds.has(item.id)&&!pendingForDomain.some(pendingTask=>pendingTask.id===item.id)&&!allPlaced.some(placedTask=>placedTask.id===item.id))];
+    const ancestors=new Set<string>();const visitAncestors=(id:string)=>{for(const dependency of problem.tasks.find(item=>item.id===id)?.dependencies??[])if(!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};visitAncestors(task.id);
+    const reusableOwnLatestCompletions=new Map(pendingWithArrivals.filter(item=>!ancestors.has(item.id))
+      .flatMap(item=>{const completion=sharedOwnLatestCompletions.get(item.id);return completion===undefined?[]:[[item.id,completion] as const];}));
+    const feedingSafeStarts:number[]=[];
+    for(const start of raw){
+      const scheduled=scoreAuxiliaryTask(problem,task,start,allPlaced).scheduled;
+      const feeding=assessPendingArrivalFeeding(problem,pendingForDomain,allPlaced,[scheduled],coreMeals,reusableOwnLatestCompletions);
+      evidence.resourceTaskDomainFeedingChecks+=1;
+      if(feeding.conclusive&&!feeding.feasible){evidence.resourceTaskDomainAnalyticallyEliminatedByArrival+=1;continue;}
+      feedingSafeStarts.push(start);if(!feeding.pendingArrivalDeadline.checked)evidence.resourceTaskDomainInconclusiveStarts+=1;
+    }
+    evidence.resourceTaskDomainKeptStarts+=feedingSafeStarts.length;
+    const result={domainSize:feedingSafeStarts.length,feedingSafeStarts};
     if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);
-    macroDomainCache.set(`task:${signature}`,{domainSize:count});return count;
+    macroDomainCache.set(`task:${signature}`,result);return result;
   };
   const authoritySignatures=unit.tasks.map((task)=>{let staticDomain=staticMacroDomains.get(task.id);if(!staticDomain){staticDomain=standaloneForwardStaticDomain(problem,task,coreMeals);staticMacroDomains.set(task.id,staticDomain);}return standaloneForwardAuthoritySignature(problem,task,allPlaced,coreMeals,staticDomain,"STATIC_DOMAIN");}).sort();
   const macroSignature=causalHash({id:unit.id,authoritySignatures,preparations:[...preparations].sort(byId),roundPreparations:[...roundPreparations].sort(byId)});
   let measure=macroDomainCache.get(macroSignature);
   if(unit.kind==="TECHNICAL_CHAIN"){evidence.technicalChainMacroDomainQueries+=1;if(measure)evidence.technicalChainMacroDomainCacheHits+=1;else evidence.technicalChainMacroDomainCacheMisses+=1;}
   if(!measure){
-    if(unit.kind==="RESOURCE_TASK")measure={domainSize:taskDomain(unit.tasks[0]!)};
+    if(unit.kind==="RESOURCE_TASK")measure=taskDomain(unit.tasks[0]!);
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
     else if(unit.kind==="ROUND_SYNCHRONIZATION")measure=probeExactRoundSynchronizationMacroDomain(problem,unit.policy,allPlaced,preparations,roundPreparations,coreMeals);
     else if(unit.kind==="SETUP_GROUP")measure=probeExactSetupMacroDomain(problem,unit.tasks,allPlaced,preparations,coreMeals);
@@ -936,7 +956,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
     : unit.kind === "JOINT" ? unit.tasks.length : 0;
-  return { unit, id: unit.id, domainSize:measure.domainSize,
+  return { unit, id: unit.id, domainSize:measure.domainSize, feedingSafeStarts:measure.feedingSafeStarts,
     domainMeasure:measure.domainExact === false ? "conservative-top-level-macro-domain-upper-bound" : "hard-valid-top-level-macro-placements",
     domainExact:measure.domainExact !== false,
     structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
@@ -1007,7 +1027,12 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[], operationalReservations:readonly OperationalMealReservation[]): StandaloneOutcome => {
   if(activeSetupCandidate)activeSetupCandidate.maximumDepth=Math.max(activeSetupCandidate.maximumDepth,placed.length);
   if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder,operationalReservations);
-  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
+  // The domain certificate may optimistically ignore unrelated tasks' own
+  // availability bounds. Fixed successors and the candidate's full ancestor
+  // chain still propagate bidirectionally; day.end makes the remaining bounds
+  // weaker, never an unsound negative proof, and avoids an exact-domain sweep.
+  const sharedOwnLatestCompletions=new Map(pending.map(task=>[task.id,problem.day.end]));
+  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations,sharedOwnLatestCompletions));
   const selected = selectMostConstrainedUnit(constrained)!;
   const diagnosticFrontier=macroCapacityDiagnostic.enabled&&placed.length>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1)
     ?{depth:placed.length,fingerprint:causalHash([...placed].sort(byId).map(({id,start,end})=>({id,start,end}))),
@@ -1113,7 +1138,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.jointGroupAnalyticallyEliminatedStarts += fullGridCount-domain.eligibleStartCount;
     const starts = unit.kind === "JOINT" && jointGroupStartDomainMode === "FULL_GRID"
       ? (function* () { for (let start=problem.day.start;start+duration<=problem.day.end;start+=5) yield start; })()
-      : domain.starts();
+      : unit.kind === "RESOURCE_TASK" ? selected.feedingSafeStarts! : domain.starts();
     const orderedStarts = unit.kind === "RESOURCE_TASK" ? [...starts].map((start, canonicalIndex) => {
       if (!canPlaceTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed], coreMeals))
         return { start, canonicalIndex, hardValid: false, freedom: null, compactness: null };
@@ -1350,6 +1375,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],
+    resourceTaskDomainLogicalStarts:0,resourceTaskDomainFeedingChecks:0,resourceTaskDomainAnalyticallyEliminatedByArrival:0,
+    resourceTaskDomainInconclusiveStarts:0,resourceTaskDomainKeptStarts:0,
     macroPendingPrerequisiteForwardChecks:0,macroPendingPrerequisiteTasksChecked:0,macroPendingPrerequisiteIndividualDomainChecks:0,
     macroPendingPrerequisiteCollectiveCapacityChecks:0,macroPendingPrerequisiteObligationsChecked:0,macroPendingPrerequisiteCollectiveCapacityPrunes:0,
     macroPendingPrerequisiteJointChecks:0,macroPendingPrerequisiteCacheHits:0,macroPendingPrerequisiteCacheMisses:0,

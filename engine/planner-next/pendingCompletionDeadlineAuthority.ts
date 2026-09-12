@@ -14,7 +14,8 @@ export interface PendingCompletionDeadlineAuthority {
  * plus duration. Successor bounds can only tighten that completion bound.
  */
 export function createPendingCompletionDeadlineAuthority(problem: PlannerNextProblem, pending: readonly Task[],
-  placed: readonly ScheduledTask[], meals: readonly ScheduledSpaceMeal[] = []): PendingCompletionDeadlineAuthority {
+  placed: readonly ScheduledTask[], meals: readonly ScheduledSpaceMeal[] = [],
+  reusableOwnLatestCompletions:ReadonlyMap<string,number>=new Map()): PendingCompletionDeadlineAuthority {
   const pendingById = new Map([...pending].sort((a, b) => a.id.localeCompare(b.id)).map((task) => [task.id, task]));
   const placedById = new Map(placed.map((task) => [task.id, task]));
   const successors = new Map<string, string[]>();
@@ -36,6 +37,7 @@ export function createPendingCompletionDeadlineAuthority(problem: PlannerNextPro
   const own = new Map<string, number>();
   const ownLatestCompletion = (task: Task): number => {
     const cached = own.get(task.id); if (cached !== undefined) return cached;
+    const reusable=reusableOwnLatestCompletions.get(task.id);if(reusable!==undefined){own.set(task.id,reusable);return reusable;}
     const domain = exactTaskStartDomain(problem, task, [...placed], [...meals]);
     let latestStart: number | undefined;
     for (let index = domain.intervals.length - 1; index >= 0; index--) {
