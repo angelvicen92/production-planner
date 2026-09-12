@@ -53,15 +53,17 @@ function arrivalFixture(count: number, options: { maximum?: number; target?: num
   return { problem: input, pending: [...arrivals, ...flexible], core: [{ ...successor, start: 40, end: 50 }] as ScheduledTask[] };
 }
 
-test("a changed first boundary uses a certificate without repairing or branching over ARRIVAL", () => {
+test("the initial virtual reservation is built from the effective core deadline", () => {
   const input = arrivalFixture(4, { maximum: 2, target: 2, gap: 10 });
   const arrival = input.pending[0]!;
   const macro: ScheduledTask = { id: "macro", kind: "auxiliary", participantId: arrival.participantId,
     duration: 5, spaceId: "core-space", dependencies: [], start: 15, end: 20 };
   const next = maintainDeferredPrerequisiteReservation(input.problem, input.pending, [...input.core, macro]);
   assert.equal(next.feasible, true);
-  assert.equal(next.arrivalBranchesExplored, 0);
+  assert.ok(next.arrivalBranchesExplored > 0);
   assert.equal(next.arrivalRepaired, false);
+  assert.ok(next.reservation.groups.length > 0);
+  assert.equal(next.reservation.deadlines[arrival.id], 15);
 });
 
 test("ordinary reservation prunes a pending-IN deadline deficit before exact DFS", () => {
@@ -81,7 +83,7 @@ test("transport demand equal to optimistic hard capacity remains viable", () => 
   const input = arrivalFixture(2, { maximum: 1, gap: 20, arrivalWindow: { start: 0, end: 30 } });
   const result = maintainDeferredPrerequisiteReservation(input.problem, input.pending, input.core);
   assert.equal(result.feasible, true);
-  assert.equal(result.arrivalBranchesExplored, 0);
+  assert.ok(result.arrivalBranchesExplored > 0);
   assert.equal(result.pendingArrivalDeadline.prunes, 0);
 });
 
@@ -146,4 +148,34 @@ test("arrival propagation leaves problem, pending, and placed inputs immutable",
   const before = JSON.stringify(input);
   maintainDeferredPrerequisiteReservation(input.problem, [], input.core);
   assert.equal(JSON.stringify(input), before);
+});
+
+test("a valid virtual witness is reused without search and unrelated work preserves it", () => {
+  const input=arrivalFixture(2,{maximum:2,target:2});
+  const initial=maintainDeferredPrerequisiteReservation(input.problem,input.pending,input.core);
+  const unrelated:ScheduledTask={id:"unrelated",kind:"auxiliary",participantId:"core",duration:5,
+    spaceId:"core-space",dependencies:[],start:50,end:55};
+  const next=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,unrelated],[],initial.reservation);
+  assert.equal(next.feasible,true);assert.equal(next.arrivalBranchesExplored,0);
+  assert.equal(next.arrivalRepaired,false);assert.equal(next.reservation.fingerprint,initial.reservation.fingerprint);
+});
+
+test("an earlier participant obligation deterministically repairs the virtual witness", () => {
+  const input=arrivalFixture(2,{maximum:1,target:1,gap:10,arrivalWindow:{start:0,end:30}});
+  const initial=maintainDeferredPrerequisiteReservation(input.problem,input.pending,input.core);
+  const arrival=input.pending[1]!;const earlier:ScheduledTask={id:"earlier",kind:"auxiliary",
+    participantId:arrival.participantId,duration:5,spaceId:"core-space",dependencies:[],start:25,end:30};
+  const repaired=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,earlier],[],initial.reservation,()=>true,earlier.id);
+  assert.equal(repaired.feasible,true);assert.equal(repaired.arrivalRepaired,true);
+  assert.notEqual(repaired.reservation.fingerprint,initial.reservation.fingerprint);
+  assert.equal(repaired.causalDiagnostic?.causingTaskId,earlier.id);
+});
+
+test("an exact no-witness repair rejects instead of dropping a viable branch", () => {
+  const input=arrivalFixture(2,{maximum:1,target:1,gap:20,arrivalWindow:{start:0,end:30}});
+  const initial=maintainDeferredPrerequisiteReservation(input.problem,input.pending,input.core);
+  const arrival=input.pending[1]!;const impossible:ScheduledTask={id:"too-early",kind:"auxiliary",
+    participantId:arrival.participantId,duration:5,spaceId:"core-space",dependencies:[],start:5,end:10};
+  const result=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,impossible],[],initial.reservation);
+  assert.equal(result.feasible,false);assert.equal(result.arrivalPruned,true);assert.equal(result.arrivalWitnessDropped,true);
 });
