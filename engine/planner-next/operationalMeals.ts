@@ -203,6 +203,17 @@ export function operationalMealFreeIntervals(problem: PlannerNextProblem, policy
       interval, policy.duration, problem.day.start, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES));
 }
 
+/** Number of grid-representable starts left for a REQUIRED operational meal. */
+export function operationalMealWitnessCount(problem: PlannerNextProblem, policy: OperationalMealPolicy,
+  tasks: readonly ScheduledTask[]): number {
+  return operationalMealFreeIntervals(problem, policy, tasks).reduce((total, interval) => {
+    const first = firstRepresentableOperationalMealStart(
+      interval, problem.day.start, PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES);
+    return total + Math.max(0, Math.floor((interval.end - policy.duration - first)
+      / PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES) + 1);
+  }, 0);
+}
+
 function applicableCoachTransitionMinutes(problem: PlannerNextProblem, policy: OperationalMealPolicy,
   tasks: readonly ScheduledTask[]): number | undefined {
   if (!isIndividualCoachMeal(problem, policy)) return undefined;
