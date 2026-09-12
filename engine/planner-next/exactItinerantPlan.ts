@@ -24,7 +24,7 @@ import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySu
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
-import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerprint, probeOperationalMealFutureFeasibility, type OperationalMealReservation, type OperationalMealWitness } from "./operationalMeals";
+import { assessOperationalMealFutureFeasibility, operationalMealWitnessCount, operationalMealWitnessFingerprint, probeOperationalMealFutureFeasibility, taskConflictsWithOperationalMealPolicy, type OperationalMealReservation, type OperationalMealWitness } from "./operationalMeals";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
@@ -64,6 +64,27 @@ export function compareCompleteParticipantQuality(candidate: CompleteParticipant
     "totalIdleMinutes", "totalGapCount", "totalSpaceChangeCount"];
   if (keys.some((key) => candidate[key] > incumbent[key])) return 0;
   return keys.some((key) => candidate[key] < incumbent[key]) ? 1 : -1;
+}
+
+export interface OperationalMealFreedom {
+  readonly minimumWitnesses: number;
+  readonly totalWitnesses: number;
+}
+
+/** Branch-free ordering signal; policies outside the candidate's scope are deliberately absent. */
+export function operationalMealFreedomAfterPlacement(problem: PlannerNextProblem,
+  placed: readonly ScheduledTask[], candidate: ScheduledTask): OperationalMealFreedom {
+  const affected = [...(problem.operationalMealPolicies ?? [])]
+    .filter((policy) => taskConflictsWithOperationalMealPolicy(candidate, policy))
+    .sort((left, right) => left.id.localeCompare(right.id, "en"));
+  if (affected.length === 0) return { minimumWitnesses: 0, totalWitnesses: 0 };
+  const counts = affected.map((policy) => operationalMealWitnessCount(problem, policy, [...placed, candidate]));
+  return { minimumWitnesses: Math.min(...counts), totalWitnesses: counts.reduce((sum, count) => sum + count, 0) };
+}
+
+export function compareOperationalMealFreedom(left: OperationalMealFreedom,
+  right: OperationalMealFreedom): number {
+  return right.minimumWitnesses-left.minimumWitnesses || right.totalWitnesses-left.totalWitnesses;
 }
 
 export type ExactItinerantPlanStatus = "COMPLETE" | "CORE_FAILED" | "UNSUPPORTED_STANDALONE_SHAPE"
@@ -1042,7 +1063,16 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     const starts = unit.kind === "JOINT" && jointGroupStartDomainMode === "FULL_GRID"
       ? (function* () { for (let start=problem.day.start;start+duration<=problem.day.end;start+=5) yield start; })()
       : domain.starts();
-    for (const start of starts) {
+    const orderedStarts = unit.kind === "RESOURCE_TASK" ? [...starts].map((start, canonicalIndex) => {
+      if (!canPlaceTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed], coreMeals))
+        return { start, canonicalIndex, hardValid: false, freedom: null };
+      const scheduled = scoreAuxiliaryTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed]).scheduled;
+      return { start, canonicalIndex, hardValid: true,
+        freedom: operationalMealFreedomAfterPlacement(problem, [...coreTasks, ...placed], scheduled) };
+    }).sort((left, right) => Number(right.hardValid)-Number(left.hardValid)
+      || (left.freedom && right.freedom ? compareOperationalMealFreedom(left.freedom, right.freedom) : 0)
+      || left.canonicalIndex-right.canonicalIndex).map(({start})=>start) : starts;
+    for (const start of orderedStarts) {
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
       evidence.jointGroupStartsEvaluated += 1; evidence.criticalResourceBranches += 1;
       if (unit.kind === "JOINT" && !canPlaceJointGroup(problem, unit.tasks, start, [...coreTasks, ...placed])) continue;

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
-  candidateIntroducesCapacityCertificate, macroCapacityCertificateSignature, resourceAvailabilityMinutes } from "./exactItinerantPlan";
+  candidateIntroducesCapacityCertificate, compareOperationalMealFreedom, macroCapacityCertificateSignature, operationalMealFreedomAfterPlacement,
+  resourceAvailabilityMinutes } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -295,6 +296,66 @@ test("macro constrainedness is recalculated after each placement", () => {
   ]);
   assert.ok(result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-c")!.domainSize
     < result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-b")!.domainSize);
+});
+
+function mealFreedomProblem(reverse = false): PlannerNextProblem {
+  const input = macroCompetitionProblem({ resource: [20, 90] });
+  const task = input.tasks.find(({ id }) => id === "resource-task")!;
+  task.availability = [{ start: 20, end: 30 }, { start: 80, end: 90 }];
+  input.operationalMealPolicies = [{ id: "required-break", window: { start: 20, end: 80 }, duration: 20,
+    resourceIds: [], spaceIds: [task.spaceId] }];
+  if (reverse) {
+    input.tasks.reverse(); input.participants.reverse(); input.spaces.reverse(); input.resources.reverse();
+    input.operationalMealPolicies.reverse();
+  }
+  return input;
+}
+
+test("RESOURCE_TASK visits the hard-valid placement preserving more REQUIRED meal witnesses first", () => {
+  const input = mealFreedomProblem();
+  const domain = standaloneForwardDynamicDomain(input, input.tasks.find(({id})=>id==="resource-task")!, [],
+    standaloneForwardStaticDomain(input, input.tasks.find(({id})=>id==="resource-task")!, []));
+  assert.deepEqual([...domain.starts()], [20, 80], "ordering does not remove candidates from the dynamic domain");
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="resource-task")!.start, 80);
+  assert.equal(result.evidence.criticalResourceBranches, 1);
+  assert.equal(result.evidence.standaloneBranches + result.evidence.coreBranches, result.evidence.branchesExplored);
+  const reversed = runExactItinerantPlanSearch(mealFreedomProblem(true));
+  assert.equal(reversed.scheduledTasks.find(({id})=>id==="resource-task")!.start, 80);
+  assert.equal(reversed.evidence.fullFingerprint, result.evidence.fullFingerprint);
+});
+
+test("operational meal freedom uses worst margin, then total, and ignores unaffected policies", () => {
+  const input = mealFreedomProblem();
+  const task = input.tasks.find(({id})=>id==="resource-task")!;
+  const scheduled = (start:number):ScheduledTask => ({...task,start,end:start+task.duration});
+  input.operationalMealPolicies!.push(
+    {id:"second",window:{start:20,end:100},duration:20,resourceIds:[],spaceIds:[task.spaceId]},
+    {id:"unaffected",window:{start:0,end:120},duration:20,resourceIds:["unit"],spaceIds:[]},
+  );
+  const early = operationalMealFreedomAfterPlacement(input, [], scheduled(20));
+  const late = operationalMealFreedomAfterPlacement(input, [], scheduled(80));
+  assert.ok(late.minimumWitnesses > early.minimumWitnesses
+    || late.minimumWitnesses === early.minimumWitnesses && late.totalWitnesses > early.totalWitnesses);
+  input.operationalMealPolicies = input.operationalMealPolicies!.filter(({id})=>id!=="unaffected");
+  assert.deepEqual(operationalMealFreedomAfterPlacement(input, [], scheduled(20)), early);
+  const neutral = operationalMealFreedomAfterPlacement(input, [], {...scheduled(20),spaceId:"main",requiredResourceIds:[]});
+  assert.deepEqual(neutral, {minimumWitnesses:0,totalWitnesses:0});
+  assert.ok(compareOperationalMealFreedom({minimumWitnesses:3,totalWitnesses:3},
+    {minimumWitnesses:2,totalWitnesses:100}) < 0, "the worst REQUIRED margin has priority");
+  assert.ok(compareOperationalMealFreedom({minimumWitnesses:3,totalWitnesses:8},
+    {minimumWitnesses:3,totalWitnesses:7}) < 0, "the total breaks equal worst margins deterministically");
+  assert.equal(compareOperationalMealFreedom({minimumWitnesses:3,totalWitnesses:8},
+    {minimumWitnesses:3,totalWitnesses:8}), 0);
+});
+
+test("equal REQUIRED meal witness freedom retains canonical start ordering", () => {
+  const input = mealFreedomProblem();
+  input.operationalMealPolicies![0]!.window = {start:40,end:70};
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="resource-task")!.start, 20);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
