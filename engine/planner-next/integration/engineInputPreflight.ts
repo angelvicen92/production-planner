@@ -316,6 +316,7 @@ function sourceProjection(input: EngineInput): unknown {
     availabilityEnd: projectAvailabilityEndpoint(resource, "availabilityEnd"),
     presenceConcentrationPolicy: resource.presenceConcentrationPolicy,
     assignedSpaceId: resource.assignedSpaceId,
+    transitionMinutes: resource.transitionMinutes,
   }));
   const endpoint = (row: Record<string, unknown>, key: string): unknown => Object.prototype.hasOwnProperty.call(row, key) && row[key] === undefined ? { undefined: true } : Object.prototype.hasOwnProperty.call(row, key) ? row[key] : { absent: true };
   const planZoneSettings = input.planZoneSettings?.map((row) => ({ id: endpoint(row as unknown as Record<string, unknown>, "id"), zoneId: row.zoneId, availabilityStart: endpoint(row as unknown as Record<string, unknown>, "availabilityStart"), availabilityEnd: endpoint(row as unknown as Record<string, unknown>, "availabilityEnd"), source: endpoint(row as unknown as Record<string, unknown>, "source") }));
@@ -1072,6 +1073,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     ...input.tasks.flatMap((task) => task.spaceId == null ? [] : [String(task.spaceId)]),
   ]);
   for (const resource of input.planResourceItems) {
+    if (resource.transitionMinutes !== undefined
+      && !(typeof resource.transitionMinutes === "number" && Number.isFinite(resource.transitionMinutes)
+        && Number.isInteger(resource.transitionMinutes) && resource.transitionMinutes >= 0)) {
+      addIssue("INVALID_TRANSITION_CONFIGURATION", "plan-resource", resource.id,
+        `planResourceItems.${resource.id}.transitionMinutes`, "Resource transition override must be a finite non-negative integer.", {
+          value: resource.transitionMinutes,
+        });
+    }
     if (resource.presenceConcentrationPolicy !== undefined
       && !["OFF", "PREFERRED", "REQUIRED"].includes(resource.presenceConcentrationPolicy)) {
       addIssue("INVALID_RESOURCE_PRESENCE_CONCENTRATION_POLICY", "plan-resource", resource.id,
