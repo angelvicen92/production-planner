@@ -8,6 +8,8 @@ Se proyectaron las 123 colocaciones standalone del `deepestStandaloneFrontier` y
 
 El probe de la decisión focal copió el dominio dinámico y el estado anterior, sin `ledger.consume`: volvió a aplicar `canPlaceTask`, pending prerequisites/capacidad, reserva de transporte y Future Feasibility de comidas. `AVOIDABLE_SPLIT` exige una alternativa contemporánea hard-valid con menos bloques/reentradas y sin pérdida de la Future Feasibility necesaria; no exige que esa alternativa sea la solución humana.
 
+Para la comparación humana de geometría de plató/recurso se aplica la precedencia oficial del Documento Maestro: aclaraciones operativas expresas → `ENSAYO_A2_LV.pdf` por espacios → desglose por concursantes → inferencia visual. La referencia normalizada por concursante sigue siendo válida para cobertura, identidad de tareas y KPIs ya certificados, pero **no se usa para contar bloques físicos de CAM1/CAM2 cuando contradice el documento por espacios**.
+
 ## CAM1 — Recursos/Pasillo
 
 Resultado: **17 bloques, 16 cambios y 15 reentradas** (A3-007: 29/28/27). Secuencia completa:
@@ -88,26 +90,32 @@ No apareció otra fragmentación con la magnitud o la causa transversal de CAM1.
 
 ## Comparación con el planning humano (sólo benchmark)
 
-La referencia humana normalizada no fue seed, hint ni orden. Con la misma proyección operacional, su CAM1 alterna 35 bloques (34 cambios, 33 reentradas), peor que el frontier; esto no legitima las 15 reentradas restantes del motor. CAM2 humano tiene 2 bloques (`Croma→Estrellas/Sillón`), 1 cambio y 0 reentradas. Cada coach humano presenta 4 bloques (`Caracola→Estudio 7→Caracola→Estudio 7`), 3 transiciones y 2 reentradas. Sus familias setup son un bloque Sillón y un bloque Estrellas, con una preparación de 10 minutos.
+El benchmark físico se obtiene del documento humano **por espacios**, que tiene precedencia sobre el desglose por concursantes para reconstruir la geometría de plató/recurso cuando ambos difieren. Los horarios humanos siguen prohibidos como seed, hint o lock.
 
-| estructura | baseline anterior (A3-007) | A3-008 frontier123 | referencia humana | mínimo/objetivo operativo defendible |
+- **CAM1 / P14:** la referencia por espacios organiza la cámara como `Recursos → Pasillo → Recursos`: aproximadamente `Recursos 10:00–12:00`, `Pasillo 12:00–13:35`, retorno a `Recursos 14:00–16:20`, con el corte de comida dentro de esa segunda estancia en Recursos. La comida no crea bloque lógico. Resultado: **3 bloques físicos, 2 cambios y 1 reentrada**. Pasillo es un único bloque compacto. Giratuto aparece también como un único bloque propio y no consume CAM1.
+- **CAM2 / P15:** `Croma → Estrellas/Sillón`, sin retorno a Croma: **2 bloques físicos, 1 cambio y 0 reentradas**. Sillón y Estrellas mantienen un bloque por familia con una preparación de 10 minutos entre ambas.
+- **Coaches:** la arquitectura humana tiene dos cohortes por coach en Caracola y dos bloques por coach en Estudio 7, es decir `Caracola→E7→Caracola→E7`: 4 bloques de ubicación, 3 cambios y 2 reentradas por coach. Es benchmark, no objetivo fijo; el motor debe buscar el mínimo factible y el frontier actual mejora esa geometría si conserva completitud.
+
+La proyección de 35 bloques CAM1 obtenida de los horarios normalizados por concursante **no es un benchmark físico válido**: mezcla tiempos del desglose por concursantes que contradicen la planificación por espacios y no debe utilizarse para afirmar que el motor ya supera al humano en movimientos de CAM1.
+
+| estructura | baseline anterior (A3-007) | A3-008 frontier123 | referencia humana por espacios | mínimo/objetivo operativo defendible |
 |---|---:|---:|---:|---:|
-| CAM1 (bloques/cambios/reentradas) | 29 / 28 / 27 | **17 / 16 / 15** | 35 / 34 / 33 | **2 / 1 / 0** (una banda por ubicación) |
-| CAM2 físico (bloques/cambios/reentradas) | 3 / 2 / 1 | **3 / 2 / 1** | 2 / 1 / 0 | **2 / 1 / 0**, salvo split exigido por viabilidad |
+| CAM1 (bloques/cambios/reentradas) | 29 / 28 / 27 | **17 / 16 / 15** | **3 / 2 / 1** | **2 / 1 / 0** (una banda por ubicación), si la viabilidad global lo permite |
+| CAM2 físico (bloques/cambios/reentradas) | 3 / 2 / 1 | **3 / 2 / 1** | **2 / 1 / 0** | **2 / 1 / 0**, salvo split exigido por viabilidad |
 | Estrellas (bloques de familia) | 1 | **1** | 1 | **1** |
 | Sillón (bloques de familia) | 1 | **1** | 1 | **1** |
-| coach Lucía (bloques/cambios/reentradas) | 2 / 1 / 0 | **2 / 1 / 0** | 4 / 3 / 2 | **2 / 1 / 0** |
-| coach José María (bloques/cambios/reentradas) | 2 / 1 / 0 | **2 / 1 / 0** | 4 / 3 / 2 | **2 / 1 / 0** |
+| coach Lucía (bloques/cambios/reentradas) | 2 / 1 / 0 | **2 / 1 / 0** | 4 / 3 / 2 | **2 / 1 / 0**, si el pipeline completo sigue viable |
+| coach José María (bloques/cambios/reentradas) | 2 / 1 / 0 | **2 / 1 / 0** | 4 / 3 / 2 | **2 / 1 / 0**, si el pipeline completo sigue viable |
 
 ## Planning drawing delta
 
-- **Bloques por recurso/familia:** CAM1 baja 29→17; CAM2 queda en 3; Estrellas y Sillón permanecen en uno por familia; cada coach queda en dos bloques totales.
-- **Movimientos:** CAM1 baja 28→16; CAM2 conserva 2; cada coach conserva una transición.
-- **Reentradas:** CAM1 baja 27→15; CAM2 conserva 1; coaches 0.
-- **Compactación:** A3-008 crea dos bandas amplias P14 y preserva familias/setup y rutas de coach compactas, pero alterna todavía ocho bandas Pasillo y nueve Recursos.
+- **Bloques por recurso/familia:** CAM1 baja 29→17, pero sigue muy lejos del humano (3) y del objetivo defendible (2); CAM2 queda en 3 frente a 2 humano; Estrellas y Sillón permanecen en uno por familia; cada coach queda en dos bloques totales.
+- **Movimientos:** CAM1 baja 28→16, aún frente a 2 humanos; CAM2 conserva 2 frente a 1 humano; cada coach conserva una transición y mejora el patrón humano si la solución completa demuestra que esa compactación es viable.
+- **Reentradas:** CAM1 baja 27→15 frente a 1 humana; CAM2 conserva 1 frente a 0; coaches 0 frente a 2 humanos.
+- **Compactación:** A3-008 crea dos bandas amplias P14 y preserva familias/setup y rutas de coach compactas, pero alterna todavía ocho bandas Pasillo y nueve Recursos. No puede considerarse próximo al patrón humano de CAM1.
 - **Qué mejoró:** la libertad futura de comida desplazó trabajo y eliminó 12 bloques/cambios/reentradas CAM1 respecto de A3-007.
-- **Qué empeoró:** no empeora ninguna estructura medida respecto de A3-007; el frontier gana dos tareas, pero la cola P14 sigue serrada.
-- **Diferencias frente al humano:** el motor es mucho más compacto en CAM1 y coaches; el humano es más compacto en CAM2; ambos mantienen una banda por familia setup.
+- **Qué empeoró:** no empeora ninguna estructura medida respecto de A3-007; el frontier gana dos tareas.
+- **Diferencias frente al humano:** el motor todavía es muy inferior en CAM1 y algo peor en CAM2; es potencialmente más compacto en coaches y mantiene paridad de una banda por familia setup.
 - **Nuevo cuello:** al empatar Future Feasibility, el orden canónico de starts carece de una señal de continuidad y acepta la primera ruptura evitable (`10167@600`).
 
 ## Conclusión y siguiente intervención
