@@ -5,6 +5,7 @@ import type { EngineInput } from "../../types";
 import { preflight as preflightPlannerNextProblem, validatePlan } from "../validate";
 import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
+
 import { createSpec10017JointGroupEngineInputFixture, createSpec10018SetupPolicyEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
 import { runSpec10017Probe } from "../benchmarks/runSpec10017JointGroupsBenchmark";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
@@ -637,4 +638,17 @@ test("SPEC10-018 projects setup families and explicit preparation policy", () =>
   assert.equal(setupSpace?.secondaryContinuity, "REQUIRED");
   assert.equal(result.problem.tasks.filter((task) => task.setupFamilyId === "setup-family:304:sillon").length, 2);
   assert.equal(result.problem.tasks.filter((task) => task.setupFamilyId === "setup-family:304:estrellas").length, 2);
+});
+test("participant boundary role is explicit, validated, projected and fingerprinted",()=>{
+  const input=createSupportedEngineInputAdapterFixture();
+  input.tasks[1]!.participantBoundaryRole="ENTRY_PREREQUISITE";
+  const first=adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(first.status,"SUPPORTED");
+  assert.equal(first.problem!.tasks.find(task=>task.id==="task:102")!.participantBoundaryRole,"ENTRY_PREREQUISITE");
+  const reversed=structuredClone(input);reversed.tasks.reverse();
+  assert.equal(adaptEngineInputToPlannerNextProblem(reversed).problemFingerprint,first.problemFingerprint);
+  const absent=structuredClone(input);delete absent.tasks.find(task=>task.id===102)!.participantBoundaryRole;
+  assert.notEqual(adaptEngineInputToPlannerNextProblem(absent).problemFingerprint,first.problemFingerprint);
+  const invalid=structuredClone(input) as any;invalid.tasks.find((task:any)=>task.id===102).participantBoundaryRole="ENTRY";
+  assert.equal(adaptEngineInputToPlannerNextProblem(invalid).status,"UNSUPPORTED");
 });

@@ -80,6 +80,7 @@ export interface CanonicalTask {
   readonly anchoredOperationId?: string;
   readonly technicalChainId?: string;
   readonly itinerantUnitId?: string;
+  readonly participantBoundaryRole?: "ENTRY_PREREQUISITE" | "EXIT_PREREQUISITE";
   readonly meal?: { readonly kind: "participant_meal"; readonly duration: 40; readonly occupiesExclusiveSpace: false };
   readonly transport?: { readonly direction: "arrival" | "departure" };
   readonly isAnchoredSegment?: boolean;
