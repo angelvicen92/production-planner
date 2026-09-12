@@ -262,13 +262,18 @@ export function createExactSetupBlockExplorer(
       }
     }
 
-    // FAST/PREFERRED: every compact start before any gapped geometry. Cost remains
+    // Breadth-first by geometry class: canonical matchings at every start are
+    // visited before returning to those starts for matching repairs. Cost remains
     // the first historical ranking key when callers materialize the full domain.
-    for (const fallback of options.compactOnly ? [false] : [false, true]) {
+    for (const { fallback, repairsEnabled } of [
+      { fallback: false, repairsEnabled: false },
+      ...(!options.canonicalOnly ? [{ fallback: false, repairsEnabled: true }] : []),
+      ...(!options.compactOnly ? [{ fallback: true, repairsEnabled: false }] : []),
+      ...(!options.compactOnly && !options.canonicalOnly ? [{ fallback: true, repairsEnabled: true }] : []),
+    ]) {
       for (let start = problem.day.start; start < problem.day.end; start += 5) {
         evidence.startsExplored += 1;
-        yield* visit(start, ordered, [], [], 0, fallback, 0, false, false);
-        if (!options.canonicalOnly) yield* visit(start, ordered, [], [], 0, fallback, 0, true, false);
+        yield* visit(start, ordered, [], [], 0, fallback, 0, repairsEnabled, false);
         if (budgetExhausted) return;
       }
     }

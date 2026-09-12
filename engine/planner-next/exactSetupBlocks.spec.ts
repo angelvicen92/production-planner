@@ -34,24 +34,40 @@ test("lazy setup matching repairs a canonical witness and is input-order determi
   const baseline=collect();const reversed=collect(true);assert.notEqual(baseline.seen[0],baseline.seen[1]);assert.ok(baseline.repairs>0);assert.deepEqual(reversed,baseline);
 });
 
-test("downstream dead end repairs the same compact geometry before any gapped geometry",()=>{
+test("a later compact canonical matching is visited before repairing the first start",()=>{
   const problem=oneFamily();
   const explorer=createExactSetupBlockExplorer(problem,problem.tasks,[],[],[],createExactSearchLedger(1000));
   const canonical=explorer.nextCandidate()!;
   assert.equal(canonical.geometryIdleMinutes,0);
   assert.equal(canonical.matchingRepairIndex,0);
   explorer.recordCandidateOutcome(false); // Fixture's canonical assignment is rejected by its downstream child.
-  const repaired=explorer.nextCandidate()!;
-  assert.equal(repaired.geometryIdleMinutes,0);
-  assert.equal(repaired.geometrySpanMinutes,canonical.geometrySpanMinutes);
-  assert.equal(repaired.matchingRepairIndex,1);
-  assert.notEqual(sig(repaired.tasks),sig(canonical.tasks));
+  const laterCanonical=explorer.nextCandidate()!;
+  assert.equal(laterCanonical.geometryIdleMinutes,0);
+  assert.equal(laterCanonical.matchingRepairIndex,0);
+  assert.ok(Math.min(...laterCanonical.tasks.map(task=>task.start))>Math.min(...canonical.tasks.map(task=>task.start)));
   assert.equal(explorer.evidence.maximumIdleMinutes,0);
-  assert.equal(explorer.evidence.compactGeometryMatchingRepairs,1);
+  assert.equal(explorer.evidence.compactGeometryMatchingRepairs,0);
   explorer.recordCandidateOutcome(true);
   assert.deepEqual(explorer.evidence.firstSuccessfulGeometry,{idleMinutes:0,spanMinutes:10});
-  assert.equal(explorer.evidence.firstSuccessfulMatchingRepairIndex,1);
-  assert.equal(validatePlan(problem,repaired.tasks,repaired.preparations).hardValid,true);
+  assert.equal(explorer.evidence.firstSuccessfulMatchingRepairIndex,0);
+  assert.equal(validatePlan(problem,laterCanonical.tasks,laterCanonical.preparations).hardValid,true);
+});
+
+test("wide budget preserves every setup candidate, repair reachability, ledger accounting, and input order",()=>{
+  const problem=oneFamily();
+  const collect=(tasks=problem.tasks)=>{const ledger=createExactSearchLedger(1000);const generated=generateExactSetupBlockCandidates(problem,tasks,[],[],[],ledger);return{generated,ledger,signatures:generated.candidates.map(candidate=>sig(candidate.tasks)).sort()};};
+  const baseline=collect();const reversed=collect([...problem.tasks].reverse());
+  const [firstId,secondId]=problem.tasks.map(task=>task.id).sort();
+  const expected:string[]=[];
+  for(let left=540;left<570;left+=5)for(let right=left+5;right<570;right+=5){
+    expected.push(`${firstId}@${left}|${secondId}@${right}`,`${firstId}@${right}|${secondId}@${left}`);
+  }
+  assert.equal(baseline.generated.outcome,"COMPLETE");
+  assert.deepEqual(baseline.signatures,expected.sort());
+  assert.deepEqual(reversed.signatures,baseline.signatures);
+  assert.ok(baseline.generated.evidence.matchingRepairs>0);
+  assert.equal(baseline.generated.evidence.branchesExplored,baseline.ledger.standaloneBranches);
+  assert.equal(baseline.ledger.branchesExplored,baseline.ledger.standaloneBranches);
 });
 
 test("setup preparation occupies exactly the inter-family interval",()=>{
