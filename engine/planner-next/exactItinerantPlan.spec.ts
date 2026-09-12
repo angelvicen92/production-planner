@@ -349,12 +349,31 @@ test("RESOURCE_TASK constructive domain removes only analytically impossible arr
  assert.ok(result.scheduledTasks.find(({id})=>id==="resource")!.start>=35,"IN and preparation must feed the resource task");
  assert.equal(result.evidence.macroDomainSizes["resource:resource"],3,"35, 40 and 45 survive from the raw ten starts");
  assert.equal(result.evidence.resourceTaskDomainLogicalStarts,10);
- assert.equal(result.evidence.resourceTaskDomainFeedingChecks,10);
+ assert.equal(result.evidence.resourceTaskDomainFeedingChecks,5,"the frontier must not scan all ten logical starts");
  assert.equal(result.evidence.resourceTaskDomainAnalyticallyEliminatedByArrival,7);
  assert.equal(result.evidence.resourceTaskDomainKeptStarts,3);
+ assert.equal(result.evidence.resourceTaskDomainRawIntervals,1);
+ assert.equal(result.evidence.resourceTaskDomainSurvivingIntervals,1);
+ assert.equal(result.evidence.resourceTaskDomainEliminatedRegions,1);
+ assert.equal(result.evidence.resourceTaskDomainPreparedAuthorityBuilds,1);
+ assert.equal(result.evidence.resourceTaskDomainPreparedAuthorityHits,4);
+ assert.ok(result.evidence.resourceTaskDomainCostMs>=0);
  const reversed=runExactItinerantPlanSearch(feedingAwareResourceProblem(true));
  assert.equal(reversed.evidence.fullFingerprint,result.evidence.fullFingerprint);
  assert.equal(reversed.evidence.macroDomainSizes["resource:resource"],3);
+});
+
+test("RESOURCE_TASK feeding envelope removes whole prefixes across multiple hard intervals",()=>{
+ const input=feedingAwareResourceProblem();
+ input.resources.find(({id})=>id==="scarce")!.availability=[{start:0,end:25},{start:35,end:50}];
+ const result=runExactItinerantPlanSearch(input);
+ assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+ assert.equal(result.evidence.resourceTaskDomainRawIntervals,2);
+ assert.equal(result.evidence.resourceTaskDomainSurvivingIntervals,1);
+ assert.equal(result.evidence.resourceTaskDomainLogicalStarts,8);
+ assert.equal(result.evidence.resourceTaskDomainAnalyticallyEliminatedByArrival,5);
+ assert.equal(result.evidence.resourceTaskDomainKeptStarts,3);
+ assert.equal(result.evidence.resourceTaskDomainFeedingChecks,3);
 });
 
 test("operational meal freedom uses worst margin, then total, and ignores unaffected policies", () => {

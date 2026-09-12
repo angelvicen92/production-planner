@@ -36,6 +36,9 @@ export interface PendingArrivalFeedingAssessment {
   failure: "PENDING_ARRIVAL_DEADLINE" | null;
   pendingArrivalDeadline: AnonymousPostInCompletionAssessment;
 }
+export interface PreparedPendingArrivalFeedingAuthority {
+  assess(candidate:readonly ScheduledTask[]):PendingArrivalFeedingAssessment;
+}
 export interface TargetCollectiveCapacityCertificateEvaluation {
   evaluated:boolean;overloaded:boolean;authorityId:string;demandMinutes:number|null;freeCapacityMinutes:number|null;overloadTaskIds:string[];
 }
@@ -55,23 +58,33 @@ const exclusiveAuthorities=(task:Task)=>[{key:`space:${task.spaceId}`,id:task.sp
  * complete in time. A positive or unavailable proof always abstains from
  * pruning; only the shared negative certificate is conclusive.
  */
+export function preparePendingArrivalFeedingAuthority(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
+  meals:readonly ScheduledSpaceMeal[]=[],reusableOwnLatestCompletions:ReadonlyMap<string,number>=new Map()):PreparedPendingArrivalFeedingAuthority{
+  const previouslyPlacedIds=new Set(previouslyPlaced.map(({id})=>id));
+  const inputPendingIds=new Set(pending.map(({id})=>id));
+  const additionalArrivals=(problem.transportPolicy?.arrival.taskIds??[])
+    .filter(id=>!inputPendingIds.has(id)&&!previouslyPlacedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task));
+  return{assess(candidate){
+    const provisional=[...previouslyPlaced,...candidate].sort(byId);
+    const candidateIds=new Set(candidate.map(({id})=>id));
+    const pendingWithArrivals=[...pending,...additionalArrivals.filter(({id})=>!candidateIds.has(id))];
+    const pendingIds=new Set(pendingWithArrivals.map(({id})=>id));
+    const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals,reusableOwnLatestCompletions);
+    const arrivalDeadlineByParticipant=new Map<string,number>();
+    for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
+      if(!pendingIds.has(arrivalId))continue;
+      const arrival=authority.pendingById.get(arrivalId),cutoff=authority.completionDeadline(arrivalId);
+      if(arrival?.participantId&&cutoff<problem.day.end)arrivalDeadlineByParticipant.set(arrival.participantId,cutoff);
+    }
+    const pendingArrivalDeadline=assessAnonymousPostInCompletions(problem,arrivalDeadlineByParticipant);
+    return pendingArrivalDeadline.feasible
+      ?{feasible:true,conclusive:false,failure:null,pendingArrivalDeadline}
+      :{feasible:false,conclusive:true,failure:"PENDING_ARRIVAL_DEADLINE",pendingArrivalDeadline};
+  }};
+}
 export function assessPendingArrivalFeeding(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
   candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[],reusableOwnLatestCompletions:ReadonlyMap<string,number>=new Map()):PendingArrivalFeedingAssessment{
-  const provisional=[...previouslyPlaced,...candidate].sort(byId),placedIds=new Set(provisional.map(({id})=>id));
-  const inputPendingIds=new Set(pending.map(({id})=>id));
-  const pendingWithArrivals=[...pending,...(problem.transportPolicy?.arrival.taskIds??[])
-    .filter(id=>!inputPendingIds.has(id)&&!placedIds.has(id)).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task))];
-  const authority=createPendingCompletionDeadlineAuthority(problem,pendingWithArrivals,provisional,meals,reusableOwnLatestCompletions);
-  const pendingIds=new Set(pendingWithArrivals.map(({id})=>id)),arrivalDeadlineByParticipant=new Map<string,number>();
-  for(const arrivalId of problem.transportPolicy?.arrival.taskIds??[]){
-    if(!pendingIds.has(arrivalId))continue;
-    const arrival=authority.pendingById.get(arrivalId),cutoff=authority.completionDeadline(arrivalId);
-    if(arrival?.participantId&&cutoff<problem.day.end)arrivalDeadlineByParticipant.set(arrival.participantId,cutoff);
-  }
-  const pendingArrivalDeadline=assessAnonymousPostInCompletions(problem,arrivalDeadlineByParticipant);
-  return pendingArrivalDeadline.feasible
-    ?{feasible:true,conclusive:false,failure:null,pendingArrivalDeadline}
-    :{feasible:false,conclusive:true,failure:"PENDING_ARRIVAL_DEADLINE",pendingArrivalDeadline};
+  return preparePendingArrivalFeedingAuthority(problem,pending,previouslyPlaced,meals,reusableOwnLatestCompletions).assess(candidate);
 }
 const collectiveOccupation=(problem:PlannerNextProblem,task:Task,provisional:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],deadline:number,
   domain?:ReturnType<typeof exactTaskStartDomain>)=>mergeIntervals(domain?.intervals.map(interval=>({start:interval.start,end:interval.end+task.duration}))
