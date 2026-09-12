@@ -87,6 +87,57 @@ export function compareOperationalMealFreedom(left: OperationalMealFreedom,
   return right.minimumWitnesses-left.minimumWitnesses || right.totalWitnesses-left.totalWitnesses;
 }
 
+export interface ResourceCompactnessImpact {
+  readonly deltaResourceBlocks: number;
+  readonly deltaResourceLocationChanges: number;
+  readonly deltaResourceReentries: number;
+}
+
+function resourceStateCounts(tasks: readonly ScheduledTask[]): ResourceCompactnessImpact {
+  const ordered = [...tasks].sort((left, right) => left.start-right.start || left.end-right.end
+    || left.id.localeCompare(right.id, "en"));
+  let previous: string | null = null, blocks = 0, changes = 0, reentries = 0;
+  const abandoned = new Set<string>();
+  for (const task of ordered) {
+    const state = task.spaceId;
+    if (state === previous) continue;
+    blocks += 1;
+    if (previous !== null) {
+      changes += 1;
+      abandoned.add(previous);
+      if (abandoned.has(state)) reentries += 1;
+    }
+    previous = state;
+  }
+  return { deltaResourceBlocks: blocks, deltaResourceLocationChanges: changes,
+    deltaResourceReentries: reentries };
+}
+
+/** Incremental physical movement signal. Idle time alone never separates equal states. */
+export function resourceCompactnessImpactAfterPlacement(placed: readonly ScheduledTask[],
+  candidate: ScheduledTask): ResourceCompactnessImpact {
+  const total: ResourceCompactnessImpact = { deltaResourceBlocks: 0,
+    deltaResourceLocationChanges: 0, deltaResourceReentries: 0 };
+  for (const resourceId of [...new Set(candidate.requiredResourceIds ?? [])].sort()) {
+    const before = placed.filter((task) => task.requiredResourceIds?.includes(resourceId));
+    const after = [...before, candidate];
+    // A resource whose physical work has only one state has no compactness choice.
+    if (new Set(after.map(({ spaceId }) => spaceId)).size <= 1) continue;
+    const prior = resourceStateCounts(before), next = resourceStateCounts(after);
+    total.deltaResourceBlocks += next.deltaResourceBlocks-prior.deltaResourceBlocks;
+    total.deltaResourceLocationChanges += next.deltaResourceLocationChanges-prior.deltaResourceLocationChanges;
+    total.deltaResourceReentries += next.deltaResourceReentries-prior.deltaResourceReentries;
+  }
+  return total;
+}
+
+export function compareResourceCompactnessImpact(left: ResourceCompactnessImpact,
+  right: ResourceCompactnessImpact): number {
+  return left.deltaResourceReentries-right.deltaResourceReentries
+    || left.deltaResourceLocationChanges-right.deltaResourceLocationChanges
+    || left.deltaResourceBlocks-right.deltaResourceBlocks;
+}
+
 export type ExactItinerantPlanStatus = "COMPLETE" | "CORE_FAILED" | "UNSUPPORTED_STANDALONE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
@@ -1065,12 +1116,14 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       : domain.starts();
     const orderedStarts = unit.kind === "RESOURCE_TASK" ? [...starts].map((start, canonicalIndex) => {
       if (!canPlaceTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed], coreMeals))
-        return { start, canonicalIndex, hardValid: false, freedom: null };
+        return { start, canonicalIndex, hardValid: false, freedom: null, compactness: null };
       const scheduled = scoreAuxiliaryTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed]).scheduled;
       return { start, canonicalIndex, hardValid: true,
-        freedom: operationalMealFreedomAfterPlacement(problem, [...coreTasks, ...placed], scheduled) };
+        freedom: operationalMealFreedomAfterPlacement(problem, [...coreTasks, ...placed], scheduled),
+        compactness: resourceCompactnessImpactAfterPlacement([...coreTasks, ...placed], scheduled) };
     }).sort((left, right) => Number(right.hardValid)-Number(left.hardValid)
       || (left.freedom && right.freedom ? compareOperationalMealFreedom(left.freedom, right.freedom) : 0)
+      || (left.compactness && right.compactness ? compareResourceCompactnessImpact(left.compactness, right.compactness) : 0)
       || left.canonicalIndex-right.canonicalIndex).map(({start})=>start) : starts;
     for (const start of orderedStarts) {
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";

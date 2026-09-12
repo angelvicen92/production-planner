@@ -4,7 +4,8 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
-  candidateIntroducesCapacityCertificate, compareOperationalMealFreedom, macroCapacityCertificateSignature, operationalMealFreedomAfterPlacement,
+  candidateIntroducesCapacityCertificate, compareOperationalMealFreedom, compareResourceCompactnessImpact,
+  macroCapacityCertificateSignature, operationalMealFreedomAfterPlacement, resourceCompactnessImpactAfterPlacement,
   resourceAvailabilityMinutes } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
@@ -356,6 +357,55 @@ test("equal REQUIRED meal witness freedom retains canonical start ordering", () 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.equal(result.scheduledTasks.find(({id})=>id==="resource-task")!.start, 20);
+});
+
+test("resource compactness ignores idle gaps and counts physical changes and reentries", () => {
+  const scheduled = (id:string, spaceId:string, start:number, resourceIds=["camera"]):ScheduledTask => ({
+    id, kind:"auxiliary", participantId:id, duration:10, spaceId, dependencies:[],
+    requiredResourceIds:resourceIds, start, end:start+10,
+  });
+  const placed = [scheduled("a","band-a",10), scheduled("b","band-b",40)];
+  assert.deepEqual(resourceCompactnessImpactAfterPlacement(placed,scheduled("continue","band-b",80)), {
+    deltaResourceBlocks:0,deltaResourceLocationChanges:0,deltaResourceReentries:0,
+  }, "a gap without an intervening state does not open a block");
+  assert.deepEqual(resourceCompactnessImpactAfterPlacement(placed,scheduled("reenter","band-a",80)), {
+    deltaResourceBlocks:1,deltaResourceLocationChanges:1,deltaResourceReentries:1,
+  });
+  assert.deepEqual(resourceCompactnessImpactAfterPlacement([],scheduled("neutral","only-space",20)), {
+    deltaResourceBlocks:0,deltaResourceLocationChanges:0,deltaResourceReentries:0,
+  }, "a single-space resource remains neutral");
+  assert.ok(compareResourceCompactnessImpact(
+    {deltaResourceBlocks:0,deltaResourceLocationChanges:0,deltaResourceReentries:0},
+    {deltaResourceBlocks:1,deltaResourceLocationChanges:1,deltaResourceReentries:1}) < 0);
+});
+
+function resourceContinuityProblem(reverse=false):PlannerNextProblem {
+  const input=problem([]);input.protectedMeal=undefined;
+  input.resources.push({id:"camera",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+  const additions=[
+    {...auxiliary("fixed-a","fixed-a",[{start:20,end:30}],["camera"]),spaceId:"band-a"},
+    {...auxiliary("fixed-b","fixed-b",[{start:40,end:50}],["camera"]),spaceId:"band-b"},
+    {...auxiliary("choice","choice",[{start:10,end:20},{start:50,end:60}],["camera"]),spaceId:"band-b"},
+  ];
+  for(const task of additions){input.tasks.push(task);input.participants.push({id:task.participantId,availability:[{start:0,end:120}]});}
+  input.spaces.push(...["band-a","band-b"].map(id=>({id,availability:[{start:0,end:120}]})));
+  if(reverse){input.tasks.reverse();input.participants.reverse();input.resources.reverse();input.spaces.reverse();}
+  return input;
+}
+
+test("RESOURCE_TASK prefers continuing a physical band and avoiding an earlier reentry", () => {
+  const input=resourceContinuityProblem();
+  const choice=input.tasks.find(({id})=>id==="choice")!;
+  const domain=standaloneForwardDynamicDomain(input,choice,[],standaloneForwardStaticDomain(input,choice,[]));
+  assert.deepEqual([...domain.starts()],[10,50],"compactness ordering does not alter the candidate set");
+  const result=runExactItinerantPlanSearch(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="choice")!.start,50,
+    "the later continuation beats the canonical earlier reentry even with transitionMinutes=0");
+  const reversed=runExactItinerantPlanSearch(resourceContinuityProblem(true));
+  assert.equal(reversed.scheduledTasks.find(({id})=>id==="choice")!.start,50);
+  assert.equal(reversed.evidence.fullFingerprint,result.evidence.fullFingerprint);
+  assert.equal(result.evidence.standaloneBranches+result.evidence.coreBranches,result.evidence.branchesExplored);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
