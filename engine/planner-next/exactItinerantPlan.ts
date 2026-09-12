@@ -393,6 +393,9 @@ export interface ExactItinerantPlanEvidence {
   criticalResourceMacroCandidates: number;
   criticalResourceAssignments: number;
   macroUnitsSelected: number;
+  itinerantUnitAgendaVisits:number;itinerantUnitAgendaBranches:number;itinerantUnitAgendaBacktracks:number;
+  itinerantUnitAgendaPlacements:Record<string,Array<{taskId:string;start:number;end:number}>>;
+  itinerantUnitInternalSelections:Array<{unitId:string;taskId:string;reason:string;domainSize:number;depth:number}>;
   macroSelectionOrder: string[];
   macroSelectionReason: string[];
   macroDomainSizes: Record<string, number>;
@@ -904,15 +907,22 @@ const dynamicTransportIds = transportTaskIds(problem);
 const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+const itinerantTasks=pending.filter(task=>task.itinerantUnitId!==undefined&&!coupledTaskIds.has(task.id)
+  &&!roundTaskIds.has(task.id)&&task.setupFamilyId===undefined&&!dynamicTransportIds.has(task.id));
+const itinerantItems=[...new Set(itinerantTasks.map(task=>task.itinerantUnitId!))].sort().map(itinerantUnitId=>({
+  id:`itinerant:${itinerantUnitId}`,kind:"ITINERANT_UNIT" as const,itinerantUnitId,
+  tasks:itinerantTasks.filter(task=>task.itinerantUnitId===itinerantUnitId).sort(byId),
+}));
+const itinerantTaskIds=new Set(itinerantTasks.map(({id})=>id));
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
-  && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
+  && !coupledTaskIds.has(task.id) && !itinerantTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
   && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
 const roundItems = roundPolicies.map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
   tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
 const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
-type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
+type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number] | typeof itinerantItems[number]
   | typeof roundItems[number] | typeof setupItems[number];
-const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...itinerantItems, ...resourceItems, ...roundItems, ...setupItems]
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
@@ -979,6 +989,15 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   if(unit.kind==="TECHNICAL_CHAIN"){evidence.technicalChainMacroDomainQueries+=1;if(measure)evidence.technicalChainMacroDomainCacheHits+=1;else evidence.technicalChainMacroDomainCacheMisses+=1;}
   if(!measure){
     if(unit.kind==="RESOURCE_TASK")measure=taskDomain(unit.tasks[0]!);
+    else if(unit.kind==="ITINERANT_UNIT"){
+      // Never enumerate complete agendas in the selector probe. An empty exact
+      // member domain is a sound certificate; a positive minimum is only a
+      // conservative ordering signal because the members still interact.
+      const domains=unit.tasks.map(task=>standaloneForwardDynamicDomain(problem,task,allPlaced,
+        standaloneForwardStaticDomain(problem,task,coreMeals)).eligibleStartCount);
+      const domainSize=Math.min(...domains);
+      measure={domainSize,domainExact:domainSize===0};
+    }
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
     else if(unit.kind==="ROUND_SYNCHRONIZATION")measure=probeExactRoundSynchronizationMacroDomain(problem,unit.policy,allPlaced,preparations,roundPreparations,coreMeals);
     else if(unit.kind==="SETUP_GROUP")measure=probeExactSetupMacroDomain(problem,unit.tasks,allPlaced,preparations,coreMeals);
@@ -1079,12 +1098,14 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   recordMacroDecision(depth, selected, constrained);
   const unit = selected.unit;
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
-  const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
+  const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations,
+    continuation?: (nextPlaced:ScheduledTask[],nextOperationalReservations:readonly OperationalMealReservation[],nextArrivalReservation:DeferredPrerequisiteReservation)=>StandaloneOutcome,
+    continuationPending:readonly Task[]=[],basePlaced:ScheduledTask[]=placed,baseReservations:readonly OperationalMealReservation[]=operationalReservations,baseArrival:DeferredPrerequisiteReservation=arrivalReservation): StandaloneOutcome => {
     const attempt=diagnosticFrontier&&diagnosticFrontier.candidatePlacements.length<256?{taskIds:[...tasks].sort(byId).map(({id})=>id),starts:[...tasks].sort(byId).map(({start})=>start),ends:[...tasks].sort(byId).map(({end})=>end),outcome:"ENTERED" as const,firstRejectionReason:null as string|null,authorityId:null as string|null,blockingTaskId:null as string|null,transportFailure:null,transportCausalCertificate:null}:null;
     if(attempt)diagnosticFrontier!.candidatePlacements.push(attempt);
-    let nextOperationalReservations=operationalReservations;
-    const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
-    const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache);
+    let nextOperationalReservations=baseReservations;
+    const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks),...continuationPending].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
+    const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...basePlaced],tasks,coreMeals,macroPendingPrerequisiteCache);
     if(checked.pendingArrivalDeadline)addPendingArrivalDeadlineEvidence(evidence,checked.pendingArrivalDeadline,
       checked.exactPrerequisiteSearchesAvoided??0);
     evidence.macroPendingPrerequisiteForwardChecks+=1;evidence.macroPendingPrerequisiteTasksChecked+=checked.tasksChecked;
@@ -1095,7 +1116,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(!checked.feasible){const affectedParticipantId=checked.pendingArrivalDeadline?.firstCertificate?.participantIds[0]??(checked.blockingTaskId?problem.tasks.find(task=>task.id===checked.blockingTaskId)?.participantId:null)??null;
       const arrivalBlocker=checked.failure==="PENDING_ARRIVAL_DEADLINE"&&affectedParticipantId
         ?problem.transportPolicy?.arrival.taskIds.map(id=>problem.tasks.find(task=>task.id===id)).find(task=>task?.participantId===affectedParticipantId)?.id??null:null;
-      recordSetupRejection(placed.length+tasks.length,`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,checked.authorityId,checked.blockingTaskId??arrivalBlocker,affectedParticipantId);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,authorityId:checked.authorityId,blockingTaskId:checked.blockingTaskId});evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
+      recordSetupRejection(basePlaced.length+tasks.length,`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,checked.authorityId,checked.blockingTaskId??arrivalBlocker,affectedParticipantId);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:`MACRO_PENDING_PREREQUISITE:${checked.failure??"UNKNOWN"}`,authorityId:checked.authorityId,blockingTaskId:checked.blockingTaskId});evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
       evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};
@@ -1110,8 +1131,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
           const beforePending=[...pendingForCheck,...unit.tasks].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
           const scheduled=[...tasks].sort(byId),definitions=new Map(problem.tasks.map(task=>[task.id,task]));
           const common=<T>(values:T[]):T|null=>values.length&&values.every(value=>value===values[0])?values[0]!:null;
-          const beforeCandidate=evaluateTargetCollectiveCapacityCertificate(problem,beforePending,[...coreTasks,...placed],[],coreMeals,checked.authorityId!,overloadTaskIds);
-          const afterCandidate=evaluateTargetCollectiveCapacityCertificate(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,checked.authorityId!,overloadTaskIds);
+          const beforeCandidate=evaluateTargetCollectiveCapacityCertificate(problem,beforePending,[...coreTasks,...basePlaced],[],coreMeals,checked.authorityId!,overloadTaskIds);
+          const afterCandidate=evaluateTargetCollectiveCapacityCertificate(problem,pendingForCheck,[...coreTasks,...basePlaced],tasks,coreMeals,checked.authorityId!,overloadTaskIds);
           const afterMatchesNormalCertificate=afterCandidate.evaluated&&afterCandidate.overloaded
             &&afterCandidate.authorityId===checked.authorityId&&afterCandidate.demandMinutes===checked.demandMinutes
             &&afterCandidate.freeCapacityMinutes===checked.freeCapacityMinutes
@@ -1126,22 +1147,22 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
             candidatePlacement:{macroUnitId:unit.id,taskIds:scheduled.map(({id})=>id),participantId:common(scheduled.map(task=>task.participantId??null)),
               kind:common(scheduled.map(task=>task.kind))??"MIXED",start:Math.min(...scheduled.map(task=>task.start)),end:Math.max(...scheduled.map(task=>task.end)),
               spaceId:common(scheduled.map(task=>task.spaceId))??"MIXED",requiredResourceIds:[...new Set(scheduled.flatMap(task=>task.requiredResourceIds??[]))].sort(),tasks:scheduled.map(capacityPlacement)},
-            priorRelevantPlacements:[...coreTasks,...placed].filter(relevant).sort(byId).slice(0,32).map(capacityPlacement),
+            priorRelevantPlacements:[...coreTasks,...basePlaced].filter(relevant).sort(byId).slice(0,32).map(capacityPlacement),
             beforeCandidate,afterCandidate,afterMatchesNormalCertificate,causalAssessment,
             candidateIntroducesCertificate:candidateIntroducesCapacityCertificate(causalAssessment)});
         }
       }
       return "DEAD_END";}
     if((problem.operationalMealPolicies?.length??0)>0){
-      const operationalProbe=probeOperationalMealFutureFeasibility(problem,[...coreTasks,...placed,...tasks],tasks,operationalReservations);
+      const operationalProbe=probeOperationalMealFutureFeasibility(problem,[...coreTasks,...basePlaced,...tasks],tasks,baseReservations);
       evidence.operationalMealFutureChecks+=1;
       evidence.operationalMealFutureAnalyticChecks+=operationalProbe.checkedPolicyIds.length;
       evidence.operationalMealFutureBranchesExplored+=operationalProbe.branchesExplored;
       evidence.operationalMealReservationChecks+=1;evidence.operationalMealReservationAnalyticChecks+=operationalProbe.checkedPolicyIds.length;
       evidence.operationalMealReservationBranchesExplored+=operationalProbe.branchesExplored;evidence.operationalMealReservationRepairs+=operationalProbe.repairs;
-      for(const reservation of operationalProbe.reservations){const prior=operationalReservations.find(({policyId})=>policyId===reservation.policyId);if(prior&&!reservation.feasibleIntervals.some(({start,end})=>start<=prior.witnessInterval.start&&prior.witnessInterval.end<=end))evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]=(evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]??0)+1;}
+      for(const reservation of operationalProbe.reservations){const prior=baseReservations.find(({policyId})=>policyId===reservation.policyId);if(prior&&!reservation.feasibleIntervals.some(({start,end})=>start<=prior.witnessInterval.start&&prior.witnessInterval.end<=end))evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]=(evidence.operationalMealReservationRepairsByPolicy[reservation.policyId]??0)+1;}
       if(!operationalProbe.feasible){
-        recordSetupRejection(placed.length+tasks.length,"OPERATIONAL_MEAL",operationalProbe.blockingPolicyIds[0]??null);
+        recordSetupRejection(basePlaced.length+tasks.length,"OPERATIONAL_MEAL",operationalProbe.blockingPolicyIds[0]??null);
         if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"OPERATIONAL_MEAL",authorityId:operationalProbe.blockingPolicyIds[0]??null});
         evidence.operationalMealFuturePrunes+=1;
         evidence.operationalMealReservationPrunes+=1;for(const id of operationalProbe.blockingPolicyIds)evidence.operationalMealReservationPrunesByPolicy[id]=(evidence.operationalMealReservationPrunesByPolicy[id]??0)+1;
@@ -1152,7 +1173,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       nextOperationalReservations=operationalProbe.reservations;
     }
     evidence.deferredPrerequisiteReservationChecks+=1;
-    const reserved=maintainDeferredPrerequisiteReservation(problem,pendingForCheck,[...coreTasks,...placed,...tasks],coreMeals,arrivalReservation,()=>ledger.consume("STANDALONE"),unit.id);
+    const reserved=maintainDeferredPrerequisiteReservation(problem,pendingForCheck,[...coreTasks,...basePlaced,...tasks],coreMeals,baseArrival,()=>ledger.consume("STANDALONE"),unit.id);
     if(reserved.arrivalRepaired)evidence.deferredPrerequisiteReservationRepairs+=1;
     else if(reserved.arrivalBranchesExplored===0&&reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationReuses+=1;
     else if(reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
@@ -1162,10 +1183,47 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.deferredArrivalWitnessChecks+=reserved.arrivalChecks;evidence.deferredArrivalWitnessBranchesExplored+=reserved.arrivalBranchesExplored;evidence.deferredArrivalWitnessBacktracks+=reserved.arrivalBacktracks;addTransportEvidence(evidence,reserved.transportEvidence);if(reserved.arrivalRepaired)evidence.deferredArrivalWitnessRepairs+=1;if(reserved.arrivalPruned)evidence.deferredArrivalWitnessPrunes+=1;
     if(reserved.arrivalWitnessDropped){evidence.deferredArrivalWitnessDrops+=1;evidence.deferredArrivalWitnessFirstDrop??={causingTaskId:unit.id,depth};}
     if(reserved.exhausted){if(attempt)Object.assign(attempt,{outcome:"BUDGET_EXHAUSTED"});return "BUDGET_EXHAUSTED";}
-    if(!reserved.feasible){recordSetupRejection(placed.length+tasks.length,"TRANSPORT_FUTURE_FEASIBILITY",reserved.transportFailure?.direction??null,reserved.transportFailure?.taskId??null);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
-    return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)],nextOperationalReservations,reserved.reservation);
+    if(!reserved.feasible){recordSetupRejection(basePlaced.length+tasks.length,"TRANSPORT_FUTURE_FEASIBILITY",reserved.transportFailure?.direction??null,reserved.transportFailure?.taskId??null);if(attempt)Object.assign(attempt,{outcome:"REJECTED",firstRejectionReason:"TRANSPORT_FUTURE_FEASIBILITY",transportFailure:reserved.transportFailure});evidence.deferredPrerequisiteReservationPrunes+=1;evidence.deferredPrerequisiteReservationFirstPrune??={causingTaskId:unit.id,depth};return "DEAD_END";}
+    const nextPlaced=[...basePlaced,...tasks];
+    return continuation?continuation(nextPlaced,nextOperationalReservations,reserved.reservation)
+      :searchMacroUnits(rest,nextPlaced,nextPreparations,nextRoundPreparations,depth+1,[...selectionOrder,...tasks.map(({id})=>id)],nextOperationalReservations,reserved.reservation);
   };
-  if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
+  if(unit.kind==="ITINERANT_UNIT"){
+    evidence.itinerantUnitAgendaVisits+=1;
+    const agenda=(remaining:Task[],agendaPlaced:ScheduledTask[],reservations:readonly OperationalMealReservation[],arrival:DeferredPrerequisiteReservation):StandaloneOutcome=>{
+      if(remaining.length===0){
+        evidence.itinerantUnitAgendaPlacements[unit.itinerantUnitId]=agendaPlaced.filter(task=>task.itinerantUnitId===unit.itinerantUnitId)
+          .sort((left,right)=>left.start-right.start||byId(left,right)).map(({id,start,end})=>({taskId:id,start,end}));
+        return searchMacroUnits(rest,agendaPlaced,preparations,roundPreparations,depth+1,
+          [...selectionOrder,...agendaPlaced.slice(placed.length).map(({id})=>id)],reservations,arrival);
+      }
+      const choices=remaining.map(task=>({task,domain:standaloneForwardDynamicDomain(problem,task,[...coreTasks,...agendaPlaced],
+        standaloneForwardStaticDomain(problem,task,coreMeals))})).sort((left,right)=>left.domain.eligibleStartCount-right.domain.eligibleStartCount||byId(left.task,right.task));
+      const choice=choices[0]!,peers=choices.slice(1);
+      evidence.itinerantUnitInternalSelections.push({unitId:unit.itinerantUnitId,taskId:choice.task.id,
+        reason:peers.some(item=>item.domain.eligibleStartCount!==choice.domain.eligibleStartCount)?"minimum-dynamic-domain":"canonical-id-tiebreak",
+        domainSize:choice.domain.eligibleStartCount,depth:agendaPlaced.length});
+      if(choice.domain.eligibleStartCount===0)return "DEAD_END";
+      const starts=[...choice.domain.starts()].map((start,canonicalIndex)=>{
+        const scheduled=scoreAuxiliaryTask(problem,choice.task,start,[...coreTasks,...agendaPlaced]).scheduled;
+        return {start,canonicalIndex,freedom:operationalMealFreedomAfterPlacement(problem,[...coreTasks,...agendaPlaced],scheduled),
+          compactness:resourceCompactnessImpactAfterPlacement([...coreTasks,...agendaPlaced],scheduled)};
+      }).sort((left,right)=>compareOperationalMealFreedom(left.freedom,right.freedom)||compareResourceCompactnessImpact(left.compactness,right.compactness)||left.canonicalIndex-right.canonicalIndex);
+      for(const {start} of starts){
+        if(!ledger.consume("STANDALONE"))return "BUDGET_EXHAUSTED";
+        evidence.itinerantUnitAgendaBranches+=1;
+        if(!canPlaceTask(problem,choice.task,start,[...coreTasks,...agendaPlaced],coreMeals))continue;
+        const scheduled=scoreAuxiliaryTask(problem,choice.task,start,[...coreTasks,...agendaPlaced]).scheduled;
+        const nextRemaining=remaining.filter(task=>task.id!==choice.task.id);
+        const child=recurse([scheduled],preparations,roundPreparations,(nextPlaced,nextReservations,nextArrival)=>
+          agenda(nextRemaining,nextPlaced,nextReservations,nextArrival),nextRemaining,agendaPlaced,reservations,arrival);
+        if(child!=="DEAD_END")return child;
+        evidence.itinerantUnitAgendaBacktracks+=1;evidence.standaloneBacktracks+=1;
+      }
+      return "DEAD_END";
+    };
+    return agenda(unit.tasks,placed,operationalReservations,arrivalReservation);
+  } else if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
     const duration = unit.tasks[0]!.duration;
     const fullGridCount = Math.max(0, Math.floor((problem.day.end - duration - problem.day.start) / 5) + 1);
     const domain = unit.kind === "JOINT" ? standaloneJointGroupStartDomain(problem, unit.tasks, [...coreTasks, ...placed], coreMeals)
@@ -1413,6 +1471,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],
+    itinerantUnitAgendaVisits:0,itinerantUnitAgendaBranches:0,itinerantUnitAgendaBacktracks:0,
+    itinerantUnitAgendaPlacements:{},itinerantUnitInternalSelections:[],
     resourceTaskDomainLogicalStarts:0,resourceTaskDomainFeedingChecks:0,resourceTaskDomainAnalyticallyEliminatedByArrival:0,
     resourceTaskDomainInconclusiveStarts:0,resourceTaskDomainKeptStarts:0,
     resourceTaskDomainRawIntervals:0,resourceTaskDomainSurvivingIntervals:0,resourceTaskDomainEliminatedRegions:0,
