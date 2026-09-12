@@ -90,6 +90,7 @@ input.contestantAvailabilityById = Object.fromEntries(expansion.participants.map
 input.planResourceItems = expansion.resources.map((resource, index) => ({
   id: resourceId.get(resource.id)!, resourceItemId: 7001 + index, typeId: 8001 + index,
   name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
+  ...(resource.id === "cam-1" ? { transitionMinutes: 0 } : {}),
   ...(resource.id === "band" ? { presenceConcentrationPolicy: "PREFERRED" as const, assignedSpaceId: spaceId.get("estudio-7")! } : {}),
 }));
 input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
@@ -195,6 +196,12 @@ input.transportSettings = {
 
 const preflight = preflightEngineInputForPlannerNext(input);
 const adapted = adaptEngineInputToPlannerNextProblem(input);
+if (adapted.status === "SUPPORTED") {
+  const cam1 = adapted.problem.resources.find(({ id }) => id === `plan-resource:${resourceId.get("cam-1")}`);
+  if (cam1?.transitionMinutes !== 0) throw new Error("FULL_A2_CAM1_TRANSITION_OVERRIDE_NOT_PROJECTED");
+  if (adapted.problem.coachRouteTransitions?.some(({ minutes }) => minutes !== expansion.rules.coachTransition.minutes))
+    throw new Error("FULL_A2_COACH_ROUTE_TRANSITION_CHANGED");
+}
 const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic}) : null;
 const executionWithoutDiagnostic = !causalDiagnostic ? execution
   : adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
@@ -298,6 +305,8 @@ const evidence = {
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
     genericTransitionMinutes: { participant: 0, resource: 5 },
+    resourceTransitionOverrides: { "cam-1": 0 },
+    coachRouteTransitionMinutes: expansion.rules.coachTransition.minutes,
     operationalMealProjection: config.meals.operational.mealUnits,
     spaceResourceAssignments: expansion.spaceResourceAssignments,
     mainFlowBlockPolicy: {

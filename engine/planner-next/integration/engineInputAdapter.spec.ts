@@ -88,6 +88,42 @@ test("generic resource presence metadata is fingerprinted and projected lossless
   assert.notEqual(supported(changed).problemFingerprint, adapted.problemFingerprint);
 });
 
+test("resource transition overrides are validated, canonical, immutable, and projected with global fallback", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  const genericResources = input.planResourceItems.filter(({ id }) => id !== 501);
+  assert.ok(genericResources.length >= 2);
+  genericResources[0]!.transitionMinutes = 0;
+  genericResources[1]!.transitionMinutes = 25;
+  const before = clone(input);
+  const adapted = supported(input);
+  const projected = new Map(adapted.problem.resources.map((resource) => [resource.id, resource.transitionMinutes]));
+  assert.equal(projected.get(`plan-resource:${genericResources[0]!.id}`), 0);
+  assert.equal(projected.get(`plan-resource:${genericResources[1]!.id}`), 25);
+  for (const resource of genericResources.slice(2)) {
+    assert.equal(projected.get(`plan-resource:${resource.id}`), input.plannerNext!.resourceTransitionMinutes);
+  }
+  assert.deepEqual(input, before);
+
+  const reordered = clone(input);
+  reordered.planResourceItems.reverse();
+  assert.equal(supported(reordered).problemFingerprint, adapted.problemFingerprint);
+  assert.equal(supported(reordered).sourceFingerprint, adapted.sourceFingerprint);
+
+  const changed = clone(input);
+  changed.planResourceItems.find(({ id }) => id === genericResources[0]!.id)!.transitionMinutes = 5;
+  assert.notEqual(supported(changed).problemFingerprint, adapted.problemFingerprint);
+  assert.notEqual(supported(changed).sourceFingerprint, adapted.sourceFingerprint);
+
+  for (const invalid of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const rejected = clone(input);
+    rejected.planResourceItems[0]!.transitionMinutes = invalid;
+    const preflight = preflightEngineInputForPlannerNext(rejected);
+    assert.equal(preflight.status, "UNSUPPORTED");
+    assert.ok(preflight.reasonCodes.includes("INVALID_TRANSITION_CONFIGURATION"));
+    assert.equal(adaptEngineInputToPlannerNextProblem(rejected).problem, null);
+  }
+});
+
 test("technical-chain contract is preflighted and projected losslessly",()=>{
  const input=createSupportedEngineInputAdapterFixture(),before=clone(input);input.tasks.push({...input.tasks.find(task=>task.id===105)!,id:106,dependsOnTaskIds:[105]});
  input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];
