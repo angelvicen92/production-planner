@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
-  exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
+  exactFeederRunShapes, exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion,
+  exactFeederTerminalTransitionEarliestStart, mergedClippedIntervals, runExactMainAndFeederSearch,
   subtractMergedIntervals } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
@@ -20,6 +21,65 @@ function syntheticProblem(tasks: Task[], participantIds: string[], spaceIds: str
     participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
     budget: { bestK: 1, maxBacktracks: 0, maxPatterns: 20, maxBranchExpansions: 20_000 } };
 }
+
+test("exact feeder shapes preserve the run and represent every meal boundary", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[{id:"coach-meal",window:{start:10,end:60},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const shapes=exactFeederRunShapes(problem,"coach",10,10,3);
+  assert.deepEqual(shapes.map(shape=>shape.mealGap?.boundary??null),[0,1,2,3,null]);
+  assert.deepEqual(shapes[2]!.feederStarts,[10,20,40]);
+  assert.equal(shapes[2]!.blockEnd,50);
+  assert.deepEqual(shapes.at(-1)!.feederStarts,[10,20,30]);
+});
+
+test("exact feeder meal shapes obey policy window, grid, and remain input-order invariant", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[
+    {id:"late",window:{start:30,end:50},duration:10,resourceIds:["coach"],spaceIds:[]},
+    {id:"early",window:{start:10,end:30},duration:10,resourceIds:["coach"],spaceIds:[]}];
+  const first=exactFeederRunShapes(problem,"coach",10,10,3);
+  problem.operationalMealPolicies.reverse();
+  assert.deepEqual(exactFeederRunShapes(problem,"coach",10,10,3),first);
+  assert.deepEqual(first.filter(shape=>shape.mealGap).map(shape=>[shape.mealGap!.policyId,shape.mealGap!.boundary]),
+    [["early",0],["early",1],["late",2],["late",3]]);
+  problem.operationalMealPolicies=[{id:"off-grid",window:{start:11,end:21},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  assert.deepEqual(exactFeederRunShapes(problem,"coach",11,10,1).map(shape=>shape.mealGap),[null]);
+});
+
+test("exact feeder meal alignment is relative to day start, not absolute clock zero", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.day={start:1,end:121};
+  problem.operationalMealPolicies=[{id:"relative-grid",window:{start:6,end:16},duration:5,
+    resourceIds:["coach"],spaceIds:[]}];
+  assert.deepEqual(exactFeederRunShapes(problem,"coach",6,10,1)
+    .filter(shape=>shape.mealGap).map(shape=>shape.mealGap!.start),[6]);
+});
+
+test("exact feeder meal shapes observe branch-local CORE occupations", () => {
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[{id:"occupied",window:{start:10,end:20},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const occupation={id:"fixed-core",kind:"main" as const,duration:10,spaceId:"main",coachId:"coach",
+    dependencies:[],start:10,end:20};
+  assert.equal(exactFeederRunShapes(problem,"coach",10,10,1,[occupation])
+    .some(shape=>shape.mealGap!==null),false);
+});
+
+test("terminal meal transition geometry starts after the meal without double-counting internal meals",()=>{
+  const problem=syntheticProblem([],[],["feed"]);
+  problem.operationalMealPolicies=[{id:"meal",window:{start:10,end:60},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  const shapes=exactFeederRunShapes(problem,"coach",10,10,2);
+  const terminal=shapes.find(shape=>shape.mealGap?.boundary===2)!;
+  assert.equal(exactFeederTerminalTransitionEarliestStart(terminal,terminal.feederStarts[1]!+10,2),terminal.blockEnd);
+  assert.equal(terminal.blockEnd+5,45,"meal plus the real transition exactly fills the available gap");
+  assert.ok(terminal.blockEnd+5>44,"one minute less is invalid");
+  const internal=shapes.find(shape=>shape.mealGap?.boundary===1)!;
+  const internalTerminalEnd=internal.feederStarts[1]!+10;
+  assert.equal(exactFeederTerminalTransitionEarliestStart(internal,internalTerminalEnd,2),internalTerminalEnd);
+});
 
 function mainBacktrackingProblem(): PlannerNextProblem {
   return syntheticProblem([
@@ -41,6 +101,56 @@ function feederStartBacktrackingProblem(): PlannerNextProblem {
   problem.tasks.find(({ id }) => id === "main-b")!.availability = [{ start: 90, end: 100 }];
   return problem;
 }
+
+function layeredRunProblem(): PlannerNextProblem {
+  const problem = syntheticProblem([
+    { id: "feed-a1", kind: "vocal", participantId: "a1", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-a1", kind: "main", participantId: "a1", duration: 10, spaceId: "main", dependencies: ["feed-a1"], blockKey: "a", availability: [{ start: 70, end: 80 }] },
+    { id: "feed-b", kind: "vocal", participantId: "b", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["feed-b"], blockKey: "b", availability: [{ start: 80, end: 90 }] },
+    { id: "feed-a2", kind: "vocal", participantId: "a2", duration: 10, spaceId: "feed", dependencies: [] },
+    { id: "main-a2", kind: "main", participantId: "a2", duration: 10, spaceId: "main", dependencies: ["feed-a2"], blockKey: "a", availability: [{ start: 90, end: 100 }] },
+  ], ["a1", "b", "a2"], ["feed"]);
+  for (const task of problem.tasks.filter(({ kind }) => kind === "main"))
+    task.blockKey = task.coachId = task.id === "main-b" ? "coach-b" : "coach";
+  for (const task of problem.tasks.filter(({ kind }) => kind === "vocal"))
+    task.coachId = task.id === "feed-b" ? "coach-b" : "coach";
+  problem.coaches.push({ id: "coach-b", availability: [{ start: 0, end: 120 }] });
+  problem.mainFlow.maxBlocksByKey = 2;
+  problem.protectedMeal = undefined;
+  return problem;
+}
+
+test("EXACT_CONSTRUCTIVE proves lower run layers before accepting the first feasible layer", () => {
+  const result = constructExactMainAndFeederCore(layeredRunProblem());
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount }) => runCount), [2, 3]);
+  assert.ok(result.evidence.runLayers[0]!.architecturesChecked > 0);
+  assert.ok(result.evidence.runLayers[0]!.architecturesChecked
+    === Object.values(result.evidence.runLayers[0]!.rejectionReasons).reduce((sum, count) => sum + count, 0));
+  assert.equal(result.evidence.selectedPattern?.reduce((runs, key, index, pattern) =>
+    runs + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0), 3);
+});
+
+test("EXACT_CONSTRUCTIVE stops after a feasible minimum run layer", () => {
+  const problem = layeredRunProblem();
+  for (const task of problem.tasks.filter(({ kind }) => kind === "main")) task.availability = undefined;
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount }) => runCount), [2]);
+});
+
+test("an incomplete pattern layer reports budget exhaustion without false minimality", () => {
+  const problem = layeredRunProblem();
+  problem.budget.maxPatterns = 1;
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(result.evidence.reasonCodes, ["PATTERN_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.equal(result.evidence.architecturesChecked, 0);
+  assert.deepEqual(result.evidence.runLayers.map(({ runCount, patternsGenerated, architecturesChecked }) =>
+    ({ runCount, patternsGenerated, architecturesChecked })),
+  [{ runCount: 2, patternsGenerated: 1, architecturesChecked: 0 }]);
+});
 
 function fixedFeederSlotProblem(kind:"HALL_DEFICIT"|"PERFECT", rename=(id:string)=>id):PlannerNextProblem {
   const participantIds=["a","b","c"].map(rename);
@@ -119,6 +229,7 @@ test("a perfect feeder-slot matching materializes its witness without FEEDER_ORD
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.feederSlotMatchingChecks>result.evidence.feederSlotMatchingPrunes);
   assert.ok(result.evidence.feederMatchingWitnessMaterializations>0);
+  assert.ok(result.evidence.feederSlotIntervalCertificates>0);
   assert.equal(result.evidence.feederOrderBranches,0);
   assert.equal(validatePlan(fixedFeederSlotProblem("PERFECT"),result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assertFeederSlotAccounting(result);
@@ -211,11 +322,48 @@ test("feeder-slot matching is invariant to IDs and input order",()=>{
   assertFeederSlotAccounting(permuted);
 });
 
+function terminalFeederMealTransitionProblem(slowMinutes:number, fastMinutes=5, reverseInput=false):PlannerNextProblem{
+  const tasks:Task[]=[
+    {id:"feeder-slow",kind:"vocal",participantId:"slow",coachId:"coach",duration:10,spaceId:"feed-slow",dependencies:[]},
+    {id:"main-slow",kind:"main",participantId:"slow",coachId:"coach",duration:10,spaceId:"main",
+      dependencies:["feeder-slow"],blockKey:"coach",availability:[{start:95,end:105}]},
+    {id:"feeder-fast",kind:"vocal",participantId:"fast",coachId:"coach",duration:10,spaceId:"feed-fast",dependencies:[]},
+    {id:"main-fast",kind:"main",participantId:"fast",coachId:"coach",duration:10,spaceId:"main",
+      dependencies:["feeder-fast"],blockKey:"coach",availability:[{start:85,end:95}]},
+  ];
+  const problem=syntheticProblem(tasks,["slow","fast"],["feed-slow","feed-fast"]);
+  problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=105;
+  problem.operationalMealPolicies=[{id:"coach-meal",window:{start:70,end:80},duration:10,
+    resourceIds:["coach"],spaceIds:[]}];
+  problem.coachRouteTransitions=[
+    {coachId:"coach",fromSpaceId:"feed-slow",toSpaceId:"main",minutes:slowMinutes},
+    {coachId:"coach",fromSpaceId:"feed-fast",toSpaceId:"main",minutes:fastMinutes},
+  ];
+  if(reverseInput){problem.tasks.reverse();problem.participants.reverse();problem.spaces.reverse();}
+  return problem;
+}
+
+test("a terminal feeder meal uses the selected transition and repairs an invalid first terminal",()=>{
+  const problem=terminalFeederMealTransitionProblem(15),snapshot=structuredClone(problem);
+  const result=constructExactMainAndFeederCore(problem);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start).reduce((runs,task,index,ordered)=>
+    runs+(index===0||ordered[index-1]!.end!==task.start?1:0),0),1);
+  assert.equal(result.scheduledTasks.filter(task=>task.kind==="vocal").sort((a,b)=>a.start-b.start).at(-1)!.id,"feeder-fast");
+  assert.deepEqual(problem,snapshot);
+  const reversed=constructExactMainAndFeederCore(terminalFeederMealTransitionProblem(15,5,true));
+  assert.equal(reversed.status,result.status);
+  assert.deepEqual(reversed.scheduledTasks,result.scheduledTasks);
+});
+
 test("feeder-slot matching exhausts the shared budget without hidden branches",()=>{
-  const complete=constructExactMainAndFeederCore(fixedFeederSlotProblem("PERFECT"));
+  const explicitProblem=()=>{const problem=fixedFeederSlotProblem("PERFECT");
+    problem.tasks.find(({id})=>id==="feeder-a")!.availability=[{start:40,end:50},{start:60,end:70}];return problem;};
+  const complete=constructExactMainAndFeederCore(explicitProblem());
+  assert.ok(complete.evidence.feederSlotExplicitFallbacks>0);
   const findExhaustion=(phase:"EDGE"|"AUGMENT")=>{
     for(let budget=1;budget<complete.evidence.branchesExplored;budget++){
-      const problem=fixedFeederSlotProblem("PERFECT");problem.budget.maxBranchExpansions=budget;
+      const problem=explicitProblem();problem.budget.maxBranchExpansions=budget;
       const result=constructExactMainAndFeederCore(problem);
       if(result.status==="BRANCH_BUDGET_EXHAUSTED"&&(phase==="EDGE"
         ?result.evidence.feederSlotMatchingEdgeChecks>0&&result.evidence.feederSlotMatchingAugmentTraversals===0
@@ -652,8 +800,55 @@ test("a recursive leaf rejection repairs feeder matching instead of pruning the 
   }});
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.equal(orders.size,2);
+  assert.ok(result.evidence.feederSlotLazyRepairBuilds>0,"repair must materialize the explicit graph lazily");
+  assert.ok(result.evidence.feederSlotMatchingEdgeChecks>0,"lazy repair must charge every explicit edge check");
+  assert.equal(result.evidence.coreLeafValidationAttempts,result.evidence.completeLeafCount);
+  assert.equal(result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
+  assert.equal(result.evidence.coreLeafValidShapeRejects,0);
+  assert.equal(result.evidence.coreLeafHardValidationRejects,0);
+  assert.equal(result.evidence.coreLeafValidShapeRejects+result.evidence.coreLeafHardValidationRejects
+    +result.evidence.coreLeafValidationAccepted,result.evidence.completeLeafCount);
+  assert.deepEqual(result.evidence.coreLeafValidationReasonCounts,{});
   assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
   assert.equal(result.evidence.feederOrderBranches,0);
+});
+
+test("feeder matching diagnostics distinguish repair triggers without changing the search",()=>{
+  const onlyB=()=>{const problem=twoCohortProblem();
+    problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
+    problem.participants=problem.participants.filter(({id})=>id.startsWith("b"));
+    problem.coaches=problem.coaches.filter(({id})=>id==="coach-b");
+    problem.coachRouteTransitions=problem.coachRouteTransitions?.filter(({coachId})=>coachId==="coach-b");return problem;};
+  let partialCalls=0;
+  const partial=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onPartialCoreCandidate(){
+    return ++partialCalls===1?{outcome:"REJECT",diagnosticCertificate:{authorityId:"resource",demandMinutes:20,
+      freeCapacityMinutes:10,overloadTaskIds:["later"]}}:"CONTINUE";}});
+  let leafCalls=0;
+  const child=runExactMainAndFeederSearch(onlyB(),{causalDiagnostic:true,onHardValidCoreLeaf(){return ++leafCalls===1?"REJECT":"ACCEPT";}});
+  const partialRows=partial.evidence.causalDiagnostic!.feederMatching.contexts;
+  const childRows=child.evidence.causalDiagnostic!.feederMatching.contexts;
+  assert.ok(partialRows.some(row=>row.repairsByTrigger.PARTIAL_CORE_REJECT>0));
+  assert.ok(childRows.some(row=>row.repairsByTrigger.CHILD_DEAD_END>0));
+  assert.ok([...partialRows,...childRows].every(row=>Object.keys(row.repairsByTrigger).sort().join("|")===
+    "CHILD_DEAD_END|PARTIAL_CORE_REJECT|RESIDUAL_MATCHING_DEAD_END"));
+  assert.deepEqual(partialRows.flatMap(row=>row.partialCoreRejects).map(row=>row.certificate),
+    [{authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["later"]}]);
+});
+
+test("a leaf certificate skips irrelevant suffix decisions and reopens its causal CORE decision deterministically",()=>{
+  const run=(causal:boolean)=>{const leaves:string[]=[];const result=runExactMainAndFeederSearch(twoCohortProblem(),{
+    onHardValidCoreLeaf(candidate){
+      leaves.push(candidate.tasks.filter(({kind})=>kind==="main").sort((a,b)=>a.start-b.start).map(({id})=>id).join("|"));
+      assert.equal(candidate.decisionDepthByTaskId["feeder-a1"],candidate.decisionDepthByTaskId["main-a1"],
+        "an atomic feeder is owned by the same macro decision as its main");
+      return causal?{outcome:"CERTIFIED_BACKJUMP",targetDepth:2}:"REJECT";
+    }});return {leaves,result};};
+  const ordinary=run(false),first=run(true),second=run(true);
+  assert.ok(ordinary.leaves.length>first.leaves.length,"ordinary rejection must enumerate suffix alternatives");
+  assert.ok(first.result.evidence.mainRunWitnessRepairs>0,"the causal main assignment must be reopened");
+  assert.ok(new Set(first.leaves.map(order=>order.split("|").slice(0,2).join("|"))).size>1,
+    "backtracking must reach a materially different causal prefix");
+  assert.deepEqual(second,first,"causal unwind must remain deterministic");
 });
 
 test("an analytically impossible cohort cannot perform hidden factorial work", () => {

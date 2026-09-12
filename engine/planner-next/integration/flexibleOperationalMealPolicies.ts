@@ -14,7 +14,7 @@ export type FlexibleOperationalMealPolicyDefect =
   | "MISSING_RESOURCE"
   | "INVALID_SPACE"
   | "MISSING_SPACE"
-  | "RESOURCE_REUSED_ACROSS_POLICIES";
+  | "SCOPE_REUSED_ACROSS_POLICIES";
 
 export interface ResolvedFlexibleOperationalMealPolicy {
   readonly id: string;
@@ -76,25 +76,29 @@ export function resolveFlexibleOperationalMealPolicies(
 
     const rawResources = Array.isArray(policy.planResourceItemIds) ? policy.planResourceItemIds : [];
     const canonicalResources = [...new Set(rawResources.filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
-    if (rawResources.length === 0 || canonicalResources.length !== rawResources.length) defects.push("INVALID_RESOURCE");
+    if (canonicalResources.length !== rawResources.length) defects.push("INVALID_RESOURCE");
     if (canonicalResources.some((id) => !resourceIds.has(id))) defects.push("MISSING_RESOURCE");
 
     const rawSpaces = Array.isArray(policy.spaceIds) ? policy.spaceIds : [];
     const canonicalSpaces = [...new Set(rawSpaces.filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
     if (canonicalSpaces.length !== rawSpaces.length) defects.push("INVALID_SPACE");
     if (canonicalSpaces.some((id) => !spaceIds.has(id))) defects.push("MISSING_SPACE");
+    if (canonicalResources.length === 0 && canonicalSpaces.length === 0) defects.push("INVALID_RESOURCE");
 
     return { id, window: { start, end }, duration, resourceIds: canonicalResources, spaceIds: canonicalSpaces, defects };
   }).sort((left, right) => compare(left.id, right.id));
 
-  const ownerByResource = new Map<number, number>();
+  const ownerByScope = new Map<string, number>();
   drafts.forEach((draft, index) => {
-    for (const resourceId of draft.resourceIds) {
-      const owner = ownerByResource.get(resourceId);
-      if (owner === undefined) ownerByResource.set(resourceId, index);
+    for (const scopeId of [
+      ...draft.resourceIds.map((id) => `resource:${id}`),
+      ...draft.spaceIds.map((id) => `space:${id}`),
+    ]) {
+      const owner = ownerByScope.get(scopeId);
+      if (owner === undefined) ownerByScope.set(scopeId, index);
       else {
         for (const target of [drafts[owner]!, draft]) {
-          if (!target.defects.includes("RESOURCE_REUSED_ACROSS_POLICIES")) target.defects.push("RESOURCE_REUSED_ACROSS_POLICIES");
+          if (!target.defects.includes("SCOPE_REUSED_ACROSS_POLICIES")) target.defects.push("SCOPE_REUSED_ACROSS_POLICIES");
         }
       }
     }

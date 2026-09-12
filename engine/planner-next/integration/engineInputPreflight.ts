@@ -314,6 +314,9 @@ function sourceProjection(input: EngineInput): unknown {
     isAvailable: resource.isAvailable,
     availabilityStart: projectAvailabilityEndpoint(resource, "availabilityStart"),
     availabilityEnd: projectAvailabilityEndpoint(resource, "availabilityEnd"),
+    presenceConcentrationPolicy: resource.presenceConcentrationPolicy,
+    assignedSpaceId: resource.assignedSpaceId,
+    transitionMinutes: resource.transitionMinutes,
   }));
   const endpoint = (row: Record<string, unknown>, key: string): unknown => Object.prototype.hasOwnProperty.call(row, key) && row[key] === undefined ? { undefined: true } : Object.prototype.hasOwnProperty.call(row, key) ? row[key] : { absent: true };
   const planZoneSettings = input.planZoneSettings?.map((row) => ({ id: endpoint(row as unknown as Record<string, unknown>, "id"), zoneId: row.zoneId, availabilityStart: endpoint(row as unknown as Record<string, unknown>, "availabilityStart"), availabilityEnd: endpoint(row as unknown as Record<string, unknown>, "availabilityEnd"), source: endpoint(row as unknown as Record<string, unknown>, "source") }));
@@ -886,7 +889,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       let invalid=typeof id!=="string"||id.trim()!==id||id.length===0||chainIds.has(id)
         ||ordered.length<2||ordered.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(ordered).size!==ordered.length
         ||resources.some(value=>!Number.isSafeInteger(value)||!resourceIds.has(value as number))||new Set(resources).size!==resources.length
-        ||p.adjacency!=="REQUIRED"||p.resourceContinuity!=="REQUIRED";
+        ||p.adjacency!=="REQUIRED"||(p.internalTransition!==undefined&&p.internalTransition!=="INCLUDED")||p.resourceContinuity!=="REQUIRED";
       if(typeof id==="string")chainIds.add(id);
       for(const value of ordered)if(Number.isSafeInteger(value)){const prior=owners.get(value as number);if(prior&&prior!==id)invalid=true;else if(typeof id==="string")owners.set(value as number,id);}
       if(invalid)addIssue("UNSUPPORTED_TECHNICAL_CHAIN","technicalChain",typeof id==="string"?id:index,path,"Technical chain cannot be projected losslessly.");
@@ -1065,6 +1068,30 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const planResourceIds = new Set(input.planResourceItems.map((resource) => String(resource.id)));
   const resourceItemIds = new Set(input.planResourceItems.map((resource) => String(resource.resourceItemId)));
   const resourceTypeIds = new Set(input.planResourceItems.map((resource) => String(resource.typeId)));
+  const knownSpaceIds = new Set([
+    ...(input.planSpaceSettings ?? []).map((space) => String(space.spaceId)),
+    ...input.tasks.flatMap((task) => task.spaceId == null ? [] : [String(task.spaceId)]),
+  ]);
+  for (const resource of input.planResourceItems) {
+    if (resource.transitionMinutes !== undefined
+      && !(typeof resource.transitionMinutes === "number" && Number.isFinite(resource.transitionMinutes)
+        && Number.isInteger(resource.transitionMinutes) && resource.transitionMinutes >= 0)) {
+      addIssue("INVALID_TRANSITION_CONFIGURATION", "plan-resource", resource.id,
+        `planResourceItems.${resource.id}.transitionMinutes`, "Resource transition override must be a finite non-negative integer.", {
+          value: resource.transitionMinutes,
+        });
+    }
+    if (resource.presenceConcentrationPolicy !== undefined
+      && !["OFF", "PREFERRED", "REQUIRED"].includes(resource.presenceConcentrationPolicy)) {
+      addIssue("INVALID_RESOURCE_PRESENCE_CONCENTRATION_POLICY", "plan-resource", resource.id,
+        `planResourceItems.${resource.id}.presenceConcentrationPolicy`, "Resource presence concentration policy is invalid.");
+    }
+    if (resource.assignedSpaceId !== undefined
+      && (!isPositiveInteger(resource.assignedSpaceId) || !knownSpaceIds.has(String(resource.assignedSpaceId)))) {
+      addIssue("INVALID_RESOURCE_ASSIGNED_SPACE", "plan-resource", resource.id,
+        `planResourceItems.${resource.id}.assignedSpaceId`, "Assigned resource space does not exist.");
+    }
+  }
   let missingResourceReferenceCount = 0;
   let resourceAssignmentReferenceCount = 0;
   let resourceComponentReferenceCount = 0;

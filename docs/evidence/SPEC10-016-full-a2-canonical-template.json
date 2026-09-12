@@ -1,5 +1,5 @@
 {
-  "contractVersion": "A2-FULL-009.full-a2-template.v4",
+  "contractVersion": "A2-FULL-009.full-a2-template.v5",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "19b3cfe2692c9b98f2c0494e7fecaeb0d49e9a987becbe0b35c61b18ba21a707",
-  "expansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+  "manifestFingerprint": "275534f0ce385315576b1f3a561570323b4e6e52a86f6d11617078c13fac5e2a",
+  "expansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -66,6 +66,18 @@
   },
   "canonicalResources": [
     {
+      "id": "band",
+      "label": "Banda",
+      "kind": "band",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-1",
+      "label": "CAM 1",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
       "id": "cam-2",
       "label": "CAM 2",
       "kind": "camera",
@@ -80,6 +92,18 @@
     {
       "id": "cam-4",
       "label": "CAM 4",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-5",
+      "label": "CAM 5",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-6",
+      "label": "CAM 6",
       "kind": "camera",
       "availability": "inherits_day_unless_overridden"
     },
@@ -122,11 +146,7 @@
         "cam-3",
         "son-1"
       ],
-      "availability": {
-        "start": "11:00",
-        "end": "14:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "reality-unit-b",
@@ -135,11 +155,7 @@
         "cam-4",
         "son-2"
       ],
-      "availability": {
-        "start": "11:15",
-        "end": "13:30",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "availability": "inherits_day_unless_overridden"
     },
     {
       "id": "reality-unit-combined",
@@ -149,11 +165,7 @@
         "cam-4",
         "son-1"
       ],
-      "availability": {
-        "start": "16:00",
-        "end": "18:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "availability": "inherits_day_unless_overridden"
     }
   ],
   "itinerantOperations": [
@@ -345,6 +357,7 @@
         {
           "taskId": "C01.ensayo_estudio_7",
           "requiredResourceIds": [
+            "band",
             "cam-3",
             "coach-lucia",
             "son-1"
@@ -377,6 +390,7 @@
         {
           "taskId": "C08.ensayo_estudio_7",
           "requiredResourceIds": [
+            "band",
             "cam-3",
             "coach-jose-maria",
             "son-1"
@@ -600,6 +614,7 @@
         "son-1"
       ],
       "requiredResourceIds": [
+        "band",
         "cam-3",
         "coach-lucia",
         "son-1"
@@ -628,6 +643,7 @@
         "son-1"
       ],
       "requiredResourceIds": [
+        "band",
         "cam-3",
         "coach-jose-maria",
         "son-1"
@@ -752,6 +768,7 @@
           "TECH.tech_totales_post"
         ],
         "adjacency": "REQUIRED",
+        "internalTransition": "INCLUDED",
         "resourceContinuity": "REQUIRED",
         "requiredResourceIds": [
           "cam-3",
@@ -1031,6 +1048,13 @@
       "affectedCanonicalIds": []
     },
     {
+      "code": "SPACE_CAMERA_AUTHORITY",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
       "code": "COACH_TRANSITION_RULE",
       "passed": true,
       "evaluated": true,
@@ -1084,7 +1108,7 @@
   "validationIssues": [],
   "requiredCreationInputs": [],
   "effectiveConfiguration": {
-    "version": "A2-FULL-009.source-configuration.v1",
+    "version": "A2-FULL-009.source-configuration.v2",
     "executionDate": "2025-06-15",
     "effectiveDayWindow": {
       "start": "09:00",
@@ -1095,21 +1119,9 @@
     "resourceAvailability": "INHERIT_DAY_UNLESS_OVERRIDDEN",
     "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
     "itinerantUnitAvailability": {
-      "reality-unit-a": {
-        "start": "11:00",
-        "end": "14:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      },
-      "reality-unit-b": {
-        "start": "11:15",
-        "end": "13:30",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      },
-      "reality-unit-combined": {
-        "start": "16:00",
-        "end": "18:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
-      }
+      "reality-unit-a": "inherits_day_unless_overridden",
+      "reality-unit-b": "inherits_day_unless_overridden",
+      "reality-unit-combined": "inherits_day_unless_overridden"
     },
     "participantAvailability": {
       "C01": {
@@ -1193,7 +1205,7 @@
       "arrival": {
         "targetGroupSize": 3,
         "maximumGroupSize": 6,
-        "minGapMinutes": 35,
+        "minGapMinutes": 30,
         "groupingWeight": 3
       },
       "departure": {
@@ -1214,15 +1226,72 @@
         "flexible": true,
         "followsAssignedResourcesAcrossRecomposition": true,
         "fixedHumanCutIntervals": [],
-        "legacyItinerantMealBreakMinutesAuthoritative": false
+        "legacyItinerantMealBreakMinutesAuthoritative": false,
+        "mealUnits": [
+          {
+            "mealUnitId": "estudio-7-operations",
+            "spaceIds": [
+              "estudio-7"
+            ],
+            "resourceIds": [
+              "band"
+            ]
+          },
+          {
+            "mealUnitId": "plato-14-operations",
+            "spaceIds": [
+              "p14-recursos",
+              "p14-pasillo",
+              "p14-giratuto"
+            ],
+            "resourceIds": []
+          },
+          {
+            "mealUnitId": "plato-15-operations",
+            "spaceIds": [
+              "p15-croma",
+              "p15-estrellas-sillon"
+            ],
+            "resourceIds": []
+          },
+          {
+            "mealUnitId": "reality-unit-a-operations",
+            "spaceIds": [],
+            "resourceIds": [
+              "cam-3",
+              "son-1"
+            ]
+          },
+          {
+            "mealUnitId": "reality-unit-b-operations",
+            "spaceIds": [],
+            "resourceIds": [
+              "cam-4",
+              "son-2"
+            ]
+          },
+          {
+            "mealUnitId": "totales-operations",
+            "spaceIds": [
+              "totales-1",
+              "totales-coreo"
+            ],
+            "resourceIds": []
+          }
+        ]
       },
       "participant": {
         "sodexoDurationMinutes": 40,
         "maxSimultaneous": 10,
         "independentFromOperationalMeal": true
+      },
+      "coach": {
+        "individualDurationMinutes": 45,
+        "inheritsSpaceOperationalMeal": false
       }
     },
     "provenance": {
+      "itinerantUnitAvailability": "SPEC-08.v1.1",
       "participantAvailability": "A2-FULL-008-effective-configuration-probe",
       "transportPolicy": "A2-FULL-008-effective-configuration-probe+ADDENDUM_OFICIAL_SEMANTICA_AGRUPACION_TRANSPORTE_2026-08-08+SPEC-11",
       "meals": "ADDENDUM_A2_DESCANSOS_OPERATIVOS_Y_COMIDAS_2026-08-08+A2-FULL-008+SPEC-07/08/11"
@@ -1597,7 +1666,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+    "shuffledExpansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
     "matches": true
   },
   "inputImmutable": {

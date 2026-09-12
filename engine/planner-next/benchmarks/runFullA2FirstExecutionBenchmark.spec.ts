@@ -17,7 +17,10 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const lines = child.stdout.trim().split(/\n/).filter(Boolean);
     const evidence = JSON.parse(lines.at(-1)!) as {
       canonicalObligationCount: number;
-      engineInput: { maxBranchExpansions: number };
+      engineInput: { maxBranchExpansions: number; mainFlowBlockPolicy:{domainAuthority:string;projectedTechnicalMaximum:number};
+        projectedArrivalTransportPolicy:{targetGroupSize:number;minimumGroupSize:number;maximumGroupSize:number;minGapMinutes:number};
+        spaceResourceAssignments:Record<string,string[]>;
+        effectiveCameraProjection:Record<string,string[]> };
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
@@ -26,6 +29,8 @@ test("Full A2 first executable integration reports an atomic completion count", 
           deepestPartialScheduledTaskCount:number;deepestPartialMainRunsClosed:number;
           deepestPartialFeederRunsClosed:number;deepestPartialCoreTasksRemaining:number;
           firstFeedableRunSizes:number[];
+          runLayers:Array<{runCount:number;patternsGenerated:number;architecturesChecked:number;
+            rejectionReasons:Record<string,number>}>;
           structuralRejectionsByReason:Record<string,number>;
           standaloneForwardBranches:number;participantMealBranchesExplored:number;
           standaloneForwardWitnessCacheHits:number;standaloneForwardWitnessCacheMisses:number;
@@ -37,7 +42,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
           feederSlotAnalyticChecks:number;feederSlotAnalyticPrunes:number;feederSlotAnalyticAbstentions:number;
           feederSlotMatchingEdgeChecks:number;feederSlotMatchingAugmentTraversals:number;
           feederSlotMatchingBranchesExplored:number;feederMatchingWitnessRepairs:number;
-          standaloneCompleteLeafCount:number;lastExhaustionPhase:string|null };
+          standaloneCompleteLeafCount:number;lastExhaustionPhase:string|null;
+          operationalMealFuturePrunes:number;operationalMealFutureAnalyticChecks:number;
+          operationalMealFutureBranchesExplored:number;operationalMealFutureFirstPrune:unknown };
         diagnosticReport: null | { criticalRejectionReasons: Array<{ id: string; count: number }>;
           topBlockingPlacedTasks: Array<{ id: string; count: number }>;
           topFeederBlockerPairs: Array<{ id: string; count: number }>;
@@ -46,6 +53,26 @@ test("Full A2 first executable integration reports an atomic completion count", 
     };
     assert.equal(evidence.canonicalObligationCount, 269);
     assert.equal(evidence.result.targetCanonicalObligations, 269);
+    const cameras=evidence.engineInput.effectiveCameraProjection;
+    assert.deepEqual(evidence.engineInput.spaceResourceAssignments,{
+      "p14-recursos":["cam-1"],"p14-pasillo":["cam-1"],
+      "p15-croma":["cam-2"],"p15-estrellas-sillon":["cam-2"],
+      "totales-1":["cam-5"],"totales-coreo":["cam-6"],
+    });
+    assert.deepEqual(cameras.REDES,cameras.PASILLO,"Recursos and Pasillo share exactly CAM1");
+    assert.equal(cameras.REDES.length,1);
+    assert.ok(cameras.GIRATUTO.every((id)=>!cameras.REDES.includes(id)),"Giratuto does not inherit CAM1");
+    assert.deepEqual(cameras.CROMA,cameras.SILLON);
+    assert.deepEqual(cameras.CROMA,cameras.ESTRELLAS);
+    assert.equal(cameras.CROMA.length,1);
+    assert.equal(cameras.TOTALES_1.length,1);
+    assert.equal(cameras.TOTALES_COREO.length,1);
+    assert.ok(cameras.TOTALES_1.every((id)=>!cameras.TOTALES_COREO.includes(id)),"Totales lanes use distinct CAM5/CAM6");
+    assert.equal(evidence.engineInput.mainFlowBlockPolicy.domainAuthority,"UNBOUNDED");
+    assert.ok(evidence.engineInput.mainFlowBlockPolicy.projectedTechnicalMaximum>2);
+    assert.deepEqual({target:evidence.engineInput.projectedArrivalTransportPolicy.targetGroupSize,minimum:evidence.engineInput.projectedArrivalTransportPolicy.minimumGroupSize,
+      maximum:evidence.engineInput.projectedArrivalTransportPolicy.maximumGroupSize,gap:evidence.engineInput.projectedArrivalTransportPolicy.minGapMinutes},
+      {target:3,minimum:1,maximum:3,gap:30});
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
@@ -60,6 +87,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.ok(executionEvidence.firstFeedableRunSizes.length>0);
     assert.ok(executionEvidence.firstFeedableRunSizes.every((size)=>Number.isInteger(size)&&size>0));
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
+    assert.deepEqual(executionEvidence.runLayers.map(({runCount,patternsGenerated})=>({runCount,patternsGenerated})),
+      [{runCount:2,patternsGenerated:2}],"Full A2 must completely enumerate only its theoretical-minimum layer");
+    assert.ok(executionEvidence.runLayers[0]!.architecturesChecked>0);
     assert.ok(executionEvidence.coreCompleteLeafCount>0);
     assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
     assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");
@@ -88,6 +118,10 @@ test("Full A2 first executable integration reports an atomic completion count", 
           coreCompleteLeafCount: executionEvidence.coreCompleteLeafCount,
           deepestPartialCoreTasksRemaining: executionEvidence.deepestPartialCoreTasksRemaining,
           standaloneCompleteLeafCount: executionEvidence.standaloneCompleteLeafCount,
+          operationalMealFuturePrunes: executionEvidence.operationalMealFuturePrunes,
+          operationalMealFutureAnalyticChecks: executionEvidence.operationalMealFutureAnalyticChecks,
+          operationalMealFutureBranchesExplored: executionEvidence.operationalMealFutureBranchesExplored,
+          operationalMealFutureFirstPrune: executionEvidence.operationalMealFutureFirstPrune,
           lastExhaustionPhase: executionEvidence.lastExhaustionPhase,
         },
       },

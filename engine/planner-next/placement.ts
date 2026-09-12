@@ -10,6 +10,15 @@ export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, 
     ?? problem.resourceTransitionMinutes;
 }
 
+/** True only for adjacent members of one explicitly contiguous chain whose movement is already represented by its phases. */
+export function isIncludedInternalTechnicalChainTransition(problem:PlannerNextProblem,leftTaskId:string,rightTaskId:string):boolean {
+  return (problem.technicalChains??[]).some(policy=>{
+    if(policy.adjacency!=="REQUIRED"||policy.internalTransition!=="INCLUDED")return false;
+    const left=policy.orderedTaskIds.indexOf(leftTaskId),right=policy.orderedTaskIds.indexOf(rightTaskId);
+    return left>=0&&right>=0&&Math.abs(left-right)===1;
+  });
+}
+
 export function taskAvoidsItinerantUnitMeals(problem:PlannerNextProblem,task:Task,start:number,end:number):boolean {
   return !task.itinerantUnitId||(problem.itinerantUnitMeals??[]).every(meal=>meal.itinerantUnitId!==task.itinerantUnitId||!overlaps(meal.interval,{start,end}));
 }
@@ -121,7 +130,7 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     if(!sharedSpace){
       if(sharedParticipant)before=after=problem.participantTransitionMinutes;
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
-      for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
+      if(!isIncludedInternalTechnicalChainTransition(problem,task.id,other.id))for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
     }
     domain=subtractOccupation(domain,{start:other.start-before,end:other.end+after},task.duration);
   }
@@ -195,7 +204,7 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     const gap = afterOther ? start - other.end : other.start - end;
     if (sharedParticipant && gap < problem.participantTransitionMinutes) return reject("TRANSITION_PARTICIPANT",other.id);
     if (sharedCoach && gap < coachMargin) return reject("TRANSITION_COACH",other.id);
-    if (sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
+    if (!isIncludedInternalTechnicalChainTransition(problem,task.id,other.id)&&sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
   }
   return {valid:true,firstRejectionReason:null,blockingPlacedTaskId:null};
 }

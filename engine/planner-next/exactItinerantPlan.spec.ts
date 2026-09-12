@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain,
+  candidateIntroducesCapacityCertificate, compareOperationalMealFreedom, compareResourceCompactnessImpact,
+  macroCapacityCertificateSignature, operationalMealFreedomAfterPlacement, resourceCompactnessImpactAfterPlacement,
+  resourceAvailabilityMinutes } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -112,6 +115,7 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.ok(result.evidence.ordinaryExactStartChecks < 2 * 23,
     "only the selected task domain is checked exactly, not every task over the full grid");
   assert.ok(result.evidence.ordinaryAnalyticDomainBuilds >= 2);
+  assert.equal(result.evidence.deferredPrerequisiteReservationBranchesExplored, 0);
 });
 
 function ordinaryForwardProblem(tasks: Task[]): PlannerNextProblem {
@@ -134,18 +138,9 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
-  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[prerequisite.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardChecksByDepth["0"],
-    result.evidence.ordinaryIndividualForwardChecks);
-  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
-    { causingTaskId: candidate.id, blockingTaskId: prerequisite.id, depth: 0 });
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
-    "the analytic certificate does not enumerate starts");
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("ordinary provisional placement prunes an affected hard obligation that is not a prerequisite", () => {
@@ -158,14 +153,9 @@ test("ordinary provisional placement prunes an affected hard obligation that is 
 
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, obligation]));
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
-  assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
-  assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.equal(result.evidence.ordinaryIndividualForwardBlockingTaskCounts[obligation.id],
-    result.evidence.ordinaryIndividualForwardZeroDomainPrunes);
-  assert.deepEqual(result.evidence.ordinaryIndividualForwardFirstPrune,
-    { causingTaskId: candidate.id, blockingTaskId: obligation.id, depth: 0 });
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0);
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
 test("singleton ordinary candidate is retained when its affected prerequisite keeps an analytic domain", () => {
@@ -201,41 +191,101 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
     dependencies: prerequisites.map(({ id }) => id) };
   const result = runExactItinerantPlanSearch(ordinaryForwardProblem([candidate, ...prerequisites]));
   assert.equal(result.status, "INFEASIBLE");
-  assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
-  assert.ok(result.evidence.ordinaryIndividualForwardTasksChecked >= 2);
-  assert.ok(result.evidence.ordinaryIndividualForwardExactDomainChecks >= 2);
-  assert.ok(result.evidence.ordinaryIndividualForwardWitnesses >= 2,
-    "P1 and P2 each retain the start at zero after provisional A");
-  assert.equal(result.evidence.ordinaryIndividualForwardStartsChecked, 0,
-    "the individual checker derives witnesses from analytic domain counts without a joint start scan");
+  assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
+  assert.ok(result.evidence.coreStandaloneFrontierIndividualDomainChecks >= 2);
+  assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
-test("global macro MRV lets setup beat a broader synchronized round unit", () => {
+test("mixed macro policy compares setup's compact projection semantically with a synchronized round", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ setup: [60, 70], rounds: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^SETUP_GROUP:/);
   assert.ok(result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "ROUND_SYNCHRONIZATION"));
   const setup = result.evidence.macroSelectionSteps[0]!.candidates.find(({ kind }) => kind === "SETUP_GROUP")!;
   assert.equal(setup.domainSize, 1);
-  assert.equal(setup.domainMeasure, "hard-valid-top-level-macro-placements");
-  assert.equal(setup.domainExact, true);
+  assert.equal(setup.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
+  assert.equal(setup.domainExact, false);
   assert.equal(setup.matchingFeasibleCandidateCount, 1);
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "minimum-macro-domain");
 });
 
-test("global macro MRV lets narrow rounds beat a flexible explicit-resource task", () => {
-  const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] }));
+test("an inexact zero compact setup probe does not prune its sole gapped hard-domain solution", () => {
+  const input=macroCompetitionProblem({setup:[60,75]});
+  input.participants.find(({id})=>id==="setup-person")!.availability=[{start:60,end:65}];
+  input.participants.find(({id})=>id==="setup-person-2")!.availability=[{start:70,end:75}];
+  const result=constructExactItinerantPlan(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  const setup=result.evidence.macroSelectionSteps[0]!.candidates.find(({kind})=>kind==="SETUP_GROUP")!;
+  assert.equal(setup.domainSize,0);assert.equal(setup.domainExact,false);
+  assert.notEqual(result.evidence.macroSelectionSteps[0]!.reason,"sound-zero-domain");
+  assert.ok(result.evidence.setupBlockSearchInvocations>0);assert.ok(result.evidence.setupBlockBranchesExplored>0);
+  assert.equal(result.evidence.setupBlockMinimumIdleMinutes,5);
+});
+
+test("mixed macro policy lets a structurally narrow round beat a flexible exact resource task", () => {
+  const input = macroCompetitionProblem({ rounds: [60, 70], resource: [20, 100] });
+  input.resources.push(...["round-a", "round-b"].map((id) =>
+    ({ id: `resource-${id}`, availability: [{ start: 60, end: 70 }], presencePreference: "OFF" as const, transitionMinutes: 0 })));
+  for (const task of input.tasks.filter(({ id }) => id.startsWith("round-"))) task.requiredResourceIds = [`resource-${task.id}`];
+  const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
   const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
     result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
-  assert.equal(round.domainSize, 1);
-  assert.ok(resource.domainSize > round.domainSize);
+  assert.ok(round.domainSize > 0);
+  assert.equal(round.domainExact, false);
+  assert.equal(round.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
+  assert.equal(resource.domainExact, true);
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "mixed-domain-semantic-policy");
 });
 
 test("global macro MRV lets a scarce resource task beat broader rounds", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [20, 100], resource: [60, 70] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:/);
+});
+
+test("macro resource scarcity uses the minimum unioned availability deterministically", () => {
+  const create = (reverse = false) => {
+    const input = macroCompetitionProblem({ resource: [20, 100] });
+    input.resources.push(
+      { id: "overlapping", availability: [{ start: 0, end: 50 }, { start: 20, end: 80 }], presencePreference: "OFF", transitionMinutes: 0 },
+      { id: "bottleneck", availability: [{ start: 10, end: 30 }], presencePreference: "OFF", transitionMinutes: 0 },
+    );
+    const task = input.tasks.find(({ id }) => id === "resource-task")!;
+    task.requiredResourceIds = reverse ? ["bottleneck", "overlapping"] : ["overlapping", "bottleneck"];
+    if (reverse) input.resources.reverse();
+    return input;
+  };
+  const first = constructExactItinerantPlan(create());
+  const reversed = constructExactItinerantPlan(create(true));
+  const candidate = first.evidence.macroSelectionSteps[0]!.candidates.find(({ id }) => id === "resource:resource-task")!;
+  assert.equal(candidate.hardResourceAvailabilityMinutes, 20,
+    "overlaps are counted once and the narrowest required resource governs");
+  assert.deepEqual(reversed.evidence.macroSelectionOrder, first.evidence.macroSelectionOrder);
+  assert.deepEqual(reversed.evidence.macroSelectionReason, first.evidence.macroSelectionReason);
+});
+
+test("macro resource scarcity reports zero for an unavailable required resource", () => {
+  const input = macroCompetitionProblem({ resource: [20, 100] });
+  input.resources.push({ id: "unavailable", availability: [], presencePreference: "OFF", transitionMinutes: 0 });
+  const task = input.tasks.find(({ id }) => id === "resource-task")!;
+  task.requiredResourceIds = ["unavailable"];
+  assert.equal(resourceAvailabilityMinutes(input, [task]), 0);
+  assert.equal(resourceAvailabilityMinutes(input, [{ ...task, requiredResourceIds: [] }]), 120);
+});
+
+test("mixed resource macros select the task with the bottleneck resource", () => {
+  const input = macroCompetitionProblem({ resource: [20, 100] });
+  input.resources.push({ id: "bottleneck", availability: [{ start: 0, end: 30 }], presencePreference: "OFF", transitionMinutes: 0 });
+  const original = input.tasks.find(({ id }) => id === "resource-task")!;
+  original.requiredResourceIds = ["unit"];
+  input.participants.push({ id: "mixed-person", availability: [{ start: 20, end: 100 }] });
+  input.spaces.push({ id: "space-mixed", availability: [{ start: 0, end: 120 }] });
+  input.tasks.push({ ...original, id: "mixed", participantId: "mixed-person", spaceId: "space-mixed",
+    requiredResourceIds: ["unit", "bottleneck"] });
+  const result = constructExactItinerantPlan(input);
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:resource:mixed$/);
+  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "minimum-macro-domain");
 });
 
 test("macro constrainedness is recalculated after each placement", () => {
@@ -247,6 +297,164 @@ test("macro constrainedness is recalculated after each placement", () => {
   ]);
   assert.ok(result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-c")!.domainSize
     < result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-b")!.domainSize);
+});
+
+function mealFreedomProblem(reverse = false): PlannerNextProblem {
+  const input = macroCompetitionProblem({ resource: [20, 90] });
+  const task = input.tasks.find(({ id }) => id === "resource-task")!;
+  task.availability = [{ start: 20, end: 30 }, { start: 80, end: 90 }];
+  input.operationalMealPolicies = [{ id: "required-break", window: { start: 20, end: 80 }, duration: 20,
+    resourceIds: [], spaceIds: [task.spaceId] }];
+  if (reverse) {
+    input.tasks.reverse(); input.participants.reverse(); input.spaces.reverse(); input.resources.reverse();
+    input.operationalMealPolicies.reverse();
+  }
+  return input;
+}
+
+test("RESOURCE_TASK visits the hard-valid placement preserving more REQUIRED meal witnesses first", () => {
+  const input = mealFreedomProblem();
+  const domain = standaloneForwardDynamicDomain(input, input.tasks.find(({id})=>id==="resource-task")!, [],
+    standaloneForwardStaticDomain(input, input.tasks.find(({id})=>id==="resource-task")!, []));
+  assert.deepEqual([...domain.starts()], [20, 80], "ordering does not remove candidates from the dynamic domain");
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="resource-task")!.start, 80);
+  assert.equal(result.evidence.criticalResourceBranches, 1);
+  assert.equal(result.evidence.standaloneBranches + result.evidence.coreBranches, result.evidence.branchesExplored);
+  const reversed = runExactItinerantPlanSearch(mealFreedomProblem(true));
+  assert.equal(reversed.scheduledTasks.find(({id})=>id==="resource-task")!.start, 80);
+  assert.equal(reversed.evidence.fullFingerprint, result.evidence.fullFingerprint);
+});
+
+function feedingAwareResourceProblem(reverse=false):PlannerNextProblem {
+  const input=problem([]);input.protectedMeal=undefined;input.day={start:0,end:120};
+  input.resources.push({id:"scarce",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+  input.spaces.push({id:"arrival",availability:[{start:20,end:120}]},{id:"preparation",availability:[{start:0,end:120}]},{id:"resource",availability:[{start:0,end:120}]});
+  input.participants.push({id:"entrant",availability:[{start:0,end:120}]});
+  input.tasks.push(
+    {id:"arrival",kind:"auxiliary",participantId:"entrant",duration:5,spaceId:"arrival",dependencies:[],availability:[{start:20,end:120}]},
+    {id:"preparation",kind:"auxiliary",participantId:"entrant",duration:10,spaceId:"preparation",dependencies:["arrival"],availability:[{start:0,end:120}]},
+    {id:"resource",kind:"auxiliary",participantId:"entrant",duration:5,spaceId:"resource",dependencies:["preparation"],availability:[{start:0,end:50}],requiredResourceIds:["scarce"]},
+  );
+  input.transportPolicy={arrival:{taskIds:["arrival"],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:30,groupingWeight:1},
+    departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,minGapMinutes:0,groupingWeight:1}};
+  if(reverse){input.tasks.reverse();input.participants.reverse();input.spaces.reverse();input.resources.reverse();}
+  return input;
+}
+
+test("RESOURCE_TASK constructive domain removes only analytically impossible arrival-fed starts",()=>{
+ const result=runExactItinerantPlanSearch(feedingAwareResourceProblem());
+ assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+ assert.ok(result.scheduledTasks.find(({id})=>id==="resource")!.start>=35,"IN and preparation must feed the resource task");
+ assert.equal(result.evidence.macroDomainSizes["resource:resource"],3,"35, 40 and 45 survive from the raw ten starts");
+ assert.equal(result.evidence.resourceTaskDomainLogicalStarts,10);
+ assert.equal(result.evidence.resourceTaskDomainFeedingChecks,5,"the frontier must not scan all ten logical starts");
+ assert.equal(result.evidence.resourceTaskDomainAnalyticallyEliminatedByArrival,7);
+ assert.equal(result.evidence.resourceTaskDomainKeptStarts,3);
+ assert.equal(result.evidence.resourceTaskDomainRawIntervals,1);
+ assert.equal(result.evidence.resourceTaskDomainSurvivingIntervals,1);
+ assert.equal(result.evidence.resourceTaskDomainEliminatedRegions,1);
+ assert.equal(result.evidence.resourceTaskDomainPreparedAuthorityBuilds,1);
+ assert.equal(result.evidence.resourceTaskDomainPreparedAuthorityHits,4);
+ assert.ok(result.evidence.resourceTaskDomainCostMs>=0);
+ const reversed=runExactItinerantPlanSearch(feedingAwareResourceProblem(true));
+ assert.equal(reversed.evidence.fullFingerprint,result.evidence.fullFingerprint);
+ assert.equal(reversed.evidence.macroDomainSizes["resource:resource"],3);
+});
+
+test("RESOURCE_TASK feeding envelope removes whole prefixes across multiple hard intervals",()=>{
+ const input=feedingAwareResourceProblem();
+ input.resources.find(({id})=>id==="scarce")!.availability=[{start:0,end:25},{start:35,end:50}];
+ const result=runExactItinerantPlanSearch(input);
+ assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+ assert.equal(result.evidence.resourceTaskDomainRawIntervals,2);
+ assert.equal(result.evidence.resourceTaskDomainSurvivingIntervals,1);
+ assert.equal(result.evidence.resourceTaskDomainLogicalStarts,8);
+ assert.equal(result.evidence.resourceTaskDomainAnalyticallyEliminatedByArrival,5);
+ assert.equal(result.evidence.resourceTaskDomainKeptStarts,3);
+ assert.equal(result.evidence.resourceTaskDomainFeedingChecks,3);
+});
+
+test("operational meal freedom uses worst margin, then total, and ignores unaffected policies", () => {
+  const input = mealFreedomProblem();
+  const task = input.tasks.find(({id})=>id==="resource-task")!;
+  const scheduled = (start:number):ScheduledTask => ({...task,start,end:start+task.duration});
+  input.operationalMealPolicies!.push(
+    {id:"second",window:{start:20,end:100},duration:20,resourceIds:[],spaceIds:[task.spaceId]},
+    {id:"unaffected",window:{start:0,end:120},duration:20,resourceIds:["unit"],spaceIds:[]},
+  );
+  const early = operationalMealFreedomAfterPlacement(input, [], scheduled(20));
+  const late = operationalMealFreedomAfterPlacement(input, [], scheduled(80));
+  assert.ok(late.minimumWitnesses > early.minimumWitnesses
+    || late.minimumWitnesses === early.minimumWitnesses && late.totalWitnesses > early.totalWitnesses);
+  input.operationalMealPolicies = input.operationalMealPolicies!.filter(({id})=>id!=="unaffected");
+  assert.deepEqual(operationalMealFreedomAfterPlacement(input, [], scheduled(20)), early);
+  const neutral = operationalMealFreedomAfterPlacement(input, [], {...scheduled(20),spaceId:"main",requiredResourceIds:[]});
+  assert.deepEqual(neutral, {minimumWitnesses:0,totalWitnesses:0});
+  assert.ok(compareOperationalMealFreedom({minimumWitnesses:3,totalWitnesses:3},
+    {minimumWitnesses:2,totalWitnesses:100}) < 0, "the worst REQUIRED margin has priority");
+  assert.ok(compareOperationalMealFreedom({minimumWitnesses:3,totalWitnesses:8},
+    {minimumWitnesses:3,totalWitnesses:7}) < 0, "the total breaks equal worst margins deterministically");
+  assert.equal(compareOperationalMealFreedom({minimumWitnesses:3,totalWitnesses:8},
+    {minimumWitnesses:3,totalWitnesses:8}), 0);
+});
+
+test("equal REQUIRED meal witness freedom retains canonical start ordering", () => {
+  const input = mealFreedomProblem();
+  input.operationalMealPolicies![0]!.window = {start:40,end:70};
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="resource-task")!.start, 20);
+});
+
+test("resource compactness ignores idle gaps and counts physical changes and reentries", () => {
+  const scheduled = (id:string, spaceId:string, start:number, resourceIds=["camera"]):ScheduledTask => ({
+    id, kind:"auxiliary", participantId:id, duration:10, spaceId, dependencies:[],
+    requiredResourceIds:resourceIds, start, end:start+10,
+  });
+  const placed = [scheduled("a","band-a",10), scheduled("b","band-b",40)];
+  assert.deepEqual(resourceCompactnessImpactAfterPlacement(placed,scheduled("continue","band-b",80)), {
+    deltaResourceBlocks:0,deltaResourceLocationChanges:0,deltaResourceReentries:0,
+  }, "a gap without an intervening state does not open a block");
+  assert.deepEqual(resourceCompactnessImpactAfterPlacement(placed,scheduled("reenter","band-a",80)), {
+    deltaResourceBlocks:1,deltaResourceLocationChanges:1,deltaResourceReentries:1,
+  });
+  assert.deepEqual(resourceCompactnessImpactAfterPlacement([],scheduled("neutral","only-space",20)), {
+    deltaResourceBlocks:0,deltaResourceLocationChanges:0,deltaResourceReentries:0,
+  }, "a single-space resource remains neutral");
+  assert.ok(compareResourceCompactnessImpact(
+    {deltaResourceBlocks:0,deltaResourceLocationChanges:0,deltaResourceReentries:0},
+    {deltaResourceBlocks:1,deltaResourceLocationChanges:1,deltaResourceReentries:1}) < 0);
+});
+
+function resourceContinuityProblem(reverse=false):PlannerNextProblem {
+  const input=problem([]);input.protectedMeal=undefined;
+  input.resources.push({id:"camera",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+  const additions=[
+    {...auxiliary("fixed-a","fixed-a",[{start:20,end:30}],["camera"]),spaceId:"band-a"},
+    {...auxiliary("fixed-b","fixed-b",[{start:40,end:50}],["camera"]),spaceId:"band-b"},
+    {...auxiliary("choice","choice",[{start:10,end:20},{start:50,end:60}],["camera"]),spaceId:"band-b"},
+  ];
+  for(const task of additions){input.tasks.push(task);input.participants.push({id:task.participantId,availability:[{start:0,end:120}]});}
+  input.spaces.push(...["band-a","band-b"].map(id=>({id,availability:[{start:0,end:120}]})));
+  if(reverse){input.tasks.reverse();input.participants.reverse();input.resources.reverse();input.spaces.reverse();}
+  return input;
+}
+
+test("RESOURCE_TASK prefers continuing a physical band and avoiding an earlier reentry", () => {
+  const input=resourceContinuityProblem();
+  const choice=input.tasks.find(({id})=>id==="choice")!;
+  const domain=standaloneForwardDynamicDomain(input,choice,[],standaloneForwardStaticDomain(input,choice,[]));
+  assert.deepEqual([...domain.starts()],[10,50],"compactness ordering does not alter the candidate set");
+  const result=runExactItinerantPlanSearch(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.scheduledTasks.find(({id})=>id==="choice")!.start,50,
+    "the later continuation beats the canonical earlier reentry even with transitionMinutes=0");
+  const reversed=runExactItinerantPlanSearch(resourceContinuityProblem(true));
+  assert.equal(reversed.scheduledTasks.find(({id})=>id==="choice")!.start,50);
+  assert.equal(reversed.evidence.fullFingerprint,result.evidence.fullFingerprint);
+  assert.equal(result.evidence.standaloneBranches+result.evidence.coreBranches,result.evidence.branchesExplored);
 });
 
 test("EXACT_CONSTRUCTIVE schedules joint groups as one atomic work item", () => {
@@ -410,10 +618,50 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   assert.equal(integrated.evidence.firstStandaloneForwardPruneDepth, integrated.evidence.coreMaximumDepth);
   assert.equal(integrated.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
   assert.equal(integrated.evidence.standaloneSearchInvocations, 1);
+  assert.equal(integrated.evidence.coreLeafValidationAttempts,integrated.evidence.coreCompleteLeafCount);
+  assert.equal(integrated.evidence.coreLeafValidShapeRejects+integrated.evidence.coreLeafHardValidationRejects
+    +integrated.evidence.coreLeafValidationAccepted,integrated.evidence.coreCompleteLeafCount);
+  const isolatedMealCounters=["mealTimelineDomainCount","mealTimelinesExplored","mealTimelinesEliminatedAnalytically",
+    "mealTimelinesPendingAtExhaustion","mealTimelinesPreferred","mealTimelinesNonPreferred"] as const;
+  for(const key of isolatedMealCounters)assert.equal(integrated.evidence[key],isolated.evidence[key]);
   assert.notEqual(integrated.scheduledTasks.find(({ id }) => id === "vocal")!.start,
     isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start);
   assert.equal(validatePlan(input, integrated.scheduledTasks, [], integrated.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
+});
+
+test("partial CORE integration rejects collective overload and explores a capacity-preserving alternative", () => {
+  const input = coreLeafContinuationProblem();
+  input.tasks = input.tasks.filter(({ id }) => id !== "standalone");
+  const availability = [{ start: 0, end: 120 }];
+  const obligations = ["future-a", "future-b"].map((id) => auxiliary(id, id, [{ start: 75, end: 100 }], ["unit"]));
+  for (const obligation of obligations) {
+    input.participants.push({ id: obligation.participantId, availability });
+    input.spaces.push({ id: obligation.spaceId, availability });
+    input.tasks.push(obligation);
+  }
+  input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
+  const isolated = constructExactMainAndFeederCore(input);
+  assert.equal(isolated.status, "COMPLETE");
+  for (const obligation of obligations)
+    assert.ok(standaloneForwardDynamicDomain(input, obligation, isolated.scheduledTasks).eligibleStartCount > 0,
+      `${obligation.id} retains an individual domain in the first provisional CORE`);
+
+  const result = runExactItinerantPlanSearch(input);
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.standaloneForwardCollectiveCapacityPrunes > 0);
+  assert.equal(result.evidence.coreLeavesRejectedByStandalone, 0,
+    "the overloaded alternative is rejected by partial Future Feasibility, not at a CORE leaf");
+  assert.equal(result.evidence.coreCompleteLeafCount, 1,
+    "only the capacity-preserving alternative reaches a complete CORE leaf");
+  assert.equal(result.evidence.standaloneSearchInvocations, 1);
+  assert.notEqual(result.scheduledTasks.find(({ id }) => id === "main")!.start,
+    isolated.scheduledTasks.find(({ id }) => id === "main")!.start,
+    "CORE continues to a structurally different alternative after the partial prune");
+  assert.ok(result.evidence.standaloneForwardCollectiveCapacityCertificates.some(certificate =>
+    certificate.failure === "COLLECTIVE_CAPACITY" && certificate.authorityId === "unit"
+      && certificate.demandMinutes === 20 && certificate.freeCapacityMinutes === 15
+      && certificate.overloadTaskIds.join(",") === "future-a,future-b" && certificate.frequency > 0));
 });
 
 test("derived feeder endpoints preserve a solution after historical endpoints fail", () => {
@@ -454,7 +702,7 @@ test("secondary feasibility runs only after the accumulating core cohort is clos
   assert.deepEqual(result.scheduledTasks, []);
 });
 
-test("a current feeder blocker is repaired locally instead of producing an unsound causal backjump", () => {
+test("a current feeder blocker resolves without producing an unsound causal backjump", () => {
   const input = problem([auxiliary("standalone-a", "a", [{ start:60, end:70 }])]);
   const availability=[{start:0,end:120}];
   input.participants=input.participants.filter(({id})=>id!=="core"&&id!=="a"&&id!=="b");
@@ -476,10 +724,9 @@ test("a current feeder blocker is repaired locally instead of producing an unsou
   assert.equal(result.scheduledTasks.find(({id})=>id==="feeder-b")!.start,60);
   assert.equal(result.scheduledTasks.find(({id})=>id==="feeder-a")!.start,70);
   assert.equal(result.scheduledTasks.find(({id})=>id==="standalone-a")!.start,60);
-  assert.ok(result.evidence.feederMatchingWitnessRepairs>0);
   const rejected=result.evidence.causalDiagnostic!.futureFeasibility.assessments
     .find(row=>row.taskId==="standalone-a"&&row.domainEmpty);
-  assert.equal(rejected?.certifiedBackjumpTargetDepth,null);
+  assert.equal(rejected?.certifiedBackjumpTargetDepth??null,null);
   assert.equal(validatePlan(input,result.scheduledTasks,[],result.scheduledSpaceMeals).hardValid,true);
   assert.deepEqual(runExactItinerantPlanSearch(structuredClone(input)),
     {...result,evidence:{...result.evidence,causalDiagnostic:null}});
@@ -488,7 +735,7 @@ test("a current feeder blocker is repaired locally instead of producing an unsou
 test("zero alternatives are infeasible and failures publish no partial core", () => {
   const input = problem([auxiliary("impossible", "a", [{ start: 0, end: 5 }])]);
   const result = constructExactItinerantPlan(input);
-  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.standaloneZeroAlternativePrunes > 0);
+  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
   assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);assert.deepEqual(result.scheduledItinerantUnitMeals,[]);
 });
 
@@ -518,6 +765,20 @@ test("the global branch threshold completes at B and B-1 exhausts exactly", () =
   assert.deepEqual(exhausted.scheduledTasks, []);
 });
 
+test("setup Evidence never records BUDGET_EXHAUSTED as a successful geometry", () => {
+  const completeInput=macroCompetitionProblem({setup:[20,40]});
+  const complete=constructExactItinerantPlan(completeInput);assert.equal(complete.status,"COMPLETE");
+  let low=1,high=complete.evidence.branchesExplored;
+  while(low<high){const middle=Math.floor((low+high)/2);const probe=macroCompetitionProblem({setup:[20,40]});probe.budget.maxBranchExpansions=middle;
+    if(constructExactItinerantPlan(probe).status==="COMPLETE")high=middle;else low=middle+1;}
+  const exhaustedInput=macroCompetitionProblem({setup:[20,40]});
+  exhaustedInput.budget.maxBranchExpansions=low-1;
+  const exhausted=constructExactItinerantPlan(exhaustedInput);
+  assert.equal(exhausted.status,"BRANCH_BUDGET_EXHAUSTED");
+  assert.equal(exhausted.evidence.setupBlockFirstSuccessfulGeometry,null);
+  assert.equal(exhausted.evidence.setupBlockFirstSuccessfulMatchingRepairIndex,null);
+});
+
 test("results are deterministic and invariant to input collection order", () => {
   const create = () => problem([auxiliary("a", "a", [{ start: 0, end: 20 }]), auxiliary("b", "b", [{ start: 20, end: 40 }])]);
   const first = constructExactItinerantPlan(create()), second = constructExactItinerantPlan(create()), reversedInput = create();
@@ -525,6 +786,15 @@ test("results are deterministic and invariant to input collection order", () => 
   const reversed = constructExactItinerantPlan(reversedInput);
   assert.deepEqual(first, second); assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
   assert.deepEqual(first.scheduledTasks, reversed.scheduledTasks);
+});
+
+test("macro capacity certificate identity is deterministic and distinguishes causal signatures",()=>{
+  const after={authorityId:"resource",demandMinutes:20,freeCapacityMinutes:10,overloadTaskIds:["b","a"]};
+  assert.equal(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature({...after,overloadTaskIds:["a","b"]},"macro",2));
+  assert.notEqual(macroCapacityCertificateSignature(after,"macro",2),macroCapacityCertificateSignature(after,"macro",3));
+  assert.equal(candidateIntroducesCapacityCertificate("INTRODUCED_BY_CANDIDATE"),true);
+  assert.equal(candidateIntroducesCapacityCertificate("PREEXISTING"),false);
+  assert.equal(candidateIntroducesCapacityCertificate("UNRESOLVED"),false);
 });
 
 test("static forward domain exactly intersects hard windows and subtracts hard meals", () => {
@@ -671,12 +941,53 @@ test("block-closed future diagnostics are neutral, deterministic, and authority-
   assert.equal(enabled.evidence.coreMaximumDepth,disabled.evidence.coreMaximumDepth);
   assert.equal(enabled.evidence.coreCompleteLeafCount,disabled.evidence.coreCompleteLeafCount);
   assert.equal(enabled.evidence.coreBacktracks,disabled.evidence.coreBacktracks);
+  const frontier=enabled.evidence.causalDiagnostic!.standaloneFrontier;
+  assert.equal(frontier.totalRejections,enabled.evidence.coreStandaloneFrontierPrunes);
+  assert.ok(frontier.certificates.length<=frontier.totalRejections);
+  assert.equal(frontier.certificates.reduce((sum,row)=>sum+row.frequency,0),frontier.totalRejections);
+  assert.ok(frontier.examples.every(row=>row.overloadTasks.every(task=>task.duration>0)
+    &&row.consumingCoreTasks.every(task=>task.end>task.start)));
+  assert.ok(frontier.examples.every(row=>row.pivotPairProven&&row.prefixChecks.length===2
+    &&row.prefixChecks[0]!.prefixDepth===row.certificate.pivotDepth
+    &&row.prefixChecks[1]!.prefixDepth===row.certificate.pivotDepth!-1
+    &&row.prefixChecks[0]!.certificatePersists&&!row.prefixChecks[1]!.certificatePersists));
+  assert.equal(new Set(frontier.certificates.map(row=>JSON.stringify([row.failure,row.authorityId,row.demandMinutes,
+    row.freeCapacityMinutes,row.blockingTaskId,row.overloadTaskIds,row.pivotDepth]))).size,frontier.certificates.length);
   const reversed=create();reversed.tasks.reverse();reversed.spaces.reverse();reversed.resources.reverse();reversed.participants.reverse();
-  assert.deepEqual(runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility,diagnostic);
+  const reversedDiagnostic=runExactItinerantPlanSearch(reversed,{causalDiagnostic:true}).evidence.causalDiagnostic!;
+  assert.deepEqual(reversedDiagnostic.futureFeasibility,diagnostic);
+  assert.deepEqual(reversedDiagnostic.standaloneFrontier,frontier);
 
   const changed=create();changed.participantTransitionMinutes=5;
   const changedRows=runExactItinerantPlanSearch(changed,{causalDiagnostic:true}).evidence.causalDiagnostic!.futureFeasibility.assessments;
   assert.notDeepEqual(changedRows.map(row=>row.authoritySignature),diagnostic.assessments.map(row=>row.authoritySignature));
+});
+
+test("deepest standalone transport rejection records the exact before/after causal certificate", () => {
+  const candidate=auxiliary("candidate","arrival-1",[{start:20,end:30}]);
+  const input=problem([candidate]);input.protectedMeal=undefined;input.mainFlow.preferredEnd=40;
+  input.participants.push({id:"arrival-0",availability:[{start:0,end:120}]});
+  input.spaces.push({id:"transport",availability:[{start:0,end:120}]});
+  const arrivals:Task[]=[0,1].map(index=>({id:`arrival-${index}`,kind:"auxiliary",participantId:`arrival-${index}`,
+    duration:10,spaceId:"transport",dependencies:[],availability:[{start:0,end:80}]}));
+  input.tasks.push(...arrivals);const vocal=input.tasks.find(({id})=>id==="vocal")!;vocal.participantId="arrival-0";
+  vocal.availability=[{start:20,end:30}];const main=input.tasks.find(({id})=>id==="main")!;main.participantId="arrival-0";main.availability=[{start:30,end:40}];
+  input.transportPolicy={arrival:{taskIds:arrivals.map(({id})=>id),minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:50,groupingWeight:1},
+    departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,targetGroupSize:1,minGapMinutes:0,groupingWeight:1}};
+  const disabled=runExactItinerantPlanSearch(structuredClone(input));
+  const enabled=runExactItinerantPlanSearch(structuredClone(input),{causalDiagnostic:true});
+  assert.deepEqual({...enabled.evidence,causalDiagnostic:null},disabled.evidence);
+  const frontier=enabled.evidence.causalDiagnostic!.deepestStandaloneFrontier!;
+  const attempt=frontier.candidatePlacements.find(row=>row.firstRejectionReason==="TRANSPORT_FUTURE_FEASIBILITY")!;
+  assert.deepEqual(attempt.transportFailure,attempt.transportCausalCertificate?.failure);
+  assert.equal(attempt.transportCausalCertificate?.beforeFeasible,true);
+  assert.equal(attempt.transportCausalCertificate?.afterFeasible,false);
+  assert.equal(attempt.transportCausalCertificate?.participantId,"arrival-1");
+  assert.equal(attempt.transportCausalCertificate?.direction,"arrival");
+  assert.equal(attempt.transportCausalCertificate?.boundaryKind,"IN");
+  assert.equal(attempt.transportCausalCertificate?.boundaryBefore,120);
+  assert.equal(attempt.transportCausalCertificate?.boundaryAfter,20);
+  assert.deepEqual(frontier.dynamicDomainEliminations,[]);
 });
 
 test("complete quality replaces only a strictly dominating incumbent", () => {

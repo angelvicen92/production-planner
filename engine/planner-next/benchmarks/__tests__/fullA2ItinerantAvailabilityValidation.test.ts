@@ -24,17 +24,15 @@ function assertMutationFails(mutator: (unit: any) => void): void {
   assert.ok(invariant?.issueCodes.includes("ITINERANT_UNIT_SET_INVALID"));
 }
 
-test("canonical SPEC-08 itinerant windows remain canonically valid", () => {
+test("canonical SPEC-08 units inherit the effective day", () => {
   const validation = validateExpandedCanonicalFullA2Template(cloneExpansion());
   assert.equal(validation.status, "VALID", validation.issues.map((issue) => issue.code + ":" + issue.entityId).join("\n"));
   assert.deepEqual(validation.issues, []);
   assert.equal(validation.invariants.find((entry) => entry.code === "ITINERANT_UNITS")?.passed, true);
 });
 
-test("itinerant validation rejects mutated start, end and source", () => {
-  assertMutationFails((unit) => { unit.availability.start = "11:05"; });
-  assertMutationFails((unit) => { unit.availability.end = "13:55"; });
-  assertMutationFails((unit) => { unit.availability.source = "OTHER_SOURCE"; });
+test("itinerant validation rejects an explicit unit window", () => {
+  assertMutationFails((unit) => { unit.availability = { start: "11:00", end: "14:00", source: "HUMAN_PLANNING" }; });
 });
 
 test("checked-in Full A2 Evidence declares the canonical template valid", () => {

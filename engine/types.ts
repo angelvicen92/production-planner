@@ -123,6 +123,9 @@ export interface PlanResourceItemInput {
   isAvailable: boolean;
   availabilityStart?: string | null;
   availabilityEnd?: string | null;
+  presenceConcentrationPolicy?: "OFF" | "PREFERRED" | "REQUIRED";
+  assignedSpaceId?: number;
+  transitionMinutes?: number;
 }
 
 export interface PlanZoneAvailabilityInput {
@@ -245,6 +248,7 @@ export interface EngineInputTechnicalChainInput {
   id: string;
   orderedTaskIds: number[];
   adjacency: "REQUIRED";
+  internalTransition?: "INCLUDED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: number[];
 }
