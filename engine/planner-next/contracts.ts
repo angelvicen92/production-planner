@@ -109,6 +109,17 @@ export interface SearchBudget {
   maxPatterns: number;
   maxBranchExpansions: number;
 }
+
+/** Exact, already-resolved set of obligations requested from assisted planning. */
+export interface PlanningScope {
+  readonly selector: {
+    readonly kind: string;
+    readonly value: string;
+  };
+  readonly metadata: Readonly<Record<string, string | number | boolean | null>>;
+  /** Canonical task identities. Product-facing names must be resolved before execution. */
+  readonly resolvedTaskIds: readonly string[];
+}
 export interface AnchoredAccompaniment {
   id: string;
   anchorTaskId: string;

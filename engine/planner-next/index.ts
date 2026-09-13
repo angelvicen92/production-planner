@@ -1,4 +1,5 @@
 export * from "./contracts";
+export * from "./assistedPlanning";
 export * from "./time";
 export * from "./validate";
 export * from "./planMainFlowAndFeeders";
