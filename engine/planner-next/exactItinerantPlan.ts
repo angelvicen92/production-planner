@@ -34,6 +34,7 @@ import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalCh
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkMacroPendingPrerequisites, checkStandaloneCoreFrontier, evaluateTargetCollectiveCapacityCertificate, preparePendingArrivalFeedingAuthority, type MacroPendingPrerequisiteForwardCache, type MacroPendingPrerequisiteForwardCheckResult } from "./macroPendingPrerequisiteForwardCheck";
 import { maintainDeferredPrerequisiteReservation, type DeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
+import { buildResourceScopes, determineCurrentlyEligiblePostCoreScope } from "./postCoreOrchestrator";
 
 export function resourceAvailabilityMinutes(problem: PlannerNextProblem, tasks: readonly Task[]): number {
   const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();
@@ -914,15 +915,20 @@ const itinerantItems=[...new Set(itinerantTasks.map(task=>task.itinerantUnitId!)
   tasks:itinerantTasks.filter(task=>task.itinerantUnitId===itinerantUnitId).sort(byId),
 }));
 const itinerantTaskIds=new Set(itinerantTasks.map(({id})=>id));
-const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
+const resourceCandidates = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !itinerantTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
-  && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
+  && !dynamicTransportIds.has(task.id));
+const resourceAvailability = new Map(problem.resources.map((resource) => [resource.id,
+  resourceAvailabilityMinutes(problem, [{ ...resourceCandidates[0]!, requiredResourceIds: [resource.id] }])]));
+const groupedResources = buildResourceScopes(resourceCandidates, resourceAvailability);
+const resourceItems = groupedResources.atomic.map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
+const resourceScopeItems = groupedResources.scopes.map((scope) => ({ ...scope, tasks: [...scope.tasks] }));
 const roundItems = roundPolicies.map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
   tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
 const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
-type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number] | typeof itinerantItems[number]
+type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number] | typeof resourceScopeItems[number] | typeof itinerantItems[number]
   | typeof roundItems[number] | typeof setupItems[number];
-const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...itinerantItems, ...resourceItems, ...roundItems, ...setupItems]
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...itinerantItems, ...resourceScopeItems, ...resourceItems, ...roundItems, ...setupItems]
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
@@ -989,6 +995,10 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   if(unit.kind==="TECHNICAL_CHAIN"){evidence.technicalChainMacroDomainQueries+=1;if(measure)evidence.technicalChainMacroDomainCacheHits+=1;else evidence.technicalChainMacroDomainCacheMisses+=1;}
   if(!measure){
     if(unit.kind==="RESOURCE_TASK")measure=taskDomain(unit.tasks[0]!);
+    else if(unit.kind==="RESOURCE_SCOPE"){
+      const domains=unit.tasks.map(task=>taskDomain(task).domainSize);
+      measure={domainSize:Math.min(...domains),domainExact:domains.some(size=>size===0)};
+    }
     else if(unit.kind==="ITINERANT_UNIT"){
       // Never enumerate complete agendas in the selector probe. An empty exact
       // member domain is a sound certificate; a positive minimum is only a
@@ -1009,13 +1019,16 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
     : unit.kind === "JOINT" ? unit.tasks.length : 0;
-  return { unit, id: unit.id, domainSize:measure.domainSize, feedingSafeDomain:measure.feedingSafeDomain,
+  const pendingLoad=unit.tasks.reduce((sum,task)=>sum+task.duration,0);
+  const compatibleCapacity=resourceAvailabilityMinutes(problem,unit.tasks);
+  return { unit, id: unit.id, kind:unit.kind, domainSize:measure.domainSize, feedingSafeDomain:measure.feedingSafeDomain,
     domainMeasure:measure.domainExact === false ? "conservative-top-level-macro-domain-upper-bound" : "hard-valid-top-level-macro-placements",
     domainExact:measure.domainExact !== false,
     structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
     hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(problem, unit.tasks),
     exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
-    totalDuration: unit.tasks.reduce((sum, task) => sum + task.duration, 0), affectedTaskCount: unit.tasks.length };
+    totalDuration: pendingLoad, affectedTaskCount: unit.tasks.length,
+    resourcePressure:unit.kind==="RESOURCE_SCOPE"?pendingLoad/Math.max(1,compatibleCapacity):0 };
 };
 const selectionReason = (selected: ReturnType<typeof macroConstrainedness>, candidates: ReturnType<typeof macroConstrainedness>[]): string => {
   const peers = candidates.filter(({ id }) => id !== selected.id);
@@ -1086,7 +1099,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   // weaker, never an unsound negative proof, and avoids an exact-domain sweep.
   const sharedOwnLatestCompletions=new Map(pending.map(task=>[task.id,problem.day.end]));
   const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations,sharedOwnLatestCompletions));
-  const selected = selectMostConstrainedUnit(constrained)!;
+  const eligible = determineCurrentlyEligiblePostCoreScope(constrained)!;
+  const selected = selectMostConstrainedUnit(eligible.units)!;
   const diagnosticFrontier=macroCapacityDiagnostic.enabled&&placed.length>(macroCapacityDiagnostic.deepestStandaloneFrontier?.depth??-1)
     ?{depth:placed.length,fingerprint:causalHash([...placed].sort(byId).map(({id,start,end})=>({id,start,end}))),
       placedTasks:[...placed].sort(byId).map(({id,start,end})=>({id,start,end})),
@@ -1095,7 +1109,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       candidatePlacements:[],dynamicDomainEliminations:[],causalParentDecision:selectionOrder.length===0?null:{depth:placed.length-1,taskId:selectionOrder.at(-1)!}}
     :null;
   if(diagnosticFrontier)macroCapacityDiagnostic.deepestStandaloneFrontier=diagnosticFrontier;
-  recordMacroDecision(depth, selected, constrained);
+  recordMacroDecision(depth, selected, [...eligible.units]);
   const unit = selected.unit;
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations,
@@ -1188,11 +1202,11 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     return continuation?continuation(nextPlaced,nextOperationalReservations,reserved.reservation)
       :searchMacroUnits(rest,nextPlaced,nextPreparations,nextRoundPreparations,depth+1,[...selectionOrder,...tasks.map(({id})=>id)],nextOperationalReservations,reserved.reservation);
   };
-  if(unit.kind==="ITINERANT_UNIT"){
+  if(unit.kind==="ITINERANT_UNIT" || unit.kind==="RESOURCE_SCOPE"){
     evidence.itinerantUnitAgendaVisits+=1;
     const agenda=(remaining:Task[],agendaPlaced:ScheduledTask[],reservations:readonly OperationalMealReservation[],arrival:DeferredPrerequisiteReservation):StandaloneOutcome=>{
       if(remaining.length===0){
-        evidence.itinerantUnitAgendaPlacements[unit.itinerantUnitId]=agendaPlaced.filter(task=>task.itinerantUnitId===unit.itinerantUnitId)
+        if(unit.kind==="ITINERANT_UNIT") evidence.itinerantUnitAgendaPlacements[unit.itinerantUnitId]=agendaPlaced.filter(task=>task.itinerantUnitId===unit.itinerantUnitId)
           .sort((left,right)=>left.start-right.start||byId(left,right)).map(({id,start,end})=>({taskId:id,start,end}));
         return searchMacroUnits(rest,agendaPlaced,preparations,roundPreparations,depth+1,
           [...selectionOrder,...agendaPlaced.slice(placed.length).map(({id})=>id)],reservations,arrival);
@@ -1200,7 +1214,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       const choices=remaining.map(task=>({task,domain:standaloneForwardDynamicDomain(problem,task,[...coreTasks,...agendaPlaced],
         standaloneForwardStaticDomain(problem,task,coreMeals))})).sort((left,right)=>left.domain.eligibleStartCount-right.domain.eligibleStartCount||byId(left.task,right.task));
       const choice=choices[0]!,peers=choices.slice(1);
-      evidence.itinerantUnitInternalSelections.push({unitId:unit.itinerantUnitId,taskId:choice.task.id,
+      evidence.itinerantUnitInternalSelections.push({unitId:unit.kind==="ITINERANT_UNIT"?unit.itinerantUnitId:unit.resourceId,taskId:choice.task.id,
         reason:peers.some(item=>item.domain.eligibleStartCount!==choice.domain.eligibleStartCount)?"minimum-dynamic-domain":"canonical-id-tiebreak",
         domainSize:choice.domain.eligibleStartCount,depth:agendaPlaced.length});
       if(choice.domain.eligibleStartCount===0)return "DEAD_END";

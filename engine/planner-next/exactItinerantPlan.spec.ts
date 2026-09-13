@@ -139,7 +139,7 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.coreStandaloneFrontierPrunes > 0);
-  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "COLLECTIVE_CAPACITY");
+  assert.equal(result.evidence.coreStandaloneFrontierFirstPrune?.failure, "INDIVIDUAL_ZERO_DOMAIN");
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
@@ -196,16 +196,12 @@ test("ordinary forward check accepts individual witnesses without joint prerequi
   assert.equal(result.evidence.standaloneSearchInvocations, 0);
 });
 
-test("mixed macro policy compares setup's compact projection semantically with a synchronized round", () => {
+test("the continuous scope is selected before setup without cross-scope MRV", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ setup: [60, 70], rounds: [20, 100] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "ROUND_SYNCHRONIZATION"));
-  const setup = result.evidence.macroSelectionSteps[0]!.candidates.find(({ kind }) => kind === "SETUP_GROUP")!;
-  assert.equal(setup.domainSize, 1);
-  assert.equal(setup.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
-  assert.equal(setup.domainExact, false);
-  assert.equal(setup.matchingFeasibleCandidateCount, 1);
-  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "minimum-macro-domain");
+  assert.ok(!result.evidence.macroSelectionSteps[0]!.candidates.some(({ kind }) => kind === "SETUP_GROUP"));
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
 });
 
 test("an inexact zero compact setup probe does not prune its sole gapped hard-domain solution", () => {
@@ -228,20 +224,18 @@ test("mixed macro policy lets a structurally narrow round beat a flexible exact 
   for (const task of input.tasks.filter(({ id }) => id.startsWith("round-"))) task.requiredResourceIds = [`resource-${task.id}`];
   const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  const [round, resource] = ["ROUND_SYNCHRONIZATION", "RESOURCE_TASK"].map((kind) =>
-    result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === kind)!);
+  const round = result.evidence.macroSelectionSteps[0]!.candidates.find((candidate) => candidate.kind === "ROUND_SYNCHRONIZATION")!;
   assert.ok(round.domainSize > 0);
   assert.equal(round.domainExact, false);
   assert.equal(round.domainMeasure, "conservative-top-level-macro-domain-upper-bound");
-  assert.equal(resource.domainExact, true);
   assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
-  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "mixed-domain-semantic-policy");
+  assert.ok(!result.evidence.macroSelectionSteps[0]!.candidates.some(({kind})=>kind==="RESOURCE_TASK"));
 });
 
-test("global macro MRV lets a scarce resource task beat broader rounds", () => {
+test("a later atomic resource task cannot beat an eligible round", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ rounds: [20, 100], resource: [60, 70] }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:/);
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^ROUND_SYNCHRONIZATION:/);
 });
 
 test("macro resource scarcity uses the minimum unioned availability deterministically", () => {
@@ -274,7 +268,7 @@ test("macro resource scarcity reports zero for an unavailable required resource"
   assert.equal(resourceAvailabilityMinutes(input, [{ ...task, requiredResourceIds: [] }]), 120);
 });
 
-test("mixed resource macros select the task with the bottleneck resource", () => {
+test("shared-resource tasks form a resource scope", () => {
   const input = macroCompetitionProblem({ resource: [20, 100] });
   input.resources.push({ id: "bottleneck", availability: [{ start: 0, end: 30 }], presencePreference: "OFF", transitionMinutes: 0 });
   const original = input.tasks.find(({ id }) => id === "resource-task")!;
@@ -284,19 +278,14 @@ test("mixed resource macros select the task with the bottleneck resource", () =>
   input.tasks.push({ ...original, id: "mixed", participantId: "mixed-person", spaceId: "space-mixed",
     requiredResourceIds: ["unit", "bottleneck"] });
   const result = constructExactItinerantPlan(input);
-  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_TASK:resource:mixed$/);
-  assert.equal(result.evidence.macroSelectionSteps[0]!.reason, "minimum-macro-domain");
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_SCOPE:resource-scope:unit$/);
 });
 
-test("macro constrainedness is recalculated after each placement", () => {
+test("resource scope is closed before remaining atomic resource work", () => {
   const result = constructExactItinerantPlan(macroCompetitionProblem({ dynamic: true }));
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
-  assert.deepEqual(result.evidence.macroSelectionOrder.slice(0, 2), [
-    "RESOURCE_TASK:resource:dynamic-a",
-    "RESOURCE_TASK:resource:dynamic-c",
-  ]);
-  assert.ok(result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-c")!.domainSize
-    < result.evidence.macroSelectionSteps[1]!.candidates.find(({ id }) => id === "resource:dynamic-b")!.domainSize);
+  assert.match(result.evidence.macroSelectionOrder[0]!, /^RESOURCE_SCOPE:/);
+  assert.match(result.evidence.macroSelectionOrder[1]!, /^RESOURCE_TASK:/);
 });
 
 function mealFreedomProblem(reverse = false): PlannerNextProblem {
