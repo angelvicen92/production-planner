@@ -19,8 +19,11 @@ Historical inputs without the role retain the former terminal-transport path.
 The existing deferred prerequisite reservation continues to propagate productive
 deadlines through the explicit entry dependency chain and reserves/reuses or repairs
 the grouped arrival witness.  Boundary materialization uses canonical hard start
-domains and `canPlaceTask`, so participant availability, spaces, resources,
-transitions, fixed availability and materialized meals remain hard.  It consumes the
+domains and `canPlaceTask` for task constraints, explicitly excludes participant-meal
+overlaps, and projects materialized operational meals onto each occupied space.
+Participant meals are selected with the maintained arrival witness in their occupied
+participant geometry; the earlier claim that meals were already fully integrated
+into boundary placement was therefore too broad.  It consumes the
 shared search ledger per exact boundary candidate; exhaustion is reported as
 `BUDGET_EXHAUSTED`, never as infeasibility.  Productive placements are never moved.
 
