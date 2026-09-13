@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { longSecondaryBlockScenario } from "./scenarios/longSecondaryBlockScenario";
-import { hasRequiredSecondaryContinuity, secondaryBlockCount, secondaryGapMinutes } from "./secondaryContinuity";
+import { canonicalSecondaryOccupations, hasRequiredSecondaryContinuity, secondaryBlockCount, secondaryGapMinutes } from "./secondaryContinuity";
 import { preflight, validatePlan } from "./validate";
 
 test("NEXT-006 schedules a required secondary space as one complete block", () => {
@@ -28,6 +28,49 @@ test("NEXT-006 schedules a required secondary space as one complete block", () =
 test("pure continuity helpers accept unordered and mixed-duration tasks", () => {
   const tasks = [{ id:"b",kind:"auxiliary" as const,participantId:"p",duration:35,spaceId:"s",dependencies:[],start:570,end:605 }, { id:"a",kind:"auxiliary" as const,participantId:"q",duration:30,spaceId:"s",dependencies:[],start:540,end:570 }];
   assert.equal(hasRequiredSecondaryContinuity(tasks), true); assert.equal(secondaryGapMinutes(tasks), 0); assert.equal(secondaryBlockCount(tasks), 1);
+});
+
+test("a synchronized joint is one canonical REQUIRED-space occupation", () => {
+  const problem = longSecondaryBlockScenario();
+  for (const id of ["z-long-1", "y-long-2"]) problem.tasks.find((task) => task.id === id)!.jointGroupId = "joint-long";
+  const before = structuredClone(problem);
+  const result = planMainFlowAndFeeders(problem);
+  assert.equal(result.complete, true);
+  const own = result.scheduledTasks.filter((task) => task.spaceId === "long-form-room");
+  const joint = own.filter((task) => task.jointGroupId === "joint-long");
+  assert.equal(joint.length, 2);
+  assert.equal(new Set(joint.map((task) => `${task.start}:${task.end}`)).size, 1);
+  const occupations = canonicalSecondaryOccupations(own);
+  assert.equal(occupations.length, 3);
+  assert.equal(hasRequiredSecondaryContinuity(occupations), true);
+  assert.equal(validatePlan(problem, result.scheduledTasks).secondaryContinuityViolationCount, 0);
+
+  const unsynchronized = result.scheduledTasks.map((task) => task.id === joint[1]!.id
+    ? { ...task, start: task.start + 5, end: task.end + 5 } : task);
+  const invalidJoint = validatePlan(problem, unsynchronized);
+  assert.ok(invalidJoint.jointGroupViolationCount > 0);
+  assert.ok(invalidJoint.secondaryContinuityViolationCount > 0);
+
+  const foreign = { ...problem.tasks.find((task) => task.id === "x-long-3")!, id: "foreign-overlap", participantId: "participant-g", start: joint[0]!.start, end: joint[0]!.end };
+  const foreignProblem = { ...problem, tasks: [...problem.tasks, foreign] };
+  const foreignValidation = validatePlan(foreignProblem, [...result.scheduledTasks, foreign]);
+  assert.ok(foreignValidation.overlapViolationCount > 0);
+  assert.ok(foreignValidation.secondaryContinuityViolationCount > 0);
+
+  const reversed = structuredClone(problem); reversed.tasks.reverse(); reversed.spaces.reverse();
+  assert.equal(planMainFlowAndFeeders(reversed).metrics.planFingerprint, result.metrics.planFingerprint);
+  assert.deepEqual(problem, before);
+});
+
+test("a real gap between canonical occupations still violates REQUIRED continuity", () => {
+  const occupations = canonicalSecondaryOccupations([
+    { id: "joint-a", jointGroupId: "joint", kind: "auxiliary", participantId: "p1", duration: 10, spaceId: "s", dependencies: [], start: 10, end: 20 },
+    { id: "joint-b", jointGroupId: "joint", kind: "auxiliary", participantId: "p2", duration: 10, spaceId: "s", dependencies: [], start: 10, end: 20 },
+    { id: "individual", kind: "auxiliary", participantId: "p3", duration: 10, spaceId: "s", dependencies: [], start: 25, end: 35 },
+  ]);
+  assert.equal(occupations.length, 2);
+  assert.equal(secondaryGapMinutes(occupations), 5);
+  assert.equal(hasRequiredSecondaryContinuity(occupations), false);
 });
 
 test("validator reports one structural incidence for a secondary gap", () => {

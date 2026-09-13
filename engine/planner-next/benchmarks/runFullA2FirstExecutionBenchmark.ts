@@ -138,6 +138,7 @@ input.setupPolicies = [{
   reentry: "FORBIDDEN",
   preparationMinutesBetweenFamilies: expansion.rules.setup.preparationMinutesBetweenFamilies,
 }];
+input.requiredContinuousSpaceIds = [spaceId.get("alfombra-roja")!];
 input.roundSynchronizations = [{
   id: "a2-totales-rounds",
   synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE",

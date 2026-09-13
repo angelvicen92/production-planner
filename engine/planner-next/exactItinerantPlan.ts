@@ -565,8 +565,6 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
     if (task.kind !== "auxiliary" && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
-    if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
-      reasons.push(`UNSUPPORTED_STANDALONE_REQUIRED_BLOCK:${task.id}`);
     if (space?.mealPolicy !== undefined)
       reasons.push(`UNSUPPORTED_STANDALONE_SECONDARY_MEAL:${task.id}`);
   }
