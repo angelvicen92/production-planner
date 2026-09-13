@@ -6,6 +6,7 @@ import type {
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
+import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -34,6 +35,7 @@ export interface AssistedPlanningEvidence {
   readonly requiredValid: boolean;
   readonly fingerprint: string | null;
   readonly work: Readonly<Record<string, number>>;
+  readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly reasonCodes: readonly string[];
 }
 
@@ -188,7 +190,15 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const work = Object.fromEntries(["branchesExplored", "backtracks", "patternsGenerated", "branchBudgetConsumed"]
+  const work = Object.fromEntries(["branchesExplored", "backtracks", "patternsGenerated", "branchBudgetConsumed",
+    "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
+    "feederCandidatesEvaluated", "architecturesChecked", "feederOrderBranches", "feederSlotMatchingChecks",
+    "feederSlotMatchingEdgeChecks", "feederSlotMatchingAugmentTraversals", "feederSlotMatchingBranchesExplored",
+    "residualMatchingInvocations", "residualMatchingFullBuilds", "residualMatchingIncrementalUpdates",
+    "residualMatchingEdgeCacheHits", "residualMatchingEdgeCacheMisses", "residualMatchingPositionChecks",
+    "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
+    "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "standaloneForwardChecks",
+    "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
@@ -208,6 +218,7 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     work,
+    causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     reasonCodes: [...new Set(reasonCodes)].sort(),
   } };
 }

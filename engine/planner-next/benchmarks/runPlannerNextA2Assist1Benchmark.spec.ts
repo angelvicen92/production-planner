@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runA2Assist1Benchmark } from "./runPlannerNextA2Assist1Benchmark";
 
-test("A2-ASSIST-1 deterministically identifies the bounded exact-core capacity gap", () => {
+test("A2-ASSIST-1 deterministically reaches the next structural core run within the fixed budget", () => {
   const first = runA2Assist1Benchmark();
   const second = runA2Assist1Benchmark();
   assert.equal(first.scopeTaskCount, 19);
@@ -14,6 +14,15 @@ test("A2-ASSIST-1 deterministically identifies the bounded exact-core capacity g
   assert.equal(first.proposalCount, 0);
   assert.equal(first.protectedPlacementsPreserved, true);
   assert.equal(first.work.branchesExplored, 100_000);
+  assert.equal(first.supportingTaskIds.length, 63);
+  assert.ok(first.work.coreMaximumDepth >= 12);
+  assert.equal(typeof first.work.mainCandidatesEvaluated, "number");
+  assert.ok(first.work.mainRunWitnessAttempts > 0);
+  assert.ok(first.work.feederCandidatesEvaluated > 0);
+  assert.ok(first.work.feederSlotMatchingAugmentTraversals < 60_000);
+  assert.equal(Object.values(first.causalDiagnostic!.waterfallByDepth)
+    .reduce((sum, row) => sum + row.total, 0), first.work.branchesExplored);
+  assert.ok(first.causalDiagnostic!.futureFeasibility.repeatedEvaluations > 0);
   assert.ok(first.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED"));
   assert.equal(first.fingerprint, second.fingerprint);
   assert.deepEqual(first, second);
