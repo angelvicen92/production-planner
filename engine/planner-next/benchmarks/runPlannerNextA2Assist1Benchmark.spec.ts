@@ -19,7 +19,7 @@ test("A2-ASSIST-1 deterministically reaches the next structural core run within 
   assert.equal(typeof first.work.mainCandidatesEvaluated, "number");
   assert.ok(first.work.mainRunWitnessAttempts > 0);
   assert.ok(first.work.feederCandidatesEvaluated > 0);
-  assert.ok(first.work.feederSlotMatchingAugmentTraversals < 60_000);
+  assert.ok(first.work.residualMatchingAugmentTraversals < 10_000);
   assert.equal(Object.values(first.causalDiagnostic!.waterfallByDepth)
     .reduce((sum, row) => sum + row.total, 0), first.work.branchesExplored);
   assert.ok(first.causalDiagnostic!.futureFeasibility.repeatedEvaluations > 0);
