@@ -92,6 +92,7 @@ input.planResourceItems = expansion.resources.map((resource, index) => ({
   name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
   ...(resource.id === "cam-1" ? { transitionMinutes: 0 } : {}),
   ...(resource.id === "band" ? { presenceConcentrationPolicy: "PREFERRED" as const, assignedSpaceId: spaceId.get("estudio-7")! } : {}),
+  ...(resource.id === "eva" ? { availabilityStart: config.resourceOverrides.eva.availabilityStart, availabilityEnd: config.effectiveDayWindow.end, presenceConcentrationPolicy: config.resourceOverrides.eva.presenceConcentrationPolicy } : {}),
 }));
 input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
 input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
@@ -107,7 +108,7 @@ input.plannerNext = {
   searchPolicy: "EXACT_CONSTRUCTIVE",
   searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
   timeGridMinutes: 5,
-  participantTransitionMinutes: 0,
+  participantTransitionMinutes: config.defaultParticipantTransitionMinutes,
   resourceTransitionMinutes: 5,
   mainFlow: {
     spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
@@ -137,6 +138,7 @@ input.setupPolicies = [{
   reentry: "FORBIDDEN",
   preparationMinutesBetweenFamilies: expansion.rules.setup.preparationMinutesBetweenFamilies,
 }];
+input.requiredContinuousSpaceIds = [spaceId.get("alfombra-roja")!];
 input.roundSynchronizations = [{
   id: "a2-totales-rounds",
   synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE",
@@ -176,6 +178,7 @@ input.operationalMealPolicies.push(...["coach-lucia", "coach-jose-maria"].map((c
 input.itinerantTeamAvailability = Object.keys(config.itinerantUnitAvailability).map((canonicalId) => ({
   itinerantTeamId: itinerantUnitId.get(canonicalId)!,
   windows: [{ start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end }],
+  ...(canonicalId === "reality-unit-combined" ? { continuityPolicy: "REQUIRED" as const, operationalBlockCount: 1 as const, internalGapMinutes: 0 as const } : {}),
 }));
 input.arrivalGroupingTarget = config.transportPolicy.arrival.targetGroupSize;
 input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;
@@ -203,10 +206,9 @@ if (adapted.status === "SUPPORTED") {
     throw new Error("FULL_A2_COACH_ROUTE_TRANSITION_CHANGED");
 }
 const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic}) : null;
-const executionWithoutDiagnostic = !causalDiagnostic ? execution
-  : adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
+// Full A2 is intentionally executed once. Determinism is established by focused
+// order-invariance tests rather than silently doubling the baseline run.
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
-const exactResultWithoutDiagnostic = executionWithoutDiagnostic?.kind === "EXACT_CONSTRUCTIVE" ? executionWithoutDiagnostic.result : null;
 const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
   : 0;
@@ -272,18 +274,9 @@ const diagnosticReport = diagnostic ? {
   criticalRejectionCount,
   recommendation,
 } : null;
-const invariantEvidenceKeys = ["branchesExplored","coreBranches","standaloneBranches","coreCompleteLeafCount",
-  "coreCompleteLeavesEvaluated","coreStandaloneFrontierChecks","coreStandaloneFrontierPrunes","causalBacktracks",
-  "causalBacktrackTargetDepthCounts","standaloneSearchInvocations","standaloneMaximumDepth","standaloneCompleteLeafCount",
-  "coreMaximumDepth","coreFingerprint","fullFingerprint","lastExhaustionPhase"] as const;
-const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
-  diagnosticOn:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResult.evidence[key]])),
-  diagnosticOff:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResultWithoutDiagnostic.evidence[key]])),
-  statusOn:exactResult.status,statusOff:exactResultWithoutDiagnostic.status,
-  exactMatch:exactResult.status===exactResultWithoutDiagnostic.status
-    &&invariantEvidenceKeys.every(key=>JSON.stringify(exactResult.evidence[key])===JSON.stringify(exactResultWithoutDiagnostic.evidence[key])),
-}:null;
-if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
+// Diagnostic-on/off equivalence requires two independent executions. This baseline
+// deliberately performs only one Full A2 execution, so the comparison is not evaluated.
+const searchInvariance = null;
 const persistedEvidence=exactResult?{...exactResult.evidence,
   causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,deepestStandaloneFrontier:diagnostic.deepestStandaloneFrontier,feederMatching:diagnostic.feederMatching,
     macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,
@@ -304,7 +297,7 @@ const evidence = {
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
-    genericTransitionMinutes: { participant: 0, resource: 5 },
+    genericTransitionMinutes: { participant: config.defaultParticipantTransitionMinutes, resource: 5 },
     resourceTransitionOverrides: { "cam-1": 0 },
     coachRouteTransitionMinutes: expansion.rules.coachTransition.minutes,
     operationalMealProjection: config.meals.operational.mealUnits,

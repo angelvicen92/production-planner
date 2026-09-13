@@ -174,6 +174,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
       ...(fixed ? { availability: [window(fixed)] } : {}),
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
+      ...(source.participantMarginBeforeMinutes !== undefined ? { participantMarginBeforeMinutes: source.participantMarginBeforeMinutes } : {}),
+      ...(source.participantMarginAfterMinutes !== undefined ? { participantMarginAfterMinutes: source.participantMarginAfterMinutes } : {}),
     };
     if (source.plannerNextKind === "technical") return { ...base, kind: "technical" as const };
     if (source.plannerNextKind === "main" || source.plannerNextKind === "vocal") {
@@ -205,15 +207,17 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return {
       id: canonical("itinerant-team", id),
       availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
+      ...(availability.continuityPolicy ? { continuityPolicy: availability.continuityPolicy, operationalBlockCount: availability.operationalBlockCount, internalGapMinutes: availability.internalGapMinutes } : {}),
     };
   });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));
+  const requiredContinuousSpaceIds = new Set(input.requiredContinuousSpaceIds ?? []);
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {
     const availability = spatial.spacesById.get(id)?.effectiveWindow;
     if (!availability) throw new Error(`Preflight accepted unavailable space ${id}`);
     const setupPolicy = setupPoliciesBySpaceId.get(id);
     const canonicalSpace = canonical("space", id);
-    if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)] };
+    if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)], ...(requiredContinuousSpaceIds.has(id) ? { secondaryContinuity: "REQUIRED" as const } : {}) };
     const canonicalFamily = (family: string) => canonical("setup-family", `${id}:${family}`);
     if (setupPolicy.orderConstraint === "EXPLICIT") {
       const familyOrder = setupPolicy.familyOrder!.map(canonicalFamily);

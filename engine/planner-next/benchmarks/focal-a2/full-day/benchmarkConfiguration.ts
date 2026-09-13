@@ -1,5 +1,5 @@
 export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
-  version: "A2-FULL-009.source-configuration.v2" as const,
+  version: "A2-CONTRACT-RECON-001.source-configuration.v3" as const,
   executionDate: "2025-06-15" as const,
   effectiveDayWindow: Object.freeze({
     start: "09:00" as const,
@@ -8,6 +8,8 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   }),
   spaceAvailability: "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN" as const,
   resourceAvailability: "INHERIT_DAY_UNLESS_OVERRIDDEN" as const,
+  defaultParticipantTransitionMinutes: 5 as const,
+  resourceOverrides: Object.freeze({ eva: Object.freeze({ availabilityStart: "16:00" as const, presenceConcentrationPolicy: "REQUIRED" as const }) }),
   productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,
   itinerantUnitAvailability: Object.freeze({
     "reality-unit-a": "inherits_day_unless_overridden" as const,

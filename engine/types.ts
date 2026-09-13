@@ -49,6 +49,10 @@ export interface TaskInput {
 
     contestantId?: number | null;
     contestantName?: string | null;
+    /** Explicit participant-boundary override; zero is meaningful. */
+    participantMarginBeforeMinutes?: number;
+    /** Explicit participant-boundary override; zero is meaningful. */
+    participantMarginAfterMinutes?: number;
     /** Semantic identity for synchronized auxiliary joint operations. */
     jointGroupId?: string | null;
     /** Semantic setup family identity scoped by the task space. */
@@ -277,6 +281,9 @@ export interface EngineInputItinerantTeamAvailabilityInput {
   itinerantTeamId: number;
   /** All hard availability windows for this composition on the planning day. */
   windows: TimeWindow[];
+  continuityPolicy?: "REQUIRED";
+  operationalBlockCount?: 1;
+  internalGapMinutes?: 0;
 }
 
 export interface EngineInput {
@@ -295,6 +302,8 @@ export interface EngineInput {
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
   /** Explicit setup-family grouping and preparation policies. */
   setupPolicies?: EngineInputSetupPolicyInput[];
+  /** Spaces whose productive occupations must form one zero-gap block. */
+  requiredContinuousSpaceIds?: number[];
   /** Explicit dynamic round synchronization across independent spaces. */
   roundSynchronizations?: EngineInputRoundSynchronizationInput[];
   /** Explicit ordered technical operation; dependencies alone remain precedence-only. */

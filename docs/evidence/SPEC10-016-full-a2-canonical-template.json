@@ -1,5 +1,5 @@
 {
-  "contractVersion": "A2-FULL-009.full-a2-template.v5",
+  "contractVersion": "A2-CONTRACT-RECON-001.full-a2-template.v6",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -22,12 +22,12 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "275534f0ce385315576b1f3a561570323b4e6e52a86f6d11617078c13fac5e2a",
-  "expansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
+  "manifestFingerprint": "88104abd3856c22b7c90f7dd7d2407384dc9949958819fd4ce95a7fc8b9799b0",
+  "expansionFingerprint": "7e84c38e3d225fd8eab3773cc25de7f99f62e30aa1bbb653a048f19ec5eaf2d9",
   "participantCount": 19,
   "contestantTaskCount": 266,
-  "technicalTaskCount": 3,
-  "totalTaskCount": 269,
+  "technicalTaskCount": 0,
+  "totalTaskCount": 266,
   "countsByType": {
     "IN": 19,
     "ESTILISMO_ENTRADA": 19,
@@ -59,10 +59,7 @@
     "ALFOMBRA_ROJA_CONJUNTA": 2,
     "TOTALES_POST_CONJUNTO": 2,
     "ESTILISMO_SALIDA": 19,
-    "OUT": 19,
-    "TECH_REALITY_EVA": 1,
-    "TECH_DESMONTAJE_TRASLADO": 1,
-    "TECH_TOTALES_POST": 1
+    "OUT": 19
   },
   "canonicalResources": [
     {
@@ -278,6 +275,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -292,6 +292,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -306,6 +309,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -320,6 +326,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -334,6 +343,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     }
   ],
@@ -539,6 +551,7 @@
           "requiredResourceIds": [
             "cam-3",
             "cam-4",
+            "eva",
             "son-1"
           ]
         }
@@ -558,6 +571,7 @@
           "requiredResourceIds": [
             "cam-3",
             "cam-4",
+            "eva",
             "son-1"
           ]
         }
@@ -759,25 +773,7 @@
         "sequenceAfterJointGroupId": "joint.alfombra-roja.C06-C10"
       }
     ],
-    "technicalChains": [
-      {
-        "id": "technical.reality-eva-transfer-totales-post",
-        "orderedTaskIds": [
-          "TECH.tech_reality_eva",
-          "TECH.tech_desmontaje_traslado",
-          "TECH.tech_totales_post"
-        ],
-        "adjacency": "REQUIRED",
-        "internalTransition": "INCLUDED",
-        "resourceContinuity": "REQUIRED",
-        "requiredResourceIds": [
-          "cam-3",
-          "cam-4",
-          "son-1",
-          "eva"
-        ]
-      }
-    ],
+    "technicalChains": [],
     "itinerantOperations": [
       {
         "id": "itinerant.reality-unit-a.C01.reality-plato",
@@ -888,6 +884,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -902,6 +901,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -916,6 +918,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -930,6 +935,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -944,6 +952,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       }
     ]
@@ -1108,7 +1119,7 @@
   "validationIssues": [],
   "requiredCreationInputs": [],
   "effectiveConfiguration": {
-    "version": "A2-FULL-009.source-configuration.v2",
+    "version": "A2-CONTRACT-RECON-001.source-configuration.v3",
     "executionDate": "2025-06-15",
     "effectiveDayWindow": {
       "start": "09:00",
@@ -1117,6 +1128,13 @@
     },
     "spaceAvailability": "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN",
     "resourceAvailability": "INHERIT_DAY_UNLESS_OVERRIDDEN",
+    "defaultParticipantTransitionMinutes": 5,
+    "resourceOverrides": {
+      "eva": {
+        "availabilityStart": "16:00",
+        "presenceConcentrationPolicy": "REQUIRED"
+      }
+    },
     "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
     "itinerantUnitAvailability": {
       "reality-unit-a": "inherits_day_unless_overridden",
@@ -1204,13 +1222,13 @@
     "transportPolicy": {
       "arrival": {
         "targetGroupSize": 3,
-        "maximumGroupSize": 6,
+        "maximumGroupSize": 3,
         "minGapMinutes": 30,
         "groupingWeight": 3
       },
       "departure": {
         "targetGroupSize": 1,
-        "maximumGroupSize": 6,
+        "maximumGroupSize": 3,
         "minGapMinutes": 20,
         "groupingWeight": 3
       }
@@ -1433,8 +1451,8 @@
     ],
     "observedBothOrders": true,
     "selectedFamilySequence": [
-      "setup-family:304:sillon",
-      "setup-family:304:estrellas"
+      "setup-family:304:estrellas",
+      "setup-family:304:sillon"
     ],
     "selectedPreparationCount": 1,
     "selectedPreparationMinutes": 10,
@@ -1444,7 +1462,7 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "d1e54041a723ff1273e0adf0b9cf3f7b0f5e5c14f629195350e91b5113cb92fe"
+    "fullFingerprint": "6c70ec9a59116b27afac0b80f36200ce8282a6ade4d5aae0467f2e7ebb2a4d18"
   },
   "flexibleSetupOrderCapabilityProven": true,
   "roundSynchronizationProbe": {
@@ -1470,7 +1488,7 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "890d5f394e1db87340232bb565fb2689bc66cc921949dc0263a158d21302e076"
+    "fullFingerprint": "89296bd8df35cda2a35c1f9c3eacbbce6d71405320ea59f1c065b06faa745d3e"
   },
   "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
@@ -1612,8 +1630,8 @@
         ],
         "observedBothOrders": true,
         "selectedFamilySequence": [
-          "setup-family:304:sillon",
-          "setup-family:304:estrellas"
+          "setup-family:304:estrellas",
+          "setup-family:304:sillon"
         ],
         "selectedPreparationCount": 1,
         "selectedPreparationMinutes": 10,
@@ -1623,7 +1641,7 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "d1e54041a723ff1273e0adf0b9cf3f7b0f5e5c14f629195350e91b5113cb92fe"
+        "fullFingerprint": "6c70ec9a59116b27afac0b80f36200ce8282a6ade4d5aae0467f2e7ebb2a4d18"
       },
       "flexibleSetupOrderCapabilityProven": true,
       "roundSynchronizationProbe": {
@@ -1649,7 +1667,7 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "890d5f394e1db87340232bb565fb2689bc66cc921949dc0263a158d21302e076"
+        "fullFingerprint": "89296bd8df35cda2a35c1f9c3eacbbce6d71405320ea59f1c065b06faa745d3e"
       },
       "roundSynchronizationCapabilityProven": true
     },
@@ -1666,7 +1684,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
+    "shuffledExpansionFingerprint": "7e84c38e3d225fd8eab3773cc25de7f99f62e30aa1bbb653a048f19ec5eaf2d9",
     "matches": true
   },
   "inputImmutable": {

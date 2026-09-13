@@ -106,7 +106,7 @@ export function buildSpec10020Evidence() {
   );
   assert.equal(
     representability.nextImplementationBlocker?.code,
-    "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
+    undefined,
   );
 
   const payload = {
@@ -144,7 +144,7 @@ export function buildSpec10020Evidence() {
     },
     limitations: [
       "La búsqueda exacta está acotada por maxBranchExpansions y no afirma optimalidad global cuando termina por presupuesto.",
-      "La jornada A2 completa sigue bloqueada por la sincronización de rondas Totales y por inputs de creación no fijados en la fuente.",
+      "La representabilidad canónica A2 está cerrada; los inputs de creación no fijados en la fuente permanecen fuera de este probe focal.",
       "No se añade DB, UI, publicación productiva ni fallback entre motores.",
     ],
   };

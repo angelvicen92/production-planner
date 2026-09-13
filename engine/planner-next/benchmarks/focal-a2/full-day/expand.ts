@@ -15,8 +15,6 @@ export function taskId(participantId: string, type: TaskType): string {
   return `${participantId}.${type.toLowerCase()}`;
 }
 
-const TECHNICAL_CHAIN_ID = "technical.reality-eva-transfer-totales-post";
-const TECHNICAL_RESOURCE_IDS = ["cam-3", "cam-4", "son-1", "eva"] as const;
 
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
@@ -57,6 +55,16 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     if (type === "ENSAYO_ESTUDIO_7" && sourceTypes.includes("REALITY_PLATO_ANTES")) dependencies.add(taskId(participantId, "REALITY_PLATO_ANTES"));
     if (type === "REALITY_PLATO_DESPUES") dependencies.add(taskId(participantId, "ENSAYO_ESTUDIO_7"));
     if (type === "TOTALES_POST_CONJUNTO") dependencies.add(taskId(participantId, "ALFOMBRA_ROJA_CONJUNTA"));
+    const correctedSequence: Readonly<Record<string, string>> = {
+      "C12.reality_control_eva": "C06.reality_hall",
+      "C11.reality_buggy": "C12.reality_control_eva",
+      "C04.alfombra_roja_eva": "C11.reality_buggy",
+      "C13.alfombra_roja_eva": "C04.alfombra_roja_eva",
+      "C06.alfombra_roja_conjunta": "C13.alfombra_roja_eva",
+      "C10.alfombra_roja_conjunta": "C13.alfombra_roja_eva",
+      "C16.alfombra_roja": "C06.alfombra_roja_conjunta",
+    };
+    if (correctedSequence[id]) dependencies.add(correctedSequence[id]!);
     if (type === "ESTILISMO_SALIDA") {
       for (const dependencyType of sourceTypes) {
         if (dependencyType !== "ESTILISMO_SALIDA" && dependencyType !== "OUT") dependencies.add(taskId(participantId, dependencyType));
@@ -75,6 +83,7 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     if (type === "ENSAYO_ESTUDIO_7" && coachId) requiredResourceIds.add(coachId);
     if (type === "ENSAYO_ESTUDIO_7" && assignment?.requiresBand) requiredResourceIds.add("band");
     for (const resourceId of operation?.memberResourceIds ?? []) requiredResourceIds.add(resourceId);
+    for (const resourceId of operation?.requiredResourceIds ?? []) requiredResourceIds.add(resourceId);
 
     return {
       id,
@@ -99,25 +108,6 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
   });
 }
 
-function technicalTasks(template: CanonicalFullA2Template): CanonicalTask[] {
-  const orderedTypes: readonly TaskType[] = ["TECH_REALITY_EVA", "TECH_DESMONTAJE_TRASLADO", "TECH_TOTALES_POST"];
-  return orderedTypes.map((type, index) => {
-    const definition = template.taskTypes[type];
-    const id = `TECH.${type.toLowerCase()}`;
-    const previous = index === 0 ? null : `TECH.${orderedTypes[index - 1]!.toLowerCase()}`;
-    return {
-      id,
-      type,
-      duration: definition.duration,
-      spaceId: definition.spaceId,
-      dependencies: previous ? [previous] : [],
-      operationalKind: "technical",
-      requiredResourceIds: [...TECHNICAL_RESOURCE_IDS],
-      technicalChainId: TECHNICAL_CHAIN_ID,
-      editorialTags: [],
-    } satisfies CanonicalTask;
-  });
-}
 
 function anchoredOperations(template: CanonicalFullA2Template): AnchoredOperationContract[] {
   return template.itinerantOperations.filter((operation) => operation.kind === "anchored").map((operation) => {
@@ -162,22 +152,10 @@ function jointOperations(): JointOperationContract[] {
   ];
 }
 
-function technicalChains(): TechnicalChainContract[] {
-  return [{
-    id: TECHNICAL_CHAIN_ID,
-    orderedTaskIds: ["TECH.tech_reality_eva", "TECH.tech_desmontaje_traslado", "TECH.tech_totales_post"],
-    adjacency: "REQUIRED",
-    internalTransition: "INCLUDED",
-    resourceContinuity: "REQUIRED",
-    requiredResourceIds: [...TECHNICAL_RESOURCE_IDS],
-  }];
-}
-
 export function expandCanonicalFullA2Template(template: CanonicalFullA2Template): ExpandedCanonicalFullA2Template {
   const participants = [...template.participants].sort();
   const tasks = sorted([
     ...participants.flatMap((participantId) => participantTasks(template, participantId as ParticipantId)),
-    ...technicalTasks(template),
   ], (task) => task.id);
   const countsByType = Object.fromEntries(Object.keys(template.taskTypes).map((type) => [type, 0])) as Record<TaskType, number>;
   for (const task of tasks) countsByType[task.type] += 1;
@@ -189,7 +167,7 @@ export function expandCanonicalFullA2Template(template: CanonicalFullA2Template)
     countsByType,
     anchoredOperations: sorted(anchoredOperations(template), (operation) => operation.id),
     jointOperations: jointOperations(),
-    technicalChains: technicalChains(),
+    technicalChains: [],
     spaces: sorted(template.spaces, (space) => space.id),
     resources: sorted(template.resources, (resource) => resource.id),
     spaceResourceAssignments: template.spaceResourceAssignments,

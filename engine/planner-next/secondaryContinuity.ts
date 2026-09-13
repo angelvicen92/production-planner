@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, Space, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledTask, Space, Task } from "./contracts";
 
 export function requiredSecondarySpaces(problem: Pick<PlannerNextProblem, "spaces">): Space[] {
   return [...problem.spaces].filter((space) => space.secondaryContinuity === "REQUIRED")
@@ -9,6 +9,20 @@ export function secondaryTasks<T extends Task>(tasks: T[], spaceId: string): T[]
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 export interface TemporalInterval { id:string; start:number; end:number }
+/** Canonical physical occupations used by hard continuity. Only a genuinely
+ * synchronized joint group can share one occupation; all other tasks remain
+ * distinct so gaps, reentry and foreign overlaps stay visible. */
+export function canonicalSecondaryOccupations<T extends ScheduledTask>(tasks: T[]): TemporalInterval[] {
+  const occupations = new Map<string, TemporalInterval>();
+  for (const task of tasks) {
+    const key = task.jointGroupId === undefined
+      ? `task:${task.id}`
+      : `joint:${task.jointGroupId}:${task.spaceId}:${task.start}:${task.end}`;
+    const existing = occupations.get(key);
+    if (!existing) occupations.set(key, { id: key, start: task.start, end: task.end });
+  }
+  return [...occupations.values()];
+}
 function temporal<T extends TemporalInterval>(tasks: T[]): T[] {
   return [...tasks].sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id));
 }

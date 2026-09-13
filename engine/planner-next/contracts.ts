@@ -13,6 +13,9 @@ export interface Person {
 export interface ItinerantUnit {
   id: string;
   availability: Window[];
+  continuityPolicy?: "REQUIRED";
+  operationalBlockCount?: 1;
+  internalGapMinutes?: 0;
 }
 
 export interface Space {
@@ -85,6 +88,8 @@ interface BaseTask {
   requiredResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;
+  participantMarginBeforeMinutes?: Minute;
+  participantMarginAfterMinutes?: Minute;
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";

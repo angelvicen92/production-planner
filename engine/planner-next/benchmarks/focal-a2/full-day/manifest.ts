@@ -34,9 +34,6 @@ export const EXPECTED_COUNTS_BY_TYPE: Readonly<Record<TaskType, number>> = Objec
   REALITY_CORNER_MUSIC: 1,
   REALITY_INFLUENCER: 1,
   REALITY_MANZANO: 1,
-  TECH_DESMONTAJE_TRASLADO: 1,
-  TECH_REALITY_EVA: 1,
-  TECH_TOTALES_POST: 1,
 });
 
 export const EXPECTED_PARTICIPANT_TASK_MATRIX: Readonly<Record<string, readonly TaskType[]>> = Object.freeze({
@@ -115,9 +112,6 @@ export const TASK_TYPES: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>>
   TOTALES_POST_CONJUNTO: { label: "Totales Post conjunto", duration: 5, spaceId: "totales-post", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   ESTILISMO_SALIDA: { label: "Estilismo salida", duration: 5, spaceId: "styling", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   OUT: { label: "OUT", duration: 5, spaceId: "transport-out", operationalKind: "transport_departure", exclusiveSpaceUse: "not_applicable", knownResourceIds: [], blocksParticipant: true },
-  TECH_REALITY_EVA: { label: "Reality con EVA", duration: 20, spaceId: "reality-control", operationalKind: "technical", exclusiveSpaceUse: true, knownResourceIds: ["cam-3", "cam-4", "son-1", "eva"], blocksParticipant: false },
-  TECH_DESMONTAJE_TRASLADO: { label: "Desmontaje y traslado", duration: 5, spaceId: "technical-transfer", operationalKind: "technical", exclusiveSpaceUse: true, knownResourceIds: ["cam-3", "cam-4", "son-1", "eva"], blocksParticipant: false },
-  TECH_TOTALES_POST: { label: "Totales Post técnico", duration: 5, spaceId: "totales-post", operationalKind: "technical", exclusiveSpaceUse: true, knownResourceIds: ["cam-3", "cam-4", "son-1", "eva"], blocksParticipant: false },
 });
 
 export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
@@ -144,7 +138,6 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
   { id: "reality-corner-music", label: "Reality - Corner Music", exclusivity: "exclusive", capacityKnown: 1 },
   { id: "alfombra-roja", label: "Alfombra Roja", exclusivity: "exclusive", capacityKnown: 1 },
   { id: "totales-post", label: "Totales Post", exclusivity: "exclusive", capacityKnown: 1 },
-  { id: "technical-transfer", label: "Desmontaje y traslado", exclusivity: "exclusive", capacityKnown: 1 },
 ]);
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
@@ -187,11 +180,11 @@ export const CANONICAL_ITINERANT_OPERATIONS: readonly CanonicalItinerantOperatio
   { id: "itinerant.reality-unit-b.C10.reality-manzano", itinerantUnitId: "reality-unit-b", participantId: "C10", taskIds: ["C10.reality_manzano"], kind: "standalone", memberResourceIds: ["cam-4", "son-2"] },
   { id: "itinerant.reality-unit-b.C05.reality-plato", itinerantUnitId: "reality-unit-b", participantId: "C05", taskIds: ["C05.reality_plato_antes", "C05.ensayo_estudio_7", "C05.reality_plato_despues"], kind: "anchored", memberResourceIds: ["cam-4", "son-2"] },
   { id: "itinerant.reality-unit-b.C17.reality-hall", itinerantUnitId: "reality-unit-b", participantId: "C17", taskIds: ["C17.reality_hall"], kind: "standalone", memberResourceIds: ["cam-4", "son-2"] },
-  { id: "itinerant.reality-unit-combined.C06.reality-hall", itinerantUnitId: "reality-unit-combined", participantId: "C06", taskIds: ["C06.reality_hall"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
-  { id: "itinerant.reality-unit-combined.C12.reality-control-eva", itinerantUnitId: "reality-unit-combined", participantId: "C12", taskIds: ["C12.reality_control_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
-  { id: "itinerant.reality-unit-combined.C11.reality-buggy", itinerantUnitId: "reality-unit-combined", participantId: "C11", taskIds: ["C11.reality_buggy"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
-  { id: "itinerant.reality-unit-combined.C04.alfombra-roja-eva", itinerantUnitId: "reality-unit-combined", participantId: "C04", taskIds: ["C04.alfombra_roja_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
-  { id: "itinerant.reality-unit-combined.C13.alfombra-roja-eva", itinerantUnitId: "reality-unit-combined", participantId: "C13", taskIds: ["C13.alfombra_roja_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
+  { id: "itinerant.reality-unit-combined.C06.reality-hall", itinerantUnitId: "reality-unit-combined", participantId: "C06", taskIds: ["C06.reality_hall"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"], requiredResourceIds: ["eva"] },
+  { id: "itinerant.reality-unit-combined.C12.reality-control-eva", itinerantUnitId: "reality-unit-combined", participantId: "C12", taskIds: ["C12.reality_control_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"], requiredResourceIds: ["eva"] },
+  { id: "itinerant.reality-unit-combined.C11.reality-buggy", itinerantUnitId: "reality-unit-combined", participantId: "C11", taskIds: ["C11.reality_buggy"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"], requiredResourceIds: ["eva"] },
+  { id: "itinerant.reality-unit-combined.C04.alfombra-roja-eva", itinerantUnitId: "reality-unit-combined", participantId: "C04", taskIds: ["C04.alfombra_roja_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"], requiredResourceIds: ["eva"] },
+  { id: "itinerant.reality-unit-combined.C13.alfombra-roja-eva", itinerantUnitId: "reality-unit-combined", participantId: "C13", taskIds: ["C13.alfombra_roja_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"], requiredResourceIds: ["eva"] },
 ]);
 
 function assignment(participantId: string): CanonicalParticipantAssignment {

@@ -1,7 +1,7 @@
 import type { EngineInput, TaskInput } from "../../../../types";
 import type { PlannerNextProblem } from "../../../contracts";
 
-export const CONTRACT_VERSION = "A2-FULL-009.full-a2-template.v5";
+export const CONTRACT_VERSION = "A2-CONTRACT-RECON-001.full-a2-template.v6";
 
 export const PARTICIPANT_IDS = Array.from({ length: 19 }, (_, index) => `C${String(index + 1).padStart(2, "0")}`) as readonly string[];
 
@@ -48,10 +48,7 @@ export type TaskType =
   | "ALFOMBRA_ROJA_CONJUNTA"
   | "TOTALES_POST_CONJUNTO"
   | "ESTILISMO_SALIDA"
-  | "OUT"
-  | "TECH_REALITY_EVA"
-  | "TECH_DESMONTAJE_TRASLADO"
-  | "TECH_TOTALES_POST";
+  | "OUT";
 
 export interface CanonicalTaskTypeDefinition {
   readonly label: string;
@@ -140,6 +137,8 @@ export interface CanonicalItinerantOperation {
   readonly taskIds: readonly string[];
   readonly kind: "standalone" | "anchored";
   readonly memberResourceIds: readonly string[];
+  /** Additional resources explicitly assigned to this operation, not unit members. */
+  readonly requiredResourceIds?: readonly string[];
 }
 
 export interface JointOperationContract {

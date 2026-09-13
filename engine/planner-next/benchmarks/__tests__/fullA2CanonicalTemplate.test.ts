@@ -36,15 +36,15 @@ test("expands exact semantic full A2 template", () => {
   assert.equal(template.participants.join(","), "C01,C02,C03,C04,C05,C06,C07,C08,C09,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19");
   assert.equal(expansion.participants.length, 19);
   assert.equal(expansion.tasks.filter((task) => task.participantId).length, 266);
-  assert.equal(expansion.tasks.filter((task) => !task.participantId).length, 3);
-  assert.equal(expansion.tasks.length, 269);
+  assert.equal(expansion.tasks.filter((task) => !task.participantId).length, 0);
+  assert.equal(expansion.tasks.length, 266);
   assert.equal(expansion.countsByType.SODEXO, 19);
   assert.equal(expansion.countsByType.REDES, 18);
   assert.equal(expansion.countsByType.SILLON, 9);
   assert.equal(expansion.countsByType.ESTRELLAS, 8);
   assert.equal(expansion.anchoredOperations.length, 3);
   assert.equal(expansion.jointOperations.length, 2);
-  assert.equal(expansion.technicalChains.length, 1);
+  assert.equal(expansion.technicalChains.length, 0);
   assert.deepEqual(expansion.itinerantUnits.map((unit) => [unit.id, unit.memberResourceIds]), [["reality-unit-a", ["cam-3", "son-1"]], ["reality-unit-b", ["cam-4", "son-2"]], ["reality-unit-combined", ["cam-3", "cam-4", "son-1"]]]);
   assert.equal(expansion.resources.some((resource) => resource.id === "reality-unit-a"), false);
   assert.equal(expansion.tasks.some((task) => task.requiredResourceIds.includes("reality-unit-a") || task.requiredResourceIds.includes("reality-unit-b") || task.requiredResourceIds.includes("reality-unit-combined")), false);
@@ -68,17 +68,10 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).duration = 11; }, "DURATION_CATALOG", "DURATION_CHANGED");
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).requiredResourceIds.push("son-2"); }, "KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID");
   assertInvariantFails((e) => { e.resources.push({ id: "future-sound", label: "Future Sound", kind: "sound", availability: "creation_input_required" }); e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).requiredResourceIds.push("future-sound"); }, "KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID");
-  assertInvariantFails((e) => { e.technicalChains[0].adjacency = "OFF"; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID");
-  assertInvariantFails((e) => { e.technicalChains[0].resourceContinuity = "OFF"; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID");
-  assertInvariantFails((e) => { e.technicalChains[0].orderedTaskIds = ["TECH.tech_desmontaje_traslado", "TECH.tech_reality_eva", "TECH.tech_totales_post"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_ORDER_INVALID");
-  assertInvariantFails((e) => { e.technicalChains[0].requiredResourceIds = ["cam-3", "cam-4", "son-1"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_SET_INVALID");
-  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds.push("son-2"); }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID");
-  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_reality_eva").duration = 25; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID");
   assertInvariantFails((e) => { e.itinerantOperations.find((operation: any) => operation.id === "itinerant.reality-unit-b.C05.reality-plato").kind = "standalone"; }, "ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.anchoredOperations = []; }, "ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.anchoredOperations = e.anchoredOperations.filter((operation: any) => operation.participantId !== "C05"); }, "ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.jointOperations = []; }, "JOINT_OPERATIONS", "JOINT_OPERATION_SET_INVALID");
-  assertInvariantFails((e) => { e.technicalChains = []; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_SET_INVALID");
   assertInvariantFails((e) => { e.itinerantUnits = []; }, "ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID");
   assertInvariantFails((e) => { e.itinerantOperations.find((operation: any) => operation.participantId === "C05").itinerantUnitId = "reality-unit-a"; }, "ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { const task = e.tasks.find((entry: any) => entry.id === taskId("C10", "REALITY_MANZANO")); task.requiredResourceIds = task.requiredResourceIds.filter((id: string) => id !== "son-2"); }, "ITINERANT_UNITS", "ITINERANT_MEMBER_RESOURCE_LOST");
@@ -106,7 +99,7 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.rules.inTransport.targetGroupSize = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C01.end = "15:31"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C02.end = "18:39"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 30; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 25; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.targetGroupSize = 4; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minGapMinutes = 25; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.maximumGroupSize = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
@@ -117,7 +110,6 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.participant.sodexoDurationMinutes = 45; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.participant.maxSimultaneous = 9; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.meals.operational.fixedHumanCutIntervals = [{ start: "14:00", end: "15:15" }]; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds = ["cam-3", "cam-4", "eva"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID");
   assertInvariantFails((e) => { const sodexo = e.tasks.find((task: any) => task.id === taskId("C01", "SODEXO")); sodexo.operationalKind = "auxiliary"; sodexo.meal.occupiesExclusiveSpace = true; }, "SODEXO_MEALS", "SODEXO_SEMANTICS_INVALID");
   assertInvariantFails((e) => { (e as any).leakedName = "Cristina Zuloaga"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");
   assertInvariantFails((e) => { (e.tasks[0] as any).startPlanned = "09:00"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");
@@ -335,7 +327,7 @@ test("representability keeps dependent joint group blocker when the connected pr
 
 test("generated artifacts are reproducible against current expansion", () => {
   const evidence = JSON.parse(readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json", "utf8"));
-  assert.equal(evidence.totalTaskCount, 269);
+  assert.equal(evidence.totalTaskCount, 266);
   assert.equal(evidence.expansionFingerprint, canonicalFingerprint(expandCanonicalFullA2Template(createCanonicalFullA2Template())));
   assert.equal(evidence.representabilityGate.executorCallCount, 1);
   assert.equal(evidence.noEngineInputPartial, true);
