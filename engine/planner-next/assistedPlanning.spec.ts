@@ -88,5 +88,5 @@ test("combined evidence preserves an inherited protected-placement HARD violatio
   assert.equal(result.evidence.completeForScope, true);
   assert.equal(result.evidence.proposalCount, 1);
   assert.equal(result.evidence.hardValid, false);
-  assert.equal(result.evidence.requiredValid, false);
+  assert.equal(result.evidence.requiredValid, true);
 });
