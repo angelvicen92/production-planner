@@ -18,7 +18,7 @@ Las Fuentes oficiales contrastadas son SPEC-06 (construcción y Future Feasibili
 
 | etapa | requisito exacto de Fuente | símbolos / archivos | Full A2 observado y Evidence | estado |
 |---:|---|---|---|---|
-| 0 EngineInput / preflight / adapter | SPEC-10: adaptar sin pérdida, fallar cerrado ante dimensiones no representables, preservar identidad/ventanas/recursos/dependencias; SPEC-08: disponibilidad e identidad itinerante explícitas; ninguna inferencia por nombre | `preflightEngineInputForPlannerNext`, `adaptEngineInputToPlannerNextProblem`, `effectiveTaskFixedInterval`; `integration/engineInputPreflight.ts`, `integration/engineInputAdapter.ts`, `contracts.ts` | 269 obligaciones; preflight y adapter `SUPPORTED`, cero issues; fingerprint del problema `d4f16fde…f0bfa`; tres unidades itinerantes, joints, round, technical chain, setup, meals y transport llegan tipados. El input fuente no usa horas del planning humano. La ausencia de semántica de fase en `PlannerNextProblem` no altera todavía el input hard, pero será una carencia al llegar al selector. | **PASS** |
+| 0 EngineInput / preflight / adapter | SPEC-10: adaptar sin pérdida, fallar cerrado ante dimensiones no representables, preservar identidad/ventanas/recursos/dependencias; SPEC-08: disponibilidad e identidad itinerante explícitas; ninguna inferencia por nombre | `preflightEngineInputForPlannerNext`, `adaptEngineInputToPlannerNextProblem`, `effectiveTaskFixedInterval`; `integration/engineInputPreflight.ts`, `integration/engineInputAdapter.ts`, `contracts.ts` | 269 obligaciones; preflight y adapter `SUPPORTED`, cero issues; fingerprint del problema `d4f16fde…f0bfa`; tres unidades itinerantes, joints, round, technical chain, setup, meals y transport llegan tipados. El input fuente no usa horas del planning humano. La ausencia de una etiqueta permanente de fase en `PlannerNextProblem` no altera el input hard y no demuestra una carencia: la fase puede ser una decisión dinámica derivada de las autoridades conservadas; esa capacidad se audita en la etapa 8. | **PASS** |
 | 1 política / dispatcher | SPEC-09/10: seleccionar política explícita y ejecutar exactamente un motor; un resultado incompleto no es publicable | `executePlannerNext`, `PlannerSearchPolicy`, runner Full A2 | el dispatcher ejecutó una vez `EXACT_CONSTRUCTIVE`; devolvió `BRANCH_BUDGET_EXHAUSTED`, `complete=false`, 0 tareas publicadas y 269 pendientes. No hubo fallback. | **PASS** |
 | 2 protegidas / locks | SPEC-07 §11 y SPEC-10 §§8–9: `done`/`in_progress` son inmutables; tiempo, espacio, recursos, relaciones y locks aplicables se conservan; `cancelled` no crea obligación | preflight/adapter, `effectiveTaskFixedInterval`, `effectiveTaskResourceAssignments`, `canPlaceTask`, `validatePlan` | el template Full A2 pasa preflight/adapter sin pérdida ni conflicto protegido. Las autoridades quedan incorporadas antes de buscar; no se reescribió ningún lock como preferencia. El corpus canónico de esta ejecución no presenta una divergencia protegida. | **PASS** |
 | 3 comprensión global y criticidad | SPEC-06/07: construir desde todas las obligaciones y restricciones; criticidad sólo desde contratos hard/Future Feasibility, nunca nombres/IDs | `mainFlowPatterns.ts`, dominios exactos, `checkStandaloneCoreFrontier`, `resourceAvailabilityMinutes` | antes de consolidar core se consideran 269 obligaciones y se realizan 187 checks individuales, 22 de capacidad colectiva y el frontier global resulta factible. Las decisiones usan ventanas, dependencias, capacidad y recursos tipados; no hay señal derivada de nombres. No se observa una omisión anterior al core. | **PASS** |
@@ -31,7 +31,7 @@ Las Fuentes oficiales contrastadas son SPEC-06 (construcción y Future Feasibili
 | 10 geometría de unidad | SPEC-07/08: construir geometría conjunta sólo si el contrato define una estructura; no inventar contigüidad para operación itinerante `STANDALONE` | `createExactSetupBlockExplorer`, `exploreExactRoundSynchronizationPolicy`, `createTechnicalChainExplorer`, `scheduleJointGroup`, agenda `ITINERANT_UNIT`, rama `RESOURCE_TASK` | setup/round/chain/joint construyen geometría contractual; itinerant agrupa agenda y coloca operaciones standalone individualmente sin exigir contigüidad ficticia; resource coloca un start individual. La mecánica por kind es coherente, pero se activa después del selector desviado. | **PASS** (local) |
 | 11 asignación interna / matching | SPEC-07: MRV/matching después de fijar fase, unidad y geometría | `findCanonicalPerfectMatching`, matching de setup/round, `itinerantUnitInternalSelections`, ranking de starts | dentro de la primera unidad itinerante se elige `task:10169`, dominio dinámico 54, por `minimum-dynamic-domain`; después se recorren starts. Setup y round disponen de matching completo. Orden interno correcto localmente, pero bajo unidad elegida por una autoridad global incorrecta. | **PASS** (local) |
 | 12 propagación de obligaciones futuras | SPEC-06/07: después de cada candidato preservar prerrequisitos, capacidad, llegada/salida, comidas y demás obligaciones necesarias | `checkMacroPendingPrerequisites`, `probeOperationalMealFutureFeasibility`, `maintainDeferredPrerequisiteReservation`, participant-meal probe | en el recorrido observado se ejecutan 537 checks macro de prerrequisitos, 1.144 de capacidad colectiva y 284 joint; 205 ramas son podadas. La primera unidad seleccionada llega a descendencia sólo después de estas puertas. | **PASS** |
-| 13 tareas breves / flexibles | SPEC-07: atender tareas no estructurales después de las fases estructurales aplicables, con hard/Future Feasibility; no elevar `RESOURCE_TASK` a fase por tipo o duración | `ordinaryPending`, `search`, `resourceItems`, `scoreAuxiliaryTask` | las tareas sin macro quedan para `search`, pero 70 tareas individuales con recurso se elevan a la bolsa macro global. No existe contrato que permita distinguir cuáles pertenecen a fase 3, 4, 6 o 7. El comportamiento queda causalmente contaminado desde etapa 8. | **INCONCLUSIVE** |
+| 13 tareas breves / flexibles | SPEC-07: atender tareas no estructurales después de las fases estructurales aplicables, con hard/Future Feasibility; no elevar `RESOURCE_TASK` a fase por tipo o duración | `ordinaryPending`, `search`, `resourceItems`, `scoreAuxiliaryTask` | las tareas sin macro quedan para `search`, pero 70 tareas individuales con recurso se elevan a la bolsa macro global. El kind no determina si en el estado actual son operaciones de menor libertad (fase 3), trabajo estructural posterior o tareas breves/flexibles (fase 6). El comportamiento queda causalmente contaminado desde etapa 8. | **INCONCLUSIVE** |
 | 14 comidas / transport / boundary terminal | SPEC-07/08/10 y Addendum: comidas scoped son obligaciones; transporte explícito se materializa con contratos de grupo; boundary sólo al cierre sustantivo | `assessParticipantMealFutureFeasibility`, `assessOperationalMealFutureFeasibility`, `materializeTerminalTransport`, `materializeScheduledItinerantUnitMeals` | los probes futuros están activos durante construcción, pero Full A2 no alcanza hoja sustantiva: 0 materializaciones terminales y 0 publicación. No puede certificarse el comportamiento terminal de esta ejecución. | **NOT_ACTIVE** |
 | 15 coverage / `validatePlan` / publicación | SPEC-10: validar el plan completo contra el problema completo y publicar atómicamente sólo si está completo y hard-valid; Evidence no equivale a publicación | `validatePlan`, final de `runExactItinerantPlanSearch`, runner y dispatcher | preflight/coverage inicial es válido, pero el plan final no existe: `complete=false`, 0 scheduled y 269 remaining. La puerta final correctamente no publica, aunque la validación positiva de un plan completo no fue alcanzada. | **NOT_ACTIVE** |
 
@@ -56,72 +56,77 @@ Las Fuentes oficiales contrastadas son SPEC-06 (construcción y Future Feasibili
 
 Total: **78 macros / 122 tareas**. El selector toma `itinerant:itinerant-team:5003` (5 operaciones, duración total 120, disponibilidad hard 720, señal 54 inexacta). La razón registrada es `mixed-domain-semantic-policy`: el comparador enfrenta el ganador exacto y el inexacto mediante presión semántica global. Dentro de la unidad, la primera operación es `task:10169`, elegida por MRV dinámico (54 starts). Esas identidades son Evidence dinámica, no reglas ni pseudoconfiguración A2.
 
-## Clasificación contractual de fase
+## Identidad, geometría y elegibilidad dinámica por kind
 
-La clasificación usa exclusivamente contratos que llegan al selector. No usa nombre, ID, planning humano, hora, umbral inventado ni la equivalencia prohibida `RESOURCE_TASK ⇒ fase 3`.
+La SPEC-07 no autoriza convertir el `kind` en una fase. Identidad de unidad, geometría contractual y elegibilidad/criticidad dinámica son tres decisiones distintas: `itinerantUnitId`, joint, round, setup y technical-chain identifican estructura y, cuando corresponde, su geometría; ninguna de esas identidades implica por sí sola una fase. En particular, equipo itinerante es sólo un factor de dificultad, no `ITINERANT_UNIT ⇒ fase 3`, y una cadena técnica no implica `TECHNICAL_CHAIN ⇒ fase 4`.
 
-| macro | clasificación | fundamento contractual o información ausente |
-|---|---|---|
-| 3 `ITINERANT_UNIT` | `PHASE_3_SCARCE_RESOURCE_TEAM_WINDOW` | composición explícita de recursos, disponibilidad de unidad y agenda coordinada; no se infiere contigüidad. |
-| 1 `TECHNICAL_CHAIN` | `PHASE_4_LONG_OR_CONTINUOUS_SECONDARY` | adyacencia y continuidad de recurso explícitas forman una cadena secundaria continua. |
-| 1 `SETUP_GROUP` | `PHASE_5_SETUP_OR_STRUCTURED_BLOCK` | política de familias, no reentrada, preparación y continuidad espacial explícitas. |
-| 1 `ROUND_SYNCHRONIZATION` | `PHASE_6_OTHER_STRUCTURED` | policy/lane/synchronization explícitas; no es setup ni cadena continua. |
-| 2 `JOINT` | `PHASE_6_OTHER_STRUCTURED` | identidad de operación conjunta y start común explícitos; no hay contrato que la eleve a fases 3–5. |
-| 70 `RESOURCE_TASK` | `UNRESOLVED` | `requiredResourceIds` demuestra ocupación hard, no escasez/equipo/ventana crítica, longitud/continuidad, setup, estructura ni brevedad/flexibilidad. Falta una clasificación de rol operativo o pertenencia de fase proveniente de configuración/dominio. Duración y número de starts no autorizan resolverla. |
+La fase 3 reúne las operaciones con **menor libertad según la situación del día**. Esa dificultad se recalcula en cada estado: carga y capacidad restante, posiciones válidas, ventanas/deadlines, duración, dependencias y dependientes, escasez y uso compartido de recursos, itinerancia/transiciones, sincronización y riesgo de Future Feasibility. No existe una categoría permanente de “recurso crítico”. La fase 6 corresponde a tareas breves/flexibles e incluye el “recurso breve”; `requiredResourceIds` tampoco basta para incluir una tarea en ella.
 
-No hay macros clasificables como `PHASE_7_BRIEF_FLEXIBLE` con certeza: “breve/flexible” no está representado como semántica contractual. Tampoco existe en el código una autoridad previa alternativa: la única llamada al selector post-core recibe directamente `remainingUnits.map(macroConstrainedness)` con todas las clases.
+La exposición general de orden de la SPEC y sus encabezados de fase no numeran de forma uniforme todas las agrupaciones intermedias. Esta auditoría conserva los encabezados vigentes —incluidas fase 3 y fase 6— y no resuelve esa diferencia creando una fase adicional.
 
-### ¿Hay información suficiente para `phase → unit → geometry → internal assignment`?
+| kind | identidad y geometría demostradas | señales hard disponibles | señales de Future Feasibility disponibles | señales de calidad (no elegibilidad hard) | ¿puede decidirse soundly fase/elegibilidad hoy? |
+|---|---|---|---|---|---|
+| `ITINERANT_UNIT` | `itinerantUnitId`, miembros y agenda coordinada; cada operación `STANDALONE` mantiene starts individuales, sin contigüidad de bloque implícita | ventanas, disponibilidad y recursos explícitos por operación, dominios válidos, duración, dependencias y transiciones | ledger compartido, dominios restantes, reservas de prerrequisitos, capacidad colectiva y probes de comidas | orden canónico y preferencias de starts existentes | **Sí, dinámicamente**, combinando presión actual, escasez compartida, transiciones y riesgo futuro; **no** por identidad itinerante ni como fase fija. |
+| `RESOURCE_TASK` | tarea atómica con un start; el recurso requerido es ocupación hard, no una categoría constructiva | participante, espacio, recursos, ventana/deadline, duración, dependencias y dominio exacto actual | capacidad colectiva, prerrequisitos pendientes, comidas, consumo del ledger y dominios residuales | ranking de starts y score auxiliar sólo después de preservar viabilidad | **Sí para comparar libertad/criticidad dinámica y para construir la tarea atómica** con autoridades actuales. La Evidence no demuestra que falte semántica de dominio; sí demuestra que el nivel de fase aún no está implementado. “Breve/flexible” sólo puede afirmarse si la regla vigente puede derivarlo de duración y flexibilidad actuales sin umbrales inventados; de lo contrario esa definición normativa concreta, no un campo de fase permanente, es la información ausente. |
+| `JOINT` | `jointGroupId`, miembros y start común con placement conjunto | intersección de ventanas, participantes, espacio, recursos, duración y starts comunes exactos | matching conjunto, dominios residuales, capacidad y dependencias/dependientes | desempates canónicos entre geometrías factibles | **Sí, dinámicamente**; sincronización y reducción de starts son factores, pero joint no asigna fase automáticamente. |
+| `ROUND_SYNCHRONIZATION` | policy, lanes, rondas sincronizadas mientras están activas y preparación entre rondas | ventanas, recursos, starts de ronda y restricciones de sincronización | matching de lanes, capacidad residual y efecto de las rondas sobre obligaciones pendientes | orden canónico de geometrías factibles | **Sí, dinámicamente**; la cota conservadora debe combinarse con validación exacta/Future Feasibility, no convertirse en fase por kind. |
+| `SETUP_GROUP` | familias, orden permitido/flexible, no reentrada, preparación y continuidad espacial; geometrías completas con matching | ventana, espacio, recursos, preparación, orden y dominios de miembros | matching residual, capacidad y dominios que cada geometría deja al resto | preferencia entre geometrías igualmente viables | **Sí, dinámicamente**; su estructura decide cómo construir, no cuándo su fase es elegible. |
+| `TECHNICAL_CHAIN` | policy, orden, adyacencia, transición incluida y continuidad de recurso | intersección de ventanas, recursos, duración total y 98 placements exactos observados | dependencias, capacidad/ledger residual y dominios que deja cada placement | orden canónico de placements | **Sí, dinámicamente**; continuidad puede reducir libertad, pero no demuestra `fase 4`. |
 
-**No para todo el corpus.** Planner Next conserva ya las identidades estructurales necesarias para itinerant, joint, round, technical chain y setup, y sus exploradores pueden construir la geometría correspondiente. Sin embargo, antes del selector pierde/no recibe una semántica genérica que distinga entre las fases operativas de las tareas individuales con recurso y que declare cuándo una tarea es realmente `BRIEF_FLEXIBLE`. Por ello puede implementar los dos niveles sólo para el subconjunto estructural inequívoco; no puede clasificar las 70 `RESOURCE_TASK` sin inventar scoring o asumir que recurso implica fase 3.
+Las señales hard descartan placements inválidos; Future Feasibility evita consolidar una opción hard-válida que destruya obligaciones necesarias; las señales de calidad sólo ordenan alternativas que sobreviven a ambas capas. Mezclarlas en un score global o usar calidad para fabricar elegibilidad de fase violaría la precedencia normativa.
 
-El contrato mínimo faltante debe originarse en la configuración efectiva/plantilla de tarea que construye `EngineInput`, no en `selectMostConstrainedUnit`: una propiedad tipada y versionada de **rol constructivo post-core** (por ejemplo, pertenencia a una categoría genérica de fase, con `OTHER_STRUCTURED`/`BRIEF_FLEXIBLE` sólo cuando la Fuente de dominio lo declare). Preflight debe validar presencia/coherencia cuando sea necesaria, el adapter debe preservarla en `Task`, el fingerprint debe incluirla y el selector debe consumirla. Las identidades estructurales existentes siguen siendo autoridad más específica; el campo no crea contigüidad ni convierte recursos en equipos.
+### ¿Puede construirse el nivel 1 sin una fase permanente por tarea?
+
+**Sí.** Las autoridades ya presentes permiten calcular en cada estado el scope actualmente elegible: estructura explícita, número de posiciones válidas, carga pendiente, capacidad temporal compatible, ventanas/deadlines, duración, dependencias/dependientes, escasez y uso compartido de recursos, itinerancia/transiciones, sincronización y riesgo de Future Feasibility. El cálculo debe reevaluarse tras cada placement porque la fase 3 depende de la situación del día, no de una taxonomía estable.
+
+La ausencia observada es de **implementación**: `searchMacroUnits` entrega todos los kinds contemporáneos a `selectMostConstrainedUnit(constrained)` sin una determinación previa de fase/scope. No se ha demostrado una ausencia semántica general del dominio ni la necesidad de `postCoreConstructiveRole`. Tampoco se justifica proyectar un `phase` permanente por EngineInput/preflight/adapter/fingerprint.
+
+La única incertidumbre semántica concreta es el criterio normativo exacto que separa “breve/flexible” de otras tareas cuando las magnitudes actuales no basten por sí mismas. Eso no autoriza umbrales de duración inventados ni exige una etiqueta permanente: A3-024 debe reutilizar una autoridad configurada existente si la hay y, si al implementarlo se demuestra que no existe, documentar precisamente esa regla ausente antes de proponer el contrato mínimo que la represente.
 
 ## Auditoría de geometría por kind
 
-| kind | A) unidad estructural real | B) geometría de conjunto | C) sólo starts individuales | veredicto |
-|---|---|---|---|---|
-| `SETUP_GROUP` | sí: familias/política/espacio | sí: geometrías compactas completas y matching, con preparación | no | estructura y geometría reales |
-| `ROUND_SYNCHRONIZATION` | sí: policy y lanes | sí: starts de ronda, sincronización, preparación y matching | no | estructura y geometría reales |
-| `TECHNICAL_CHAIN` | sí: cadena ordenada | sí: adyacencia, continuidad y transición contractual | no | estructura y geometría reales |
-| `JOINT` | sí: `jointGroupId` | sí, limitada a su contrato: start común y placement conjunto | no | unidad conjunta real; no exige bloque adicional |
-| `ITINERANT_UNIT` | sí: identidad/composición y agenda | **no como bloque contiguo**, correctamente: cada operación `STANDALONE` conserva su propia geometría | sí, pero dentro de una agenda/unidad seleccionada | no inventar contigüidad |
-| `RESOURCE_TASK` | no más allá de la tarea | no | sí | unidad atómica individual |
+| kind | unidad estructural demostrada | geometría contractual | límite normativo |
+|---|---|---|---|
+| `SETUP_GROUP` | familias/política/espacio | geometrías compactas completas y matching, con preparación | no deriva fase |
+| `ROUND_SYNCHRONIZATION` | policy y lanes | starts de ronda, sincronización, preparación y matching | no deriva fase |
+| `TECHNICAL_CHAIN` | cadena ordenada | adyacencia, continuidad y transición contractuales | no deriva fase 4 |
+| `JOINT` | `jointGroupId` | start común y placement conjunto | no exige bloque adicional ni deriva fase |
+| `ITINERANT_UNIT` | identidad/composición y agenda | operaciones `STANDALONE` individuales dentro de la agenda | no inventar contigüidad ni fase 3 |
+| `RESOURCE_TASK` | tarea atómica | start individual | recurso requerido no deriva fase 3 ni fase 6 |
 
 ## A3-024 mínimo (sin hardcode A2)
 
-La primera desviación es el selector global, pero el delta productivo mínimo necesita primero cerrar el contrato `UNRESOLVED`; de otro modo un phase gate sólo movería arbitrariedad. Pseudocódigo:
+No hace falta cerrar primero un contrato de clasificación permanente. El delta mínimo es separar la elegibilidad dinámica del scope de la selección crítica dentro de ese scope, conservando los exploradores actuales:
 
 ```text
-// Origen: configuración efectiva / plantilla, no nombres, IDs, duración ni score.
-preflight(input):
-  validar postCoreConstructiveRole cuando una tarea no tenga una identidad
-  estructural que determine inequívocamente su categoría; fallar cerrado si falta.
+searchPostCore(remainingUnits, state):
+  phaseScope = determineCurrentlyEligiblePhaseScope(
+    remainingUnits,
+    explicitStructure,
+    validPositions,
+    pendingLoad,
+    compatibleTemporalCapacity,
+    windowsAndDeadlines,
+    duration,
+    dependenciesAndDependents,
+    scarceAndSharedResources,
+    itinerancyAndTransitions,
+    synchronization,
+    futureFeasibilityRisk,
+  )
 
-adapter(input):
-  Task.postCoreConstructiveRole = canonical(input.role)
-  incluir role en problem fingerprint y Evidence.
-
-buildUnits(pending):
-  preservar precedencias de identidad existentes:
-    joint > technical-chain > round > setup > itinerant > atomic task
-  unit.phase = phaseFromExplicitStructuralContractOrTaskRole(unit)
-  // nunca: nombre, ID, duración threshold, resource=>phase3, score threshold
-
-searchPostCore(remaining, state):
-  eligiblePhases = phasesInOfficialOrder
-    .filter(phase => hasPendingUnit(phase))
-    .filter(phase => phaseNecessaryConditionsRemainFeasible(state))
-  phase = firstEligibleOfficialPhase(eligiblePhases)
-  units = remaining.filter(unit => unit.phase == phase)
-  unit = selectMostConstrainedUnit(units)       // MRV sólo dentro de fase
+  scopedUnits = remainingUnits.filter(unit => phaseScope.includes(unit))
+  unit = selectMostConstrainedUnit(scopedUnits)
   geometries = constructContractualGeometry(unit, state)
   for geometry in geometries:
     for assignment in exactInternalMatchingOrMRV(unit, geometry, state):
-      if hardAndFutureFeasible(assignment, remaining): recurse(...)
+      if hardAndFutureFeasible(assignment, remainingUnits):
+        recurseOrBacktrack(...)
 ```
 
-Para `ITINERANT_UNIT`, `constructContractualGeometry` devuelve una agenda de operaciones independientes y el MRV interno actual; no fabrica un bloque contiguo. Para `RESOURCE_TASK`, devuelve su geometría atómica. A3-024 debe incluir una prueba donde dos fases tengan candidatos contemporáneos y demuestre que cambiar domain sizes entre fases no cambia la fase, mientras MRV sí cambia la unidad **dentro** de la fase; también debe probar abstención/fallo cerrado cuando falta el rol requerido.
+`determineCurrentlyEligiblePhaseScope` aplica el orden y los encabezados vigentes de la SPEC, recalcula la libertad sobre el estado actual y se abstiene de inferir por kind, nombre, ID, horario humano o thresholds inventados. La geometría continúa viniendo del contrato: agenda no contigua para itinerant standalone, start atómico para `RESOURCE_TASK`, start común para joint y los exploradores actuales para setup/round/chain.
+
+A3-024 debe probar al menos: (1) candidatos contemporáneos de scopes distintos no compiten en el MRV global; (2) cambiar la libertad dinámica puede cambiar el scope elegible cuando lo ordena la SPEC; (3) dentro del scope elegido, `selectMostConstrainedUnit` sí reacciona a los dominios; (4) hard y Future Feasibility preceden a calidad; y (5) ninguna identidad estructural ni `requiredResourceIds` asigna automáticamente fase. No debe cambiar presence/boundary ni añadir scoring, umbrales o datos A2.
 
 ## Resultado causal obligatorio
 
@@ -137,8 +142,8 @@ Para `ITINERANT_UNIT`, `constructContractualGeometry` devuelve una agenda de ope
 
 `DOWNSTREAM_EFFECTS`: fase y unidad quedan colapsadas en una sola decisión; señales exactas e inexactas de clases distintas compiten; una unidad de fase posterior puede consumir capacidad de otra anterior; geometría y matching local pueden ser correctos pero aplicarse al scope equivocado; tareas individuales con recurso no pueden ordenarse metodológicamente; el agotamiento a profundidad 129 no demuestra cuál sería el primer blocker bajo el método oficial.
 
-`PHASE_CONTRACT_COVERAGE`: inequívoca para itinerant→3, technical-chain→4, setup→5, round/joint→6; 70 `RESOURCE_TASK` y toda afirmación de fase 7 quedan `UNRESOLVED`. No se usaron nombres, IDs, horas humanas, umbrales ni scoring inventado.
+`PHASE_CONTRACT_COVERAGE`: ningún kind demuestra por sí solo una fase. Las autoridades actuales permiten evaluar dinámicamente libertad, elegibilidad y criticidad, mientras cada kind conserva únicamente su identidad y geometría contractual. No existe fase 7.
 
-`MISSING_DOMAIN_AUTHORITY`: rol constructivo post-core explícito, tipado, versionado y con procedencia para tareas atómicas no clasificables por una identidad estructural existente; debe nacer en configuración efectiva/plantilla, viajar por EngineInput/preflight/adapter/Task/fingerprint y llegar intacto al selector.
+`MISSING_DOMAIN_AUTHORITY`: ninguna ausencia semántica general demostrada. Sólo queda por verificar, al implementar fase 6, si la autoridad vigente define de forma computable “breve/flexible”; si no, la ausencia concreta sería esa regla normativa, no un rol o phase field permanente.
 
-`MINIMUM_PRODUCTIVE_DELTA`: primero añadir/proyectar ese contrato genérico con fail-closed; después separar el selector en `selectEligiblePhase` y `selectMostConstrainedUnit(unitsOfPhase)`, reutilizando exploradores y Future Feasibility actuales, sin hardcode A2, sin scoring nuevo y sin imponer contigüidad a operaciones itinerantes standalone.
+`MINIMUM_PRODUCTIVE_DELTA`: `remaining units` → determinar dinámicamente fase/scope actualmente elegible → elegir con `selectMostConstrainedUnit` la unidad más crítica dentro de ese scope → construir geometría contractual → MRV/matching interno → propagar Future Feasibility → recurse/backtrack; sin hardcode A2, scoring nuevo, thresholds, cambios presence/boundary ni contigüidad ficticia.
