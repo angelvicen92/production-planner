@@ -1,5 +1,5 @@
 {
-  "contractVersion": "A2-FULL-009.full-a2-template.v5",
+  "contractVersion": "A2-CONTRACT-RECON-001.full-a2-template.v6",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -22,12 +22,12 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "275534f0ce385315576b1f3a561570323b4e6e52a86f6d11617078c13fac5e2a",
-  "expansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
+  "manifestFingerprint": "88104abd3856c22b7c90f7dd7d2407384dc9949958819fd4ce95a7fc8b9799b0",
+  "expansionFingerprint": "7e84c38e3d225fd8eab3773cc25de7f99f62e30aa1bbb653a048f19ec5eaf2d9",
   "participantCount": 19,
   "contestantTaskCount": 266,
-  "technicalTaskCount": 3,
-  "totalTaskCount": 269,
+  "technicalTaskCount": 0,
+  "totalTaskCount": 266,
   "countsByType": {
     "IN": 19,
     "ESTILISMO_ENTRADA": 19,
@@ -59,10 +59,7 @@
     "ALFOMBRA_ROJA_CONJUNTA": 2,
     "TOTALES_POST_CONJUNTO": 2,
     "ESTILISMO_SALIDA": 19,
-    "OUT": 19,
-    "TECH_REALITY_EVA": 1,
-    "TECH_DESMONTAJE_TRASLADO": 1,
-    "TECH_TOTALES_POST": 1
+    "OUT": 19
   },
   "canonicalResources": [
     {
@@ -278,6 +275,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -292,6 +292,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -306,6 +309,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -320,6 +326,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     },
     {
@@ -334,6 +343,9 @@
         "cam-3",
         "cam-4",
         "son-1"
+      ],
+      "requiredResourceIds": [
+        "eva"
       ]
     }
   ],
@@ -539,6 +551,7 @@
           "requiredResourceIds": [
             "cam-3",
             "cam-4",
+            "eva",
             "son-1"
           ]
         }
@@ -558,6 +571,7 @@
           "requiredResourceIds": [
             "cam-3",
             "cam-4",
+            "eva",
             "son-1"
           ]
         }
@@ -759,25 +773,7 @@
         "sequenceAfterJointGroupId": "joint.alfombra-roja.C06-C10"
       }
     ],
-    "technicalChains": [
-      {
-        "id": "technical.reality-eva-transfer-totales-post",
-        "orderedTaskIds": [
-          "TECH.tech_reality_eva",
-          "TECH.tech_desmontaje_traslado",
-          "TECH.tech_totales_post"
-        ],
-        "adjacency": "REQUIRED",
-        "internalTransition": "INCLUDED",
-        "resourceContinuity": "REQUIRED",
-        "requiredResourceIds": [
-          "cam-3",
-          "cam-4",
-          "son-1",
-          "eva"
-        ]
-      }
-    ],
+    "technicalChains": [],
     "itinerantOperations": [
       {
         "id": "itinerant.reality-unit-a.C01.reality-plato",
@@ -888,6 +884,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -902,6 +901,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -916,6 +918,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -930,6 +935,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       },
       {
@@ -944,6 +952,9 @@
           "cam-3",
           "cam-4",
           "son-1"
+        ],
+        "requiredResourceIds": [
+          "eva"
         ]
       }
     ]
@@ -1108,7 +1119,7 @@
   "validationIssues": [],
   "requiredCreationInputs": [],
   "effectiveConfiguration": {
-    "version": "A2-FULL-009.source-configuration.v2",
+    "version": "A2-CONTRACT-RECON-001.source-configuration.v3",
     "executionDate": "2025-06-15",
     "effectiveDayWindow": {
       "start": "09:00",
@@ -1117,6 +1128,13 @@
     },
     "spaceAvailability": "INHERIT_CONTAINER_OR_DAY_UNLESS_OVERRIDDEN",
     "resourceAvailability": "INHERIT_DAY_UNLESS_OVERRIDDEN",
+    "defaultParticipantTransitionMinutes": 5,
+    "resourceOverrides": {
+      "eva": {
+        "availabilityStart": "16:00",
+        "presenceConcentrationPolicy": "REQUIRED"
+      }
+    },
     "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
     "itinerantUnitAvailability": {
       "reality-unit-a": "inherits_day_unless_overridden",
@@ -1204,13 +1222,13 @@
     "transportPolicy": {
       "arrival": {
         "targetGroupSize": 3,
-        "maximumGroupSize": 6,
+        "maximumGroupSize": 3,
         "minGapMinutes": 30,
         "groupingWeight": 3
       },
       "departure": {
         "targetGroupSize": 1,
-        "maximumGroupSize": 6,
+        "maximumGroupSize": 3,
         "minGapMinutes": 20,
         "groupingWeight": 3
       }
@@ -1298,10 +1316,65 @@
     },
     "unresolvedCreationInputs": []
   },
-  "representabilityStatus": "FULLY_REPRESENTABLE",
+  "representabilityStatus": "BLOCKED",
   "requiredCreationInputBlockers": [],
-  "implementationBlockers": [],
-  "nextImplementationBlocker": null,
+  "implementationBlockers": [
+    {
+      "code": "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+      "layer": "ENGINE_INPUT",
+      "affectedRule": "operaciones conjuntas dependientes C06/C10",
+      "canonicalIds": [
+        "task:201",
+        "task:202",
+        "task:203",
+        "task:204"
+      ],
+      "operationalExplanation": "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+      "semanticLoss": "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
+      "implementationRank": 1
+    },
+    {
+      "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+      "layer": "ENGINE_INPUT",
+      "affectedRule": "familias Sillón/Estrellas y preparación de set",
+      "canonicalIds": [
+        "C02.estrellas",
+        "C02.sillon",
+        "C05.estrellas",
+        "C05.sillon",
+        "C06.estrellas",
+        "C07.estrellas",
+        "C07.sillon",
+        "C09.estrellas",
+        "C09.sillon",
+        "C10.estrellas",
+        "C10.sillon",
+        "C11.sillon",
+        "C13.estrellas",
+        "C13.sillon",
+        "C15.sillon",
+        "C17.estrellas",
+        "C18.sillon"
+      ],
+      "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+      "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+      "implementationRank": 2
+    }
+  ],
+  "nextImplementationBlocker": {
+    "code": "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+    "layer": "ENGINE_INPUT",
+    "affectedRule": "operaciones conjuntas dependientes C06/C10",
+    "canonicalIds": [
+      "task:201",
+      "task:202",
+      "task:203",
+      "task:204"
+    ],
+    "operationalExplanation": "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+    "semanticLoss": "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
+    "implementationRank": 1
+  },
   "participantAvailabilityProbe": {
     "sourceConfigurationPresent": true,
     "engineInputContractPresent": true,
@@ -1371,82 +1444,67 @@
   },
   "jointGroupProbe": {
     "executed": true,
-    "engineInputPreflightSupported": true,
-    "adapterSupported": true,
-    "plannerNextPreflightSupported": true,
-    "sourceGroupCount": 2,
-    "projectedGroupCount": 2,
-    "projectedMemberCount": 4,
-    "dependenciesPreserved": true,
-    "firstGroupSynchronized": true,
-    "secondGroupSynchronized": true,
-    "sequencePreserved": true,
-    "complete": true,
-    "hardValid": true,
-    "jointGroupViolationCount": 0,
-    "deterministic": true,
-    "orderInvariant": true,
-    "inputImmutable": true,
-    "canonicalIds": [
-      "joint-group:a2-c06-c10-alfombra-roja",
-      "joint-group:a2-c06-c10-totales-post"
-    ]
+    "engineInputPreflightSupported": false,
+    "adapterSupported": false,
+    "plannerNextPreflightSupported": false,
+    "sourceGroupCount": 0,
+    "projectedGroupCount": 0,
+    "projectedMemberCount": 0,
+    "dependenciesPreserved": false,
+    "firstGroupSynchronized": false,
+    "secondGroupSynchronized": false,
+    "sequencePreserved": false,
+    "complete": false,
+    "hardValid": false,
+    "jointGroupViolationCount": 1,
+    "deterministic": false,
+    "orderInvariant": false,
+    "inputImmutable": false,
+    "canonicalIds": []
   },
-  "jointGroupCapabilityProven": true,
+  "jointGroupCapabilityProven": false,
   "setupPolicyProbe": {
     "executed": true,
-    "engineInputPreflightSupported": true,
-    "adapterSupported": true,
-    "plannerNextPreflightSupported": true,
-    "projectedFamilyCount": 2,
-    "projectedPolicyCount": 1,
-    "complete": true,
-    "hardValid": true,
-    "setupViolationCount": 0,
-    "setupPreparationViolationCount": 0,
-    "deterministic": true,
-    "orderInvariant": true,
-    "inputImmutable": true,
-    "familyOrder": [
-      "setup-family:304:estrellas",
-      "setup-family:304:sillon"
-    ],
-    "familySequence": [
-      "setup-family:304:sillon",
-      "setup-family:304:estrellas"
-    ]
+    "engineInputPreflightSupported": false,
+    "adapterSupported": false,
+    "plannerNextPreflightSupported": false,
+    "projectedFamilyCount": 0,
+    "projectedPolicyCount": 0,
+    "complete": false,
+    "hardValid": false,
+    "setupViolationCount": 1,
+    "setupPreparationViolationCount": 1,
+    "deterministic": false,
+    "orderInvariant": false,
+    "inputImmutable": false,
+    "familyOrder": [],
+    "familySequence": []
   },
-  "setupPolicyCapabilityProven": true,
+  "setupPolicyCapabilityProven": false,
   "flexibleSetupOrderProbe": {
     "executed": true,
-    "engineInputPreflightSupported": true,
-    "adapterSupported": true,
-    "plannerNextPreflightSupported": true,
-    "exactPolicySelected": true,
-    "complete": true,
-    "hardValid": true,
-    "setupViolationCount": 0,
-    "setupPreparationViolationCount": 0,
-    "observedFamilyOrders": [
-      "setup-family:304:estrellas>setup-family:304:sillon",
-      "setup-family:304:sillon>setup-family:304:estrellas"
-    ],
-    "observedBothOrders": true,
-    "selectedFamilySequence": [
-      "setup-family:304:sillon",
-      "setup-family:304:estrellas"
-    ],
-    "selectedPreparationCount": 1,
-    "selectedPreparationMinutes": 10,
-    "preparationTargetsSecondFamily": true,
-    "deterministic": true,
-    "orderInvariant": true,
-    "inputImmutable": true,
-    "sharedBudgetAccounting": true,
-    "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "d1e54041a723ff1273e0adf0b9cf3f7b0f5e5c14f629195350e91b5113cb92fe"
+    "engineInputPreflightSupported": false,
+    "adapterSupported": false,
+    "plannerNextPreflightSupported": false,
+    "exactPolicySelected": false,
+    "complete": false,
+    "hardValid": false,
+    "setupViolationCount": 1,
+    "setupPreparationViolationCount": 1,
+    "observedFamilyOrders": [],
+    "observedBothOrders": false,
+    "selectedFamilySequence": [],
+    "selectedPreparationCount": 0,
+    "selectedPreparationMinutes": 0,
+    "preparationTargetsSecondFamily": false,
+    "deterministic": false,
+    "orderInvariant": false,
+    "inputImmutable": false,
+    "sharedBudgetAccounting": false,
+    "atomicOnBudgetExhaustion": false,
+    "fullFingerprint": null
   },
-  "flexibleSetupOrderCapabilityProven": true,
+  "flexibleSetupOrderCapabilityProven": false,
   "roundSynchronizationProbe": {
     "executed": true,
     "engineInputPreflightSupported": true,
@@ -1470,17 +1528,114 @@
     "inputImmutable": true,
     "sharedBudgetAccounting": true,
     "atomicOnBudgetExhaustion": true,
-    "fullFingerprint": "890d5f394e1db87340232bb565fb2689bc66cc921949dc0263a158d21302e076"
+    "fullFingerprint": "89296bd8df35cda2a35c1f9c3eacbbce6d71405320ea59f1c065b06faa745d3e"
   },
   "roundSynchronizationCapabilityProven": true,
   "representabilityGate": {
-    "status": "EXECUTED",
+    "status": "REJECTED_BLOCKED",
     "analysis": {
-      "status": "FULLY_REPRESENTABLE",
+      "status": "BLOCKED",
       "requiredCreationInputs": [],
-      "implementationBlockers": [],
-      "blockers": [],
-      "nextImplementationBlocker": null,
+      "implementationBlockers": [
+        {
+          "code": "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "operaciones conjuntas dependientes C06/C10",
+          "canonicalIds": [
+            "task:201",
+            "task:202",
+            "task:203",
+            "task:204"
+          ],
+          "operationalExplanation": "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+          "semanticLoss": "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
+          "implementationRank": 1
+        },
+        {
+          "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "familias Sillón/Estrellas y preparación de set",
+          "canonicalIds": [
+            "C02.estrellas",
+            "C02.sillon",
+            "C05.estrellas",
+            "C05.sillon",
+            "C06.estrellas",
+            "C07.estrellas",
+            "C07.sillon",
+            "C09.estrellas",
+            "C09.sillon",
+            "C10.estrellas",
+            "C10.sillon",
+            "C11.sillon",
+            "C13.estrellas",
+            "C13.sillon",
+            "C15.sillon",
+            "C17.estrellas",
+            "C18.sillon"
+          ],
+          "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+          "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+          "implementationRank": 2
+        }
+      ],
+      "blockers": [
+        {
+          "code": "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "operaciones conjuntas dependientes C06/C10",
+          "canonicalIds": [
+            "task:201",
+            "task:202",
+            "task:203",
+            "task:204"
+          ],
+          "operationalExplanation": "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+          "semanticLoss": "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
+          "implementationRank": 1
+        },
+        {
+          "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "familias Sillón/Estrellas y preparación de set",
+          "canonicalIds": [
+            "C02.estrellas",
+            "C02.sillon",
+            "C05.estrellas",
+            "C05.sillon",
+            "C06.estrellas",
+            "C07.estrellas",
+            "C07.sillon",
+            "C09.estrellas",
+            "C09.sillon",
+            "C10.estrellas",
+            "C10.sillon",
+            "C11.sillon",
+            "C13.estrellas",
+            "C13.sillon",
+            "C15.sillon",
+            "C17.estrellas",
+            "C18.sillon"
+          ],
+          "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+          "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+          "implementationRank": 2
+        }
+      ],
+      "nextImplementationBlocker": {
+        "code": "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+        "layer": "ENGINE_INPUT",
+        "affectedRule": "operaciones conjuntas dependientes C06/C10",
+        "canonicalIds": [
+          "task:201",
+          "task:202",
+          "task:203",
+          "task:204"
+        ],
+        "operationalExplanation": "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+        "semanticLoss": "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
+        "implementationRank": 1
+      },
       "participantAvailabilityProbe": {
         "sourceConfigurationPresent": true,
         "engineInputContractPresent": true,
@@ -1550,82 +1705,67 @@
       },
       "jointGroupProbe": {
         "executed": true,
-        "engineInputPreflightSupported": true,
-        "adapterSupported": true,
-        "plannerNextPreflightSupported": true,
-        "sourceGroupCount": 2,
-        "projectedGroupCount": 2,
-        "projectedMemberCount": 4,
-        "dependenciesPreserved": true,
-        "firstGroupSynchronized": true,
-        "secondGroupSynchronized": true,
-        "sequencePreserved": true,
-        "complete": true,
-        "hardValid": true,
-        "jointGroupViolationCount": 0,
-        "deterministic": true,
-        "orderInvariant": true,
-        "inputImmutable": true,
-        "canonicalIds": [
-          "joint-group:a2-c06-c10-alfombra-roja",
-          "joint-group:a2-c06-c10-totales-post"
-        ]
+        "engineInputPreflightSupported": false,
+        "adapterSupported": false,
+        "plannerNextPreflightSupported": false,
+        "sourceGroupCount": 0,
+        "projectedGroupCount": 0,
+        "projectedMemberCount": 0,
+        "dependenciesPreserved": false,
+        "firstGroupSynchronized": false,
+        "secondGroupSynchronized": false,
+        "sequencePreserved": false,
+        "complete": false,
+        "hardValid": false,
+        "jointGroupViolationCount": 1,
+        "deterministic": false,
+        "orderInvariant": false,
+        "inputImmutable": false,
+        "canonicalIds": []
       },
-      "jointGroupCapabilityProven": true,
+      "jointGroupCapabilityProven": false,
       "setupPolicyProbe": {
         "executed": true,
-        "engineInputPreflightSupported": true,
-        "adapterSupported": true,
-        "plannerNextPreflightSupported": true,
-        "projectedFamilyCount": 2,
-        "projectedPolicyCount": 1,
-        "complete": true,
-        "hardValid": true,
-        "setupViolationCount": 0,
-        "setupPreparationViolationCount": 0,
-        "deterministic": true,
-        "orderInvariant": true,
-        "inputImmutable": true,
-        "familyOrder": [
-          "setup-family:304:estrellas",
-          "setup-family:304:sillon"
-        ],
-        "familySequence": [
-          "setup-family:304:sillon",
-          "setup-family:304:estrellas"
-        ]
+        "engineInputPreflightSupported": false,
+        "adapterSupported": false,
+        "plannerNextPreflightSupported": false,
+        "projectedFamilyCount": 0,
+        "projectedPolicyCount": 0,
+        "complete": false,
+        "hardValid": false,
+        "setupViolationCount": 1,
+        "setupPreparationViolationCount": 1,
+        "deterministic": false,
+        "orderInvariant": false,
+        "inputImmutable": false,
+        "familyOrder": [],
+        "familySequence": []
       },
-      "setupPolicyCapabilityProven": true,
+      "setupPolicyCapabilityProven": false,
       "flexibleSetupOrderProbe": {
         "executed": true,
-        "engineInputPreflightSupported": true,
-        "adapterSupported": true,
-        "plannerNextPreflightSupported": true,
-        "exactPolicySelected": true,
-        "complete": true,
-        "hardValid": true,
-        "setupViolationCount": 0,
-        "setupPreparationViolationCount": 0,
-        "observedFamilyOrders": [
-          "setup-family:304:estrellas>setup-family:304:sillon",
-          "setup-family:304:sillon>setup-family:304:estrellas"
-        ],
-        "observedBothOrders": true,
-        "selectedFamilySequence": [
-          "setup-family:304:sillon",
-          "setup-family:304:estrellas"
-        ],
-        "selectedPreparationCount": 1,
-        "selectedPreparationMinutes": 10,
-        "preparationTargetsSecondFamily": true,
-        "deterministic": true,
-        "orderInvariant": true,
-        "inputImmutable": true,
-        "sharedBudgetAccounting": true,
-        "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "d1e54041a723ff1273e0adf0b9cf3f7b0f5e5c14f629195350e91b5113cb92fe"
+        "engineInputPreflightSupported": false,
+        "adapterSupported": false,
+        "plannerNextPreflightSupported": false,
+        "exactPolicySelected": false,
+        "complete": false,
+        "hardValid": false,
+        "setupViolationCount": 1,
+        "setupPreparationViolationCount": 1,
+        "observedFamilyOrders": [],
+        "observedBothOrders": false,
+        "selectedFamilySequence": [],
+        "selectedPreparationCount": 0,
+        "selectedPreparationMinutes": 0,
+        "preparationTargetsSecondFamily": false,
+        "deterministic": false,
+        "orderInvariant": false,
+        "inputImmutable": false,
+        "sharedBudgetAccounting": false,
+        "atomicOnBudgetExhaustion": false,
+        "fullFingerprint": null
       },
-      "flexibleSetupOrderCapabilityProven": true,
+      "flexibleSetupOrderCapabilityProven": false,
       "roundSynchronizationProbe": {
         "executed": true,
         "engineInputPreflightSupported": true,
@@ -1649,11 +1789,11 @@
         "inputImmutable": true,
         "sharedBudgetAccounting": true,
         "atomicOnBudgetExhaustion": true,
-        "fullFingerprint": "890d5f394e1db87340232bb565fb2689bc66cc921949dc0263a158d21302e076"
+        "fullFingerprint": "89296bd8df35cda2a35c1f9c3eacbbce6d71405320ea59f1c065b06faa745d3e"
       },
       "roundSynchronizationCapabilityProven": true
     },
-    "executorCallCount": 1,
+    "executorCallCount": 0,
     "engineInputBuilt": false,
     "preflightCalled": false,
     "adapterCalled": false,
@@ -1666,7 +1806,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "a400be93303ef4e86e425f1eaa8ba8d8efecaa94ff131446bc093351c29fb698",
+    "shuffledExpansionFingerprint": "7e84c38e3d225fd8eab3773cc25de7f99f62e30aa1bbb653a048f19ec5eaf2d9",
     "matches": true
   },
   "inputImmutable": {

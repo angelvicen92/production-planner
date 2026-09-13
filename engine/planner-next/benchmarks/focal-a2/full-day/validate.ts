@@ -83,8 +83,8 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     const technicalCount = expansion.tasks.filter((task) => !task.participantId).length;
     const issues: ValidationIssue[] = [];
     if (contestantCount !== 266) issues.push(issue("GLOBAL_COUNTS", "CONTESTANT_TASK_COUNT_MISMATCH", "contestantTasks", `Expected 266 contestant tasks, got ${contestantCount}.`));
-    if (technicalCount !== 3) issues.push(issue("GLOBAL_COUNTS", "TECHNICAL_TASK_COUNT_MISMATCH", "technicalTasks", `Expected 3 technical tasks, got ${technicalCount}.`));
-    if (expansion.tasks.length !== 269) issues.push(issue("GLOBAL_COUNTS", "TOTAL_TASK_COUNT_MISMATCH", "tasks", `Expected 269 total tasks, got ${expansion.tasks.length}.`));
+    if (technicalCount !== 0) issues.push(issue("GLOBAL_COUNTS", "TECHNICAL_TASK_COUNT_MISMATCH", "technicalTasks", `Expected no standalone technical tasks, got ${technicalCount}.`));
+    if (expansion.tasks.length !== 266) issues.push(issue("GLOBAL_COUNTS", "TOTAL_TASK_COUNT_MISMATCH", "tasks", `Expected 266 total tasks, got ${expansion.tasks.length}.`));
     return issues;
   }],
   ["COUNTS_BY_TYPE", (expansion) => {
@@ -266,35 +266,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
   ["TRANSPORT_RULE", (expansion) => expansion.rules.inTransport.targetGroupSize === 3 && expansion.rules.inTransport.maximumGroupSize === 3 && expansion.rules.inTransport.minGapMinutes === 30 && expansion.rules.outTransport.targetGroupSize === 1 && expansion.rules.outTransport.maximumGroupSize === 3 && expansion.rules.outTransport.minGapMinutes === 20 && expansion.tasks.filter((task) => task.type === "IN").every((task) => task.operationalKind === "transport_arrival" && task.transport?.direction === "arrival") && expansion.tasks.filter((task) => task.type === "OUT").every((task) => task.operationalKind === "transport_departure" && task.transport?.direction === "departure")
     ? []
     : [issue("TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED", "rules.inTransport", "Transport semantics or IN policy changed.")]],
-  ["TECHNICAL_CHAIN", (expansion) => {
-    const expectedIds = ["technical.reality-eva-transfer-totales-post"];
-    const expectedOrderedTaskIds = ["TECH.tech_reality_eva", "TECH.tech_desmontaje_traslado", "TECH.tech_totales_post"];
-    const expectedResourceIds = ["cam-3", "cam-4", "eva", "son-1"];
-    const expectedDurations = [20, 5, 5];
-    const actualIds = expansion.technicalChains.map((chain) => chain.id).sort();
-    const setIssues: ValidationIssue[] = JSON.stringify(actualIds) === JSON.stringify(expectedIds)
-      ? []
-      : [issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_SET_INVALID", "technicalChains", "Technical chain set must contain the exact official continuous chain.")];
-    return [...setIssues, ...expansion.technicalChains.flatMap((chain) => {
-    const chainTasks = chain.orderedTaskIds.map((id) => expansion.tasks.find((task) => task.id === id));
-    const issues: ValidationIssue[] = [];
-    if (chain.adjacency !== "REQUIRED" || chain.internalTransition !== "INCLUDED" || chain.resourceContinuity !== "REQUIRED") issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID", chain.id, "Technical chain must require adjacency, included internal transition and resource continuity."));
-    if (JSON.stringify(chain.orderedTaskIds) !== JSON.stringify(expectedOrderedTaskIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_ORDER_INVALID", chain.id, "Technical chain orderedTaskIds must match the official sequence."));
-    if (JSON.stringify([...chain.requiredResourceIds].sort()) !== JSON.stringify(expectedResourceIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_SET_INVALID", chain.id, "Technical chain contract resources must be exactly CAM 3, CAM 4, SON 1 and EVA."));
-    if (chainTasks.some((task) => !task || task.participantId !== undefined || task.operationalKind !== "technical")) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID", chain.id, "Technical chain member missing or attributed to participant."));
-    chainTasks.forEach((task, index) => {
-      if (!task) return;
-      if (task.duration !== expectedDurations[index]) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID", task.id, "Technical chain task duration changed."));
-      if (JSON.stringify([...task.requiredResourceIds].sort()) !== JSON.stringify(expectedResourceIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID", task.id, "Technical chain task resources must be exactly CAM 3, CAM 4, SON 1 and EVA."));
-    });
-    for (let index = 1; index < chain.orderedTaskIds.length; index += 1) {
-      const task = chainTasks[index];
-      const previousId = chain.orderedTaskIds[index - 1]!;
-      if (task && !task.dependencies.includes(previousId)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_DEPENDENCY_LOST", task.id, "Technical chain dependency lost."));
-    }
-    return issues;
-  })];
-  }],
+  ["TECHNICAL_CHAIN", (expansion) => expansion.technicalChains.length === 0 ? [] : [issue("TECHNICAL_CHAIN", "OBSOLETE_TECHNICAL_CHAIN_PRESENT", "technicalChains", "The retired Reality EVA header must not create standalone technical obligations.")]],
   ["ITINERANT_UNITS", (expansion) => {
     const issues: ValidationIssue[] = [];
     const expectedUnitIds = CANONICAL_ITINERANT_UNITS.map((unit) => unit.id).sort();
@@ -331,7 +303,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     }
     for (const task of expansion.tasks) {
       for (const resourceId of task.requiredResourceIds) if (unitIds.has(resourceId)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_USED_AS_HARD_RESOURCE", task.id, "Itinerant unit identity must not be in requiredResourceIds."));
-      const evaAllowed = task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA" || task.type.startsWith("TECH_");
+      const evaAllowed = task.itinerantUnitId === "reality-unit-combined";
       if (task.requiredResourceIds.includes("eva") && !evaAllowed) issues.push(issue("ITINERANT_UNITS", "EVA_RESOURCE_ON_NON_EVA_TASK", task.id, "EVA must only be added to tasks that explicitly require EVA."));
       if (task.itinerantUnitId && !claimedTaskIds.has(task.id)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_TASK_WITHOUT_EXPLICIT_OPERATION", task.id, "Itinerant task must be assigned through an explicit operation descriptor."));
     }
@@ -342,7 +314,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     const croma = expansion.tasks.filter((task) => task.type === "CROMA");
     const soundResourceIds = new Set(expansion.resources.filter((resource) => resource.kind === "sound").map((resource) => resource.id));
     if (croma.some((task) => task.requiredResourceIds.includes("cam-2") || task.requiredResourceIds.some((resourceId) => soundResourceIds.has(resourceId))) || expansion.spaceResourceAssignments["p15-croma"]?.join() !== "cam-2") issues.push(issue("KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID", ids(croma).join(","), "Croma must receive CAM 2 from its space and no canonical sound resource."));
-    const evaTasks = expansion.tasks.filter((task) => task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA" || task.type.startsWith("TECH_"));
+    const evaTasks = expansion.tasks.filter((task) => task.itinerantUnitId === "reality-unit-combined");
     if (evaTasks.some((task) => !task.requiredResourceIds.includes("eva"))) issues.push(issue("KNOWN_RESOURCES", "EVA_RESOURCE_LOST", ids(evaTasks).join(","), "EVA tasks must retain EVA resource."));
     const coached = expansion.tasks.filter((task) => task.type === "PRUEBA_VOCAL_LUCIA" || task.type === "PRUEBA_VOCAL_JOSE_MARIA" || task.type === "ENSAYO_ESTUDIO_7");
     if (coached.some((task) => !task.coachId || !task.requiredResourceIds.includes(task.coachId))) issues.push(issue("KNOWN_RESOURCES", "COACH_RESOURCE_LOST", ids(coached).join(","), "Coached tasks must keep effective coach resource."));

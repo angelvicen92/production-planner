@@ -2,7 +2,7 @@
 
 ## Día expresado
 
-La plantilla anónima expresa 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
+La plantilla anónima expresa 19 concursantes, 266 tareas de concursante, 0 tareas técnicas y 266 tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
 
 ## Unidades itinerantes A2
 
@@ -14,15 +14,16 @@ Todos los inputs de creación A2 conocidos para este benchmark están resueltos.
 
 ## Implementation blockers
 
-Estado de representabilidad: **FULLY_REPRESENTABLE**. La puerta ejecutada devuelve **EXECUTED**, con executorCallCount=1. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
+Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0. Los probes de capacidades se ejecutan de forma aislada y no publican un plan parcial.
 
-
+- **PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED** (ENGINE_INPUT): El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto. Pérdida si se aproxima: Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.
+- **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED** (ENGINE_INPUT): Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada. Pérdida si se aproxima: Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.
 
 La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 
-No hay blocker técnico pendiente. El probe conectado demuestra roundSynchronizationCapabilityProven=true, incluyendo emparejamiento ordinal dinámico, preparación explícita, ronda residual, determinismo, contabilidad de presupuesto y publicación atómica.
+Los probes focales demuestran jointGroupCapabilityProven=false, setupPolicyCapabilityProven=false, flexibleSetupOrderCapabilityProven=false, roundSynchronizationCapabilityProven=true y supportsSpecificCoachRouteTransition=true. Por eso el siguiente paso de menor riesgo es **PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED**.
 
 ## No implementado
 

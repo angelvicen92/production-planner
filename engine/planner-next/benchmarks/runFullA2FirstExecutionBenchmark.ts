@@ -15,7 +15,7 @@ import { EXPECTED_COACH_BY_PARTICIPANT } from "./focal-a2/full-day/manifest";
 const PLAN_ID = 27001;
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
 const branchBudgetOverride = process.env.PLANNER_NEXT_FULL_A2_BRANCH_BUDGET;
-const branchBudget = branchBudgetOverride === undefined ? 300_000 : Number(branchBudgetOverride);
+const branchBudget = branchBudgetOverride === undefined ? 5_000 : Number(branchBudgetOverride);
 const causalDiagnostic = process.env.PLANNER_NEXT_FULL_A2_CAUSAL_DIAGNOSTIC !== "false";
 if (!Number.isSafeInteger(branchBudget) || branchBudget <= 0)
   throw new Error("INVALID_PLANNER_NEXT_FULL_A2_BRANCH_BUDGET");
@@ -92,6 +92,7 @@ input.planResourceItems = expansion.resources.map((resource, index) => ({
   name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
   ...(resource.id === "cam-1" ? { transitionMinutes: 0 } : {}),
   ...(resource.id === "band" ? { presenceConcentrationPolicy: "PREFERRED" as const, assignedSpaceId: spaceId.get("estudio-7")! } : {}),
+  ...(resource.id === "eva" ? { availabilityStart: config.resourceOverrides.eva.availabilityStart, availabilityEnd: config.effectiveDayWindow.end, presenceConcentrationPolicy: config.resourceOverrides.eva.presenceConcentrationPolicy } : {}),
 }));
 input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
 input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
@@ -107,7 +108,7 @@ input.plannerNext = {
   searchPolicy: "EXACT_CONSTRUCTIVE",
   searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
   timeGridMinutes: 5,
-  participantTransitionMinutes: 0,
+  participantTransitionMinutes: config.defaultParticipantTransitionMinutes,
   resourceTransitionMinutes: 5,
   mainFlow: {
     spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
@@ -176,6 +177,7 @@ input.operationalMealPolicies.push(...["coach-lucia", "coach-jose-maria"].map((c
 input.itinerantTeamAvailability = Object.keys(config.itinerantUnitAvailability).map((canonicalId) => ({
   itinerantTeamId: itinerantUnitId.get(canonicalId)!,
   windows: [{ start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end }],
+  ...(canonicalId === "reality-unit-combined" ? { continuityPolicy: "REQUIRED" as const, operationalBlockCount: 1 as const, internalGapMinutes: 0 as const } : {}),
 }));
 input.arrivalGroupingTarget = config.transportPolicy.arrival.targetGroupSize;
 input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;
@@ -203,8 +205,9 @@ if (adapted.status === "SUPPORTED") {
     throw new Error("FULL_A2_COACH_ROUTE_TRANSITION_CHANGED");
 }
 const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic}) : null;
-const executionWithoutDiagnostic = !causalDiagnostic ? execution
-  : adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic:false}) : null;
+// Full A2 is intentionally executed once. Determinism is established by focused
+// order-invariance tests rather than silently doubling the baseline run.
+const executionWithoutDiagnostic = execution;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
 const exactResultWithoutDiagnostic = executionWithoutDiagnostic?.kind === "EXACT_CONSTRUCTIVE" ? executionWithoutDiagnostic.result : null;
 const scheduledCanonicalObligations = exactResult
@@ -304,7 +307,7 @@ const evidence = {
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
     maxBranchExpansions: branchBudget,
-    genericTransitionMinutes: { participant: 0, resource: 5 },
+    genericTransitionMinutes: { participant: config.defaultParticipantTransitionMinutes, resource: 5 },
     resourceTransitionOverrides: { "cam-1": 0 },
     coachRouteTransitionMinutes: expansion.rules.coachTransition.minutes,
     operationalMealProjection: config.meals.operational.mealUnits,

@@ -392,6 +392,7 @@ function sourceProjection(input: EngineInput): unknown {
     } : plannerNext,
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
+    requiredContinuousSpaceIds: Array.isArray(input.requiredContinuousSpaceIds) ? [...input.requiredContinuousSpaceIds].sort((a,b)=>a-b) : input.requiredContinuousSpaceIds,
     roundSynchronizations: projectEngineInputRoundSynchronizations(input),
     coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
   });
@@ -520,6 +521,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
+
     addIdentity("task", task.id, `${path}.id`, true);
     addIdentity("template", task.templateId, `${path}.templateId`);
     addIdentity("participant", task.contestantId, `${path}.contestantId`);
@@ -939,10 +941,24 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (isPositiveInteger(spaceId)) setupPolicyBySpace.set(spaceId, { families: new Set(families.filter((f): f is string => typeof f === "string")), policy });
   });
 
+  if (input.requiredContinuousSpaceIds !== undefined && (!Array.isArray(input.requiredContinuousSpaceIds)
+    || input.requiredContinuousSpaceIds.some((id) => !isPositiveInteger(id) || !describedSpaceIds.has(String(id)))
+    || new Set(input.requiredContinuousSpaceIds).size !== input.requiredContinuousSpaceIds.length)) {
+    addIssue("UNSUPPORTED_SETUP_MAPPING", "plan", input.planId, "requiredContinuousSpaceIds", "Continuous-space identities must be unique described space IDs.");
+  }
+
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
 
     const runtimeJointGroupId = (task as unknown as Record<string, unknown>).jointGroupId;
+    for (const field of ["participantMarginBeforeMinutes", "participantMarginAfterMinutes"] as const) {
+      const value = task[field];
+      if (value !== undefined) {
+        if (typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+          addIssue("INVALID_TRANSITION_CONFIGURATION", "task", task.id, `${path}.${field}`, "Participant transition override must be a finite non-negative integer.", { receivedValue: value });
+        } else auditedDurations.push(value);
+      }
+    }
     const hasJointGroupId = Object.prototype.hasOwnProperty.call(task as unknown as Record<string, unknown>, "jointGroupId");
     if (hasJointGroupId && runtimeJointGroupId !== null && runtimeJointGroupId !== undefined) {
       const active = task.status !== "cancelled";
@@ -1783,6 +1799,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         && Number.isInteger(integrationConfigurationRecord[key]) && integrationConfigurationRecord[key] >= 0))
     .map((key) => ({ key, value: integrationConfigurationRecord?.[key] }));
   const transitionConfigurationComplete = !missingTransitionKeys.length && !invalidTransitionEntries.length;
+  for (const key of transitionKeys) {
+    const value = integrationConfigurationRecord?.[key];
+    if (typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value >= 0) auditedDurations.push(value);
+  }
   if (missingTransitionKeys.length) {
     addIssue("MISSING_TRANSITION_CONFIGURATION", "plan", input.planId, "plannerNext", "Explicit participant and resource transition configuration is incomplete.", { missingKeys: missingTransitionKeys });
   }

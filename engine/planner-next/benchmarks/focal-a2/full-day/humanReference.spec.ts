@@ -18,12 +18,12 @@ test("human A2 reference is complete, canonical, immutable and reference-only", 
   assert.equal(reference.forbiddenAsPlannerInput, true);
   assert.equal(reference.sourceAudit.status, "REQUIRES_CONFIGURATION_CLARIFICATION");
   assert.equal(reference.sourceAudit.knownAmbiguities.length, 2);
-  assert.equal(reference.intervals.length, 269);
-  assert.equal(new Set(reference.intervals.map(({ taskId }) => taskId)).size, 269);
+  assert.equal(reference.intervals.length, 266);
+  assert.equal(new Set(reference.intervals.map(({ taskId }) => taskId)).size, 266);
   assert.deepEqual([...reference.intervals.map(({ taskId }) => taskId)].sort(), [...expanded.taskIds].sort());
   assert.ok(Object.isFrozen(reference));
   assert.ok(Object.isFrozen(reference.intervals));
-  assert.equal(reference.fingerprint, "48ba729611debb6cbcacae0c24c1dda0a614e5d63f191f20d0fcd58f8cc7c595");
+  assert.equal(reference.fingerprint, "98ae25c0965e7e8c25929ef76bd9f83f774fbdea159c6c44130997e4421ad3b6");
   assert.equal(reference.preparations.length, 18);
   assert.equal(reference.preparations.reduce((sum, preparation) => sum + preparation.duration, 0), 95);
   assert.ok(Object.isFrozen(reference.preparations));
@@ -92,12 +92,6 @@ test("anchored, joint and technical operations retain the corrected human timing
     const c10 = byId.get(`C10.${suffix}`)!;
     assert.deepEqual([c06.start, c06.end], [c10.start, c10.end], suffix);
   }
-  const technicalReality = byId.get("TECH.tech_reality_eva")!;
-  const transfer = byId.get("TECH.tech_desmontaje_traslado")!;
-  const technicalPost = byId.get("TECH.tech_totales_post")!;
-  assert.deepEqual([technicalReality.start, technicalReality.end], [960, 980]);
-  assert.deepEqual([transfer.start, transfer.end], [980, 985]);
-  assert.deepEqual([technicalPost.start, technicalPost.end], [985, 990]);
 });
 
 test("official PDF corrections are visible in the normalized reference", () => {
