@@ -812,7 +812,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         type FeederRepairResult={outcome:"PERFECT";matching:ReadonlyMap<string,number>}
           |{outcome:"NO_PERFECT_MATCH"|"BUDGET_EXHAUSTED"};
         type FeederSlotCertificate = {outcome:"PERFECT";matching:ReadonlyMap<string,number>;
-          repair:(forbidden:ReadonlySet<string>)=>FeederRepairResult}
+          repair:(forbidden:ReadonlySet<string>,required:ReadonlyMap<string,number>)=>FeederRepairResult}
           | {outcome:"NO_PERFECT_MATCH"|"NOT_APPLICABLE"|"BUDGET_EXHAUSTED"};
         const feederSlotCertificate = (blockStart:number):FeederSlotCertificate => {
           const first=rankedCohort[0];
@@ -857,8 +857,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             }
             edges.set(candidate.choice.feeder.id,candidateEdges);
           }
-          const findMatching=(forbidden:ReadonlySet<string>):FeederRepairResult=>{
-           const owner=new Map<number,string>();
+          const findMatching=(forbidden:ReadonlySet<string>,required:ReadonlyMap<string,number>=new Map()):FeederRepairResult=>{
+           const owner=new Map<number,string>(),fixed=new Set<string>();
+           for(const [feederId,ordinal] of required){
+             if(owner.has(ordinal)||forbidden.has(`${feederId}@${ordinal}`)
+               ||!(edges.get(feederId)??[]).includes(ordinal))return {outcome:"NO_PERFECT_MATCH"};
+             owner.set(ordinal,feederId);fixed.add(feederId);
+           }
            const augment=(feederId:string,seen:Set<number>):"MATCHED"|"UNMATCHED"|"BUDGET_EXHAUSTED"=>{
             for(const ordinal of edges.get(feederId)??[]){
               if(seen.has(ordinal)||forbidden.has(`${feederId}@${ordinal}`))continue;
@@ -869,6 +874,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               seen.add(ordinal);
               const previous=owner.get(ordinal);
               if(previous===undefined){owner.set(ordinal,feederId);return "MATCHED";}
+              if(fixed.has(previous))continue;
               const displaced=augment(previous,seen);
               if(displaced==="BUDGET_EXHAUSTED")return displaced;
               if(displaced==="MATCHED"){
@@ -878,6 +884,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             return "UNMATCHED";
            };
            for(const {choice} of rankedCohort){
+            if(fixed.has(choice.feeder.id))continue;
             const result=augment(choice.feeder.id,new Set());
             if(result==="BUDGET_EXHAUSTED")return {outcome:result};
             if(result==="UNMATCHED")return {outcome:"NO_PERFECT_MATCH"};
@@ -958,10 +965,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 resources:[...(feeder.requiredResourceIds??[])].sort(),dependencies:feeder.dependencies.map(dependencyProfile),
                 deadline,domain:domain.intervals,future});};
             const feederProfileById=new Map([...byFeederId.keys()].map(id=>[id,feederContextSignature(id)]));
-            const pending:[ReadonlySet<string>,ReadonlyMap<string,number>][]=[[new Set(),feederSlotMatching.matching]];
-            const seenForbidden=new Set<string>([""]),seenOrders=new Set<string>();
+            const pending:[ReadonlySet<string>,ReadonlyMap<string,number>,ReadonlyMap<string,number>][]=
+              [[new Set(),new Map(),feederSlotMatching.matching]];
+            const seenStates=new Set<string>(["|"]),seenOrders=new Set<string>();
             while(pending.length>0){
-              const [forbidden,witness]=pending.pop()!;
+              const [forbidden,required,witness]=pending.pop()!;
               const orderKey=[...witness].sort((left,right)=>left[1]-right[1])
                 .map(([id])=>feederContextSignature(id)).join("|");
               if(seenOrders.has(orderKey)){
@@ -991,7 +999,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 evidence.backtracks++;
                 if(!feederOrderAuthorityObserved)continue blockStarts;
               }
-              for(const [feederId,ordinal] of witness){
+              const orderedWitness=[...witness].sort(([left],[right])=>left.localeCompare(right));
+              const childRequired=new Map(required);
+              for(const [feederId,ordinal] of orderedWitness){
                 // Branch on the structural profile at this ordinal, not on a nominal
                 // feeder identity. Equal-profile feeders are interchangeable vertices
                 // in the quotient graph and must never recreate factorial repair paths.
@@ -999,15 +1009,18 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 const next=new Set(forbidden);
                 for(const [candidateId,candidateProfile] of feederProfileById)
                   if(candidateProfile===profile)next.add(`${candidateId}@${ordinal}`);
-                const key=[...next].sort().join("|");
-                if(seenForbidden.has(key))continue;
+                const key=`${[...next].sort().join(",")}|${[...childRequired].sort(([a],[b])=>a.localeCompare(b)).map(([id,slot])=>`${id}@${slot}`).join(",")}`;
+                if(seenStates.has(key))continue;
                 if(!consumeBranch("FEEDER_SLOT_MATCHING_BUDGET_EXHAUSTED","RESIDUAL_MATCHING",runEnd))
                   return "BUDGET_EXHAUSTED";
                 evidence.feederSlotMatchingBranchesExplored++;
-                seenForbidden.add(key);evidence.feederMatchingWitnessRepairs++;
-                const repaired=feederSlotMatching.repair(next);
+                seenStates.add(key);evidence.feederMatchingWitnessRepairs++;
+                const repaired=feederSlotMatching.repair(next,childRequired);
                 if(repaired.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
-                if(repaired.outcome==="PERFECT")pending.push([next,repaired.matching]);
+                if(repaired.outcome==="PERFECT"){
+                  pending.push([next,new Map(childRequired),repaired.matching]);
+                }
+                childRequired.set(feederId,ordinal);
               }
             }
             continue;

@@ -129,6 +129,10 @@ export interface ExactItinerantPlanEvidence {
   coreBacktracks: number;
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
+  patternCandidatesExplored:number;
+  timelineCandidatesExplored:number;
+  mainCandidatesEvaluated:number;
+  feederCandidatesEvaluated:number;
   /** Deepest block-closed, hard-valid partial frontier observed; unlike coreMaximumDepth,
    * this never counts an open main run whose feeder cohort has not closed. */
   deepestCoreDepthReached: number;
@@ -835,7 +839,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
-    coreMaximumDepth: 0, coreCompleteLeafCount: 0,deepestCoreDepthReached:0,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0,patternCandidatesExplored:0,timelineCandidatesExplored:0,
+    mainCandidatesEvaluated:0,feederCandidatesEvaluated:0,deepestCoreDepthReached:0,
     deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
     deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
     architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,firstFeedableRunSizes:[],
@@ -1087,6 +1092,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
   evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
   evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
+  evidence.patternCandidatesExplored=core.evidence.patternCandidatesExplored;
+  evidence.timelineCandidatesExplored=core.evidence.timelineCandidatesExplored;
+  evidence.mainCandidatesEvaluated=core.evidence.mainCandidatesEvaluated;
+  evidence.feederCandidatesEvaluated=core.evidence.feederCandidatesEvaluated;
   evidence.architecturesChecked=core.evidence.architecturesChecked;
   evidence.architecturesStructurallyRejected=core.evidence.architecturesStructurallyRejected;
   evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};
