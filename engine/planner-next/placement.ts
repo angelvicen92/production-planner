@@ -187,11 +187,12 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     const sharedResources = (task.requiredResourceIds ?? [])
       .filter((id) => (other.requiredResourceIds ?? []).includes(id));
     const sharedResource = sharedResources.length > 0;
+    const sharedSpace = other.spaceId === task.spaceId;
 
     if (overlaps(other,{start,end})) {
       if (sharedParticipant) return reject("OVERLAP_PARTICIPANT",other.id);
       if (sharedCoach) return reject("OVERLAP_COACH",other.id);
-      if (other.spaceId===task.spaceId) return reject("OVERLAP_SPACE",other.id);
+      if (sharedSpace) return reject("OVERLAP_SPACE",other.id);
       if (sharedResource) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
     }
     const afterOther = other.end <= start;
@@ -210,7 +211,7 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
       : effectiveParticipantTransitionMinutes(problem, task, other);
     if (sharedParticipant && gap < participantMargin && !isInternalAnchoredPair(problem, afterOther ? other : task, afterOther ? task : other)) return reject("TRANSITION_PARTICIPANT",other.id);
     if (sharedCoach && gap < coachMargin) return reject("TRANSITION_COACH",other.id);
-    if (!isIncludedInternalTechnicalChainTransition(problem,task.id,other.id)&&sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
+    if (!sharedSpace && !isIncludedInternalTechnicalChainTransition(problem,task.id,other.id)&&sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
   }
   return {valid:true,firstRejectionReason:null,blockingPlacedTaskId:null};
 }
