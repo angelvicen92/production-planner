@@ -144,6 +144,63 @@ interface ResidualMatchingResult {
   readonly certificate?: ResidualMatchingCertificate;
 }
 
+export interface IncrementalMatchingWitnessResult {
+  readonly outcome: "PERFECT" | "NO_PERFECT_MATCH" | "BUDGET_EXHAUSTED";
+  readonly matching?: ReadonlyMap<string, number>;
+  readonly traversals: number;
+}
+
+/** Reuses a perfect matching while the graph is unchanged and only forbidden edges grow.
+ * `previousForbidden` is part of the proof: callers may reuse `previous` only when the new
+ * authority is a monotonic superset. Every newly forbidden matched edge is removed before
+ * the displaced task is repaired, so this is equivalent to rebuilding the same graph. */
+export function incrementallyRepairMatchingWitness(
+  taskIds: readonly string[],
+  validPositions: ReadonlyMap<string, readonly number[]>,
+  forbidden: ReadonlySet<string>,
+  previousForbidden: ReadonlySet<string>,
+  previous: ReadonlyMap<string, number>,
+  consumeTraversal: () => boolean = () => true,
+): IncrementalMatchingWitnessResult {
+  if ([...previousForbidden].some((key) => !forbidden.has(key)))
+    throw new Error("MATCHING_WITNESS_NON_MONOTONIC_AUTHORITY");
+  const edgeKey = (taskId: string, position: number) => `${taskId}@${position}`;
+  const matching = new Map(previous);
+  const owner = new Map<number, string>();
+  for (const [taskId, position] of matching) {
+    if (forbidden.has(edgeKey(taskId, position))) matching.delete(taskId);
+    else owner.set(position, taskId);
+  }
+  let traversals = 0;
+  let exhausted = false;
+  const augment = (taskId: string, seen: Set<number>): boolean => {
+    const preferred = previous.get(taskId);
+    const positions = [...(validPositions.get(taskId) ?? [])].sort((left, right) =>
+      Number(right === preferred) - Number(left === preferred) || left - right);
+    for (const position of positions) {
+      if (forbidden.has(edgeKey(taskId, position)) || seen.has(position)) continue;
+      if (!consumeTraversal()) { exhausted = true; return false; }
+      traversals += 1;
+      seen.add(position);
+      const displaced = owner.get(position);
+      if (displaced === undefined || augment(displaced, seen)) {
+        owner.set(position, taskId);
+        matching.set(taskId, position);
+        return true;
+      }
+      if (exhausted) return false;
+    }
+    return false;
+  };
+  for (const taskId of taskIds) {
+    if (matching.has(taskId)) continue;
+    if (!augment(taskId, new Set())) return {
+      outcome: exhausted ? "BUDGET_EXHAUSTED" : "NO_PERFECT_MATCH", traversals,
+    };
+  }
+  return { outcome: "PERFECT", matching, traversals };
+}
+
 /** Returns the task whose current residual domain proves that it must occupy `position`.
  * The graph already applies static pattern/composite/availability/departure authorities and
  * canonical placement against the current occupations. Descendants only add occupations and
@@ -1178,20 +1235,24 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     // rediscover every nominal permutation even when none of the resulting operations
     // shared a hard authority.  Repair only edges that are causally implicated by a
     // joint-placement conflict (or by a different cohort being required downstream).
-    const forbiddenQueue:ReadonlySet<string>[]=[new Set()];
+    interface ForbiddenWitnessState { forbidden:ReadonlySet<string>; previousForbidden:ReadonlySet<string>;
+      matching:ReadonlyMap<string,number> }
+    const emptyForbidden:ReadonlySet<string>=new Set();
+    const forbiddenQueue:ForbiddenWitnessState[]=[{forbidden:emptyForbidden,previousForbidden:emptyForbidden,
+      matching:initialCertificate.matching}];
     const seenForbidden=new Set<string>();
     const seenEquivalentCohorts=new Set<string>();
     let runWitnessBudgetExhausted=false;
     const edgeKey=(taskId:string,position:number)=>`${taskId}@${position}`;
-    const enqueueForbidden=(base:ReadonlySet<string>,key:string):void=>{
+    const enqueueForbidden=(base:ReadonlySet<string>,matching:ReadonlyMap<string,number>,key:string):void=>{
       const next=new Set(base).add(key);const canonicalKey=[...next].sort().join("|");
       if(!seenForbidden.has(canonicalKey)){
         if(!consumeMatchingBranch()){runWitnessBudgetExhausted=true;return;}
         evidence.residualMatchingAugmentTraversals++;
-        seenForbidden.add(canonicalKey);forbiddenQueue.push(next);
+        seenForbidden.add(canonicalKey);forbiddenQueue.push({forbidden:next,previousForbidden:base,matching});
       }
     };
-    const enqueueCohortExclusion=(base:ReadonlySet<string>,taskId:string):void=>{
+    const enqueueCohortExclusion=(base:ReadonlySet<string>,matching:ReadonlyMap<string,number>,taskId:string):void=>{
       const next=new Set(base);
       for(const edge of initialCertificate!.validEdges.get(taskId)??[])
         if(depth<=edge.position&&edge.position<runEnd)next.add(edgeKey(taskId,edge.position));
@@ -1199,35 +1260,22 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(!seenForbidden.has(canonicalKey)){
         if(!consumeMatchingBranch()){runWitnessBudgetExhausted=true;return;}
         evidence.residualMatchingAugmentTraversals++;
-        seenForbidden.add(canonicalKey);forbiddenQueue.push(next);
+        seenForbidden.add(canonicalKey);forbiddenQueue.push({forbidden:next,previousForbidden:base,matching});
       }
     };
     while(forbiddenQueue.length>0){
       if(runWitnessBudgetExhausted)return "BUDGET_EXHAUSTED";
-      const forbidden=forbiddenQueue.pop()!;
+      const witnessState=forbiddenQueue.pop()!;
+      const forbidden=witnessState.forbidden;
       const descriptorBase=descriptors.length;
       evidence.mainRunWitnessAttempts++;
-      const matching=new Map<string,number>(),owner=new Map<number,string>();
-      let witnessBudgetExhausted=false;
-      const augment=(taskId:string,seen:Set<number>):boolean=>{
-        const preferred=initialCertificate!.matching.get(taskId);
-        const edges=[...(initialCertificate!.validEdges.get(taskId)??[])].sort((left,right)=>
-          Number(right.position===preferred)-Number(left.position===preferred)||left.position-right.position);
-        for(const edge of edges){
-          if(forbidden.has(edgeKey(taskId,edge.position))||seen.has(edge.position))continue;
-          if(!consumeMatchingBranch()){witnessBudgetExhausted=true;return false;}
-          evidence.residualMatchingAugmentTraversals++;
-          seen.add(edge.position);const previous=owner.get(edge.position);
-          if(previous===undefined||augment(previous,seen)){
-            owner.set(edge.position,taskId);matching.set(taskId,edge.position);return true;
-          }
-        }
-        return false;
-      };
-      let perfect=true;
-      for(const taskId of initialCertificate.taskIds)if(!matching.has(taskId)&&!augment(taskId,new Set())){perfect=false;break;}
-      if(witnessBudgetExhausted)return "BUDGET_EXHAUSTED";
-      if(!perfect)continue;
+      const repaired=incrementallyRepairMatchingWitness(initialCertificate.taskIds,
+        new Map([...initialCertificate.validEdges].map(([taskId,edges])=>[taskId,edges.map(({position})=>position)])),
+        forbidden,witnessState.previousForbidden,witnessState.matching,()=>consumeMatchingBranch());
+      evidence.residualMatchingAugmentTraversals+=repaired.traversals;
+      if(repaired.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+      if(repaired.outcome==="NO_PERFECT_MATCH")continue;
+      const matching=repaired.matching!;
       const runAssignments=[...matching].filter(([,position])=>depth<=position&&position<runEnd)
         .sort((left,right)=>left[1]-right[1]);
       const assignedEdges=runAssignments.map(([taskId,position])=>({taskId,position,
@@ -1267,7 +1315,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const cohortKey=contextualProfiles.join("|");
       if(seenEquivalentCohorts.has(cohortKey)){
         evidence.mainRunEquivalentOrdersCollapsed++;
-        for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,taskId);
+        for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,matching,taskId);
         continue;
       }
       seenEquivalentCohorts.add(cohortKey);
@@ -1320,8 +1368,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(conflict){
         descriptors.length=descriptorBase;
         evidence.mainRunWitnessRepairs++;
-        enqueueForbidden(forbidden,edgeKey(conflict[0],conflict[1]));
-        enqueueForbidden(forbidden,edgeKey(conflict[2],conflict[3]));
+        enqueueForbidden(forbidden,matching,edgeKey(conflict[0],conflict[1]));
+        enqueueForbidden(forbidden,matching,edgeKey(conflict[2],conflict[3]));
         continue;
       }
       cohortCandidatesExplored+=witnessCohort.length;
@@ -1339,7 +1387,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if(child.targetDepth<=depth)return child;
           const target=runAssignments.find(([,position])=>position===child.targetDepth-1);
           descriptors.length=descriptorBase;
-          if(target){evidence.mainRunWitnessRepairs++;enqueueForbidden(forbidden,edgeKey(target[0],target[1]));}
+          if(target){evidence.mainRunWitnessRepairs++;enqueueForbidden(forbidden,matching,edgeKey(target[0],target[1]));}
           continue;
         }
         if(child!=="DEAD_END")return child;
@@ -1348,7 +1396,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // A feeder failure changes cohort membership, not nominal order.  Exclude one
       // selected edge at a time so matching can produce every structurally distinct
       // cohort without regenerating permutations of a cohort already evaluated.
-      for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,taskId);
+      for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,matching,taskId);
     }
     if(runWitnessBudgetExhausted)return "BUDGET_EXHAUSTED";
     return "DEAD_END";

@@ -4,6 +4,7 @@ import type { ScheduledTask } from "./contracts";
 import {
   createExactSearchLedger,
   forcedMainSingletonTaskId,
+  incrementallyRepairMatchingWitness,
   residualMatchingOperationsMayInteract,
   runExactMainAndFeederSearch,
 } from "./exactMainAndFeederCore";
@@ -13,6 +14,26 @@ const scheduled = (overrides: Partial<ScheduledTask> = {}): ScheduledTask => ({
   id: "edge", kind: "auxiliary", participantId: "participant-edge", coachId: "coach-edge",
   duration: 5, start: 20, end: 25, spaceId: "space-edge", dependencies: [],
   requiredResourceIds: ["resource-edge"], ...overrides,
+});
+
+test("matching witness distinguishes a newly forbidden matched edge authority", () => {
+  const domains = new Map([["a", [0, 1]], ["b", [0, 1]]]);
+  const previous = new Map([["a", 0], ["b", 1]]);
+  const changed = incrementallyRepairMatchingWitness(["a", "b"], domains,
+    new Set(["a@0"]), new Set(), previous);
+  assert.equal(changed.outcome, "PERFECT");
+  assert.deepEqual([...changed.matching!], [["b", 0], ["a", 1]]);
+  assert.ok(changed.traversals > 0);
+});
+
+test("matching witness reuses an equivalent result when added authority cannot affect it", () => {
+  const domains = new Map([["a", [0, 1]], ["b", [0, 1]]]);
+  const previous = new Map([["a", 0], ["b", 1]]);
+  const equivalent = incrementallyRepairMatchingWitness(["a", "b"], domains,
+    new Set(["a@1"]), new Set(), previous);
+  assert.equal(equivalent.outcome, "PERFECT");
+  assert.deepEqual(equivalent.matching, previous);
+  assert.equal(equivalent.traversals, 0);
 });
 
 test("a current singleton forces its task and assigning another task destroys residual coverage", () => {
