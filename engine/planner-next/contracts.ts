@@ -85,6 +85,7 @@ interface BaseTask {
   requiredResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;
+  participantBoundaryRole?: "ENTRY_PREREQUISITE" | "EXIT_PREREQUISITE";
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";

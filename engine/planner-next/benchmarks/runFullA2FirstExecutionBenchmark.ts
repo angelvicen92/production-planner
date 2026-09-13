@@ -58,6 +58,8 @@ const tasks: TaskInput[] = expansion.tasks.map((task) => {
       zoneId: zoneId.get(task.spaceId)!,
     }),
     plannerNextKind,
+    ...(task.type === "ESTILISMO_ENTRADA" ? { participantBoundaryRole: "ENTRY_PREREQUISITE" as const }
+      : task.type === "ESTILISMO_SALIDA" ? { participantBoundaryRole: "EXIT_PREREQUISITE" as const } : {}),
     operationalRole: isMeal ? "meal_break_placeholder"
       : task.transport?.direction === "arrival" ? "transport_arrival"
       : task.transport?.direction === "departure" ? "transport_departure"

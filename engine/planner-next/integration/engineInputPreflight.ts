@@ -294,6 +294,8 @@ function sourceProjection(input: EngineInput): unknown {
       startReal: task.startReal, endReal: task.endReal, breakId: task.breakId, breakKind: task.breakKind,
       mealOccupiesSpace: task.mealOccupiesSpace, operationalRole: task.operationalRole,
       ...(task.status !== "cancelled" ? { plannerNextKind: task.plannerNextKind } : {}),
+      ...(task.status !== "cancelled" && task.participantBoundaryRole !== undefined
+        ? { participantBoundaryRole: task.participantBoundaryRole } : {}),
       blocksSpace: task.blocksSpace, allowsSpaceOverlap: task.allowsSpaceOverlap, spaceOccupancyMode: task.spaceOccupancyMode,
       transportGroupCapacityPresent: task.transportGroupCapacity != null,
       transportGroupingTargetPresent: task.transportGroupingTarget != null,
@@ -393,6 +395,8 @@ function sourceProjection(input: EngineInput): unknown {
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
     roundSynchronizations: projectEngineInputRoundSynchronizations(input),
+    technicalChains: Array.isArray(runtime.technicalChains) ? runtime.technicalChains.map((entry) =>
+      projectRecord(entry, ["id", "orderedTaskIds", "adjacency", "internalTransition", "resourceContinuity", "requiredResourceIds"])) : runtime.technicalChains,
     coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
   });
 }
@@ -520,6 +524,17 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
+
+    const boundaryRole = (task as unknown as Record<string, unknown>).participantBoundaryRole;
+    if (boundaryRole !== undefined && boundaryRole !== "ENTRY_PREREQUISITE" && boundaryRole !== "EXIT_PREREQUISITE") {
+      addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `${path}.participantBoundaryRole`,
+        "Participant boundary role is invalid.", { allowedValues: ["ENTRY_PREREQUISITE", "EXIT_PREREQUISITE"], receivedValue: boundaryRole });
+    } else if (boundaryRole !== undefined && task.status !== "cancelled"
+      && (task.plannerNextKind !== "auxiliary" || task.contestantId == null
+        || flexibleParticipantMealTaskIds.has(task.id) || resourceMealTaskIds.has(task.id))) {
+      addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `${path}.participantBoundaryRole`,
+        "Participant boundary role requires an ordinary participant auxiliary task.", { plannerNextKind: task.plannerNextKind ?? null });
+    }
     addIdentity("task", task.id, `${path}.id`, true);
     addIdentity("template", task.templateId, `${path}.templateId`);
     addIdentity("participant", task.contestantId, `${path}.contestantId`);

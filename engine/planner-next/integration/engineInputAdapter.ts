@@ -166,6 +166,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const resources = projection.genericResourceIds;
     const base = {
       id: canonical("task", source.id),
+      ...(source.participantBoundaryRole ? { participantBoundaryRole: source.participantBoundaryRole } : {}),
       duration: protectedInterval && (protectedInterval.status === "COMPLETE_REAL" || protectedInterval.status === "COMPLETE_PLANNED")
         ? engineTimeToMinute(protectedInterval.interval.end) - engineTimeToMinute(protectedInterval.interval.start)
         : source.durationOverrideMin!,
