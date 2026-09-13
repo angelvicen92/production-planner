@@ -56,22 +56,29 @@ const witnessSummary = (groups:readonly (readonly ScheduledTask[])[]) => groups.
 const reservationFingerprint = (groups:readonly (readonly ScheduledTask[])[],deadlines:Readonly<Record<string,number>>) =>
   `${witnessSummary(groups).map(group=>`${group.start}:${group.taskIds.join(",")}`).join("|")}#${Object.entries(deadlines).sort(([a],[b])=>a.localeCompare(b)).map(([id,value])=>`${id}:${value}`).join("|")}`;
 
-function maintainParticipantMealWitness(problem:PlannerNextProblem,tasks:readonly ScheduledTask[],previous:readonly ScheduledParticipantMeal[],consume:()=>boolean){
+function arrivalLowerBounds(groups:readonly (readonly ScheduledTask[])[]):ReadonlyMap<string,number>{
+  return new Map(groups.flat().flatMap(task=>task.participantId?[[task.participantId,task.end] as const]:[]));
+}
+
+function maintainParticipantMealWitness(problem:PlannerNextProblem,tasks:readonly ScheduledTask[],previous:readonly ScheduledParticipantMeal[],consume:()=>boolean,
+  arrivals:readonly (readonly ScheduledTask[])[]=[]){
   if(!(problem.participantMeals?.length))return {status:"REUSE" as const,meals:[] as ScheduledParticipantMeal[],branches:0,exhausted:false};
-  const probe=probeParticipantMealFutureFeasibility(problem,tasks);
+  const arrivalTasks=arrivals.flat(),effectiveTasks=[...tasks,...arrivalTasks];
+  const lowerBounds=arrivalLowerBounds(arrivals);
+  const probe=probeParticipantMealFutureFeasibility(problem,effectiveTasks);
   if(!probe.feasible)return {status:"NO_WITNESS" as const,meals:[] as ScheduledParticipantMeal[],branches:0,exhausted:false};
   const obligations=[...(problem.participantMeals??[])].sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId));
   const priorById=new Map(previous.map(meal=>[meal.sourceTaskId,meal]));
   const preserved:ScheduledParticipantMeal[]=[];const affected:typeof obligations=[];
   for(const obligation of obligations){const prior=priorById.get(obligation.sourceTaskId);
-    if(prior&&participantMealCandidates(problem,obligation,tasks,[...previous.filter(x=>x.sourceTaskId!==obligation.sourceTaskId)]).some(x=>x.start===prior.start))preserved.push(prior);
+    if(prior&&participantMealCandidates(problem,obligation,effectiveTasks,[...previous.filter(x=>x.sourceTaskId!==obligation.sourceTaskId)],lowerBounds).some(x=>x.start===prior.start))preserved.push(prior);
     else affected.push(obligation);
   }
   if(previous.length===obligations.length&&!affected.length)return {status:"REUSE" as const,meals:[...previous],branches:0,exhausted:false};
   let branches=0,exhausted=false;
   const search=(pending:typeof obligations,placed:ScheduledParticipantMeal[]):ScheduledParticipantMeal[]|null=>{
     if(!pending.length)return placed;
-    const domains=pending.map(obligation=>({obligation,candidates:participantMealCandidates(problem,obligation,tasks,placed)}))
+    const domains=pending.map(obligation=>({obligation,candidates:participantMealCandidates(problem,obligation,effectiveTasks,placed,lowerBounds)}))
       .sort((a,b)=>a.candidates.length-b.candidates.length||a.obligation.sourceTaskId.localeCompare(b.obligation.sourceTaskId));
     const selected=domains[0]!;if(!selected.candidates.length)return null;
     for(const candidate of selected.candidates){if(!consume()){exhausted=true;return null;}branches++;
@@ -81,12 +88,25 @@ function maintainParticipantMealWitness(problem:PlannerNextProblem,tasks:readonl
   // Initial construction deliberately uses the canonical exact authority. Repairs
   // retain every still-valid obligation and enumerate only the damaged suffix.
   if(!previous.length){const budget={remaining:Number.MAX_SAFE_INTEGER,consume:(count=1)=>{for(let i=0;i<count;i++)if(!consume())return false;return true;}};
-    const built=assessParticipantMealFutureFeasibility(problem,tasks,budget,"MATERIALIZE");
+    const built=assessParticipantMealFutureFeasibility(problem,effectiveTasks,budget,"MATERIALIZE",lowerBounds);
     return {status:built.complete?"BUILD" as const:built.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")?"BUDGET_EXHAUSTED" as const:"NO_WITNESS" as const,
       meals:[...built.scheduled],branches:built.branchesExplored,exhausted:built.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")};}
   const repaired=search(affected,preserved);
   return {status:repaired?"REPAIR" as const:exhausted?"BUDGET_EXHAUSTED" as const:"NO_WITNESS" as const,
     meals:(repaired??[]).sort((a,b)=>a.start-b.start||a.sourceTaskId.localeCompare(b.sourceTaskId)),branches,exhausted};
+}
+
+/** Single, read-only authority for the coupled virtual arrival/meal reservation. */
+export function validateParticipantPresenceReservation(problem:PlannerNextProblem,arrivals:readonly Task[],
+  groups:readonly (readonly ScheduledTask[])[],meals:readonly ScheduledParticipantMeal[],
+  productive:readonly ScheduledTask[],virtualBoundaries:ReadonlyMap<string,number>=new Map()):boolean{
+  if(!validateDirectionWitness(problem,"arrival",arrivals,groups,productive,meals,null,virtualBoundaries))return false;
+  const lowerBounds=arrivalLowerBounds(groups);
+  return (problem.participantMeals??[]).every(obligation=>{
+    const witness=meals.find(meal=>meal.sourceTaskId===obligation.sourceTaskId);
+    return Boolean(witness&&participantMealCandidates(problem,obligation,[...productive,...groups.flat()],
+      meals.filter(meal=>meal.sourceTaskId!==obligation.sourceTaskId),lowerBounds).some(candidate=>candidate.start===witness.start));
+  });
 }
 
 const noTransportEvidence = () => ({ slotLogicalStarts:0,slotAnalyticallyEliminatedStarts:0,slotStartSetsEvaluated:0,
@@ -152,14 +172,18 @@ export function maintainDeferredPrerequisiteReservation(problem: PlannerNextProb
     transportFailure:futureTransport.firstFailure, pendingArrivalDeadline, exactPrerequisiteSearchesAvoided: 0,reservation:emptyReservation(),participantMealWitnessAction:"NO_WITNESS",participantMealRepairBranches:0 };
   const previousGroups=previous?.groups??[];
   const sameMembership=previousGroups.flat().map(({id})=>id).sort().join("|")===arrivals.map(({id})=>id).sort().join("|");
-  const reusable=sameMembership&&previousGroups.length>0&&validateDirectionWitness(problem,"arrival",arrivals,previousGroups,placed,[],null,virtualBoundaries);
-  const witness=reusable?null:findTransportDirectionWitness(problem,"arrival",arrivals,placed,consume,[],true,virtualBoundaries);
-  const groups=reusable?previousGroups:(witness?.groups??[]);
-  // Arrival/ENTRY remain virtual boundaries, not participant occupations. Meals
-  // are checked against productive work here; their starts constrain arrival at
-  // terminal validation instead of causing needless witness churn when a grouped
-  // arrival reservation moves within its envelope.
-  const mealState=maintainParticipantMealWitness(problem,placed,previous?.participantMeals??[],consume);
+  // Repair meals against the maintained arrival first. A concrete stale meal is
+  // a movable witness, never a lock which may justify NO_WITNESS for the branch.
+  let groups=previousGroups;
+  let mealState=maintainParticipantMealWitness(problem,placed,previous?.participantMeals??[],consume,groups);
+  let reusable=sameMembership&&groups.length>0&&mealState.status!=="NO_WITNESS"&&mealState.status!=="BUDGET_EXHAUSTED"
+    &&validateParticipantPresenceReservation(problem,arrivals,groups,mealState.meals,placed,virtualBoundaries);
+  let witness=reusable?null:findTransportDirectionWitness(problem,"arrival",arrivals,placed,consume,
+    mealState.status==="NO_WITNESS"||mealState.status==="BUDGET_EXHAUSTED"?previous?.participantMeals??[]:mealState.meals,true,virtualBoundaries);
+  if(!reusable&&witness?.feasible){
+    groups=witness.groups;
+    mealState=maintainParticipantMealWitness(problem,placed,previous?.participantMeals??[],consume,groups);
+  } else if(!reusable)groups=witness?.groups??[];
   const mealFingerprint=participantMealWitnessFingerprint(mealState.meals);
   const baseFingerprint=reservationFingerprint(groups,deadlineRecord);
   const reservation={groups,deadlines:deadlineRecord,participantMeals:mealState.meals,participantMealFingerprint:mealFingerprint,

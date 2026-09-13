@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { materializeParticipantBoundaries } from "./participantBoundaryMaterialization";
+import { materializeParticipantBoundaries, probePendingBoundaryCapacity } from "./participantBoundaryMaterialization";
 
 function fixture(): { problem:PlannerNextProblem; productive:ScheduledTask[] } {
   const tasks:Task[]=[
@@ -37,4 +37,21 @@ test("boundary identity is explicit rather than inferred from id or space",()=>{
   const result=materializeParticipantBoundaries(problem,productive);
   assert.equal(result.status,"FEASIBLE");
   assert.equal(result.scheduled.some(task=>task.id==="arbitrary-alpha"),false);
+});
+
+test("boundary Hall probe distinguishes collective impossibility from nonempty individual domains",()=>{
+  const {problem}=fixture();
+  const tasks:Task[]=["a","b"].map((id,index)=>({id,kind:"auxiliary",participantId:`p${index}`,duration:10,
+    spaceId:"shared",dependencies:[],availability:[{start:0,end:10}],participantBoundaryRole:"ENTRY_PREREQUISITE"}));
+  problem.participants.push(...tasks.map(task=>({id:task.participantId!,availability:[{start:0,end:10}]})));
+  const result=probePendingBoundaryCapacity(problem,tasks,[]);
+  assert.equal(result.feasible,false);assert.equal(result.collectiveCapacityPrunes,1);
+  assert.deepEqual(result.blockingTaskIds,["a","b"]);
+});
+
+test("boundary Hall probe retains collectively feasible ENTRY and EXIT domains",()=>{
+  const {problem}=fixture();
+  const tasks=problem.tasks.filter(task=>task.participantBoundaryRole!==undefined);
+  const result=probePendingBoundaryCapacity(problem,tasks,[]);
+  assert.equal(result.feasible,true);assert.ok(result.checks>0);
 });

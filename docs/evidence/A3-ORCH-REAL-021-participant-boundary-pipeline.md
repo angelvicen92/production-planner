@@ -74,3 +74,29 @@ ledger se agotó antes del primer ENTRY. La única ejecución 20k permitida tamb
 `BRANCH_BUDGET_EXHAUSTED` antes de ENTRY; por tanto no se afirma `FULL_HARD_VALID`, ni
 coverage 269 publicada, ni validación hard final. El resultado conserva el diagnóstico
 como riesgo pendiente en vez de ocultarlo con un presupuesto mayor.
+
+## Autoridad conjunta y capacidad colectiva (continuación)
+
+La reserva ya no valida llegada con una lista de comidas vacía. Una única autoridad
+read-only comprueba conjuntamente la geometría canónica de llegada y cada witness de
+comida; además, los dominios exactos de comida reciben el final de la llegada del
+participante como límite inferior de presencia. El orden de reparación conserva primero
+la llegada e intenta mover únicamente las comidas afectadas; si esa combinación no
+existe, la llegada vuelve a buscarse contra los deadlines de las comidas y éstas se
+revalidan contra el nuevo witness. `BUDGET_EXHAUSTED` permanece separado de
+`NO_WITNESS` y todo candidato exacto consume el ledger compartido.
+
+ENTRY y EXIT comparten ahora un probe necessary-only basado en intervalos. El probe
+construye dominios individuales con las autoridades estática y dinámica, certifica
+dominios vacíos y aplica una desigualdad conservadora de carga acumulada por espacio y
+recurso sobre endpoints de envelopes; no enumera la grid. Cuando el resultado es
+inconcluso conserva la rama para el matching implícito en la materialización exacta.
+Los checks, prunes colectivos certificados y ramas exactas se propagan a los contadores
+`boundaryAnalyticChecks`, `boundaryCollectiveCapacityPrunes` y `boundaryExactRepairs`.
+
+El gate Full A2 de 5k se ejecutó después de esta integración. Preflight y adapter
+permanecen `SUPPORTED`, se conservan las 269 obligaciones y se alcanza profundidad
+productiva 130, pero el resultado sigue siendo `BRANCH_BUDGET_EXHAUSTED` antes de una
+publicación hard-valid. Por la regla del gate no se ejecutó 20k. Esta evidencia no afirma
+`COMPLETE`, coverage 269 publicada ni `FULL_HARD_VALID`; queda pendiente aislar el
+consumidor terminal que aún agota el ledger antes de completar ENTRY/EXIT.

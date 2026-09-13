@@ -98,7 +98,8 @@ export function participantMealWitnessFromReservation(meals:readonly ScheduledPa
     maximumSimultaneous:maximumConcurrent(meals),reasonCodes:[],readOnly:true});
 }
 
-export function participantMealCandidates(problem: PlannerNextProblem, obligation: ParticipantMealObligation, tasks: readonly ScheduledTask[], placed: readonly ScheduledParticipantMeal[]): ScheduledParticipantMeal[] {
+export function participantMealCandidates(problem: PlannerNextProblem, obligation: ParticipantMealObligation, tasks: readonly ScheduledTask[], placed: readonly ScheduledParticipantMeal[],
+  presenceLowerBoundByParticipant:ReadonlyMap<string,number>=new Map()): ScheduledParticipantMeal[] {
   const participant = problem.participants.find(({ id }) => id === obligation.participantId);
   if (!participant) return [];
   const capacity = problem.participantMealCapacity?.maxSimultaneous ?? 0;
@@ -115,7 +116,8 @@ export function participantMealCandidates(problem: PlannerNextProblem, obligatio
   for (const start of starts) {
     const end = start + obligation.duration;
     const candidate = { id: obligation.id, sourceTaskId: obligation.sourceTaskId, participantId: obligation.participantId, duration: obligation.duration, start, end };
-    if (end > obligation.window.end || !contains(participant.availability, start, end)) continue;
+    if (start < (presenceLowerBoundByParticipant.get(obligation.participantId) ?? problem.day.start)
+      || end > obligation.window.end || !contains(participant.availability, start, end)) continue;
     if ((obligation.dependencies ?? []).some((dependencyId) => {
       const dependencyTask = taskById.get(dependencyId);
       if (dependencyTask) return dependencyTask.end > start;
@@ -166,7 +168,8 @@ export function probeParticipantMealFutureFeasibility(problem: PlannerNextProble
 }
 
 /** Exact deterministic joint witness; smallest-domain-first and ID only as final tie-break. */
-export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode): ParticipantMealWitness {
+export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode,
+  presenceLowerBoundByParticipant:ReadonlyMap<string,number>=new Map()): ParticipantMealWitness {
   const obligations = [...(problem.participantMeals ?? [])].sort(byIdentity);
   if (obligations.length === 0) return freeze({ complete: true, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: [], rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: [], readOnly: true });
   const capacity = problem.participantMealCapacity?.maxSimultaneous;
@@ -177,7 +180,7 @@ export function assessParticipantMealFutureFeasibility(problem: PlannerNextProbl
   const consume = (): boolean => { if (budget.remaining <= 0) { exhausted = true; return false; } if (budget.consume && !budget.consume(1)) { exhausted = true; return false; } budget.remaining -= 1; branches += 1; return true; };
   const search = (pending: ParticipantMealObligation[], placed: ScheduledParticipantMeal[], path: string[]): ScheduledParticipantMeal[] | null => {
     if (pending.length === 0) { acceptedOrder = path; return placed; }
-    const domains = pending.map((obligation) => {const logical=obligation.fixedInterval?1:Math.max(0,Math.floor((obligation.window.end-obligation.duration-obligation.window.start)/GRID)+1);logicalGridStarts+=logical;actuallyEvaluatedStarts+=logical;return { obligation, candidates: participantMealCandidates(problem, obligation, tasks, placed) };})
+    const domains = pending.map((obligation) => {const logical=obligation.fixedInterval?1:Math.max(0,Math.floor((obligation.window.end-obligation.duration-obligation.window.start)/GRID)+1);logicalGridStarts+=logical;actuallyEvaluatedStarts+=logical;return { obligation, candidates: participantMealCandidates(problem, obligation, tasks, placed,presenceLowerBoundByParticipant) };})
       .sort((a, b) => a.candidates.length - b.candidates.length || byIdentity(a.obligation, b.obligation));
     const selected = domains[0]!;
     counts[selected.obligation.sourceTaskId] = selected.candidates.length;

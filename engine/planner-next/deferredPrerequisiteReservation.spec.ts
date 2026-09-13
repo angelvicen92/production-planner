@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { maintainDeferredPrerequisiteReservation } from "./deferredPrerequisiteReservation";
+import { maintainDeferredPrerequisiteReservation, validateParticipantPresenceReservation } from "./deferredPrerequisiteReservation";
 import { validateTransportGrouping } from "./transportGrouping";
 
 const interval = [{ start: 0, end: 60 }];
@@ -178,4 +178,15 @@ test("an exact no-witness repair rejects instead of dropping a viable branch", (
     participantId:arrival.participantId,duration:5,spaceId:"core-space",dependencies:[],start:5,end:10};
   const result=maintainDeferredPrerequisiteReservation(input.problem,input.pending,[...input.core,impossible],[],initial.reservation);
   assert.equal(result.feasible,false);assert.equal(result.arrivalPruned,true);assert.equal(result.arrivalWitnessDropped,true);
+});
+
+test("joint presence rejects a pre-arrival meal while an alternative witness preserves the branch",()=>{
+  const input=arrivalFixture(1);const arrival=input.pending[0]!;
+  input.problem.participantMealCapacity={maxSimultaneous:1};
+  input.problem.participantMeals=[{id:"meal",sourceTaskId:"meal-source",participantId:arrival.participantId!,duration:5,window:{start:0,end:35}}];
+  const groups=[[{...arrival,start:10,end:20}]];
+  const early={id:"meal",sourceTaskId:"meal-source",participantId:arrival.participantId!,duration:5,start:5,end:10};
+  const later={...early,start:20,end:25};
+  assert.equal(validateParticipantPresenceReservation(input.problem,[arrival],groups,[early],input.core),false);
+  assert.equal(validateParticipantPresenceReservation(input.problem,[arrival],groups,[later],input.core),true);
 });

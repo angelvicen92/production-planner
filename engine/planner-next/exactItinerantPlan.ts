@@ -681,8 +681,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       : (()=>{const legacy=materializeTerminalTransport(problem,substantive,mealWitness.scheduled,arrivalReservation.groups,()=>ledger.consume("STANDALONE"));return {
         status:legacy.status,scheduled:legacy.scheduled,entryBranches:legacy.arrival.branchesExplored,
         exitBranches:legacy.departure.branchesExplored,arrivalWitnessReused:legacy.arrivalReservedWitnessReused,
-        arrivalWitnessRepaired:false,materializedEntryCount:0,materializedExitCount:0};})()) : null;
+        arrivalWitnessRepaired:false,materializedEntryCount:0,materializedExitCount:0,boundaryAnalyticChecks:0,
+        boundaryCollectiveCapacityPrunes:0,boundaryExactRepairs:0};})()) : null;
     if(transport){evidence.materializedEntryCount+=transport.materializedEntryCount;evidence.materializedExitCount+=transport.materializedExitCount;evidence.terminalPresenceExactBranches+=transport.entryBranches+transport.exitBranches;evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.entryBranches;
+      evidence.boundaryAnalyticChecks+=transport.boundaryAnalyticChecks;evidence.boundaryCollectiveCapacityPrunes+=transport.boundaryCollectiveCapacityPrunes;evidence.boundaryExactRepairs+=transport.boundaryExactRepairs;
       evidence.terminalTransportDepartureBranches+=transport.exitBranches;
       if(transport.arrivalWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;}
     if(transport?.status==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
