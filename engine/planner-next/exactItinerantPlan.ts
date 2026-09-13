@@ -647,7 +647,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const exactSubstantive = actualSubstantive.length === expectedSubstantive.length && actualSubstantive.every((id, index) => id === expectedSubstantive[index]);
     if(exactSubstantive)evidence.substantiveCompleteLeaves+=1;
     const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE"):null;
+    // A reserved arrival is part of the terminal presence geometry.  Feeding it to
+    // the canonical meal authority prevents that authority from selecting a meal
+    // which would immediately invalidate the witness and then paying to rediscover
+    // the same arrival during terminal materialization.
+    const mealGeometry=orderScheduled([...substantive,...arrivalReservation.groups.flat()]);
+    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,mealGeometry,mealBudget,"MATERIALIZE"):null;
     if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealExactMaterializations+=1;evidence.participantMealLogicalGridStarts+=mealWitness.logicalGridStarts;evidence.participantMealActuallyEvaluatedStarts+=mealWitness.actuallyEvaluatedStarts;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(mealWitness.complete)evidence.participantMealComplete+=1;else evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
     const operationalMealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
     const operationalMealWitness=exactSubstantive?assessOperationalMealFutureFeasibility(problem,substantive,operationalMealBudget,"MATERIALIZE"):null;
@@ -659,11 +664,15 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     if(mealWitness?.complete)evidence.terminalTransportAttempts+=1;
+    const operationalBoundaryMeals=(operationalMealWitness?.scheduled??[]).flatMap(meal=>meal.spaceIds.map((spaceId,index)=>({
+      id:`${meal.id}:${spaceId}`,kind:"space-meal" as const,spaceId,entryIndex:index,duration:meal.duration,start:meal.start,end:meal.end,
+    })));
     const transport = mealWitness?.complete ? (boundaryPending.length
-      ? materializeParticipantBoundaries(problem, substantive, mealWitness.scheduled,coreMeals,arrivalReservation.groups,()=>ledger.consume("STANDALONE"))
+      ? materializeParticipantBoundaries(problem, substantive, mealWitness.scheduled,[...coreMeals,...operationalBoundaryMeals],arrivalReservation.groups,()=>ledger.consume("STANDALONE"))
       : (()=>{const legacy=materializeTerminalTransport(problem,substantive,mealWitness.scheduled,arrivalReservation.groups,()=>ledger.consume("STANDALONE"));return {
         status:legacy.status,scheduled:legacy.scheduled,entryBranches:legacy.arrival.branchesExplored,
-        exitBranches:legacy.departure.branchesExplored,arrivalWitnessReused:legacy.arrivalReservedWitnessReused};})()) : null;
+        exitBranches:legacy.departure.branchesExplored,arrivalWitnessReused:legacy.arrivalReservedWitnessReused,
+        arrivalWitnessRepaired:false,materializedEntryCount:0,materializedExitCount:0};})()) : null;
     if(transport){evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.entryBranches;
       evidence.terminalTransportDepartureBranches+=transport.exitBranches;
       if(transport.arrivalWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;}
