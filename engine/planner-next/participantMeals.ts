@@ -90,6 +90,14 @@ function maximumConcurrent(meals: readonly ScheduledParticipantMeal[]): number {
 }
 export function participantMealWitnessFingerprint(meals: readonly ScheduledParticipantMeal[]): string { return createHash("sha256").update(JSON.stringify([...meals].sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId)).map(({id,sourceTaskId,participantId,duration,start,end})=>({id,sourceTaskId,participantId,duration,start,end})))).digest("hex"); }
 
+/** Adapts an already validated virtual reservation to the terminal witness contract without search. */
+export function participantMealWitnessFromReservation(meals:readonly ScheduledParticipantMeal[]):ParticipantMealWitness {
+  return freeze({complete:true,scheduled:[...meals].sort((a,b)=>a.start-b.start||a.sourceTaskId.localeCompare(b.sourceTaskId)),
+    candidateCountByTaskId:{},finalSelectionOrder:[...meals].map(x=>x.sourceTaskId).sort(),attemptedSelectionTrace:[],blockingMealTaskIds:[],
+    rejectedCandidateCount:0,candidateOrderByTaskId:{},branchesExplored:0,logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks:0,
+    maximumSimultaneous:maximumConcurrent(meals),reasonCodes:[],readOnly:true});
+}
+
 export function participantMealCandidates(problem: PlannerNextProblem, obligation: ParticipantMealObligation, tasks: readonly ScheduledTask[], placed: readonly ScheduledParticipantMeal[]): ScheduledParticipantMeal[] {
   const participant = problem.participants.find(({ id }) => id === obligation.participantId);
   if (!participant) return [];

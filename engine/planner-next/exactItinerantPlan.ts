@@ -23,7 +23,7 @@ import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
-import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
+import { probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, participantMealWitnessFromReservation, type ParticipantMealWitness } from "./participantMeals";
 import { assessOperationalMealFutureFeasibility, operationalMealWitnessCount, operationalMealWitnessFingerprint, probeOperationalMealFutureFeasibility, taskConflictsWithOperationalMealPolicy, type OperationalMealReservation, type OperationalMealWitness } from "./operationalMeals";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
@@ -452,11 +452,24 @@ export interface ExactItinerantPlanEvidence {
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealCheapProbes:number; participantMealAffectedObligationsChecked:number; participantMealAnalyticDomainBuilds:number; participantMealLogicalGridStarts:number; participantMealAnalyticallyEliminatedStarts:number; participantMealActuallyEvaluatedStarts:number; participantMealZeroDomainPrunes:number; participantMealAnalyticCollectivePrunes:number; participantMealExactSearchesAvoided:number; participantMealExactMaterializations:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
+  participantPresenceReservationBuilds:number;participantPresenceReservationReuses:number;participantPresenceReservationRepairs:number;participantPresenceReservationPrunes:number;
+  participantMealWitnessBuilds:number;participantMealWitnessReuses:number;participantMealWitnessRepairs:number;participantMealRepairBranches:number;
+  boundaryAnalyticChecks:number;boundaryCollectiveCapacityPrunes:number;boundaryExactRepairs:number;
+  terminalPresenceReuses:number;terminalPresenceRepairs:number;terminalPresenceExactBranches:number;
+  materializedEntryCount:number;materializedExitCount:number;firstPresenceFailure:string|null;
   causalDiagnostic:ExactCoreCausalDiagnostic|null;
 }
 
 function addTransportEvidence(evidence:ExactItinerantPlanEvidence,value:{slotLogicalStarts:number;slotAnalyticallyEliminatedStarts:number;slotStartSetsEvaluated:number;matchingChecks:number;matchingEdgeChecks:number;matchingAugmentTraversals:number;equivalentMembershipsCollapsed:number;monotoneFastPathChecks:number;monotoneFastPathHits:number;monotoneFastPathWitnesses:number;monotoneFastPathAbstentions:number;cumulativeCapacityChecks:number;cumulativeCapacityPrunes:number;futureChecks:number;futureIntervalCalculations:number;futureEnumeratedStarts:number;futureCapacityPrunes:number}):void { evidence.transportSlotLogicalStarts+=value.slotLogicalStarts;evidence.transportSlotAnalyticallyEliminatedStarts+=value.slotAnalyticallyEliminatedStarts;evidence.transportSlotStartSetsEvaluated+=value.slotStartSetsEvaluated;evidence.transportMatchingChecks+=value.matchingChecks;evidence.transportMatchingEdgeChecks+=value.matchingEdgeChecks;evidence.transportMatchingAugmentTraversals+=value.matchingAugmentTraversals;evidence.transportEquivalentMembershipsCollapsed+=value.equivalentMembershipsCollapsed;evidence.transportMonotoneFastPathChecks+=value.monotoneFastPathChecks;evidence.transportMonotoneFastPathHits+=value.monotoneFastPathHits;evidence.transportMonotoneFastPathWitnesses+=value.monotoneFastPathWitnesses;evidence.transportMonotoneFastPathAbstentions+=value.monotoneFastPathAbstentions;evidence.transportCumulativeCapacityChecks+=value.cumulativeCapacityChecks;evidence.transportCumulativeCapacityPrunes+=value.cumulativeCapacityPrunes;evidence.transportFutureChecks+=value.futureChecks;evidence.transportFutureIntervalCalculations+=value.futureIntervalCalculations;evidence.transportFutureEnumeratedStarts+=value.futureEnumeratedStarts;evidence.transportFutureCapacityPrunes+=value.futureCapacityPrunes; }
 function addPendingArrivalDeadlineEvidence(evidence:ExactItinerantPlanEvidence,value:NonNullable<MacroPendingPrerequisiteForwardCheckResult["pendingArrivalDeadline"]>,searchesAvoided:number):void { evidence.pendingArrivalDeadlineChecks+=value.checks;evidence.pendingArrivalDeadlinePrunes+=value.prunes;evidence.pendingArrivalDeadlineFirstCertificate??=value.firstCertificate;evidence.exactPrerequisiteSearchesAvoided+=searchesAvoided; }
+function addPresenceReservationEvidence(evidence:ExactItinerantPlanEvidence,result:ReturnType<typeof maintainDeferredPrerequisiteReservation>):void{
+  const action=result.participantMealWitnessAction;
+  if(action==="BUILD"){evidence.participantPresenceReservationBuilds++;evidence.participantMealWitnessBuilds++;}
+  else if(action==="REUSE"){evidence.participantPresenceReservationReuses++;evidence.participantMealWitnessReuses++;}
+  else if(action==="REPAIR"){evidence.participantPresenceReservationRepairs++;evidence.participantMealWitnessRepairs++;}
+  else {evidence.participantPresenceReservationPrunes++;evidence.firstPresenceFailure??=action;}
+  evidence.participantMealRepairBranches+=result.participantMealRepairBranches;
+}
 
 export interface ExactItinerantPlanResult {
   status: ExactItinerantPlanStatus;
@@ -646,14 +659,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const actualSubstantive = [...substantive].sort(byId).map(({ id }) => id);
     const exactSubstantive = actualSubstantive.length === expectedSubstantive.length && actualSubstantive.every((id, index) => id === expectedSubstantive[index]);
     if(exactSubstantive)evidence.substantiveCompleteLeaves+=1;
-    const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-    // A reserved arrival is part of the terminal presence geometry.  Feeding it to
-    // the canonical meal authority prevents that authority from selecting a meal
-    // which would immediately invalidate the witness and then paying to rediscover
-    // the same arrival during terminal materialization.
-    const mealGeometry=orderScheduled([...substantive,...arrivalReservation.groups.flat()]);
-    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,mealGeometry,mealBudget,"MATERIALIZE"):null;
-    if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealExactMaterializations+=1;evidence.participantMealLogicalGridStarts+=mealWitness.logicalGridStarts;evidence.participantMealActuallyEvaluatedStarts+=mealWitness.actuallyEvaluatedStarts;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(mealWitness.complete)evidence.participantMealComplete+=1;else evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
+    // Presence maintenance validated or repaired this virtual witness after every
+    // productive placement. Terminal materialization must not restart global meal DFS.
+    const mealWitness=exactSubstantive?participantMealWitnessFromReservation(arrivalReservation.participantMeals):null;
+    if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealComplete+=1;evidence.terminalPresenceReuses+=1;}
     const operationalMealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
     const operationalMealWitness=exactSubstantive?assessOperationalMealFutureFeasibility(problem,substantive,operationalMealBudget,"MATERIALIZE"):null;
     if(operationalMealWitness){evidence.operationalMealAttempts+=1;if(operationalMealWitness.complete)evidence.operationalMealComplete+=1;else evidence.operationalMealInfeasible+=1;
@@ -673,7 +682,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         status:legacy.status,scheduled:legacy.scheduled,entryBranches:legacy.arrival.branchesExplored,
         exitBranches:legacy.departure.branchesExplored,arrivalWitnessReused:legacy.arrivalReservedWitnessReused,
         arrivalWitnessRepaired:false,materializedEntryCount:0,materializedExitCount:0};})()) : null;
-    if(transport){evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.entryBranches;
+    if(transport){evidence.materializedEntryCount+=transport.materializedEntryCount;evidence.materializedExitCount+=transport.materializedExitCount;evidence.terminalPresenceExactBranches+=transport.entryBranches+transport.exitBranches;evidence.terminalTransportArrivalAttempts+=1;evidence.terminalTransportArrivalBranches+=transport.entryBranches;
       evidence.terminalTransportDepartureBranches+=transport.exitBranches;
       if(transport.arrivalWitnessReused)evidence.terminalTransportArrivalReservedWitnessReuses+=1;}
     if(transport?.status==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
@@ -845,6 +854,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       }
       evidence.deferredPrerequisiteReservationChecks+=1;
       const reserved=maintainDeferredPrerequisiteReservation(problem,[...ordinaryForwardObligations,...boundaryPending],provisionalPlaced,coreMeals,arrivalReservation,()=>ledger.consume("STANDALONE"),choice.task.id);
+      addPresenceReservationEvidence(evidence,reserved);
       if(reserved.arrivalRepaired)evidence.deferredPrerequisiteReservationRepairs+=1;
       else if(reserved.arrivalBranchesExplored===0&&reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationReuses+=1;
       else if(reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
@@ -1178,6 +1188,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }
     evidence.deferredPrerequisiteReservationChecks+=1;
     const reserved=maintainDeferredPrerequisiteReservation(problem,[...pendingForCheck,...boundaryPending],[...coreTasks,...basePlaced,...tasks],coreMeals,baseArrival,()=>ledger.consume("STANDALONE"),unit.id);
+    addPresenceReservationEvidence(evidence,reserved);
     if(reserved.arrivalRepaired)evidence.deferredPrerequisiteReservationRepairs+=1;
     else if(reserved.arrivalBranchesExplored===0&&reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationReuses+=1;
     else if(reserved.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
@@ -1331,6 +1342,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
 };
 evidence.deferredPrerequisiteReservationChecks+=1;
 const initialReservation=maintainDeferredPrerequisiteReservation(problem,[...pending,...boundaryPending],coreTasks,coreMeals);
+addPresenceReservationEvidence(evidence,initialReservation);
 if(initialReservation.reservation.groups.length>0)evidence.deferredPrerequisiteReservationBuilds+=1;
 addPendingArrivalDeadlineEvidence(evidence,initialReservation.pendingArrivalDeadline,initialReservation.exactPrerequisiteSearchesAvoided);
 evidence.deferredPrerequisiteReservationBranchesExplored+=initialReservation.branchesExplored;
@@ -1498,7 +1510,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryIndividualForwardBlockingTaskCounts:{},ordinaryIndividualForwardChecksByDepth:{},
     ordinaryIndividualForwardFirstPrune:null,deferredPrerequisiteReservationChecks:0,deferredPrerequisiteReservationBuilds:0,deferredPrerequisiteReservationReuses:0,deferredPrerequisiteReservationRepairs:0,deferredPrerequisiteReservationPrunes:0,deferredPrerequisiteReservationBranchesExplored:0,deferredPrerequisiteReservationFirstPrune:null,deferredArrivalWitnessChecks:0,deferredArrivalWitnessBranchesExplored:0,deferredArrivalWitnessBacktracks:0,deferredArrivalWitnessRepairs:0,deferredArrivalWitnessPrunes:0,deferredArrivalWitnessDrops:0,deferredArrivalWitnessFirstDrop:null,transportSlotLogicalStarts:0,transportSlotAnalyticallyEliminatedStarts:0,transportSlotStartSetsEvaluated:0,transportMatchingChecks:0,transportMatchingEdgeChecks:0,transportMatchingAugmentTraversals:0,transportMatchingRepairs:0,transportEquivalentMembershipsCollapsed:0,transportMonotoneFastPathChecks:0,transportMonotoneFastPathHits:0,transportMonotoneFastPathWitnesses:0,transportMonotoneFastPathAbstentions:0,transportCumulativeCapacityChecks:0,transportCumulativeCapacityPrunes:0,transportFutureChecks:0,transportFutureIntervalCalculations:0,transportFutureEnumeratedStarts:0,transportFutureCapacityPrunes:0,
     standaloneBlockingTaskDetails:{},
-    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
+    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],participantPresenceReservationBuilds:0,participantPresenceReservationReuses:0,participantPresenceReservationRepairs:0,participantPresenceReservationPrunes:0,participantMealWitnessBuilds:0,participantMealWitnessReuses:0,participantMealWitnessRepairs:0,participantMealRepairBranches:0,boundaryAnalyticChecks:0,boundaryCollectiveCapacityPrunes:0,boundaryExactRepairs:0,terminalPresenceReuses:0,terminalPresenceRepairs:0,terminalPresenceExactBranches:0,materializedEntryCount:0,materializedExitCount:0,firstPresenceFailure:null,causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));

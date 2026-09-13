@@ -1,6 +1,6 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
-import { findTransportDirectionWitness, transportTaskIds } from "./transportGrouping";
+import { findTransportDirectionWitness, transportTaskIds, validateDirectionWitness } from "./transportGrouping";
 
 export interface ParticipantBoundaryMaterialization {
   status: "FEASIBLE" | "NO_WITNESS" | "BUDGET_EXHAUSTED";
@@ -63,15 +63,13 @@ export function materializeParticipantBoundaries(problem:PlannerNextProblem,prod
   for(const task of entries)entryMinutesByParticipant.set(task.participantId!,
     (entryMinutesByParticipant.get(task.participantId!)??0)+task.duration);
   const arrivalDeadlines=new Map(arrivalTasks.map(task=>[task.id,
-    Math.min(problem.day.end,...virtualProductive.filter(row=>row.participantId===task.participantId).map(row=>row.start))
+    Math.min(problem.day.end,...virtualProductive.filter(row=>row.participantId===task.participantId).map(row=>row.start),
+      ...participantMeals.filter(row=>row.participantId===task.participantId).map(row=>row.start))
       -(entryMinutesByParticipant.get(task.participantId!)??0)]));
-  // The reservation authority already validated this witness against productive deadlines.
-  // The reservation has already been validated after every productive placement.
-  // Participant meals are constructed with the reserved groups in their occupied
-  // participant geometry, so validating the same witness a second time here would
-  // both duplicate exact work and (historically) pay for a repair after the meal
-  // authority had selected a conflicting compactness tie-break.
-  const reservedValid=reserved.length>0;
+  // Existence is not validity: terminal authorities (notably operational meals)
+  // may only now be concrete, so reuse requires the canonical cheap validator.
+  const reservedValid=reserved.length>0&&validateDirectionWitness(problem,"arrival",arrivalTasks,reserved,
+    virtualProductive,participantMeals);
   const arrival=reservedValid?{ feasible:true,groups:reserved,exhausted:false }
     :findTransportDirectionWitness(problem,"arrival",arrivalTasks,virtualProductive,consume,participantMeals,false,arrivalDeadlines);
   if(!arrival.feasible)return {status:arrival.exhausted?"BUDGET_EXHAUSTED":"NO_WITNESS",scheduled:[],entryBranches:0,exitBranches:0,arrivalWitnessReused:false,arrivalWitnessRepaired:false,materializedEntryCount:0,materializedExitCount:0};

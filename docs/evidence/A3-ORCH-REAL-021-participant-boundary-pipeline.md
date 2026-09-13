@@ -49,3 +49,28 @@ removed from productive DFS, but terminal participant meals invalidate the reusa
 arrival witness.  A follow-up must include final meal geometry in the reparable virtual
 reservation rather than repeatedly reaching terminal with a stale witness; raising the
 budget would hide that causal problem and was deliberately avoided.
+
+## Reserva reparable de presencia (continuación)
+
+La autoridad recursiva ahora conserva una sola reserva de presencia: el witness agrupado
+de llegada y sus deadlines, junto con un witness virtual de comidas y un fingerprint
+determinista conjunto. La construcción exacta del witness de comidas ocurre una vez;
+cada placement posterior valida primero las elecciones existentes sin búsqueda. Las
+obligaciones intactas se conservan y sólo las afectadas usan candidatos canónicos para
+repair, consumiendo el ledger y distinguiendo agotamiento de ausencia exacta de witness.
+
+Las cuatro capas quedan separadas: la **reserva analítica** descarta únicamente déficits
+necessary-only; el **witness virtual** conserva elecciones móviles; el **repair exacto**
+se limita a elecciones dañadas; y la **materialización terminal** reutiliza el witness
+reservado en vez de reiniciar `MATERIALIZE` global. La validación terminal de llegada es
+explícita mediante la autoridad canónica; la mera existencia de grupos ya no prueba su
+validez. Los starts de comidas también participan en el deadline terminal de presencia,
+por lo que una comida anterior a la primera tarea productiva exige llegada/ENTRY anterior.
+
+En la medición causal 5k posterior al cambio, la búsqueda global de comidas terminales
+bajó de 1.493 ramas a cero: se observó 1 build, 89 reuses, 3 repairs y 24 ramas exactas de
+repair. Se alcanzó una hoja productiva y la autoridad terminal de presencia, pero el
+ledger se agotó antes del primer ENTRY. La única ejecución 20k permitida también terminó
+`BRANCH_BUDGET_EXHAUSTED` antes de ENTRY; por tanto no se afirma `FULL_HARD_VALID`, ni
+coverage 269 publicada, ni validación hard final. El resultado conserva el diagnóstico
+como riesgo pendiente en vez de ocultarlo con un presupuesto mayor.
