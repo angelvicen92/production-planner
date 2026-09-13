@@ -2,7 +2,6 @@ import type {
   PlannerNextProblem,
   PlanningScope,
   ScheduledTask,
-  ValidationSummary,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -16,6 +15,7 @@ export type AssistedPlanningReasonCode =
 
 export interface AssistedProblem {
   readonly problem: PlannerNextProblem;
+  readonly originalValidationProblem: PlannerNextProblem;
   readonly scope: PlanningScope;
   readonly protectedPlacements: readonly ScheduledTask[];
   readonly automaticTaskIds: readonly string[];
@@ -25,6 +25,7 @@ export interface AssistedProblem {
 export interface AssistedPlanningEvidence {
   readonly scopeTaskCount: number;
   readonly scopeTaskIds: readonly string[];
+  readonly supportingTaskIds: readonly string[];
   readonly protectedPlacementCount: number;
   readonly protectedPlacementsPreserved: boolean;
   readonly proposalCount: 0 | 1;
@@ -64,8 +65,7 @@ export function createPlanningScope(
 
 /**
  * Projects an immutable Planner Next problem onto one assisted scope. The only
- * extra search variables are dependency/anchor closure and the vocal feeders
- * required by the existing main-flow core. Accepted placements are represented
+ * extra search variables are the explicit dependency/anchor closure. Accepted placements are represented
  * as singleton task-availability domains, so the engine can use them as hard
  * context but cannot move them.
  */
@@ -91,46 +91,39 @@ export function buildAssistedProblem(
   }
 
   const included = new Set([...scopeIds, ...protectedIds]);
+  const closure = new Set(scopeIds);
   const supporting = new Set<string>();
   const includeSupporting = (id: string): void => {
     if (included.has(id)) return;
     if (!tasksById.has(id)) throw new Error("UNKNOWN_SUPPORTING_TASK_ID");
     included.add(id);
     supporting.add(id);
+    closure.add(id);
   };
   let changed = true;
   while (changed) {
     changed = false;
-    for (const id of [...included]) {
+    for (const id of [...closure]) {
       const task = tasksById.get(id)!;
       for (const dependencyId of task.dependencies) if (!included.has(dependencyId)) {
         includeSupporting(dependencyId);
         changed = true;
       }
-      if (task.kind === "main") {
-        const feeders = problem.tasks.filter((candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId);
-        if (feeders.length !== 1) throw new Error("ASSISTED_MAIN_REQUIRES_EXACTLY_ONE_FEEDER");
-        if (!included.has(feeders[0]!.id)) {
-          includeSupporting(feeders[0]!.id);
-          changed = true;
-        }
-      }
-      const anchor = problem.anchoredAccompaniments?.find((candidate) => candidate.anchorTaskId === id
-        || candidate.beforeTaskIds.includes(id) || candidate.afterTaskIds.includes(id));
-      for (const memberId of anchor ? [...anchor.beforeTaskIds, anchor.anchorTaskId, ...anchor.afterTaskIds] : []) {
-        if (!included.has(memberId)) {
-          includeSupporting(memberId);
-          changed = true;
+      for (const anchor of problem.anchoredAccompaniments ?? []) {
+        if (anchor.anchorTaskId === id || anchor.beforeTaskIds.includes(id) || anchor.afterTaskIds.includes(id)) {
+          for (const memberId of [...anchor.beforeTaskIds, anchor.anchorTaskId, ...anchor.afterTaskIds]) {
+            if (!included.has(memberId)) {
+              includeSupporting(memberId);
+              changed = true;
+            }
+          }
         }
       }
     }
   }
 
   const fixedById = new Map(protectedPlacements.map((placement) => [placement.id, placement]));
-  problem.tasks = problem.tasks.filter(({ id }) => included.has(id)).map((task) => {
-    const fixed = fixedById.get(task.id);
-    return fixed ? { ...task, availability: [{ start: fixed.start, end: fixed.end }] } : task;
-  });
+  problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
   problem.roundSynchronizations = problem.roundSynchronizations?.map((policy) => ({
@@ -144,9 +137,15 @@ export function buildAssistedProblem(
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
   problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
+  const originalValidationProblem = structuredClone(problem);
+  problem.tasks = problem.tasks.map((task) => {
+    const fixed = fixedById.get(task.id);
+    return fixed ? { ...task, availability: [{ start: fixed.start, end: fixed.end }] } : task;
+  });
 
   return {
     problem,
+    originalValidationProblem,
     scope,
     protectedPlacements: structuredClone(protectedPlacements),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
@@ -154,15 +153,19 @@ export function buildAssistedProblem(
   };
 }
 
-const requiredValid = (validation: ValidationSummary): boolean => validation.hardValid;
-
 export function executeAssistedPlanning(input: AssistedProblem): AssistedPlanningResult {
   const execution = executePlannerNext(input.problem, { causalDiagnostic: true });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
-  const scheduled = result?.complete ? result.scheduledTasks.map((task) =>
-    structuredClone(protectedById.get(task.id) ?? task)) : [];
-  const validation = result?.complete ? validatePlan(input.problem, scheduled,
+  const searchScheduled = result?.complete ? result.scheduledTasks : [];
+  const scheduled = searchScheduled.map((task) =>
+    structuredClone(protectedById.get(task.id) ?? task));
+  const searchValidation = result?.complete ? validatePlan(input.problem, searchScheduled,
+    result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
+    result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
+    "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
+    "scheduledOperationalMeals" in result ? result.scheduledOperationalMeals : []) : null;
+  const validation = result?.complete ? validatePlan(input.originalValidationProblem, scheduled,
     result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
@@ -173,14 +176,16 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     return actual !== undefined && JSON.stringify(actual) === JSON.stringify(fixed);
   });
   const completeForScope = input.scope.resolvedTaskIds.every((id) => byId.has(id));
+  const searchHardValid = Boolean(searchValidation?.hardValid && protectedPreserved);
   const hardValid = Boolean(validation?.hardValid && protectedPreserved);
-  const proposal = completeForScope && hardValid ? scheduled.filter(({ id }) => input.automaticTaskIds.includes(id)) : null;
+  const proposal = completeForScope && searchHardValid
+    ? scheduled.filter(({ id }) => input.scope.resolvedTaskIds.includes(id)) : null;
   const resultReasonCodes = result && "evidence" in result && Array.isArray(result.evidence.reasonCodes)
     ? result.evidence.reasonCodes : result && "metrics" in result ? result.metrics.reasonCodes : [];
   const reasonCodes: string[] = [...resultReasonCodes, ...(validation?.reasonCodes ?? [])];
   reasonCodes.push(execution.kind === "POLICY_REJECTED" ? "ASSISTED_EXECUTION_REJECTED"
     : !completeForScope ? "ASSISTED_SCOPE_INCOMPLETE"
-    : !hardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
+    : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
   const work = Object.fromEntries(["branchesExplored", "backtracks", "patternsGenerated", "branchBudgetConsumed"]
@@ -191,12 +196,16 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
   return { proposal, evidence: {
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
+    supportingTaskIds: input.supportingTaskIds,
     protectedPlacementCount: input.protectedPlacements.length,
     protectedPlacementsPreserved: protectedPreserved,
     proposalCount: proposal ? 1 : 0,
     completeForScope,
     hardValid,
-    requiredValid: Boolean(validation && requiredValid(validation)),
+    // Planner Next still reports HARD + REQUIRED through one strict search validator.
+    // A returned assisted proposal therefore proves REQUIRED compliance even if
+    // the combined state retains an inherited, human-accepted HARD exception.
+    requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     work,
     reasonCodes: [...new Set(reasonCodes)].sort(),
