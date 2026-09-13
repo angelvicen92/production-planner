@@ -2,7 +2,6 @@ import type {
   PlannerNextProblem,
   PlanningScope,
   ScheduledTask,
-  ValidationSummary,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -154,8 +153,6 @@ export function buildAssistedProblem(
   };
 }
 
-const requiredValid = (validation: ValidationSummary): boolean => validation.hardValid;
-
 export function executeAssistedPlanning(input: AssistedProblem): AssistedPlanningResult {
   const execution = executePlannerNext(input.problem, { causalDiagnostic: true });
   const result = execution.result;
@@ -205,7 +202,10 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     proposalCount: proposal ? 1 : 0,
     completeForScope,
     hardValid,
-    requiredValid: Boolean(validation && requiredValid(validation)),
+    // Planner Next still reports HARD + REQUIRED through one strict search validator.
+    // A returned assisted proposal therefore proves REQUIRED compliance even if
+    // the combined state retains an inherited, human-accepted HARD exception.
+    requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     work,
     reasonCodes: [...new Set(reasonCodes)].sort(),
