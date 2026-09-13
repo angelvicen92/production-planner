@@ -1,6 +1,6 @@
 # A2-CONTRACT-RECON-001 — corrected A2 baseline
 
-Date: 2026-09-13. PR base: `9d733eaef737fe39e8992307ce695097f0fe4779`. Evidence candidate head: `ace8f234ca41ead50a27bcaefa11ef241ee8ad2b`.
+Date: 2026-09-13. PR base: `9d733eaef737fe39e8992307ce695097f0fe4779`. Contract/baseline execution head: `e3d2f450310500ad728e10c7b410019bb3b1bd07`. The subsequent governance-only cleanup restores the runner default and corrects Evidence semantics without rerunning Full A2.
 
 ## CANONICAL CONTRACT
 
