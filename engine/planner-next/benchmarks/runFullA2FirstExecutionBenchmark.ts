@@ -15,7 +15,7 @@ import { EXPECTED_COACH_BY_PARTICIPANT } from "./focal-a2/full-day/manifest";
 const PLAN_ID = 27001;
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
 const branchBudgetOverride = process.env.PLANNER_NEXT_FULL_A2_BRANCH_BUDGET;
-const branchBudget = branchBudgetOverride === undefined ? 5_000 : Number(branchBudgetOverride);
+const branchBudget = branchBudgetOverride === undefined ? 300_000 : Number(branchBudgetOverride);
 const causalDiagnostic = process.env.PLANNER_NEXT_FULL_A2_CAUSAL_DIAGNOSTIC !== "false";
 if (!Number.isSafeInteger(branchBudget) || branchBudget <= 0)
   throw new Error("INVALID_PLANNER_NEXT_FULL_A2_BRANCH_BUDGET");
@@ -208,9 +208,7 @@ if (adapted.status === "SUPPORTED") {
 const execution = adapted.status === "SUPPORTED" ? executePlannerNext(adapted.problem,{causalDiagnostic}) : null;
 // Full A2 is intentionally executed once. Determinism is established by focused
 // order-invariance tests rather than silently doubling the baseline run.
-const executionWithoutDiagnostic = execution;
 const exactResult = execution?.kind === "EXACT_CONSTRUCTIVE" ? execution.result : null;
-const exactResultWithoutDiagnostic = executionWithoutDiagnostic?.kind === "EXACT_CONSTRUCTIVE" ? executionWithoutDiagnostic.result : null;
 const scheduledCanonicalObligations = exactResult
   ? exactResult.scheduledTasks.length + exactResult.scheduledParticipantMeals.length
   : 0;
@@ -276,18 +274,9 @@ const diagnosticReport = diagnostic ? {
   criticalRejectionCount,
   recommendation,
 } : null;
-const invariantEvidenceKeys = ["branchesExplored","coreBranches","standaloneBranches","coreCompleteLeafCount",
-  "coreCompleteLeavesEvaluated","coreStandaloneFrontierChecks","coreStandaloneFrontierPrunes","causalBacktracks",
-  "causalBacktrackTargetDepthCounts","standaloneSearchInvocations","standaloneMaximumDepth","standaloneCompleteLeafCount",
-  "coreMaximumDepth","coreFingerprint","fullFingerprint","lastExhaustionPhase"] as const;
-const searchInvariance = exactResult&&exactResultWithoutDiagnostic ? {
-  diagnosticOn:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResult.evidence[key]])),
-  diagnosticOff:Object.fromEntries(invariantEvidenceKeys.map(key=>[key,exactResultWithoutDiagnostic.evidence[key]])),
-  statusOn:exactResult.status,statusOff:exactResultWithoutDiagnostic.status,
-  exactMatch:exactResult.status===exactResultWithoutDiagnostic.status
-    &&invariantEvidenceKeys.every(key=>JSON.stringify(exactResult.evidence[key])===JSON.stringify(exactResultWithoutDiagnostic.evidence[key])),
-}:null;
-if(searchInvariance&&!searchInvariance.exactMatch)throw new Error("CAUSAL_DIAGNOSTIC_CHANGED_SEARCH");
+// Diagnostic-on/off equivalence requires two independent executions. This baseline
+// deliberately performs only one Full A2 execution, so the comparison is not evaluated.
+const searchInvariance = null;
 const persistedEvidence=exactResult?{...exactResult.evidence,
   causalDiagnostic:diagnostic?{standaloneFrontier:diagnostic.standaloneFrontier,deepestStandaloneFrontier:diagnostic.deepestStandaloneFrontier,feederMatching:diagnostic.feederMatching,
     macroPendingPrerequisiteCapacityCertificates:diagnostic.macroPendingPrerequisiteCapacityCertificates,

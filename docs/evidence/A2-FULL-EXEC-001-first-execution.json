@@ -1843,47 +1843,7 @@
       "criticalRejectionCount": 81,
       "recommendation": "Next PR: run one feeder-aware core-ordering experiment around blocker task:10203, which accounts for 66 of 81 (81.5%) depth-8 feeder rejections, while preserving every hard constraint and the 5,000-branch budget."
     },
-    "searchInvariance": {
-      "diagnosticOn": {
-        "branchesExplored": 5000,
-        "coreBranches": 4791,
-        "standaloneBranches": 209,
-        "coreCompleteLeafCount": 0,
-        "coreCompleteLeavesEvaluated": 0,
-        "coreStandaloneFrontierChecks": 0,
-        "coreStandaloneFrontierPrunes": 0,
-        "causalBacktracks": 0,
-        "causalBacktrackTargetDepthCounts": {},
-        "standaloneSearchInvocations": 0,
-        "standaloneMaximumDepth": 0,
-        "standaloneCompleteLeafCount": 0,
-        "coreMaximumDepth": 8,
-        "coreFingerprint": null,
-        "fullFingerprint": null,
-        "lastExhaustionPhase": "CORE"
-      },
-      "diagnosticOff": {
-        "branchesExplored": 5000,
-        "coreBranches": 4791,
-        "standaloneBranches": 209,
-        "coreCompleteLeafCount": 0,
-        "coreCompleteLeavesEvaluated": 0,
-        "coreStandaloneFrontierChecks": 0,
-        "coreStandaloneFrontierPrunes": 0,
-        "causalBacktracks": 0,
-        "causalBacktrackTargetDepthCounts": {},
-        "standaloneSearchInvocations": 0,
-        "standaloneMaximumDepth": 0,
-        "standaloneCompleteLeafCount": 0,
-        "coreMaximumDepth": 8,
-        "coreFingerprint": null,
-        "fullFingerprint": null,
-        "lastExhaustionPhase": "CORE"
-      },
-      "statusOn": "BRANCH_BUDGET_EXHAUSTED",
-      "statusOff": "BRANCH_BUDGET_EXHAUSTED",
-      "exactMatch": true
-    }
+    "searchInvariance": null
   },
   "baselineComparison": {
     "previous": {

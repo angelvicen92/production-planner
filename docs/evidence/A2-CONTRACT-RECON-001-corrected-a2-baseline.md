@@ -1,6 +1,6 @@
 # A2-CONTRACT-RECON-001 — corrected A2 baseline
 
-Date: 2026-09-13. PR head baseline: `9d733eaef737fe39e8992307ce695097f0fe4779`.
+Date: 2026-09-13. PR base: `9d733eaef737fe39e8992307ce695097f0fe4779`. Contract/baseline execution head: `e3d2f450310500ad728e10c7b410019bb3b1bd07`. The subsequent governance-only cleanup restores the runner default and corrects Evidence semantics without rerunning Full A2.
 
 ## CANONICAL CONTRACT
 
@@ -17,6 +17,8 @@ The regenerated SPEC10-016 artifact reports `representabilityStatus=FULLY_REPRES
 ## Full A2 baseline — 5,000 branches
 
 The canonical execution used the unchanged `EXACT_CONSTRUCTIVE` search/order/scoring and one 5,000-branch baseline budget. Command-harness wall-clock was approximately **10 seconds**.
+
+Diagnostic-on/off equivalence was **not evaluated** in this baseline because the reconciliation permits only one Full A2 execution. Accordingly, `searchInvariance` is `null`; determinism and order-invariance claims are retained only where independent focused probes establish them.
 
 * Canonical template: VALID; EngineInput preflight: SUPPORTED; adapter: SUPPORTED; Planner Next execution route: EXACT_CONSTRUCTIVE.
 * Deterministic problem fingerprint: `ce3c113b10e0e7e700a92a2b4a40a71ba5c1cbc1dc209e08c39df2f7fa526e29`.
