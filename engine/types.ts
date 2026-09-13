@@ -1,6 +1,7 @@
 // Engine Inputs (DB-agnostic)
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'interrupted' | 'cancelled';
 export type PlannerNextTaskKindInput = "main" | "vocal" | "auxiliary" | "technical";
+export type ParticipantBoundaryRoleInput = "ENTRY_PREREQUISITE" | "EXIT_PREREQUISITE";
 export type ResourceType = 'auxiliar' | 'coach' | 'presenter';
 export type LockType = 'time' | 'space' | 'resource' | 'full';
 
@@ -90,6 +91,8 @@ export interface TaskInput {
       seedSource?: "v4_planned_task" | "protected_existing_planning";
       operationalRole?: "productive_task" | "transport_arrival" | "transport_departure" | "meal_break_placeholder" | "arrival_placeholder" | "call_time_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
       plannerNextKind?: PlannerNextTaskKindInput;
+      /** Explicit terminal-presence role; never inferred from task identity or shape. */
+      participantBoundaryRole?: ParticipantBoundaryRoleInput;
       blocksSpace?: boolean;
       countsAsWork?: boolean;
       countsForMainFlow?: boolean;
