@@ -109,14 +109,15 @@ BEGIN
 END $$;
 
 -- RLS is bypassed by service_role, so table/column privileges are the primary
--- write boundary.  The absence of direct DELETE grants preserves FK cascades.
+-- write boundary. Direct child-table DELETE is deliberately not granted; FK
+-- cascades from deleting the owning plan remain database-managed.
 REVOKE ALL ON TABLE public.plan_config_revisions, public.assisted_planning_sessions, public.assisted_planning_stages, public.planning_stage_validations, public.planning_accepted_exceptions FROM anon, authenticated, service_role;
 GRANT SELECT, INSERT ON TABLE public.plan_config_revisions, public.planning_stage_validations TO authenticated, service_role;
 GRANT SELECT, INSERT ON TABLE public.assisted_planning_stages TO authenticated, service_role;
 GRANT UPDATE (archived_at) ON TABLE public.assisted_planning_stages TO authenticated, service_role;
 GRANT SELECT, INSERT ON TABLE public.planning_accepted_exceptions TO authenticated, service_role;
 GRANT UPDATE (status, resolved_at) ON TABLE public.planning_accepted_exceptions TO authenticated, service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.assisted_planning_sessions TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.assisted_planning_sessions TO authenticated, service_role;
 GRANT USAGE, SELECT ON SEQUENCE public.plan_config_revisions_id_seq, public.assisted_planning_sessions_id_seq, public.assisted_planning_stages_id_seq, public.planning_stage_validations_id_seq, public.planning_accepted_exceptions_id_seq TO authenticated, service_role;
 CREATE TRIGGER assisted_planning_stages_immutable BEFORE UPDATE ON public.assisted_planning_stages
 FOR EACH ROW EXECUTE FUNCTION public.guard_assisted_planning_stage_update();
@@ -139,8 +140,6 @@ END $$;
 CREATE POLICY assisted_planning_sessions_update_admin_production ON public.assisted_planning_sessions
   FOR UPDATE TO authenticated USING (public.has_role('admin') OR public.has_role('production'))
   WITH CHECK (public.has_role('admin') OR public.has_role('production'));
-CREATE POLICY assisted_planning_sessions_delete_admin_production ON public.assisted_planning_sessions
-  FOR DELETE TO authenticated USING (public.has_role('admin') OR public.has_role('production'));
 CREATE POLICY assisted_planning_stages_archive_admin_production ON public.assisted_planning_stages
   FOR UPDATE TO authenticated USING (public.has_role('admin') OR public.has_role('production'))
   WITH CHECK (public.has_role('admin') OR public.has_role('production'));
