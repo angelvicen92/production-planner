@@ -35,15 +35,16 @@ test("cross-plan references stay composite and plan deletion cascades through hi
   assert.match(sql, /guard_assisted_stage_proposal_plan/);
 });
 
-test("service-role privileges enforce the table mutability model without blocking FK cascades", () => {
+test("service-role privileges enforce history while preserving plan-owned cascades", () => {
   assert.match(normalizedSql, /REVOKE ALL ON TABLE .* FROM anon, authenticated, service_role/);
   assert.match(normalizedSql, /GRANT SELECT, INSERT ON TABLE public\.plan_config_revisions, public\.planning_stage_validations TO authenticated, service_role/);
   assert.match(normalizedSql, /GRANT SELECT, INSERT ON TABLE public\.assisted_planning_stages TO authenticated, service_role/);
   assert.match(normalizedSql, /GRANT UPDATE \(archived_at\) ON TABLE public\.assisted_planning_stages TO authenticated, service_role/);
   assert.match(normalizedSql, /GRANT SELECT, INSERT ON TABLE public\.planning_accepted_exceptions TO authenticated, service_role/);
   assert.match(normalizedSql, /GRANT UPDATE \(status, resolved_at\) ON TABLE public\.planning_accepted_exceptions TO authenticated, service_role/);
-  assert.match(normalizedSql, /GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public\.assisted_planning_sessions TO authenticated, service_role/);
-  assert.doesNotMatch(normalizedSql, /GRANT[^;]*DELETE[^;]*(plan_config_revisions|assisted_planning_stages|planning_stage_validations|planning_accepted_exceptions)/);
+  assert.match(normalizedSql, /GRANT SELECT, INSERT, UPDATE ON TABLE public\.assisted_planning_sessions TO authenticated, service_role/);
+  assert.doesNotMatch(normalizedSql, /GRANT[^;]*DELETE[^;]*(plan_config_revisions|assisted_planning_sessions|assisted_planning_stages|planning_stage_validations|planning_accepted_exceptions)/);
+  assert.doesNotMatch(normalizedSql, /assisted_planning_sessions_delete_admin_production/);
 });
 
 test("accepted stages reject mutation except their first archive transition", () => {
