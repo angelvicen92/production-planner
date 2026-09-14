@@ -43,6 +43,10 @@ import {
   resolvePlanOptimizerTransportReferencesV1,
   validatePlanOptimizerSnapshotZoneReferencesV1,
 } from "./planOptimizerSnapshotPersistence";
+import {
+  buildPlanResourceBundleSnapshotCandidateV1,
+  RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE,
+} from "./planResourceBundleSnapshot";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -1294,7 +1298,7 @@ export class SupabaseStorage implements IStorage {
     if (error) throw error;
 
     let persistedTaskTemplateSnapshotRows: Array<{ id: number; source_template_id: number; template_name: string }> = [];
-    if (!bundlesError && !bundleComponentsError && !bundleAffinitiesError) try {
+    try {
       const taskTemplateSnapshotRows = validatedTaskTemplateSnapshots.map((snapshot: TaskTemplateOperationalSnapshotV1) =>
         taskTemplateSnapshotToPersistenceRow(Number(data.id), snapshot),
       );
@@ -1341,17 +1345,27 @@ export class SupabaseStorage implements IStorage {
       return throwAfterPlanCreationFailure(Number(data.id), spatialError, "Failed to snapshot spatial availability for plan");
     }
 
-    try {
-      const activeBundleIds = new Set((bundleCatalog ?? []).map((row: any) => String(row.id)));
-      const { error: bundleSnapshotError } = await supabaseAdmin.from("plan_resource_bundle_snapshots").insert({
-        plan_id: Number(data.id), contract_version: 1, source: "INHERITED",
-        bundles: bundleCatalog ?? [],
-        components: (bundleComponentCatalog ?? []).filter((row: any) => activeBundleIds.has(String(row.bundle_id))),
-        space_affinities: (bundleAffinityCatalog ?? []).filter((row: any) => activeBundleIds.has(String(row.bundle_id))),
-      });
-      if (bundleSnapshotError) throw bundleSnapshotError;
-    } catch (bundleSnapshotError: any) {
-      console.warn("RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE", { planId: Number(data.id), cause: bundleSnapshotError?.message });
+    const bundleSnapshotCandidate = buildPlanResourceBundleSnapshotCandidateV1({
+      bundles: bundleCatalog,
+      components: bundleComponentCatalog,
+      spaceAffinities: bundleAffinityCatalog,
+      bundlesError,
+      componentsError: bundleComponentsError,
+      spaceAffinitiesError: bundleAffinitiesError,
+    });
+    if (bundleSnapshotCandidate) {
+      try {
+        const { error: bundleSnapshotError } = await supabaseAdmin.from("plan_resource_bundle_snapshots").insert({
+          plan_id: Number(data.id),
+          ...bundleSnapshotCandidate,
+        });
+        if (bundleSnapshotError) throw bundleSnapshotError;
+      } catch (bundleSnapshotError: any) {
+        console.warn(RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE, { planId: Number(data.id), cause: bundleSnapshotError?.message });
+      }
+    } else {
+      const sourceError = bundlesError ?? bundleComponentsError ?? bundleAffinitiesError;
+      console.warn(RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE, { planId: Number(data.id), cause: sourceError?.message });
     }
 
     // SPEC11-010: once daily template/spatial identities exist, persist the optimizer snapshot against them.
