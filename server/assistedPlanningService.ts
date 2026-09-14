@@ -22,9 +22,13 @@ function dbError(error: any): never {
 function provenance(authority: string) { return { authority, authorityContractVersion: 1 }; }
 
 export type DraftChange = { taskId: number; startPlanned?: string | null; endPlanned?: string | null; zoneId?: number | null; spaceId?: number | null; locationLabel?: string | null; durationOverride?: number | null; camerasOverride?: number | null };
+type AssistedRpc = (name: string, parameters: Record<string, unknown>) => Promise<{ error: unknown }>;
 
 export class AssistedPlanningService {
-  constructor(private readonly storage: IStorage) {}
+  constructor(
+    private readonly storage: IStorage,
+    private readonly rpc: AssistedRpc = async (name, parameters) => supabaseAdmin.rpc(name, parameters),
+  ) {}
 
   async start(planId: number, userId: string) {
     const existing = await this.storage.getActiveAssistedPlanningSession(planId);
@@ -39,7 +43,7 @@ export class AssistedPlanningService {
     const identity = buildEffectivePlanConfigRevisionV1(revisionInput);
     const replay = buildEffectivePlanConfigReplaySnapshotV1(revisionInput);
     const snapshot = buildAssistedPlanningSnapshotV1(tasks);
-    const { error } = await supabaseAdmin.rpc("assisted_bootstrap_session", { p_plan_id: planId, p_user_id: userId, p_identity: identity, p_replay: replay, p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot) });
+    const { error } = await this.rpc("assisted_bootstrap_session", { p_plan_id: planId, p_user_id: userId, p_identity: identity, p_replay: replay, p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot) });
     if (error) dbError(error);
     return this.state(planId);
   }
@@ -67,13 +71,13 @@ export class AssistedPlanningService {
     const byId = new Map(changes.map((change) => [change.taskId, change]));
     const snapshot = buildAssistedPlanningSnapshotV1(current.tasks.map((task) => ({ id: task.taskId, ...task, ...(byId.get(task.taskId) ?? {}) })));
     const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
-    const { error } = await supabaseAdmin.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: fingerprint });
+    const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: fingerprint });
     if (error) dbError(error); return this.state(planId);
   }
   async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number) {
-    const { error } = await supabaseAdmin.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
+    const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
     if (error) dbError(error); return this.state(planId);
   }
-  async rollback(planId: number, targetStageId: number) { const { error } = await supabaseAdmin.rpc("assisted_move_stage", { p_plan_id: planId, p_target: targetStageId, p_redo: false }); if (error) dbError(error); return this.state(planId); }
-  async redo(planId: number) { const { error } = await supabaseAdmin.rpc("assisted_move_stage", { p_plan_id: planId, p_target: null, p_redo: true }); if (error) dbError(error); return this.state(planId); }
+  async rollback(planId: number, targetStageId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: targetStageId, p_redo: false }); if (error) dbError(error); return this.state(planId); }
+  async redo(planId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: null, p_redo: true }); if (error) dbError(error); return this.state(planId); }
 }
