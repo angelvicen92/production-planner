@@ -17,7 +17,7 @@ CREATE TABLE public.plan_config_revisions (
   replay_snapshot_json JSONB NOT NULL CHECK (jsonb_typeof(replay_snapshot_json) = 'object' AND replay_snapshot_json->>'contractVersion' = '1'),
   diff_json JSONB CHECK (diff_json IS NULL OR jsonb_typeof(diff_json) = 'object'),
   created_by UUID REFERENCES auth.users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (id, plan_id), UNIQUE (plan_id, fingerprint),
+  UNIQUE (id, plan_id),
   CONSTRAINT plan_config_revisions_parent_fk FOREIGN KEY (parent_revision_id, plan_id)
     REFERENCES public.plan_config_revisions(id, plan_id)
 );
@@ -108,9 +108,15 @@ BEGIN
   RETURN NEW;
 END $$;
 
-REVOKE ALL ON TABLE public.plan_config_revisions, public.assisted_planning_sessions, public.assisted_planning_stages, public.planning_stage_validations, public.planning_accepted_exceptions FROM anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.plan_config_revisions, public.assisted_planning_sessions, public.assisted_planning_stages, public.planning_stage_validations, public.planning_accepted_exceptions TO authenticated;
-GRANT ALL ON TABLE public.plan_config_revisions, public.assisted_planning_sessions, public.assisted_planning_stages, public.planning_stage_validations, public.planning_accepted_exceptions TO service_role;
+-- RLS is bypassed by service_role, so table/column privileges are the primary
+-- write boundary.  The absence of direct DELETE grants preserves FK cascades.
+REVOKE ALL ON TABLE public.plan_config_revisions, public.assisted_planning_sessions, public.assisted_planning_stages, public.planning_stage_validations, public.planning_accepted_exceptions FROM anon, authenticated, service_role;
+GRANT SELECT, INSERT ON TABLE public.plan_config_revisions, public.planning_stage_validations TO authenticated, service_role;
+GRANT SELECT, INSERT ON TABLE public.assisted_planning_stages TO authenticated, service_role;
+GRANT UPDATE (archived_at) ON TABLE public.assisted_planning_stages TO authenticated, service_role;
+GRANT SELECT, INSERT ON TABLE public.planning_accepted_exceptions TO authenticated, service_role;
+GRANT UPDATE (status, resolved_at) ON TABLE public.planning_accepted_exceptions TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.assisted_planning_sessions TO authenticated, service_role;
 GRANT USAGE, SELECT ON SEQUENCE public.plan_config_revisions_id_seq, public.assisted_planning_sessions_id_seq, public.assisted_planning_stages_id_seq, public.planning_stage_validations_id_seq, public.planning_accepted_exceptions_id_seq TO authenticated, service_role;
 CREATE TRIGGER assisted_planning_stages_immutable BEFORE UPDATE ON public.assisted_planning_stages
 FOR EACH ROW EXECUTE FUNCTION public.guard_assisted_planning_stage_update();
@@ -127,6 +133,17 @@ DO $$ DECLARE table_name TEXT; BEGIN
   FOREACH table_name IN ARRAY ARRAY['plan_config_revisions','assisted_planning_sessions','assisted_planning_stages','planning_stage_validations','planning_accepted_exceptions'] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', table_name);
     EXECUTE format('CREATE POLICY %I ON public.%I FOR SELECT TO authenticated USING (public.has_role(''admin'') OR public.has_role(''production'') OR public.has_role(''aux'') OR public.has_role(''viewer''))', table_name || '_read_all_roles', table_name);
-    EXECUTE format('CREATE POLICY %I ON public.%I FOR ALL TO authenticated USING (public.has_role(''admin'') OR public.has_role(''production'')) WITH CHECK (public.has_role(''admin'') OR public.has_role(''production''))', table_name || '_write_admin_production', table_name);
+    EXECUTE format('CREATE POLICY %I ON public.%I FOR INSERT TO authenticated WITH CHECK (public.has_role(''admin'') OR public.has_role(''production''))', table_name || '_insert_admin_production', table_name);
   END LOOP;
 END $$;
+CREATE POLICY assisted_planning_sessions_update_admin_production ON public.assisted_planning_sessions
+  FOR UPDATE TO authenticated USING (public.has_role('admin') OR public.has_role('production'))
+  WITH CHECK (public.has_role('admin') OR public.has_role('production'));
+CREATE POLICY assisted_planning_sessions_delete_admin_production ON public.assisted_planning_sessions
+  FOR DELETE TO authenticated USING (public.has_role('admin') OR public.has_role('production'));
+CREATE POLICY assisted_planning_stages_archive_admin_production ON public.assisted_planning_stages
+  FOR UPDATE TO authenticated USING (public.has_role('admin') OR public.has_role('production'))
+  WITH CHECK (public.has_role('admin') OR public.has_role('production'));
+CREATE POLICY planning_accepted_exceptions_update_admin_production ON public.planning_accepted_exceptions
+  FOR UPDATE TO authenticated USING (public.has_role('admin') OR public.has_role('production'))
+  WITH CHECK (public.has_role('admin') OR public.has_role('production'));

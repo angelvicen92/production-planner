@@ -1,11 +1,105 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { normalizePlanOptimizerSnapshotV1 } from "./planOptimizerSnapshot";
+import { normalizeTaskTemplateCatalogEntry } from "./taskTemplateSnapshot";
+import {
+  buildEffectivePlanConfigRevisionV1,
+  EFFECTIVE_PLAN_CONFIG_DERIVED_AUTHORITIES_V1,
+  type BuildEffectivePlanConfigRevisionInputV1,
+} from "./effectivePlanConfigRevision";
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 
-test("replay snapshot owns canonical semantic data independent from mutable catalogs", () => {
-  const catalog = [{ id: 2, duration: 20 }, { id: 1, duration: 10 }];
-  const replay = buildEffectivePlanConfigReplaySnapshotV1({ taskTemplateSnapshots: catalog, optimizerSnapshot: { mode: "basic" }, authorities: { plan_workday: [{ end: "18:00", start: "09:00" }] } });
-  catalog[0].duration = 99;
-  assert.equal((replay.taskTemplateSnapshots[0] as { duration: number }).duration, 20);
-  assert.equal(replay.contractVersion, 1);
+const provenance = (authority: string) => ({ authority, authorityContractVersion: 1 });
+
+function fixture(): BuildEffectivePlanConfigRevisionInputV1 {
+  return {
+    planId: 42,
+    taskTemplateSnapshots: [
+      normalizeTaskTemplateCatalogEntry({ id: 2, name: "Second", defaultDuration: 20 }),
+      normalizeTaskTemplateCatalogEntry({ id: 1, name: "First", defaultDuration: 10 }),
+    ],
+    taskTemplateProvenance: provenance("plan_task_template_snapshots"),
+    optimizerSnapshot: normalizePlanOptimizerSnapshotV1({
+      groupingZoneIds: [3, 1],
+      vanCapacity: 9,
+      arrivalMinGapMinutes: 7,
+    }),
+    optimizerProvenance: provenance("plan_optimizer_snapshots"),
+    authorities: Object.fromEntries(EFFECTIVE_PLAN_CONFIG_DERIVED_AUTHORITIES_V1.map((authority) => [
+      authority,
+      { semanticValue: [{ id: 2, sequence: ["a", "b"] }, { sequence: ["c"], id: 1 }], provenance: provenance(authority) },
+    ])),
+  };
+}
+
+function revisionFromReplay(input: BuildEffectivePlanConfigRevisionInputV1, replay: ReturnType<typeof buildEffectivePlanConfigReplaySnapshotV1>) {
+  return buildEffectivePlanConfigRevisionV1({
+    ...input,
+    taskTemplateSnapshots: replay.taskTemplateSnapshots,
+    optimizerSnapshot: replay.optimizerSnapshot,
+    authorities: Object.fromEntries(Object.entries(replay.authorities).map(([authority, semanticValue]) => [
+      authority,
+      { semanticValue, provenance: provenance(authority) },
+    ])),
+  });
+}
+
+function assertDeepFrozen(value: unknown): void {
+  if (value === null || typeof value !== "object") return;
+  assert.ok(Object.isFrozen(value));
+  for (const nested of Object.values(value as Record<string, unknown>)) assertDeepFrozen(nested);
+}
+
+test("replay is detached, deeply frozen, canonical and preserves ASST-002 identity", () => {
+  const input = fixture();
+  const expected = buildEffectivePlanConfigRevisionV1(input);
+  const replay = buildEffectivePlanConfigReplaySnapshotV1(input);
+  (input.authorities.spatial_configuration!.semanticValue as Array<{ id: number }>)[0].id = 99;
+
+  assert.equal((replay.authorities.spatial_configuration as Array<{ id: number }>)[1].id, 2);
+  assert.deepEqual(replay.taskTemplateSnapshots.map((item) => item.sourceTemplateId), [1, 2]);
+  assertDeepFrozen(replay);
+  assert.equal(revisionFromReplay(fixture(), replay).configurationFingerprint, expected.configurationFingerprint);
+});
+
+test("replay follows effective authority ordering semantics rather than treating every array alike", () => {
+  const original = fixture();
+  const equivalent = fixture();
+  const orderedDifference = fixture();
+  equivalent.authorities.spatial_configuration!.semanticValue = [
+    { sequence: ["c"], id: 1 },
+    { sequence: ["a", "b"], id: 2 },
+  ];
+  orderedDifference.authorities.plan_workday!.semanticValue = [
+    { sequence: ["c"], id: 1 },
+    { id: 2, sequence: ["a", "b"] },
+  ];
+
+  const left = buildEffectivePlanConfigReplaySnapshotV1(original);
+  const same = buildEffectivePlanConfigReplaySnapshotV1({
+    ...equivalent,
+    taskTemplateSnapshots: [...equivalent.taskTemplateSnapshots].reverse(),
+  });
+  const different = buildEffectivePlanConfigReplaySnapshotV1(orderedDifference);
+  assert.deepEqual(left.authorities.spatial_configuration, same.authorities.spatial_configuration);
+  assert.notDeepEqual(left.authorities.plan_workday, different.authorities.plan_workday);
+});
+
+test("replay ignores object-key order while preserving ordered sequences", () => {
+  const first = fixture();
+  const second = fixture();
+  second.authorities.plan_workday!.semanticValue = [
+    { sequence: ["a", "b"], id: 2 },
+    { sequence: ["c"], id: 1 },
+  ];
+  assert.deepEqual(
+    buildEffectivePlanConfigReplaySnapshotV1(first),
+    buildEffectivePlanConfigReplaySnapshotV1(second),
+  );
+
+  (second.authorities.plan_workday!.semanticValue as Array<{ sequence: string[] }>)[0].sequence.reverse();
+  assert.notDeepEqual(
+    buildEffectivePlanConfigReplaySnapshotV1(first),
+    buildEffectivePlanConfigReplaySnapshotV1(second),
+  );
 });
