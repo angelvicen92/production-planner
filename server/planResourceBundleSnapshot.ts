@@ -8,6 +8,12 @@ export type PlanResourceBundleSnapshotCandidateV1 = Readonly<{
   space_affinities: readonly Record<string, unknown>[];
 }>;
 
+/**
+ * `null` means the optional bundle signal was unavailable. A non-null candidate
+ * with empty arrays means the source loaded successfully and the catalog was
+ * genuinely empty. Keep these states distinct so EngineInput can warn/fallback
+ * only for unavailable data.
+ */
 export function buildPlanResourceBundleSnapshotCandidateV1(input: Readonly<{
   bundles: readonly Record<string, unknown>[] | null;
   components: readonly Record<string, unknown>[] | null;
