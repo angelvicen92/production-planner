@@ -148,13 +148,22 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-test("planner-next remains isolated from legacy and production", () => {
+test("planner-next remains isolated from legacy and production except the assisted proposal boundary", () => {
   for (const file of sourceFiles("engine/planner-next").filter((name) => !name.endsWith(".spec.ts"))) {
     const source = readFileSync(file, "utf8");
     assert.doesNotMatch(source, /engine\/(v3|v4|orc)|generatePlanV[34]|orcActivePlanner/);
   }
+  const assistedProposalBoundary = new Set([
+    "server/assistedProposalService.spec.ts",
+    "server/assistedProposalService.ts",
+    "server/assistedScopeResolver.ts",
+  ]);
   for (const root of ["server", "client", "shared"]) {
-    for (const file of sourceFiles(root)) assert.doesNotMatch(readFileSync(file, "utf8"), /planner-next/);
+    for (const file of sourceFiles(root)) {
+      const source = readFileSync(file, "utf8");
+      if (assistedProposalBoundary.has(file)) assert.match(source, /planner-next/);
+      else assert.doesNotMatch(source, /planner-next/);
+    }
   }
   for (const file of ["engine/solve.ts", "engine/buildInput.ts", "engine/types.ts"]) {
     assert.doesNotMatch(readFileSync(file, "utf8"), /planner-next/);
