@@ -1,0 +1,56 @@
+import assert from "node:assert/strict";
+import type { PlannerNextProblem, Task } from "../contracts";
+import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../assistedPlanning";
+import { createCanonicalFullA2Template, expandCanonicalFullA2Template } from "./focal-a2/full-day/canonicalFullA2Template";
+
+const minute = (value: string): number => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+
+export function runA2AssistedProposalE1Benchmark() {
+  const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
+  const config = expansion.effectiveConfiguration;
+  const itinerantUnitId = new Map(expansion.itinerantUnits.map((unit, index) => [unit.id, `itinerant-team:${index + 1}`]));
+  const tasks: Task[] = expansion.tasks.filter((task) => task.operationalKind !== "participant_meal").map((task) => ({
+    id: task.id, kind: task.operationalKind === "main" || task.operationalKind === "vocal" || task.operationalKind === "technical"
+      ? task.operationalKind : "auxiliary",
+    duration: task.duration, spaceId: task.spaceId, dependencies: [...task.dependencies],
+    ...(task.participantId ? { participantId: task.participantId } : {}),
+    ...(task.coachId ? { coachId: task.coachId } : {}), ...(task.blockKey ? { blockKey: task.blockKey } : {}),
+    ...(task.setupFamilyId ? { setupFamilyId: task.setupFamilyId } : {}),
+    ...(task.jointGroupId ? { jointGroupId: task.jointGroupId } : {}),
+    ...(task.requiredResourceIds.filter((id) => id !== task.coachId).length
+      ? { requiredResourceIds: task.requiredResourceIds.filter((id) => id !== task.coachId) } : {}),
+    ...(task.itinerantUnitId ? { itinerantUnitId: itinerantUnitId.get(task.itinerantUnitId)! } : {}),
+  } as Task));
+  const problem: PlannerNextProblem = {
+    day: { start: minute(config.effectiveDayWindow.start), end: minute(config.effectiveDayWindow.end) },
+    spaces: expansion.spaces.map(({ id }) => ({ id, availability: [{ start: minute(config.effectiveDayWindow.start), end: minute(config.effectiveDayWindow.end) }] })),
+    resources: expansion.resources.map(({ id }) => ({ id, availability: [{ start: minute(config.effectiveDayWindow.start), end: minute(config.effectiveDayWindow.end) }], presencePreference: "OFF" })),
+    participants: expansion.participants.map((id) => ({ id, availability: [{ start: minute(config.participantAvailability[id].start), end: minute(config.participantAvailability[id].end) }] })),
+    coaches: ["coach-lucia", "coach-jose-maria"].map((id) => ({ id, availability: [{ start: minute(config.effectiveDayWindow.start), end: minute(config.effectiveDayWindow.end) }] })),
+    itinerantUnits: expansion.itinerantUnits.map(({ id }) => ({ id: itinerantUnitId.get(id)!, availability: [{ start: minute(config.itinerantUnitAvailability[id].start), end: minute(config.itinerantUnitAvailability[id].end) }] })),
+    tasks, mainFlow: { spaceId: expansion.rules.mainFlow.spaceId, preferredEnd: minute(config.meals.effectiveWindow.start), continuity: "REQUIRED", maxBlocksByKey: expansion.rules.mainFlow.maxBlocksPerCoach, minTasksPerBlock: 1 },
+    participantTransitionMinutes: 5, resourceTransitionMinutes: 0,
+    coachRouteTransitions: [["coach-lucia", "caracola-lucia"], ["coach-jose-maria", "caracola-jose-maria"]].map(([coachId, fromSpaceId]) => ({ coachId, fromSpaceId, toSpaceId: expansion.rules.mainFlow.spaceId, minutes: expansion.rules.coachTransition.minutes })),
+    anchoredAccompaniments: expansion.anchoredOperations.map((operation) => ({ id: operation.id, anchorTaskId: operation.anchorTaskId, beforeTaskIds: [...operation.beforeTaskIds], afterTaskIds: [...operation.afterTaskIds], adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED", itinerantUnitId: itinerantUnitId.get(operation.itinerantUnitId)! })),
+    searchPolicy: "EXACT_CONSTRUCTIVE", budget: { bestK: 5, maxBacktracks: 500, maxPatterns: 200, maxBranchExpansions: 100_000 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" },
+  };
+  const scopeIds = expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7").slice(0, 2).map(({ id }) => id);
+  assert.equal(expansion.tasks.filter((task) => task.participantId).length, 266);
+  const scope = createPlanningScope({ kind: "canonical-space", value: "estudio-7" }, { benchmarkId: "A2-ASSISTED-PROPOSAL-E1", sourceObligationCount: 266 }, scopeIds);
+  // Seed one accepted placement, then prove it remains immutable in both measured executions.
+  const seed = executeAssistedPlanning(buildAssistedProblem(problem, scope, []));
+  assert.ok(seed.proposal && seed.proposal.length > 1);
+  const protectedPlacements = [seed.proposal[0]];
+  const assisted = buildAssistedProblem(problem, scope, protectedPlacements);
+  const first = executeAssistedPlanning(assisted);
+  const second = executeAssistedPlanning(assisted);
+  assert.equal(scopeIds.length, 2);
+  assert.equal(first.evidence.proposalCount, 1);
+  assert.equal(first.evidence.completeForScope, true);
+  assert.equal(first.evidence.requiredValid, true);
+  assert.equal(first.evidence.protectedPlacementsPreserved, true);
+  assert.deepEqual(first, second);
+  return { benchmarkId: "A2-ASSISTED-PROPOSAL-E1", sourceObligationCount: 266,
+    productWrites: 0, deterministicExecutions: 2, ...first.evidence };
+}
