@@ -92,6 +92,11 @@ function readPresentField(row: PlanResourceItemRow, camelKey: string, snakeKey: 
   return undefined;
 }
 
+function hasPresentField(row: PlanResourceItemRow, camelKey: string, snakeKey: string): boolean {
+  return Object.prototype.hasOwnProperty.call(row, camelKey)
+    || Object.prototype.hasOwnProperty.call(row, snakeKey);
+}
+
 export function projectPlanZoneSettingsForEngineInput(rows: readonly PlanResourceItemRow[] | null | undefined): PlanZoneAvailabilityInput[] {
   return (rows ?? []).map((row) => ({
     id: readPresentField(row, "id", "id") as number | undefined,
@@ -99,13 +104,13 @@ export function projectPlanZoneSettingsForEngineInput(rows: readonly PlanResourc
     availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
     availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
     source: readPresentField(row, "source", "source") as string | undefined,
-    name: readPresentField(row, "name", "name") as string | undefined,
-    mealStartPreferred: readPresentField(row, "mealStartPreferred", "meal_start_preferred") as string | null | undefined,
-    mealEndPreferred: readPresentField(row, "mealEndPreferred", "meal_end_preferred") as string | null | undefined,
-    groupingLevel: readPresentField(row, "groupingLevel", "grouping_level") as number | undefined,
-    groupingMinChain: readPresentField(row, "groupingMinChain", "grouping_min_chain") as number | undefined,
-    maxTemplateChanges: readPresentField(row, "maxTemplateChanges", "max_template_changes") as number | undefined,
-    spaceMealBreakMinutes: readPresentField(row, "spaceMealBreakMinutes", "space_meal_break_minutes") as number | null | undefined,
+    ...(hasPresentField(row, "name", "name") ? { name: readPresentField(row, "name", "name") as string | undefined } : {}),
+    ...(hasPresentField(row, "mealStartPreferred", "meal_start_preferred") ? { mealStartPreferred: readPresentField(row, "mealStartPreferred", "meal_start_preferred") as string | null | undefined } : {}),
+    ...(hasPresentField(row, "mealEndPreferred", "meal_end_preferred") ? { mealEndPreferred: readPresentField(row, "mealEndPreferred", "meal_end_preferred") as string | null | undefined } : {}),
+    ...(hasPresentField(row, "groupingLevel", "grouping_level") ? { groupingLevel: readPresentField(row, "groupingLevel", "grouping_level") as number | undefined } : {}),
+    ...(hasPresentField(row, "groupingMinChain", "grouping_min_chain") ? { groupingMinChain: readPresentField(row, "groupingMinChain", "grouping_min_chain") as number | undefined } : {}),
+    ...(hasPresentField(row, "maxTemplateChanges", "max_template_changes") ? { maxTemplateChanges: readPresentField(row, "maxTemplateChanges", "max_template_changes") as number | undefined } : {}),
+    ...(hasPresentField(row, "spaceMealBreakMinutes", "space_meal_break_minutes") ? { spaceMealBreakMinutes: readPresentField(row, "spaceMealBreakMinutes", "space_meal_break_minutes") as number | null | undefined } : {}),
   })).sort((a, b) => a.zoneId - b.zoneId);
 }
 
@@ -117,12 +122,12 @@ export function projectPlanSpaceSettingsForEngineInput(rows: readonly PlanResour
     availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
     availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
     source: readPresentField(row, "source", "source") as string | undefined,
-    name: readPresentField(row, "name", "name") as string | undefined,
-    parentSpaceId: readPresentField(row, "parentSpaceId", "parent_space_id") as number | null | undefined,
-    priorityLevel: readPresentField(row, "priorityLevel", "priority_level") as number | undefined,
-    groupingLevel: readPresentField(row, "groupingLevel", "grouping_level") as number | undefined,
-    groupingMinChain: readPresentField(row, "groupingMinChain", "grouping_min_chain") as number | undefined,
-    groupingApplyToDescendants: readPresentField(row, "groupingApplyToDescendants", "grouping_apply_to_descendants") as boolean | undefined,
+    ...(hasPresentField(row, "name", "name") ? { name: readPresentField(row, "name", "name") as string | undefined } : {}),
+    ...(hasPresentField(row, "parentSpaceId", "parent_space_id") ? { parentSpaceId: readPresentField(row, "parentSpaceId", "parent_space_id") as number | null | undefined } : {}),
+    ...(hasPresentField(row, "priorityLevel", "priority_level") ? { priorityLevel: readPresentField(row, "priorityLevel", "priority_level") as number | undefined } : {}),
+    ...(hasPresentField(row, "groupingLevel", "grouping_level") ? { groupingLevel: readPresentField(row, "groupingLevel", "grouping_level") as number | undefined } : {}),
+    ...(hasPresentField(row, "groupingMinChain", "grouping_min_chain") ? { groupingMinChain: readPresentField(row, "groupingMinChain", "grouping_min_chain") as number | undefined } : {}),
+    ...(hasPresentField(row, "groupingApplyToDescendants", "grouping_apply_to_descendants") ? { groupingApplyToDescendants: readPresentField(row, "groupingApplyToDescendants", "grouping_apply_to_descendants") as boolean | undefined } : {}),
   })).sort((a, b) => a.spaceId - b.spaceId);
 }
 
