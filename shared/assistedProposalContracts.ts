@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AssistedPlanningSnapshotV1 } from "../server/assistedPlanningSnapshot";
 
 export const assistedScopeSelectorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("TASK_IDS"), taskIds: z.array(z.number().int().positive()).min(1) }).strict(),
@@ -27,6 +28,9 @@ export interface AssistedProposalRunResultV1 {
   readonly scopeTaskIds: readonly number[];
   readonly includePrerequisites: boolean;
   readonly proposal: readonly AssistedProposalPlacementV1[] | null;
+  /** Canonical draft authority; this is not the PostgreSQL result fingerprint contract. */
+  readonly proposedDraftSnapshot: AssistedPlanningSnapshotV1 | null;
+  readonly proposedDraftFingerprint: string | null;
   readonly evidence: Readonly<Record<string, unknown>>;
   readonly reasonCodes: readonly string[];
 }

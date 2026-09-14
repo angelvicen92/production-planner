@@ -90,3 +90,20 @@ test("combined evidence preserves an inherited protected-placement HARD violatio
   assert.equal(result.evidence.hardValid, false);
   assert.equal(result.evidence.requiredValid, true);
 });
+
+test("protected-vs-protected inherited incompatibility remains an ASST-008 AcceptedException boundary", () => {
+  const source = fixture();
+  const first = source.tasks.find(({ id }) => id === "protected")!;
+  const second = source.tasks.find(({ id }) => id === "outside")!;
+  const protectedPlacements = [first, second].map((task) => ({ ...task, start: 140, end: 150 } as ScheduledTask));
+  const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "space", value: "main-space" }, {}, ["main"]), protectedPlacements);
+  const result = executeAssistedPlanning(assisted);
+
+  // The strict solver sees both accepted rows as ordinary hard constraints. Teaching
+  // it an accepted-exception delta would require the ASST-008 persistence/search contract.
+  assert.equal(result.proposal, null);
+  assert.equal(result.evidence.protectedPlacementCount, 2);
+  assert.equal(result.evidence.proposalCount, 0);
+  assert.ok(result.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE")
+    || result.evidence.reasonCodes.includes("ASSISTED_HARD_VALIDATION_FAILED"));
+});

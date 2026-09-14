@@ -29,11 +29,26 @@ ALTER TABLE public.planning_runs
    assisted_session_id IS NOT NULL AND base_stage_id IS NOT NULL AND config_revision_id IS NOT NULL AND scope_json IS NOT NULL AND source_draft_fingerprint IS NOT NULL);
 CREATE INDEX planning_runs_assisted_session_created_idx ON public.planning_runs(assisted_session_id,created_at DESC);
 
--- The client supplies only optimistic concurrency guards. The proposal and trace
--- are read under the same session lock from planning_runs.
+-- Result integrity and draft identity are deliberately distinct contracts:
+-- result_fingerprint is SHA-256(jsonb::text), wholly computed/verified by PostgreSQL;
+-- proposedDraftFingerprint is the server's canonical AssistedPlanningSnapshotV1 fingerprint.
+CREATE OR REPLACE FUNCTION public.assisted_finish_proposal(p_plan_id integer,p_run_id bigint,p_result jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+BEGIN
+ IF jsonb_typeof(p_result)<>'object' OR (p_result->>'contractVersion')::integer<>1 THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+ UPDATE planning_runs SET status='success',assisted_result_json=p_result,
+   result_fingerprint=encode(digest(convert_to(p_result::text,'UTF8'),'sha256'),'hex'),finished_at=now(),updated_at=now()
+ WHERE id=p_run_id AND plan_id=p_plan_id AND execution_kind='ASSISTED_SCOPE' AND status='running';
+ IF NOT FOUND THEN RAISE EXCEPTION 'RUN_NOT_READY'; END IF;
+END $$;
+REVOKE ALL ON FUNCTION public.assisted_finish_proposal(integer,bigint,jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.assisted_finish_proposal(integer,bigint,jsonb) TO service_role;
+
+-- The client supplies only optimistic concurrency guards. The immutable proposed
+-- draft and its canonical fingerprint are read from the persisted run result.
 CREATE OR REPLACE FUNCTION public.assisted_apply_proposal(p_plan_id integer,p_run_id bigint,p_expected_fingerprint text,p_expected_base bigint)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE s assisted_planning_sessions%rowtype; r planning_runs%rowtype; result jsonb; item jsonb; next_snapshot jsonb; next_fingerprint text; trace jsonb;
+DECLARE s assisted_planning_sessions%rowtype; r planning_runs%rowtype; result jsonb; proposed jsonb; proposed_fingerprint text; trace jsonb;
 BEGIN
  SELECT * INTO s FROM assisted_planning_sessions WHERE plan_id=p_plan_id AND status='ACTIVE' FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'SESSION_NOT_FOUND'; END IF;
@@ -46,16 +61,18 @@ BEGIN
  IF r.base_stage_id IS DISTINCT FROM p_expected_base OR s.draft_base_stage_id IS DISTINCT FROM r.base_stage_id THEN RAISE EXCEPTION 'STALE_BASE_STAGE'; END IF;
  IF s.draft_fingerprint<>p_expected_fingerprint OR s.draft_fingerprint<>r.source_draft_fingerprint THEN RAISE EXCEPTION 'STALE_DRAFT'; END IF;
  IF s.current_config_revision_id<>r.config_revision_id THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
- IF r.result_fingerprint IS NULL THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
- next_snapshot:=s.draft_snapshot_json;
- FOR item IN SELECT * FROM jsonb_array_elements(result->'proposal') LOOP
-   IF NOT EXISTS(SELECT 1 FROM daily_tasks WHERE id=(item->>'taskId')::integer AND plan_id=p_plan_id) THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
-   next_snapshot:=jsonb_set(next_snapshot,ARRAY['tasks',(SELECT (ordinality-1)::text FROM jsonb_array_elements(next_snapshot->'tasks') WITH ORDINALITY x WHERE (x.value->>'taskId')::integer=(item->>'taskId')::integer)],
-     (SELECT value FROM jsonb_array_elements(next_snapshot->'tasks') value WHERE (value->>'taskId')::integer=(item->>'taskId')::integer) || item,true);
- END LOOP;
- next_fingerprint:=encode(digest(convert_to(next_snapshot::text,'UTF8'),'sha256'),'hex');
+ IF r.result_fingerprint IS NULL OR r.result_fingerprint<>encode(digest(convert_to(result::text,'UTF8'),'sha256'),'hex') THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+ proposed:=result->'proposedDraftSnapshot'; proposed_fingerprint:=result->>'proposedDraftFingerprint';
+ IF jsonb_typeof(proposed)<>'object' OR proposed->>'contractVersion'<>'1' OR jsonb_typeof(proposed->'tasks')<>'array'
+   OR proposed_fingerprint !~ '^[0-9a-f]{64}$' OR jsonb_typeof(result->'proposal')<>'array' THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+ IF (SELECT count(*) FROM jsonb_array_elements(proposed->'tasks'))<>(SELECT count(DISTINCT (item->>'taskId')::integer) FROM jsonb_array_elements(proposed->'tasks') item)
+   OR (SELECT coalesce(array_agg((item->>'taskId')::integer ORDER BY (item->>'taskId')::integer),'{}') FROM jsonb_array_elements(proposed->'tasks') item)
+      IS DISTINCT FROM
+      (SELECT coalesce(array_agg((item->>'taskId')::integer ORDER BY (item->>'taskId')::integer),'{}') FROM jsonb_array_elements(s.draft_snapshot_json->'tasks') item)
+   OR EXISTS (SELECT 1 FROM jsonb_array_elements(result->'proposal') item WHERE NOT (r.scope_task_ids_json @> jsonb_build_array((item->>'taskId')::integer)))
+ THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
  trace:=jsonb_build_object('contractVersion',1,'selector',r.scope_json->'selector','metadata',r.scope_json->'metadata','resolvedTaskIds',r.scope_task_ids_json,'includePrerequisites',r.include_prerequisites,'proposalRunId',r.id);
- UPDATE assisted_planning_sessions SET draft_snapshot_json=next_snapshot,draft_fingerprint=next_fingerprint,draft_scope_json=trace,draft_validation_id=NULL,updated_at=now() WHERE id=s.id;
+ UPDATE assisted_planning_sessions SET draft_snapshot_json=proposed,draft_fingerprint=proposed_fingerprint,draft_scope_json=trace,draft_validation_id=NULL,updated_at=now() WHERE id=s.id;
  RETURN s.id;
 END $$;
 REVOKE ALL ON FUNCTION public.assisted_apply_proposal(integer,bigint,text,bigint) FROM PUBLIC,anon,authenticated;
