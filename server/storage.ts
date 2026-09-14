@@ -11,7 +11,16 @@ import {
   TaskTemplate,
   Lock,
   InsertLock,
+  PlanConfigRevision,
+  AssistedPlanningSession,
+  AssistedPlanningStage,
+  PlanningStageValidation,
+  PlanningAcceptedException,
 } from "@shared/schema";
+import type { EffectivePlanConfigRevisionV1 } from "./effectivePlanConfigRevision";
+import type { EffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
+import type { AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
+import { mapAssistedPersistenceRow, toAssistedPersistenceRow } from "./assistedPlanningPersistenceMapping";
 import {
   OptimizerHeuristicKey,
   coerceOptimizationMode,
@@ -138,7 +147,29 @@ export type PlanFullDetails = {
   breaks: any[];
 };
 
+export type CreatePlanConfigRevisionInput = { planId: number; parentRevisionId?: number | null; source: string; identity: EffectivePlanConfigRevisionV1; replaySnapshot: EffectivePlanConfigReplaySnapshotV1; diff?: Record<string, unknown> | null; createdBy?: string | null };
+export type CreateAssistedPlanningSessionInput = { planId: number; currentConfigRevisionId: number; draftScope: Record<string, unknown>; draftSnapshot: AssistedPlanningSnapshotV1; draftFingerprint: string };
+export type AssistedPlanningSessionPatch = Partial<Pick<AssistedPlanningSession, "status" | "activeStageId" | "draftBaseStageId" | "currentConfigRevisionId" | "draftScopeJson" | "draftSnapshotJson" | "draftFingerprint" | "draftValidationId">>;
+export type CreateAssistedPlanningStageInput = Omit<AssistedPlanningStage, "id" | "createdAt" | "archivedAt">;
+export type CreatePlanningStageValidationInput = Omit<PlanningStageValidation, "id" | "createdAt">;
+export type CreatePlanningAcceptedExceptionInput = Omit<PlanningAcceptedException, "id">;
+
+
 export interface IStorage {
+  createPlanConfigRevision(input: CreatePlanConfigRevisionInput): Promise<PlanConfigRevision>;
+  getPlanConfigRevision(id: number): Promise<PlanConfigRevision | null>;
+  listPlanConfigRevisions(planId: number): Promise<PlanConfigRevision[]>;
+  createAssistedPlanningSession(input: CreateAssistedPlanningSessionInput): Promise<AssistedPlanningSession>;
+  getActiveAssistedPlanningSession(planId: number): Promise<AssistedPlanningSession | null>;
+  updateAssistedPlanningSession(id: number, patch: AssistedPlanningSessionPatch): Promise<AssistedPlanningSession>;
+  createAssistedPlanningStage(input: CreateAssistedPlanningStageInput): Promise<AssistedPlanningStage>;
+  getAssistedPlanningStage(id: number): Promise<AssistedPlanningStage | null>;
+  listAssistedPlanningStages(sessionId: number): Promise<AssistedPlanningStage[]>;
+  archiveAssistedPlanningStage(id: number, archivedAt: string): Promise<AssistedPlanningStage>;
+  createPlanningStageValidation(input: CreatePlanningStageValidationInput): Promise<PlanningStageValidation>;
+  getPlanningStageValidation(id: number): Promise<PlanningStageValidation | null>;
+  createPlanningAcceptedException(input: CreatePlanningAcceptedExceptionInput): Promise<PlanningAcceptedException>;
+  listPlanningAcceptedExceptions(stageId: number): Promise<PlanningAcceptedException[]>;
   // Plans
   getPlans(): Promise<PlanSummary[]>;
   getPlan(id: number): Promise<Plan | undefined>;
@@ -322,6 +353,63 @@ export interface IStorage {
 }
 
 export class SupabaseStorage implements IStorage {
+  async createPlanConfigRevision(input: CreatePlanConfigRevisionInput): Promise<PlanConfigRevision> {
+    const row = toAssistedPersistenceRow({ planId: input.planId, parentRevisionId: input.parentRevisionId ?? null, source: input.source, fingerprint: input.identity.configurationFingerprint, identityJson: input.identity, replaySnapshotJson: input.replaySnapshot, diffJson: input.diff ?? null, createdBy: input.createdBy ?? null });
+    const { data, error } = await supabaseAdmin.from("plan_config_revisions").insert(row).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async getPlanConfigRevision(id: number): Promise<PlanConfigRevision | null> {
+    const { data, error } = await supabaseAdmin.from("plan_config_revisions").select("*").eq("id", id).maybeSingle();
+    if (error) throw error; return data ? mapAssistedPersistenceRow(data) : null;
+  }
+  async listPlanConfigRevisions(planId: number): Promise<PlanConfigRevision[]> {
+    const { data, error } = await supabaseAdmin.from("plan_config_revisions").select("*").eq("plan_id", planId).order("created_at", { ascending: true });
+    if (error) throw error; return (data ?? []).map((row) => mapAssistedPersistenceRow<PlanConfigRevision>(row));
+  }
+  async createAssistedPlanningSession(input: CreateAssistedPlanningSessionInput): Promise<AssistedPlanningSession> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_sessions").insert(toAssistedPersistenceRow({ planId: input.planId, currentConfigRevisionId: input.currentConfigRevisionId, status: "ACTIVE", draftScopeJson: input.draftScope, draftSnapshotJson: input.draftSnapshot, draftFingerprint: input.draftFingerprint })).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async getActiveAssistedPlanningSession(planId: number): Promise<AssistedPlanningSession | null> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_sessions").select("*").eq("plan_id", planId).eq("status", "ACTIVE").maybeSingle();
+    if (error) throw error; return data ? mapAssistedPersistenceRow(data) : null;
+  }
+  async updateAssistedPlanningSession(id: number, patch: AssistedPlanningSessionPatch): Promise<AssistedPlanningSession> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_sessions").update({ ...toAssistedPersistenceRow(patch), updated_at: new Date().toISOString() }).eq("id", id).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async createAssistedPlanningStage(input: CreateAssistedPlanningStageInput): Promise<AssistedPlanningStage> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_stages").insert(toAssistedPersistenceRow(input)).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async getAssistedPlanningStage(id: number): Promise<AssistedPlanningStage | null> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_stages").select("*").eq("id", id).maybeSingle();
+    if (error) throw error; return data ? mapAssistedPersistenceRow(data) : null;
+  }
+  async listAssistedPlanningStages(sessionId: number): Promise<AssistedPlanningStage[]> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_stages").select("*").eq("session_id", sessionId).order("ordinal", { ascending: true });
+    if (error) throw error; return (data ?? []).map((row) => mapAssistedPersistenceRow<AssistedPlanningStage>(row));
+  }
+  async archiveAssistedPlanningStage(id: number, archivedAt: string): Promise<AssistedPlanningStage> {
+    const { data, error } = await supabaseAdmin.from("assisted_planning_stages").update({ archived_at: archivedAt }).eq("id", id).is("archived_at", null).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async createPlanningStageValidation(input: CreatePlanningStageValidationInput): Promise<PlanningStageValidation> {
+    const { data, error } = await supabaseAdmin.from("planning_stage_validations").insert(toAssistedPersistenceRow(input)).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async getPlanningStageValidation(id: number): Promise<PlanningStageValidation | null> {
+    const { data, error } = await supabaseAdmin.from("planning_stage_validations").select("*").eq("id", id).maybeSingle();
+    if (error) throw error; return data ? mapAssistedPersistenceRow(data) : null;
+  }
+  async createPlanningAcceptedException(input: CreatePlanningAcceptedExceptionInput): Promise<PlanningAcceptedException> {
+    const { data, error } = await supabaseAdmin.from("planning_accepted_exceptions").insert(toAssistedPersistenceRow(input)).select("*").single();
+    if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async listPlanningAcceptedExceptions(stageId: number): Promise<PlanningAcceptedException[]> {
+    const { data, error } = await supabaseAdmin.from("planning_accepted_exceptions").select("*").eq("stage_id", stageId).order("accepted_at", { ascending: true });
+    if (error) throw error; return (data ?? []).map((row) => mapAssistedPersistenceRow<PlanningAcceptedException>(row));
+  }
   async createPlanningRunDiagnostics(runId: number, planId: number, diagnostics: EngineRunDiagnostics): Promise<void> {
     const { error } = await supabaseAdmin
       .from("planning_runs")

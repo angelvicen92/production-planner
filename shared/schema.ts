@@ -588,6 +588,102 @@ export const dailyTasks = pgTable("daily_tasks", {
   comment2Color: text("comment2_color"),
 });
 
+// Assisted planning persistence. Stages and revisions are immutable authorities;
+// the session is the only mutable workflow pointer/draft row.
+export const planConfigRevisions = pgTable("plan_config_revisions", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  parentRevisionId: bigint("parent_revision_id", { mode: "number" }),
+  source: text("source").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  identityJson: jsonb("identity_json").$type<Record<string, unknown>>().notNull(),
+  replaySnapshotJson: jsonb("replay_snapshot_json").$type<Record<string, unknown>>().notNull(),
+  diffJson: jsonb("diff_json").$type<Record<string, unknown> | null>(),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planIdx: index("plan_config_revisions_plan_id_idx").on(table.planId),
+  fingerprintCheck: check("plan_config_revisions_fingerprint_check", sql`${table.fingerprint} ~ '^[0-9a-f]{64}$'`),
+}));
+
+export const assistedPlanningSessions = pgTable("assisted_planning_sessions", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  status: text("status").notNull(),
+  activeStageId: bigint("active_stage_id", { mode: "number" }),
+  draftBaseStageId: bigint("draft_base_stage_id", { mode: "number" }),
+  currentConfigRevisionId: bigint("current_config_revision_id", { mode: "number" }).notNull(),
+  draftScopeJson: jsonb("draft_scope_json").$type<Record<string, unknown>>().notNull().default({}),
+  draftSnapshotJson: jsonb("draft_snapshot_json").$type<Record<string, unknown>>().notNull(),
+  draftFingerprint: text("draft_fingerprint").notNull(),
+  draftValidationId: bigint("draft_validation_id", { mode: "number" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planIdx: index("assisted_planning_sessions_plan_id_idx").on(table.planId),
+  oneActivePerPlan: uniqueIndex("assisted_planning_sessions_one_active_per_plan").on(table.planId).where(sql`${table.status} = 'ACTIVE'`),
+  statusCheck: check("assisted_planning_sessions_status_check", sql`${table.status} IN ('ACTIVE', 'CLOSED', 'ABANDONED')`),
+}));
+
+export const assistedPlanningStages = pgTable("assisted_planning_stages", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  sessionId: bigint("session_id", { mode: "number" }).notNull().references(() => assistedPlanningSessions.id, { onDelete: "cascade" }),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  ordinal: integer("ordinal").notNull(),
+  parentStageId: bigint("parent_stage_id", { mode: "number" }),
+  scopeJson: jsonb("scope_json").$type<Record<string, unknown>>().notNull(),
+  scopeTaskIdsJson: jsonb("scope_task_ids_json").$type<number[]>().notNull().default([]),
+  includePrerequisites: boolean("include_prerequisites").notNull().default(false),
+  configRevisionId: bigint("config_revision_id", { mode: "number" }).notNull().references(() => planConfigRevisions.id),
+  proposalRunId: bigint("proposal_run_id", { mode: "number" }).references(() => planningRuns.id),
+  snapshotJson: jsonb("snapshot_json").$type<Record<string, unknown>>().notNull(),
+  snapshotFingerprint: text("snapshot_fingerprint").notNull(),
+  validationSummaryJson: jsonb("validation_summary_json").$type<Record<string, unknown>>().notNull(),
+  acceptedBy: uuid("accepted_by").notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  sessionOrdinal: uniqueIndex("assisted_planning_stages_session_ordinal_key").on(table.sessionId, table.ordinal),
+  planIdx: index("assisted_planning_stages_plan_id_idx").on(table.planId),
+  ordinalCheck: check("assisted_planning_stages_ordinal_check", sql`${table.ordinal} >= 0`),
+  scopeTaskIdsArrayCheck: check("assisted_planning_stages_scope_task_ids_array_check", sql`jsonb_typeof(${table.scopeTaskIdsJson}) = 'array'`),
+}));
+
+export const planningStageValidations = pgTable("planning_stage_validations", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  sessionId: bigint("session_id", { mode: "number" }).notNull().references(() => assistedPlanningSessions.id, { onDelete: "cascade" }),
+  baseStageId: bigint("base_stage_id", { mode: "number" }),
+  draftFingerprint: text("draft_fingerprint").notNull(),
+  configRevisionId: bigint("config_revision_id", { mode: "number" }).notNull().references(() => planConfigRevisions.id),
+  hardCount: integer("hard_count").notNull(),
+  requiredCount: integer("required_count").notNull(),
+  preferredCount: integer("preferred_count").notNull(),
+  reportJson: jsonb("report_json").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  draftIdx: index("planning_stage_validations_draft_idx").on(table.sessionId, table.draftFingerprint),
+  countsCheck: check("planning_stage_validations_counts_check", sql`${table.hardCount} >= 0 AND ${table.requiredCount} >= 0 AND ${table.preferredCount} >= 0`),
+}));
+
+export const planningAcceptedExceptions = pgTable("planning_accepted_exceptions", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  stageId: bigint("stage_id", { mode: "number" }).notNull().references(() => assistedPlanningStages.id, { onDelete: "cascade" }),
+  severity: text("severity").notNull(), ruleCode: text("rule_code").notNull(), violationKey: text("violation_key").notNull(),
+  affectedTaskIdsJson: jsonb("affected_task_ids_json").$type<number[]>().notNull().default([]),
+  detailsJson: jsonb("details_json").$type<Record<string, unknown>>().notNull(), status: text("status").notNull(),
+  acceptedBy: uuid("accepted_by").notNull(), acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, (table) => ({
+  stageIdx: index("planning_accepted_exceptions_stage_id_idx").on(table.stageId),
+  workflowIdx: index("planning_accepted_exceptions_plan_status_idx").on(table.planId, table.status),
+  severityCheck: check("planning_accepted_exceptions_severity_check", sql`${table.severity} IN ('HARD', 'REQUIRED')`),
+  statusCheck: check("planning_accepted_exceptions_status_check", sql`${table.status} IN ('ACTIVE', 'RESOLVED', 'STALE', 'SUPERSEDED')`),
+  taskIdsArrayCheck: check("planning_accepted_exceptions_task_ids_array_check", sql`jsonb_typeof(${table.affectedTaskIdsJson}) = 'array'`),
+}));
+
 // 8. locks
 export const locks = pgTable("locks", {
   id: serial("id").primaryKey(),
@@ -691,6 +787,12 @@ export type InsertPlan = z.infer<typeof insertPlanSchema>;
 
 export type DailyTask = typeof dailyTasks.$inferSelect;
 export type InsertDailyTask = z.infer<typeof insertDailyTaskSchema>;
+
+export type PlanConfigRevision = typeof planConfigRevisions.$inferSelect;
+export type AssistedPlanningSession = typeof assistedPlanningSessions.$inferSelect;
+export type AssistedPlanningStage = typeof assistedPlanningStages.$inferSelect;
+export type PlanningStageValidation = typeof planningStageValidations.$inferSelect;
+export type PlanningAcceptedException = typeof planningAcceptedExceptions.$inferSelect;
 
 export type Lock = typeof locks.$inferSelect;
 export type InsertLock = z.infer<typeof insertLockSchema>;
