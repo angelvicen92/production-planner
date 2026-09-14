@@ -37,9 +37,9 @@
     },
     {
       "sourceId": "EIS-004",
-      "loader": "storage.getResourceBundles()",
+      "loader": "storage.getPlanResourceBundleSnapshot(planId)",
       "criticality": "OPTIONAL_SIGNAL",
-      "currentBehavior": "WARNING_FALLBACK",
+      "currentBehavior": "DAILY_SNAPSHOT_WARNING_FALLBACK",
       "targetFailurePolicy": "CONTINUE_WITH_WARNING",
       "reason": "Actualmente los bundles sólo aportan scoring/afinidad y no representan una obligación hard.",
       "capabilityIds": ["CONFIGURABILITY_GOVERNANCE_GATE"],
@@ -47,9 +47,9 @@
     },
     {
       "sourceId": "EIS-005",
-      "loader": "storage.getResourceBundleComponents()",
+      "loader": "storage.getPlanResourceBundleSnapshot(planId)",
       "criticality": "OPTIONAL_SIGNAL",
-      "currentBehavior": "WARNING_FALLBACK",
+      "currentBehavior": "DAILY_SNAPSHOT_WARNING_FALLBACK",
       "targetFailurePolicy": "CONTINUE_WITH_WARNING",
       "reason": "Los componentes de bundle pertenecen a la misma señal soft mientras los bundles no sean REQUIRED.",
       "capabilityIds": ["CONFIGURABILITY_GOVERNANCE_GATE"],
@@ -57,9 +57,9 @@
     },
     {
       "sourceId": "EIS-006",
-      "loader": "storage.getResourceBundleSpaceAffinities()",
+      "loader": "storage.getPlanResourceBundleSnapshot(planId)",
       "criticality": "OPTIONAL_SIGNAL",
-      "currentBehavior": "WARNING_FALLBACK",
+      "currentBehavior": "DAILY_SNAPSHOT_WARNING_FALLBACK",
       "targetFailurePolicy": "CONTINUE_WITH_WARNING",
       "reason": "La afinidad no cambia hard validity y puede neutralizarse con warning explícito.",
       "capabilityIds": ["CONFIGURABILITY_GOVERNANCE_GATE"],
@@ -98,9 +98,9 @@
     {
       "sourceId": "EIS-010",
       "loader": "storage.getSpaces()",
-      "criticality": "LEGACY_COMPATIBILITY",
-      "currentBehavior": "DIRECT_HARD",
-      "targetFailurePolicy": "ABORT_BUILD",
+      "criticality": "FORBIDDEN_GLOBAL_READ",
+      "currentBehavior": "REMOVED",
+      "targetFailurePolicy": "NOT_ALLOWED",
       "reason": "Actualmente aporta jerarquía, capacidad, nombres y prioridades globales. Las propiedades operativas deben migrar a snapshot; mientras tanto un fallo de lectura continúa siendo hard.",
       "capabilityIds": ["SPACE_AVAILABILITY_WINDOW", "OPTIMIZER_DAILY_SNAPSHOT"],
       "requiredReasonCode": "ENGINE_INPUT_SPACE_CATALOG_UNAVAILABLE"
@@ -108,9 +108,9 @@
     {
       "sourceId": "EIS-011",
       "loader": "storage.getZones()",
-      "criticality": "LEGACY_COMPATIBILITY",
-      "currentBehavior": "DIRECT_HARD",
-      "targetFailurePolicy": "ABORT_BUILD",
+      "criticality": "FORBIDDEN_GLOBAL_READ",
+      "currentBehavior": "REMOVED",
+      "targetFailurePolicy": "NOT_ALLOWED",
       "reason": "Actualmente aporta preferencias, agrupación y aliases nominales; las relaciones temporales diarias ya tienen snapshot, pero otras propiedades operativas no.",
       "capabilityIds": ["SPACE_AVAILABILITY_WINDOW", "OPTIMIZER_DAILY_SNAPSHOT"],
       "requiredReasonCode": "ENGINE_INPUT_ZONE_CATALOG_UNAVAILABLE"

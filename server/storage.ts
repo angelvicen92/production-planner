@@ -43,6 +43,10 @@ import {
   resolvePlanOptimizerTransportReferencesV1,
   validatePlanOptimizerSnapshotZoneReferencesV1,
 } from "./planOptimizerSnapshotPersistence";
+import {
+  buildPlanResourceBundleSnapshotCandidateV1,
+  RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE,
+} from "./planResourceBundleSnapshot";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -199,6 +203,7 @@ export interface IStorage {
   ): Promise<any>;
   getPlanZoneSettings(planId: number): Promise<any[]>;
   getPlanSpaceSettings(planId: number): Promise<any[]>;
+  getPlanResourceBundleSnapshot(planId: number): Promise<any>;
   initializePlanSpatialAvailabilitySnapshots(planId: number): Promise<{ zonesCreated: number; spacesCreated: number }>;
   updatePlanZoneAvailability(planId: number, zoneId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any>;
   updatePlanSpaceAvailability(planId: number, spaceId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any>;
@@ -1218,12 +1223,18 @@ export class SupabaseStorage implements IStorage {
       { data: settings, error: settingsError },
       { data: zoneCatalog, error: zonesError },
       { data: spaceCatalog, error: spacesError },
+      { data: bundleCatalog, error: bundlesError },
+      { data: bundleComponentCatalog, error: bundleComponentsError },
+      { data: bundleAffinityCatalog, error: bundleAffinitiesError },
       taskTemplateCatalog,
       { data: optimizerSettings, error: optimizerSettingsError },
     ] = await Promise.all([
       supabaseAdmin.from("program_settings").select("default_work_start, default_work_end").eq("id", 1).single(),
-      supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
-      supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
+      supabaseAdmin.from("zones").select("id, name, meal_start_preferred, meal_end_preferred, grouping_level, grouping_min_chain, max_template_changes, space_meal_break_minutes, default_availability_start, default_availability_end").order("id"),
+      supabaseAdmin.from("spaces").select("id, name, zone_id, parent_space_id, priority_level, grouping_level, grouping_min_chain, grouping_apply_to_descendants, default_availability_start, default_availability_end").order("id"),
+      supabaseAdmin.from("resource_bundles").select("id, name, description, bundle_type, is_active, metadata").eq("is_active", true).order("id"),
+      supabaseAdmin.from("resource_bundle_components").select("id, bundle_id, resource_id, resource_item_id, component_role, quantity, is_required, metadata").order("id"),
+      supabaseAdmin.from("resource_bundle_space_affinities").select("id, bundle_id, space_id, affinity_score, metadata").order("bundle_id").order("space_id"),
       this.getTaskTemplates(),
       supabaseAdmin.from("optimizer_settings").select("*").eq("id", 1).single(),
     ]);
@@ -1259,8 +1270,8 @@ export class SupabaseStorage implements IStorage {
     const snapshotInput = {
       requestedWorkDay: { start: plan.workStart, end: plan.workEnd },
       defaultWorkDay: { start: settings.default_work_start, end: settings.default_work_end },
-      zones: (zoneCatalog ?? []).map((row: any) => ({ id: Number(row.id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
-      spaces: (spaceCatalog ?? []).map((row: any) => ({ id: Number(row.id), zoneId: Number(row.zone_id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
+      zones: (zoneCatalog ?? []).map((row: any) => ({ ...row, id: Number(row.id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
+      spaces: (spaceCatalog ?? []).map((row: any) => ({ ...row, id: Number(row.id), zoneId: Number(row.zone_id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
     };
     const validatedSnapshots = runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot({ planId: 0, ...snapshotInput }));
     const { data, error } = await supabaseAdmin
@@ -1321,15 +1332,40 @@ export class SupabaseStorage implements IStorage {
     try {
       const spatialSnapshots = runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot({ planId: Number(data.id), ...snapshotInput }));
       if (spatialSnapshots.zones.length > 0) {
-        const { error: zoneSnapshotError } = await supabaseAdmin.from("plan_zone_settings").insert(spatialSnapshots.zones);
+        const rows = spatialSnapshots.zones.map((row: any) => { const z: any = (zoneCatalog ?? []).find((item: any) => Number(item.id) === row.zone_id); return { ...row, name: z.name, meal_start_preferred: z.meal_start_preferred, meal_end_preferred: z.meal_end_preferred, grouping_level: z.grouping_level, grouping_min_chain: z.grouping_min_chain, max_template_changes: z.max_template_changes, space_meal_break_minutes: z.space_meal_break_minutes }; });
+        const { error: zoneSnapshotError } = await supabaseAdmin.from("plan_zone_settings").insert(rows);
         if (zoneSnapshotError) throw zoneSnapshotError;
       }
       if (spatialSnapshots.spaces.length > 0) {
-        const { error: spaceSnapshotError } = await supabaseAdmin.from("plan_space_settings").insert(spatialSnapshots.spaces);
+        const rows = spatialSnapshots.spaces.map((row: any) => { const s: any = (spaceCatalog ?? []).find((item: any) => Number(item.id) === row.space_id); return { ...row, name: s.name, parent_space_id: s.parent_space_id, priority_level: s.priority_level, grouping_level: s.grouping_level, grouping_min_chain: s.grouping_min_chain, grouping_apply_to_descendants: s.grouping_apply_to_descendants }; });
+        const { error: spaceSnapshotError } = await supabaseAdmin.from("plan_space_settings").insert(rows);
         if (spaceSnapshotError) throw spaceSnapshotError;
       }
     } catch (spatialError: any) {
       return throwAfterPlanCreationFailure(Number(data.id), spatialError, "Failed to snapshot spatial availability for plan");
+    }
+
+    const bundleSnapshotCandidate = buildPlanResourceBundleSnapshotCandidateV1({
+      bundles: bundleCatalog,
+      components: bundleComponentCatalog,
+      spaceAffinities: bundleAffinityCatalog,
+      bundlesError,
+      componentsError: bundleComponentsError,
+      spaceAffinitiesError: bundleAffinitiesError,
+    });
+    if (bundleSnapshotCandidate) {
+      try {
+        const { error: bundleSnapshotError } = await supabaseAdmin.from("plan_resource_bundle_snapshots").insert({
+          plan_id: Number(data.id),
+          ...bundleSnapshotCandidate,
+        });
+        if (bundleSnapshotError) throw bundleSnapshotError;
+      } catch (bundleSnapshotError: any) {
+        console.warn(RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE, { planId: Number(data.id), cause: bundleSnapshotError?.message });
+      }
+    } else {
+      const sourceError = bundlesError ?? bundleComponentsError ?? bundleAffinitiesError;
+      console.warn(RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE, { planId: Number(data.id), cause: sourceError?.message });
     }
 
     // SPEC11-010: once daily template/spatial identities exist, persist the optimizer snapshot against them.
@@ -2558,11 +2594,18 @@ export class SupabaseStorage implements IStorage {
     return data ?? [];
   }
 
+  async getPlanResourceBundleSnapshot(planId: number): Promise<any> {
+    const { data, error } = await supabaseAdmin.from("plan_resource_bundle_snapshots")
+      .select("contract_version, source, bundles, components, space_affinities").eq("plan_id", planId).single();
+    if (error) throw error;
+    return data;
+  }
+
   async initializePlanSpatialAvailabilitySnapshots(planId: number): Promise<{ zonesCreated: number; spacesCreated: number }> {
     const [{ data: plan, error: planError }, { data: zones, error: zoneError }, { data: spaces, error: spaceError }, existingZones, existingSpaces] = await Promise.all([
       supabaseAdmin.from("plans").select("work_start, work_end").eq("id", planId).single(),
-      supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
-      supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
+      supabaseAdmin.from("zones").select("id, name, meal_start_preferred, meal_end_preferred, grouping_level, grouping_min_chain, max_template_changes, space_meal_break_minutes, default_availability_start, default_availability_end").order("id"),
+      supabaseAdmin.from("spaces").select("id, name, zone_id, parent_space_id, priority_level, grouping_level, grouping_min_chain, grouping_apply_to_descendants, default_availability_start, default_availability_end").order("id"),
       this.getPlanZoneSettings(planId), this.getPlanSpaceSettings(planId),
     ]);
     if (planError) throw planError;
@@ -2576,11 +2619,13 @@ export class SupabaseStorage implements IStorage {
       existingSpaces: existingSpaces.map((r: any) => ({ spaceId: Number(r.space_id), zoneId: Number(r.zone_id), availabilityStart: r.availability_start, availabilityEnd: r.availability_end, source: String(r.source) })),
     }));
     if (batch.zones.length) {
-      const { error } = await supabaseAdmin.from("plan_zone_settings").insert(batch.zones);
+      const rows = batch.zones.map((row: any) => { const z: any = (zones ?? []).find((item: any) => Number(item.id) === row.zone_id); return { ...row, config_source: "LEGACY_BACKFILL", name: z.name, meal_start_preferred: z.meal_start_preferred, meal_end_preferred: z.meal_end_preferred, grouping_level: z.grouping_level, grouping_min_chain: z.grouping_min_chain, max_template_changes: z.max_template_changes, space_meal_break_minutes: z.space_meal_break_minutes }; });
+      const { error } = await supabaseAdmin.from("plan_zone_settings").insert(rows);
       if (error) throw error;
     }
     if (batch.spaces.length) {
-      const { error: spaceInsertError } = await supabaseAdmin.from("plan_space_settings").insert(batch.spaces);
+      const rows = batch.spaces.map((row: any) => { const s: any = (spaces ?? []).find((item: any) => Number(item.id) === row.space_id); return { ...row, config_source: "LEGACY_BACKFILL", name: s.name, parent_space_id: s.parent_space_id, priority_level: s.priority_level, grouping_level: s.grouping_level, grouping_min_chain: s.grouping_min_chain, grouping_apply_to_descendants: s.grouping_apply_to_descendants }; });
+      const { error: spaceInsertError } = await supabaseAdmin.from("plan_space_settings").insert(rows);
       if (spaceInsertError) {
         if (batch.zones.length) {
           const newZoneIds = batch.zones.map((row) => row.zone_id);

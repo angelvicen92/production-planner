@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PlanOptimizerSnapshotV1 } from "./planOptimizerSnapshot";
+import type { EngineInput } from "../engine/types";
 import {
   deriveTaskTemplateSnapshotCatalogFingerprint,
   type TaskTemplateOperationalSnapshotV1,
@@ -233,4 +234,36 @@ export function buildEffectivePlanConfigRevisionV1(
     components,
     configurationFingerprint,
   });
+}
+
+/**
+ * Adapter for the exact daily projections consumed by the engine. Mutable catalog
+ * rows must never be supplied here; callers pass the already-built EngineInput.
+ */
+export function projectEffectiveAuthoritiesFromEngineInputV1(
+  input: EngineInput,
+): BuildEffectivePlanConfigRevisionInputV1["authorities"] {
+  const provenance = (authority: string): EffectivePlanConfigProvenanceV1 => ({ authority, authorityContractVersion: 1 });
+  const bundleUnavailable = (input.resourceBundleLoadWarnings?.length ?? 0) > 0;
+  return {
+    plan_workday: { semanticValue: [{ workDay: input.workDay, meal: input.meal, mealWindow: input.mealWindow, mealMode: input.mealMode }], provenance: provenance("plans") },
+    contestant_availability: { semanticValue: Object.entries(input.contestantAvailabilityById ?? {}).map(([contestantId, availability]) => ({ contestantId: Number(contestantId), ...availability })), provenance: provenance("contestants") },
+    spatial_configuration: { semanticValue: [
+      ...(input.planZoneSettings ?? []).map(({ zoneId, availabilityStart, availabilityEnd, name, mealStartPreferred, mealEndPreferred, groupingLevel, groupingMinChain, maxTemplateChanges, spaceMealBreakMinutes }) => ({ kind: "zone", zoneId, availabilityStart: availabilityStart ?? null, availabilityEnd: availabilityEnd ?? null, name: name ?? "", mealStartPreferred: mealStartPreferred ?? null, mealEndPreferred: mealEndPreferred ?? null, groupingLevel: groupingLevel ?? 0, groupingMinChain: groupingMinChain ?? 4, maxTemplateChanges: maxTemplateChanges ?? 4, spaceMealBreakMinutes: spaceMealBreakMinutes ?? null })),
+      ...(input.planSpaceSettings ?? []).map(({ spaceId, zoneId, availabilityStart, availabilityEnd, name, parentSpaceId, priorityLevel, groupingLevel, groupingMinChain, groupingApplyToDescendants }) => ({ kind: "space", spaceId, zoneId, availabilityStart: availabilityStart ?? null, availabilityEnd: availabilityEnd ?? null, name: name ?? "", parentSpaceId: parentSpaceId ?? null, priorityLevel: priorityLevel ?? 1, groupingLevel: groupingLevel ?? 0, groupingMinChain: groupingMinChain ?? 4, groupingApplyToDescendants: groupingApplyToDescendants ?? false })),
+    ], provenance: provenance("plan_zone_settings+plan_space_settings") },
+    resource_configuration: { semanticValue: input.planResourceItems ?? [], provenance: provenance("plan_resource_items") },
+    resource_assignments_and_requirements: { semanticValue: [
+      { kind: "zoneAssignments", value: input.zoneResourceAssignments },
+      { kind: "spaceAssignments", value: input.spaceResourceAssignments },
+      { kind: "zoneRequirements", value: input.zoneResourceTypeRequirements },
+      { kind: "spaceRequirements", value: input.spaceResourceTypeRequirements },
+      { kind: "components", value: input.resourceItemComponents },
+    ], provenance: provenance("plan_resource_authorities") },
+    ...(bundleUnavailable ? {} : { resource_bundles: { semanticValue: [
+      ...(input.resourceBundles ?? []).map((row) => ({ kind: "bundle", ...row })),
+      ...(input.resourceBundleComponents ?? []).map((row) => ({ kind: "component", ...row })),
+      ...(input.resourceBundleSpaceAffinities ?? []).map((row) => ({ kind: "spaceAffinity", ...row })),
+    ], provenance: provenance("plan_resource_bundle_snapshots") } }),
+  };
 }

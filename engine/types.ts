@@ -131,6 +131,13 @@ export interface PlanZoneAvailabilityInput {
   availabilityStart?: string | null;
   availabilityEnd?: string | null;
   source?: string;
+  name?: string;
+  mealStartPreferred?: string | null;
+  mealEndPreferred?: string | null;
+  groupingLevel?: number;
+  groupingMinChain?: number;
+  maxTemplateChanges?: number;
+  spaceMealBreakMinutes?: number | null;
 }
 
 export interface PlanSpaceAvailabilityInput {
@@ -141,6 +148,12 @@ export interface PlanSpaceAvailabilityInput {
   availabilityStart?: string | null;
   availabilityEnd?: string | null;
   source?: string;
+  name?: string;
+  parentSpaceId?: number | null;
+  priorityLevel?: number;
+  groupingLevel?: number;
+  groupingMinChain?: number;
+  groupingApplyToDescendants?: boolean;
 }
 
 export interface ResourceItemComponentInput {
