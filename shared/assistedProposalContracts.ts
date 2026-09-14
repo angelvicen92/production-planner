@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AssistedPlanningSnapshotV1 } from "../server/assistedPlanningSnapshot";
+import type { AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshotContracts";
 
 export const assistedScopeSelectorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("TASK_IDS"), taskIds: z.array(z.number().int().positive()).min(1) }).strict(),

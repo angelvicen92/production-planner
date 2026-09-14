@@ -7,6 +7,8 @@ import type { ScheduledTask } from "../engine/planner-next/contracts";
 import { expandVisiblePrerequisites, resolveAssistedScope, ScopeResolutionError } from "./assistedScopeResolver";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
+import type { BuildEffectivePlanConfigRevisionInputV1, EffectivePlanConfigRevisionV1 } from "./effectivePlanConfigRevision";
+import type { EngineInput } from "../engine/types";
 import type { AssistedProposalRequest, AssistedProposalRunResultV1 } from "../shared/assistedProposalContracts";
 
 export type AssistedProposalErrorCode = "INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
@@ -36,11 +38,20 @@ const defaultRunAccess: AssistedProposalRunAccess = {
   async apply(parameters) { const {data,error}=await supabaseAdmin.rpc("assisted_apply_proposal",parameters); return {data,error}; },
 };
 type AssistedRunner = typeof executeAssistedPlanning;
+export interface AssistedProposalServiceDependencies {
+  readonly buildInput: (planId: number, storage: IStorage) => Promise<EngineInput>;
+  readonly buildConfigRevision: (input: BuildEffectivePlanConfigRevisionInputV1) => EffectivePlanConfigRevisionV1;
+}
+const defaultDependencies: AssistedProposalServiceDependencies = {
+  buildInput: buildEngineInput,
+  buildConfigRevision: buildEffectivePlanConfigRevisionV1,
+};
 const provenance = (authority:string) => ({authority,authorityContractVersion:1});
 
 export class AssistedProposalService {
   constructor(private readonly storage: IStorage, private readonly defer: (work:()=>void)=>void = queueMicrotask,
-    private readonly runs: AssistedProposalRunAccess = defaultRunAccess, private readonly runner: AssistedRunner = executeAssistedPlanning) {}
+    private readonly runs: AssistedProposalRunAccess = defaultRunAccess, private readonly runner: AssistedRunner = executeAssistedPlanning,
+    private readonly dependencies: AssistedProposalServiceDependencies = defaultDependencies) {}
 
   async request(planId: number, request: AssistedProposalRequest) {
     const session = await this.storage.getActiveAssistedPlanningSession(planId);
@@ -50,7 +61,7 @@ export class AssistedProposalService {
     const base = await this.storage.getAssistedPlanningStage(request.expectedBaseStageId);
     if (!base || base.sessionId !== session.id || base.planId !== planId) throw new AssistedProposalError("STALE_BASE_STAGE",409);
     if (base.snapshotFingerprint !== session.draftFingerprint) throw new AssistedProposalError("DIRTY_DRAFT",409);
-    const input = await buildEngineInput(planId,this.storage); const adapter=adaptEngineInputToPlannerNextProblem(input);
+    const input = await this.dependencies.buildInput(planId,this.storage); const adapter=adaptEngineInputToPlannerNextProblem(input);
     if(adapter.status!=="SUPPORTED") throw new AssistedProposalError("UNSUPPORTED_ENGINE_INPUT",422);
     let resolution;
     try { resolution=resolveAssistedScope(input,adapter,request.selector); if(request.includePrerequisites) resolution=expandVisiblePrerequisites(resolution,adapter); }
@@ -67,10 +78,10 @@ export class AssistedProposalService {
     if(!session||session.id!==Number(run.assisted_session_id)) throw new AssistedProposalError("RUN_SESSION_MISMATCH",409);
     if(session.currentConfigRevisionId!==Number(run.config_revision_id)) throw new AssistedProposalError("STALE_CONFIG_REVISION",409);
     const [input,optimizerSnapshot,taskTemplateSnapshots,persistedRevision]=await Promise.all([
-      buildEngineInput(planId,this.storage), this.storage.getPlanOptimizerSnapshot(planId),
+      this.dependencies.buildInput(planId,this.storage), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getPlanConfigRevision(Number(run.config_revision_id)),
     ]);
-    const actual=buildEffectivePlanConfigRevisionV1({planId,optimizerSnapshot,taskTemplateSnapshots,
+    const actual=this.dependencies.buildConfigRevision({planId,optimizerSnapshot,taskTemplateSnapshots,
       optimizerProvenance:provenance("plan_optimizer_snapshots"),taskTemplateProvenance:provenance("plan_task_template_snapshots"),
       authorities:projectEffectiveAuthoritiesFromEngineInputV1(input)});
     if(!persistedRevision || persistedRevision.planId!==planId || persistedRevision.fingerprint!==actual.configurationFingerprint)
