@@ -99,6 +99,13 @@ export function projectPlanZoneSettingsForEngineInput(rows: readonly PlanResourc
     availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
     availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
     source: readPresentField(row, "source", "source") as string | undefined,
+    name: readPresentField(row, "name", "name") as string | undefined,
+    mealStartPreferred: readPresentField(row, "mealStartPreferred", "meal_start_preferred") as string | null | undefined,
+    mealEndPreferred: readPresentField(row, "mealEndPreferred", "meal_end_preferred") as string | null | undefined,
+    groupingLevel: readPresentField(row, "groupingLevel", "grouping_level") as number | undefined,
+    groupingMinChain: readPresentField(row, "groupingMinChain", "grouping_min_chain") as number | undefined,
+    maxTemplateChanges: readPresentField(row, "maxTemplateChanges", "max_template_changes") as number | undefined,
+    spaceMealBreakMinutes: readPresentField(row, "spaceMealBreakMinutes", "space_meal_break_minutes") as number | null | undefined,
   })).sort((a, b) => a.zoneId - b.zoneId);
 }
 
@@ -110,6 +117,12 @@ export function projectPlanSpaceSettingsForEngineInput(rows: readonly PlanResour
     availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
     availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
     source: readPresentField(row, "source", "source") as string | undefined,
+    name: readPresentField(row, "name", "name") as string | undefined,
+    parentSpaceId: readPresentField(row, "parentSpaceId", "parent_space_id") as number | null | undefined,
+    priorityLevel: readPresentField(row, "priorityLevel", "priority_level") as number | undefined,
+    groupingLevel: readPresentField(row, "groupingLevel", "grouping_level") as number | undefined,
+    groupingMinChain: readPresentField(row, "groupingMinChain", "grouping_min_chain") as number | undefined,
+    groupingApplyToDescendants: readPresentField(row, "groupingApplyToDescendants", "grouping_apply_to_descendants") as boolean | undefined,
   })).sort((a, b) => a.spaceId - b.spaceId);
 }
 
@@ -217,6 +230,14 @@ export async function buildEngineInput(
       ? camerasFromResources
       : (p.cameras_available ?? p.camerasAvailable ?? 0);
 
+  const [planZoneSettings, planSpaceSettings] = await Promise.all([
+    storage.getPlanZoneSettings(planId),
+    storage.getPlanSpaceSettings(planId),
+  ]).then(([zoneRows, spaceRows]) => [
+    projectPlanZoneSettingsForEngineInput(zoneRows),
+    projectPlanSpaceSettingsForEngineInput(spaceRows),
+  ] as const);
+
   const loadBundleRows = async (
     source: "resource_bundles" | "resource_bundle_components" | "resource_bundle_space_affinities",
     fn: () => Promise<any[]>,
@@ -230,17 +251,22 @@ export async function buildEngineInput(
       };
     }
   };
-  const [bundleLoad, componentLoad, affinityLoad] = await Promise.all([
-    loadBundleRows("resource_bundles", () => storage.getResourceBundles()),
-    loadBundleRows("resource_bundle_components", () => storage.getResourceBundleComponents()),
-    loadBundleRows("resource_bundle_space_affinities", () => storage.getResourceBundleSpaceAffinities()),
-  ]);
+  const bundleSnapshotLoader = storage.getPlanResourceBundleSnapshot?.bind(storage);
+  const bundleSnapshot = bundleSnapshotLoader
+    ? await loadBundleRows("resource_bundles", async () => [await bundleSnapshotLoader(planId)])
+    : { rows: [], warning: { source: "resource_bundles" as const, message: "No se pudo cargar resource_bundles; el scoring de bundles continúa con fallback neutral." } };
+  const snapshotRow = bundleSnapshot.rows[0] ?? null;
+  const [bundleLoad, componentLoad, affinityLoad] = snapshotRow ? [
+    { rows: snapshotRow.bundles ?? [], warning: null },
+    { rows: snapshotRow.components ?? [], warning: null },
+    { rows: snapshotRow.space_affinities ?? snapshotRow.spaceAffinities ?? [], warning: null },
+  ] : [bundleSnapshot, { rows: [], warning: null }, { rows: [], warning: null }];
   const resourceBundleRows = bundleLoad.rows;
   const resourceBundleComponentRows = componentLoad.rows;
   const resourceBundleAffinityRows = affinityLoad.rows;
   const resourceBundleLoadWarnings = [bundleLoad.warning, componentLoad.warning, affinityLoad.warning]
     .filter((warning): warning is NonNullable<typeof warning> => warning !== null);
-  const resourceBundles = resourceBundleRows.map((row: any) => ({
+  const resourceBundles: NonNullable<EngineInput["resourceBundles"]> = resourceBundleRows.map((row: any) => ({
     id: String(row.id),
     name: String(row.name ?? ""),
     description: row.description ?? null,
@@ -249,7 +275,7 @@ export async function buildEngineInput(
     metadata: row.metadata ?? {},
   }));
   const activeBundleIds = new Set(resourceBundles.filter((bundle) => bundle.isActive !== false).map((bundle) => bundle.id));
-  const resourceBundleComponents = resourceBundleComponentRows
+  const resourceBundleComponents: NonNullable<EngineInput["resourceBundleComponents"]> = resourceBundleComponentRows
     .map((row: any) => ({
       id: row.id == null ? undefined : String(row.id),
       bundleId: String(row.bundle_id ?? row.bundleId ?? ""),
@@ -261,7 +287,7 @@ export async function buildEngineInput(
       metadata: row.metadata ?? {},
     }))
     .filter((component) => activeBundleIds.has(component.bundleId));
-  const resourceBundleSpaceAffinities = resourceBundleAffinityRows
+  const resourceBundleSpaceAffinities: NonNullable<EngineInput["resourceBundleSpaceAffinities"]> = resourceBundleAffinityRows
     .map((row: any) => ({
       id: row.id == null ? undefined : String(row.id),
       bundleId: String(row.bundle_id ?? row.bundleId ?? ""),
@@ -309,7 +335,7 @@ export async function buildEngineInput(
   const transportWeight = optimizerProjection.transport.groupingWeight;
 
   // ✅ Jerarquía de espacios (para herencia de pools)
-      const allSpaces = await storage.getSpaces();
+      const allSpaces = planSpaceSettings.map((row) => ({ ...row, id: row.spaceId }));
       const existingSpaceIds = new Set<number>();
       const spaceParentById: Record<number, number | null> = {};
       const spaceNameById: Record<number, string> = {};
@@ -361,7 +387,7 @@ export async function buildEngineInput(
 
   const spaceMeta = new Map<number, { zoneId: number | null; parentSpaceId: number | null; groupingLevel: number; groupingMinChain: number; groupingApplyToDescendants: boolean }>();
 
-  const zones = await storage.getZones();
+  const zones = planZoneSettings.map((row) => ({ ...row, id: row.zoneId }));
   for (const z of (zones as any[]) ?? []) {
     const zid = Number((z as any)?.id);
     if (!Number.isFinite(zid) || zid <= 0) continue;
@@ -483,13 +509,6 @@ export async function buildEngineInput(
       () => storage.getPlanResourceItemsForPlan(planId),
     )) as unknown as readonly PlanResourceItemRow[],
   );
-  const [planZoneSettings, planSpaceSettings] = await Promise.all([
-    storage.getPlanZoneSettings(planId),
-    storage.getPlanSpaceSettings(planId),
-  ]).then(([zoneRows, spaceRows]) => [
-    projectPlanZoneSettingsForEngineInput(zoneRows),
-    projectPlanSpaceSettingsForEngineInput(spaceRows),
-  ] as const);
   const dailyZoneIdBySpaceId = buildDailySpaceZoneIdMapForEngineInput(planSpaceSettings);
 
   const resourceItemIds = Array.from(

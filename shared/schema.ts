@@ -212,6 +212,14 @@ export const planZoneSettings = pgTable("plan_zone_settings", {
   availabilityStart: text("availability_start"),
   availabilityEnd: text("availability_end"),
   source: text("source").notNull().default("default"),
+  configSource: text("config_source").notNull().default("INHERITED"),
+  name: text("name").notNull(),
+  mealStartPreferred: text("meal_start_preferred"),
+  mealEndPreferred: text("meal_end_preferred"),
+  groupingLevel: integer("grouping_level").notNull().default(0),
+  groupingMinChain: integer("grouping_min_chain").notNull().default(4),
+  maxTemplateChanges: integer("max_template_changes").notNull().default(4),
+  spaceMealBreakMinutes: integer("space_meal_break_minutes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
@@ -229,6 +237,13 @@ export const planSpaceSettings = pgTable("plan_space_settings", {
   availabilityStart: text("availability_start"),
   availabilityEnd: text("availability_end"),
   source: text("source").notNull().default("default"),
+  configSource: text("config_source").notNull().default("INHERITED"),
+  name: text("name").notNull(),
+  parentSpaceId: integer("parent_space_id"),
+  priorityLevel: integer("priority_level").notNull().default(1),
+  groupingLevel: integer("grouping_level").notNull().default(0),
+  groupingMinChain: integer("grouping_min_chain").notNull().default(4),
+  groupingApplyToDescendants: boolean("grouping_apply_to_descendants").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
@@ -236,6 +251,19 @@ export const planSpaceSettings = pgTable("plan_space_settings", {
   availabilityPair: check("plan_space_settings_availability_pair_check", sql`(${table.availabilityStart} IS NULL) = (${table.availabilityEnd} IS NULL)`),
   availabilityFormat: check("plan_space_settings_availability_format_check", sql`${table.availabilityStart} IS NULL OR (${table.availabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.availabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
   availabilityOrder: check("plan_space_settings_availability_order_check", sql`${table.availabilityStart} IS NULL OR ${table.availabilityStart} < ${table.availabilityEnd}`),
+}));
+
+export const planResourceBundleSnapshots = pgTable("plan_resource_bundle_snapshots", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  contractVersion: integer("contract_version").notNull().default(1),
+  source: text("source").notNull(),
+  bundles: jsonb("bundles").$type<Record<string, unknown>[]>().notNull().default([]),
+  components: jsonb("components").$type<Record<string, unknown>[]>().notNull().default([]),
+  spaceAffinities: jsonb("space_affinities").$type<Record<string, unknown>[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planUnique: uniqueIndex("plan_resource_bundle_snapshots_plan_uidx").on(table.planId),
 }));
 
 // 4. resources
