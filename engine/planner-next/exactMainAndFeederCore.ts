@@ -1231,6 +1231,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
       initialCertificate = matching.certificate;
     }
+    if (initialCertificate === undefined) return "DEAD_END";
     // A run is an assignment problem first.  Enumerating position -> task here used to
     // rediscover every nominal permutation even when none of the resulting operations
     // shared a hard authority.  Repair only edges that are causally implicated by a
@@ -1301,7 +1302,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           main:{duration:task.duration,availability:task.availability??null,
             participantAvailability:problem.participants.find(item=>item.id===task.participantId)?.availability??null,
             dependencies:task.dependencies.map(dependencyProfile),resources:[...(task.requiredResourceIds??[])].sort(),
-            departureDeadline:latestDepartureStart.get(task.participantId)??null},
+            departureDeadline:task.participantId === undefined ? null : latestDepartureStart.get(task.participantId)??null},
           operation:operation.map(item=>({kind:item.kind,start:item.start-anchor.start,end:item.end-anchor.start,
             duration:item.duration,spaceId:item.spaceId,coachId:item.coachId??null,
             resources:[...(item.requiredResourceIds??[])].sort(),dependencies:item.dependencies.map(dependencyProfile)})),
@@ -1427,7 +1428,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       invocationPositionChecks += 1;
       const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
       if (!operation) return null;
-      const departureDeadline = latestDepartureStart.get(task.participantId);
+      const departureDeadline = task.participantId === undefined ? undefined : latestDepartureStart.get(task.participantId);
       if (departureDeadline !== undefined && operation.end > departureDeadline) return null;
       return { position, operation: operation.tasks.map((item) => ({ ...item,
         dependencies: [...item.dependencies], requiredResourceIds: item.requiredResourceIds === undefined
@@ -1699,7 +1700,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (result === "BUDGET_EXHAUSTED")
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
           if (result === "FOUND") {
-            if (selected) selected.timeline = timeline;
+            const found = selected as { timeline?: MainFlowTimeline } | null;
+            if (found) found.timeline = timeline;
             break outer;
           }
         }
@@ -1707,10 +1709,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
   }
   if (!selected) return fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_CORE"], coreIds);
-  const ordered = [...selected.tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
-  const meals = [...selected.meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
-  evidence.selectedPattern = [...selected.pattern];
-  evidence.selectedTimelineKey = selected.timeline?.key ?? null;
+  const completed = selected as { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline };
+  const ordered = [...completed.tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+  const meals = [...completed.meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+  evidence.selectedPattern = [...completed.pattern];
+  evidence.selectedTimelineKey = completed.timeline?.key ?? null;
   evidence.selectedMainTaskIds = ordered.filter(({ kind }) => kind === "main").map(({ id }) => id);
   evidence.selectedFeederTaskIds = ordered.filter(({ kind }) => kind === "vocal").map(({ id }) => id);
   evidence.coreFingerprint = fingerprint(ordered, [], meals);

@@ -1015,7 +1015,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         });
       } else if (protectedTime.status === "MISSING") {
         addIssue("PROTECTED_TASK_WITHOUT_FIXED_PLANNING", "task", task.id, path, "Protected task lacks complete fixed planning.");
-      } else {
+      } else if (protectedTime.status === "COMPLETE_REAL" || protectedTime.status === "COMPLETE_PLANNED") {
         const { start, end } = protectedTime.interval;
         if (!validateInterval({ start, end }, "task", task.id, `${path}.protectedPlanning`)) {
         addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, path, "Protected planning cannot be represented exactly.");
@@ -1305,7 +1305,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   for (const task of input.tasks) {
     if ((task.status !== "done" && task.status !== "in_progress") || task.spaceId == null) continue;
     const protectedTime = resolveProtectedTaskInterval(task);
-    if (protectedTime.status === "PARTIAL_REAL" || protectedTime.status === "MISSING") continue;
+    if (protectedTime.status !== "COMPLETE_REAL" && protectedTime.status !== "COMPLETE_PLANNED") continue;
     const protectedInterval = protectedTime.interval;
     const effective = spatial.spacesById.get(task.spaceId);
     if (!effective?.effectiveWindow) continue;
@@ -1400,7 +1400,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (assignment) {
       const projection = projectedResourcesByTaskId.get(task.id)!;
       if (projection.status === "UNSUPPORTED") {
-        addIssue(projection.reasonCode, "task", task.id, `tasks.${task.id}.projectedResources`, "Task resources cannot be represented without crossing the Planner Next coach and generic-resource channels.", projection.details);
+        addIssue(projection.reasonCode, "task", task.id, `tasks.${task.id}.projectedResources`, "Task resources cannot be represented without crossing the Planner Next coach and generic-resource channels.", { ...projection.details });
       } else if (task.plannerNextKind === "vocal" && projection.genericResourceIds.length > 0) {
         addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `tasks.${task.id}.projectedResources`, "Planner Next vocal feeders cannot preserve generic resources in addition to their explicit coach.", { participantId: task.contestantId ?? null, planResourceItemId: projection.coachResourceId ?? null, additionalResourceIds: projection.genericResourceIds });
       }
@@ -1463,7 +1463,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (assignment.status !== "done" && assignment.status !== "in_progress") continue;
     const task = taskById.get(String(assignment.taskId))!;
     const protectedTime = resolveProtectedTaskInterval(task);
-    if (protectedTime.status === "PARTIAL_REAL" || protectedTime.status === "MISSING") continue;
+    if (protectedTime.status !== "COMPLETE_REAL" && protectedTime.status !== "COMPLETE_PLANNED") continue;
     const protectedInterval = protectedTime.interval;
     const protectedStart = toMinutes(protectedInterval.start);
     const protectedEnd = toMinutes(protectedInterval.end);

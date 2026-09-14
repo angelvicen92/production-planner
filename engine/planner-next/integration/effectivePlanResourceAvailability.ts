@@ -41,10 +41,10 @@ export function resolveEffectivePlanResourceAvailability(
   const start = fullDay ? dayStart : minutes(rawStart)!;
   const end = fullDay ? dayEnd : minutes(rawEnd)!;
   if (start >= end) return invalid("INVALID_TIME_ORDER");
-  if (!resource.isAvailable) return frozen({ status: "UNAVAILABLE", planResourceItemId: resource.id, sourceMode, rawStart: rawStart!, rawEnd: rawEnd!, effectiveWindow: null, reason: "RESOURCE_DISABLED" });
+  if (!resource.isAvailable) return frozen({ status: "UNAVAILABLE" as const, planResourceItemId: resource.id, sourceMode, rawStart: rawStart!, rawEnd: rawEnd!, effectiveWindow: null, reason: "RESOURCE_DISABLED" as const });
   const effectiveStart = Math.max(dayStart, start);
   const effectiveEnd = Math.min(dayEnd, end);
-  if (effectiveStart >= effectiveEnd) return frozen({ status: "UNAVAILABLE", planResourceItemId: resource.id, sourceMode, rawStart: rawStart!, rawEnd: rawEnd!, effectiveWindow: null, reason: "EMPTY_WORKDAY_INTERSECTION" });
+  if (effectiveStart >= effectiveEnd) return frozen({ status: "UNAVAILABLE" as const, planResourceItemId: resource.id, sourceMode, rawStart: rawStart!, rawEnd: rawEnd!, effectiveWindow: null, reason: "EMPTY_WORKDAY_INTERSECTION" as const });
   const effectiveWindow = fullDay ? { start: workDay.start, end: workDay.end } : {
     start: effectiveStart === dayStart ? workDay.start : rawStart as string,
     end: effectiveEnd === dayEnd ? workDay.end : rawEnd as string,

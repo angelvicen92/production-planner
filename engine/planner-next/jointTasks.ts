@@ -9,7 +9,7 @@ export function jointGroupIds(tasks: Task[]): string[] {
 }
 export function jointGroupMembers(tasks: Task[], id: string): Task[] { return tasks.filter(t => t.jointGroupId === id).sort((a,b)=>a.id.localeCompare(b.id)); }
 export function jointGroups(tasks: Task[]): Map<string, Task[]> { return new Map(jointGroupIds(tasks).map(id=>[id,jointGroupMembers(tasks,id)])); }
-export function jointParticipants(tasks: Task[]): string[] { return [...new Set(tasks.map(t=>t.participantId))].sort(); }
+export function jointParticipants(tasks: Task[]): string[] { return [...new Set(tasks.map(t=>t.participantId).filter((id): id is string => id !== undefined))].sort(); }
 export function jointResources(tasks: Task[]): string[] { return tasks[0] ? canonicalResourceIds(tasks[0]) : []; }
 export function jointWorkItemKey(id: string): string { return `joint:${id}`; }
 export function structurallyCompatibleJointGroup(tasks: Task[]): boolean {

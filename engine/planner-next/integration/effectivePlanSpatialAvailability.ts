@@ -40,7 +40,7 @@ export function resolveEffectivePlanSpatialAvailability(workDay: TimeWindow, zon
     const zone = zones.find((entry) => entry.zoneId === space.zoneId);
     const effectiveZone = zonesById.get(space.zoneId);
     if (!zone || !effectiveZone || effectiveZone.defect?.reason === "DUPLICATE_ZONE_SNAPSHOT") {
-      const reason = effectiveZone?.defect?.reason === "DUPLICATE_ZONE_SNAPSHOT" ? "DUPLICATE_ZONE_SNAPSHOT" : "MISSING_ZONE_SNAPSHOT";
+      const reason: EffectiveSpatialDefectReason = effectiveZone?.defect?.reason === "DUPLICATE_ZONE_SNAPSHOT" ? "DUPLICATE_ZONE_SNAPSHOT" : "MISSING_ZONE_SNAPSHOT";
       const defect = freeze({ entity: "space" as const, entityId: space.spaceId, reason });
       if (reason === "MISSING_ZONE_SNAPSHOT") defects.push(defect);
       spacesById.set(space.spaceId, freeze({ spaceId: space.spaceId, zoneId: space.zoneId, effectiveWindow: null, mode: null, source: space.source, defect })); continue;
@@ -59,9 +59,9 @@ function countIds<T>(values: readonly T[], id: (value: T) => number): Map<number
   return counts;
 }
 
-function endpointPair(value: object, startKey: string, endKey: string): { start?: unknown; end?: unknown } {
-  const result: { start?: unknown; end?: unknown } = {};
-  if (Object.prototype.hasOwnProperty.call(value, startKey)) result.start = (value as Record<string, unknown>)[startKey];
-  if (Object.prototype.hasOwnProperty.call(value, endKey)) result.end = (value as Record<string, unknown>)[endKey];
-  return result;
+function endpointPair(value: object, startKey: string, endKey: string): { start: unknown; end: unknown } {
+  return {
+    start: Object.prototype.hasOwnProperty.call(value, startKey) ? (value as Record<string, unknown>)[startKey] : undefined,
+    end: Object.prototype.hasOwnProperty.call(value, endKey) ? (value as Record<string, unknown>)[endKey] : undefined,
+  };
 }

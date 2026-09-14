@@ -1,23 +1,14 @@
 import { createHash } from "node:crypto";
+import {
+  ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION,
+  type AssistedPlanningSnapshotV1,
+} from "../shared/assistedPlanningSnapshotContracts";
 
-export const ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION = 1 as const;
-
-export interface AssistedPlanningTaskSnapshotV1 {
-  readonly taskId: number;
-  readonly startPlanned: string | null;
-  readonly endPlanned: string | null;
-  readonly zoneId: number | null;
-  readonly spaceId: number | null;
-  readonly locationLabel: string | null;
-  readonly durationOverride: number | null;
-  readonly camerasOverride: number | null;
-}
-
-export interface AssistedPlanningSnapshotV1 {
-  readonly contractVersion: 1;
-  /** Complete task catalog for the day, including unplaced tasks. */
-  readonly tasks: readonly AssistedPlanningTaskSnapshotV1[];
-}
+export {
+  ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION,
+  type AssistedPlanningSnapshotV1,
+  type AssistedPlanningTaskSnapshotV1,
+} from "../shared/assistedPlanningSnapshotContracts";
 
 export type AssistedPlanningTaskSource = Readonly<{
   id: number;
