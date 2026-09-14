@@ -286,7 +286,7 @@ export async function buildEngineInput(
       isRequired: row.is_required ?? row.isRequired ?? true,
       metadata: row.metadata ?? {},
     }))
-    .filter((component) => activeBundleIds.has(component.bundleId));
+    .filter((component: NonNullable<EngineInput["resourceBundleComponents"]>[number]) => activeBundleIds.has(component.bundleId));
   const resourceBundleSpaceAffinities: NonNullable<EngineInput["resourceBundleSpaceAffinities"]> = resourceBundleAffinityRows
     .map((row: any) => ({
       id: row.id == null ? undefined : String(row.id),
@@ -295,7 +295,7 @@ export async function buildEngineInput(
       affinityScore: Number(row.affinity_score ?? row.affinityScore ?? 0) || 0,
       metadata: row.metadata ?? {},
     }))
-    .filter((affinity) => activeBundleIds.has(affinity.bundleId));
+    .filter((affinity: NonNullable<EngineInput["resourceBundleSpaceAffinities"]>[number]) => activeBundleIds.has(affinity.bundleId));
 
   // Recursos anclados a ZONAS (snapshot/override por plan)
   const zoneResourceAssignments =
