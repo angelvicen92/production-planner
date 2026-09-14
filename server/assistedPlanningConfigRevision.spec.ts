@@ -6,6 +6,7 @@ import {
   buildEffectivePlanConfigRevisionV1,
   EFFECTIVE_PLAN_CONFIG_DERIVED_AUTHORITIES_V1,
   type BuildEffectivePlanConfigRevisionInputV1,
+  type EffectivePlanConfigDerivedAuthorityV1,
 } from "./effectivePlanConfigRevision";
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 
@@ -29,6 +30,20 @@ function fixture(): BuildEffectivePlanConfigRevisionInputV1 {
       authority,
       { semanticValue: [{ id: 2, sequence: ["a", "b"] }, { sequence: ["c"], id: 1 }], provenance: provenance(authority) },
     ])),
+  };
+}
+
+function withAuthority(
+  input: BuildEffectivePlanConfigRevisionInputV1,
+  authority: EffectivePlanConfigDerivedAuthorityV1,
+  semanticValue: unknown,
+): BuildEffectivePlanConfigRevisionInputV1 {
+  return {
+    ...input,
+    authorities: {
+      ...input.authorities,
+      [authority]: { semanticValue, provenance: provenance(authority) },
+    },
   };
 }
 
@@ -64,16 +79,14 @@ test("replay is detached, deeply frozen, canonical and preserves ASST-002 identi
 
 test("replay follows effective authority ordering semantics rather than treating every array alike", () => {
   const original = fixture();
-  const equivalent = fixture();
-  const orderedDifference = fixture();
-  equivalent.authorities.spatial_configuration!.semanticValue = [
+  const equivalent = withAuthority(fixture(), "spatial_configuration", [
     { sequence: ["c"], id: 1 },
     { sequence: ["a", "b"], id: 2 },
-  ];
-  orderedDifference.authorities.plan_workday!.semanticValue = [
+  ]);
+  const orderedDifference = withAuthority(fixture(), "plan_workday", [
     { sequence: ["c"], id: 1 },
     { id: 2, sequence: ["a", "b"] },
-  ];
+  ]);
 
   const left = buildEffectivePlanConfigReplaySnapshotV1(original);
   const same = buildEffectivePlanConfigReplaySnapshotV1({
@@ -87,19 +100,21 @@ test("replay follows effective authority ordering semantics rather than treating
 
 test("replay ignores object-key order while preserving ordered sequences", () => {
   const first = fixture();
-  const second = fixture();
-  second.authorities.plan_workday!.semanticValue = [
+  const second = withAuthority(fixture(), "plan_workday", [
     { sequence: ["a", "b"], id: 2 },
     { sequence: ["c"], id: 1 },
-  ];
+  ]);
   assert.deepEqual(
     buildEffectivePlanConfigReplaySnapshotV1(first),
     buildEffectivePlanConfigReplaySnapshotV1(second),
   );
 
-  (second.authorities.plan_workday!.semanticValue as Array<{ sequence: string[] }>)[0].sequence.reverse();
+  const reorderedNestedSequence = withAuthority(second, "plan_workday", [
+    { sequence: ["b", "a"], id: 2 },
+    { sequence: ["c"], id: 1 },
+  ]);
   assert.notDeepEqual(
     buildEffectivePlanConfigReplaySnapshotV1(first),
-    buildEffectivePlanConfigReplaySnapshotV1(second),
+    buildEffectivePlanConfigReplaySnapshotV1(reorderedNestedSequence),
   );
 });
