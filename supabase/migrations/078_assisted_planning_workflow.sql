@@ -111,5 +111,7 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.assisted_apply_snapshot(integer,jsonb), public.assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text),
  public.assisted_patch_draft(integer,text,bigint,jsonb,text), public.assisted_accept_stage(integer,uuid,text,bigint), public.assisted_move_stage(integer,bigint,boolean) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.assisted_apply_snapshot(integer,jsonb), public.assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text),
+ public.assisted_patch_draft(integer,text,bigint,jsonb,text), public.assisted_accept_stage(integer,uuid,text,bigint), public.assisted_move_stage(integer,bigint,boolean) FROM service_role;
 GRANT EXECUTE ON FUNCTION public.assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text), public.assisted_patch_draft(integer,text,bigint,jsonb,text),
  public.assisted_accept_stage(integer,uuid,text,bigint), public.assisted_move_stage(integer,bigint,boolean) TO service_role;

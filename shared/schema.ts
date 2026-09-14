@@ -645,6 +645,7 @@ export const assistedPlanningStages = pgTable("assisted_planning_stages", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   sessionOrdinal: uniqueIndex("assisted_planning_stages_session_ordinal_key").on(table.sessionId, table.ordinal),
+  oneLiveChild: uniqueIndex("assisted_planning_stages_one_live_child").on(table.sessionId, table.parentStageId).where(sql`${table.archivedAt} IS NULL AND ${table.parentStageId} IS NOT NULL`),
   planIdx: index("assisted_planning_stages_plan_id_idx").on(table.planId),
   ordinalCheck: check("assisted_planning_stages_ordinal_check", sql`${table.ordinal} >= 0`),
   scopeTaskIdsArrayCheck: check("assisted_planning_stages_scope_task_ids_array_check", sql`jsonb_typeof(${table.scopeTaskIdsJson}) = 'array'`),
