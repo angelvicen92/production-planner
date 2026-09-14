@@ -30,6 +30,8 @@ import {
 import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError } from "./spatialAvailabilityHttp";
 import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 import { AssistedPlanningError, AssistedPlanningService } from "./assistedPlanningService";
+import { AssistedProposalError, AssistedProposalService } from "./assistedProposalService";
+import { assistedProposalApplySchema, assistedProposalRequestSchema } from "@shared/assistedProposalContracts";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -46,10 +48,12 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const assistedPlanning = new AssistedPlanningService(storage);
+  const assistedProposals = new AssistedProposalService(storage);
   const assistedAction = async (res: any, action: () => Promise<unknown>) => {
     try { return res.json(await action()); }
     catch (error) {
       if (error instanceof AssistedPlanningError) return res.status(error.status).json({ code: error.code, message: error.code });
+      if (error instanceof AssistedProposalError) return res.status(error.status).json({ code: error.code, message: error.code });
       throw error;
     }
   };
@@ -3292,6 +3296,12 @@ function mapDeleteError(err: any, fallback: string) {
   app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.accept(assistedPlanId(req.params.id), (req as any).user.id, body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   app.post("/api/plans/:id/assisted/rollback", async (req, res) => assistedAction(res, () => { const body = z.object({ targetStageId: z.number().int().positive() }).strict().parse(req.body); return assistedPlanning.rollback(assistedPlanId(req.params.id), body.targetStageId); }));
   app.post("/api/plans/:id/assisted/redo", async (req, res) => assistedAction(res, () => assistedPlanning.redo(assistedPlanId(req.params.id))));
+  app.post("/api/plans/:id/assisted/proposals", async (req,res) => {
+    try { const result=await assistedProposals.request(assistedPlanId(req.params.id),assistedProposalRequestSchema.parse(req.body)); return res.status(202).json(result); }
+    catch(error){ if(error instanceof AssistedProposalError)return res.status(error.status).json({code:error.code,message:error.code}); throw error; }
+  });
+  app.get("/api/plans/:id/assisted/proposals/:runId", async(req,res)=>assistedAction(res,()=>assistedProposals.get(assistedPlanId(req.params.id),assistedPlanId(req.params.runId))));
+  app.post("/api/plans/:id/assisted/proposals/:runId/apply", async(req,res)=>assistedAction(res,()=>{const body=assistedProposalApplySchema.parse(req.body);return assistedProposals.apply(assistedPlanId(req.params.id),assistedPlanId(req.params.runId),body.expectedDraftFingerprint,body.expectedBaseStageId);}));
 
   app.get("/api/plans/:id/tasks", async (req, res) => {
     const tasks = await storage.getTasksForPlan(Number(req.params.id));

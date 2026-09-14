@@ -149,13 +149,29 @@ function sourceFiles(directory: string): string[] {
 }
 
 test("planner-next remains isolated from legacy and production", () => {
+  const productionBoundaryAllowlist = new Set([
+    "server/assistedProposalService.spec.ts",
+    "server/assistedProposalService.ts",
+    "server/assistedScopeResolver.ts",
+  ]);
+  const referencedBoundaryFiles = new Set<string>();
+
   for (const file of sourceFiles("engine/planner-next").filter((name) => !name.endsWith(".spec.ts"))) {
     const source = readFileSync(file, "utf8");
     assert.doesNotMatch(source, /engine\/(v3|v4|orc)|generatePlanV[34]|orcActivePlanner/);
   }
   for (const root of ["server", "client", "shared"]) {
-    for (const file of sourceFiles(root)) assert.doesNotMatch(readFileSync(file, "utf8"), /planner-next/);
+    for (const file of sourceFiles(root)) {
+      const referencesPlannerNext = /planner-next/.test(readFileSync(file, "utf8"));
+      if (productionBoundaryAllowlist.has(file)) {
+        assert.equal(referencesPlannerNext, true, `${file} must retain its authorized Planner Next reference`);
+        referencedBoundaryFiles.add(file);
+      } else {
+        assert.equal(referencesPlannerNext, false, `${file} must remain isolated from Planner Next`);
+      }
+    }
   }
+  assert.deepEqual(referencedBoundaryFiles, productionBoundaryAllowlist);
   for (const file of ["engine/solve.ts", "engine/buildInput.ts", "engine/types.ts"]) {
     assert.doesNotMatch(readFileSync(file, "utf8"), /planner-next/);
   }

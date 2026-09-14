@@ -72,9 +72,22 @@ export const planningRuns = pgTable("planning_runs", {
   selectedCandidateMetrics: jsonb("selected_candidate_metrics").$type<Record<string, unknown> | null>(),
   engineMetadata: jsonb("engine_metadata").$type<Record<string, unknown> | null>(),
   diagnosticWarnings: jsonb("diagnostic_warnings").$type<Record<string, unknown> | null>(),
+  executionKind: text("execution_kind").notNull().default("FULL_PLAN"),
+  assistedSessionId: bigint("assisted_session_id", { mode: "number" }),
+  baseStageId: bigint("base_stage_id", { mode: "number" }),
+  configRevisionId: bigint("config_revision_id", { mode: "number" }),
+  scopeJson: jsonb("scope_json").$type<Record<string, unknown> | null>(),
+  scopeTaskIdsJson: jsonb("scope_task_ids_json").$type<number[]>().notNull().default([]),
+  includePrerequisites: boolean("include_prerequisites").notNull().default(false),
+  sourceDraftFingerprint: text("source_draft_fingerprint"),
+  resultFingerprint: text("result_fingerprint"),
+  assistedResultJson: jsonb("assisted_result_json").$type<Record<string, unknown> | null>(),
 }, (table) => ({
   planIdx: index("planning_runs_plan_id_idx").on(table.planId),
   latestDiagnosticsIdx: index("planning_runs_plan_created_at_idx").on(table.planId, table.createdAt),
+  assistedLatestIdx: index("planning_runs_assisted_session_created_idx").on(table.assistedSessionId, table.createdAt),
+  scopeIdsCheck: check("planning_runs_scope_task_ids_check", sql`public.positive_integer_jsonb_array(${table.scopeTaskIdsJson})`),
+  resultFingerprintCheck: check("planning_runs_result_fingerprint_check", sql`${table.resultFingerprint} IS NULL OR ${table.resultFingerprint} ~ '^[0-9a-f]{64}$'`),
 }));
 
 // 1.1 program_settings (defaults globales)

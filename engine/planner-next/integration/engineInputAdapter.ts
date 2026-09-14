@@ -214,7 +214,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const canonicalFamily = (family: string) => canonical("setup-family", `${id}:${family}`);
     if (setupPolicy.orderConstraint === "EXPLICIT") {
       const familyOrder = setupPolicy.familyOrder!.map(canonicalFamily);
-      const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies]).sort(([left], [right]) => compare(left, right)));
+      const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies] as const).sort(([left], [right]) => compare(left, right)));
       return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
     }
     const familyOrder = [...setupPolicy.families].sort(compare).map(canonicalFamily);
@@ -259,7 +259,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     anchorTaskId: canonical("task", entry.anchorTaskId),
     beforeTaskIds: entry.beforeTaskIds.map((id) => canonical("task", id)),
     afterTaskIds: entry.afterTaskIds.map((id) => canonical("task", id)),
-    adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED",
+    adjacency: "REQUIRED" as const, internalTransition: "INCLUDED" as const, resourceContinuity: "REQUIRED" as const,
     ...(()=>{const segmentIds=[...entry.beforeTaskIds,...entry.afterTaskIds],segments=segmentIds.map(id=>input.tasks.find(task=>task.id===id)?.itinerantTeamId),declared=segments.filter((id):id is number=>id!=null),anchor=input.tasks.find(task=>task.id===entry.anchorTaskId)?.itinerantTeamId;const unit=declared[0]??anchor;return unit!=null&&declared.length===segments.length&&declared.every(id=>id===unit)&&(anchor==null||anchor===unit)?{itinerantUnitId:canonical("itinerant-team",unit)}:{};})(),
   })).sort((a, b) => compare(a.id, b.id));
 

@@ -50,6 +50,7 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
 
   for (const task of input.tasks) {
+    if (task.status === "cancelled") continue;
     if (!(["pending", "interrupted", "in_progress", "done"] as const).includes(task.status as Exclude<TaskStatus, "cancelled">)) continue;
     const spaceId = isPositiveInteger(task.spaceId) ? task.spaceId : null;
     const explicitZoneId = isPositiveInteger(task.zoneId) ? task.zoneId : null;

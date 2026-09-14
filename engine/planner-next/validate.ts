@@ -170,7 +170,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
         && direction.groupingWeight >= 0;
     };
     const bothValid = directions.every(validDirection);
-    if (!bothValid || (bothValid && directions[0]!.taskIds.some((id) => directions[1]!.taskIds.includes(id)))) {
+    if (!bothValid || (bothValid && (directions[0]!.taskIds as string[]).some((id: string) => (directions[1]!.taskIds as string[]).includes(id)))) {
       reasons.add("INVALID_TRANSPORT_POLICY");
     }
   }
@@ -400,7 +400,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const task of scheduled) {
     if(expectedTaskById.get(task.id)?.itinerantUnitId!==task.itinerantUnitId)itinerantUnitMeal+=1;
     if(task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))itinerantUnitResourceAlias=true;
-    const participant = participants.get(task.participantId);
+    const participant = task.participantId === undefined ? undefined : participants.get(task.participantId);
     const coach = task.coachId === undefined ? undefined : coaches.get(task.coachId);
     const space = spaces.get(task.spaceId);
     if (task.end - task.start !== task.duration
