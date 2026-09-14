@@ -29,6 +29,7 @@ import {
 } from "./resourceAvailabilityWindow";
 import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError } from "./spatialAvailabilityHttp";
 import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
+import { AssistedPlanningError, AssistedPlanningService } from "./assistedPlanningService";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -44,6 +45,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const assistedPlanning = new AssistedPlanningService(storage);
+  const assistedAction = async (res: any, action: () => Promise<unknown>) => {
+    try { return res.json(await action()); }
+    catch (error) {
+      if (error instanceof AssistedPlanningError) return res.status(error.status).json({ code: error.code, message: error.code });
+      throw error;
+    }
+  };
   const sendSpatialAvailability = async (res: any, action: () => Promise<unknown>) => {
     const result = await executeSpatialAvailabilityAction(action);
     return res.status(result.status).json(result.body);
@@ -3272,6 +3281,17 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(400).json({ message: err?.message || "Cannot delete plan" });
     }
   });
+
+  const assistedPlanId = (value: string) => z.coerce.number().int().positive().parse(value);
+  const assistedExpected = z.object({ expectedDraftFingerprint: z.string().regex(/^[0-9a-f]{64}$/), expectedBaseStageId: z.number().int().positive() }).strict();
+  const assistedChanges = z.object({ taskId: z.number().int().positive(), startPlanned: z.string().nullable().optional(), endPlanned: z.string().nullable().optional(), zoneId: z.number().int().positive().nullable().optional(), spaceId: z.number().int().positive().nullable().optional(), locationLabel: z.string().nullable().optional(), durationOverride: z.number().int().positive().nullable().optional(), camerasOverride: z.number().int().min(0).nullable().optional() }).strict();
+  app.get("/api/plans/:id/assisted", async (req, res) => assistedAction(res, () => assistedPlanning.state(assistedPlanId(req.params.id))));
+  app.get("/api/plans/:id/assisted/history", async (req, res) => assistedAction(res, async () => (await assistedPlanning.state(assistedPlanId(req.params.id))).history));
+  app.post("/api/plans/:id/assisted/session", async (req, res) => assistedAction(res, () => assistedPlanning.start(assistedPlanId(req.params.id), (req as any).user.id)));
+  app.patch("/api/plans/:id/assisted/draft", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ changes: z.array(assistedChanges).min(1) }).parse(req.body); return assistedPlanning.patchDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId, body.changes); }));
+  app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.accept(assistedPlanId(req.params.id), (req as any).user.id, body.expectedDraftFingerprint, body.expectedBaseStageId); }));
+  app.post("/api/plans/:id/assisted/rollback", async (req, res) => assistedAction(res, () => { const body = z.object({ targetStageId: z.number().int().positive() }).strict().parse(req.body); return assistedPlanning.rollback(assistedPlanId(req.params.id), body.targetStageId); }));
+  app.post("/api/plans/:id/assisted/redo", async (req, res) => assistedAction(res, () => assistedPlanning.redo(assistedPlanId(req.params.id))));
 
   app.get("/api/plans/:id/tasks", async (req, res) => {
     const tasks = await storage.getTasksForPlan(Number(req.params.id));
