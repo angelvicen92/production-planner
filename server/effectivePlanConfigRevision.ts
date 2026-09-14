@@ -19,6 +19,30 @@ export const EFFECTIVE_PLAN_CONFIG_DERIVED_AUTHORITIES_V1 = [
 export type EffectivePlanConfigDerivedAuthorityV1 =
   (typeof EFFECTIVE_PLAN_CONFIG_DERIVED_AUTHORITIES_V1)[number];
 
+type EffectivePlanConfigAuthorityPolicyV1 = Readonly<{
+  criticality: "REQUIRED";
+  canonicalization: "ORDERED" | "UNORDERED_CATALOG";
+}> | Readonly<{
+  criticality: "OPTIONAL_SIGNAL";
+  canonicalization: "ORDERED" | "UNORDERED_CATALOG";
+  unavailableReasonCode: "RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE";
+}>;
+
+const EFFECTIVE_PLAN_CONFIG_AUTHORITY_POLICIES_V1: Readonly<
+  Record<EffectivePlanConfigDerivedAuthorityV1, EffectivePlanConfigAuthorityPolicyV1>
+> = {
+  plan_workday: { criticality: "REQUIRED", canonicalization: "ORDERED" },
+  contestant_availability: { criticality: "REQUIRED", canonicalization: "UNORDERED_CATALOG" },
+  spatial_configuration: { criticality: "REQUIRED", canonicalization: "UNORDERED_CATALOG" },
+  resource_configuration: { criticality: "REQUIRED", canonicalization: "UNORDERED_CATALOG" },
+  resource_assignments_and_requirements: { criticality: "REQUIRED", canonicalization: "UNORDERED_CATALOG" },
+  resource_bundles: {
+    criticality: "OPTIONAL_SIGNAL",
+    canonicalization: "UNORDERED_CATALOG",
+    unavailableReasonCode: "RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE",
+  },
+};
+
 export interface EffectivePlanConfigProvenanceV1 {
   /** Stable name of the materialized daily authority (table/view/contract), not a row id. */
   readonly authority: string;
@@ -37,14 +61,16 @@ export interface BuildEffectivePlanConfigRevisionInputV1 {
   readonly taskTemplateProvenance: EffectivePlanConfigProvenanceV1;
   readonly optimizerSnapshot: PlanOptimizerSnapshotV1;
   readonly optimizerProvenance: EffectivePlanConfigProvenanceV1;
-  readonly authorities: Readonly<Record<EffectivePlanConfigDerivedAuthorityV1, EffectivePlanConfigAuthorityInputV1>>;
+  readonly authorities: Readonly<Partial<Record<EffectivePlanConfigDerivedAuthorityV1, EffectivePlanConfigAuthorityInputV1>>>;
 }
 
 export interface EffectivePlanConfigComponentRevisionV1 {
   readonly authority: "task_templates" | "optimizer" | EffectivePlanConfigDerivedAuthorityV1;
   readonly identityKind: "REUSED_CANONICAL_FINGERPRINT" | "DERIVED_SEMANTIC_FINGERPRINT";
   readonly fingerprint: string;
-  readonly provenance: EffectivePlanConfigProvenanceV1;
+  readonly availability: "AVAILABLE" | "UNAVAILABLE_NEUTRAL";
+  readonly provenance?: EffectivePlanConfigProvenanceV1;
+  readonly unavailableReasonCode?: "RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE";
 }
 
 export interface EffectivePlanConfigRevisionV1 {
@@ -72,13 +98,14 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-function canonicalize(value: unknown, path: string): unknown {
+function canonicalize(value: unknown, path: string, unorderedArray: boolean): unknown {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (Array.isArray(value)) {
-    // These authorities are catalogs/sets of effective rows. Their storage order is not semantic.
-    return value.map((entry, index) => canonicalize(entry, `${path}[${index}]`))
-      .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    const entries = value.map((entry, index) => canonicalize(entry, `${path}[${index}]`, false));
+    return unorderedArray
+      ? entries.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
+      : entries;
   }
   if (typeof value === "object") {
     const prototype = Object.getPrototypeOf(value);
@@ -88,7 +115,7 @@ function canonicalize(value: unknown, path: string): unknown {
     return Object.fromEntries(Object.keys(value as Record<string, unknown>).sort().map((key) => {
       const nested = (value as Record<string, unknown>)[key];
       if (nested === undefined) throw invalidAuthority(`${path}.${key}`, "undefined is not canonical");
-      return [key, canonicalize(nested, `${path}.${key}`)];
+      return [key, canonicalize(nested, `${path}.${key}`, false)];
     }));
   }
   throw invalidAuthority(path, `unsupported semantic value type ${typeof value}`);
@@ -140,20 +167,34 @@ export function buildEffectivePlanConfigRevisionV1(
     {
       authority: "task_templates",
       identityKind: "REUSED_CANONICAL_FINGERPRINT",
+      availability: "AVAILABLE",
       fingerprint: deriveTaskTemplateSnapshotCatalogFingerprint(input.taskTemplateSnapshots),
       provenance: validateProvenance(input.taskTemplateProvenance, "task_templates"),
     },
     {
       authority: "optimizer",
       identityKind: "REUSED_CANONICAL_FINGERPRINT",
+      availability: "AVAILABLE",
       fingerprint: input.optimizerSnapshot.configurationFingerprint,
       provenance: validateProvenance(input.optimizerProvenance, "optimizer"),
     },
   ];
 
   for (const authority of EFFECTIVE_PLAN_CONFIG_DERIVED_AUTHORITIES_V1) {
+    const policy = EFFECTIVE_PLAN_CONFIG_AUTHORITY_POLICIES_V1[authority];
     const component = input.authorities?.[authority];
     if (!component) {
+      if (policy.criticality === "OPTIONAL_SIGNAL") {
+        const unavailableReasonCode = policy.unavailableReasonCode;
+        components.push({
+          authority,
+          identityKind: "DERIVED_SEMANTIC_FINGERPRINT",
+          availability: "UNAVAILABLE_NEUTRAL",
+          unavailableReasonCode,
+          fingerprint: digest({ contractVersion: 1, authority, availability: "UNAVAILABLE_NEUTRAL", unavailableReasonCode }),
+        });
+        continue;
+      }
       throw new EffectivePlanConfigRevisionError(
         "MISSING_EFFECTIVE_AUTHORITY",
         `Missing required daily authority ${authority}.`,
@@ -163,7 +204,17 @@ export function buildEffectivePlanConfigRevisionV1(
     components.push({
       authority,
       identityKind: "DERIVED_SEMANTIC_FINGERPRINT",
-      fingerprint: digest({ contractVersion: 1, authority, semanticValue: canonicalize(component.semanticValue, authority) }),
+      availability: "AVAILABLE",
+      fingerprint: digest({
+        contractVersion: 1,
+        authority,
+        availability: "AVAILABLE",
+        semanticValue: canonicalize(
+          component.semanticValue,
+          authority,
+          policy.canonicalization === "UNORDERED_CATALOG",
+        ),
+      }),
       provenance: validateProvenance(component.provenance, authority),
     });
   }
@@ -171,7 +222,7 @@ export function buildEffectivePlanConfigRevisionV1(
   components.sort((left, right) => left.authority.localeCompare(right.authority));
   const configurationFingerprint = digest({
     contractVersion: EFFECTIVE_PLAN_CONFIG_REVISION_CONTRACT_VERSION,
-    components: components.map(({ authority, fingerprint }) => ({ authority, fingerprint })),
+    components: components.map(({ authority, availability, fingerprint }) => ({ authority, availability, fingerprint })),
   });
   return deepFreeze({
     contractVersion: EFFECTIVE_PLAN_CONFIG_REVISION_CONTRACT_VERSION,
