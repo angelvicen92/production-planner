@@ -4,14 +4,16 @@ import { buildEngineInput } from "../engine/buildInput";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
+import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute } from "../engine/planner-next/integration/engineInputAdapter";
+import { validatePlan } from "../engine/planner-next/validate";
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "TASK_SET_MISMATCH" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "CONCURRENT_ACCEPT";
+export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "CONCURRENT_ACCEPT";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
 }
 const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
-  VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, TASK_SET_MISMATCH: 409,
+  STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
   INVALID_STAGE_TARGET: 422, NO_REDO_AVAILABLE: 409, CONCURRENT_ACCEPT: 409,
 };
 function dbError(error: any): never {
@@ -77,6 +79,48 @@ export class AssistedPlanningService {
   async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number) {
     const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
     if (error) dbError(error); return this.state(planId);
+  }
+  async validateDraft(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number) {
+    const session = await this.storage.getActiveAssistedPlanningSession(planId);
+    if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
+    if (session.draftFingerprint !== expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT", 409);
+    if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    const [input, optimizerSnapshot, taskTemplateSnapshots, persistedRevision] = await Promise.all([
+      buildEngineInput(planId, this.storage), this.storage.getPlanOptimizerSnapshot(planId),
+      this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getPlanConfigRevision(session.currentConfigRevisionId),
+    ]);
+    const actual = buildEffectivePlanConfigRevisionV1({ planId, optimizerSnapshot, taskTemplateSnapshots,
+      optimizerProvenance: provenance("plan_optimizer_snapshots"), taskTemplateProvenance: provenance("plan_task_template_snapshots"),
+      authorities: projectEffectiveAuthoritiesFromEngineInputV1(input) });
+    if (!persistedRevision || persistedRevision.planId !== planId || persistedRevision.fingerprint !== actual.configurationFingerprint)
+      throw new AssistedPlanningError("STALE_CONFIG_REVISION", 409);
+    const adapted = adaptEngineInputToPlannerNextProblem(input);
+    if (adapted.status !== "SUPPORTED") throw new AssistedPlanningError("UNSUPPORTED_ENGINE_INPUT", 422);
+    const canonicalTaskId = new Map(adapted.identityMap.filter(item => item.namespace === "task").map(item => [Number(item.sourceId), item.canonicalId]));
+    const canonicalSpaceId = new Map(adapted.identityMap.filter(item => item.namespace === "space").map(item => [Number(item.sourceId), item.canonicalId]));
+    const taskById = new Map(adapted.problem.tasks.map(task => [task.id, task]));
+    const draft = session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1;
+    const scheduled = draft.tasks.flatMap(row => {
+      const id = canonicalTaskId.get(row.taskId);
+      const task = id ? taskById.get(id) : undefined;
+      const spaceId = row.spaceId == null ? undefined : canonicalSpaceId.get(row.spaceId);
+      if (!task || !row.startPlanned || !row.endPlanned || !spaceId) return [];
+      const start = engineTimeToMinute(row.startPlanned); const end = engineTimeToMinute(row.endPlanned);
+      return [{ ...task, spaceId, duration: end - start, start, end }];
+    });
+    const validation = validatePlan(adapted.problem, scheduled);
+    const complete = scheduled.length === adapted.problem.tasks.length;
+    if (!complete || !validation.hardValid || validation.reasonCodes.length > 0) {
+      return { current: false, mode: "CLEAN_ONLY_V1", blocking: true, reasonCodes: validation.reasonCodes,
+        scheduledTaskCount: scheduled.length, expectedTaskCount: adapted.problem.tasks.length };
+    }
+    const { error } = await this.rpc("assisted_record_clean_validation", { p_plan_id: planId,
+      p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId,
+      p_expected_config: session.currentConfigRevisionId,
+      p_report: { mode: "CLEAN_ONLY_V1", hardValid: true, reasonCodes: validation.reasonCodes } });
+    if (error) dbError(error);
+    const state = await this.state(planId);
+    return { current: true, mode: "CLEAN_ONLY_V1", validation: state.validation };
   }
   async rollback(planId: number, targetStageId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: targetStageId, p_redo: false }); if (error) dbError(error); return this.state(planId); }
   async redo(planId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: null, p_redo: true }); if (error) dbError(error); return this.state(planId); }

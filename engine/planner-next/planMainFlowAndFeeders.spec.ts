@@ -150,6 +150,7 @@ function sourceFiles(directory: string): string[] {
 
 test("planner-next remains isolated from legacy and production", () => {
   const productionBoundaryAllowlist = new Set([
+    "server/assistedPlanningService.ts",
     "server/assistedProposalService.spec.ts",
     "server/assistedProposalService.ts",
     "server/assistedScopeResolver.ts",
