@@ -122,6 +122,18 @@ function canonicalize(value: unknown, path: string, unorderedArray: boolean): un
   throw invalidAuthority(path, `unsupported semantic value type ${typeof value}`);
 }
 
+/** Canonical semantic value shared by effective identity and durable replay. */
+export function canonicalizeEffectivePlanConfigAuthorityValueV1(
+  authority: EffectivePlanConfigDerivedAuthorityV1,
+  value: unknown,
+): unknown {
+  const policy = EFFECTIVE_PLAN_CONFIG_AUTHORITY_POLICIES_V1[authority];
+  if (policy.canonicalization === "UNORDERED_CATALOG" && !Array.isArray(value)) {
+    throw invalidAuthority(authority, "UNORDERED_CATALOG semanticValue must be a root array");
+  }
+  return canonicalize(value, authority, policy.canonicalization === "UNORDERED_CATALOG");
+}
+
 function invalidAuthority(path: string, message: string): EffectivePlanConfigRevisionError {
   return new EffectivePlanConfigRevisionError("INVALID_EFFECTIVE_AUTHORITY", message, { path });
 }
@@ -202,9 +214,6 @@ export function buildEffectivePlanConfigRevisionV1(
         { authority },
       );
     }
-    if (policy.canonicalization === "UNORDERED_CATALOG" && !Array.isArray(component.semanticValue)) {
-      throw invalidAuthority(authority, "UNORDERED_CATALOG semanticValue must be a root array");
-    }
     components.push({
       authority,
       identityKind: "DERIVED_SEMANTIC_FINGERPRINT",
@@ -213,11 +222,7 @@ export function buildEffectivePlanConfigRevisionV1(
         contractVersion: 1,
         authority,
         availability: "AVAILABLE",
-        semanticValue: canonicalize(
-          component.semanticValue,
-          authority,
-          policy.canonicalization === "UNORDERED_CATALOG",
-        ),
+        semanticValue: canonicalizeEffectivePlanConfigAuthorityValueV1(authority, component.semanticValue),
       }),
       provenance: validateProvenance(component.provenance, authority),
     });
