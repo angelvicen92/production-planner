@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizePlanOptimizerSnapshotV1 } from "./planOptimizerSnapshot";
-import { normalizeTaskTemplateCatalogEntry } from "./taskTemplateSnapshot";
+import {
+  deriveTaskTemplateSnapshotCatalogFingerprint,
+  normalizeTaskTemplateCatalogEntry,
+} from "./taskTemplateSnapshot";
 import {
   buildEffectivePlanConfigRevisionV1,
   EffectivePlanConfigRevisionError,
@@ -27,7 +30,7 @@ function fixture() {
   };
 }
 
-test("canonical identity ignores row/key order, provenance metadata and plan audit identity", () => {
+test("unordered catalogs ignore row and object-key order, provenance metadata and plan audit identity", () => {
   const first = fixture();
   const before = structuredClone(first);
   const second = fixture();
@@ -41,6 +44,45 @@ test("canonical identity ignores row/key order, provenance metadata and plan aud
   assert.deepEqual(first, before);
   assert.ok(Object.isFrozen(left));
   assert.ok(Object.isFrozen(left.components));
+});
+
+test("unordered catalogs reject an object root even when it contains an array", () => {
+  const input = fixture();
+  input.authorities.spatial_configuration.semanticValue = {
+    rows: [{ id: 1 }, { id: 2 }],
+  };
+
+  assert.throws(
+    () => buildEffectivePlanConfigRevisionV1(input),
+    (error) => error instanceof EffectivePlanConfigRevisionError
+      && error.code === "INVALID_EFFECTIVE_AUTHORITY"
+      && error.details.path === "spatial_configuration",
+  );
+});
+
+test("arrays nested within unordered catalog rows preserve sequence semantics", () => {
+  const first = fixture();
+  const second = fixture();
+  first.authorities.spatial_configuration.semanticValue = [{ id: 1, sequence: ["a", "b"] }];
+  second.authorities.spatial_configuration.semanticValue = [{ id: 1, sequence: ["b", "a"] }];
+
+  assert.notEqual(
+    buildEffectivePlanConfigRevisionV1(first).configurationFingerprint,
+    buildEffectivePlanConfigRevisionV1(second).configurationFingerprint,
+  );
+});
+
+test("ordered authority arrays preserve sequence semantics while object key order remains irrelevant", () => {
+  const first = fixture();
+  const reorderedKeys = fixture();
+  const reorderedSequence = fixture();
+  first.authorities.plan_workday.semanticValue = [{ step: 1, enabled: true }, { step: 2, enabled: false }];
+  reorderedKeys.authorities.plan_workday.semanticValue = [{ enabled: true, step: 1 }, { enabled: false, step: 2 }];
+  reorderedSequence.authorities.plan_workday.semanticValue = [{ step: 2, enabled: false }, { step: 1, enabled: true }];
+
+  const original = buildEffectivePlanConfigRevisionV1(first);
+  assert.equal(original.configurationFingerprint, buildEffectivePlanConfigRevisionV1(reorderedKeys).configurationFingerprint);
+  assert.notEqual(original.configurationFingerprint, buildEffectivePlanConfigRevisionV1(reorderedSequence).configurationFingerprint);
 });
 
 test("a semantic effective component change changes both component and compound fingerprints", () => {
@@ -67,6 +109,26 @@ test("missing required daily authority fails closed with a typed deterministic r
   );
 });
 
+test("unavailable optional bundle signal is neutral, deterministic, and distinct from an empty catalog", () => {
+  const firstUnavailable = fixture();
+  const secondUnavailable = fixture();
+  const emptyCatalog = fixture();
+  delete firstUnavailable.authorities.resource_bundles;
+  delete secondUnavailable.authorities.resource_bundles;
+  emptyCatalog.authorities.resource_bundles.semanticValue = [];
+
+  const first = buildEffectivePlanConfigRevisionV1(firstUnavailable);
+  const second = buildEffectivePlanConfigRevisionV1(secondUnavailable);
+  const empty = buildEffectivePlanConfigRevisionV1(emptyCatalog);
+  const unavailableComponent = first.components.find((item) => item.authority === "resource_bundles");
+
+  assert.equal(first.configurationFingerprint, second.configurationFingerprint);
+  assert.equal(unavailableComponent?.availability, "UNAVAILABLE_NEUTRAL");
+  assert.equal(unavailableComponent?.unavailableReasonCode, "RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE");
+  assert.notEqual(first.configurationFingerprint, empty.configurationFingerprint);
+  assert.equal(empty.components.find((item) => item.authority === "resource_bundles")?.availability, "AVAILABLE");
+});
+
 test("existing snapshot fingerprints are reused and no mutable configuration reader exists", () => {
   const input = fixture();
   const revision = buildEffectivePlanConfigRevisionV1(input);
@@ -75,5 +137,9 @@ test("existing snapshot fingerprints are reused and no mutable configuration rea
     input.optimizerSnapshot.configurationFingerprint,
   );
   assert.equal(revision.components.find((item) => item.authority === "optimizer")?.identityKind, "REUSED_CANONICAL_FINGERPRINT");
+  assert.equal(
+    revision.components.find((item) => item.authority === "task_templates")?.fingerprint,
+    deriveTaskTemplateSnapshotCatalogFingerprint(input.taskTemplateSnapshots),
+  );
   assert.equal(buildEffectivePlanConfigRevisionV1.length, 1);
 });
