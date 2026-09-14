@@ -13,7 +13,7 @@
 
 ### Cómo leer el catálogo
 
-La traza empleada es **fuente/requisito → autoridad productiva → `EngineInput` → preflight/adapter → Planner Next/ORC → validación → test/benchmark/Evidence → assisted → limitación**. Las dimensiones son independientes: una implementación puede estar activa y a la vez tener integración assisted parcial. `OFFICIAL` se reserva para contratos vinculados explícitamente por documentación de cobertura; `DERIVED` identifica conducta deducida del código. `UNVERIFIED` no equivale a roto.
+La traza empleada es **fuente/requisito → autoridad productiva → `EngineInput` → preflight/adapter → Planner Next/ORC → validación → test/benchmark/Evidence → assisted → limitación**. Las dimensiones son independientes: una implementación puede estar activa y a la vez tener integración assisted parcial. `OFFICIAL` se reserva para contratos vinculados explícitamente por documentación de cobertura o por las Fuentes oficiales del proyecto; `DERIVED` identifica conducta deducida del código. `UNVERIFIED` no equivale a roto.
 
 ## Summary matrix
 
@@ -70,12 +70,13 @@ La traza empleada es **fuente/requisito → autoridad productiva → `EngineInpu
 | AST-03 | Persistencia de sesión/stage/draft | OFFICIAL | ACTIVE | ACTIVE | TESTED | REUSE | migration 077; `assistedPlanningPersistenceMapping.ts`; storage specs |
 | AST-04 | Bootstrap/patch/validate/accept/undo-redo atómicos | OFFICIAL | ACTIVE | ACTIVE | TESTED | REUSE | migration 078; `assistedPlanningService.ts`; workflow specs |
 | AST-05 | Excepciones aceptadas | OFFICIAL | PARTIAL | PARTIAL | TESTED | REUSE_AND_EXTEND | migration 077 tables; persistence mapping; acceptance still requires zero HARD/REQUIRED in migration 078 |
-| EXP-01 | One-click Full A2 histórico | EXPERIMENTAL_ONLY | EXPERIMENTAL_NOT_MAIN | NOT_APPLICABLE | KNOWN_BROKEN | RETIRE_OR_REDESIGN | `exp@5077675:docs/evidence/A3-ORCH-REAL-025-final-one-click-core-feeding.md`: `ONE_CLICK_SURVIVAL_GATE=FAIL`, `CORE_COMPLETE_LEAF=NO`, `POST_CORE_REACHED=NO`; nunca productivo |
+| AST-06 | Integración de ASST-005 | OFFICIAL | ABSENT | PENDING_PR | UNVERIFIED | INVESTIGATE | Fuente oficial de reenfoque ASST-005; PR #899 + corrección apilada #902 pendientes y excluidos de `main` |
+| EXP-01 | One-click Full A2 histórico | EXPERIMENTAL_ONLY | EXPERIMENTAL_NOT_MAIN | NOT_APPLICABLE | KNOWN_BROKEN | RETIRE | `exp@5077675:docs/evidence/A3-ORCH-REAL-025-final-one-click-core-feeding.md`: `ONE_CLICK_SURVIVAL_GATE=FAIL`, `CORE_COMPLETE_LEAF=NO`, `POST_CORE_REACHED=NO`; nunca productivo |
 | EXP-02 | Experimentos de presence/residual ordering | EXPERIMENTAL_ONLY | LEGACY | NOT_APPLICABLE | TESTED | RETIRE | archivos `*Experiment*`, manifests históricos; no son selection policy productiva |
-| AST-06 | Integración de ASST-005 | UNKNOWN | ABSENT | PENDING_PR | UNVERIFIED | INVESTIGATE | PR #899 + corrección apilada #902, ambas pendientes; deliberadamente excluidas de `main` |
+| EXP-03 | Reserva diferida de prerequisites | EXPERIMENTAL_ONLY | EXPERIMENTAL_NOT_MAIN | NOT_APPLICABLE | KNOWN_LIMITATION | INVESTIGATE | `exp@5077675:engine/planner-next/deferredPrerequisiteReservation.ts`; A3-ORCH-REAL-016 prueba actividad pero no alcanza terminal |
+| EXP-04 | Autoridad de deadline de completion pendiente | EXPERIMENTAL_ONLY | EXPERIMENTAL_NOT_MAIN | NOT_APPLICABLE | TESTED | INVESTIGATE | `exp@5077675:engine/planner-next/pendingCompletionDeadlineAuthority.ts`; spec experimental de propagación/ciclos |
 
-**Total:** 54 capacidades diferenciadas. La granularidad separa autoridad, wiring, evidencia e integración assisted para evitar declarar “soportado” sólo porque existe un tipo o un test aislado.
-
+**Total:** 56 capacidades diferenciadas. La granularidad separa autoridad, wiring, evidencia e integración assisted para evitar declarar “soportado” sólo porque existe un tipo o un test aislado.
 
 ## Per-capability traceability
 
@@ -134,9 +135,11 @@ La traza empleada es **fuente/requisito → autoridad productiva → `EngineInpu
 | AST-03 | Assisted; persistencia session/stage/draft | OFFICIAL; DB 077 + snapshot mapping | assisted payload → persistence mapping/storage | persistence/storage specs; migration 077 | ACTIVE / ACTIVE | Sujeto a RLS; no usar experimental; REUSE |
 | AST-04 | Assisted; workflow atómico | OFFICIAL; DB 078/service | bootstrap/patch/validate/accept → service/RPC | workflow/service specs; migration 078 | ACTIVE / ACTIVE | Aceptación exige validación fresca; no usar experimental; REUSE |
 | AST-05 | Assisted; excepciones aceptadas | OFFICIAL; tablas 077 y accept RPC 078 | exception records → mapping; no bypass de validator | persistence/workflow specs; migrations 077/078 | PARTIAL / PARTIAL | RPC exige cero HARD/REQUIRED; KNOWN_LIMITATION con Evidence 077/078; REUSE_AND_EXTEND |
-| EXP-01 | Experimental; one-click Full A2 | EXPERIMENTAL_ONLY; ref `5077675` | sólo rama exp → one-click orchestration → no main wiring | `exp@5077675:docs/evidence/A3-ORCH-REAL-025-final-one-click-core-feeding.md` | EXPERIMENTAL_NOT_MAIN / NOT_APPLICABLE | **KNOWN_BROKEN:** survival FAIL, core leaf NO, post-core NO; RETIRE_OR_REDESIGN |
+| AST-06 | Assisted; ASST-005 pendiente | OFFICIAL; Fuente oficial de reenfoque ASST-005 + PR #899/#902 pendientes | contenido fuera de main; no se atribuye EngineInput/proyección/wiring productivo | checks de los PR, no Evidence de este SHA | ABSENT / PENDING_PR | Dos PR `PENDING_PR`; ninguna relación experimental; INVESTIGATE al integrar |
+| EXP-01 | Experimental; one-click Full A2 | EXPERIMENTAL_ONLY; ref `5077675` | sólo rama exp → one-click orchestration → no main wiring | `exp@5077675:docs/evidence/A3-ORCH-REAL-025-final-one-click-core-feeding.md` | EXPERIMENTAL_NOT_MAIN / NOT_APPLICABLE | **KNOWN_BROKEN:** survival FAIL, core leaf NO, post-core NO; RETIRE |
 | EXP-02 | Experimental; presence/residual ordering | EXPERIMENTAL_ONLY; runners/manifests históricos | no EngineInput authority nueva → experiment runners → no selection policy main | `*Experiment*` specs + historical manifests | LEGACY / NOT_APPLICABLE | Experimento no productivo; RETIRE |
-| AST-06 | Assisted; ASST-005 pendiente | autoridad aún no integrada; PR #899 + fix apilado #902 | contenido fuera de main; no se atribuye EngineInput/proyección/wiring | checks de los PR, no Evidence de este SHA | ABSENT / PENDING_PR | Dos PR `PENDING_PR`; ninguna relación experimental; INVESTIGATE al integrar |
+| EXP-03 | Experimental; deferred prerequisite reservation | EXPERIMENTAL_ONLY; ref `5077675` | sólo rama exp → `deferredPrerequisiteReservation.ts` → no main wiring | specs experimentales + `exp@5077675:docs/evidence/A3-ORCH-REAL-016*` | EXPERIMENTAL_NOT_MAIN / NOT_APPLICABLE | KNOWN_LIMITATION: opera y poda/repara, pero no alcanza terminal; INVESTIGATE |
+| EXP-04 | Experimental; pending completion deadline authority | EXPERIMENTAL_ONLY; ref `5077675` | sólo rama exp → `pendingCompletionDeadlineAuthority.ts` → no main wiring | spec experimental de propagación/ciclos; A3-ORCH-REAL Evidence relacionada | EXPERIMENTAL_NOT_MAIN / NOT_APPLICABLE | No promovida ni integrada en main; INVESTIGATE |
 
 ## Detailed capability cards
 
@@ -220,11 +223,11 @@ Migration 077 crea revisiones, sessions, stages inmutables, validations y except
 
 ## Capability reuse by assisted roadmap
 
-> Los nombres ASST-005…011 no están definidos en el árbol auditado. La tabla es un mapa de reutilización técnica conservador por secuencia, no una redefinición de sus acceptance criteria. ASST-005 sólo puede marcarse `PENDING_PR`.
+> La secuencia ASST-005…011 procede de la Fuente oficial de reenfoque; el árbol auditado sólo demuestra qué piezas de `main` pueden reutilizarse y qué implementación sigue pendiente. La tabla es un mapa de reutilización técnica conservador, no una redefinición de sus acceptance criteria. ASST-005 sólo puede marcarse `PENDING_PR` hasta que #899/#902 entren en `main`.
 
 | Milestone | Reutilizar | Gaps demostrados en main | No reconstruir |
 |---|---|---|---|
-| ASST-005 (`PENDING_PR`) | `PlanningScope`, projection, assisted Evidence, snapshots/service | Contenido del PR no verificable desde este árbol; no atribuir wiring | Planner Next, validator, persistence ASST-004 |
+| ASST-005 (`PENDING_PR`) | `PlanningScope`, projection, assisted Evidence, snapshots/service | Implementación pendiente fuera de `main`; no atribuir wiring productivo hasta merge | Planner Next, validator, persistence ASST-004 |
 | ASST-006 | protected placements, effective fixed intervals, fingerprints | Falta envolvente de interacciones futuras | Semántica de locks/status ni canonicalización |
 | ASST-007 | dependency/anchor closure y causal diagnostics | joint/technical/round closure incompleta | Validadores de dependencies/coupled work |
 | ASST-008 | exact core, budgets, matching, forward checks | Forward checks sólo ven problema proyectado | Search exact ni ledger de Evidence |
@@ -254,11 +257,12 @@ Sólo se registran deudas observables en código/tests/Evidence; ausencia de evi
 
 La auditoría del ref `codex/implementar-cambios-para-full-a2` @ `5077675d76f24c088b3e9961dc71cb75635d07bd` separa dos clases:
 
-- **Exclusivas del ref experimental:** `exp@5077675:engine/planner-next/deferredPrerequisiteReservation.ts` y `exp@5077675:engine/planner-next/pendingCompletionDeadlineAuthority.ts`, con Evidence `exp@5077675:docs/evidence/A3-ORCH-REAL-016*`. No existen en `main`; por tanto no son autoridad, wiring ni capacidad productiva.
+- **Exclusivas del ref experimental:** EXP-03 `exp@5077675:engine/planner-next/deferredPrerequisiteReservation.ts` y EXP-04 `exp@5077675:engine/planner-next/pendingCompletionDeadlineAuthority.ts`, con Evidence `exp@5077675:docs/evidence/A3-ORCH-REAL-016*`. No existen en `main`; por tanto no son autoridad, wiring ni capacidad productiva.
 - **Versiones experimentales de capacidades ya presentes en main:** cambios de exact core/completion, presence policy y residual-obligation ordering. Sus autoridades productivas siguen siendo `exactMainAndFeederCore.ts`, `exactItinerantPlan.ts`, `resourcePresence.ts` y el policy gate de `main`; el sufijo `Experiment` y los manifests históricos no elevan su estado.
 - **Fallo conocido one-click:** `exp@5077675:docs/evidence/A3-ORCH-REAL-025-final-one-click-core-feeding.md` registra `ONE_CLICK_SURVIVAL_GATE = FAIL`, `CORE_COMPLETE_LEAF = NO` y `POST_CORE_REACHED = NO`. EXP-01 queda `KNOWN_BROKEN`, no `UNVERIFIED`, y no debe promoverse ni describirse como productivo.
 
 PR #899 y su corrección apilada #902 permanecen `PENDING_PR`; tampoco elevan estados de `main`.
+
 ## Completeness and duplication review
 
 La revisión cruzó: contrato/config/snapshots/locks/status; dependency y operaciones acopladas; spaces/main/setup/continuity/rounds; transiciones; recursos y alternativas/bundles; itinerancia; seis modalidades de breaks/meals; transporte; policy/budget/exact/backtracking/backjump/matching/forward/pruning; preflight/validation/reason codes/diagnóstico/Evidence/determinismo; assisted/persistencia; y experimental. Capacidades parecidas se mantuvieron separadas cuando sus contratos y validadores lo están (especialmente meals, transitions y coupled work); componentes/bundles no se fusionaron con assignments porque su wiring difiere.
