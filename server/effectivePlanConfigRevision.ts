@@ -201,6 +201,9 @@ export function buildEffectivePlanConfigRevisionV1(
         { authority },
       );
     }
+    if (policy.canonicalization === "UNORDERED_CATALOG" && !Array.isArray(component.semanticValue)) {
+      throw invalidAuthority(authority, "UNORDERED_CATALOG semanticValue must be a root array");
+    }
     components.push({
       authority,
       identityKind: "DERIVED_SEMANTIC_FINGERPRINT",

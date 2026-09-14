@@ -46,6 +46,32 @@ test("unordered catalogs ignore row and object-key order, provenance metadata an
   assert.ok(Object.isFrozen(left.components));
 });
 
+test("unordered catalogs reject an object root even when it contains an array", () => {
+  const input = fixture();
+  input.authorities.spatial_configuration.semanticValue = {
+    rows: [{ id: 1 }, { id: 2 }],
+  };
+
+  assert.throws(
+    () => buildEffectivePlanConfigRevisionV1(input),
+    (error) => error instanceof EffectivePlanConfigRevisionError
+      && error.code === "INVALID_EFFECTIVE_AUTHORITY"
+      && error.details.path === "spatial_configuration",
+  );
+});
+
+test("arrays nested within unordered catalog rows preserve sequence semantics", () => {
+  const first = fixture();
+  const second = fixture();
+  first.authorities.spatial_configuration.semanticValue = [{ id: 1, sequence: ["a", "b"] }];
+  second.authorities.spatial_configuration.semanticValue = [{ id: 1, sequence: ["b", "a"] }];
+
+  assert.notEqual(
+    buildEffectivePlanConfigRevisionV1(first).configurationFingerprint,
+    buildEffectivePlanConfigRevisionV1(second).configurationFingerprint,
+  );
+});
+
 test("ordered authority arrays preserve sequence semantics while object key order remains irrelevant", () => {
   const first = fixture();
   const reorderedKeys = fixture();
