@@ -14,3 +14,9 @@ test("accepted exception applies only to the exact key while affected tasks rema
   assert.equal(isAcceptedExceptionStillApplicable(exception,{violationKey:"new"},[]),false);
   assert.equal(isAcceptedExceptionStillApplicable(exception,{violationKey:"exact"},[9]),false);
 });
+
+test("violationKey recursively canonicalizes nested dimensions", () => {
+  const left=createViolationKey({ruleCode:"NESTED",affectedTaskIds:["10","2"],dimensions:{outer:{z:1,a:{right:true,left:false}},items:[{b:2,a:1}]}});
+  const right=createViolationKey({ruleCode:"NESTED",affectedTaskIds:["2","10"],dimensions:{items:[{a:1,b:2}],outer:{a:{left:false,right:true},z:1}}});
+  assert.equal(left,right);
+});
