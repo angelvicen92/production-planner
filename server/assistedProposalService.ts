@@ -2,14 +2,16 @@ import type { IStorage } from "./storage";
 import { supabaseAdmin } from "./supabase";
 import { buildEngineInput } from "../engine/buildInput";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, minuteToEngineTime } from "../engine/planner-next/integration/engineInputAdapter";
-import { buildAssistedProblem, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
-import type { ScheduledTask } from "../engine/planner-next/contracts";
+import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
+import type { PlannerNextProblem, ScheduledTask } from "../engine/planner-next/contracts";
 import { expandVisiblePrerequisites, resolveAssistedScope, ScopeResolutionError } from "./assistedScopeResolver";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
 import type { BuildEffectivePlanConfigRevisionInputV1, EffectivePlanConfigRevisionV1 } from "./effectivePlanConfigRevision";
 import type { EngineInput } from "../engine/types";
 import type { AssistedProposalRequest, AssistedProposalRunResultV1 } from "../shared/assistedProposalContracts";
+import { validatePlan } from "../engine/planner-next/validate";
+import { fingerprint } from "../engine/planner-next/fingerprint";
 
 export type AssistedProposalErrorCode = "INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
 export class AssistedProposalError extends Error {
@@ -47,6 +49,26 @@ const defaultDependencies: AssistedProposalServiceDependencies = {
   buildConfigRevision: buildEffectivePlanConfigRevisionV1,
 };
 const provenance = (authority:string) => ({authority,authorityContractVersion:1});
+
+export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
+  const adapter=adaptEngineInputToPlannerNextProblem(input);if(adapter.status!=="SUPPORTED")return null;
+  const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
+  if(touched.some(id=>!canonicalByProduct.has(id)))return null;
+  const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
+  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),task=canonical?taskById.get(canonical):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
+  const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
+  return executeAssistedPlanning(buildAssistedProblem(adapter.problem,scope,protectedPlacements)).evidence;
+}
+
+/** Evidence-only seam: same immutable placements, validated by Planner Next without search. */
+export function createManualDeltaValidationHarness(problem:PlannerNextProblem,identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]){
+  return (_input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[])=>{
+    const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
+    const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),task=id?taskById.get(id):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
+    const validation=validatePlan(problem,placements,[],[],[],[],[],[],[]),scopeIds=touched.map(id=>canonicalByProduct.get(id)!);const completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
+    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:[],supportingReasonByTaskId:{},protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes};
+  };
+}
 
 export class AssistedProposalService {
   constructor(private readonly storage: IStorage, private readonly defer: (work:()=>void)=>void = queueMicrotask,

@@ -4,11 +4,10 @@ import { buildEngineInput } from "../engine/buildInput";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
-import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute } from "../engine/planner-next/integration/engineInputAdapter";
-import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
-import type { ScheduledTask } from "../engine/planner-next/contracts";
+import { engineTimeToMinute } from "./assistedTime";
+import { validateManualAssistedDelta } from "./assistedProposalService";
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
+export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
 }
@@ -16,7 +15,7 @@ const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
   STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, RUN_RESULT_INVALID: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
   INVALID_STAGE_TARGET: 422, NO_REDO_AVAILABLE: 409, CONCURRENT_ACCEPT: 409,
-  IMMUTABLE_TASK: 422, UNSUPPORTED_MANUAL_FIELD: 422, INVALID_MANUAL_DURATION: 422,
+  IMMUTABLE_TASK: 422, UNSUPPORTED_MANUAL_FIELD: 422, INVALID_MANUAL_DURATION: 422, INVALID_MANUAL_RESET: 422, CORRUPT_EDIT_LEDGER: 409,
   ASSISTED_DELTA_VALIDATION_UNSUPPORTED: 422, NO_UNDO_AVAILABLE: 409,
 };
 function dbError(error: any): never {
@@ -31,6 +30,7 @@ type AssistedRpc = (name: string, parameters: Record<string, unknown>) => Promis
 type AssistedPlanningServiceDependencies = {
   buildInput?: typeof buildEngineInput;
   buildConfigRevision?: typeof buildEffectivePlanConfigRevisionV1;
+  validateManual?: typeof validateManualAssistedDelta;
 };
 
 export class AssistedPlanningService {
@@ -86,17 +86,22 @@ export class AssistedPlanningService {
     const current = session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1;
     const known = new Set(current.tasks.map((task) => task.taskId));
     if ([...ids].some((id) => !known.has(id))) throw new AssistedPlanningError("TASK_SET_MISMATCH", 409);
-    const persisted = await this.storage.getTasksForPlan(planId);
+    const [persisted,baseStage] = await Promise.all([this.storage.getTasksForPlan(planId),this.storage.getAssistedPlanningStage(expectedBaseStageId)]);
+    if(!baseStage || baseStage.sessionId!==session.id || baseStage.planId!==planId) throw new AssistedPlanningError("STALE_BASE_STAGE",409);
+    const baseById=new Map((baseStage.snapshotJson as unknown as AssistedPlanningSnapshotV1).tasks.map(task=>[task.taskId,task]));
     const persistedById = new Map(persisted.map((task: any) => [Number(task.id), task]));
     for (const change of changes) {
       const row: any = persistedById.get(change.taskId);
       if (!row || !["pending", "interrupted"].includes(String(row.status))) throw new AssistedPlanningError("IMMUTABLE_TASK", 422);
       const before = current.tasks.find((task) => task.taskId === change.taskId)!;
-      const start = change.startPlanned ?? before.startPlanned;
-      const end = change.endPlanned ?? before.endPlanned;
-      if (!start || !end || !before.startPlanned || !before.endPlanned
-        || engineTimeToMinute(end) - engineTimeToMinute(start) !== engineTimeToMinute(before.endPlanned) - engineTimeToMinute(before.startPlanned))
-        throw new AssistedPlanningError("INVALID_MANUAL_DURATION", 422);
+      const hasStart=Object.prototype.hasOwnProperty.call(change,"startPlanned"),hasEnd=Object.prototype.hasOwnProperty.call(change,"endPlanned");
+      if(!hasStart||!hasEnd) throw new AssistedPlanningError("INVALID_MANUAL_DURATION",422);
+      const start=change.startPlanned,end=change.endPlanned;
+      if((start===null)!==(end===null)) throw new AssistedPlanningError("INVALID_MANUAL_RESET",422);
+      if(start===null&&end===null){const base=baseById.get(change.taskId);if(!base||base.startPlanned!==null||base.endPlanned!==null)throw new AssistedPlanningError("INVALID_MANUAL_RESET",422);continue;}
+      if(typeof start!=="string"||typeof end!=="string"||!before.startPlanned||!before.endPlanned
+        ||engineTimeToMinute(end)-engineTimeToMinute(start)!==engineTimeToMinute(before.endPlanned)-engineTimeToMinute(before.startPlanned))
+        throw new AssistedPlanningError("INVALID_MANUAL_DURATION",422);
     }
     const byId = new Map(changes.map((change) => [change.taskId, change]));
     const snapshot = buildAssistedPlanningSnapshotV1(current.tasks.map((task) => ({ id: task.taskId, ...task, ...(byId.get(task.taskId) ?? {}) })));
@@ -130,8 +135,6 @@ export class AssistedPlanningService {
       const state = await this.state(planId);
       return { current: true, mode: "PROPOSAL_CERTIFIED_CLEAN_V1", validation: state.validation };
     }
-    const adapter = adaptEngineInputToPlannerNextProblem(input);
-    if (adapter.status !== "SUPPORTED") throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED", 422);
     const base = await this.storage.getAssistedPlanningStage(expectedBaseStageId);
     if (!base || base.sessionId !== session.id) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
     const draft = session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1;
@@ -142,23 +145,14 @@ export class AssistedPlanningService {
       return prior && (prior.startPlanned !== task.startPlanned || prior.endPlanned !== task.endPlanned);
     }).map(task => task.taskId).sort((a,b)=>a-b);
     if (touched.length === 0) throw new AssistedPlanningError("VALIDATION_REQUIRED", 422);
-    const canonicalByProduct = new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
-    if (touched.some(id=>!canonicalByProduct.has(id))) throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
-    const taskById = new Map(adapter.problem.tasks.map(task=>[task.id,task]));
-    const protectedPlacements: ScheduledTask[] = draft.tasks.flatMap(row=>{
-      if(!row.startPlanned||!row.endPlanned)return [];
-      const canonical=canonicalByProduct.get(row.taskId); const task=canonical?taskById.get(canonical):undefined;
-      return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];
-    });
-    const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
-    const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds);
-    const execution=executeAssistedPlanning(buildAssistedProblem(adapter.problem,scope,protectedPlacements));
-    const evidence=execution.evidence;
+    const evidence=(this.dependencies.validateManual??validateManualAssistedDelta)(input,draft,touched);
+    if(!evidence)throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
     if(!evidence.completeForScope||!evidence.protectedPlacementsPreserved||!evidence.hardValid||!evidence.requiredValid)
       throw new AssistedPlanningError("VALIDATION_NOT_ACCEPTABLE",422);
-    const report={mode:"MANUAL_DELTA_CLEAN_V1",scopeTaskIds:touched,completeForScope:evidence.completeForScope,
+    const report={mode:"MANUAL_DELTA_CLEAN_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
       protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:evidence.hardValid,requiredValid:evidence.requiredValid,
-      supportingTaskIds:evidence.supportingTaskIds,fingerprint:evidence.fingerprint,futureFullDayFeasibility:"NOT_CERTIFIED"};
+      preferredAssessment:"NOT_CLASSIFIED",supportingTaskIds:evidence.supportingTaskIds,supportingReasonByTaskId:evidence.supportingReasonByTaskId,
+      reasonCodes:evidence.reasonCodes,work:evidence.work,fingerprint:evidence.fingerprint,futureFullDayFeasibility:"NOT_CERTIFIED"};
     const { error } = await this.rpc("assisted_record_manual_clean_validation", { p_plan_id: planId,
       p_expected_fingerprint: expectedDraftFingerprint,p_expected_base:expectedBaseStageId,
       p_expected_config:session.currentConfigRevisionId,p_report:report });

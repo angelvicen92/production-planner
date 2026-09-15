@@ -27,10 +27,15 @@ BEGIN
  THEN RAISE EXCEPTION 'UNSUPPORTED_MANUAL_FIELD'; END IF;
  IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_snapshot->'tasks') next
    JOIN jsonb_array_elements(s.draft_snapshot_json->'tasks') previous ON previous->>'taskId'=next->>'taskId'
-   WHERE next IS DISTINCT FROM previous AND
-    ((next->>'startPlanned')::time IS NULL OR (next->>'endPlanned')::time IS NULL OR
-     (next->>'endPlanned')::time-(next->>'startPlanned')::time IS DISTINCT FROM
-     (previous->>'endPlanned')::time-(previous->>'startPlanned')::time))
+   WHERE next IS DISTINCT FROM previous AND (
+    ((next->'startPlanned'='null'::jsonb) IS DISTINCT FROM (next->'endPlanned'='null'::jsonb)) OR
+    (next->'startPlanned'='null'::jsonb AND NOT EXISTS (
+      SELECT 1 FROM public.assisted_planning_stages base_stage,
+        jsonb_array_elements(base_stage.snapshot_json->'tasks') base_task
+      WHERE base_stage.id=s.draft_base_stage_id AND base_task->>'taskId'=next->>'taskId'
+        AND base_task->'startPlanned'='null'::jsonb AND base_task->'endPlanned'='null'::jsonb)) OR
+    (next->'startPlanned'<>'null'::jsonb AND ((next->>'endPlanned')::time-(next->>'startPlanned')::time IS DISTINCT FROM
+      (previous->>'endPlanned')::time-(previous->>'startPlanned')::time))))
  THEN RAISE EXCEPTION 'INVALID_MANUAL_DURATION'; END IF;
  IF EXISTS (SELECT 1 FROM jsonb_array_elements(changed_ids) x JOIN public.daily_tasks t ON t.id=(x#>>'{}')::integer
    WHERE t.plan_id=p_plan_id AND t.status NOT IN ('pending','interrupted')) THEN RAISE EXCEPTION 'IMMUTABLE_TASK'; END IF;
@@ -40,7 +45,8 @@ BEGIN
    'manualTouchedTaskIds',(SELECT coalesce(jsonb_agg(DISTINCT id ORDER BY id),'[]'::jsonb) FROM
       (SELECT (x#>>'{}')::integer id FROM jsonb_array_elements(coalesce(trace->'manualTouchedTaskIds','[]')) x
        UNION SELECT (x#>>'{}')::integer FROM jsonb_array_elements(changed_ids) x) touched),
-   'editLedger',coalesce(trace->'editLedger','[]') || jsonb_build_array(jsonb_build_object('forward',forward_rows,'inverse',inverse_rows)),
+   'editLedger',coalesce(trace->'editLedger','[]') || jsonb_build_array(jsonb_build_object(
+     'beforeFingerprint',s.draft_fingerprint,'afterFingerprint',p_fingerprint,'forward',forward_rows,'inverse',inverse_rows)),
    'redoLedger','[]'::jsonb)-'proposalRunId';
  UPDATE public.assisted_planning_sessions SET draft_snapshot_json=p_snapshot,draft_fingerprint=p_fingerprint,
    draft_scope_json=trace,draft_validation_id=NULL,updated_at=now() WHERE id=s.id;
@@ -61,11 +67,18 @@ BEGIN
  trace:=coalesce(s.draft_scope_json,'{}'::jsonb); source:=coalesce(trace->(CASE WHEN p_redo THEN 'redoLedger' ELSE 'editLedger' END),'[]'::jsonb);
  IF jsonb_array_length(source)=0 THEN RAISE EXCEPTION USING MESSAGE=CASE WHEN p_redo THEN 'NO_REDO_AVAILABLE' ELSE 'NO_UNDO_AVAILABLE' END; END IF;
  operation:=source->(jsonb_array_length(source)-1); next_snapshot:=s.draft_snapshot_json;
+ IF jsonb_typeof(operation) IS DISTINCT FROM 'object'
+   OR coalesce(operation->>'beforeFingerprint','') !~ '^[0-9a-f]{64}$'
+   OR coalesce(operation->>'afterFingerprint','') !~ '^[0-9a-f]{64}$'
+   OR jsonb_typeof(operation->'forward') IS DISTINCT FROM 'array'
+   OR jsonb_typeof(operation->'inverse') IS DISTINCT FROM 'array'
+   OR s.draft_fingerprint IS DISTINCT FROM operation->>(CASE WHEN p_redo THEN 'beforeFingerprint' ELSE 'afterFingerprint' END)
+ THEN RAISE EXCEPTION 'CORRUPT_EDIT_LEDGER'; END IF;
  SELECT jsonb_set(next_snapshot,'{tasks}',jsonb_agg(coalesce(patch.row,current.row) ORDER BY (current.row->>'taskId')::integer)) INTO next_snapshot
  FROM jsonb_array_elements(next_snapshot->'tasks') current(row)
  LEFT JOIN jsonb_array_elements(operation->(CASE WHEN p_redo THEN 'forward' ELSE 'inverse' END)) patch(row)
    ON patch.row->>'taskId'=current.row->>'taskId';
- next_fingerprint:=encode(extensions.digest(convert_to(next_snapshot::text,'UTF8'),'sha256'),'hex');
+ next_fingerprint:=operation->>(CASE WHEN p_redo THEN 'afterFingerprint' ELSE 'beforeFingerprint' END);
  trace:=jsonb_set(trace,ARRAY[CASE WHEN p_redo THEN 'redoLedger' ELSE 'editLedger' END],source-(jsonb_array_length(source)-1));
  trace:=jsonb_set(trace,ARRAY[CASE WHEN p_redo THEN 'editLedger' ELSE 'redoLedger' END],
    coalesce(trace->(CASE WHEN p_redo THEN 'editLedger' ELSE 'redoLedger' END),'[]'::jsonb)||jsonb_build_array(operation));
@@ -83,6 +96,7 @@ BEGIN
  IF s.draft_fingerprint<>p_expected_fingerprint THEN RAISE EXCEPTION 'STALE_DRAFT'; END IF;
  IF s.draft_base_stage_id IS DISTINCT FROM p_expected_base THEN RAISE EXCEPTION 'STALE_BASE_STAGE'; END IF;
  IF s.current_config_revision_id<>p_expected_config THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
+ IF s.draft_scope_json->>'editKind' IS DISTINCT FROM 'MANUAL' THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
  IF p_report->>'mode' IS DISTINCT FROM 'MANUAL_DELTA_CLEAN_V1' OR p_report->>'completeForScope' IS DISTINCT FROM 'true'
   OR p_report->>'protectedPlacementsPreserved' IS DISTINCT FROM 'true' OR p_report->>'hardValid' IS DISTINCT FROM 'true'
   OR p_report->>'requiredValid' IS DISTINCT FROM 'true' OR p_report->>'futureFullDayFeasibility' IS DISTINCT FROM 'NOT_CERTIFIED'

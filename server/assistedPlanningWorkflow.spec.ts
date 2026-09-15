@@ -25,7 +25,7 @@ const baseSession = {
   draftFingerprint: fingerprintAssistedPlanningSnapshotV1(draft), draftValidationId: 40,
   createdAt: new Date(0), updatedAt: new Date(0),
 };
-const activeStage = { id: 20, sessionId: 7, ordinal: 0 };
+const activeStage = { id: 20, sessionId: 7, planId:5, ordinal: 0, snapshotJson:draft };
 const validation = { id: 40, sessionId: 7, draftFingerprint: baseSession.draftFingerprint };
 const history = [activeStage, { id: 21, sessionId: 7, ordinal: 1 }];
 
@@ -96,6 +96,21 @@ test("unknown and duplicate patch task IDs fail deterministically without RPC", 
     await expectConflict(() => service.patchDraft(5, baseSession.draftFingerprint, 20, changes), "TASK_SET_MISMATCH");
     assert.deepEqual(calls, []);
   }
+});
+
+test("manual null is only a reset to an unplanned base and partial/null or changed duration fail",async()=>{
+  const unplannedBase=buildAssistedPlanningSnapshotV1([{id:11,startPlanned:null,endPlanned:null},{id:12,startPlanned:"10:00",endPlanned:"10:45"}]);
+  const session={...baseSession,draftBaseStageId:20,draftSnapshotJson:draft};
+  const rpcCalls:unknown[]=[];
+  const storage=new Proxy({}, {get(_target,property:string){const reads:Record<string,any>={
+    getActiveAssistedPlanningSession:async()=>session,getAssistedPlanningStage:async()=>({id:20,sessionId:7,planId:5,snapshotJson:unplannedBase}),
+    getTasksForPlan:async()=>draft.tasks.map(task=>({id:task.taskId,status:"pending"})),listAssistedPlanningStages:async()=>[],getPlanningStageValidation:async()=>null,
+  };return reads[property]??(async()=>null);}}) as IStorage;
+  const service=new AssistedPlanningService(storage,async(name,parameters)=>{rpcCalls.push({name,parameters});return {error:null};});
+  await service.patchDraft(5,session.draftFingerprint,20,[{taskId:11,startPlanned:null,endPlanned:null}]);
+  assert.equal((rpcCalls[0] as any).parameters.p_snapshot.tasks[0].startPlanned,null);
+  for(const changes of [[{taskId:12,startPlanned:null,endPlanned:null}],[{taskId:11,startPlanned:null,endPlanned:"09:30"}],[{taskId:11,startPlanned:"09:00",endPlanned:"09:45"}]])
+    await assert.rejects(()=>service.patchDraft(5,session.draftFingerprint,20,changes as any),(error:any)=>error.status===422);
 });
 
 test("STALE_DRAFT and STALE_BASE_STAGE RPC failures map to HTTP conflict", async () => {

@@ -43,10 +43,10 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
   const validationCurrent=Boolean(state?.validation&&state.validation.draftFingerprint===state.draftFingerprint&&Number(state.validation.baseStageId)===Number(state.draftBaseStageId)&&Number(state.validation.configRevisionId)===Number(state.currentConfigRevisionId));
   const modified=Boolean(draft&&isAssistedDraftModified(draft,base));
   const touchedTaskCount=Object.values(visual).filter(value=>value==="DRAFT_CHANGED").length;
-  const applyTimelineEdits=async(edits:Array<{taskId:number;start:string;end:string}>)=>mutate("edit",()=>apiRequest("PATCH",`/api/plans/${planId}/assisted/draft`,{
+  const applyTimelineEdits=async(edits:Array<{taskId:number;start:string|null;end:string|null}>)=>mutate("edit",()=>apiRequest("PATCH",`/api/plans/${planId}/assisted/draft`,{
     ...guard(),changes:edits.map(edit=>({taskId:edit.taskId,startPlanned:edit.start,endPlanned:edit.end})),
   }));
-  const applyOperation=(operation:AssistedDraftPatch)=>applyTimelineEdits(operation.changes.map(task=>({taskId:task.taskId,start:task.startPlanned!,end:task.endPlanned!})));
+  const applyOperation=(operation:AssistedDraftPatch)=>applyTimelineEdits(operation.changes.map(task=>({taskId:task.taskId,start:task.startPlanned,end:task.endPlanned})));
   const generate=async()=>{setBusy("proposal");setMessage(null);setPreview(null);try{const selector=scopeKind==="TASK_IDS"?{kind:"TASK_IDS",taskIds:selected}:{kind:"SPACE",spaceId:Number(spaceId)};const result=await apiRequest<any>("POST",`/api/plans/${planId}/assisted/proposals`,{selector,includePrerequisites,...guard()});setRunId(Number(result.runId));}catch(e:any){setMessage(errorCode(e));setBusy(null);if(isAssistedConflict(e)){clearProposal();await refresh();}}};
   if(stateQ.isLoading||busy==="bootstrap")return <Card className="p-4">Inicializando planificación asistida…</Card>;
   if(!state)return <Card className="p-4 text-destructive">No se pudo iniciar la sesión assisted. {message} <Button size="sm" variant="outline" disabled={!!busy} onClick={bootstrap}>Reintentar</Button></Card>;
