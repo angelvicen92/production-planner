@@ -1,6 +1,6 @@
 # OptiPlan — Protocolo permanente de eficiencia de Codex
 
-Versión 1.2 · 10 de agosto de 2026  
+Versión 1.3 · 15 de septiembre de 2026  
 Estado: documento de gobierno operativo
 
 ## Propósito
@@ -57,6 +57,40 @@ Reglas:
 - log causal mínimo;
 - permitir lectura adicional ante dependencias locales reales.
 
+### 3.1 Precondiciones de checkout
+
+Los prompts deben ser estrictos con la **identidad real del trabajo**, no con detalles cosméticos del checkout local.
+
+Autoridades que sí importan:
+
+- repositorio correcto;
+- PR o rama remota objetivo correcta;
+- base remota correcta;
+- working tree limpio antes de tocar código;
+- ausencia de cambios ajenos al delta;
+- contenido equivalente al head/base que se pretende continuar.
+
+No deben convertirse por defecto en blockers:
+
+- que la rama local se llame `work`;
+- que no exista `origin` en el shell;
+- que un commit local tenga SHA distinto del publicado cuando el entorno lo haya recreado con metadatos diferentes;
+- que un objeto remoto no esté presente localmente si puede demostrarse por otra vía fiable que el checkout contiene el trabajo correcto.
+
+Orden preferido para comprobar equivalencia cuando sea necesario:
+
+1. árbol limpio;
+2. parent/base esperada si está disponible;
+3. comparación de contenido o diff;
+4. `HEAD^{tree}` frente al tree SHA remoto cuando ChatGPT lo haya verificado;
+5. SHA exacto de commit sólo cuando el objeto esté disponible y su identidad exacta sea material para la tarea.
+
+El **tree SHA** identifica el contenido del checkout; el SHA de commit también incorpora parent, autor, fechas y mensaje. Por ello, en entornos que recrean commits no debe exigirse igualdad de commit SHA si el árbol y la base demuestran equivalencia.
+
+Sólo debe detenerse la ejecución cuando exista riesgo material de trabajar sobre la base/contenido equivocados, haya cambios locales no explicados o no pueda demostrarse una equivalencia suficiente para el riesgo del delta.
+
+No pedir `fetch`, `pull`, `switch`, reparación de remotes o reescritura de historia sólo para conseguir un nombre de rama o SHA local exacto. Esas operaciones se usan únicamente cuando son necesarias para recuperar la base correcta.
+
 ## 4. Lectura dirigida
 
 1. `AGENTS.md` + prompt.
@@ -112,7 +146,8 @@ Sobre head candidato:
 - grandes logs en chat;
 - varios agentes por defecto;
 - modelo caro para tarea trivial;
-- usar Codex para una comprobación de entorno que un comando corto de Replit resolvería mejor.
+- usar Codex para una comprobación de entorno que un comando corto de Replit resolvería mejor;
+- bloquear una iteración por nombre de rama local, ausencia de `origin` o SHA local distinto cuando el contenido/base correctos ya están demostrados.
 
 ## 9. Entrega mínima
 
