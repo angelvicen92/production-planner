@@ -11,8 +11,19 @@ export interface AssistedPlanningTaskSnapshotV1 {
   readonly camerasOverride: number | null;
 }
 
+export interface AssistedPlanningBlockV1 {
+  readonly blockId: string;
+  readonly memberTaskIds: readonly number[];
+  readonly scopeProvenance: Readonly<Record<string, unknown>>;
+  readonly spaceId: number | null;
+  readonly activityTemplateId: number;
+  readonly order: number;
+}
+
 export interface AssistedPlanningSnapshotV1 {
   readonly contractVersion: typeof ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION;
   /** Complete task catalog for the day, including unplaced tasks. */
   readonly tasks: readonly AssistedPlanningTaskSnapshotV1[];
+  /** WorkingPlan-only grouping metadata. Omitted for legacy/blockless snapshots. */
+  readonly planningBlocks?: readonly AssistedPlanningBlockV1[];
 }

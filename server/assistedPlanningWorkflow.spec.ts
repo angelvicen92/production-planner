@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import type { IStorage } from "./storage";
-import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
+import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
@@ -25,7 +25,7 @@ const baseSession = {
   draftFingerprint: fingerprintAssistedPlanningSnapshotV1(draft), draftValidationId: 40,
   createdAt: new Date(0), updatedAt: new Date(0),
 };
-const activeStage = { id: 20, sessionId: 7, ordinal: 0 };
+const activeStage = { id: 20, sessionId: 7, planId:5, ordinal: 0, snapshotJson:draft, snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(draft) };
 const validation = { id: 40, sessionId: 7, draftFingerprint: baseSession.draftFingerprint };
 const history = [activeStage, { id: 21, sessionId: 7, ordinal: 1 }];
 
@@ -39,6 +39,7 @@ function harness(options: { session?: any; rpcError?: unknown } = {}) {
     getAssistedPlanningStage: async () => activeStage,
     listAssistedPlanningStages: async () => history,
     getPlanningStageValidation: async () => validation,
+    getTasksForPlan: async () => draft.tasks.map(task => ({ id: task.taskId, status: "pending" })),
   };
   const storage = new Proxy({}, {
     get(_target, property: string) {
@@ -74,12 +75,12 @@ test("start is idempotent for an existing ACTIVE session and does not bootstrap 
 
 test("patch starts from the complete draft, changes only requested tasks, fingerprints it, and uses one RPC", async () => {
   const { service, calls, storageWrites } = harness();
-  await service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11, startPlanned: "09:15", zoneId: null }]);
+  await service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11, startPlanned: "09:15", endPlanned: "09:45" }]);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].name, "assisted_patch_draft");
   const parameters = calls[0].parameters;
   const snapshot = parameters.p_snapshot as typeof draft;
-  assert.deepEqual(snapshot.tasks[0], { ...draft.tasks[0], startPlanned: "09:15", zoneId: null });
+  assert.deepEqual(snapshot.tasks[0], { ...draft.tasks[0], startPlanned: "09:15", endPlanned: "09:45" });
   assert.deepEqual(snapshot.tasks[1], draft.tasks[1]);
   assert.equal(parameters.p_fingerprint, fingerprintAssistedPlanningSnapshotV1(snapshot));
   assert.deepEqual(parameters, {
@@ -87,6 +88,36 @@ test("patch starts from the complete draft, changes only requested tasks, finger
     p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot),
   });
   assert.deepEqual(storageWrites, []);
+});
+
+test("reset draft restores the complete canonical base through one undoable patch", async () => {
+  const { service, calls } = harness();
+  await service.resetDraft(5, baseSession.draftFingerprint, 20);
+  assert.deepEqual(calls, [{ name:"assisted_patch_draft", parameters:{ p_plan_id:5,
+    p_expected_fingerprint:baseSession.draftFingerprint, p_expected_base:20,
+    p_snapshot:draft, p_fingerprint:activeStage.snapshotFingerprint } }]);
+});
+
+test("block reorder persists member metadata and temporal placements in one authoritative edit",async()=>{
+  const block={blockId:"block:a",memberTaskIds:[11,12],scopeProvenance:{scope:"A"},spaceId:2,activityTemplateId:1,order:0};
+  const blocked=buildAssistedPlanningSnapshotV1(draft.tasks.map(task=>({id:task.taskId,...task})),[block]);
+  const session={...baseSession,draftSnapshotJson:blocked,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(blocked)};
+  const {service,calls}=harness({session});
+  await service.editPlanningBlocks(5,session.draftFingerprint,20,{kind:"REORDER_BLOCK_MEMBERS",blockId:block.blockId,memberTaskIds:[12,11]});
+  assert.equal(calls.length,1);assert.equal(calls[0].name,"assisted_patch_draft");
+  const next=calls[0].parameters.p_snapshot as AssistedPlanningSnapshotV1;
+  assert.deepEqual(next.planningBlocks![0].memberTaskIds,[12,11]);
+  assert.deepEqual([...next.tasks].sort((a,b)=>a.startPlanned!.localeCompare(b.startPlanned!)).map(task=>task.taskId),[12,11]);
+});
+
+test("a generic temporal patch cannot cross PlanningBlock member order or create a ledger entry",async()=>{
+  const block={blockId:"block:a",memberTaskIds:[11,12],scopeProvenance:{},spaceId:2,activityTemplateId:1,order:0};
+  const blocked=buildAssistedPlanningSnapshotV1(draft.tasks.map(task=>({id:task.taskId,...task})),[block]);
+  const session={...baseSession,draftSnapshotJson:blocked,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(blocked)};
+  const {service,calls}=harness({session});
+  await assert.rejects(()=>service.patchDraft(5,session.draftFingerprint,20,[{taskId:11,startPlanned:"10:15",endPlanned:"10:45"}]),
+    (error:any)=>error.code==="PLANNING_BLOCK_ORDER_CONFLICT"&&error.status===422);
+  assert.deepEqual(calls,[]);assert.equal(session.draftFingerprint,fingerprintAssistedPlanningSnapshotV1(blocked));
 });
 
 test("unknown and duplicate patch task IDs fail deterministically without RPC", async () => {
@@ -97,10 +128,25 @@ test("unknown and duplicate patch task IDs fail deterministically without RPC", 
   }
 });
 
+test("manual null is only a reset to an unplanned base and partial/null or changed duration fail",async()=>{
+  const unplannedBase=buildAssistedPlanningSnapshotV1([{id:11,startPlanned:null,endPlanned:null},{id:12,startPlanned:"10:00",endPlanned:"10:45"}]);
+  const session={...baseSession,draftBaseStageId:20,draftSnapshotJson:draft};
+  const rpcCalls:unknown[]=[];
+  const storage=new Proxy({}, {get(_target,property:string){const reads:Record<string,any>={
+    getActiveAssistedPlanningSession:async()=>session,getAssistedPlanningStage:async()=>({id:20,sessionId:7,planId:5,snapshotJson:unplannedBase}),
+    getTasksForPlan:async()=>draft.tasks.map(task=>({id:task.taskId,status:"pending"})),listAssistedPlanningStages:async()=>[],getPlanningStageValidation:async()=>null,
+  };return reads[property]??(async()=>null);}}) as IStorage;
+  const service=new AssistedPlanningService(storage,async(name,parameters)=>{rpcCalls.push({name,parameters});return {error:null};});
+  await service.patchDraft(5,session.draftFingerprint,20,[{taskId:11,startPlanned:null,endPlanned:null}]);
+  assert.equal((rpcCalls[0] as any).parameters.p_snapshot.tasks[0].startPlanned,null);
+  for(const changes of [[{taskId:12,startPlanned:null,endPlanned:null}],[{taskId:11,startPlanned:null,endPlanned:"09:30"}],[{taskId:11,startPlanned:"09:00",endPlanned:"09:45"}]])
+    await assert.rejects(()=>service.patchDraft(5,session.draftFingerprint,20,changes as any),(error:any)=>error.status===422);
+});
+
 test("STALE_DRAFT and STALE_BASE_STAGE RPC failures map to HTTP conflict", async () => {
   for (const code of ["STALE_DRAFT", "STALE_BASE_STAGE"] as const) {
     const { service, calls } = harness({ rpcError: { message: `Postgres: ${code}` } });
-    await expectConflict(() => service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11 }]), code);
+    await expectConflict(() => service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11, startPlanned:"09:15", endPlanned:"09:45" }]), code);
     assert.equal(calls.length, 1);
   }
 });

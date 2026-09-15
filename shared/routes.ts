@@ -1605,11 +1605,13 @@ export const api = {
     startSession: { method: "POST" as const, path: "/api/plans/:id/assisted/session" },
     patchDraft: {
       method: "PATCH" as const, path: "/api/plans/:id/assisted/draft",
-      input: z.object({ expectedDraftFingerprint: z.string().regex(/^[0-9a-f]{64}$/), expectedBaseStageId: z.number().int().positive(), changes: z.array(z.object({ taskId: z.number().int().positive(), startPlanned: z.string().nullable().optional(), endPlanned: z.string().nullable().optional(), zoneId: z.number().int().positive().nullable().optional(), spaceId: z.number().int().positive().nullable().optional(), locationLabel: z.string().nullable().optional(), durationOverride: z.number().int().positive().nullable().optional(), camerasOverride: z.number().int().min(0).nullable().optional() }).strict()).min(1) }).strict(),
+      input: z.object({ expectedDraftFingerprint: z.string().regex(/^[0-9a-f]{64}$/), expectedBaseStageId: z.number().int().positive(), changes: z.array(z.object({ taskId: z.number().int().positive(), startPlanned: z.string().nullable().optional(), endPlanned: z.string().nullable().optional() }).strict()).min(1) }).strict(),
     },
     acceptStage: { method: "POST" as const, path: "/api/plans/:id/assisted/accept-stage", input: z.object({ expectedDraftFingerprint: z.string().regex(/^[0-9a-f]{64}$/), expectedBaseStageId: z.number().int().positive() }).strict() },
     rollback: { method: "POST" as const, path: "/api/plans/:id/assisted/rollback", input: z.object({ targetStageId: z.number().int().positive() }).strict() },
     redo: { method: "POST" as const, path: "/api/plans/:id/assisted/redo" },
+    undoDraft: { method: "POST" as const, path: "/api/plans/:id/assisted/draft/undo" },
+    redoDraft: { method: "POST" as const, path: "/api/plans/:id/assisted/draft/redo" },
     history: { method: "GET" as const, path: "/api/plans/:id/assisted/history" },
   },
   dailyTasks: {

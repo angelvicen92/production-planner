@@ -21,12 +21,14 @@ export interface AssistedProblem {
   readonly protectedPlacements: readonly ScheduledTask[];
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
+  readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface AssistedPlanningEvidence {
   readonly scopeTaskCount: number;
   readonly scopeTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
+  readonly supportingReasonByTaskId?: Readonly<Record<string, readonly string[]>>;
   readonly protectedPlacementCount: number;
   readonly protectedPlacementsPreserved: boolean;
   readonly proposalCount: 0 | 1;
@@ -93,9 +95,18 @@ export function buildAssistedProblem(
   }
 
   const included = new Set([...scopeIds, ...protectedIds]);
-  const closure = new Set(scopeIds);
+  // Fixed members are not search variables, but they remain graph vertices.
+  // Traversing them is essential: a protected member can be the only bridge to
+  // another dependency, anchor, joint group, technical chain, or round.
+  const closure = new Set([...scopeIds, ...protectedIds]);
   const supporting = new Set<string>();
-  const includeSupporting = (id: string): void => {
+  const supportingReasons = new Map<string, Set<string>>();
+  const includeSupporting = (id: string, reason: string): void => {
+    if (!scopeIds.includes(id) && !protectedIds.includes(id)) {
+      const reasons = supportingReasons.get(id) ?? new Set<string>();
+      reasons.add(reason);
+      supportingReasons.set(id, reasons);
+    }
     if (included.has(id)) return;
     if (!tasksById.has(id)) throw new Error("UNKNOWN_SUPPORTING_TASK_ID");
     included.add(id);
@@ -108,17 +119,34 @@ export function buildAssistedProblem(
     for (const id of [...closure]) {
       const task = tasksById.get(id)!;
       for (const dependencyId of task.dependencies) if (!included.has(dependencyId)) {
-        includeSupporting(dependencyId);
+        includeSupporting(dependencyId, `DEPENDENCY_OF:${id}`);
         changed = true;
       }
       for (const anchor of problem.anchoredAccompaniments ?? []) {
         if (anchor.anchorTaskId === id || anchor.beforeTaskIds.includes(id) || anchor.afterTaskIds.includes(id)) {
           for (const memberId of [...anchor.beforeTaskIds, anchor.anchorTaskId, ...anchor.afterTaskIds]) {
             if (!included.has(memberId)) {
-              includeSupporting(memberId);
+              includeSupporting(memberId, `ANCHORED_WITH:${id}`);
               changed = true;
             }
           }
+        }
+      }
+      const jointGroupId = task.jointGroupId;
+      if (jointGroupId) for (const member of problem.tasks) {
+        if (member.jointGroupId === jointGroupId && !included.has(member.id)) {
+          includeSupporting(member.id, `JOINT_GROUP:${jointGroupId}`); changed = true;
+        }
+      }
+      for (const chain of problem.technicalChains ?? []) if (chain.orderedTaskIds.includes(id)) {
+        for (const memberId of chain.orderedTaskIds) if (!included.has(memberId)) {
+          includeSupporting(memberId, `TECHNICAL_CHAIN:${chain.id}`); changed = true;
+        }
+      }
+      for (const policy of problem.roundSynchronizations ?? []) {
+        const members = policy.lanes.flatMap((lane) => lane.taskIds);
+        if (members.includes(id)) for (const memberId of members) if (!included.has(memberId)) {
+          includeSupporting(memberId, `ROUND_SYNCHRONIZATION:${policy.id}`); changed = true;
         }
       }
     }
@@ -152,6 +180,8 @@ export function buildAssistedProblem(
     protectedPlacements: structuredClone(protectedPlacements),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
     supportingTaskIds: canonicalIds([...supporting]),
+    supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
+      [id, Object.freeze([...(supportingReasons.get(id) ?? [])].sort())]))),
   };
 }
 
@@ -207,6 +237,7 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
     supportingTaskIds: input.supportingTaskIds,
+    supportingReasonByTaskId: input.supportingReasonByTaskId,
     protectedPlacementCount: input.protectedPlacements.length,
     protectedPlacementsPreserved: protectedPreserved,
     proposalCount: proposal ? 1 : 0,
