@@ -23,7 +23,9 @@ export interface StageValidationReport {
   [key: string]: unknown;
 }
 
-const canonicalIds = (values: readonly number[] | undefined) => [...new Set(values ?? [])].sort((a, b) => a - b);
+type ViolationId = string | number;
+const canonicalIds = (values: readonly ViolationId[] | undefined) => [...new Set(values ?? [])]
+  .sort((a, b) => String(a).localeCompare(String(b), "en", { numeric: true }));
 const canonicalDimensions = (value: unknown): unknown => Array.isArray(value)
   ? value.map(canonicalDimensions)
   : value && typeof value === "object"
@@ -32,8 +34,8 @@ const canonicalDimensions = (value: unknown): unknown => Array.isArray(value)
 
 /** Lossless, message-independent identity for one material rule conflict. */
 export function createViolationKey(input: {
-  ruleCode: string; affectedTaskIds?: readonly number[]; affectedResourceIds?: readonly number[];
-  affectedSpaceIds?: readonly number[]; dimensions?: Record<string, unknown>;
+  ruleCode: string; affectedTaskIds?: readonly ViolationId[]; affectedResourceIds?: readonly ViolationId[];
+  affectedSpaceIds?: readonly ViolationId[]; dimensions?: Record<string, unknown>;
 }): string {
   return JSON.stringify({ ruleCode: input.ruleCode, taskIds: canonicalIds(input.affectedTaskIds),
     resourceIds: canonicalIds(input.affectedResourceIds), spaceIds: canonicalIds(input.affectedSpaceIds),

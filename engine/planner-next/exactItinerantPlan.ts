@@ -1054,7 +1054,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
-    const standalone = searchStandaloneForCoreCandidate(problem, [...candidate.tasks,...(options.fixedPlacements??[])], candidate.meals, standaloneTasks, ledger, evidence,
+    const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
+    const immutableCoreTasks=[...candidate.tasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
+    const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation);
     if (standalone.tasks) {

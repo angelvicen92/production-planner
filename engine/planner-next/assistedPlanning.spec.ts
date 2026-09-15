@@ -78,19 +78,19 @@ test("supporting closure does not infer feeders from task kind and participant",
   assert.deepEqual(assisted.problem.tasks.map(({ id }) => id), ["main"]);
 });
 
-test("combined evidence preserves an inherited protected-placement HARD violation", () => {
+test("a fixed placement violation requires its exact accepted baseline", () => {
   const source = fixture();
   const protectedTask = source.tasks.find(({ id }) => id === "protected")!;
   protectedTask.availability = [{ start: 0, end: 10 }];
   const protectedPlacement = { ...protectedTask, start: 140, end: 150 } as ScheduledTask;
   const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "space", value: "main-space" }, {}, ["main"]), [protectedPlacement]);
   const result = executeAssistedPlanning(assisted);
-  assert.deepEqual(result.proposal?.map(({ id }) => id), ["main"]);
+  assert.equal(result.proposal,null);
   assert.equal(result.evidence.protectedPlacementsPreserved, true);
-  assert.equal(result.evidence.completeForScope, true);
-  assert.equal(result.evidence.proposalCount, 1);
+  assert.equal(result.evidence.completeForScope, false);
+  assert.equal(result.evidence.proposalCount, 0);
   assert.equal(result.evidence.hardValid, false);
-  assert.equal(result.evidence.requiredValid, true);
+  assert.equal(result.evidence.requiredValid, false);
 });
 
 test("protected-vs-protected inherited incompatibility remains an ASST-008 AcceptedException boundary", () => {
