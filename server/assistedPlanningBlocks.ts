@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { AssistedPlanningBlockV1, AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
+import { assertPlanningBlockTemporalOrder, reorderPlanningBlockTasks } from "../shared/assistedPlanningTaskOrdering";
 
 export type PlanningBlockOperation =
   | { readonly kind: "CREATE_BLOCK"; readonly memberTaskIds: readonly number[] }
@@ -74,7 +75,7 @@ export function applyPlanningBlockOperation(
       const block = get(operation.blockId); touched = [...block.memberTaskIds]; blocks.splice(blocks.indexOf(block), 1);
     } else if (operation.kind === "REORDER_BLOCK_MEMBERS") {
       const block = get(operation.blockId); touched = [...block.memberTaskIds];
-      if (new Set(operation.memberTaskIds).size !== touched.length || touched.some((id) => !operation.memberTaskIds.includes(id))) throw new Error("INVALID_PLANNING_BLOCK_REORDER");
+      tasks = reorderPlanningBlockTasks(snapshot, block, operation.memberTaskIds);
       blocks[blocks.indexOf(block)] = { ...block, memberTaskIds: [...operation.memberTaskIds] };
     } else {
       const block=get(operation.blockId); touched=[...block.memberTaskIds];
@@ -87,5 +88,6 @@ export function applyPlanningBlockOperation(
   blocks = blocks.map((block, order) => ({ ...block, order }));
   const { planningBlocks: _discardedBlocks, ...blockless } = snapshot;
   const next: AssistedPlanningSnapshotV1 = blocks.length ? { ...blockless, tasks, planningBlocks: blocks } : { ...blockless, tasks };
+  assertPlanningBlockTemporalOrder(next);
   return { snapshot: next, touchedTaskIds: [...new Set(touched)].sort((a, b) => a - b) };
 }

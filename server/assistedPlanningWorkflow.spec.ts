@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import type { IStorage } from "./storage";
-import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
+import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
@@ -96,6 +96,28 @@ test("reset draft restores the complete canonical base through one undoable patc
   assert.deepEqual(calls, [{ name:"assisted_patch_draft", parameters:{ p_plan_id:5,
     p_expected_fingerprint:baseSession.draftFingerprint, p_expected_base:20,
     p_snapshot:draft, p_fingerprint:activeStage.snapshotFingerprint } }]);
+});
+
+test("block reorder persists member metadata and temporal placements in one authoritative edit",async()=>{
+  const block={blockId:"block:a",memberTaskIds:[11,12],scopeProvenance:{scope:"A"},spaceId:2,activityTemplateId:1,order:0};
+  const blocked=buildAssistedPlanningSnapshotV1(draft.tasks.map(task=>({id:task.taskId,...task})),[block]);
+  const session={...baseSession,draftSnapshotJson:blocked,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(blocked)};
+  const {service,calls}=harness({session});
+  await service.editPlanningBlocks(5,session.draftFingerprint,20,{kind:"REORDER_BLOCK_MEMBERS",blockId:block.blockId,memberTaskIds:[12,11]});
+  assert.equal(calls.length,1);assert.equal(calls[0].name,"assisted_patch_draft");
+  const next=calls[0].parameters.p_snapshot as AssistedPlanningSnapshotV1;
+  assert.deepEqual(next.planningBlocks![0].memberTaskIds,[12,11]);
+  assert.deepEqual([...next.tasks].sort((a,b)=>a.startPlanned!.localeCompare(b.startPlanned!)).map(task=>task.taskId),[12,11]);
+});
+
+test("a generic temporal patch cannot cross PlanningBlock member order or create a ledger entry",async()=>{
+  const block={blockId:"block:a",memberTaskIds:[11,12],scopeProvenance:{},spaceId:2,activityTemplateId:1,order:0};
+  const blocked=buildAssistedPlanningSnapshotV1(draft.tasks.map(task=>({id:task.taskId,...task})),[block]);
+  const session={...baseSession,draftSnapshotJson:blocked,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(blocked)};
+  const {service,calls}=harness({session});
+  await assert.rejects(()=>service.patchDraft(5,session.draftFingerprint,20,[{taskId:11,startPlanned:"10:15",endPlanned:"10:45"}]),
+    (error:any)=>error.code==="PLANNING_BLOCK_ORDER_CONFLICT"&&error.status===422);
+  assert.deepEqual(calls,[]);assert.equal(session.draftFingerprint,fingerprintAssistedPlanningSnapshotV1(blocked));
 });
 
 test("unknown and duplicate patch task IDs fail deterministically without RPC", async () => {
