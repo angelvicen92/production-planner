@@ -2,12 +2,14 @@ import { createHash } from "node:crypto";
 import {
   ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION,
   type AssistedPlanningSnapshotV1,
+  type AssistedPlanningBlockV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export {
   ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION,
   type AssistedPlanningSnapshotV1,
   type AssistedPlanningTaskSnapshotV1,
+  type AssistedPlanningBlockV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export type AssistedPlanningTaskSource = Readonly<{
@@ -28,9 +30,15 @@ function freeze<T>(value: T): T {
   }
   return value;
 }
+function canonicalJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>[key,canonicalJson(item)]));
+  return value;
+}
 
 export function buildAssistedPlanningSnapshotV1(
   rows: readonly AssistedPlanningTaskSource[],
+  planningBlocks?: readonly AssistedPlanningBlockV1[],
 ): AssistedPlanningSnapshotV1 {
   const tasks = rows.map((row) => {
     if (!Number.isInteger(row.id) || row.id <= 0) throw new Error("task id must be a positive integer");
@@ -48,10 +56,25 @@ export function buildAssistedPlanningSnapshotV1(
   if (tasks.some((task, index) => index > 0 && tasks[index - 1].taskId === task.taskId)) {
     throw new Error("snapshot cannot contain duplicate task ids");
   }
-  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks });
+  if (planningBlocks === undefined) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks });
+  const seen = new Set<number>();
+  const blocks = planningBlocks.map((block) => ({
+    ...structuredClone(block),
+    memberTaskIds: [...block.memberTaskIds],
+    scopeProvenance: canonicalJson(block.scopeProvenance) as Readonly<Record<string, unknown>>,
+  })).sort((a, b) => a.order - b.order || a.blockId.localeCompare(b.blockId));
+  for (const [index, block] of blocks.entries()) {
+    if (!block.blockId || block.order !== index || block.memberTaskIds.length < 2 || new Set(block.memberTaskIds).size !== block.memberTaskIds.length)
+      throw new Error("invalid planning block");
+    for (const id of block.memberTaskIds) {
+      if (!tasks.some((task) => task.taskId === id) || seen.has(id)) throw new Error("contradictory planning block membership");
+      seen.add(id);
+    }
+  }
+  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks });
 }
 
 export function fingerprintAssistedPlanningSnapshotV1(snapshot: AssistedPlanningSnapshotV1): string {
-  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })));
+  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks);
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }

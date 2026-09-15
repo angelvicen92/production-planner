@@ -19,6 +19,14 @@ BEGIN
  FROM jsonb_array_elements(p_snapshot->'tasks') next
  JOIN jsonb_array_elements(s.draft_snapshot_json->'tasks') previous ON previous->>'taskId'=next->>'taskId'
  WHERE next IS DISTINCT FROM previous;
+ IF coalesce(p_snapshot->'planningBlocks','[]'::jsonb) IS DISTINCT FROM coalesce(s.draft_snapshot_json->'planningBlocks','[]'::jsonb) THEN
+   SELECT (SELECT coalesce(jsonb_agg(DISTINCT id ORDER BY id),'[]'::jsonb) FROM (
+     SELECT (member#>>'{}')::integer id FROM jsonb_array_elements(coalesce(p_snapshot->'planningBlocks','[]')) block,
+       jsonb_array_elements(block->'memberTaskIds') member
+     UNION
+     SELECT (member#>>'{}')::integer id FROM jsonb_array_elements(coalesce(s.draft_snapshot_json->'planningBlocks','[]')) block,
+       jsonb_array_elements(block->'memberTaskIds') member) members) INTO changed_ids;
+ END IF;
  IF jsonb_array_length(changed_ids)=0 THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
  IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_snapshot->'tasks') next
    JOIN jsonb_array_elements(s.draft_snapshot_json->'tasks') previous ON previous->>'taskId'=next->>'taskId'
@@ -46,7 +54,9 @@ BEGIN
       (SELECT (x#>>'{}')::integer id FROM jsonb_array_elements(coalesce(trace->'manualTouchedTaskIds','[]')) x
        UNION SELECT (x#>>'{}')::integer FROM jsonb_array_elements(changed_ids) x) touched),
    'editLedger',coalesce(trace->'editLedger','[]') || jsonb_build_array(jsonb_build_object(
-     'beforeFingerprint',s.draft_fingerprint,'afterFingerprint',p_fingerprint,'forward',forward_rows,'inverse',inverse_rows)),
+     'beforeFingerprint',s.draft_fingerprint,'afterFingerprint',p_fingerprint,'forward',forward_rows,'inverse',inverse_rows,
+     'forwardBlocks',coalesce(p_snapshot->'planningBlocks','[]'::jsonb),'inverseBlocks',coalesce(s.draft_snapshot_json->'planningBlocks','[]'::jsonb),
+     'forwardHasBlocks',p_snapshot ? 'planningBlocks','inverseHasBlocks',s.draft_snapshot_json ? 'planningBlocks')),
    'redoLedger','[]'::jsonb)-'proposalRunId';
  UPDATE public.assisted_planning_sessions SET draft_snapshot_json=p_snapshot,draft_fingerprint=p_fingerprint,
    draft_scope_json=trace,draft_validation_id=NULL,updated_at=now() WHERE id=s.id;
@@ -78,6 +88,11 @@ BEGIN
  FROM jsonb_array_elements(next_snapshot->'tasks') current(row)
  LEFT JOIN jsonb_array_elements(operation->(CASE WHEN p_redo THEN 'forward' ELSE 'inverse' END)) patch(row)
    ON patch.row->>'taskId'=current.row->>'taskId';
+ IF operation ? (CASE WHEN p_redo THEN 'forwardHasBlocks' ELSE 'inverseHasBlocks' END) THEN
+   IF (operation->>(CASE WHEN p_redo THEN 'forwardHasBlocks' ELSE 'inverseHasBlocks' END))::boolean THEN
+     next_snapshot:=jsonb_set(next_snapshot,'{planningBlocks}',operation->(CASE WHEN p_redo THEN 'forwardBlocks' ELSE 'inverseBlocks' END),true);
+   ELSE next_snapshot:=next_snapshot-'planningBlocks'; END IF;
+ END IF;
  next_fingerprint:=operation->>(CASE WHEN p_redo THEN 'afterFingerprint' ELSE 'beforeFingerprint' END);
  trace:=jsonb_set(trace,ARRAY[CASE WHEN p_redo THEN 'redoLedger' ELSE 'editLedger' END],source-(jsonb_array_length(source)-1));
  trace:=jsonb_set(trace,ARRAY[CASE WHEN p_redo THEN 'editLedger' ELSE 'redoLedger' END],
