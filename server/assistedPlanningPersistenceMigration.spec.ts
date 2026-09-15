@@ -55,6 +55,8 @@ test("080 closes authenticated direct writes while preserving reads and service-
     assert.match(normalizedSql,new RegExp(`GRANT[^;]*SELECT[^;]*public\\.${table}[^;]*TO authenticated, service_role`));
     assert.match(normalizedCorrection,new RegExp(`REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE[^;]*public\\.${table}[^;]*FROM authenticated`));
   }
+  assert.match(normalizedCorrection,/REVOKE UPDATE \(archived_at\) ON TABLE public\.assisted_planning_stages FROM authenticated/);
+  assert.match(normalizedCorrection,/REVOKE UPDATE \(status, resolved_at\) ON TABLE public\.planning_accepted_exceptions FROM authenticated/);
   assert.doesNotMatch(normalizedCorrection,/REVOKE (?:INSERT|UPDATE|DELETE|TRUNCATE)[^;]+FROM service_role/);
   assert.match(normalizedSql,/GRANT SELECT, INSERT, UPDATE ON TABLE public\.assisted_planning_sessions TO authenticated, service_role/);
   assert.match(normalizedCorrection,/GRANT EXECUTE ON FUNCTION public\.assisted_record_proposal_clean_validation[^;]+TO service_role/);
