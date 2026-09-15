@@ -95,7 +95,10 @@ export function buildAssistedProblem(
   }
 
   const included = new Set([...scopeIds, ...protectedIds]);
-  const closure = new Set(scopeIds);
+  // Fixed members are not search variables, but they remain graph vertices.
+  // Traversing them is essential: a protected member can be the only bridge to
+  // another dependency, anchor, joint group, technical chain, or round.
+  const closure = new Set([...scopeIds, ...protectedIds]);
   const supporting = new Set<string>();
   const supportingReasons = new Map<string, Set<string>>();
   const includeSupporting = (id: string, reason: string): void => {

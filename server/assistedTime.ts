@@ -1,0 +1,1 @@
+export function engineTimeToMinute(value:string):number{const match=/^(\d{2}):(\d{2})(?::\d{2})?$/.exec(value);if(!match)throw new Error("INVALID_ASSISTED_DRAFT_TIME");return Number(match[1])*60+Number(match[2]);}

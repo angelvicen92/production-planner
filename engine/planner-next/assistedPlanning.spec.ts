@@ -58,13 +58,14 @@ test("assisted projection is immutable, fixes accepted placements and never move
   assert.deepEqual(source, before);
 });
 
-test("protected placements are not roots of supporting closure", () => {
+test("protected placements remain traversal roots without becoming automatic variables", () => {
   const source = fixture();
   source.tasks.find(({ id }) => id === "protected")!.dependencies = ["outside"];
   const protectedPlacement = { ...source.tasks.find(({ id }) => id === "protected")!, start: 140, end: 150 } as ScheduledTask;
   const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "space", value: "main-space" }, {}, ["main"]), [protectedPlacement]);
-  assert.deepEqual(assisted.supportingTaskIds, ["feed"]);
-  assert.equal(assisted.problem.tasks.some(({ id }) => id === "outside"), false);
+  assert.deepEqual(assisted.supportingTaskIds, ["feed", "outside"]);
+  assert.equal(assisted.automaticTaskIds.includes("protected"), false);
+  assert.equal(assisted.problem.tasks.some(({ id }) => id === "outside"), true);
 });
 
 test("supporting closure does not infer feeders from task kind and participant", () => {

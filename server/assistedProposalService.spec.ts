@@ -24,7 +24,7 @@ const baseSnapshot = buildAssistedPlanningSnapshotV1(input.tasks.map((task) => (
   endPlanned: task.id === 105 ? "10:30" : null,
   zoneId: task.zoneId ?? null,
   spaceId: task.spaceId ?? null,
-})));
+})), [{blockId:"block:proposal-preserved",memberTaskIds:[101,102],scopeProvenance:{kind:"TASK_IDS"},spaceId:null,activityTemplateId:1,order:0}]);
 const session = {
   id: 7, planId, status: "ACTIVE", activeStageId: 4, draftBaseStageId: 4, currentConfigRevisionId: 8,
   draftFingerprint: fingerprintAssistedPlanningSnapshotV1(baseSnapshot),
@@ -152,6 +152,7 @@ test("run derives protected placements only from the base stage and preserves th
   assert.deepEqual(captured?.protectedPlacements.map(({id,start,end})=>({id,start,end})),[{id:"task:105",start:600,end:630}]);
   assert.equal(captured?.protectedPlacements.some(({id})=>id==="task:103"),false);
   assert.equal(result.outcome,"PROPOSAL"); assert.ok(result.proposedDraftFingerprint); assert.ok(finished); assert.deepEqual(writes,[]);
+  assert.deepEqual(result.proposedDraftSnapshot?.planningBlocks,baseSnapshot.planningBlocks);
 });
 
 test("NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes", async () => {

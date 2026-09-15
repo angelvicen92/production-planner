@@ -754,14 +754,16 @@ function TaskStatusMenuTrigger({
     if (!selectedTask || !canSelectManualTask(selectedTask)) return;
 
     const targetStart = manualDragPreviewStart ?? manualDrag.startAtMinutes;
-    const { nextEdits, shiftedIds, clampedStart } = computeCascadeEdits({
+    const { nextEdits, shiftedIds, clampedStart } = assistedDraftMode
+      ? assistedSimpleDragEdit(selectedTask,targetStart,startMin,endMin)
+      : computeCascadeEdits({
       laneTasks,
       movedTask: selectedTask,
       targetStart,
       startMin,
       endMin,
       pendingManualEdits,
-    });
+      });
 
     shiftedTaskIdsRef.current = shiftedIds;
     lastManualEditedPrimaryTaskIdRef.current = Number(selectedTask.id);
@@ -3387,3 +3389,4 @@ function TaskStatusMenuTrigger({
     </TooltipProvider>
   );
 }
+import { assistedSimpleDragEdit } from "@/lib/assisted-timeline-drag";
