@@ -36,7 +36,7 @@ BEGIN
   result := r.assisted_result_json;
   evidence := result->'evidence';
   IF r.result_fingerprint IS NULL
-    OR r.result_fingerprint<>encode(digest(convert_to(result::text,'UTF8'),'sha256'),'hex')
+    OR r.result_fingerprint<>encode(extensions.digest(convert_to(result::text,'UTF8'),'sha256'),'hex')
     OR result->>'contractVersion' IS DISTINCT FROM '1' OR result->>'outcome' IS DISTINCT FROM 'PROPOSAL'
     OR jsonb_typeof(result->'proposal') IS DISTINCT FROM 'array'
     OR jsonb_array_length(result->'proposal')=0
@@ -91,3 +91,5 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE
   public.planning_stage_validations,
   public.planning_accepted_exceptions
 FROM authenticated;
+REVOKE UPDATE (archived_at) ON TABLE public.assisted_planning_stages FROM authenticated;
+REVOKE UPDATE (status, resolved_at) ON TABLE public.planning_accepted_exceptions FROM authenticated;
