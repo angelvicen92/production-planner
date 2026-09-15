@@ -1,0 +1,2 @@
+import assert from "node:assert/strict";import test from "node:test";import { runA2Assist6Evidence } from "./runA2Assist6Evidence";
+test("A2-ASSIST-6 executes validation, atomic acceptance and inherited proposal",async()=>{const e=await runA2Assist6Evidence();assert.equal(e.proposalExists,true);assert.ok(e.inheritedAcceptedHardViolationCount>=1);assert.equal(e.newHardViolationCount,0);assert.equal(e.exceptionSurvivesValidateReset,true);});

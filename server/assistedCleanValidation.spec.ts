@@ -71,6 +71,7 @@ test("a clean scoped proposal validates and accepts an incomplete S0 -> S1 witho
     const reads:Record<string,()=>Promise<any>>={
       getActiveAssistedPlanningSession:async()=>session,getAssistedPlanningStage:async()=>stages.find(stage=>stage.id===session.activeStageId),
       listAssistedPlanningStages:async()=>stages,getPlanningStageValidation:async()=>validation,
+      listPlanningAcceptedExceptions:async()=>[],
       getPlanOptimizerSnapshot:async()=>optimizerSnapshot,getPlanTaskTemplateSnapshots:async()=>taskTemplateSnapshots,
       getPlanConfigRevision:async()=>({planId,fingerprint:configurationFingerprint}),
     }; return reads[property]??(async()=>{throw new Error(`unexpected storage call: ${property}`);});

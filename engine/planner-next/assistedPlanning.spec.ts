@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "./assistedPlanning";
+import { validatePlan } from "./validate";
 
 function fixture(): PlannerNextProblem {
   return {
@@ -107,6 +108,16 @@ test("protected-vs-protected inherited incompatibility remains an ASST-008 Accep
   assert.equal(result.evidence.proposalCount, 0);
   assert.ok(result.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE")
     || result.evidence.reasonCodes.includes("ASSISTED_HARD_VALIDATION_FAILED"));
+  const accepted=executeAssistedPlanning(assisted,{protectedTaskIds:["protected","outside"]});
+  assert.deepEqual(accepted.proposal?.map(task=>task.id),["main"]);
+  assert.equal(accepted.evidence.hardValid,false);
+});
+
+test("canonical validator emits separate exact structured overlap identities",()=>{
+  const problem=fixture();const tasks=problem.tasks.map((task,index)=>({...task,start:index<2?20:140,end:index===1?35:index<2?30:150})) as ScheduledTask[];
+  const overlaps=validatePlan(problem,tasks).violations?.filter(item=>item.ruleCode==="OVERLAP_VIOLATION")??[];
+  assert.equal(overlaps.length,2);assert.deepEqual(overlaps.map(item=>item.affectedTaskIds),[["feed","main"],["outside","protected"]]);
+  assert.deepEqual(overlaps[1]?.affectedSpaceIds,["other-space"]);assert.equal(overlaps[0]?.severity,"HARD");
 });
 
 test("one shared closure keeps every hard-coupled structure intact and explains supporting members", () => {

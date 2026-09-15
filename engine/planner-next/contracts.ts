@@ -265,6 +265,17 @@ export interface ValidationSummary {
   operationalMealViolationCount?: number;
   itinerantUnitMealViolationCount: number;
   reasonCodes: string[];
+  /** Canonical material conflicts emitted by the same authority as the legacy counters. */
+  violations?: ValidationViolationDetail[];
+}
+
+export interface ValidationViolationDetail {
+  ruleCode: string;
+  severity: "HARD" | "REQUIRED";
+  affectedTaskIds: string[];
+  affectedResourceIds: string[];
+  affectedSpaceIds: string[];
+  dimensions: Record<string, unknown>;
 }
 
 export type SearchStopReason =

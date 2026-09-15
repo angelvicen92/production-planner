@@ -39,6 +39,7 @@ function harness(options: { session?: any; rpcError?: unknown } = {}) {
     getAssistedPlanningStage: async () => activeStage,
     listAssistedPlanningStages: async () => history,
     getPlanningStageValidation: async () => validation,
+    listPlanningAcceptedExceptions: async () => [],
     getTasksForPlan: async () => draft.tasks.map(task => ({ id: task.taskId, status: "pending" })),
   };
   const storage = new Proxy({}, {
@@ -156,6 +157,7 @@ test("accept passes only the expected plan/fingerprint/base/user to its single a
   await service.accept(5, "user-1", "a".repeat(64), 20);
   assert.deepEqual(calls, [{ name: "assisted_accept_stage", parameters: {
     p_plan_id: 5, p_user_id: "user-1", p_expected_fingerprint: "a".repeat(64), p_expected_base: 20,
+    p_confirmation: "NONE",
   } }]);
   assert.deepEqual(storageWrites, []);
 });
@@ -176,7 +178,7 @@ test("state coherently projects the session's active stage, config, draft, valid
   assert.deepEqual(await service.state(5), {
     session: baseSession, activeStage, draft, draftBaseStageId: 20,
     draftFingerprint: baseSession.draftFingerprint, currentConfigRevisionId: 30,
-    validation, history,
+    validation, acceptedExceptions: [], history,
   });
 });
 

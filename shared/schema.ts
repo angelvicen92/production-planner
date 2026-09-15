@@ -686,7 +686,11 @@ export const planningAcceptedExceptions = pgTable("planning_accepted_exceptions"
   planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
   stageId: bigint("stage_id", { mode: "number" }).notNull().references(() => assistedPlanningStages.id, { onDelete: "cascade" }),
   severity: text("severity").notNull(), ruleCode: text("rule_code").notNull(), violationKey: text("violation_key").notNull(),
+  configRevisionId: bigint("config_revision_id", { mode: "number" }).references(() => planConfigRevisions.id),
+  snapshotFingerprint: text("snapshot_fingerprint"),
   affectedTaskIdsJson: jsonb("affected_task_ids_json").$type<number[]>().notNull().default([]),
+  affectedResourceIdsJson: jsonb("affected_resource_ids_json").$type<number[]>().notNull().default([]),
+  affectedSpaceIdsJson: jsonb("affected_space_ids_json").$type<number[]>().notNull().default([]),
   detailsJson: jsonb("details_json").$type<Record<string, unknown>>().notNull(), status: text("status").notNull(),
   acceptedBy: uuid("accepted_by").notNull(), acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
@@ -696,6 +700,7 @@ export const planningAcceptedExceptions = pgTable("planning_accepted_exceptions"
   severityCheck: check("planning_accepted_exceptions_severity_check", sql`${table.severity} IN ('HARD', 'REQUIRED')`),
   statusCheck: check("planning_accepted_exceptions_status_check", sql`${table.status} IN ('ACTIVE', 'RESOLVED', 'STALE', 'SUPERSEDED')`),
   taskIdsArrayCheck: check("planning_accepted_exceptions_task_ids_array_check", sql`jsonb_typeof(${table.affectedTaskIdsJson}) = 'array'`),
+  uniqueStageViolation: uniqueIndex("planning_accepted_exceptions_stage_violation_key").on(table.stageId, table.violationKey),
 }));
 
 // 8. locks

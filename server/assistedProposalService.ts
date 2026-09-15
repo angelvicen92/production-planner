@@ -12,6 +12,16 @@ import type { EngineInput } from "../engine/types";
 import type { AssistedProposalRequest, AssistedProposalRunResultV1 } from "../shared/assistedProposalContracts";
 import { validatePlan } from "../engine/planner-next/validate";
 import { fingerprint } from "../engine/planner-next/fingerprint";
+import { createViolationKey, type StageViolation } from "../shared/assistedStageValidation";
+import type { ValidationViolationDetail } from "../engine/planner-next/contracts";
+import { acceptedRequiredViolations, affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
+
+export function projectPlannerViolations(details:readonly ValidationViolationDetail[],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):StageViolation[]{
+  const map=(namespace:string,ids:readonly string[])=>ids.map(id=>identityMap.find(item=>item.namespace===namespace&&item.canonicalId===id)).filter((item):item is {sourceId:string;canonicalId:string;namespace:string}=>Boolean(item)).map(item=>Number(item.sourceId)).filter(Number.isInteger).sort((a,b)=>a-b);
+  return details.map(detail=>{const affectedTaskIds=map("task",detail.affectedTaskIds),affectedResourceIds=map("resource",detail.affectedResourceIds),affectedSpaceIds=map("space",detail.affectedSpaceIds);
+    return {ruleCode:detail.ruleCode,severity:detail.severity,affectedTaskIds,affectedResourceIds,affectedSpaceIds,details:{dimensions:detail.dimensions},inheritedAcceptedExceptionId:null,
+      violationKey:createViolationKey({ruleCode:detail.ruleCode,affectedTaskIds,affectedResourceIds,affectedSpaceIds,dimensions:detail.dimensions})};});
+}
 
 export type AssistedProposalErrorCode = "INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
 export class AssistedProposalError extends Error {
@@ -57,7 +67,10 @@ export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlan
   const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
   const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),task=canonical?taskById.get(canonical):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
   const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
-  return executeAssistedPlanning(buildAssistedProblem(adapter.problem,scope,protectedPlacements)).evidence;
+  const assisted=buildAssistedProblem(adapter.problem,scope,protectedPlacements);
+  const evidence=executeAssistedPlanning(assisted).evidence;
+  const validationSummary=validatePlan(assisted.originalValidationProblem,protectedPlacements);
+  return {...evidence,validationSummary,structuredViolations:projectPlannerViolations(validationSummary.violations??[],adapter.identityMap)};
 }
 
 /** Evidence-only seam: same immutable placements, validated by Planner Next without search. */
@@ -66,7 +79,7 @@ export function createManualDeltaValidationHarness(problem:PlannerNextProblem,id
     const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
     const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),task=id?taskById.get(id):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
     const validation=validatePlan(problem,placements,[],[],[],[],[],[],[]),scopeIds=touched.map(id=>canonicalByProduct.get(id)!);const completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
-    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:[],supportingReasonByTaskId:{},protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes};
+    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:[],supportingReasonByTaskId:{},protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes,validationSummary:validation,structuredViolations:projectPlannerViolations(validation.violations??[],identityMap)};
   };
 }
 
@@ -119,15 +132,35 @@ export class AssistedProposalService {
       if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const task=id?taskById.get(id):undefined;
       return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];
     });
-    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements));
     const productByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[i.canonicalId,Number(i.sourceId)]));
+    const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
     const spaceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const taskInputById=new Map(input.tasks.map(t=>[t.id,t]));
+    const lineage=resolveActiveStageLineage(await this.storage.listAssistedPlanningStages(session.id),stage.id);
+    const hardBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
+    const requiredBaseline=acceptedRequiredViolations(lineage,baseSnapshot);
+    const baselineTaskIds=[...new Set([...hardBaseline.flatMap(item=>item.affectedTaskIdsJson),...requiredBaseline.flatMap(item=>item.affectedTaskIds)].map(id=>canonicalByProduct.get(id)).filter((id):id is string=>Boolean(id)))];
+    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements),{protectedTaskIds:baselineTaskIds});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!; return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks) : null;
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
-    const result:AssistedProposalRunResultV1={contractVersion:1,outcome:proposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal,proposedDraftSnapshot,proposedDraftFingerprint,evidence:execution.evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
+    const candidateDetails=(execution.evidence as any).violations as ValidationViolationDetail[]|undefined;
+    const candidateViolations=projectPlannerViolations(candidateDetails??[],adapter.identityMap);
+    const inheritedHard=candidateViolations.filter(item=>item.severity==="HARD"&&hardBaseline.some(exception=>exception.violationKey===item.violationKey));
+    const inheritedRequired=candidateViolations.filter(item=>item.severity==="REQUIRED"&&requiredBaseline.some(baseline=>baseline.violationKey===item.violationKey));
+    const inheritedKeys=new Set([...inheritedHard,...inheritedRequired].map(item=>item.violationKey));
+    const detailedRules=new Set((candidateDetails??[]).map(item=>item.ruleCode));
+    const unmatchedHardReasons=execution.evidence.reasonCodes.filter(code=>!code.startsWith("ASSISTED_")&&!detailedRules.has(code.split(":",1)[0]!));
+    const newHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&!inheritedKeys.has(item.violationKey)).length+unmatchedHardReasons.length;
+    const newRequiredViolationCount=candidateViolations.filter(item=>item.severity==="REQUIRED"&&!inheritedKeys.has(item.violationKey)).length;
+    const proposalEligible=newHardViolationCount===0&&newRequiredViolationCount===0;
+    const evidence={...execution.evidence,hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
+      inheritedAcceptedHardViolationCount:inheritedHard.length,inheritedAcceptedRequiredViolationCount:inheritedRequired.length,
+      newHardViolationCount,newRequiredViolationCount,proposalEligible,violations:candidateDetails??[]};
+    const safeProposal=proposal&&proposalEligible?proposal:null;
+    const safeSnapshot=safeProposal?proposedDraftSnapshot:null,safeFingerprint=safeProposal?proposedDraftFingerprint:null;
+    const result:AssistedProposalRunResultV1={contractVersion:1,outcome:safeProposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal:safeProposal,proposedDraftSnapshot:safeSnapshot,proposedDraftFingerprint:safeFingerprint,evidence:evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
     return this.finish(planId,run,result);
   }
 

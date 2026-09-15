@@ -45,6 +45,8 @@ function storage(reads: Record<string, (...args: unknown[]) => Promise<unknown>>
   return new Proxy({}, {
     get(_target, property: string) {
       if (reads[property]) return reads[property];
+      if (property === "listPlanningAcceptedExceptions") return async () => [];
+      if (property === "listAssistedPlanningStages") return async () => [stage];
       return async () => { writes.push(property); throw new Error(`unexpected storage call: ${property}`); };
     },
   }) as IStorage;

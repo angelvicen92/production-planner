@@ -10,6 +10,7 @@ const columnMap: Record<string, string> = {
   acceptedAt: "accepted_at", archivedAt: "archived_at", baseStageId: "base_stage_id", hardCount: "hard_count",
   requiredCount: "required_count", preferredCount: "preferred_count", reportJson: "report_json", ruleCode: "rule_code",
   violationKey: "violation_key", affectedTaskIdsJson: "affected_task_ids_json", detailsJson: "details_json", resolvedAt: "resolved_at",
+  affectedResourceIdsJson: "affected_resource_ids_json", affectedSpaceIdsJson: "affected_space_ids_json",
 };
 
 export function mapAssistedPersistenceRow<T>(row: Record<string, unknown>): T {
