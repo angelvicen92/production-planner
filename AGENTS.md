@@ -25,6 +25,17 @@ Cuando una tarea llega a Codex, ChatGPT ya ha definido objetivo, alcance y crite
 - Si una ambigüedad material impide implementar correctamente, detente y repórtala.
 - No abras otro PR si la tarea indica continuar uno existente. No hagas merge.
 
+## Identidad del checkout
+
+- La identidad autoritativa del trabajo es el **repo + PR/rama remota objetivo + base remota** indicada por ChatGPT; el nombre de la rama local puede ser `work` u otro nombre interno del entorno.
+- El prompt puede incluir una línea explícita `RAMA A SELECCIONAR EN CODEX`. Esa rama es la referencia remota que el usuario debe seleccionar en el desplegable de la interfaz antes de lanzar la tarea. No la confundas con el nombre de la rama local que el entorno use después.
+- Para una tarea nueva desde `main`, la rama a seleccionar será normalmente la rama de trabajo remota creada por ChatGPT desde el `main` autorizado. Para continuar un PR existente en un nuevo hilo/tarea, la rama a seleccionar será normalmente el **head remoto actual de ese PR**, no su base.
+- No exijas igualdad de SHA de commit local cuando el entorno pueda recrear commits equivalentes con metadatos distintos. Si hace falta verificar equivalencia, compara contenido (`HEAD^{tree}`), diff contra la referencia disponible o parent/base; el tree SHA identifica el contenido, el commit SHA también incluye metadatos.
+- Un SHA exacto es un ancla útil cuando el objeto existe localmente y debe probarse una base concreta, pero su ausencia local no es por sí sola un blocker si el checkout puede demostrar por contenido/base que corresponde al trabajo remoto correcto.
+- Para continuar bastan normalmente: repositorio correcto, trabajo remoto objetivo correcto, árbol limpio y ninguna diferencia material respecto al head/base que se pretende continuar.
+- Detente sólo ante riesgo real de trabajar sobre contenido/base equivocados, cambios locales ajenos, divergencia material o imposibilidad de demostrar equivalencia con la información disponible.
+- No hagas `fetch`, `pull`, `switch`, reparación de remotes o reescritura de historia únicamente para satisfacer un nombre de rama o SHA local cosmético, salvo que el prompt lo requiera porque esa operación sea necesaria para recuperar la base correcta.
+
 ## Contexto
 
 1. Lee este archivo y el prompt.
