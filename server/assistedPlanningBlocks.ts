@@ -20,6 +20,13 @@ const canonicalJson = (value: unknown): unknown => Array.isArray(value) ? value.
   ? Object.fromEntries(Object.entries(value as Record<string,unknown>).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>[key,canonicalJson(item)])) : value;
 const idFor = (members: readonly number[], scope: Readonly<Record<string, unknown>>) =>
   `block:${createHash("sha256").update(JSON.stringify({ members, scope:canonicalJson(scope) })).digest("hex").slice(0, 20)}`;
+const canonicalString = (value: unknown) => JSON.stringify(canonicalJson(value));
+const mergeProvenance = (left: Readonly<Record<string, unknown>>, right: Readonly<Record<string, unknown>>) => {
+  if (canonicalString(left) === canonicalString(right)) return structuredClone(left);
+  const sources = [left, right].flatMap(source => Array.isArray(source.sources) ? source.sources : [source]);
+  const unique = new Map(sources.map(source => [canonicalString(source), canonicalJson(source)]));
+  return { sources: [...unique.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, source]) => source) };
+};
 
 export function applyPlanningBlockOperation(
   snapshot: AssistedPlanningSnapshotV1,
@@ -40,7 +47,10 @@ export function applyPlanningBlockOperation(
   };
   let touched: number[];
   if (operation.kind === "CREATE_BLOCK") {
-    const members = [...operation.memberTaskIds]; const authority = assertMembers(members);
+    const selected = [...operation.memberTaskIds]; const authority = assertMembers(selected);
+    const taskById = new Map(snapshot.tasks.map(task => [task.taskId, task]));
+    if (selected.some(id => !taskById.get(id)?.startPlanned)) throw new Error("PLANNING_BLOCK_MEMBER_UNPLANNED");
+    const members = selected.sort((left, right) => taskById.get(left)!.startPlanned!.localeCompare(taskById.get(right)!.startPlanned!) || left - right);
     if (blocks.some((block) => block.memberTaskIds.some((id) => members.includes(id)))) throw new Error("CONTRADICTORY_PLANNING_BLOCK_MEMBERSHIP");
     touched = members;
     blocks.push({ blockId: idFor(members, scopeProvenance), memberTaskIds: members, scopeProvenance: structuredClone(scopeProvenance), spaceId: authority.spaceId ?? null, activityTemplateId: authority.templateId, order: blocks.length });
@@ -48,17 +58,18 @@ export function applyPlanningBlockOperation(
     const get = (id: string) => { const block = blocks.find((item) => item.blockId === id); if (!block) throw new Error("PLANNING_BLOCK_NOT_FOUND"); return block; };
     if (operation.kind === "SPLIT_BLOCK") {
       const block = get(operation.blockId); const at = operation.splitAfter;
-      if (!Number.isInteger(at) || at < 2 || at > block.memberTaskIds.length - 2) throw new Error("INVALID_PLANNING_BLOCK_SPLIT");
+      if (!Number.isInteger(at) || at < 1 || at > block.memberTaskIds.length - 1) throw new Error("INVALID_PLANNING_BLOCK_SPLIT");
       const left = block.memberTaskIds.slice(0, at), right = block.memberTaskIds.slice(at); touched = [...block.memberTaskIds];
-      blocks.splice(blocks.indexOf(block), 1,
-        { ...block, blockId: idFor(left, block.scopeProvenance), memberTaskIds: left },
-        { ...block, blockId: idFor(right, block.scopeProvenance), memberTaskIds: right });
+      const replacements = [left, right].filter(memberTaskIds => memberTaskIds.length >= 2)
+        .map(memberTaskIds => ({ ...block, blockId: idFor(memberTaskIds, block.scopeProvenance), memberTaskIds }));
+      blocks.splice(blocks.indexOf(block), 1, ...replacements);
     } else if (operation.kind === "MERGE_BLOCKS") {
       if (operation.blockIds[0] === operation.blockIds[1]) throw new Error("INVALID_PLANNING_BLOCK_MERGE");
       const selected = operation.blockIds.map(get).sort((a, b) => a.order - b.order); touched = selected.flatMap((block) => [...block.memberTaskIds]);
       const authority = assertMembers(touched); const firstIndex = Math.min(...selected.map((block) => blocks.indexOf(block)));
       blocks = blocks.filter((block) => !operation.blockIds.includes(block.blockId));
-      blocks.splice(firstIndex, 0, { blockId: idFor(touched, selected[0].scopeProvenance), memberTaskIds: touched, scopeProvenance: selected[0].scopeProvenance, spaceId: authority.spaceId ?? null, activityTemplateId: authority.templateId, order: firstIndex });
+      const scope = mergeProvenance(selected[0].scopeProvenance, selected[1].scopeProvenance);
+      blocks.splice(firstIndex, 0, { blockId: idFor(touched, scope), memberTaskIds: touched, scopeProvenance: scope, spaceId: authority.spaceId ?? null, activityTemplateId: authority.templateId, order: firstIndex });
     } else if (operation.kind === "REMOVE_BLOCK_GROUPING") {
       const block = get(operation.blockId); touched = [...block.memberTaskIds]; blocks.splice(blocks.indexOf(block), 1);
     } else if (operation.kind === "REORDER_BLOCK_MEMBERS") {
@@ -74,5 +85,7 @@ export function applyPlanningBlockOperation(
     }
   }
   blocks = blocks.map((block, order) => ({ ...block, order }));
-  return { snapshot: { ...snapshot, tasks, planningBlocks: blocks }, touchedTaskIds: [...new Set(touched)].sort((a, b) => a - b) };
+  const { planningBlocks: _discardedBlocks, ...blockless } = snapshot;
+  const next: AssistedPlanningSnapshotV1 = blocks.length ? { ...blockless, tasks, planningBlocks: blocks } : { ...blockless, tasks };
+  return { snapshot: next, touchedTaskIds: [...new Set(touched)].sort((a, b) => a - b) };
 }

@@ -7,11 +7,33 @@ export function sameAssistedPlacement(a?: AssistedPlanningTaskSnapshotV1, b?: As
   return Boolean(a && b && placementKeys.every(key => a[key] === b[key]));
 }
 
+const canonicalJson = (value: unknown): unknown => Array.isArray(value) ? value.map(canonicalJson) : value && typeof value === "object"
+  ? Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => [key, canonicalJson(item)]))
+  : value;
+
+export function sameAssistedPlanningBlocks(left: AssistedPlanningSnapshotV1, right: AssistedPlanningSnapshotV1) {
+  const canonicalBlocks = (snapshot: AssistedPlanningSnapshotV1) => (snapshot.planningBlocks ?? [])
+    .map(block => canonicalJson(block))
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  return JSON.stringify(canonicalBlocks(left)) === JSON.stringify(canonicalBlocks(right));
+}
+
+export function assistedDraftTouchedTaskIds(draft: AssistedPlanningSnapshotV1, base: AssistedPlanningSnapshotV1 | null) {
+  if (!base) return draft.tasks.map(task => task.taskId).sort((a, b) => a - b);
+  const baseById = new Map(base.tasks.map(task => [task.taskId, task]));
+  const touched = new Set(draft.tasks.filter(task => !sameAssistedPlacement(task, baseById.get(task.taskId))).map(task => task.taskId));
+  if (!sameAssistedPlanningBlocks(draft, base)) {
+    for (const block of [...(draft.planningBlocks ?? []), ...(base.planningBlocks ?? [])])
+      block.memberTaskIds.forEach(id => touched.add(id));
+  }
+  return [...touched].sort((a, b) => a - b);
+}
+
 /** Placement dirtiness is independent from selection and preview presentation. */
 export function isAssistedDraftModified(draft: AssistedPlanningSnapshotV1, base: AssistedPlanningSnapshotV1 | null) {
   if (!base || draft.tasks.length !== base.tasks.length) return true;
   const baseById = new Map(base.tasks.map(task => [task.taskId, task]));
-  return draft.tasks.some(task => !sameAssistedPlacement(task, baseById.get(task.taskId)));
+  return draft.tasks.some(task => !sameAssistedPlacement(task, baseById.get(task.taskId))) || !sameAssistedPlanningBlocks(draft, base);
 }
 
 /** Live rows own execution/display metadata; the immutable draft owns placement only. */

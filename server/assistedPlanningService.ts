@@ -132,6 +132,21 @@ export class AssistedPlanningService {
     if (error) dbError(error);
     return this.state(planId);
   }
+  async resetDraft(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number) {
+    const session = await this.storage.getActiveAssistedPlanningSession(planId);
+    if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
+    if (session.draftFingerprint !== expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT", 409);
+    if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    const base = await this.storage.getAssistedPlanningStage(expectedBaseStageId);
+    if (!base || base.sessionId !== session.id || base.planId !== planId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    const snapshot = buildAssistedPlanningSnapshotV1((base.snapshotJson as unknown as AssistedPlanningSnapshotV1).tasks.map(task => ({ id: task.taskId, ...task })), (base.snapshotJson as unknown as AssistedPlanningSnapshotV1).planningBlocks);
+    const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
+    if (fingerprint !== base.snapshotFingerprint) throw new AssistedPlanningError("CORRUPT_EDIT_LEDGER", 409);
+    const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint,
+      p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: base.snapshotFingerprint });
+    if (error) dbError(error);
+    return this.state(planId);
+  }
   async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number) {
     const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
     if (error) dbError(error); return this.state(planId);

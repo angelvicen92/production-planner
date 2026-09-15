@@ -56,7 +56,7 @@ export function buildAssistedPlanningSnapshotV1(
   if (tasks.some((task, index) => index > 0 && tasks[index - 1].taskId === task.taskId)) {
     throw new Error("snapshot cannot contain duplicate task ids");
   }
-  if (planningBlocks === undefined) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks });
+  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks });
   const seen = new Set<number>();
   const blocks = planningBlocks.map((block) => ({
     ...structuredClone(block),

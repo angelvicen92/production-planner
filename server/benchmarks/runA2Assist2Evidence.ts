@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import { applyAssistedDraftChanges, reorderTasks, swapTasks } from "../../client/src/lib/assisted-draft-editing";
 import type { IStorage } from "../storage";
+import { applyPlanningBlockOperation } from "../assistedPlanningBlocks";
 
 export async function runA2Assist2Evidence(){
   process.env.SUPABASE_URL??="http://localhost";process.env.SUPABASE_SERVICE_ROLE_KEY??="test-service-role-key";process.env.SUPABASE_ANON_KEY??="test-anon-key";
@@ -18,6 +19,11 @@ export async function runA2Assist2Evidence(){
   let session:any={id:sessionId,planId,status:"ACTIVE",activeStageId:baseStageId,draftBaseStageId:baseStageId,currentConfigRevisionId:configId,draftScopeJson:{},draftSnapshotJson:s1,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(s1),draftValidationId:null};
   const stages:any[]=[{id:20,sessionId,planId,ordinal:0,snapshotJson:s1},{id:baseStageId,sessionId,planId,ordinal:1,snapshotJson:s1,snapshotFingerprint:session.draftFingerprint}];
   const tasks=s1.tasks.map(task=>({id:task.taskId,status:"pending",templateId:1,spaceId:1}));
+  const roundTripCreated=applyPlanningBlockOperation(s1,{kind:"CREATE_BLOCK",memberTaskIds:[2,1]},tasks,{benchmark:"A2-ASSIST-2"}).snapshot;
+  const roundTripRemoved=applyPlanningBlockOperation(roundTripCreated,{kind:"REMOVE_BLOCK_GROUPING",blockId:roundTripCreated.planningBlocks![0].blockId},tasks,{}).snapshot;
+  const createRemoveCanonicalRoundTrip=JSON.stringify(roundTripRemoved)===JSON.stringify(s1)
+    && fingerprintAssistedPlanningSnapshotV1(roundTripRemoved)===fingerprintAssistedPlanningSnapshotV1(s1);
+  assert.equal(createRemoveCanonicalRoundTrip,true);
   const storage=new Proxy({}, {get(_target,property:string){const reads:Record<string,any>={getActiveAssistedPlanningSession:async()=>session,
     getAssistedPlanningStage:async(id:number)=>stages.find(stage=>stage.id===id),listAssistedPlanningStages:async()=>stages,
     getPlanningStageValidation:async()=>validation,getTasksForPlan:async()=>tasks,getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"c".repeat(64)})};
@@ -68,7 +74,7 @@ export async function runA2Assist2Evidence(){
     planningRunsCreatedDuringEditing:planningRuns,productWritesBeforeAccept:0,productWritesAtAccept,...counters,touchedTaskCount:validation.reportJson.changedTaskIds.length,
     validationMode:result.mode,acceptedStageOrdinal:stages.at(-1).ordinal,validatedFingerprint,validatedBaseStageId:validation.baseStageId,validatedConfigRevisionId:validation.configRevisionId,
     deterministicFingerprints:validatedFingerprint===fingerprintAssistedPlanningSnapshotV1(stages.at(-1).snapshotJson),blocksSurviveAccept:(stages.at(-1).snapshotJson.planningBlocks??[]).length===1,
-    rollbackExact,rollbackRedoExact,blocksSurviveRollbackRedo:(session.draftSnapshotJson.planningBlocks??[]).length===1,futureFullDayFeasibility:validation.reportJson.futureFullDayFeasibility};
+    createRemoveCanonicalRoundTrip,rollbackExact,rollbackRedoExact,blocksSurviveRollbackRedo:(session.draftSnapshotJson.planningBlocks??[]).length===1,futureFullDayFeasibility:validation.reportJson.futureFullDayFeasibility};
   return evidence;
 }
 if(import.meta.url===`file://${process.argv[1]}`)console.log(JSON.stringify(await runA2Assist2Evidence(),null,2));

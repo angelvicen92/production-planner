@@ -25,7 +25,7 @@ const baseSession = {
   draftFingerprint: fingerprintAssistedPlanningSnapshotV1(draft), draftValidationId: 40,
   createdAt: new Date(0), updatedAt: new Date(0),
 };
-const activeStage = { id: 20, sessionId: 7, planId:5, ordinal: 0, snapshotJson:draft };
+const activeStage = { id: 20, sessionId: 7, planId:5, ordinal: 0, snapshotJson:draft, snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(draft) };
 const validation = { id: 40, sessionId: 7, draftFingerprint: baseSession.draftFingerprint };
 const history = [activeStage, { id: 21, sessionId: 7, ordinal: 1 }];
 
@@ -88,6 +88,14 @@ test("patch starts from the complete draft, changes only requested tasks, finger
     p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot),
   });
   assert.deepEqual(storageWrites, []);
+});
+
+test("reset draft restores the complete canonical base through one undoable patch", async () => {
+  const { service, calls } = harness();
+  await service.resetDraft(5, baseSession.draftFingerprint, 20);
+  assert.deepEqual(calls, [{ name:"assisted_patch_draft", parameters:{ p_plan_id:5,
+    p_expected_fingerprint:baseSession.draftFingerprint, p_expected_base:20,
+    p_snapshot:draft, p_fingerprint:activeStage.snapshotFingerprint } }]);
 });
 
 test("unknown and duplicate patch task IDs fail deterministically without RPC", async () => {
