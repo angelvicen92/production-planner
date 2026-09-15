@@ -7,6 +7,13 @@ export function sameAssistedPlacement(a?: AssistedPlanningTaskSnapshotV1, b?: As
   return Boolean(a && b && placementKeys.every(key => a[key] === b[key]));
 }
 
+/** Placement dirtiness is independent from selection and preview presentation. */
+export function isAssistedDraftModified(draft: AssistedPlanningSnapshotV1, base: AssistedPlanningSnapshotV1 | null) {
+  if (!base || draft.tasks.length !== base.tasks.length) return true;
+  const baseById = new Map(base.tasks.map(task => [task.taskId, task]));
+  return draft.tasks.some(task => !sameAssistedPlacement(task, baseById.get(task.taskId)));
+}
+
 /** Live rows own execution/display metadata; the immutable draft owns placement only. */
 export function buildAssistedPlanningView<T extends Record<string, any>>(liveTasks: readonly T[], draft: AssistedPlanningSnapshotV1) {
   const placement = new Map(draft.tasks.map(task => [task.taskId, task]));
