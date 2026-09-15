@@ -9,17 +9,22 @@ test("079 extends planning_runs without introducing a job table",()=>{
 });
 test("finish owns a PostgreSQL-verifiable result fingerprint",()=>{
  const finish=sql.slice(sql.indexOf("CREATE OR REPLACE FUNCTION public.assisted_finish_proposal"),sql.indexOf("-- The client supplies only optimistic concurrency guards"));
- assert.match(finish,/digest\(convert_to\(p_result::text,'UTF8'\),'sha256'\)/);
+ assert.match(finish,/extensions\.digest\(convert_to\(p_result::text,'UTF8'\),'sha256'\)/);
  assert.doesNotMatch(finish,/p_fingerprint/);
 });
 test("apply is one locked authority operation and never writes product tasks",()=>{
  const apply=sql.slice(sql.indexOf("CREATE OR REPLACE FUNCTION public.assisted_apply_proposal"),sql.indexOf("REVOKE ALL ON FUNCTION public.assisted_apply_proposal"));
  assert.match(apply,/status='ACTIVE' FOR UPDATE/); assert.match(apply,/draft_validation_id=NULL/);
- assert.match(apply,/result_fingerprint<>encode\(digest\(convert_to\(result::text,'UTF8'\),'sha256'\)/);
+ assert.match(apply,/result_fingerprint<>encode\(extensions\.digest\(convert_to\(result::text,'UTF8'\),'sha256'\)/);
  assert.match(apply,/draft_snapshot_json=proposed,draft_fingerprint=proposed_fingerprint/);
  assert.doesNotMatch(apply,/next_fingerprint|digest\(convert_to\(proposed/);
  assert.doesNotMatch(apply,/UPDATE daily_tasks|INSERT INTO daily_tasks|DELETE FROM daily_tasks/);
  for(const gate of ["RUN_NOT_FOUND","RUN_SESSION_MISMATCH","RUN_NOT_READY","RUN_HAS_NO_PROPOSAL","STALE_BASE_STAGE","STALE_DRAFT","STALE_CONFIG_REVISION","RUN_RESULT_INVALID"]) assert.match(apply,new RegExp(gate));
+});
+test("079 schema-qualifies pgcrypto under Supabase",()=>{
+ assert.doesNotMatch(sql,/(?<!extensions\.)digest\(convert_to\(/);
+ assert.match(sql,/extensions\.digest\(convert_to\(p_result::text,'UTF8'\),'sha256'\)/);
+ assert.match(sql,/extensions\.digest\(convert_to\(result::text,'UTF8'\),'sha256'\)/);
 });
 test("acceptance and stage trigger retain exact proposal provenance",()=>{
  assert.match(sql,/s\.draft_scope_json[\s\S]*proposalRunId/);

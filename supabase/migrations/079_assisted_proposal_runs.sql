@@ -37,7 +37,7 @@ RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 BEGIN
  IF jsonb_typeof(p_result)<>'object' OR (p_result->>'contractVersion')::integer<>1 THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
  UPDATE planning_runs SET status='success',assisted_result_json=p_result,
-   result_fingerprint=encode(digest(convert_to(p_result::text,'UTF8'),'sha256'),'hex'),finished_at=now(),updated_at=now()
+   result_fingerprint=encode(extensions.digest(convert_to(p_result::text,'UTF8'),'sha256'),'hex'),finished_at=now(),updated_at=now()
  WHERE id=p_run_id AND plan_id=p_plan_id AND execution_kind='ASSISTED_SCOPE' AND status='running';
  IF NOT FOUND THEN RAISE EXCEPTION 'RUN_NOT_READY'; END IF;
 END $$;
@@ -61,7 +61,7 @@ BEGIN
  IF r.base_stage_id IS DISTINCT FROM p_expected_base OR s.draft_base_stage_id IS DISTINCT FROM r.base_stage_id THEN RAISE EXCEPTION 'STALE_BASE_STAGE'; END IF;
  IF s.draft_fingerprint<>p_expected_fingerprint OR s.draft_fingerprint<>r.source_draft_fingerprint THEN RAISE EXCEPTION 'STALE_DRAFT'; END IF;
  IF s.current_config_revision_id<>r.config_revision_id THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
- IF r.result_fingerprint IS NULL OR r.result_fingerprint<>encode(digest(convert_to(result::text,'UTF8'),'sha256'),'hex') THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+ IF r.result_fingerprint IS NULL OR r.result_fingerprint<>encode(extensions.digest(convert_to(result::text,'UTF8'),'sha256'),'hex') THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
  proposed:=result->'proposedDraftSnapshot'; proposed_fingerprint:=result->>'proposedDraftFingerprint';
  IF jsonb_typeof(proposed)<>'object' OR proposed->>'contractVersion'<>'1' OR jsonb_typeof(proposed->'tasks')<>'array'
    OR proposed_fingerprint !~ '^[0-9a-f]{64}$' OR jsonb_typeof(result->'proposal')<>'array' THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
