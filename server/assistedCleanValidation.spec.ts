@@ -43,6 +43,7 @@ test("proposal validation runs as invoker with an empty search path and qualifie
   assert.doesNotMatch(rpc,/SECURITY DEFINER/);
   for(const relation of ["assisted_planning_sessions","planning_runs","planning_stage_validations"])
     assert.match(rpc,new RegExp(`public\\.${relation}`));
+  assert.match(rpc,/extensions\.digest\(/);
 });
 test("incomplete and internal-supporting snapshots are accepted based on clean ASST-005 evidence, not physical placement counts",()=>{
   assert.doesNotMatch(rpc,/jsonb_array_length\(result->'proposedDraftSnapshot'->'tasks'\).*proposal|plannedTaskCount|totalActiveObligationCount/);
