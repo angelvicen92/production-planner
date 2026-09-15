@@ -12,6 +12,7 @@ import type { EngineInput } from "../engine/types";
 import type { AssistedProposalRequest, AssistedProposalRunResultV1 } from "../shared/assistedProposalContracts";
 import { validatePlan } from "../engine/planner-next/validate";
 import { fingerprint } from "../engine/planner-next/fingerprint";
+import { normalizePlannerValidation } from "../shared/assistedStageValidation";
 
 export type AssistedProposalErrorCode = "INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
 export class AssistedProposalError extends Error {
@@ -57,7 +58,9 @@ export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlan
   const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
   const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),task=canonical?taskById.get(canonical):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
   const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
-  return executeAssistedPlanning(buildAssistedProblem(adapter.problem,scope,protectedPlacements)).evidence;
+  const assisted=buildAssistedProblem(adapter.problem,scope,protectedPlacements);
+  const evidence=executeAssistedPlanning(assisted).evidence;
+  return {...evidence,validationSummary:validatePlan(assisted.originalValidationProblem,protectedPlacements)};
 }
 
 /** Evidence-only seam: same immutable placements, validated by Planner Next without search. */
@@ -66,7 +69,7 @@ export function createManualDeltaValidationHarness(problem:PlannerNextProblem,id
     const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
     const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),task=id?taskById.get(id):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
     const validation=validatePlan(problem,placements,[],[],[],[],[],[],[]),scopeIds=touched.map(id=>canonicalByProduct.get(id)!);const completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
-    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:[],supportingReasonByTaskId:{},protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes};
+    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:[],supportingReasonByTaskId:{},protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes,validationSummary:validation};
   };
 }
 
@@ -127,7 +130,24 @@ export class AssistedProposalService {
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks) : null;
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
-    const result:AssistedProposalRunResultV1={contractVersion:1,outcome:proposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal,proposedDraftSnapshot,proposedDraftFingerprint,evidence:execution.evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
+    const activeExceptions=(await this.storage.listPlanningAcceptedExceptions(stage.id)).filter(exception=>exception.status==="ACTIVE");
+    const placementDimensions=Object.fromEntries(baseSnapshot.tasks.map(task=>[task.taskId,{startPlanned:task.startPlanned,endPlanned:task.endPlanned,spaceId:task.spaceId}]));
+    const engineReasons=execution.evidence.reasonCodes.filter(code=>!code.startsWith("ASSISTED_"));
+    const inheritedIds=new Set<number>(); const inheritedReasons=new Set<string>();
+    for(const exception of activeExceptions){
+      const encoded=String((exception.detailsJson as any)?.engineReasonCode??exception.ruleCode);
+      const candidate=normalizePlannerValidation({reasonCodes:[encoded],affectedTaskIds:exception.affectedTaskIdsJson,placementDimensions})[0];
+      if(candidate?.violationKey===exception.violationKey&&engineReasons.includes(encoded)){inheritedIds.add(exception.id);inheritedReasons.add(encoded);}
+    }
+    const newReasons=engineReasons.filter(code=>!inheritedReasons.has(code));
+    const requiredViolationCount=newReasons.filter(code=>code.startsWith("RESOURCE_REQUIRED_PRESENCE_VIOLATION")).length;
+    const newHardViolationCount=newReasons.length-requiredViolationCount;
+    const evidence={...execution.evidence,hardValid:newHardViolationCount===0,requiredValid:requiredViolationCount===0,
+      inheritedAcceptedViolationCount:inheritedIds.size,newHardViolationCount,requiredViolationCount,
+      inheritedAcceptedExceptionIds:[...inheritedIds].sort((a,b)=>a-b)};
+    const safeProposal=proposal&&newHardViolationCount===0&&requiredViolationCount===0?proposal:null;
+    const safeSnapshot=safeProposal?proposedDraftSnapshot:null,safeFingerprint=safeProposal?proposedDraftFingerprint:null;
+    const result:AssistedProposalRunResultV1={contractVersion:1,outcome:safeProposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal:safeProposal,proposedDraftSnapshot:safeSnapshot,proposedDraftFingerprint:safeFingerprint,evidence:evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
     return this.finish(planId,run,result);
   }
 

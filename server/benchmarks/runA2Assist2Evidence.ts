@@ -27,7 +27,7 @@ export async function runA2Assist2Evidence(){
   assert.equal(createRemoveCanonicalRoundTrip,true);
   const storage=new Proxy({}, {get(_target,property:string){const reads:Record<string,any>={getActiveAssistedPlanningSession:async()=>session,
     getAssistedPlanningStage:async(id:number)=>stages.find(stage=>stage.id===id),listAssistedPlanningStages:async()=>stages,
-    getPlanningStageValidation:async()=>validation,getTasksForPlan:async()=>tasks,getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"c".repeat(64)})};
+    getPlanningStageValidation:async()=>validation,listPlanningAcceptedExceptions:async()=>[],getTasksForPlan:async()=>tasks,getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"c".repeat(64)})};
     return reads[property]??(async()=>{throw new Error(`unexpected storage ${property}`);});}}) as IStorage;
   const rpc=async(name:string,p:any)=>{
     if(name==="assisted_patch_draft"){
@@ -45,7 +45,7 @@ export async function runA2Assist2Evidence(){
       const expected=p.p_redo?operation.beforeFingerprint:operation.afterFingerprint;assert.equal(session.draftFingerprint,expected);
       session={...session,draftSnapshotJson:snapshot,draftFingerprint:p.p_redo?operation.afterFingerprint:operation.beforeFingerprint,draftValidationId:null,draftScopeJson:{...session.draftScopeJson,editLedger:p.p_redo?[...session.draftScopeJson.editLedger,operation]:source.slice(0,-1),redoLedger:p.p_redo?source.slice(0,-1):[...session.draftScopeJson.redoLedger,operation]}};return {error:null};
     }
-    if(name==="assisted_record_manual_clean_validation"){assert.equal(p.p_expected_fingerprint,session.draftFingerprint);assert.equal(p.p_expected_base,baseStageId);assert.equal(p.p_expected_config,configId);validation={id:44,sessionId,planId,baseStageId,draftFingerprint:p.p_expected_fingerprint,configRevisionId:configId,reportJson:p.p_report};session={...session,draftValidationId:44};return {error:null};}
+    if(name==="assisted_record_stage_validation"){assert.equal(p.p_expected_fingerprint,session.draftFingerprint);assert.equal(p.p_expected_base,baseStageId);assert.equal(p.p_expected_config,configId);validation={id:44,sessionId,planId,baseStageId,draftFingerprint:p.p_expected_fingerprint,configRevisionId:configId,reportJson:p.p_report};session={...session,draftValidationId:44};return {error:null};}
     if(name==="assisted_accept_stage"){acceptStarted=true;assert.equal(session.draftValidationId,44);productWrites++;const stage={id:22,sessionId,planId,ordinal:2,snapshotJson:session.draftSnapshotJson,snapshotFingerprint:session.draftFingerprint};stages.push(stage);session={...session,activeStageId:22,draftBaseStageId:22,draftScopeJson:{},draftValidationId:null};return {error:null};}
     if(name==="assisted_move_stage"){const target=p.p_redo?stages.find(stage=>stage.id===22):stages.find(stage=>stage.id===p.p_target);assert.ok(target);productWrites++;session={...session,activeStageId:target.id,draftBaseStageId:target.id,draftSnapshotJson:target.snapshotJson,draftFingerprint:target.snapshotFingerprint,draftScopeJson:{},draftValidationId:null};return {error:null};}
     return {error:{message:`unexpected RPC ${name}`}};

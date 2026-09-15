@@ -8,8 +8,9 @@ import { engineTimeToMinute } from "./assistedTime";
 import { validateManualAssistedDelta } from "./assistedProposalService";
 import { applyPlanningBlockOperation, type PlanningBlockOperation } from "./assistedPlanningBlocks";
 import { assertPlanningBlockTemporalOrder } from "../shared/assistedPlanningTaskOrdering";
+import { normalizePlannerValidation, type StageValidationReport } from "../shared/assistedStageValidation";
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
+export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
 }
@@ -21,6 +22,7 @@ const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
   ASSISTED_DELTA_VALIDATION_UNSUPPORTED: 422, NO_UNDO_AVAILABLE: 409,
   INVALID_BLOCK_OPERATION: 422,
   PLANNING_BLOCK_ORDER_CONFLICT: 422,
+  HARD_CONFIRMATION_REQUIRED: 422, REQUIRED_CONFIRMATION_REQUIRED: 422,
 };
 function dbError(error: any): never {
   const code = (Object.keys(statuses) as AssistedPlanningErrorCode[]).find((candidate) => String(error?.message ?? "").includes(candidate));
@@ -69,13 +71,15 @@ export class AssistedPlanningService {
   async state(planId: number) {
     const session = await this.storage.getActiveAssistedPlanningSession(planId);
     if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
-    const [activeStage, stages, validation] = await Promise.all([
+    const [activeStage, stages, validation, acceptedExceptions] = await Promise.all([
       session.activeStageId ? this.storage.getAssistedPlanningStage(session.activeStageId) : null,
       this.storage.listAssistedPlanningStages(session.id),
       session.draftValidationId ? this.storage.getPlanningStageValidation(session.draftValidationId) : null,
+      session.activeStageId ? this.storage.listPlanningAcceptedExceptions(session.activeStageId) : [],
     ]);
     return { session, activeStage, draft: session.draftSnapshotJson, draftBaseStageId: session.draftBaseStageId,
-      draftFingerprint: session.draftFingerprint, currentConfigRevisionId: session.currentConfigRevisionId, validation, history: stages };
+      draftFingerprint: session.draftFingerprint, currentConfigRevisionId: session.currentConfigRevisionId, validation,
+      acceptedExceptions: (acceptedExceptions ?? []).filter(item=>item.status==="ACTIVE"), history: stages };
   }
 
   async patchDraft(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number, changes: DraftChange[]) {
@@ -150,8 +154,9 @@ export class AssistedPlanningService {
     if (error) dbError(error);
     return this.state(planId);
   }
-  async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number) {
-    const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
+  async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number,
+    confirmation: "NONE"|"REQUIRED_DEVIATIONS"|"HARD_EXCEPTIONS" = "NONE") {
+    const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_confirmation: confirmation });
     if (error) dbError(error); return this.state(planId);
   }
   async validateDraft(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number) {
@@ -190,13 +195,16 @@ export class AssistedPlanningService {
     if (touched.length === 0) throw new AssistedPlanningError("VALIDATION_REQUIRED", 422);
     const evidence=(this.dependencies.validateManual??validateManualAssistedDelta)(input,draft,touched);
     if(!evidence)throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
-    if(!evidence.completeForScope||!evidence.protectedPlacementsPreserved||!evidence.hardValid||!evidence.requiredValid)
-      throw new AssistedPlanningError("VALIDATION_NOT_ACCEPTABLE",422);
-    const report={mode:"MANUAL_DELTA_CLEAN_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
-      protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:evidence.hardValid,requiredValid:evidence.requiredValid,
+    const placementDimensions=Object.fromEntries(draft.tasks.map(task=>[task.taskId,{startPlanned:task.startPlanned,endPlanned:task.endPlanned,spaceId:task.spaceId}]));
+    const normalized=normalizePlannerValidation({reasonCodes:evidence.validationSummary.reasonCodes,affectedTaskIds:touched,placementDimensions});
+    const accepted=(await this.storage.listPlanningAcceptedExceptions(expectedBaseStageId)).filter(item=>item.status==="ACTIVE");
+    const violations=normalized.map(violation=>{const inherited=accepted.find(item=>item.violationKey===violation.violationKey);return inherited?{...violation,inheritedAcceptedExceptionId:inherited.id}:violation;});
+    const hardCount=violations.filter(item=>item.severity==="HARD").length,requiredCount=violations.filter(item=>item.severity==="REQUIRED").length;
+    const report:StageValidationReport={contractVersion:1,mode:"MANUAL_DELTA_CLEAN_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
+      protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:hardCount===0,hardCount,requiredCount,preferredCount:0,violations,
       preferredAssessment:"NOT_CLASSIFIED",supportingTaskIds:evidence.supportingTaskIds,supportingReasonByTaskId:evidence.supportingReasonByTaskId,
       reasonCodes:evidence.reasonCodes,work:evidence.work,fingerprint:evidence.fingerprint,futureFullDayFeasibility:"NOT_CERTIFIED"};
-    const { error } = await this.rpc("assisted_record_manual_clean_validation", { p_plan_id: planId,
+    const { error } = await this.rpc("assisted_record_stage_validation", { p_plan_id: planId,
       p_expected_fingerprint: expectedDraftFingerprint,p_expected_base:expectedBaseStageId,
       p_expected_config:session.currentConfigRevisionId,p_report:report });
     if (error) dbError(error);
