@@ -6,6 +6,7 @@ import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanningTimeline } from "@/components/planning-timeline";
 import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planning-panel";
+import { AssistedPlanningWorkspace } from "@/components/planning/assisted-planning-workspace";
 import { PlanningWarningsPanel } from "@/components/planning-warnings-panel";
 import { PlanEngineDiagnostics } from "@/components/plan-engine-diagnostics";
 import {
@@ -1443,6 +1444,7 @@ export default function PlanDetailsPage() {
   const [newCoachPriId, setNewCoachPriId] = useState<string>("none");
 
   const [showAdminTasks, setShowAdminTasks] = useState(false);
+  const [planningMode, setPlanningMode] = useState<"assisted" | "legacy">("assisted");
   const [timelineView, setTimelineView] = useState<"contestants" | "spaces" | "resources">(
     "contestants",
   );
@@ -4257,6 +4259,18 @@ ${reasonMessage}` : message,
 
           <TabsContent value="planning" className="mt-0">
             <div className="space-y-4">
+              <Card className="p-3"><div className="flex items-center justify-between gap-3"><div><div className="font-medium">Planificación asistida</div><div className="text-xs text-muted-foreground">El Draft es el workspace principal; Legacy permanece disponible.</div></div><div className="flex gap-2"><Button size="sm" variant={planningMode === "assisted" ? "default" : "outline"} onClick={() => setPlanningMode("assisted")}>Asistida</Button><Button size="sm" variant={planningMode === "legacy" ? "default" : "outline"} onClick={() => setPlanningMode("legacy")}>Legacy</Button></div></div></Card>
+              {planningMode === "assisted" ? <AssistedPlanningWorkspace
+                planId={id}
+                plan={plan as any}
+                spaces={spaces as any[]}
+                timelineProps={{ contestants, viewMode: timelineView, spaceVerticalMode, stageFilterIds,
+                  resourceFilterIds, resourceSelectables: resourceFilterOptions, zones, spaces,
+                  zoneResourceAssignments: zoneAssignmentsForTooltip, planResourceItemNameById,
+                  zoneStaffModes: planZoneStaffModes, itinerantTeams, staffAssignments: planStaffAssignments,
+                  uiItinerantGroupOrderIndex: (programSettings as any)?.uiItinerantGroupOrderIndex ?? (programSettings as any)?.ui_itinerant_group_order_index ?? null,
+                  uiUnlocatedGroupOrderIndex: (programSettings as any)?.uiUnlocatedGroupOrderIndex ?? (programSettings as any)?.ui_unlocated_group_order_index ?? null }}
+              /> : <>
               <Card className="p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -4882,6 +4896,7 @@ ${reasonMessage}` : message,
                 />
               </div>
               </FullscreenPlanningPanel>
+              </>}
             </div>
           </TabsContent>
 

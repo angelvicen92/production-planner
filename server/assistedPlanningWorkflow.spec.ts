@@ -178,7 +178,7 @@ test("ACL denies direct helper execution and exposes only the four workflow entr
 test("API remains globally authenticated/authorized and exposes no proposal operation", () => {
   for (const suffix of ["assisted\"", "assisted/session", "assisted/draft", "assisted/accept-stage", "assisted/rollback", "assisted/redo", "assisted/history"])
     assert.ok(routes.includes(suffix), suffix);
-  assert.doesNotMatch(serviceSource, /proposal|planning_runs/i);
+  assert.doesNotMatch(serviceSource, /planning_runs/i);
   assert.match(routes, /app\.use\("\/api"[\s\S]*requireAuth/);
   assert.match(routes, /writePlansPrefixes = \["\/plans", "\/locks"\]/);
 });

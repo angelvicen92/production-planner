@@ -10,12 +10,12 @@ export class ScopeResolutionError extends Error {
 /** Resolves product IDs only through the immutable EngineInput/identity-map authorities. */
 export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAdapterSupportedResult, selector: AssistedScopeSelector) {
   if (input.planId <= 0) throw new ScopeResolutionError("INVALID_SCOPE");
-  const active = new Map(input.tasks.filter(task => task.status !== "cancelled")
+  const eligible = new Map(input.tasks.filter(task => task.status === "pending" || task.status === "interrupted")
     .map(task => [task.id, task] as const));
   const productIds = selector.kind === "TASK_IDS"
     ? [...new Set(selector.taskIds)].sort((a, b) => a - b)
-    : [...active.values()].filter(task => task.spaceId === selector.spaceId).map(task => task.id).sort((a, b) => a - b);
-  if (selector.kind === "TASK_IDS" && (productIds.length !== selector.taskIds.length || productIds.some(id => !active.has(id))))
+    : [...eligible.values()].filter(task => task.spaceId === selector.spaceId).map(task => task.id).sort((a, b) => a - b);
+  if (selector.kind === "TASK_IDS" && (productIds.length !== selector.taskIds.length || productIds.some(id => !eligible.has(id))))
     throw new ScopeResolutionError("INVALID_SCOPE");
   if (selector.kind === "SPACE" && !adapter.identityMap.some(i => i.namespace === "space" && i.sourceId === String(selector.spaceId)))
     throw new ScopeResolutionError("INVALID_SCOPE");
@@ -30,12 +30,14 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
 }
 
 /** Uses buildAssistedProblem as the single prerequisite-closure authority. */
-export function expandVisiblePrerequisites(resolution: ReturnType<typeof resolveAssistedScope>, adapter: EngineInputAdapterSupportedResult) {
+export function expandVisiblePrerequisites(input: EngineInput, resolution: ReturnType<typeof resolveAssistedScope>, adapter: EngineInputAdapterSupportedResult) {
   const assisted = buildAssistedProblem(adapter.problem, resolution.scope, []);
   const sourceByCanonical = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [i.canonicalId, Number(i.sourceId)]));
-  const productTaskIds = [...new Set([...resolution.scope.resolvedTaskIds, ...assisted.supportingTaskIds].map(id => sourceByCanonical.get(id)))];
+  const eligible = new Set(input.tasks.filter(task => task.status === "pending" || task.status === "interrupted").map(task => task.id));
+  const visibleSupporting = assisted.supportingTaskIds.filter(id => eligible.has(sourceByCanonical.get(id)!));
+  const productTaskIds = [...new Set([...resolution.scope.resolvedTaskIds, ...visibleSupporting].map(id => sourceByCanonical.get(id)))];
   if (productTaskIds.some(id => !Number.isInteger(id) || id! <= 0)) throw new ScopeResolutionError("INVALID_SCOPE");
-  return resolveAssistedScopeFromCanonical(productTaskIds as number[], [...resolution.scope.resolvedTaskIds, ...assisted.supportingTaskIds], resolution.scope.selector, resolution.scope.metadata);
+  return resolveAssistedScopeFromCanonical(productTaskIds as number[], [...resolution.scope.resolvedTaskIds, ...visibleSupporting], resolution.scope.selector, resolution.scope.metadata);
 }
 function resolveAssistedScopeFromCanonical(productTaskIds: number[], canonicalIds: string[], selector: {kind:string;value:string}, metadata: Readonly<Record<string,string|number|boolean|null>>) {
   const sortedProducts = [...productTaskIds].sort((a,b)=>a-b);

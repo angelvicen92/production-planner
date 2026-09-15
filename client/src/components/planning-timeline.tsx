@@ -76,6 +76,8 @@ type ResourceSelectable = {
 };
 
 interface PlanningTimelineProps {
+  mode?: "accepted" | "assisted-draft";
+  taskVisualStates?: Record<number, "ACCEPTED" | "DRAFT_CHANGED" | "PROPOSAL_PREVIEW" | "SCOPE_SELECTED" | "UNPLANNED">;
   isHydratingPlanningResult?: boolean;
   planningRunId?: number | null;
   taskDatasetVersion?: string;
@@ -522,6 +524,8 @@ function TaskStatusMenuTrigger({
 }
 
   export function PlanningTimeline({
+    mode = "accepted",
+    taskVisualStates = {},
     plan,
     contestants,
     viewMode = "contestants",
@@ -608,6 +612,17 @@ function TaskStatusMenuTrigger({
   };
 
   const [manualMode, setManualMode] = useState(false);
+  const assistedDraftMode = mode === "assisted-draft";
+  useEffect(() => { if (assistedDraftMode) setManualMode(false); }, [assistedDraftMode]);
+  const assistedVisualClass = (task: Task) => {
+    if (!assistedDraftMode) return "";
+    const state = taskVisualStates[Number(task.id)];
+    if (state === "PROPOSAL_PREVIEW") return "ring-2 ring-violet-500 border-violet-500";
+    if (state === "DRAFT_CHANGED") return "ring-2 ring-amber-500 border-amber-500";
+    if (state === "SCOPE_SELECTED") return "ring-2 ring-blue-400 border-blue-400";
+    if (state === "UNPLANNED") return "opacity-60 border-dashed";
+    return state === "ACCEPTED" ? "border-emerald-500/60" : "";
+  };
   const [taskSortArmed, setTaskSortArmed] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
@@ -2105,7 +2120,7 @@ function TaskStatusMenuTrigger({
                                                   canOpenMenuFromCard={manualDrag === null}
                                                   onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8", durationMinutes: Math.max(5, timeToMinutes(task.endPlanned ?? "00:30") - timeToMinutes(task.startPlanned ?? "00:00") || 30) })}
                                                   onClick={(event) => handleTaskCardClick(event, task)}
-                                                  className={cn("absolute border cursor-pointer z-10", spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1", task.isManualBlock ? "border-dashed border-sky-500/80" : "", manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "", task.status === "done" ? "opacity-80" : "", isApplying ? "pointer-events-none opacity-85" : "")}
+                                                  className={cn("absolute border cursor-pointer z-10", spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1", task.isManualBlock ? "border-dashed border-sky-500/80" : "", assistedVisualClass(task), manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "", task.status === "done" ? "opacity-80" : "", isApplying ? "pointer-events-none opacity-85" : "")}
                                                   style={{ top, height, backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
                                                 >
                                                   <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>{taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}</div>
@@ -2468,7 +2483,7 @@ function TaskStatusMenuTrigger({
                                               canOpenMenuFromCard={manualDrag === null}
                                               onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8", durationMinutes: Math.max(5, timeToMinutes(task.endPlanned ?? "00:30") - timeToMinutes(task.startPlanned ?? "00:00") || 30) })}
                                               onClick={(event) => handleTaskCardClick(event, task)}
-                                              className={cn("rounded-lg border shadow-sm px-3 py-2 cursor-pointer", task.isManualBlock ? "border-dashed border-sky-500/80" : "", manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "")}
+                                              className={cn("rounded-lg border shadow-sm px-3 py-2 cursor-pointer", task.isManualBlock ? "border-dashed border-sky-500/80" : "", assistedVisualClass(task), manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "")}
                                               style={{ backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
                                             >
                                               <div className="text-sm font-bold truncate">{taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}</div>
@@ -2746,7 +2761,7 @@ function TaskStatusMenuTrigger({
                 </div>
               </div>
 
-              <div className="mb-3 flex flex-wrap items-center gap-3">
+              {!assistedDraftMode ? <div className="mb-3 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={manualMode}
@@ -2817,7 +2832,7 @@ function TaskStatusMenuTrigger({
                     ) : null}
                   </div>
                 ) : null}
-              </div>
+              </div> : <div className="mb-3 text-xs text-muted-foreground">Draft de solo lectura. La edición legacy, locks, bloques y generación están deshabilitados.</div>}
 
               {manualExitDialogOpen ? (
                 <Card className="mb-3 p-3 border-amber-400/40 bg-amber-50/40">
