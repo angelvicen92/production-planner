@@ -64,7 +64,7 @@ export async function runA2Assist2Evidence(){
   const afterEdits=session.draftFingerprint;await service.undoDraft(planId,afterEdits,baseStageId);counters.undoCount++;
   const afterUndo=session.draftFingerprint;await service.redoDraft(planId,afterUndo,baseStageId);counters.redoCount++;assert.equal(session.draftFingerprint,afterEdits);
   const validatedFingerprint=session.draftFingerprint;const result=await service.validateDraft(planId,validatedFingerprint,baseStageId);
-  assert.equal(result.mode,"MANUAL_DELTA_CLEAN_V1");assert.equal(validation.draftFingerprint,validatedFingerprint);assert.equal(productWrites,0);
+  assert.equal(result.mode,"MANUAL_STAGE_VALIDATION_V1");assert.equal(validation.draftFingerprint,validatedFingerprint);assert.equal(productWrites,0);
   await service.accept(planId,"user-1",validatedFingerprint,baseStageId);assert.equal(acceptStarted,true);const productWritesAtAccept=productWrites;
   const acceptedSnapshot=structuredClone(stages.at(-1).snapshotJson);await service.rollback(planId,baseStageId);
   const rollbackExact=session.draftFingerprint===stages.find(stage=>stage.id===baseStageId).snapshotFingerprint&&!session.draftSnapshotJson.planningBlocks;

@@ -267,6 +267,8 @@ export interface ValidationSummary {
   reasonCodes: string[];
   /** Canonical material conflicts emitted by the same authority as the legacy counters. */
   violations?: ValidationViolationDetail[];
+  /** Legacy failures for which no lossless material identity is available. */
+  unstructuredReasonCodes?: string[];
 }
 
 export interface ValidationViolationDetail {

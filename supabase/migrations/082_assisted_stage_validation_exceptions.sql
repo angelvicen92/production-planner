@@ -50,6 +50,7 @@ CREATE FUNCTION public.assisted_accept_stage(p_plan_id integer,p_user_id uuid,p_
 RETURNS bigint LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE s public.assisted_planning_sessions%rowtype; v public.planning_stage_validations%rowtype; new_id bigint; next_ordinal integer; item jsonb; task_item jsonb;
 BEGIN
+ IF p_confirmation NOT IN ('NONE','REQUIRED_DEVIATIONS','HARD_EXCEPTIONS') THEN RAISE EXCEPTION 'INVALID_CONFIRMATION'; END IF;
  SELECT * INTO s FROM public.assisted_planning_sessions WHERE plan_id=p_plan_id AND status='ACTIVE' FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'SESSION_NOT_FOUND'; END IF;
  IF s.draft_base_stage_id IS DISTINCT FROM p_expected_base THEN RAISE EXCEPTION 'STALE_BASE_STAGE'; END IF;

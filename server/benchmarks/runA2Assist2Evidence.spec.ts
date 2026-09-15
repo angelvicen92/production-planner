@@ -13,7 +13,7 @@ test("A2-ASSIST-2 executes editing, validation and Accept S2 through workflow se
   assert.ok(evidence.blockShiftCount>=1&&evidence.swapCount>=1&&evidence.splitCount>=1&&evidence.mergeCount>=1);
   assert.equal(evidence.blocksSurviveAccept,true);
   assert.equal(evidence.rollbackExact,true);assert.equal(evidence.rollbackRedoExact,true);assert.equal(evidence.blocksSurviveRollbackRedo,true);
-  assert.equal(evidence.undoCount,1);assert.equal(evidence.redoCount,1);assert.equal(evidence.validationMode,"MANUAL_DELTA_CLEAN_V1");assert.equal(evidence.acceptedStageOrdinal,2);
+  assert.equal(evidence.undoCount,1);assert.equal(evidence.redoCount,1);assert.equal(evidence.validationMode,"MANUAL_STAGE_VALIDATION_V1");assert.equal(evidence.acceptedStageOrdinal,2);
   assert.equal(evidence.futureFullDayFeasibility,"NOT_CERTIFIED");
   const replay=await runA2Assist2Evidence();assert.equal(replay.validatedFingerprint,evidence.validatedFingerprint);
 });

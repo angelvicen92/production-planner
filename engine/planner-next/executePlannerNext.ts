@@ -36,7 +36,7 @@ export type PlannerNextExecution =
       result: ExactItinerantPlanResult;
     };
 
-export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean}={}): PlannerNextExecution {
+export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[]}={}): PlannerNextExecution {
   const policyResolution = resolvePlannerSearchPolicy(problem);
 
   if (!policyResolution.compatible) {
@@ -54,6 +54,6 @@ export function executePlannerNext(problem: PlannerNextProblem, options:{causalD
   return {
     kind: "EXACT_CONSTRUCTIVE",
     policyResolution,
-    result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic)),
+      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements)),
   };
 }

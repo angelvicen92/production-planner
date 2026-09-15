@@ -13,9 +13,15 @@ test("validation and accept are server-only and validation freshness is checked 
   assert.match(sql,/FROM PUBLIC,anon,authenticated,service_role/); assert.match(sql,/GRANT EXECUTE[\s\S]+TO service_role/);
 });
 test("accept requires typed confirmation and creates HARD exceptions in its transaction",()=>{
-  assert.match(sql,/HARD_CONFIRMATION_REQUIRED/); assert.match(sql,/REQUIRED_CONFIRMATION_REQUIRED/);
+  assert.match(sql,/INVALID_CONFIRMATION/); assert.match(sql,/HARD_CONFIRMATION_REQUIRED/); assert.match(sql,/REQUIRED_CONFIRMATION_REQUIRED/);
   assert.match(sql,/INSERT INTO public\.planning_accepted_exceptions/); assert.match(sql,/UPDATE public\.daily_tasks/);
   const validate=sql.slice(sql.indexOf("assisted_record_stage_validation"),sql.indexOf("DROP FUNCTION public.assisted_accept_stage"));
   assert.doesNotMatch(validate,/UPDATE public\.planning_accepted_exceptions/);
   assert.match(sql,/WITH RECURSIVE lineage/);assert.match(sql,/status='SUPERSEDED'/);
+});
+test("Drizzle mirrors migration 082 critical nullability and HARD-only severity",()=>{
+  const schema=fs.readFileSync("shared/schema.ts","utf8");
+  const table=schema.slice(schema.indexOf('export const planningAcceptedExceptions'),schema.indexOf('// 8. locks'));
+  assert.match(table,/config_revision_id[^\n]+\.notNull\(\)/);assert.match(table,/snapshot_fingerprint[^\n]+\.notNull\(\)/);
+  assert.match(table,/severity[^\n]+ = 'HARD'/);assert.doesNotMatch(table,/HARD', 'REQUIRED/);
 });
