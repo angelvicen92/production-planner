@@ -1,6 +1,6 @@
 # OptiPlan — Protocolo permanente de eficiencia de Codex
 
-Versión 1.3 · 15 de septiembre de 2026  
+Versión 1.4 · 15 de septiembre de 2026  
 Estado: documento de gobierno operativo
 
 ## Propósito
@@ -37,6 +37,7 @@ Contendrá invariantes, límites, navegación, validación y entrega; no PRD/SPE
 Formato preferido:
 
 ```text
+RAMA A SELECCIONAR EN CODEX: ...
 Repo/PR: ...
 Objetivo: ...
 Evidencia: ...
@@ -55,9 +56,28 @@ Reglas:
 - referenciar archivos/símbolos/fuentes;
 - no pegar contexto permanente;
 - log causal mínimo;
-- permitir lectura adicional ante dependencias locales reales.
+- permitir lectura adicional ante dependencias locales reales;
+- todo prompt que el usuario deba lanzar manualmente en Codex debe indicar de forma visible y fuera de ambigüedad la **rama remota que debe seleccionar en el desplegable de Codex antes de ejecutar**.
 
-### 3.1 Precondiciones de checkout
+### 3.1 Rama a seleccionar en la interfaz de Codex
+
+Esta instrucción es obligatoria cuando ChatGPT entrega al usuario un prompt para Codex.
+
+ChatGPT debe mostrar, antes del bloque del prompt y también dentro del propio prompt cuando sea útil:
+
+> **RAMA A SELECCIONAR EN CODEX: `<rama>`**
+
+Reglas de elección:
+
+1. **Trabajo nuevo desde `main`**: ChatGPT verifica `main`, crea primero una rama remota de trabajo desde el SHA autorizado y esa rama es la que el usuario selecciona en Codex.
+2. **Continuación de un PR existente en un nuevo hilo/tarea**: seleccionar normalmente el **head remoto actual del PR**, no la rama base del PR.
+3. **PR apilado/corrección sobre otro PR**: seleccionar el head remoto del trabajo exacto que contiene el estado que se quiere corregir.
+4. Si la plataforma Codex crea después una rama local `work` o una nueva rama `codex/...`, eso no invalida el checkout inicial; la selección de UI y el nombre local posterior son conceptos distintos.
+5. ChatGPT no debe obligar al usuario a deducir la rama a partir de `base`, `head`, SHA o texto del PR. Debe indicarla expresamente.
+
+Cuando un mismo mensaje contiene base GitHub, head de PR y rama de ejecución, la etiqueta **RAMA A SELECCIONAR EN CODEX** prevalece como instrucción de interfaz para el usuario.
+
+### 3.2 Precondiciones de checkout
 
 Los prompts deben ser estrictos con la **identidad real del trabajo**, no con detalles cosméticos del checkout local.
 
@@ -147,7 +167,9 @@ Sobre head candidato:
 - varios agentes por defecto;
 - modelo caro para tarea trivial;
 - usar Codex para una comprobación de entorno que un comando corto de Replit resolvería mejor;
-- bloquear una iteración por nombre de rama local, ausencia de `origin` o SHA local distinto cuando el contenido/base correctos ya están demostrados.
+- bloquear una iteración por nombre de rama local, ausencia de `origin` o SHA local distinto cuando el contenido/base correctos ya están demostrados;
+- entregar un prompt de Codex sin indicar explícitamente qué rama debe seleccionar el usuario en la interfaz;
+- confundir la base de un PR con la rama que debe seleccionarse para continuar el head actual de ese PR.
 
 ## 9. Entrega mínima
 
