@@ -40,6 +40,7 @@ export interface AssistedPlanningEvidence {
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
+  readonly unstructuredReasonCodes?: readonly string[];
 }
 
 export interface AssistedPlanningResult {
@@ -47,8 +48,12 @@ export interface AssistedPlanningResult {
   readonly evidence: AssistedPlanningEvidence;
 }
 export interface AssistedAcceptedBaseline {
-  readonly protectedTaskIds: readonly string[];
+  readonly violations: readonly import("./contracts").ValidationViolationDetail[];
 }
+
+const violationIdentity=(detail:import("./contracts").ValidationViolationDetail)=>JSON.stringify({ruleCode:detail.ruleCode,
+  taskIds:canonicalIds(detail.affectedTaskIds),resourceIds:canonicalIds(detail.affectedResourceIds),spaceIds:canonicalIds(detail.affectedSpaceIds),
+  dimensions:Object.fromEntries(Object.entries(detail.dimensions).sort(([a],[b])=>a.localeCompare(b)))});
 
 const canonicalIds = (ids: readonly string[]): string[] => [...ids].sort((a, b) => a.localeCompare(b));
 
@@ -191,14 +196,22 @@ export function buildAssistedProblem(
 
 export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
   let searchProblem=input.problem;
-  // Accepted baseline is an Assisted-only search projection, applied before the
-  // solver decides proposal eligibility. The full combined validator below still
-  // sees every row and rejects any non-exact/new conflict.
-  if(acceptedBaseline?.protectedTaskIds.length){
-    const ignored=new Set(acceptedBaseline.protectedTaskIds);
-    searchProblem={...structuredClone(input.problem),tasks:input.problem.tasks.filter(task=>!ignored.has(task.id))};
+  const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
+  const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>
+    (summary.unstructuredReasonCodes?.length??0)===0 && (summary.violations??[]).every(item=>acceptedKeys.has(violationIdentity(item)));
+  if(acceptedBaseline?.violations.length){
+    const acceptedIds=new Set(acceptedBaseline.violations.flatMap(item=>item.affectedTaskIds));
+    const fixed=input.protectedPlacements.filter(item=>acceptedIds.has(item.id));
+    const subtract=(windows:readonly {start:number;end:number}[],blocks:readonly {start:number;end:number}[])=>windows.flatMap(window=>blocks.reduce((parts,block)=>parts.flatMap(part=>
+      block.end<=part.start||block.start>=part.end?[part]:[{start:part.start,end:Math.max(part.start,block.start)},{start:Math.min(part.end,block.end),end:part.end}].filter(x=>x.start<x.end)),[window]));
+    const blocksFor=(predicate:(task:ScheduledTask)=>boolean)=>fixed.filter(predicate).map(({start,end})=>({start,end}));
+    searchProblem={...structuredClone(input.problem),tasks:input.problem.tasks.filter(task=>!acceptedIds.has(task.id)),
+      participants:input.problem.participants.map(item=>({...item,availability:subtract(item.availability,blocksFor(task=>task.participantId===item.id))})),
+      coaches:input.problem.coaches.map(item=>({...item,availability:subtract(item.availability,blocksFor(task=>task.coachId===item.id))})),
+      spaces:input.problem.spaces.map(item=>({...item,availability:subtract(item.availability,blocksFor(task=>task.spaceId===item.id))})),
+      resources:input.problem.resources.map(item=>({...item,availability:subtract(item.availability,blocksFor(task=>(task.requiredResourceIds??[]).includes(item.id)))}))};
   }
-  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true });
+  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -264,5 +277,6 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     reasonCodes: [...new Set(reasonCodes)].sort(),
     violations: validation?.violations??[],
+    unstructuredReasonCodes: validation?.unstructuredReasonCodes??[],
   } };
 }

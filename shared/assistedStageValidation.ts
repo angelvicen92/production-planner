@@ -13,7 +13,7 @@ export interface StageViolation {
 
 export interface StageValidationReport {
   contractVersion: 1;
-  mode: "PROPOSAL_CERTIFIED_CLEAN_V1" | "MANUAL_DELTA_CLEAN_V1";
+  mode: "PROPOSAL_CERTIFIED_CLEAN_V1" | "MANUAL_DELTA_CLEAN_V1" | "MANUAL_STAGE_VALIDATION_V1";
   hardValid: boolean;
   hardCount: number;
   requiredCount: number;

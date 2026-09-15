@@ -5,7 +5,7 @@ type StageLike={id:number;parentStageId:number|null;archivedAt?:string|Date|null
 
 export function resolveActiveStageLineage(stages:readonly StageLike[],stageId:number):StageLike[]{
   const byId=new Map(stages.map(stage=>[stage.id,stage])),lineage:StageLike[]=[];let cursor=byId.get(stageId);const seen=new Set<number>();
-  while(cursor){if(seen.has(cursor.id))throw new Error("CORRUPT_STAGE_LINEAGE");seen.add(cursor.id);lineage.push(cursor);cursor=cursor.parentStageId==null?undefined:byId.get(cursor.parentStageId);}
+  while(cursor){if(seen.has(cursor.id))throw new Error("CORRUPT_STAGE_LINEAGE");seen.add(cursor.id);lineage.push(cursor);if(cursor.parentStageId==null)break;cursor=byId.get(cursor.parentStageId);if(!cursor)throw new Error("CORRUPT_STAGE_LINEAGE");}
   if(lineage[0]?.id!==stageId)throw new Error("STALE_BASE_STAGE");return lineage;
 }
 

@@ -199,6 +199,8 @@ export class AssistedPlanningService {
     if(!evidence)throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
     const normalized=(evidence as any).structuredViolations as import("../shared/assistedStageValidation").StageViolation[];
     if(!Array.isArray(normalized))throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
+    if(((evidence as any).validationSummary?.unstructuredReasonCodes?.length??0)>0)
+      throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
     const lineage=resolveActiveStageLineage(await this.storage.listAssistedPlanningStages(session.id) as any,expectedBaseStageId);
     const accepted=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)??[]).filter(item=>item.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,draft,item.affectedTaskIdsJson))))).flat();
     const requiredBaseline=acceptedRequiredViolations(lineage,draft);
@@ -206,7 +208,7 @@ export class AssistedPlanningService {
     const hardCount=violations.filter(item=>item.severity==="HARD").length,requiredCount=violations.filter(item=>item.severity==="REQUIRED").length;
     const newHardCount=violations.filter(item=>item.severity==="HARD"&&item.inheritedAcceptedExceptionId==null).length;
     const newRequiredCount=violations.filter(item=>item.severity==="REQUIRED"&&!(item.details as any).inheritedAcceptedRequired).length;
-    const report:StageValidationReport={contractVersion:1,mode:"MANUAL_DELTA_CLEAN_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
+    const report:StageValidationReport={contractVersion:1,mode:"MANUAL_STAGE_VALIDATION_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
       protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:hardCount===0,hardCount,requiredCount,newHardCount,newRequiredCount,preferredCount:0,violations,
       preferredAssessment:"NOT_CLASSIFIED",supportingTaskIds:evidence.supportingTaskIds,supportingReasonByTaskId:evidence.supportingReasonByTaskId,
       reasonCodes:evidence.reasonCodes,work:evidence.work,fingerprint:evidence.fingerprint,futureFullDayFeasibility:"NOT_CERTIFIED"};
@@ -215,7 +217,7 @@ export class AssistedPlanningService {
       p_expected_config:session.currentConfigRevisionId,p_report:report });
     if (error) dbError(error);
     const state = await this.state(planId);
-    return { current: true, mode: "MANUAL_DELTA_CLEAN_V1", validation: state.validation };
+    return { current: true, mode: "MANUAL_STAGE_VALIDATION_V1", validation: state.validation };
   }
   async rollback(planId: number, targetStageId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: targetStageId, p_redo: false }); if (error) dbError(error); return this.state(planId); }
   async redo(planId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: null, p_redo: true }); if (error) dbError(error); return this.state(planId); }

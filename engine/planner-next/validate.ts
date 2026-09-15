@@ -709,16 +709,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   }
   const scheduledIds=new Set(scheduled.map(task=>task.id));
   for(const task of problem.tasks.filter(task=>!scheduledIds.has(task.id)))addViolation("UNPLANNED_TASKS","HARD",[task as ScheduledTask],task.requiredResourceIds??[],[task.spaceId],{taskId:task.id});
-  // Preserve coverage for legacy aggregate validators while their exact entity set
-  // remains the policy-defined subset, never the caller's edited/touched set.
-  for(const encoded of reasonCodes){const ruleCode=encoded.split(":",1)[0]!;if(violations.some(item=>item.ruleCode===ruleCode))continue;
-    const policyTasks=ruleCode.includes("SETUP")?scheduled.filter(task=>task.setupFamilyId!==undefined)
-      :ruleCode.includes("JOINT")?scheduled.filter(task=>task.jointGroupId!==undefined)
-      :ruleCode.includes("TECHNICAL")?scheduled.filter(task=>task.kind==="technical")
-      :ruleCode.includes("MEAL")?scheduled.filter(task=>task.participantId!==undefined)
-      :scheduled;
-    addViolation(ruleCode,"HARD",policyTasks,policyTasks.flatMap(task=>task.requiredResourceIds??[]),policyTasks.map(task=>task.spaceId),{engineReasonCode:encoded});
-  }
+  // Never manufacture an accept/grandfather identity from an aggregate counter.
+  // Until each remaining family exposes its exact entities it is explicitly
+  // unsupported at the Assisted acceptance boundary.
+  const structuredRules=new Set(violations.map(item=>item.ruleCode));
+  const unstructuredReasonCodes=reasonCodes.filter(encoded=>!structuredRules.has(encoded.split(":",1)[0]!));
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -749,6 +744,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     ...(problem.operationalMealPolicies?.length || operationalMeals.length ? { operationalMealViolationCount: operationalMeal } : {}),
     itinerantUnitMealViolationCount: itinerantUnitMeal,
     reasonCodes: reasonCodes.sort(),
+    unstructuredReasonCodes: [...new Set(unstructuredReasonCodes)].sort(),
     violations: violations.sort((a,b)=>a.ruleCode.localeCompare(b.ruleCode)||a.affectedTaskIds.join("\0").localeCompare(b.affectedTaskIds.join("\0"))),
   };
 }

@@ -12,7 +12,7 @@ import type {
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
 process.env.SUPABASE_ANON_KEY ??= "test-anon-key";
-const { AssistedProposalError, AssistedProposalService } = await import("./assistedProposalService");
+const { AssistedProposalError, AssistedProposalService, projectPlannerViolations } = await import("./assistedProposalService");
 
 const planId = 701;
 const request = { selector: { kind: "TASK_IDS" as const, taskIds: [101] }, includePrerequisites: false,
@@ -187,4 +187,12 @@ test("apply performs one RPC, sends only optimistic guards, and propagates stale
 test("get rejects a run belonging to another plan or execution kind as RUN_NOT_FOUND", async () => {
   const service=new AssistedProposalService(storage({},[]),queueMicrotask,access({find:async()=>({data:null,error:null})}));
   await assert.rejects(service.get(702,9),(error:unknown)=>error instanceof AssistedProposalError&&error.code==="RUN_NOT_FOUND");
+});
+
+
+test("canonical violation projection is lossless and fails closed for every missing identity namespace",()=>{
+  const detail={ruleCode:"X",severity:"HARD" as const,affectedTaskIds:["t"],affectedResourceIds:["r"],affectedSpaceIds:["s"],dimensions:{edge:1}};
+  const identities=[{namespace:"task",sourceId:"1",canonicalId:"t"},{namespace:"resource",sourceId:"2",canonicalId:"r"},{namespace:"space",sourceId:"3",canonicalId:"s"}];
+  assert.deepEqual(projectPlannerViolations([detail],identities)[0]?.affectedTaskIds,[1]);
+  for(const namespace of ["task","resource","space"])assert.throws(()=>projectPlannerViolations([detail],identities.filter(item=>item.namespace!==namespace)),/UNPROJECTABLE_VALIDATION_IDENTITY/);
 });
