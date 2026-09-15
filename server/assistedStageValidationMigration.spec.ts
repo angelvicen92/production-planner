@@ -3,6 +3,7 @@ import test from "node:test";
 import fs from "node:fs";
 
 const sql=fs.readFileSync("supabase/migrations/082_assisted_stage_validation_exceptions.sql","utf8");
+const editingSql=fs.readFileSync("supabase/migrations/081_assisted_draft_editing.sql","utf8");
 test("082 persists exact exception identity and prevents duplicates",()=>{
   for(const token of ["config_revision_id","snapshot_fingerprint","affected_resource_ids_json","affected_space_ids_json","stage_violation_key","severity='HARD'"])assert.match(sql,new RegExp(token));
 });
@@ -18,6 +19,16 @@ test("accept requires typed confirmation and creates HARD exceptions in its tran
   const validate=sql.slice(sql.indexOf("assisted_record_stage_validation"),sql.indexOf("DROP FUNCTION public.assisted_accept_stage"));
   assert.doesNotMatch(validate,/UPDATE public\.planning_accepted_exceptions/);
   assert.match(sql,/WITH RECURSIVE lineage/);assert.match(sql,/status='SUPERSEDED'/);
+});
+test("082 preserves exact, edited-proposal and manual-only stage provenance",()=>{
+  const accept=sql.slice(sql.indexOf("CREATE FUNCTION public.assisted_accept_stage"),sql.indexOf("REVOKE ALL ON FUNCTION public.assisted_record_stage_validation"));
+  assert.match(accept,/s\.draft_scope_json,\s*coalesce\(s\.draft_scope_json->'resolvedTaskIds',s\.draft_scope_json->'originalScope'->'resolvedTaskIds'/);
+  assert.match(accept,/coalesce\(\(s\.draft_scope_json->>'includePrerequisites'\)::boolean,\(s\.draft_scope_json->'originalScope'->>'includePrerequisites'\)::boolean,false\)/);
+  assert.match(accept,/CASE WHEN s\.draft_scope_json->>'editKind' IS DISTINCT FROM 'MANUAL' THEN \(s\.draft_scope_json->>'proposalRunId'\)::bigint ELSE NULL END/);
+  assert.doesNotMatch(accept,/s\.draft_base_stage_id,'\{\}','\[\]',false/);
+  // Manual-only drafts retain their existing scope JSON and cannot manufacture a run;
+  // edited proposals retain originalScope/originProposalRunId while exact proposals retain proposalRunId.
+  for(const field of ["originalScope","originProposalRunId","manualTouchedTaskIds","editLedger"]) assert.match(editingSql,new RegExp(field));
 });
 test("Drizzle mirrors migration 082 critical nullability and HARD-only severity",()=>{
   const schema=fs.readFileSync("shared/schema.ts","utf8");
