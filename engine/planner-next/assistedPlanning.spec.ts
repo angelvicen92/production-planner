@@ -107,3 +107,31 @@ test("protected-vs-protected inherited incompatibility remains an ASST-008 Accep
   assert.ok(result.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE")
     || result.evidence.reasonCodes.includes("ASSISTED_HARD_VALIDATION_FAILED"));
 });
+
+test("one shared closure keeps every hard-coupled structure intact and explains supporting members", () => {
+  const source = fixture();
+  source.tasks = [
+    { ...source.tasks[0], id: "dependency" },
+    { ...source.tasks[2], id: "seed", dependencies: ["dependency"], jointGroupId: "joint" },
+    { ...source.tasks[2], id: "joint-peer", jointGroupId: "joint" },
+    { ...source.tasks[2], id: "anchor" },
+    { ...source.tasks[2], id: "chain-peer" },
+    { ...source.tasks[2], id: "round-peer" },
+    { ...source.tasks[2], id: "unrelated" },
+  ];
+  source.anchoredAccompaniments = [{ id: "a", anchorTaskId: "joint-peer", beforeTaskIds: [], afterTaskIds: ["anchor"], adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED" }];
+  source.technicalChains = [{ id: "c", orderedTaskIds: ["anchor", "chain-peer"], adjacency: "REQUIRED", resourceContinuity: "REQUIRED", requiredResourceIds: [] }];
+  source.roundSynchronizations = [{ id: "r", synchronization: "START_TOGETHER_WHILE_ALL_LANES_ACTIVE", lanes: [
+    { spaceId: "other-space", taskIds: ["chain-peer"], preparationMinutesBetweenRounds: 0 },
+    { spaceId: "vocal-space", taskIds: ["round-peer"], preparationMinutesBetweenRounds: 0 },
+  ] }];
+  const result = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: "seed" }, {}, ["seed"]), []);
+  assert.deepEqual(result.problem.tasks.map(({ id }) => id).sort(), ["anchor", "chain-peer", "dependency", "joint-peer", "round-peer", "seed"].sort());
+  assert.equal(result.problem.tasks.some(({ id }) => id === "unrelated"), false);
+  assert.deepEqual(result.supportingTaskIds, ["anchor", "chain-peer", "dependency", "joint-peer", "round-peer"]);
+  assert.match(result.supportingReasonByTaskId.dependency.join(), /DEPENDENCY_OF:seed/);
+  assert.match(result.supportingReasonByTaskId["joint-peer"].join(), /JOINT_GROUP:joint/);
+  assert.match(result.supportingReasonByTaskId.anchor.join(), /ANCHORED_WITH:joint-peer/);
+  assert.match(result.supportingReasonByTaskId["chain-peer"].join(), /TECHNICAL_CHAIN:c/);
+  assert.match(result.supportingReasonByTaskId["round-peer"].join(), /ROUND_SYNCHRONIZATION:r/);
+});

@@ -5,7 +5,7 @@ import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngi
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "CONCURRENT_ACCEPT";
+export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "CONCURRENT_ACCEPT";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
 }
@@ -13,6 +13,7 @@ const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
   STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, RUN_RESULT_INVALID: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
   INVALID_STAGE_TARGET: 422, NO_REDO_AVAILABLE: 409, CONCURRENT_ACCEPT: 409,
+  IMMUTABLE_TASK: 422, ASSISTED_DELTA_VALIDATION_UNSUPPORTED: 422,
 };
 function dbError(error: any): never {
   const code = (Object.keys(statuses) as AssistedPlanningErrorCode[]).find((candidate) => String(error?.message ?? "").includes(candidate));
@@ -92,6 +93,11 @@ export class AssistedPlanningService {
     if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
     if (session.draftFingerprint !== expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT", 409);
     if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    if ((session.draftScopeJson as any)?.editKind === "MANUAL") {
+      // ASST-007 fails closed until every capability touched by the bounded
+      // delta can be represented losslessly by the scoped Planner Next input.
+      throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED", 422);
+    }
     const [input, optimizerSnapshot, taskTemplateSnapshots, persistedRevision] = await Promise.all([
       this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getPlanConfigRevision(session.currentConfigRevisionId),

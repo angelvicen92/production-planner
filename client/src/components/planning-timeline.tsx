@@ -613,7 +613,7 @@ function TaskStatusMenuTrigger({
 
   const [manualMode, setManualMode] = useState(false);
   const assistedDraftMode = mode === "assisted-draft";
-  useEffect(() => { if (assistedDraftMode) setManualMode(false); }, [assistedDraftMode]);
+  useEffect(() => { if (assistedDraftMode) setManualMode(true); }, [assistedDraftMode]);
   const assistedVisualClass = (task: Task) => {
     if (!assistedDraftMode) return "";
     const state = taskVisualStates[Number(task.id)];
@@ -2832,7 +2832,16 @@ function TaskStatusMenuTrigger({
                     ) : null}
                   </div>
                 ) : null}
-              </div> : <div className="mb-3 text-xs text-muted-foreground">Draft de solo lectura. La edición legacy, locks, bloques y generación están deshabilitados.</div>}
+              </div> : <div className="mb-3 flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/30">
+                <Badge variant="outline">Editar borrador</Badge>
+                <span className="text-xs">{Object.keys(pendingManualEdits).length} movimientos pendientes</span>
+                <Button size="sm" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={async () => {
+                  const edits = Object.entries(pendingManualEdits).map(([taskId, value]) => ({ taskId: Number(taskId), start: value.start, end: value.end }));
+                  setIsApplying(true); try { await onApplyManualEdits?.(edits); clearManualDraftState(); } finally { setIsApplying(false); }
+                }}>Aplicar edición</Button>
+                <Button size="sm" variant="outline" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={() => clearManualDraftState()}>Cancelar</Button>
+                <span className="text-xs text-muted-foreground">Espacio, recursos, duración, locks y bloques permanecen deshabilitados.</span>
+              </div>}
 
               {manualExitDialogOpen ? (
                 <Card className="mb-3 p-3 border-amber-400/40 bg-amber-50/40">
