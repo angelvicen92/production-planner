@@ -4262,7 +4262,7 @@ ${reasonMessage}` : message,
               <Card className="p-3"><div className="flex items-center justify-between gap-3"><div><div className="font-medium">Planificación asistida</div><div className="text-xs text-muted-foreground">El Draft es el workspace principal; Legacy permanece disponible.</div></div><div className="flex gap-2"><Button size="sm" variant={planningMode === "assisted" ? "default" : "outline"} onClick={() => setPlanningMode("assisted")}>Asistida</Button><Button size="sm" variant={planningMode === "legacy" ? "default" : "outline"} onClick={() => setPlanningMode("legacy")}>Legacy</Button></div></div></Card>
               {planningMode === "assisted" ? <AssistedPlanningWorkspace
                 planId={id}
-                plan={planningViewPlan as any}
+                plan={plan as any}
                 spaces={spaces as any[]}
                 timelineProps={{ contestants, viewMode: timelineView, spaceVerticalMode, stageFilterIds,
                   resourceFilterIds, resourceSelectables: resourceFilterOptions, zones, spaces,
