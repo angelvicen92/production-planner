@@ -79,8 +79,10 @@ export function createManualDeltaValidationHarness(problem:PlannerNextProblem,id
   return (_input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[])=>{
     const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
     const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),task=id?taskById.get(id):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
-    const validation=validatePlan(problem,placements,[],[],[],[],[],[],[]),scopeIds=touched.map(id=>canonicalByProduct.get(id)!);const completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
-    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:[],supportingReasonByTaskId:{},protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes,validationSummary:validation,structuredViolations:projectPlannerViolations(validation.violations??[],identityMap)};
+    const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
+    const assisted=buildAssistedProblem(problem,createPlanningScope({kind:"TASK_IDS",value:scopeIds.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds),placements);
+    const validation=validatePlan(assisted.originalValidationProblem,placements),completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
+    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:assisted.supportingTaskIds,supportingReasonByTaskId:assisted.supportingReasonByTaskId,protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes,validationSummary:validation,structuredViolations:projectPlannerViolations(validation.violations??[],identityMap)};
   };
 }
 
