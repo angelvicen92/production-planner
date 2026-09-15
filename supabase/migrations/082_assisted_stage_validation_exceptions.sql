@@ -71,7 +71,12 @@ BEGIN
  UPDATE public.assisted_planning_stages SET archived_at=now() WHERE id IN (SELECT id FROM obsolete);
  SELECT coalesce(max(ordinal),-1)+1 INTO next_ordinal FROM public.assisted_planning_stages WHERE session_id=s.id;
  INSERT INTO public.assisted_planning_stages(session_id,plan_id,ordinal,parent_stage_id,scope_json,scope_task_ids_json,include_prerequisites,config_revision_id,proposal_run_id,snapshot_json,snapshot_fingerprint,validation_summary_json,accepted_by,accepted_at)
- VALUES(s.id,p_plan_id,next_ordinal,s.draft_base_stage_id,'{}','[]',false,s.current_config_revision_id,NULL,s.draft_snapshot_json,s.draft_fingerprint,
+ VALUES(s.id,p_plan_id,next_ordinal,s.draft_base_stage_id,s.draft_scope_json,
+   coalesce(s.draft_scope_json->'resolvedTaskIds',s.draft_scope_json->'originalScope'->'resolvedTaskIds','[]'::jsonb),
+   coalesce((s.draft_scope_json->>'includePrerequisites')::boolean,(s.draft_scope_json->'originalScope'->>'includePrerequisites')::boolean,false),
+   s.current_config_revision_id,
+   CASE WHEN s.draft_scope_json->>'editKind' IS DISTINCT FROM 'MANUAL' THEN (s.draft_scope_json->>'proposalRunId')::bigint ELSE NULL END,
+   s.draft_snapshot_json,s.draft_fingerprint,
    jsonb_build_object('hardValid',v.hard_count=0,'hardCount',v.hard_count,'requiredCount',v.required_count,'preferredCount',v.preferred_count,'validationId',v.id,'report',v.report_json),p_user_id,now()) RETURNING id INTO new_id;
  FOR item IN SELECT value FROM jsonb_array_elements(v.report_json->'violations') WHERE value->>'severity'='HARD' AND value->>'inheritedAcceptedExceptionId' IS NULL LOOP
    INSERT INTO public.planning_accepted_exceptions(plan_id,stage_id,severity,rule_code,violation_key,config_revision_id,snapshot_fingerprint,affected_task_ids_json,affected_resource_ids_json,affected_space_ids_json,details_json,status,accepted_by,accepted_at)

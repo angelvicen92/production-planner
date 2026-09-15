@@ -19,7 +19,7 @@ const rpc=migration.slice(migration.indexOf("CREATE OR REPLACE FUNCTION"),migrat
 test("validation delegates only to proposal-certified DB authority and permits incomplete stages",()=>{
   assert.match(service,/assisted_record_proposal_clean_validation/);
   assert.match(service,/PROPOSAL_CERTIFIED_CLEAN_V1/);
-  assert.match(service,/MANUAL_DELTA_CLEAN_V1/);
+  assert.match(service,/MANUAL_STAGE_VALIDATION_V1/);
   assert.doesNotMatch(rpc,/daily_tasks|expectedTaskCount|reasonCodes/);
   assert.match(routes,/assisted\/validate/);
 });

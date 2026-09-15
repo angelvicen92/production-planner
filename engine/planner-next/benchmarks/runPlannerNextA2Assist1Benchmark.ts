@@ -5,7 +5,7 @@ import { createCanonicalFullA2Template, expandCanonicalFullA2Template } from "./
 
 const minute = (value: string): number => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
 
-export function runA2Assist1Benchmark() {
+export function buildCanonicalA2PlannerNextProblem() {
   const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
   const config = expansion.effectiveConfiguration;
   const itinerantUnitId = new Map(expansion.itinerantUnits.map((unit, index) => [unit.id, `itinerant-team:${index + 1}`]));
@@ -35,6 +35,11 @@ export function runA2Assist1Benchmark() {
     searchPolicy: "EXACT_CONSTRUCTIVE", budget: { bestK: 5, maxBacktracks: 500, maxPatterns: 200, maxBranchExpansions: 100_000 },
     auxiliaryPolicy: { participantPresencePreference: "OFF" },
   };
+  return { expansion, problem };
+}
+
+export function runA2Assist1Benchmark() {
+  const { expansion, problem } = buildCanonicalA2PlannerNextProblem();
   const scopeIds = expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7").map(({ id }) => id);
   assert.equal(expansion.tasks.filter((task) => task.participantId).length, 266);
   const scope = createPlanningScope({ kind: "canonical-space", value: "estudio-7" }, { benchmarkId: "A2-ASSIST-1", sourceObligationCount: 266 }, scopeIds);
