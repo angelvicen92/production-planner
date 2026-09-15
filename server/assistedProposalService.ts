@@ -125,7 +125,7 @@ export class AssistedProposalService {
     const taskInputById=new Map(input.tasks.map(t=>[t.id,t]));
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!; return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
-    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})}))) : null;
+    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks) : null;
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
     const result:AssistedProposalRunResultV1={contractVersion:1,outcome:proposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal,proposedDraftSnapshot,proposedDraftFingerprint,evidence:execution.evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
     return this.finish(planId,run,result);

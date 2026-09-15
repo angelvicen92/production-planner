@@ -3293,6 +3293,16 @@ function mapDeleteError(err: any, fallback: string) {
   app.get("/api/plans/:id/assisted/history", async (req, res) => assistedAction(res, async () => (await assistedPlanning.state(assistedPlanId(req.params.id))).history));
   app.post("/api/plans/:id/assisted/session", async (req, res) => assistedAction(res, () => assistedPlanning.start(assistedPlanId(req.params.id), (req as any).user.id)));
   app.patch("/api/plans/:id/assisted/draft", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ changes: z.array(assistedChanges).min(1) }).parse(req.body); return assistedPlanning.patchDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId, body.changes); }));
+  app.post("/api/plans/:id/assisted/draft/reset", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.resetDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
+  const planningBlockOperation = z.discriminatedUnion("kind", [
+    z.object({ kind:z.literal("CREATE_BLOCK"),memberTaskIds:z.array(z.number().int().positive()).min(2) }).strict(),
+    z.object({ kind:z.literal("SPLIT_BLOCK"),blockId:z.string().min(1),splitAfter:z.number().int().positive() }).strict(),
+    z.object({ kind:z.literal("MERGE_BLOCKS"),blockIds:z.tuple([z.string().min(1),z.string().min(1)]) }).strict(),
+    z.object({ kind:z.literal("REMOVE_BLOCK_GROUPING"),blockId:z.string().min(1) }).strict(),
+    z.object({ kind:z.literal("REORDER_BLOCK_MEMBERS"),blockId:z.string().min(1),memberTaskIds:z.array(z.number().int().positive()).min(2) }).strict(),
+    z.object({ kind:z.literal("MOVE_BLOCK"),blockId:z.string().min(1),deltaMinutes:z.number().int() }).strict(),
+  ]);
+  app.post("/api/plans/:id/assisted/draft/blocks", async (req,res)=>assistedAction(res,()=>{const body=assistedExpected.extend({operation:planningBlockOperation}).parse(req.body);return assistedPlanning.editPlanningBlocks(assistedPlanId(req.params.id),body.expectedDraftFingerprint,body.expectedBaseStageId,body.operation);}));
   app.post("/api/plans/:id/assisted/validate", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.validateDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.accept(assistedPlanId(req.params.id), (req as any).user.id, body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   app.post("/api/plans/:id/assisted/rollback", async (req, res) => assistedAction(res, () => { const body = z.object({ targetStageId: z.number().int().positive() }).strict().parse(req.body); return assistedPlanning.rollback(assistedPlanId(req.params.id), body.targetStageId); }));

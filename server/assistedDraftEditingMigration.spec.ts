@@ -11,3 +11,7 @@ test("081 stores canonical TS fingerprints and moves F0 to F1 to F0 to F1 withou
 test("081 fails closed on corrupt ledger and locks manual validation provenance",()=>{
   for(const token of ["CORRUPT_EDIT_LEDGER","beforeFingerprint","afterFingerprint","FOR UPDATE","editKind","MANUAL"])assert.match(sql,new RegExp(token));
 });
+test("081 ledgers PlanningBlock metadata and restores it on draft undo/redo",()=>{
+  for(const token of ["planningBlocks","forwardBlocks","inverseBlocks"])assert.match(sql,new RegExp(token));
+  assert.match(sql,/next_snapshot:=jsonb_set\(next_snapshot,'\{planningBlocks\}'/);
+});
