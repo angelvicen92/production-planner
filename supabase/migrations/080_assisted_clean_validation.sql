@@ -2,17 +2,17 @@
 CREATE OR REPLACE FUNCTION public.assisted_record_proposal_clean_validation(
   p_plan_id integer, p_expected_fingerprint text, p_expected_base bigint,
   p_expected_config bigint
-) RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+) RETURNS bigint LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE
-  s assisted_planning_sessions%rowtype;
-  r planning_runs%rowtype;
+  s public.assisted_planning_sessions%rowtype;
+  r public.planning_runs%rowtype;
   result jsonb;
   evidence jsonb;
   proposal_run_id bigint;
   validation_id bigint;
   report jsonb;
 BEGIN
-  SELECT * INTO s FROM assisted_planning_sessions
+  SELECT * INTO s FROM public.assisted_planning_sessions
     WHERE plan_id=p_plan_id AND status='ACTIVE' FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'SESSION_NOT_FOUND'; END IF;
   IF s.draft_fingerprint<>p_expected_fingerprint THEN RAISE EXCEPTION 'STALE_DRAFT'; END IF;
@@ -26,7 +26,7 @@ BEGIN
   THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
   proposal_run_id := (s.draft_scope_json->>'proposalRunId')::bigint;
 
-  SELECT * INTO r FROM planning_runs WHERE id=proposal_run_id;
+  SELECT * INTO r FROM public.planning_runs WHERE id=proposal_run_id;
   IF NOT FOUND OR r.plan_id<>p_plan_id OR r.execution_kind<>'ASSISTED_SCOPE'
     OR r.assisted_session_id<>s.id OR r.base_stage_id IS DISTINCT FROM s.draft_base_stage_id
     OR r.config_revision_id<>s.current_config_revision_id OR r.status<>'success'
@@ -69,11 +69,11 @@ BEGIN
     'scopeTaskIds',r.scope_task_ids_json, 'includePrerequisites',r.include_prerequisites,
     'hardAssessment','CLEAN', 'requiredAssessment','CLEAN',
     'preferredAssessment','NOT_CLASSIFIED');
-  INSERT INTO planning_stage_validations(plan_id,session_id,base_stage_id,draft_fingerprint,
+  INSERT INTO public.planning_stage_validations(plan_id,session_id,base_stage_id,draft_fingerprint,
     config_revision_id,hard_count,required_count,preferred_count,report_json)
   VALUES(p_plan_id,s.id,s.draft_base_stage_id,s.draft_fingerprint,s.current_config_revision_id,
     0,0,0,report) RETURNING id INTO validation_id;
-  UPDATE assisted_planning_sessions SET draft_validation_id=validation_id,updated_at=now() WHERE id=s.id;
+  UPDATE public.assisted_planning_sessions SET draft_validation_id=validation_id,updated_at=now() WHERE id=s.id;
   RETURN validation_id;
 END $$;
 REVOKE ALL ON FUNCTION public.assisted_record_proposal_clean_validation(integer,text,bigint,bigint) FROM PUBLIC;
@@ -81,3 +81,13 @@ REVOKE ALL ON FUNCTION public.assisted_record_proposal_clean_validation(integer,
 REVOKE ALL ON FUNCTION public.assisted_record_proposal_clean_validation(integer,text,bigint,bigint) FROM authenticated;
 REVOKE ALL ON FUNCTION public.assisted_record_proposal_clean_validation(integer,text,bigint,bigint) FROM service_role;
 GRANT EXECUTE ON FUNCTION public.assisted_record_proposal_clean_validation(integer,text,bigint,bigint) TO service_role;
+
+-- Assisted workflow mutations are server-only. Keep authenticated reads governed
+-- by the existing RLS policies, but close the historical direct-write grants from 077.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE
+  public.plan_config_revisions,
+  public.assisted_planning_sessions,
+  public.assisted_planning_stages,
+  public.planning_stage_validations,
+  public.planning_accepted_exceptions
+FROM authenticated;
