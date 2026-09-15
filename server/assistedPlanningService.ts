@@ -7,8 +7,9 @@ import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1,
 import { engineTimeToMinute } from "./assistedTime";
 import { validateManualAssistedDelta } from "./assistedProposalService";
 import { applyPlanningBlockOperation, type PlanningBlockOperation } from "./assistedPlanningBlocks";
+import { assertPlanningBlockTemporalOrder } from "../shared/assistedPlanningTaskOrdering";
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
+export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
 }
@@ -19,6 +20,7 @@ const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
   IMMUTABLE_TASK: 422, UNSUPPORTED_MANUAL_FIELD: 422, INVALID_MANUAL_DURATION: 422, INVALID_MANUAL_RESET: 422, CORRUPT_EDIT_LEDGER: 409,
   ASSISTED_DELTA_VALIDATION_UNSUPPORTED: 422, NO_UNDO_AVAILABLE: 409,
   INVALID_BLOCK_OPERATION: 422,
+  PLANNING_BLOCK_ORDER_CONFLICT: 422,
 };
 function dbError(error: any): never {
   const code = (Object.keys(statuses) as AssistedPlanningErrorCode[]).find((candidate) => String(error?.message ?? "").includes(candidate));
@@ -107,6 +109,7 @@ export class AssistedPlanningService {
     }
     const byId = new Map(changes.map((change) => [change.taskId, change]));
     const snapshot = buildAssistedPlanningSnapshotV1(current.tasks.map((task) => ({ id: task.taskId, ...task, ...(byId.get(task.taskId) ?? {}) })), current.planningBlocks);
+    try { assertPlanningBlockTemporalOrder(snapshot); } catch { throw new AssistedPlanningError("PLANNING_BLOCK_ORDER_CONFLICT", 422); }
     const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
     const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: fingerprint });
     if (error) dbError(error); return this.state(planId);
@@ -132,6 +135,21 @@ export class AssistedPlanningService {
     if (error) dbError(error);
     return this.state(planId);
   }
+  async resetDraft(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number) {
+    const session = await this.storage.getActiveAssistedPlanningSession(planId);
+    if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
+    if (session.draftFingerprint !== expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT", 409);
+    if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    const base = await this.storage.getAssistedPlanningStage(expectedBaseStageId);
+    if (!base || base.sessionId !== session.id || base.planId !== planId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    const snapshot = buildAssistedPlanningSnapshotV1((base.snapshotJson as unknown as AssistedPlanningSnapshotV1).tasks.map(task => ({ id: task.taskId, ...task })), (base.snapshotJson as unknown as AssistedPlanningSnapshotV1).planningBlocks);
+    const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
+    if (fingerprint !== base.snapshotFingerprint) throw new AssistedPlanningError("CORRUPT_EDIT_LEDGER", 409);
+    const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint,
+      p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: base.snapshotFingerprint });
+    if (error) dbError(error);
+    return this.state(planId);
+  }
   async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number) {
     const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
     if (error) dbError(error); return this.state(planId);
@@ -141,6 +159,8 @@ export class AssistedPlanningService {
     if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
     if (session.draftFingerprint !== expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT", 409);
     if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
+    try { assertPlanningBlockTemporalOrder(session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1); }
+    catch { throw new AssistedPlanningError("PLANNING_BLOCK_ORDER_CONFLICT", 422); }
     const [input, optimizerSnapshot, taskTemplateSnapshots, persistedRevision] = await Promise.all([
       this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getPlanConfigRevision(session.currentConfigRevisionId),

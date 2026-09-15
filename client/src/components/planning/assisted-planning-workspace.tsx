@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FullscreenPlanningPanel } from "./fullscreen-planning-panel";
 import { PlanningTimeline } from "../planning-timeline";
-import { buildAssistedPlanningView, classifyAssistedTasks, isAssistedDraftModified } from "@/lib/assisted-planning-view";
+import { assistedDraftTouchedTaskIds, buildAssistedPlanningView, classifyAssistedTasks, isAssistedDraftModified } from "@/lib/assisted-planning-view";
 import { cascadeTasks, reorderTasks, resetTasksToBase, shiftTasks, swapTasks, type AssistedDraftPatch } from "@/lib/assisted-draft-editing";
 import { collectAssistedDraftWarnings } from "@/lib/assisted-draft-warnings";
 
@@ -42,7 +42,7 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
   const mutate=async(label:string,work:()=>Promise<any>,planToo=false)=>{setBusy(label);setMessage(null);try{await work();clearProposal();await refresh(planToo);}catch(e:any){setMessage(errorCode(e));if(isAssistedConflict(e)){clearProposal();await refresh();}}finally{setBusy(null);}};
   const validationCurrent=Boolean(state?.validation&&state.validation.draftFingerprint===state.draftFingerprint&&Number(state.validation.baseStageId)===Number(state.draftBaseStageId)&&Number(state.validation.configRevisionId)===Number(state.currentConfigRevisionId));
   const modified=Boolean(draft&&isAssistedDraftModified(draft,base));
-  const touchedTaskCount=Object.values(visual).filter(value=>value==="DRAFT_CHANGED").length;
+  const touchedTaskCount=draft?assistedDraftTouchedTaskIds(draft,base).length:0;
   const blocks:any[]=draft?.planningBlocks??[];
   const selectedBlocks=blocks.filter(block=>block.memberTaskIds.some((id:number)=>selected.includes(Number(id))));
   const applyTimelineEdits=async(edits:Array<{taskId:number;start:string|null;end:string|null}>)=>mutate("edit",()=>apiRequest("PATCH",`/api/plans/${planId}/assisted/draft`,{
@@ -50,6 +50,15 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
   }));
   const applyOperation=(operation:AssistedDraftPatch)=>applyTimelineEdits(operation.changes.map(task=>({taskId:task.taskId,start:task.startPlanned,end:task.endPlanned})));
   const editBlock=(operation:any)=>mutate("block",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/blocks`,{...guard(),operation}));
+  const incompatibleBlockEdit=()=>setMessage("La selección cruza o cubre parcialmente un bloque. Divide o retira la agrupación antes de reordenar.");
+  const swapSelected=()=>{const containing=blocks.filter(block=>selected.some(id=>block.memberTaskIds.includes(id)));
+    if(containing.length===0)return applyOperation(swapTasks(draft,selected[0],selected[1]));
+    if(containing.length===1&&selected.every(id=>containing[0].memberTaskIds.includes(id))){const order=[...containing[0].memberTaskIds];const left=order.indexOf(selected[0]),right=order.indexOf(selected[1]);[order[left],order[right]]=[order[right],order[left]];return editBlock({kind:"REORDER_BLOCK_MEMBERS",blockId:containing[0].blockId,memberTaskIds:order});}
+    incompatibleBlockEdit();};
+  const reorderSelected=()=>{const containing=blocks.filter(block=>selected.some(id=>block.memberTaskIds.includes(id)));
+    if(containing.length===0)return applyOperation(reorderTasks(draft,[...selected].reverse()));
+    if(containing.length===1&&selected.length===containing[0].memberTaskIds.length&&containing[0].memberTaskIds.every((id:number)=>selected.includes(id)))return editBlock({kind:"REORDER_BLOCK_MEMBERS",blockId:containing[0].blockId,memberTaskIds:[...containing[0].memberTaskIds].reverse()});
+    incompatibleBlockEdit();};
   const generate=async()=>{setBusy("proposal");setMessage(null);setPreview(null);try{const selector=scopeKind==="TASK_IDS"?{kind:"TASK_IDS",taskIds:selected}:{kind:"SPACE",spaceId:Number(spaceId)};const result=await apiRequest<any>("POST",`/api/plans/${planId}/assisted/proposals`,{selector,includePrerequisites,...guard()});setRunId(Number(result.runId));}catch(e:any){setMessage(errorCode(e));setBusy(null);if(isAssistedConflict(e)){clearProposal();await refresh();}}};
   if(stateQ.isLoading||busy==="bootstrap")return <Card className="p-4">Inicializando planificación asistida…</Card>;
   if(!state)return <Card className="p-4 text-destructive">No se pudo iniciar la sesión assisted. {message} <Button size="sm" variant="outline" disabled={!!busy} onClick={bootstrap}>Reintentar</Button></Card>;
@@ -57,10 +66,10 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
   const toolbar=<div className="flex flex-wrap items-center gap-1 text-xs"><Badge>S{active?.ordinal??0}</Badge><Badge variant={modified?"destructive":"secondary"}>{modified?"MODIFIED":"CLEAN"}</Badge>{modified?<Badge variant="outline">{touchedTaskCount} tocadas</Badge>:null}<Badge variant={validationCurrent?"default":"outline"}>{validationCurrent?"VALID":state.session?.draftValidationId?"STALE":"NOT VALIDATED"}</Badge><Badge variant="outline">config {state.currentConfigRevisionId}</Badge>{runId?<Badge variant="outline">run {runId}</Badge>:null}
   <Button size="sm" variant="outline" disabled={operationDisabled} onClick={()=>applyOperation(shiftTasks(draft,selected,-15,"MULTI_SHIFT"))}>Multi −15</Button><Button size="sm" variant="outline" disabled={operationDisabled} onClick={()=>applyOperation(shiftTasks(draft,selected,15,"MULTI_SHIFT"))}>Multi +15</Button>
   <Button size="sm" variant="outline" disabled={!!busy||selectedBlocks.length!==1} onClick={()=>editBlock({kind:"MOVE_BLOCK",blockId:selectedBlocks[0].blockId,deltaMinutes:15})}>Mover bloque +15</Button>
-  <Button size="sm" variant="outline" disabled={operationDisabled} onClick={()=>applyOperation(cascadeTasks(draft,selected,15))}>Cascade +15</Button><Button size="sm" variant="outline" disabled={!!busy||selected.length!==2} onClick={()=>applyOperation(swapTasks(draft,selected[0],selected[1]))}>Swap</Button><Button size="sm" variant="outline" disabled={!!busy||selected.length<2} onClick={()=>applyOperation(reorderTasks(draft,[...selected].reverse()))}>Reorder</Button>
-  <Button size="sm" variant="outline" disabled={operationDisabled} onClick={()=>applyOperation(resetTasksToBase(draft,base,selected))}>Reset selection</Button><Button size="sm" variant="outline" disabled={!!busy||!modified} onClick={()=>applyOperation(resetTasksToBase(draft,base,draft.tasks.map((task:any)=>Number(task.taskId))))}>Reset Draft</Button>
+  <Button size="sm" variant="outline" disabled={operationDisabled} onClick={()=>applyOperation(cascadeTasks(draft,selected,15))}>Cascade +15</Button><Button size="sm" variant="outline" disabled={!!busy||selected.length!==2} onClick={swapSelected}>Swap</Button><Button size="sm" variant="outline" disabled={!!busy||selected.length<2} onClick={reorderSelected}>Reorder</Button>
+  <Button size="sm" variant="outline" disabled={operationDisabled} onClick={()=>applyOperation(resetTasksToBase(draft,base,selected))}>Reset selection</Button><Button size="sm" variant="outline" disabled={!!busy||!modified} onClick={()=>mutate("reset",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/reset`,guard()))}>Reset Draft</Button>
   <Button size="sm" variant="outline" disabled={!!busy||selected.length<2||selectedBlocks.length>0} onClick={()=>editBlock({kind:"CREATE_BLOCK",memberTaskIds:selected})}>Crear bloque</Button>
-  <Button size="sm" variant="outline" disabled={!!busy||selectedBlocks.length!==1||selectedBlocks[0].memberTaskIds.length<4} onClick={()=>editBlock({kind:"SPLIT_BLOCK",blockId:selectedBlocks[0].blockId,splitAfter:Math.floor(selectedBlocks[0].memberTaskIds.length/2)})}>Dividir bloque</Button>
+  <Button size="sm" variant="outline" disabled={!!busy||selectedBlocks.length!==1} onClick={()=>editBlock({kind:"SPLIT_BLOCK",blockId:selectedBlocks[0].blockId,splitAfter:Math.floor(selectedBlocks[0].memberTaskIds.length/2)})}>Dividir bloque</Button>
   <Button size="sm" variant="outline" disabled={!!busy||selectedBlocks.length!==2} onClick={()=>editBlock({kind:"MERGE_BLOCKS",blockIds:selectedBlocks.map(block=>block.blockId)})}>Fusionar bloques</Button>
   <Button size="sm" variant="outline" disabled={!!busy||selectedBlocks.length!==1} onClick={()=>editBlock({kind:"REMOVE_BLOCK_GROUPING",blockId:selectedBlocks[0].blockId})}>Retirar agrupación</Button>
   <Button size="sm" variant="outline" disabled={!!busy||!state.session?.draftScopeJson?.editLedger?.length} onClick={()=>mutate("undo",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/undo`,guard()))}>Draft Undo</Button><Button size="sm" variant="outline" disabled={!!busy||!state.session?.draftScopeJson?.redoLedger?.length} onClick={()=>mutate("redo-edit",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/redo`,guard()))}>Draft Redo</Button>

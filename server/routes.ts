@@ -3293,6 +3293,7 @@ function mapDeleteError(err: any, fallback: string) {
   app.get("/api/plans/:id/assisted/history", async (req, res) => assistedAction(res, async () => (await assistedPlanning.state(assistedPlanId(req.params.id))).history));
   app.post("/api/plans/:id/assisted/session", async (req, res) => assistedAction(res, () => assistedPlanning.start(assistedPlanId(req.params.id), (req as any).user.id)));
   app.patch("/api/plans/:id/assisted/draft", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ changes: z.array(assistedChanges).min(1) }).parse(req.body); return assistedPlanning.patchDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId, body.changes); }));
+  app.post("/api/plans/:id/assisted/draft/reset", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.resetDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   const planningBlockOperation = z.discriminatedUnion("kind", [
     z.object({ kind:z.literal("CREATE_BLOCK"),memberTaskIds:z.array(z.number().int().positive()).min(2) }).strict(),
     z.object({ kind:z.literal("SPLIT_BLOCK"),blockId:z.string().min(1),splitAfter:z.number().int().positive() }).strict(),

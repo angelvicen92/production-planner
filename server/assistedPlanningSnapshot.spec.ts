@@ -42,3 +42,5 @@ test("execution changes are excluded and source input remains mutable/unmodified
   assert.deepEqual(before.map(({ startReal: _, status: __, ...row }) => row), rows.map(({ startReal: _, status: __, ...row }) => row));
   assert.equal(Object.isFrozen(first), true);
 });
+
+test("empty and omitted PlanningBlocks preserve the legacy blockless identity",()=>{const omitted=buildAssistedPlanningSnapshotV1(base);const empty=buildAssistedPlanningSnapshotV1(base,[]);assert.deepEqual(empty,omitted);assert.equal(Object.prototype.hasOwnProperty.call(empty,"planningBlocks"),false);assert.equal(fingerprintAssistedPlanningSnapshotV1(empty),fingerprintAssistedPlanningSnapshotV1(omitted));});

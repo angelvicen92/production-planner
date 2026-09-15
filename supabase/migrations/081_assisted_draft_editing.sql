@@ -21,6 +21,8 @@ BEGIN
  WHERE next IS DISTINCT FROM previous;
  IF coalesce(p_snapshot->'planningBlocks','[]'::jsonb) IS DISTINCT FROM coalesce(s.draft_snapshot_json->'planningBlocks','[]'::jsonb) THEN
    SELECT (SELECT coalesce(jsonb_agg(DISTINCT id ORDER BY id),'[]'::jsonb) FROM (
+     SELECT (id#>>'{}')::integer id FROM jsonb_array_elements(changed_ids) id
+     UNION
      SELECT (member#>>'{}')::integer id FROM jsonb_array_elements(coalesce(p_snapshot->'planningBlocks','[]')) block,
        jsonb_array_elements(block->'memberTaskIds') member
      UNION
