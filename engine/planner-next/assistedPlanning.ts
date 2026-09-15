@@ -39,11 +39,15 @@ export interface AssistedPlanningEvidence {
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly reasonCodes: readonly string[];
+  readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
 }
 
 export interface AssistedPlanningResult {
   readonly proposal: readonly ScheduledTask[] | null;
   readonly evidence: AssistedPlanningEvidence;
+}
+export interface AssistedAcceptedBaseline {
+  readonly protectedTaskIds: readonly string[];
 }
 
 const canonicalIds = (ids: readonly string[]): string[] => [...ids].sort((a, b) => a.localeCompare(b));
@@ -185,14 +189,22 @@ export function buildAssistedProblem(
   };
 }
 
-export function executeAssistedPlanning(input: AssistedProblem): AssistedPlanningResult {
-  const execution = executePlannerNext(input.problem, { causalDiagnostic: true });
+export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
+  let searchProblem=input.problem;
+  // Accepted baseline is an Assisted-only search projection, applied before the
+  // solver decides proposal eligibility. The full combined validator below still
+  // sees every row and rejects any non-exact/new conflict.
+  if(acceptedBaseline?.protectedTaskIds.length){
+    const ignored=new Set(acceptedBaseline.protectedTaskIds);
+    searchProblem={...structuredClone(input.problem),tasks:input.problem.tasks.filter(task=>!ignored.has(task.id))};
+  }
+  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
-  const scheduled = searchScheduled.map((task) =>
-    structuredClone(protectedById.get(task.id) ?? task));
-  const searchValidation = result?.complete ? validatePlan(input.problem, searchScheduled,
+  const scheduled = searchScheduled.map((task) => structuredClone(protectedById.get(task.id) ?? task));
+  for(const fixed of input.protectedPlacements)if(!scheduled.some(task=>task.id===fixed.id))scheduled.push(structuredClone(fixed));
+  const searchValidation = result?.complete ? validatePlan(searchProblem, searchScheduled,
     result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
@@ -251,5 +263,6 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     reasonCodes: [...new Set(reasonCodes)].sort(),
+    violations: validation?.violations??[],
   } };
 }

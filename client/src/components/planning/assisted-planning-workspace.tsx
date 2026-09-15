@@ -43,7 +43,7 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
   const validationCurrent=Boolean(state?.validation&&state.validation.draftFingerprint===state.draftFingerprint&&Number(state.validation.baseStageId)===Number(state.draftBaseStageId)&&Number(state.validation.configRevisionId)===Number(state.currentConfigRevisionId));
   const validationReport:any=validationCurrent?state.validation.reportJson:null;
   const acceptStage=()=>{const hard=Number(state.validation?.hardCount??0),required=Number(state.validation?.requiredCount??0);let confirmation="NONE";
-    if(hard>0){if(!window.confirm(`Este Draft contiene ${hard} conflicto(s) HARD. Se crearán excepciones aceptadas auditables. ¿Continuar?`))return;confirmation="HARD_EXCEPTIONS";}
+    if(hard>0){if(!window.confirm(`Este Draft contiene ${hard} conflicto(s) HARD y ${required} desviación(es) REQUIRED. Se crearán excepciones HARD auditables. ¿Continuar?`))return;confirmation="HARD_EXCEPTIONS";}
     else if(required>0){if(!window.confirm(`Este Draft contiene ${required} desviación(es) REQUIRED. ¿Aceptar conscientemente?`))return;confirmation="REQUIRED_DEVIATIONS";}
     return mutate("accept",()=>apiRequest("POST",`/api/plans/${planId}/assisted/accept-stage`,{...guard(),confirmation}),true);};
   const modified=Boolean(draft&&isAssistedDraftModified(draft,base));

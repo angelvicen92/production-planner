@@ -25,7 +25,7 @@ export interface StageValidationReport {
 
 const canonicalIds = (values: readonly number[] | undefined) => [...new Set(values ?? [])].sort((a, b) => a - b);
 const canonicalDimensions = (value: unknown): unknown => Array.isArray(value)
-  ? [...value].map(canonicalDimensions).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+  ? value.map(canonicalDimensions)
   : value && typeof value === "object"
     ? Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonicalDimensions(item)]))
     : value;
@@ -44,21 +44,4 @@ export function isAcceptedExceptionStillApplicable(exception: Pick<StageViolatio
   current: Pick<StageViolation, "violationKey">, materiallyChangedTaskIds: readonly number[]): boolean {
   const changed = new Set(materiallyChangedTaskIds);
   return exception.violationKey === current.violationKey && !exception.affectedTaskIds.some(id => changed.has(id));
-}
-
-export function normalizePlannerValidation(input: {
-  reasonCodes: readonly string[]; affectedTaskIds: readonly number[];
-  placementDimensions: Record<number, { startPlanned: string | null; endPlanned: string | null; spaceId: number | null }>;
-}): StageViolation[] {
-  return [...new Set(input.reasonCodes)].sort().map(encoded => {
-    const [ruleCode, resource] = encoded.split(":", 2);
-    const severity: StageViolationSeverity = ruleCode === "RESOURCE_REQUIRED_PRESENCE_VIOLATION" ? "REQUIRED" : "HARD";
-    const affectedTaskIds = canonicalIds(input.affectedTaskIds);
-    const affectedResourceIds = resource && /^\d+$/.test(resource) ? [Number(resource)] : [];
-    const affectedSpaceIds = canonicalIds(affectedTaskIds.map(id => input.placementDimensions[id]?.spaceId).filter((id): id is number => id != null));
-    const dimensions = Object.fromEntries(affectedTaskIds.map(id => [String(id), input.placementDimensions[id] ?? null]));
-    return { ruleCode, severity, affectedTaskIds, affectedResourceIds, affectedSpaceIds,
-      violationKey: createViolationKey({ ruleCode, affectedTaskIds, affectedResourceIds, affectedSpaceIds, dimensions }),
-      details: { engineReasonCode: encoded, dimensions }, inheritedAcceptedExceptionId: null };
-  });
 }

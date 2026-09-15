@@ -25,6 +25,16 @@ test("REQUIRED presence treats only the assigned-space meal as an authorized bri
   assert.equal(foreign.requiredPolicySatisfied, false);
 });
 
+test("canonical validation attributes REQUIRED presence to its exact tasks and resource",()=>{
+  const problem=mainFlowResourcePresenceScenario("MAXIMUM");
+  const resource=problem.resources.find(item=>problem.tasks.filter(task=>(task.requiredResourceIds??[]).includes(item.id)).length>=2)!;
+  resource.presenceConcentrationPolicy="REQUIRED";resource.assignedSpaceId=problem.mainFlow.spaceId;
+  const own=problem.tasks.filter(task=>(task.requiredResourceIds??[]).includes(resource.id)).slice(0,2);
+  const scheduled=own.map((task,index)=>({...task,start:index*60,end:index*60+task.duration})) as ScheduledTask[];
+  const detail=validatePlan({...problem,tasks:own},scheduled).violations?.find(item=>item.ruleCode==="RESOURCE_REQUIRED_PRESENCE_VIOLATION");
+  assert.equal(detail?.severity,"REQUIRED");assert.deepEqual(detail?.affectedResourceIds,[resource.id]);assert.deepEqual(detail?.affectedTaskIds,[...own.map(task=>task.id)].sort());
+});
+
 test("HIGH compacts shared-resource main tasks while OFF remains separated", () => {
   const offProblem = mainFlowResourcePresenceScenario("OFF");
   const before = JSON.stringify(offProblem);
