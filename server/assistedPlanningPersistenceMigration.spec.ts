@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const sql = await readFile(new URL("../supabase/migrations/077_assisted_planning_state.sql", import.meta.url), "utf8");
+const correction = await readFile(new URL("../supabase/migrations/080_assisted_clean_validation.sql", import.meta.url), "utf8");
 const schema = await readFile(new URL("../shared/schema.ts", import.meta.url), "utf8");
 const storage = await readFile(new URL("./storage.ts", import.meta.url), "utf8");
 
@@ -45,6 +46,22 @@ test("service-role privileges enforce history while preserving plan-owned cascad
   assert.match(normalizedSql, /GRANT SELECT, INSERT, UPDATE ON TABLE public\.assisted_planning_sessions TO authenticated, service_role/);
   assert.doesNotMatch(normalizedSql, /GRANT[^;]*DELETE[^;]*(plan_config_revisions|assisted_planning_sessions|assisted_planning_stages|planning_stage_validations|planning_accepted_exceptions)/);
   assert.doesNotMatch(normalizedSql, /assisted_planning_sessions_delete_admin_production/);
+});
+
+test("080 closes authenticated direct writes while preserving reads and service-role workflow authority",()=>{
+  const assistedTables=["plan_config_revisions","assisted_planning_sessions","assisted_planning_stages","planning_stage_validations","planning_accepted_exceptions"];
+  const normalizedCorrection=correction.replace(/\s+/g," ");
+  for(const table of assistedTables){
+    assert.match(normalizedSql,new RegExp(`GRANT[^;]*SELECT[^;]*public\\.${table}[^;]*TO authenticated, service_role`));
+    assert.match(normalizedCorrection,new RegExp(`REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE[^;]*public\\.${table}[^;]*FROM authenticated`));
+  }
+  assert.match(normalizedCorrection,/REVOKE UPDATE \(archived_at\) ON TABLE public\.assisted_planning_stages FROM authenticated/);
+  assert.match(normalizedCorrection,/REVOKE UPDATE \(status, resolved_at\) ON TABLE public\.planning_accepted_exceptions FROM authenticated/);
+  assert.doesNotMatch(normalizedCorrection,/REVOKE (?:INSERT|UPDATE|DELETE|TRUNCATE)[^;]+FROM service_role/);
+  assert.match(normalizedSql,/GRANT SELECT, INSERT, UPDATE ON TABLE public\.assisted_planning_sessions TO authenticated, service_role/);
+  assert.match(normalizedCorrection,/GRANT EXECUTE ON FUNCTION public\.assisted_record_proposal_clean_validation[^;]+TO service_role/);
+  for(const role of ["PUBLIC","anon","authenticated","service_role"])
+    assert.match(normalizedCorrection,new RegExp(`REVOKE ALL ON FUNCTION public\\.assisted_record_proposal_clean_validation[^;]+FROM ${role}`));
 });
 
 test("accepted stages reject mutation except their first archive transition", () => {

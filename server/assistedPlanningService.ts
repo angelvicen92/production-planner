@@ -23,24 +23,33 @@ function provenance(authority: string) { return { authority, authorityContractVe
 
 export type DraftChange = { taskId: number; startPlanned?: string | null; endPlanned?: string | null; zoneId?: number | null; spaceId?: number | null; locationLabel?: string | null; durationOverride?: number | null; camerasOverride?: number | null };
 type AssistedRpc = (name: string, parameters: Record<string, unknown>) => Promise<{ error: unknown }>;
+type AssistedPlanningServiceDependencies = {
+  buildInput?: typeof buildEngineInput;
+  buildConfigRevision?: typeof buildEffectivePlanConfigRevisionV1;
+};
 
 export class AssistedPlanningService {
   constructor(
     private readonly storage: IStorage,
     private readonly rpc: AssistedRpc = async (name, parameters) => supabaseAdmin.rpc(name, parameters),
+    private readonly dependencies: AssistedPlanningServiceDependencies = {},
   ) {}
+
+  private buildInput(planId: number) {
+    return (this.dependencies.buildInput ?? buildEngineInput)(planId, this.storage);
+  }
 
   async start(planId: number, userId: string) {
     const existing = await this.storage.getActiveAssistedPlanningSession(planId);
     if (existing) return this.state(planId);
     const [engineInput, optimizerSnapshot, taskTemplateSnapshots, tasks] = await Promise.all([
-      buildEngineInput(planId, this.storage), this.storage.getPlanOptimizerSnapshot(planId),
+      this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getTasksForPlan(planId),
     ]);
     const revisionInput = { planId, optimizerSnapshot, taskTemplateSnapshots,
       optimizerProvenance: provenance("plan_optimizer_snapshots"), taskTemplateProvenance: provenance("plan_task_template_snapshots"),
       authorities: projectEffectiveAuthoritiesFromEngineInputV1(engineInput) };
-    const identity = buildEffectivePlanConfigRevisionV1(revisionInput);
+    const identity = (this.dependencies.buildConfigRevision ?? buildEffectivePlanConfigRevisionV1)(revisionInput);
     const replay = buildEffectivePlanConfigReplaySnapshotV1(revisionInput);
     const snapshot = buildAssistedPlanningSnapshotV1(tasks);
     const { error } = await this.rpc("assisted_bootstrap_session", { p_plan_id: planId, p_user_id: userId, p_identity: identity, p_replay: replay, p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot) });
@@ -84,10 +93,10 @@ export class AssistedPlanningService {
     if (session.draftFingerprint !== expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT", 409);
     if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
     const [input, optimizerSnapshot, taskTemplateSnapshots, persistedRevision] = await Promise.all([
-      buildEngineInput(planId, this.storage), this.storage.getPlanOptimizerSnapshot(planId),
+      this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getPlanConfigRevision(session.currentConfigRevisionId),
     ]);
-    const actual = buildEffectivePlanConfigRevisionV1({ planId, optimizerSnapshot, taskTemplateSnapshots,
+    const actual = (this.dependencies.buildConfigRevision ?? buildEffectivePlanConfigRevisionV1)({ planId, optimizerSnapshot, taskTemplateSnapshots,
       optimizerProvenance: provenance("plan_optimizer_snapshots"), taskTemplateProvenance: provenance("plan_task_template_snapshots"),
       authorities: projectEffectiveAuthoritiesFromEngineInputV1(input) });
     if (!persistedRevision || persistedRevision.planId !== planId || persistedRevision.fingerprint !== actual.configurationFingerprint)
