@@ -3288,7 +3288,7 @@ function mapDeleteError(err: any, fallback: string) {
 
   const assistedPlanId = (value: string) => z.coerce.number().int().positive().parse(value);
   const assistedExpected = z.object({ expectedDraftFingerprint: z.string().regex(/^[0-9a-f]{64}$/), expectedBaseStageId: z.number().int().positive() }).strict();
-  const assistedChanges = z.object({ taskId: z.number().int().positive(), startPlanned: z.string().nullable().optional(), endPlanned: z.string().nullable().optional(), zoneId: z.number().int().positive().nullable().optional(), spaceId: z.number().int().positive().nullable().optional(), locationLabel: z.string().nullable().optional(), durationOverride: z.number().int().positive().nullable().optional(), camerasOverride: z.number().int().min(0).nullable().optional() }).strict();
+  const assistedChanges = z.object({ taskId: z.number().int().positive(), startPlanned: z.string().nullable().optional(), endPlanned: z.string().nullable().optional() }).strict();
   app.get("/api/plans/:id/assisted", async (req, res) => assistedAction(res, () => assistedPlanning.state(assistedPlanId(req.params.id))));
   app.get("/api/plans/:id/assisted/history", async (req, res) => assistedAction(res, async () => (await assistedPlanning.state(assistedPlanId(req.params.id))).history));
   app.post("/api/plans/:id/assisted/session", async (req, res) => assistedAction(res, () => assistedPlanning.start(assistedPlanId(req.params.id), (req as any).user.id)));
@@ -3297,6 +3297,8 @@ function mapDeleteError(err: any, fallback: string) {
   app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.accept(assistedPlanId(req.params.id), (req as any).user.id, body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   app.post("/api/plans/:id/assisted/rollback", async (req, res) => assistedAction(res, () => { const body = z.object({ targetStageId: z.number().int().positive() }).strict().parse(req.body); return assistedPlanning.rollback(assistedPlanId(req.params.id), body.targetStageId); }));
   app.post("/api/plans/:id/assisted/redo", async (req, res) => assistedAction(res, () => assistedPlanning.redo(assistedPlanId(req.params.id))));
+  app.post("/api/plans/:id/assisted/draft/undo", async (req,res)=>assistedAction(res,()=>{const body=assistedExpected.parse(req.body);return assistedPlanning.undoDraft(assistedPlanId(req.params.id),body.expectedDraftFingerprint,body.expectedBaseStageId);}));
+  app.post("/api/plans/:id/assisted/draft/redo", async (req,res)=>assistedAction(res,()=>{const body=assistedExpected.parse(req.body);return assistedPlanning.redoDraft(assistedPlanId(req.params.id),body.expectedDraftFingerprint,body.expectedBaseStageId);}));
   app.post("/api/plans/:id/assisted/proposals", async (req,res) => {
     try { const result=await assistedProposals.request(assistedPlanId(req.params.id),assistedProposalRequestSchema.parse(req.body)); return res.status(202).json(result); }
     catch(error){ if(error instanceof AssistedProposalError)return res.status(error.status).json({code:error.code,message:error.code}); throw error; }

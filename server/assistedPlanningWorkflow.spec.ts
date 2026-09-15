@@ -39,6 +39,7 @@ function harness(options: { session?: any; rpcError?: unknown } = {}) {
     getAssistedPlanningStage: async () => activeStage,
     listAssistedPlanningStages: async () => history,
     getPlanningStageValidation: async () => validation,
+    getTasksForPlan: async () => draft.tasks.map(task => ({ id: task.taskId, status: "pending" })),
   };
   const storage = new Proxy({}, {
     get(_target, property: string) {
@@ -74,12 +75,12 @@ test("start is idempotent for an existing ACTIVE session and does not bootstrap 
 
 test("patch starts from the complete draft, changes only requested tasks, fingerprints it, and uses one RPC", async () => {
   const { service, calls, storageWrites } = harness();
-  await service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11, startPlanned: "09:15", zoneId: null }]);
+  await service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11, startPlanned: "09:15", endPlanned: "09:45" }]);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].name, "assisted_patch_draft");
   const parameters = calls[0].parameters;
   const snapshot = parameters.p_snapshot as typeof draft;
-  assert.deepEqual(snapshot.tasks[0], { ...draft.tasks[0], startPlanned: "09:15", zoneId: null });
+  assert.deepEqual(snapshot.tasks[0], { ...draft.tasks[0], startPlanned: "09:15", endPlanned: "09:45" });
   assert.deepEqual(snapshot.tasks[1], draft.tasks[1]);
   assert.equal(parameters.p_fingerprint, fingerprintAssistedPlanningSnapshotV1(snapshot));
   assert.deepEqual(parameters, {
@@ -100,7 +101,7 @@ test("unknown and duplicate patch task IDs fail deterministically without RPC", 
 test("STALE_DRAFT and STALE_BASE_STAGE RPC failures map to HTTP conflict", async () => {
   for (const code of ["STALE_DRAFT", "STALE_BASE_STAGE"] as const) {
     const { service, calls } = harness({ rpcError: { message: `Postgres: ${code}` } });
-    await expectConflict(() => service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11 }]), code);
+    await expectConflict(() => service.patchDraft(5, baseSession.draftFingerprint, 20, [{ taskId: 11, startPlanned:"09:15", endPlanned:"09:45" }]), code);
     assert.equal(calls.length, 1);
   }
 });
