@@ -226,3 +226,13 @@ test("canonical violation projection is lossless and fails closed for every miss
   assert.deepEqual(projectPlannerViolations([detail],identities)[0]?.affectedTaskIds,[1]);
   for(const namespace of ["task","resource","space"])assert.throws(()=>projectPlannerViolations([detail],identities.filter(item=>item.namespace!==namespace)),/UNPROJECTABLE_VALIDATION_IDENTITY/);
 });
+
+test("projects resource violations from adapter plan-resource identities", () => {
+  const detail = { ruleCode: "OVERLAP_VIOLATION", severity: "HARD", affectedTaskIds: ["task:1"], affectedResourceIds: ["plan-resource:9"], affectedSpaceIds: ["space:2"], dimensions: {} } as const;
+  const projected = projectPlannerViolations([detail as any], [
+    { namespace: "task", sourceId: "1", canonicalId: "task:1" },
+    { namespace: "plan-resource", sourceId: "9", canonicalId: "plan-resource:9" },
+    { namespace: "space", sourceId: "2", canonicalId: "space:2" },
+  ]);
+  assert.deepEqual(projected[0]?.affectedResourceIds, [9]);
+});

@@ -147,3 +147,14 @@ test("one shared closure keeps every hard-coupled structure intact and explains 
   assert.match(result.supportingReasonByTaskId["chain-peer"].join(), /TECHNICAL_CHAIN:c/);
   assert.match(result.supportingReasonByTaskId["round-peer"].join(), /ROUND_SYNCHRONIZATION:r/);
 });
+
+test("scope projection removes structured-space requirements with no surviving tasks", () => {
+  const source = fixture();
+  source.spaces.find(space => space.id === "other-space")!.secondaryContinuity = "REQUIRED";
+  source.spaces.find(space => space.id === "other-space")!.setupPolicy = { familyOrder: ["absent"], reentry: "FORBIDDEN" };
+  const result = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: "main" }, {}, ["main"]), []);
+  const unrelated = result.problem.spaces.find(space => space.id === "other-space")!;
+  assert.equal(unrelated.secondaryContinuity, undefined);
+  assert.equal(unrelated.setupPolicy, undefined);
+  assert.equal(source.spaces.find(space => space.id === "other-space")!.secondaryContinuity, "REQUIRED");
+});

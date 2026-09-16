@@ -1,0 +1,57 @@
+{
+  "benchmark": "A2-ASSIST-4-7",
+  "status": "PASS",
+  "sourceObligationCount": 266,
+  "stages": {
+    "s0": 1,
+    "s1": 2,
+    "s2": 3,
+    "configStage": 3,
+    "conflictStage": 4,
+    "divergentStage": 5
+  },
+  "secondScopeThroughRequestRun": true,
+  "s1ProtectedExactly": true,
+  "configRevision": {
+    "before": 40,
+    "after": 41,
+    "rollbackPreservedCurrent": true
+  },
+  "proposalConsumedRevisionIds": [
+    40,
+    41,
+    41
+  ],
+  "protectedPlacementCounts": [
+    0,
+    1,
+    2
+  ],
+  "hardConflict": {
+    "hardValid": false,
+    "acceptedExceptionCount": 1,
+    "followupBaselineCount": 1,
+    "followupNewCount": 0,
+    "followupOutcome": "NO_PROPOSAL"
+  },
+  "rollback": {
+    "exactSnapshot": true,
+    "exactDraft": true,
+    "exactFingerprint": true,
+    "exactActiveAndBaseStage": true,
+    "redoOldFutureBeforeDivergence": true
+  },
+  "divergence": {
+    "parentIsRestoredCheckpoint": true,
+    "oldFutureArchived": true,
+    "oldRedoUnavailable": true,
+    "activeAcceptedExceptionCount": 0,
+    "dailyTasksAtLatestActiveCheckpoint": true
+  },
+  "productDefectFound": true,
+  "productDefects": [
+    "scoped structured-space policies retained absent families/spaces",
+    "resource violation identity rejected adapter namespaces"
+  ],
+  "migration084": false
+}

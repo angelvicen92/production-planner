@@ -177,6 +177,23 @@ export function buildAssistedProblem(
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
   problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
+  // Structured-space policies describe the tasks that survive projection. An
+  // unrelated required-continuity/setup space must not make a small scope fail
+  // preflight, and absent setup families cannot remain mandatory in the scope.
+  problem.spaces = problem.spaces.map((space) => {
+    const ownTasks = problem.tasks.filter((task) => task.spaceId === space.id);
+    if (ownTasks.length === 0) {
+      const { secondaryContinuity: _secondary, setupPolicy: _setup, ...plain } = space;
+      return plain;
+    }
+    if (!space.setupPolicy) return space;
+    const presentFamilies = new Set(ownTasks.flatMap((task) => task.setupFamilyId ? [task.setupFamilyId] : []));
+    return { ...space, setupPolicy: { ...space.setupPolicy,
+      familyOrder: space.setupPolicy.familyOrder.filter((family) => presentFamilies.has(family)),
+      preparationMinutesByFamily: space.setupPolicy.preparationMinutesByFamily === undefined ? undefined
+        : Object.fromEntries(Object.entries(space.setupPolicy.preparationMinutesByFamily).filter(([family]) => presentFamilies.has(family))),
+    } };
+  });
   const originalValidationProblem = structuredClone(problem);
   problem.tasks = problem.tasks.map((task) => {
     const fixed = fixedById.get(task.id);
