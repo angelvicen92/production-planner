@@ -32,6 +32,8 @@ import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors"
 import { AssistedPlanningError, AssistedPlanningService } from "./assistedPlanningService";
 import { AssistedProposalError, AssistedProposalService } from "./assistedProposalService";
 import { assistedProposalApplySchema, assistedProposalRequestSchema } from "@shared/assistedProposalContracts";
+import { assistedConfigRefreshApplySchema } from "@shared/assistedConfigRefreshContracts";
+import { AssistedConfigRefreshError, AssistedConfigRefreshService } from "./assistedConfigRefresh";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -49,11 +51,13 @@ export async function registerRoutes(
 ): Promise<Server> {
   const assistedPlanning = new AssistedPlanningService(storage);
   const assistedProposals = new AssistedProposalService(storage);
+  const assistedConfigRefresh = new AssistedConfigRefreshService(storage);
   const assistedAction = async (res: any, action: () => Promise<unknown>) => {
     try { return res.json(await action()); }
     catch (error) {
       if (error instanceof AssistedPlanningError) return res.status(error.status).json({ code: error.code, message: error.code });
       if (error instanceof AssistedProposalError) return res.status(error.status).json({ code: error.code, message: error.code });
+      if (error instanceof AssistedConfigRefreshError) return res.status(error.status).json({ code: error.code, message: error.code });
       throw error;
     }
   };
@@ -3315,6 +3319,8 @@ function mapDeleteError(err: any, fallback: string) {
   });
   app.get("/api/plans/:id/assisted/proposals/:runId", async(req,res)=>assistedAction(res,()=>assistedProposals.get(assistedPlanId(req.params.id),assistedPlanId(req.params.runId))));
   app.post("/api/plans/:id/assisted/proposals/:runId/apply", async(req,res)=>assistedAction(res,()=>{const body=assistedProposalApplySchema.parse(req.body);return assistedProposals.apply(assistedPlanId(req.params.id),assistedPlanId(req.params.runId),body.expectedDraftFingerprint,body.expectedBaseStageId);}));
+  app.get("/api/plans/:id/assisted/config-refresh",async(req,res)=>assistedAction(res,()=>assistedConfigRefresh.preview(assistedPlanId(req.params.id))));
+  app.post("/api/plans/:id/assisted/config-refresh",async(req,res)=>assistedAction(res,()=>{const body=assistedConfigRefreshApplySchema.parse(req.body);return assistedConfigRefresh.apply(assistedPlanId(req.params.id),(req as any).user.id,body.expectedConfigRevisionId,body.selectedChangeKeys);}));
 
   app.get("/api/plans/:id/tasks", async (req, res) => {
     const tasks = await storage.getTasksForPlan(Number(req.params.id));

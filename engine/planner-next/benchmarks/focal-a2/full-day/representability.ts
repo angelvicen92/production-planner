@@ -286,8 +286,8 @@ function runJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
         ...structuredClone(input),
         tasks: [...input.tasks].reverse(),
         planResourceItems: [...input.planResourceItems].reverse(),
-        planSpaceSettings: [...input.planSpaceSettings].reverse(),
-        planZoneSettings: [...input.planZoneSettings].reverse(),
+        planSpaceSettings: [...(input.planSpaceSettings ?? [])].reverse(),
+        planZoneSettings: [...(input.planZoneSettings ?? [])].reverse(),
         locks: [...input.locks].reverse(),
       };
     });

@@ -27,6 +27,7 @@ import {
 } from "../integration/engineInputAdapter.fixture";
 import {
   preflightEngineInputForPlannerNext,
+  type EngineInputPreflightReasonCode,
 } from "../integration/engineInputPreflight";
 
 const baseCommit =
@@ -664,7 +665,7 @@ export function runSpec10018Probe(
 
 function unsupported(
   mutate: (input: EngineInput) => void,
-  expected: string,
+  expected: EngineInputPreflightReasonCode,
 ): {
   caseId: string;
   passed: boolean;
