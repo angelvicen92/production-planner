@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { executeAssistedPlanning, type AssistedProblem } from "../../engine/planner-next/assistedPlanning";
-import { buildCanonicalA2PlannerNextProblem } from "../../engine/planner-next/benchmarks/runPlannerNextA2Assist1Benchmark";
-import { createSupportedEngineInputAdapterFixture } from "../../engine/planner-next/integration/engineInputAdapter.fixture";
+import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import type { IStorage } from "../storage";
 import type { ConfigRefreshCandidate } from "../assistedConfigRefresh";
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "../assistedPlanningConfigRevision";
@@ -17,10 +16,13 @@ process.env.SUPABASE_URL??="http://localhost";process.env.SUPABASE_SERVICE_ROLE_
 async function run(){
   const {AssistedConfigRefreshService}=await import("../assistedConfigRefresh");
   const {AssistedProposalService}=await import("../assistedProposalService");
-  const canonical=buildCanonicalA2PlannerNextProblem();
-  assert.equal(canonical.expansion.tasks.filter(task=>task.participantId).length,266,"canonical A2 universe was truncated");
-  const planId=701,oldRevisionId=8,newRevisionId=9,taskId=105,runId=91;
-  const engineInput=createSupportedEngineInputAdapterFixture();
+  const planId=701,oldRevisionId=8,newRevisionId=9,runId=91;
+  const canonical=buildCanonicalFullA2EngineInput({planId});
+  const engineInput=canonical.input;
+  const canonicalParticipantObligations=canonical.expansion.tasks.filter(task=>task.participantId).length;
+  assert.equal(canonicalParticipantObligations,266,"canonical A2 universe was truncated");
+  const targetCanonicalTask=canonical.expansion.tasks.find(task=>task.participantId&&task.type!=="SODEXO")!;
+  const taskId=canonical.taskId.get(targetCanonicalTask.id)!;
   const originalDuration=engineInput.tasks.find(task=>task.id===taskId)!.durationOverrideMin!;
   const oldTemplate=normalizeTaskTemplateCatalogEntry({id:engineInput.tasks.find(task=>task.id===taskId)!.templateId,name:"Ensayo estudio 7",defaultDuration:originalDuration},"legacy_backfill");
   const newTemplate=normalizeTaskTemplateCatalogEntry({id:oldTemplate.sourceTemplateId,name:oldTemplate.templateName,defaultDuration:originalDuration+10},"inherited");
@@ -31,10 +33,10 @@ async function run(){
   const candidate:ConfigRefreshCandidate={currentReplay,candidateReplay,preview:{contractVersion:1,expectedConfigRevisionId:oldRevisionId,unsupportedAuthorities:[],localOverrides:[],changes:[{key:`task_templates:${oldTemplate.sourceTemplateId}`,authority:"task_templates",kind:"MODIFIED",label:newTemplate.templateName,localOverride:false}]}};
   const s1=buildAssistedPlanningSnapshotV1(engineInput.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,spaceId:task.spaceId??null,zoneId:task.zoneId??null})));
   const s1Fingerprint=fingerprintAssistedPlanningSnapshotV1(s1),s1Placements=structuredClone(s1.tasks);
-  const dailyTasks=structuredClone(canonical.expansion.tasks),acceptedExceptions=[{id:77,stageId:1,ruleCode:"A2_ACCEPTED"}];
+  const dailyTasks=structuredClone(engineInput.tasks),acceptedExceptions=[{id:77,stageId:1,ruleCode:"A2_ACCEPTED"}];
   const session:any={id:7,planId,status:"ACTIVE",activeStageId:1,draftBaseStageId:1,currentConfigRevisionId:oldRevisionId,draftFingerprint:s1Fingerprint,draftSnapshotJson:s1,draftValidationId:55};
   const stage:any={id:1,sessionId:session.id,planId,snapshotFingerprint:s1Fingerprint,snapshotJson:s1};
-  let materialized=oldTemplate,writes=0,storedRun:any=null,finished:any=null,runnerDuration:number|null=null;
+  let materialized=oldTemplate,writes=0,storedRun:any=null,finished:any=null,runnerDuration:number|null=null,runnerObligations=0;
   const storage=new Proxy({}, {get(_target,property:string){const reads:Record<string,()=>Promise<any>>={
     getActiveAssistedPlanningSession:async()=>session,getAssistedPlanningStage:async()=>stage,getPlanOptimizerSnapshot:async()=>optimizer,
     getPlanTaskTemplateSnapshots:async()=>[materialized],getPlanConfigRevision:async(id?:number)=>({id,planId,fingerprint:"revision-9"}),
@@ -45,20 +47,20 @@ async function run(){
   const preview=await refresh.preview(planId);assert.deepEqual({revision:session.currentConfigRevisionId,validation:session.draftValidationId,materialized,writes},before,"preview wrote state");
   const applied=await refresh.apply(planId,"00000000-0000-0000-0000-000000000005",oldRevisionId,[`task_templates:${oldTemplate.sourceTemplateId}`]);
   assert.equal(applied.revisionId,newRevisionId);assert.equal(session.currentConfigRevisionId,newRevisionId);assert.equal(materialized.defaultDuration,originalDuration+10);assert.equal(session.draftValidationId,null);
-  assert.equal(fingerprintAssistedPlanningSnapshotV1(s1),s1Fingerprint);assert.deepEqual(s1.tasks,s1Placements);assert.deepEqual(canonical.expansion.tasks,dailyTasks);assert.deepEqual(acceptedExceptions,[{id:77,stageId:1,ruleCode:"A2_ACCEPTED"}]);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(s1),s1Fingerprint);assert.deepEqual(s1.tasks,s1Placements);assert.deepEqual(engineInput.tasks,dailyTasks);assert.deepEqual(acceptedExceptions,[{id:77,stageId:1,ruleCode:"A2_ACCEPTED"}]);
 
   const runs:AssistedProposalRunAccess={
     create:async values=>{storedRun={id:runId,...values};return {data:{id:runId},error:null};},find:async()=>({data:storedRun,error:null}),fail:async()=>({error:null}),
     finish:async(_plan,_run,result)=>{finished=result;return {error:null};},apply:async()=>({error:null}),
   };
-  let buildInputCalls=0;
-  const buildInput=async()=>{buildInputCalls++;const input=structuredClone(engineInput);const task=input.tasks.find(row=>row.templateId===materialized.sourceTemplateId)!;task.durationOverrideMin=materialized.defaultDuration;return input;};
-  const proposal=new AssistedProposalService(storage,()=>{},runs,(problem:AssistedProblem,options)=>{runnerDuration=problem.problem.tasks.find(task=>task.id===`task:${taskId}`)!.duration;return executeAssistedPlanning(problem,options);},{buildInput,buildConfigRevision:({planId:revisionPlanId})=>({contractVersion:1,planId:revisionPlanId,components:[],configurationFingerprint:"revision-9"})});
+  let buildInputCalls=0;const adapterInputObligationCounts:number[]=[];
+  const buildInput=async()=>{buildInputCalls++;adapterInputObligationCounts.push(engineInput.tasks.filter(task=>task.contestantId!==null&&task.contestantId!==undefined).length);const input=structuredClone(engineInput);for(const task of input.tasks.filter(row=>row.templateId===materialized.sourceTemplateId))task.durationOverrideMin=materialized.defaultDuration;return input;};
+  const proposal=new AssistedProposalService(storage,()=>{},runs,(problem:AssistedProblem,options)=>{runnerDuration=problem.problem.tasks.find(task=>task.id===`task:${taskId}`)!.duration;runnerObligations=problem.problem.tasks.filter(task=>task.participantId).length+(problem.problem.participantMeals?.length??0);return executeAssistedPlanning(problem,options);},{buildInput,buildConfigRevision:({planId:revisionPlanId})=>({contractVersion:1,planId:revisionPlanId,components:[],configurationFingerprint:"revision-9"})});
   const requested=await proposal.request(planId,{selector:{kind:"TASK_IDS",taskIds:[taskId]},includePrerequisites:false,expectedDraftFingerprint:s1Fingerprint,expectedBaseStageId:stage.id});
   assert.equal(storedRun.config_revision_id,newRevisionId,"request persisted the old revision");
   const result=await proposal.run(planId,requested.runId);
   assert.equal(storedRun.config_revision_id,session.currentConfigRevisionId,"run revision diverged from session");assert.ok(buildInputCalls>=2,"request/run did not build from materialized daily state");
-  assert.equal(runnerDuration,originalDuration+10,"runner consumed the old duration");assert.equal(finished,result);assert.notEqual(runnerDuration,originalDuration);
-  return {benchmark:"A2-ASSIST-5",status:"PASS",canonicalParticipantObligations:266,previewReadOnly:true,detectedChanges:preview.changes.length,parentRevisionId:oldRevisionId,newRevisionId,acceptedS1Fingerprint:s1Fingerprint,acceptedS1Exact:true,dailyTasksUnchanged:true,acceptedExceptionsUnchanged:true,draftValidationInvalidated:true,nextProposalConfigRevisionId:storedRun.config_revision_id,buildInputCalls,oldDuration:originalDuration,consumedRefreshedDuration:runnerDuration,outcome:result.outcome};
+  assert.equal(runnerDuration,originalDuration+10,"runner consumed the old duration");assert.deepEqual(adapterInputObligationCounts,[266,266],"request/run adapter did not receive canonical A2");assert.equal(finished,result);assert.notEqual(runnerDuration,originalDuration);
+  return {benchmark:"A2-ASSIST-5",status:"PASS",canonicalParticipantObligations,engineInputTaskCount:engineInput.tasks.length,adapterInputObligationCounts,runnerScopedParticipantObligations:runnerObligations,previewReadOnly:true,detectedChanges:preview.changes.length,parentRevisionId:oldRevisionId,newRevisionId,acceptedS1Fingerprint:s1Fingerprint,acceptedS1Exact:true,dailyTasksUnchanged:true,acceptedExceptionsUnchanged:true,draftValidationInvalidated:true,nextProposalConfigRevisionId:storedRun.config_revision_id,buildInputCalls,oldDuration:originalDuration,consumedRefreshedDuration:runnerDuration,outcome:result.outcome};
 }
 run().then(result=>console.log(JSON.stringify(result,null,2)));

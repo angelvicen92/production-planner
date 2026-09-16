@@ -27,6 +27,21 @@ test("migration verifies every materialized replay group before creating a revis
   assert.match(guard,/jsonb_agg\(v ORDER BY v::text\)/);
 });
 
+test("migration compares resource requirements as canonical JSONB objects and preserves SQL NULL",()=>{
+  const sql=readFileSync(new URL("../supabase/migrations/083_assisted_config_refresh.sql",import.meta.url),"utf8");
+  const guard=sql.slice(sql.indexOf("IF (SELECT count(*) FROM public.plan_task_template_snapshots"),sql.indexOf("INSERT INTO public.plan_config_revisions"));
+  assert.match(sql,/NULLIF\(item->'resourceRequirements','null'::jsonb\)/);
+  assert.match(guard,/t\.resource_requirements IS DISTINCT FROM NULLIF\(x->'resourceRequirements','null'::jsonb\)/);
+  assert.doesNotMatch(guard,/jsonb_array_elements\(t\.resource_requirements\)/);
+  const canonical=(value:unknown)=>value===null?null:JSON.stringify(value,(_key,nested)=>nested&&typeof nested==="object"&&!Array.isArray(nested)?Object.fromEntries(Object.entries(nested).sort(([a],[b])=>a.localeCompare(b))):nested);
+  const stored={byType:{camera:2,audio:1},byItem:{"17":1},anyOf:[{typeIds:[3,2],quantity:1}]};
+  const reordered={anyOf:[{quantity:1,typeIds:[3,2]}],byItem:{"17":1},byType:{audio:1,camera:2}};
+  assert.equal(canonical(stored),canonical(reordered),"JSON object key order must not create a mismatch");
+  assert.notEqual(canonical(stored),canonical({...reordered,byType:{audio:1,camera:3}}),"a semantic mismatch must reach REFRESH_REPLAY_NOT_MATERIALIZED");
+  assert.equal(canonical(null),canonical(null),"NULL must equal NULL");
+  assert.match(guard,/THEN RAISE EXCEPTION 'REFRESH_REPLAY_NOT_MATERIALIZED'/);
+});
+
 test("template refresh compares operational semantics independently from provenance",()=>{
   const legacy={...oldTemplate,source:"legacy_backfill" as const};
   assert.deepEqual(buildTaskTemplateRefreshChanges([legacy],[oldTemplate]),[]);
