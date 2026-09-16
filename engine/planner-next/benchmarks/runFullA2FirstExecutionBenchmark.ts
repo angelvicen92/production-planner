@@ -17,7 +17,7 @@ function writeStable(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-const { input, expansion, validation, config, itinerantUnitId } = buildCanonicalFullA2EngineInput({
+const { input, expansion, validation, config, itinerantUnitId, operationalMealGroups } = buildCanonicalFullA2EngineInput({
   planId: PLAN_ID,
   branchBudget,
 });

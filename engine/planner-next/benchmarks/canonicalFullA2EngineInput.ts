@@ -177,5 +177,5 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     source: "engine-buildInput-optimizer-transport",
   };
 
-  return { input, expansion, validation, config, itinerantUnitId, taskId, templateId };
+  return { input, expansion, validation, config, itinerantUnitId, taskId, templateId, operationalMealGroups };
 }
