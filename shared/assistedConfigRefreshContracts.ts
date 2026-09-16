@@ -17,5 +17,12 @@ export interface AssistedConfigRefreshPreviewV1 {
   readonly contractVersion: 1;
   readonly expectedConfigRevisionId: number;
   readonly changes: readonly AssistedConfigRefreshChangeV1[];
-  readonly unsupportedAuthorities: readonly string[];
+  /** Daily authorities that cannot yet be refreshed losslessly from General. */
+  readonly unsupportedAuthorities: readonly AssistedConfigRefreshUnsupportedAuthorityV1[];
+}
+
+export interface AssistedConfigRefreshUnsupportedAuthorityV1 {
+  readonly authority: "plan_workday" | "contestant_availability" | "spatial_configuration" | "resource_configuration" | "resource_assignments_and_requirements" | "resource_bundles";
+  readonly label: string;
+  readonly reason: "NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION";
 }

@@ -7,7 +7,21 @@ import { buildEffectivePlanConfigReplaySnapshotV1, type EffectivePlanConfigRepla
 import { buildEngineInput } from "../engine/buildInput";
 import type { AssistedConfigRefreshChangeV1, AssistedConfigRefreshPreviewV1 } from "../shared/assistedConfigRefreshContracts";
 
-const unsupported = Object.freeze(["plan_workday", "contestant_availability", "spatial_configuration", "resource_configuration", "resource_assignments_and_requirements", "resource_bundles"]);
+/**
+ * Focused General -> day audit (074-082 and buildEngineInput): these authorities
+ * are effective daily projections assembled from several plan-scoped tables. There
+ * is no single General source plus lossless atomic writer for any of them. Keep the
+ * coverage gap explicit rather than pretending that an EngineInput projection is
+ * a writable General mapping.
+ */
+const unsupported = Object.freeze([
+  ["plan_workday", "Horario de la jornada"],
+  ["contestant_availability", "Disponibilidad de concursantes"],
+  ["spatial_configuration", "Configuración de espacios y zonas"],
+  ["resource_configuration", "Configuración de recursos"],
+  ["resource_assignments_and_requirements", "Asignaciones y necesidades de recursos"],
+  ["resource_bundles", "Agrupaciones de recursos"],
+].map(([authority,label])=>Object.freeze({authority,label,reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION" as const})));
 const stable = (value: unknown) => JSON.stringify(value);
 const provenance = (authority:string)=>({authority,authorityContractVersion:1});
 export class AssistedConfigRefreshError extends Error {
@@ -15,6 +29,23 @@ export class AssistedConfigRefreshError extends Error {
 }
 
 export interface ConfigRefreshCandidate { preview: AssistedConfigRefreshPreviewV1; currentReplay: EffectivePlanConfigReplaySnapshotV1; candidateReplay: EffectivePlanConfigReplaySnapshotV1; }
+
+/** Compare only canonical operational fields; source is audit provenance. */
+export function sameTaskTemplateOperationalSemantics(left:TaskTemplateOperationalSnapshotV1,right:TaskTemplateOperationalSnapshotV1){
+  const {source:_leftSource,sourceFingerprint:_leftFingerprint,...leftOperational}=left;
+  const {source:_rightSource,sourceFingerprint:_rightFingerprint,...rightOperational}=right;
+  return stable(leftOperational)===stable(rightOperational);
+}
+
+export const isAuthoritativeLocalTemplateOverride=(row:TaskTemplateOperationalSnapshotV1)=>row.source==="ad_hoc_from_default";
+
+export function buildTaskTemplateRefreshChanges(current:readonly TaskTemplateOperationalSnapshotV1[],candidate:readonly TaskTemplateOperationalSnapshotV1[]){
+  const changes:AssistedConfigRefreshChangeV1[]=[];
+  const oldById=new Map(current.map(row=>[row.sourceTemplateId,row])),nextById=new Map(candidate.map(row=>[row.sourceTemplateId,row]));
+  for(const row of candidate){const old=oldById.get(row.sourceTemplateId);if(!old||!sameTaskTemplateOperationalSemantics(old,row))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:old?"MODIFIED":"NEW",label:row.templateName,localOverride:Boolean(old&&isAuthoritativeLocalTemplateOverride(old))});}
+  for(const row of current)if(!nextById.has(row.sourceTemplateId))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:"REMOVED",label:row.templateName,localOverride:isAuthoritativeLocalTemplateOverride(row)});
+  return changes;
+}
 
 /** General→daily mapping audit: only versioned task-template and optimizer snapshots have safe writable projections. */
 export async function buildConfigRefreshCandidate(storage:IStorage,planId:number):Promise<ConfigRefreshCandidate>{
@@ -30,10 +61,7 @@ export async function buildConfigRefreshCandidate(storage:IStorage,planId:number
     dailyTemplateSnapshots:currentTemplates.map(row=>({sourceTemplateId:row.sourceTemplateId,templateName:row.templateName,planTemplateSnapshotId:row.planTemplateSnapshotId})),
     dailyZoneIds:(input.planZoneSettings??[]).map(row=>row.zoneId)});
   if(optimizerPreview.status!=="READY")throw new AssistedConfigRefreshError("REFRESH_BLOCKED",422);
-  const changes:AssistedConfigRefreshChangeV1[]=[];
-  const oldById=new Map(currentTemplates.map(row=>[row.sourceTemplateId,row]));const nextById=new Map(candidateTemplates.map(row=>[row.sourceTemplateId,row]));
-  for(const row of candidateTemplates){const old=oldById.get(row.sourceTemplateId);if(!old||old.sourceFingerprint!==row.sourceFingerprint)changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:old?"MODIFIED":"NEW",label:row.templateName,localOverride:Boolean(old&&old.source!=="inherited")});}
-  for(const row of currentTemplates)if(!nextById.has(row.sourceTemplateId))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:"REMOVED",label:row.templateName,localOverride:row.source!=="inherited"});
+  const changes:AssistedConfigRefreshChangeV1[]=buildTaskTemplateRefreshChanges(currentTemplates,candidateTemplates);
   if(stable(currentOptimizer)!==stable(optimizerPreview.candidate))changes.push({key:"optimizer:settings",authority:"optimizer",kind:"MODIFIED",label:"Preferencias de optimización",localOverride:currentOptimizer.source==="DAY_OVERRIDE"});
   changes.sort((a,b)=>a.key.localeCompare(b.key));
   const currentReplay=revision.replaySnapshotJson as unknown as EffectivePlanConfigReplaySnapshotV1;
