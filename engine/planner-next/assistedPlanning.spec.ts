@@ -158,3 +158,23 @@ test("scope projection removes structured-space requirements with no surviving t
   assert.equal(unrelated.setupPolicy, undefined);
   assert.equal(source.spaces.find(space => space.id === "other-space")!.secondaryContinuity, "REQUIRED");
 });
+
+test("scope projection preserves surviving setup families and removes only absent families immutably", () => {
+  const source = fixture();
+  source.tasks.find(task => task.id === "main")!.setupFamilyId = "present";
+  source.spaces.find(space => space.id === "main-space")!.setupPolicy = {
+    familyOrder: ["present", "absent"],
+    reentry: "FORBIDDEN",
+    preparationMinutesByFamily: { present: 4, absent: 9 },
+  };
+  const before = structuredClone(source);
+
+  const result = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: "main" }, {}, ["main"]), []);
+
+  assert.deepEqual(result.problem.spaces.find(space => space.id === "main-space")!.setupPolicy, {
+    familyOrder: ["present"],
+    reentry: "FORBIDDEN",
+    preparationMinutesByFamily: { present: 4 },
+  });
+  assert.deepEqual(source, before);
+});

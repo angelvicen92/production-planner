@@ -11,7 +11,18 @@
     "divergentStage": 5
   },
   "secondScopeThroughRequestRun": true,
-  "s1ProtectedExactly": true,
+  "s1Protection": {
+    "checkedPlacementCount": 1,
+    "exact": true
+  },
+  "configRefresh": {
+    "changeKind": "MODIFIED",
+    "oldDuration": 10,
+    "materializedDuration": 20,
+    "consumedDuration": 20,
+    "buildInputCalls": 10,
+    "consumedNewValue": true
+  },
   "configRevision": {
     "before": 40,
     "after": 41,
@@ -30,9 +41,10 @@
   "hardConflict": {
     "hardValid": false,
     "acceptedExceptionCount": 1,
+    "followupTaskId": 10031,
     "followupBaselineCount": 1,
     "followupNewCount": 0,
-    "followupOutcome": "NO_PROPOSAL"
+    "followupOutcome": "PROPOSAL"
   },
   "rollback": {
     "exactSnapshot": true,
