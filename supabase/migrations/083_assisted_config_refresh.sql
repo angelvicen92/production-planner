@@ -48,14 +48,45 @@ BEGIN
           OR t.default_cameras IS DISTINCT FROM (x->>'defaultCameras')::int
           OR t.default_zone_id IS DISTINCT FROM (x->>'defaultZoneId')::int
           OR t.default_space_id IS DISTINCT FROM (x->>'defaultSpaceId')::int
-          OR t.dependency_template_ids IS DISTINCT FROM x->'dependencyTemplateIds'
-          OR t.resource_requirements IS DISTINCT FROM x->'resourceRequirements'
-          OR t.allowed_itinerant_team_ids IS DISTINCT FROM x->'allowedItinerantTeamIds'
+          OR t.auto_create_on_contestant_create IS DISTINCT FROM (x->>'autoCreateOnContestantCreate')::bool
+          OR t.requires_auxiliar IS DISTINCT FROM (x->>'requiresAuxiliar')::bool
+          OR t.requires_coach IS DISTINCT FROM (x->>'requiresCoach')::bool
+          OR t.requires_presenter IS DISTINCT FROM (x->>'requiresPresenter')::bool
+          OR t.exclusive_auxiliar IS DISTINCT FROM (x->>'exclusiveAuxiliar')::bool
+          OR t.has_dependency IS DISTINCT FROM (x->>'hasDependency')::bool
+          OR (SELECT COALESCE(jsonb_agg(v ORDER BY v::text),'[]'::jsonb) FROM jsonb_array_elements(t.dependency_template_ids) v)
+             IS DISTINCT FROM (SELECT COALESCE(jsonb_agg(v ORDER BY v::text),'[]'::jsonb) FROM jsonb_array_elements(x->'dependencyTemplateIds') v)
+          OR (SELECT COALESCE(jsonb_agg(v ORDER BY v::text),'[]'::jsonb) FROM jsonb_array_elements(t.resource_requirements) v)
+             IS DISTINCT FROM (SELECT COALESCE(jsonb_agg(v ORDER BY v::text),'[]'::jsonb) FROM jsonb_array_elements(x->'resourceRequirements') v)
+          OR t.itinerant_team_requirement IS DISTINCT FROM x->>'itinerantTeamRequirement'
+          OR t.itinerant_team_id IS DISTINCT FROM (x->>'itinerantTeamId')::int
+          OR (SELECT COALESCE(jsonb_agg(v ORDER BY v::text),'[]'::jsonb) FROM jsonb_array_elements(t.allowed_itinerant_team_ids) v)
+             IS DISTINCT FROM (SELECT COALESCE(jsonb_agg(v ORDER BY v::text),'[]'::jsonb) FROM jsonb_array_elements(x->'allowedItinerantTeamIds') v)
+          OR t.setup_id IS DISTINCT FROM (x->>'setupId')::int
      ) THEN RAISE EXCEPTION 'REFRESH_REPLAY_NOT_MATERIALIZED'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.plan_optimizer_snapshots o WHERE o.plan_id=p_plan_id
        AND o.source IS NOT DISTINCT FROM optimizer->>'source'
        AND o.editing_mode IS NOT DISTINCT FROM optimizer->>'editingMode'
-       AND o.near_hard_breaks_max IS NOT DISTINCT FROM (optimizer->>'nearHardBreaksMax')::int)
+       AND o.main_zone_id IS NOT DISTINCT FROM (optimizer->>'mainZoneId')::int
+       AND o.arrival_plan_template_snapshot_id IS NOT DISTINCT FROM (optimizer#>>'{transport,arrivalPlanTemplateSnapshotId}')::bigint
+       AND o.departure_plan_template_snapshot_id IS NOT DISTINCT FROM (optimizer#>>'{transport,departurePlanTemplateSnapshotId}')::bigint
+       AND o.arrival_grouping_target IS NOT DISTINCT FROM (optimizer#>>'{transport,arrivalGroupingTarget}')::int
+       AND o.departure_grouping_target IS NOT DISTINCT FROM (optimizer#>>'{transport,departureGroupingTarget}')::int
+       AND o.arrival_min_gap_minutes IS NOT DISTINCT FROM (optimizer#>>'{transport,arrivalMinGapMinutes}')::int
+       AND o.departure_min_gap_minutes IS NOT DISTINCT FROM (optimizer#>>'{transport,departureMinGapMinutes}')::int
+       AND o.van_capacity IS NOT DISTINCT FROM (optimizer#>>'{transport,vanCapacity}')::int
+       AND o.grouping_weight IS NOT DISTINCT FROM (optimizer#>>'{transport,groupingWeight}')::int
+       AND o.near_hard_breaks_max IS NOT DISTINCT FROM (optimizer->>'nearHardBreaksMax')::int
+       AND (SELECT count(*) FROM public.plan_optimizer_snapshot_heuristics h WHERE h.snapshot_id=o.id)=jsonb_object_length(optimizer->'heuristics')
+       AND NOT EXISTS (
+         SELECT 1 FROM jsonb_each(optimizer->'heuristics') expected
+         LEFT JOIN public.plan_optimizer_snapshot_heuristics actual ON actual.snapshot_id=o.id AND actual.heuristic_key=expected.key
+         WHERE actual.heuristic_key IS NULL
+            OR actual.basic_level IS DISTINCT FROM (expected.value->>'basicLevel')::int
+            OR actual.advanced_value IS DISTINCT FROM (expected.value->>'advancedValue')::int
+       )
+       AND (SELECT COALESCE(jsonb_agg(g.zone_id ORDER BY g.zone_id),'[]'::jsonb) FROM public.plan_optimizer_snapshot_grouping_zones g WHERE g.snapshot_id=o.id)
+           IS NOT DISTINCT FROM (SELECT COALESCE(jsonb_agg((z#>>'{}')::int ORDER BY (z#>>'{}')::int),'[]'::jsonb) FROM jsonb_array_elements(optimizer->'groupingZoneIds') z))
      THEN RAISE EXCEPTION 'REFRESH_REPLAY_NOT_MATERIALIZED'; END IF;
 
   INSERT INTO public.plan_config_revisions(plan_id,parent_revision_id,source,fingerprint,identity_json,replay_snapshot_json,diff_json,created_by)

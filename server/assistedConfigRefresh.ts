@@ -5,7 +5,7 @@ import { buildPlanOptimizerRefreshPreviewV1 } from "./planOptimizerSnapshotRefre
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
 import { buildEffectivePlanConfigReplaySnapshotV1, type EffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import { buildEngineInput } from "../engine/buildInput";
-import type { AssistedConfigRefreshChangeV1, AssistedConfigRefreshPreviewV1 } from "../shared/assistedConfigRefreshContracts";
+import type { AssistedConfigRefreshChangeV1, AssistedConfigRefreshLocalOverrideV1, AssistedConfigRefreshPreviewV1 } from "../shared/assistedConfigRefreshContracts";
 
 /**
  * Focused General -> day audit (074-082 and buildEngineInput): these authorities
@@ -39,6 +39,17 @@ export function sameTaskTemplateOperationalSemantics(left:TaskTemplateOperationa
 
 export const isAuthoritativeLocalTemplateOverride=(row:TaskTemplateOperationalSnapshotV1)=>row.source==="ad_hoc_from_default";
 
+export function buildLocalOverrideProjection(current:readonly TaskTemplateOperationalSnapshotV1[],optimizerSource:string):AssistedConfigRefreshLocalOverrideV1[]{
+  const overrides:AssistedConfigRefreshLocalOverrideV1[]=current.filter(isAuthoritativeLocalTemplateOverride).map(row=>({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",label:row.templateName,source:"ad_hoc_from_default"}));
+  if(optimizerSource==="DAY_OVERRIDE")overrides.push({key:"optimizer:settings",authority:"optimizer",label:"Preferencias de optimización",source:"DAY_OVERRIDE"});
+  return overrides.sort((a,b)=>a.key.localeCompare(b.key));
+}
+
+export function buildOptimizerRefreshChange(optimizerPreview:ReturnType<typeof buildPlanOptimizerRefreshPreviewV1>):AssistedConfigRefreshChangeV1|null{
+  if(optimizerPreview.status!=="READY"||!optimizerPreview.diff.hasSemanticChanges)return null;
+  return {key:"optimizer:settings",authority:"optimizer",kind:"MODIFIED",label:"Preferencias de optimización",localOverride:optimizerPreview.current.source==="DAY_OVERRIDE"};
+}
+
 export function buildTaskTemplateRefreshChanges(current:readonly TaskTemplateOperationalSnapshotV1[],candidate:readonly TaskTemplateOperationalSnapshotV1[]){
   const changes:AssistedConfigRefreshChangeV1[]=[];
   const oldById=new Map(current.map(row=>[row.sourceTemplateId,row])),nextById=new Map(candidate.map(row=>[row.sourceTemplateId,row]));
@@ -62,11 +73,11 @@ export async function buildConfigRefreshCandidate(storage:IStorage,planId:number
     dailyZoneIds:(input.planZoneSettings??[]).map(row=>row.zoneId)});
   if(optimizerPreview.status!=="READY")throw new AssistedConfigRefreshError("REFRESH_BLOCKED",422);
   const changes:AssistedConfigRefreshChangeV1[]=buildTaskTemplateRefreshChanges(currentTemplates,candidateTemplates);
-  if(stable(currentOptimizer)!==stable(optimizerPreview.candidate))changes.push({key:"optimizer:settings",authority:"optimizer",kind:"MODIFIED",label:"Preferencias de optimización",localOverride:currentOptimizer.source==="DAY_OVERRIDE"});
+  const optimizerChange=buildOptimizerRefreshChange(optimizerPreview);if(optimizerChange)changes.push(optimizerChange);
   changes.sort((a,b)=>a.key.localeCompare(b.key));
   const currentReplay=revision.replaySnapshotJson as unknown as EffectivePlanConfigReplaySnapshotV1;
   const candidateInput={taskTemplateSnapshots:candidateTemplates,optimizerSnapshot:optimizerPreview.candidate,authorities:projectEffectiveAuthoritiesFromEngineInputV1(input)};
-  return {preview:Object.freeze({contractVersion:1,expectedConfigRevisionId:session.currentConfigRevisionId,changes:Object.freeze(changes),unsupportedAuthorities:unsupported}),currentReplay,candidateReplay:buildEffectivePlanConfigReplaySnapshotV1(candidateInput)};
+  return {preview:Object.freeze({contractVersion:1,expectedConfigRevisionId:session.currentConfigRevisionId,changes:Object.freeze(changes),localOverrides:Object.freeze(buildLocalOverrideProjection(currentTemplates,currentOptimizer.source)),unsupportedAuthorities:unsupported}),currentReplay,candidateReplay:buildEffectivePlanConfigReplaySnapshotV1(candidateInput)};
 }
 
 export class AssistedConfigRefreshService {
