@@ -15,6 +15,14 @@ test("accepted exception applies only to the exact key while affected tasks rema
   assert.equal(isAcceptedExceptionStillApplicable(exception,{violationKey:"exact"},[9]),false);
 });
 
+test("config revision is provenance: exact untouched identity is grandfathered, material identity and moved tasks are not",()=>{
+  const oldDecision={violationKey:"same-material-rule",affectedTaskIds:[2],snapshotFingerprint:"old-snapshot",configRevisionId:10};
+  assert.equal(isAcceptedExceptionStillApplicable(oldDecision,{violationKey:"same-material-rule"},[]),true);
+  assert.equal(isAcceptedExceptionStillApplicable(oldDecision,{violationKey:"changed-material-rule"},[]),false);
+  assert.equal(isAcceptedExceptionStillApplicable(oldDecision,{violationKey:"same-material-rule"},[2]),false);
+  assert.equal(oldDecision.configRevisionId,10);
+});
+
 test("violationKey recursively canonicalizes nested dimensions", () => {
   const left=createViolationKey({ruleCode:"NESTED",affectedTaskIds:["10","2"],dimensions:{outer:{z:1,a:{right:true,left:false}},items:[{b:2,a:1}]}});
   const right=createViolationKey({ruleCode:"NESTED",affectedTaskIds:["2","10"],dimensions:{items:[{a:1,b:2}],outer:{a:{left:false,right:true},z:1}}});

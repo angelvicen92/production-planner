@@ -8,5 +8,11 @@ test("assisted timeline edits only the draft while accept and rollback alone ref
 test("bootstrap uses structured API authority and remains explicitly retryable",()=>{assert.match(source,/error\?\.status===404\|\|error\?\.code==="SESSION_NOT_FOUND"/);assert.doesNotMatch(source,/message.*includes\("404"\)/);assert.match(source,/bootstrapped\.current=false/);assert.match(source,/>Reintentar</);});
 test("every authoritative 409 clears stale preview and run before refresh",()=>{assert.match(source,/isAssistedConflict=\(error:any\)=>error\?\.status===409/);assert.match(source,/if\(isAssistedConflict\(e\)\)\{clearProposal\(\);await refresh\(\);\}/);});
 test("only pending and interrupted tasks are offered as editable scope",()=>{assert.match(source,/filter\(\(task:any\)=>task\.status==="pending"\|\|task\.status==="interrupted"\)/);});
-test("operational conflict UI uses human task context and never renders internal identifiers",()=>{const report=source.slice(source.indexOf('data-testid="stage-validation-report"'),source.indexOf("{localWarnings.length"));assert.match(report,/taskContext/);assert.doesNotMatch(report,/engineReasonCode|ruleCode|affectedTaskIds.*join/);assert.match(source,/hardAffectedTaskIds/);});
+test("the complete Assisted operator surface renders human context rather than internal identifiers or codes",()=>{
+  const surface=source.slice(source.indexOf("const toolbar="),source.indexOf("<FullscreenPlanningPanel"));
+  assert.match(surface,/violationExplanation\(violation\)/);assert.match(surface,/taskContext/);assert.match(surface,/warningExplanation\(warning\)/);
+  assert.doesNotMatch(surface,/engineReasonCode|reasonCodes|\.ruleCode|\.kind|taskIds\.join|config \{|run \{|errorCode/);
+  assert.match(source,/hardAffectedTaskIds/);
+  assert.doesNotMatch(source,/setMessage\(errorCode|setMessage\(run\.message/);
+});
 test("Assisted receives product plan while V4 remains outside its authority",async()=>{const page=await readFile(new URL("../../pages/plan-details.tsx",import.meta.url),"utf8");const call=page.slice(page.indexOf("<AssistedPlanningWorkspace"),page.indexOf("/> : <>",page.indexOf("<AssistedPlanningWorkspace")));assert.match(call,/plan=\{plan as any\}/);assert.doesNotMatch(call,/planningViewPlan/);});

@@ -5,7 +5,13 @@ import fs from "node:fs";
 const sql=fs.readFileSync("supabase/migrations/082_assisted_stage_validation_exceptions.sql","utf8");
 const editingSql=fs.readFileSync("supabase/migrations/081_assisted_draft_editing.sql","utf8");
 test("082 persists exact exception identity and prevents duplicates",()=>{
-  for(const token of ["config_revision_id","snapshot_fingerprint","affected_resource_ids_json","affected_space_ids_json","stage_violation_key","severity IN \\('HARD','REQUIRED'\\)"])assert.match(sql,new RegExp(token));
+  for(const token of ["config_revision_id","snapshot_fingerprint","affected_resource_ids_json","affected_space_ids_json","stage_violation_key"])assert.match(sql,new RegExp(token));
+});
+test("082 incrementally reuses the HARD/REQUIRED check already installed by 077",()=>{
+  const stateSql=fs.readFileSync("supabase/migrations/077_assisted_planning_state.sql","utf8");
+  assert.match(stateSql,/severity TEXT NOT NULL CHECK \(severity IN \('HARD', 'REQUIRED'\)\)/);
+  assert.doesNotMatch(sql,/ADD CONSTRAINT\s+planning_accepted_exceptions_severity_check/);
+  assert.doesNotMatch(sql,/DROP CONSTRAINT\s+(?:IF EXISTS\s+)?planning_accepted_exceptions_severity_check/);
 });
 test("validation and accept are server-only and validation freshness is checked under lock",()=>{
   assert.equal((sql.match(/SECURITY INVOKER SET search_path=''/g)??[]).length,2); assert.doesNotMatch(sql,/SECURITY DEFINER/);

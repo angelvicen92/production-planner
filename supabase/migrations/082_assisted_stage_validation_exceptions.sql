@@ -16,8 +16,7 @@ ALTER TABLE public.planning_accepted_exceptions
     REFERENCES public.plan_config_revisions(id,plan_id),
   ADD CONSTRAINT planning_accepted_exceptions_snapshot_fingerprint_check CHECK (snapshot_fingerprint ~ '^[0-9a-f]{64}$'),
   ADD CONSTRAINT planning_accepted_exceptions_resource_ids_check CHECK (public.is_positive_integer_jsonb_array(affected_resource_ids_json)),
-  ADD CONSTRAINT planning_accepted_exceptions_space_ids_check CHECK (public.is_positive_integer_jsonb_array(affected_space_ids_json)),
-  ADD CONSTRAINT planning_accepted_exceptions_severity_check CHECK (severity IN ('HARD','REQUIRED'));
+  ADD CONSTRAINT planning_accepted_exceptions_space_ids_check CHECK (public.is_positive_integer_jsonb_array(affected_space_ids_json));
 CREATE UNIQUE INDEX planning_accepted_exceptions_stage_violation_key
   ON public.planning_accepted_exceptions(stage_id,severity,violation_key);
 

@@ -78,7 +78,7 @@ export class AssistedPlanningService {
       session.draftValidationId ? this.storage.getPlanningStageValidation(session.draftValidationId) : null,
     ]);
     const lineage=session.activeStageId?resolveActiveStageLineage((stages.some(stage=>stage.id===session.activeStageId)||!activeStage?stages:[...stages,activeStage]) as any,session.activeStageId):[];
-    const acceptedExceptions=(await Promise.all(lineage.map(async stage=>(await this.storage.listPlanningAcceptedExceptions(stage.id)??[]).filter(item=>item.status==="ACTIVE"&&item.severity==="HARD"&&item.configRevisionId===session.currentConfigRevisionId&&affectedTasksUnchanged(stage.snapshotJson,session.draftSnapshotJson,item.affectedTaskIdsJson))))).flat();
+    const acceptedExceptions=(await Promise.all(lineage.map(async stage=>(await this.storage.listPlanningAcceptedExceptions(stage.id)??[]).filter(item=>item.status==="ACTIVE"&&item.severity==="HARD"&&affectedTasksUnchanged(stage.snapshotJson,session.draftSnapshotJson,item.affectedTaskIdsJson))))).flat();
     return { session, activeStage, draft: session.draftSnapshotJson, draftBaseStageId: session.draftBaseStageId,
       draftFingerprint: session.draftFingerprint, currentConfigRevisionId: session.currentConfigRevisionId, validation,
       acceptedExceptions: (acceptedExceptions ?? []).filter(item=>item.status==="ACTIVE"), history: stages };
@@ -202,7 +202,10 @@ export class AssistedPlanningService {
     if(((evidence as any).validationSummary?.unstructuredReasonCodes?.length??0)>0)
       throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
     const lineage=resolveActiveStageLineage(await this.storage.listAssistedPlanningStages(session.id) as any,expectedBaseStageId);
-    const accepted=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)??[]).filter(item=>item.status==="ACTIVE"&&item.configRevisionId===session.currentConfigRevisionId&&affectedTasksUnchanged(origin.snapshotJson,draft,item.affectedTaskIdsJson))))).flat();
+    // The revision is immutable provenance, not an applicability gate. An untouched
+    // placement remains grandfathered; exact violation identity below prevents a
+    // materially different rule result from inheriting the old decision.
+    const accepted=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)??[]).filter(item=>item.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,draft,item.affectedTaskIdsJson))))).flat();
     const violations=normalized.map(violation=>{const inherited=accepted.find(item=>item.severity===violation.severity&&item.violationKey===violation.violationKey);return inherited?{...violation,inheritedAcceptedExceptionId:inherited.id}:violation;});
     const hardCount=violations.filter(item=>item.severity==="HARD").length,requiredCount=violations.filter(item=>item.severity==="REQUIRED").length;
     const newHardCount=violations.filter(item=>item.severity==="HARD"&&item.inheritedAcceptedExceptionId==null).length;
