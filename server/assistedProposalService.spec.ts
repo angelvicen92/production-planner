@@ -157,6 +157,36 @@ test("run derives protected placements only from the base stage and preserves th
   assert.deepEqual(result.proposedDraftSnapshot?.planningBlocks,baseSnapshot.planningBlocks);
 });
 
+test("run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline", async () => {
+  const writes: string[] = []; let baseline: unknown;
+  const acceptedException = {
+    id: 12, planId, stageId: stage.id, severity: "REQUIRED", ruleCode: "UNCHANGED_RULE",
+    violationKey: "unchanged-violation", configRevisionId: 7, snapshotFingerprint: stage.snapshotFingerprint,
+    affectedTaskIdsJson: [101], affectedResourceIdsJson: [], affectedSpaceIdsJson: [],
+    detailsJson: { dimensions: { window: "morning" } }, status: "ACTIVE",
+    acceptedBy: "user-1", acceptedAt: new Date(0), resolvedAt: null,
+  };
+  const service = new AssistedProposalService(storage({
+    getActiveAssistedPlanningSession: async () => session,
+    getPlanOptimizerSnapshot: async () => ({}),
+    getPlanTaskTemplateSnapshots: async () => [],
+    getPlanConfigRevision: async () => ({ planId, fingerprint: "B" }),
+    getAssistedPlanningStage: async () => stage,
+    listAssistedPlanningStages: async () => [stage],
+    listPlanningAcceptedExceptions: async () => [acceptedException],
+  }, writes), queueMicrotask, access({find:async()=>({data:runRecord(),error:null})}),
+  ((_problem: AssistedProblem, options: unknown) => { baseline=options; return {proposal:null,evidence:evidence(false)}; }), dependencies());
+
+  await service.run(planId,9);
+
+  assert.deepEqual(baseline, { violations: [{
+    ruleCode: "UNCHANGED_RULE", severity: "REQUIRED", affectedTaskIds: ["task:101"],
+    affectedResourceIds: [], affectedSpaceIds: [], dimensions: { window: "morning" },
+  }] });
+  assert.equal(acceptedException.configRevisionId, 7);
+  assert.deepEqual(writes, []);
+});
+
 test("NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes", async () => {
   for (const outcome of ["NO_PROPOSAL", "UNSUPPORTED"] as const) {
     const writes: string[]=[]; let finishes=0; let runnerCalls=0;
