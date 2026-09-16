@@ -17,9 +17,9 @@ ALTER TABLE public.planning_accepted_exceptions
   ADD CONSTRAINT planning_accepted_exceptions_snapshot_fingerprint_check CHECK (snapshot_fingerprint ~ '^[0-9a-f]{64}$'),
   ADD CONSTRAINT planning_accepted_exceptions_resource_ids_check CHECK (public.is_positive_integer_jsonb_array(affected_resource_ids_json)),
   ADD CONSTRAINT planning_accepted_exceptions_space_ids_check CHECK (public.is_positive_integer_jsonb_array(affected_space_ids_json)),
-  ADD CONSTRAINT planning_accepted_exceptions_hard_only_check CHECK (severity='HARD');
+  ADD CONSTRAINT planning_accepted_exceptions_severity_check CHECK (severity IN ('HARD','REQUIRED'));
 CREATE UNIQUE INDEX planning_accepted_exceptions_stage_violation_key
-  ON public.planning_accepted_exceptions(stage_id,violation_key);
+  ON public.planning_accepted_exceptions(stage_id,severity,violation_key);
 
 CREATE OR REPLACE FUNCTION public.assisted_record_stage_validation(
   p_plan_id integer,p_expected_fingerprint text,p_expected_base bigint,p_expected_config bigint,p_report jsonb
@@ -78,9 +78,9 @@ BEGIN
    CASE WHEN s.draft_scope_json->>'editKind' IS DISTINCT FROM 'MANUAL' THEN (s.draft_scope_json->>'proposalRunId')::bigint ELSE NULL END,
    s.draft_snapshot_json,s.draft_fingerprint,
    jsonb_build_object('hardValid',v.hard_count=0,'hardCount',v.hard_count,'requiredCount',v.required_count,'preferredCount',v.preferred_count,'validationId',v.id,'report',v.report_json),p_user_id,now()) RETURNING id INTO new_id;
- FOR item IN SELECT value FROM jsonb_array_elements(v.report_json->'violations') WHERE value->>'severity'='HARD' AND value->>'inheritedAcceptedExceptionId' IS NULL LOOP
+ FOR item IN SELECT value FROM jsonb_array_elements(v.report_json->'violations') WHERE value->>'severity' IN ('HARD','REQUIRED') AND value->>'inheritedAcceptedExceptionId' IS NULL LOOP
    INSERT INTO public.planning_accepted_exceptions(plan_id,stage_id,severity,rule_code,violation_key,config_revision_id,snapshot_fingerprint,affected_task_ids_json,affected_resource_ids_json,affected_space_ids_json,details_json,status,accepted_by,accepted_at)
-   VALUES(p_plan_id,new_id,'HARD',item->>'ruleCode',item->>'violationKey',s.current_config_revision_id,s.draft_fingerprint,item->'affectedTaskIds',coalesce(item->'affectedResourceIds','[]'),coalesce(item->'affectedSpaceIds','[]'),coalesce(item->'details','{}'),'ACTIVE',p_user_id,now());
+   VALUES(p_plan_id,new_id,item->>'severity',item->>'ruleCode',item->>'violationKey',s.current_config_revision_id,s.draft_fingerprint,item->'affectedTaskIds',coalesce(item->'affectedResourceIds','[]'),coalesce(item->'affectedSpaceIds','[]'),coalesce(item->'details','{}'),'ACTIVE',p_user_id,now());
  END LOOP;
  WITH RECURSIVE lineage AS (
    SELECT id,parent_stage_id,snapshot_json FROM public.assisted_planning_stages WHERE id=s.draft_base_stage_id AND session_id=s.id

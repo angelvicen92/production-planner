@@ -1,6 +1,4 @@
 import type { AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
-import type { StageViolation } from "../shared/assistedStageValidation";
-
 type StageLike={id:number;parentStageId:number|null;archivedAt?:string|Date|null;snapshotJson:unknown;validationSummaryJson?:Record<string,unknown>};
 
 export function resolveActiveStageLineage(stages:readonly StageLike[],stageId:number):StageLike[]{
@@ -13,9 +11,4 @@ const taskById=(snapshot:unknown)=>new Map(((snapshot as AssistedPlanningSnapsho
 export function affectedTasksUnchanged(originSnapshot:unknown,currentSnapshot:unknown,taskIds:readonly number[]):boolean{
   const origin=taskById(originSnapshot),current=taskById(currentSnapshot);
   return taskIds.every(id=>JSON.stringify(origin.get(id))===JSON.stringify(current.get(id)));
-}
-
-export function acceptedRequiredViolations(lineage:readonly StageLike[],currentSnapshot:unknown):StageViolation[]{
-  return lineage.flatMap(stage=>{const report=(stage.validationSummaryJson as any)?.report;const violations=Array.isArray(report?.violations)?report.violations:[];
-    return violations.filter((item:StageViolation)=>item.severity==="REQUIRED"&&affectedTasksUnchanged(stage.snapshotJson,currentSnapshot,item.affectedTaskIds));});
 }

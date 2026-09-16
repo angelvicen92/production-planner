@@ -697,10 +697,10 @@ export const planningAcceptedExceptions = pgTable("planning_accepted_exceptions"
 }, (table) => ({
   stageIdx: index("planning_accepted_exceptions_stage_id_idx").on(table.stageId),
   workflowIdx: index("planning_accepted_exceptions_plan_status_idx").on(table.planId, table.status),
-  severityCheck: check("planning_accepted_exceptions_hard_only_check", sql`${table.severity} = 'HARD'`),
+  severityCheck: check("planning_accepted_exceptions_severity_check", sql`${table.severity} IN ('HARD', 'REQUIRED')`),
   statusCheck: check("planning_accepted_exceptions_status_check", sql`${table.status} IN ('ACTIVE', 'RESOLVED', 'STALE', 'SUPERSEDED')`),
   taskIdsArrayCheck: check("planning_accepted_exceptions_task_ids_array_check", sql`jsonb_typeof(${table.affectedTaskIdsJson}) = 'array'`),
-  uniqueStageViolation: uniqueIndex("planning_accepted_exceptions_stage_violation_key").on(table.stageId, table.violationKey),
+  uniqueStageViolation: uniqueIndex("planning_accepted_exceptions_stage_violation_key").on(table.stageId, table.severity, table.violationKey),
 }));
 
 // 8. locks
