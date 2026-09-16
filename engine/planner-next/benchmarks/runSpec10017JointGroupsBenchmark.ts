@@ -9,7 +9,7 @@ import type { PlannerNextProblem, ScheduledTask } from "../contracts";
 import { planMainFlowAndFeeders } from "../planMainFlowAndFeeders";
 import { preflight as preflightPlannerNextProblem, validatePlan } from "../validate";
 import { adaptEngineInputToPlannerNextProblem } from "../integration/engineInputAdapter";
-import { preflightEngineInputForPlannerNext } from "../integration/engineInputPreflight";
+import { preflightEngineInputForPlannerNext, type EngineInputPreflightReasonCode } from "../integration/engineInputPreflight";
 import { createSpec10017JointGroupEngineInputFixture } from "../integration/engineInputAdapter.fixture";
 
 const baseCommit = "8dd69dde5ef83fbf460640addd70b00b10d9a66e";
@@ -49,8 +49,8 @@ function invertInput(input: EngineInput): EngineInput {
     ...input,
     tasks: [...input.tasks].reverse(),
     planResourceItems: [...input.planResourceItems].reverse(),
-    planSpaceSettings: [...input.planSpaceSettings].reverse(),
-    planZoneSettings: [...input.planZoneSettings].reverse(),
+    planSpaceSettings: [...(input.planSpaceSettings ?? [])].reverse(),
+    planZoneSettings: [...(input.planZoneSettings ?? [])].reverse(),
     locks: [...input.locks].reverse(),
   };
 }
@@ -198,7 +198,7 @@ export function runSpec10017Probe(inputFactory = createSpec10017JointGroupEngine
 }
 
 function runNegativeTests(): Array<{ caseId: string; passed: boolean; reasonCodes: readonly string[] }> {
-  const cases: Array<{ caseId: string; mutate: (input: EngineInput) => void; expected: string }> = [
+  const cases: Array<{ caseId: string; mutate: (input: EngineInput) => void; expected: EngineInputPreflightReasonCode }> = [
     { caseId: "blank-string", mutate: (input) => { input.tasks.find((task) => task.id === 201)!.jointGroupId = " "; }, expected: "UNSUPPORTED_JOINT_GROUP_MAPPING" },
     { caseId: "runtime-number", mutate: (input) => { (input.tasks.find((task) => task.id === 201) as unknown as Record<string, unknown>).jointGroupId = 7; }, expected: "UNSUPPORTED_JOINT_GROUP_MAPPING" },
     { caseId: "technical-task", mutate: (input) => { input.tasks.find((task) => task.id === 206)!.jointGroupId = "invalid"; }, expected: "UNSUPPORTED_JOINT_GROUP_MAPPING" },

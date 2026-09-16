@@ -14,14 +14,14 @@ import type { AssistedConfigRefreshChangeV1, AssistedConfigRefreshLocalOverrideV
  * coverage gap explicit rather than pretending that an EngineInput projection is
  * a writable General mapping.
  */
-const unsupported = Object.freeze([
-  ["plan_workday", "Horario de la jornada"],
-  ["contestant_availability", "Disponibilidad de concursantes"],
-  ["spatial_configuration", "Configuración de espacios y zonas"],
-  ["resource_configuration", "Configuración de recursos"],
-  ["resource_assignments_and_requirements", "Asignaciones y necesidades de recursos"],
-  ["resource_bundles", "Agrupaciones de recursos"],
-].map(([authority,label])=>Object.freeze({authority,label,reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION" as const})));
+const unsupported: AssistedConfigRefreshPreviewV1["unsupportedAuthorities"] = Object.freeze([
+  Object.freeze({authority:"plan_workday",label:"Horario de la jornada",reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION"}),
+  Object.freeze({authority:"contestant_availability",label:"Disponibilidad de concursantes",reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION"}),
+  Object.freeze({authority:"spatial_configuration",label:"Configuración de espacios y zonas",reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION"}),
+  Object.freeze({authority:"resource_configuration",label:"Configuración de recursos",reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION"}),
+  Object.freeze({authority:"resource_assignments_and_requirements",label:"Asignaciones y necesidades de recursos",reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION"}),
+  Object.freeze({authority:"resource_bundles",label:"Agrupaciones de recursos",reason:"NO_LOSSLESS_GENERAL_TO_DAY_PROJECTION"}),
+]);
 const stable = (value: unknown) => JSON.stringify(value);
 const provenance = (authority:string)=>({authority,authorityContractVersion:1});
 export class AssistedConfigRefreshError extends Error {

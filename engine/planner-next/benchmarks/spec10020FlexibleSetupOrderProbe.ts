@@ -103,9 +103,6 @@ export function executeSpec10020Fixture(
 
   const execution = executePlannerNext(problem);
   assert.equal(execution.kind, "EXACT_CONSTRUCTIVE");
-  if (execution.kind !== "EXACT_CONSTRUCTIVE") {
-    throw new Error(`Unexpected execution kind ${execution.kind}`);
-  }
   const result = execution.result;
   const validation = validatePlan(
     problem,
