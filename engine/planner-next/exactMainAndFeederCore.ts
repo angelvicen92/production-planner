@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -259,6 +259,8 @@ export interface ExactPartialCoreCandidate {
 }
 export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
+  /** Assisted-only final gate; candidate placement checks remain strict. */
+  acceptsValidation?: (validation: ValidationSummary) => boolean;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
@@ -704,7 +706,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const reducedPlaced = placed.map((task) => ({ ...task,
         dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
       const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
-      if (validShape && validation.hardValid) {
+      if (validShape && (validation.hardValid || options.acceptsValidation?.(validation))) {
         const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
         const ordered = placed.map((task) => ({ ...task,
           dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],

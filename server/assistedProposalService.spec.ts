@@ -12,7 +12,7 @@ import type {
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
 process.env.SUPABASE_ANON_KEY ??= "test-anon-key";
-const { AssistedProposalError, AssistedProposalService } = await import("./assistedProposalService");
+const { AssistedProposalError, AssistedProposalService, projectPlannerViolations } = await import("./assistedProposalService");
 
 const planId = 701;
 const request = { selector: { kind: "TASK_IDS" as const, taskIds: [101] }, includePrerequisites: false,
@@ -45,6 +45,8 @@ function storage(reads: Record<string, (...args: unknown[]) => Promise<unknown>>
   return new Proxy({}, {
     get(_target, property: string) {
       if (reads[property]) return reads[property];
+      if (property === "listPlanningAcceptedExceptions") return async () => [];
+      if (property === "listAssistedPlanningStages") return async () => [stage];
       return async () => { writes.push(property); throw new Error(`unexpected storage call: ${property}`); };
     },
   }) as IStorage;
@@ -155,6 +157,36 @@ test("run derives protected placements only from the base stage and preserves th
   assert.deepEqual(result.proposedDraftSnapshot?.planningBlocks,baseSnapshot.planningBlocks);
 });
 
+test("run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline", async () => {
+  const writes: string[] = []; let baseline: unknown;
+  const acceptedException = {
+    id: 12, planId, stageId: stage.id, severity: "REQUIRED", ruleCode: "UNCHANGED_RULE",
+    violationKey: "unchanged-violation", configRevisionId: 7, snapshotFingerprint: stage.snapshotFingerprint,
+    affectedTaskIdsJson: [101], affectedResourceIdsJson: [], affectedSpaceIdsJson: [],
+    detailsJson: { dimensions: { window: "morning" } }, status: "ACTIVE",
+    acceptedBy: "user-1", acceptedAt: new Date(0), resolvedAt: null,
+  };
+  const service = new AssistedProposalService(storage({
+    getActiveAssistedPlanningSession: async () => session,
+    getPlanOptimizerSnapshot: async () => ({}),
+    getPlanTaskTemplateSnapshots: async () => [],
+    getPlanConfigRevision: async () => ({ planId, fingerprint: "B" }),
+    getAssistedPlanningStage: async () => stage,
+    listAssistedPlanningStages: async () => [stage],
+    listPlanningAcceptedExceptions: async () => [acceptedException],
+  }, writes), queueMicrotask, access({find:async()=>({data:runRecord(),error:null})}),
+  ((_problem: AssistedProblem, options: unknown) => { baseline=options; return {proposal:null,evidence:evidence(false)}; }), dependencies());
+
+  await service.run(planId,9);
+
+  assert.deepEqual(baseline, { violations: [{
+    ruleCode: "UNCHANGED_RULE", severity: "REQUIRED", affectedTaskIds: ["task:101"],
+    affectedResourceIds: [], affectedSpaceIds: [], dimensions: { window: "morning" },
+  }] });
+  assert.equal(acceptedException.configRevisionId, 7);
+  assert.deepEqual(writes, []);
+});
+
 test("NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes", async () => {
   for (const outcome of ["NO_PROPOSAL", "UNSUPPORTED"] as const) {
     const writes: string[]=[]; let finishes=0; let runnerCalls=0;
@@ -185,4 +217,12 @@ test("apply performs one RPC, sends only optimistic guards, and propagates stale
 test("get rejects a run belonging to another plan or execution kind as RUN_NOT_FOUND", async () => {
   const service=new AssistedProposalService(storage({},[]),queueMicrotask,access({find:async()=>({data:null,error:null})}));
   await assert.rejects(service.get(702,9),(error:unknown)=>error instanceof AssistedProposalError&&error.code==="RUN_NOT_FOUND");
+});
+
+
+test("canonical violation projection is lossless and fails closed for every missing identity namespace",()=>{
+  const detail={ruleCode:"X",severity:"HARD" as const,affectedTaskIds:["t"],affectedResourceIds:["r"],affectedSpaceIds:["s"],dimensions:{edge:1}};
+  const identities=[{namespace:"task",sourceId:"1",canonicalId:"t"},{namespace:"resource",sourceId:"2",canonicalId:"r"},{namespace:"space",sourceId:"3",canonicalId:"s"}];
+  assert.deepEqual(projectPlannerViolations([detail],identities)[0]?.affectedTaskIds,[1]);
+  for(const namespace of ["task","resource","space"])assert.throws(()=>projectPlannerViolations([detail],identities.filter(item=>item.namespace!==namespace)),/UNPROJECTABLE_VALIDATION_IDENTITY/);
 });

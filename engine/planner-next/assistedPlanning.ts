@@ -7,6 +7,7 @@ import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
 import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
+import { createViolationKey } from "../../shared/assistedStageValidation";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -39,12 +40,21 @@ export interface AssistedPlanningEvidence {
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly reasonCodes: readonly string[];
+  readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
+  readonly unstructuredReasonCodes?: readonly string[];
 }
 
 export interface AssistedPlanningResult {
   readonly proposal: readonly ScheduledTask[] | null;
   readonly evidence: AssistedPlanningEvidence;
 }
+export interface AssistedAcceptedBaseline {
+  readonly violations: readonly import("./contracts").ValidationViolationDetail[];
+}
+
+const violationIdentity=(detail:import("./contracts").ValidationViolationDetail)=>createViolationKey({
+  ruleCode:detail.ruleCode,affectedTaskIds:detail.affectedTaskIds,affectedResourceIds:detail.affectedResourceIds,
+  affectedSpaceIds:detail.affectedSpaceIds,dimensions:detail.dimensions});
 
 const canonicalIds = (ids: readonly string[]): string[] => [...ids].sort((a, b) => a.localeCompare(b));
 
@@ -185,14 +195,19 @@ export function buildAssistedProblem(
   };
 }
 
-export function executeAssistedPlanning(input: AssistedProblem): AssistedPlanningResult {
-  const execution = executePlannerNext(input.problem, { causalDiagnostic: true });
+export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
+  const searchProblem=input.problem;
+  const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
+  const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>
+    (summary.unstructuredReasonCodes?.length??0)===0 && (summary.violations??[]).every(item=>acceptedKeys.has(violationIdentity(item)));
+  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
+    fixedPlacements:input.protectedPlacements });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
-  const scheduled = searchScheduled.map((task) =>
-    structuredClone(protectedById.get(task.id) ?? task));
-  const searchValidation = result?.complete ? validatePlan(input.problem, searchScheduled,
+  const scheduled = searchScheduled.map((task) => structuredClone(protectedById.get(task.id) ?? task));
+  for(const fixed of input.protectedPlacements)if(!scheduled.some(task=>task.id===fixed.id))scheduled.push(structuredClone(fixed));
+  const searchValidation = result?.complete ? validatePlan(searchProblem, searchScheduled,
     result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
@@ -208,7 +223,8 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     return actual !== undefined && JSON.stringify(actual) === JSON.stringify(fixed);
   });
   const completeForScope = input.scope.resolvedTaskIds.every((id) => byId.has(id));
-  const searchHardValid = Boolean(searchValidation?.hardValid && protectedPreserved);
+  const searchHardValid = Boolean(searchValidation && protectedPreserved
+    && (searchValidation.hardValid || acceptsValidation(searchValidation)));
   const hardValid = Boolean(validation?.hardValid && protectedPreserved);
   const proposal = completeForScope && searchHardValid
     ? scheduled.filter(({ id }) => input.scope.resolvedTaskIds.includes(id)) : null;
@@ -251,5 +267,7 @@ export function executeAssistedPlanning(input: AssistedProblem): AssistedPlannin
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     reasonCodes: [...new Set(reasonCodes)].sort(),
+    violations: validation?.violations??[],
+    unstructuredReasonCodes: validation?.unstructuredReasonCodes??[],
   } };
 }

@@ -30,15 +30,16 @@ const validation = { id: 40, sessionId: 7, draftFingerprint: baseSession.draftFi
 const history = [activeStage, { id: 21, sessionId: 7, ordinal: 1 }];
 
 type RpcCall = { name: string; parameters: Record<string, unknown> };
-function harness(options: { session?: any; rpcError?: unknown } = {}) {
+function harness(options: { session?: any; rpcError?: unknown; stages?: any[]; exceptionsByStage?: Record<number,any[]> } = {}) {
   const calls: RpcCall[] = [];
   const storageWrites: string[] = [];
   const session = options.session === undefined ? baseSession : options.session;
   const reads: Record<string, (...args: any[]) => Promise<any>> = {
     getActiveAssistedPlanningSession: async () => session,
     getAssistedPlanningStage: async () => activeStage,
-    listAssistedPlanningStages: async () => history,
+    listAssistedPlanningStages: async () => options.stages??history,
     getPlanningStageValidation: async () => validation,
+    listPlanningAcceptedExceptions: async (stageId:number) => options.exceptionsByStage?.[stageId]??[],
     getTasksForPlan: async () => draft.tasks.map(task => ({ id: task.taskId, status: "pending" })),
   };
   const storage = new Proxy({}, {
@@ -156,6 +157,7 @@ test("accept passes only the expected plan/fingerprint/base/user to its single a
   await service.accept(5, "user-1", "a".repeat(64), 20);
   assert.deepEqual(calls, [{ name: "assisted_accept_stage", parameters: {
     p_plan_id: 5, p_user_id: "user-1", p_expected_fingerprint: "a".repeat(64), p_expected_base: 20,
+    p_confirmation: "NONE",
   } }]);
   assert.deepEqual(storageWrites, []);
 });
@@ -176,8 +178,19 @@ test("state coherently projects the session's active stage, config, draft, valid
   assert.deepEqual(await service.state(5), {
     session: baseSession, activeStage, draft, draftBaseStageId: 20,
     draftFingerprint: baseSession.draftFingerprint, currentConfigRevisionId: 30,
-    validation, history,
+    validation, acceptedExceptions: [], history,
   });
+});
+
+test("state grandfathers an untouched HARD exception across config revisions while retaining its provenance",async()=>{
+  const origin={...activeStage,parentStageId:null};
+  const oldException={id:91,stageId:20,status:"ACTIVE",severity:"HARD",configRevisionId:29,violationKey:"material-identity",affectedTaskIdsJson:[11]};
+  const {service}=harness({stages:[origin],exceptionsByStage:{20:[oldException]}});
+  const state=await service.state(5);
+  assert.deepEqual(state.acceptedExceptions,[oldException]);
+  assert.equal(state.currentConfigRevisionId,30);
+  assert.equal(state.acceptedExceptions[0].configRevisionId,29);
+  assert.doesNotMatch(serviceSource,/item\.configRevisionId===session\.currentConfigRevisionId/);
 });
 
 test("accept locks the ACTIVE session and checks base, fingerprint, and validation before snapshot mutation", () => {
