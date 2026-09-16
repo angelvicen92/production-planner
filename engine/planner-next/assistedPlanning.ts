@@ -215,10 +215,16 @@ export function buildAssistedProblem(
 export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
   const searchProblem=input.problem;
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
-  const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>
-    (summary.unstructuredReasonCodes?.length??0)===0 && (summary.violations??[]).every(item=>acceptedKeys.has(violationIdentity(item)));
+  const protectedIds=new Set(input.protectedPlacements.map(({id})=>id));
+  const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>{
+    const violations=summary.violations??[];
+    const exactAcceptedFixedBaseline=violations.length>0&&violations.every(item=>acceptedKeys.has(violationIdentity(item))
+      &&item.affectedTaskIds.length>0&&item.affectedTaskIds.every(id=>protectedIds.has(id)));
+    const unstructured=summary.unstructuredReasonCodes??[];
+    return exactAcceptedFixedBaseline&&unstructured.every(code=>code==="BLOCK_VIOLATION");
+  };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:acceptedKeys.size>0 });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];

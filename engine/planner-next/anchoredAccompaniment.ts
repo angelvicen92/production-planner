@@ -22,10 +22,11 @@ export function firstParticipantObligation(main: ScheduledTask, structural: Sche
 /** Builds and validates the complete operation. Internal phases are deliberately
  * omitted from each other's canonical placement check: INCLUDED applies only to
  * this contract, while every external occupation retains the canonical margins. */
-export function materializeAnchoredOperation(problem: PlannerNextProblem, anchor: Task, anchorStart: number, external: ScheduledTask[], meals: ScheduledSpaceMeal[]=[]): AnchoredOperation | null {
+export function materializeAnchoredOperation(problem: PlannerNextProblem, anchor: Task, anchorStart: number, external: ScheduledTask[], meals: ScheduledSpaceMeal[]=[],
+  canPlace:(task:Task,start:number,placed:ScheduledTask[],meals?:ScheduledSpaceMeal[])=>boolean=(task,start,placed,scheduledMeals)=>canPlaceTask(problem,task,start,placed,scheduledMeals)): AnchoredOperation | null {
   const contract=anchoredAccompanimentIndex(problem).get(anchor.id);
   const scheduledAnchor={...anchor,start:anchorStart,end:anchorStart+anchor.duration};
-  if(!contract) return canPlaceTask(problem,anchor,anchorStart,external,meals)?{contract:null as never,tasks:[scheduledAnchor],anchor:scheduledAnchor,start:anchorStart,end:scheduledAnchor.end}:null;
+  if(!contract) return canPlace(anchor,anchorStart,external,meals)?{contract:null as never,tasks:[scheduledAnchor],anchor:scheduledAnchor,start:anchorStart,end:scheduledAnchor.end}:null;
   const byId=new Map(problem.tasks.map(t=>[t.id,t]));
   const before=contract.beforeTaskIds.map(id=>byId.get(id)); const after=contract.afterTaskIds.map(id=>byId.get(id));
   if(before.some(x=>!x)||after.some(x=>!x))return null;
@@ -35,7 +36,7 @@ export function materializeAnchoredOperation(problem: PlannerNextProblem, anchor
   for(const task of after as Task[]){scheduledAfter.push({...task,start:cursor,end:cursor+task.duration});cursor+=task.duration;}
   const tasks=[...scheduledBefore,scheduledAnchor,...scheduledAfter];
   if(!anchoredOperationAvoidsItinerantUnitMeals(problem,contract,tasks[0]!.start,tasks.at(-1)!.end))return null;
-  if(tasks.some(t=>!canPlaceTask(problem,t,t.start,external,meals)))return null;
+  if(tasks.some(t=>!canPlace(t,t.start,external,meals)))return null;
   if(tasks.slice(1).some((t,i)=>tasks[i]!.end!==t.start))return null;
   if(tasks.some(t=>t.participantId!==scheduledAnchor.participantId))return null;
   return {contract,tasks,anchor:scheduledAnchor,start:tasks[0]!.start,end:tasks.at(-1)!.end};

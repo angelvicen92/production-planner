@@ -261,6 +261,10 @@ export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
   /** Assisted-only final gate; candidate placement checks remain strict. */
   acceptsValidation?: (validation: ValidationSummary) => boolean;
+  /** Immutable assisted context. Only conflicts between two fixed placements are
+   * deferred to the exact accepted-baseline validation gate. */
+  fixedPlacements?: readonly ScheduledTask[];
+  fixedPlacementsAsContext?: boolean;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
@@ -611,6 +615,23 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]}}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
+  const protectedPlacements=options.fixedPlacementsAsContext?[...(options.fixedPlacements??[])]:[];
+  const fixedIds=new Set((options.fixedPlacements??[]).map(({id})=>id));
+  const placementContext=(task:Task,placed:ScheduledTask[]):ScheduledTask[]=>fixedIds.has(task.id)
+    ?placed.filter(item=>!fixedIds.has(item.id)):placed;
+  const canPlaceCoreTask=(task:Task,start:number,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]=[])=>
+    canPlaceTask(problem,task,start,placementContext(task,placed),meals);
+  const diagnoseCoreTask=(task:Task,start:number,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]=[])=>
+    diagnoseTaskPlacement(problem,task,start,placementContext(task,placed),meals);
+  const fixedPlacements=[...protectedPlacements];
+  for(const fixed of protectedPlacements){
+    const task=problem.tasks.find(({id})=>id===fixed.id);
+    if(task?.kind!=="main")continue;
+    const operation=materializeAnchoredOperation(problem,task,fixed.start,
+      protectedPlacements.filter(({id})=>id!==fixed.id),[],(candidate,start,placed,meals)=>
+        canPlaceTask(problem,candidate,start,placementContext(candidate,placed),meals));
+    if(operation)for(const item of operation.tasks)if(!fixedIds.has(item.id)){fixedPlacements.push(item);fixedIds.add(item.id);}
+  }
   evidence.causalDiagnostic=diagnostic;
   const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
   const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
@@ -620,8 +641,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
       remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), evidence };
   };
-  const mains = canonical(problem.tasks.filter((task) => task.kind === "main"));
-  const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"));
+  const contextIds=new Set(fixedPlacements.map(({id})=>id));
+  const mains = canonical(problem.tasks.filter((task) => task.kind === "main"&&!contextIds.has(task.id)));
+  const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"&&!contextIds.has(task.id)));
   const feederByMain = new Map<string, Task>();
   const unsupported: string[] = [];
   for (const main of mains) {
@@ -640,8 +662,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const mainIds = new Set(mains.map(({ id }) => id));
   const applicableContracts = canonical((problem.anchoredAccompaniments ?? []).filter((contract) => mainIds.has(contract.anchorTaskId)));
   const coreIds = new Set([...mainIds, ...feederByMain.values()].map((value) => typeof value === "string" ? value : value.id));
+  for(const id of contextIds)coreIds.add(id);
   for (const contract of applicableContracts) for (const id of [...contract.beforeTaskIds, ...contract.afterTaskIds]) coreIds.add(id);
-  if ([...anchoredIds].some((id) => !coreIds.has(id))) return fail("UNSUPPORTED_CORE_SHAPE", ["UNSUPPORTED_NON_MAIN_ANCHORED_OPERATION"], coreIds);
+  if (!options.fixedPlacementsAsContext&&[...anchoredIds].some((id) => !coreIds.has(id))) return fail("UNSUPPORTED_CORE_SHAPE", ["UNSUPPORTED_NON_MAIN_ANCHORED_OPERATION"], coreIds);
 
   let exhaustionReason = "BRANCH_BUDGET_EXHAUSTED";
   let currentArchitecture: string | null = null;
@@ -673,8 +696,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const introducedBy=(id:string,placed:ScheduledTask[]):{mainTaskId:string|null;depth:number|null}=>{const direct=mains.some(x=>x.id===id)?id:feederMainById.get(id)??applicableContracts.find(c=>[...c.beforeTaskIds,...c.afterTaskIds].includes(id))?.anchorTaskId??null;if(!direct)return {mainTaskId:null,depth:null};return {mainTaskId:direct,depth:placed.filter(x=>x.kind==="main").findIndex(x=>x.id===direct)+1};};
   const checkFeederTask = (choice: MainChoice, feeder: ScheduledTask, placed: ScheduledTask[],
     meals: ScheduledSpaceMeal[], depth: number): boolean => {
-    const assessed = diagnostic ? diagnoseTaskPlacement(problem, choice.feeder, feeder.start, placed, meals) : null;
-    const valid = assessed ? assessed.valid : canPlaceTask(problem, choice.feeder, feeder.start, placed, meals);
+    const assessed = diagnostic ? diagnoseCoreTask(choice.feeder, feeder.start, placed, meals) : null;
+    const valid = assessed ? assessed.valid : canPlaceCoreTask(choice.feeder, feeder.start, placed, meals);
     if (!valid && diagnostic && assessed?.firstRejectionReason) {
       const blocker=assessed.blockingPlacedTaskId;const prior=blocker?introducedBy(blocker,placed):{mainTaskId:null,depth:null};const key=[depth,choice.task.id,choice.feeder.id,choice.task.participantId??"",assessed.firstRejectionReason,blocker??"",prior.depth??"",prior.mainTaskId??""].join("|");const existing=rejectionByKey.get(key);if(existing){existing.count++;existing.startsAttempted++;}else{const row={depth,mainTaskId:choice.task.id,feederTaskId:choice.feeder.id,participantId:choice.task.participantId??null,startsAttempted:1,firstRejectionReason:assessed.firstRejectionReason,blockingPlacedTaskId:blocker,blockingDecisionDepth:prior.depth&&prior.depth>0?prior.depth:null,blockingDecisionMainTaskId:prior.mainTaskId,count:1};rejectionByKey.set(key,row);diagnostic.feederRejections.push(row);}
     }
@@ -912,7 +935,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               evidence.feederSlotMatchingEdgeChecks++;
               const start=blockStart+ordinal*duration;
               if(start+duration>candidate.deadline||!isExactFeederStartInDomain(candidate.domain,start))continue;
-              if(canPlaceTask(problem,candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
+              if(canPlaceCoreTask(candidate.choice.feeder,start,fixedPlaced,blockMeals))candidateEdges.push(ordinal);
             }
             edges.set(candidate.choice.feeder.id,candidateEdges);
           }
@@ -1168,7 +1191,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           || (forcedTaskId !== undefined && task.id !== forcedTaskId)) continue;
         if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED","MAIN_CANDIDATE",position)) return "BUDGET_EXHAUSTED";
         evidence.mainCandidatesEvaluated += 1;
-        const operation = materializeAnchoredOperation(problem, task, slot, blockPlaced, meals);
+        const operation = materializeAnchoredOperation(problem, task, slot, blockPlaced, meals,
+          (candidate,start,placed,scheduledMeals)=>canPlaceCoreTask(candidate,start,placed,scheduledMeals));
         if (!operation) continue;
         const departureDeadline = latestDepartureStart.get(task.participantId);
         if (departureDeadline !== undefined && operation.end > departureDeadline) continue;
@@ -1329,7 +1353,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const edge=(initialCertificate.validEdges.get(taskId)??[]).find(candidate=>candidate.position===position)!;
         const previous=witnessCohort.find(choice=>residualMatchingOperationsMayInteract(problem,choice.operation,edge.operation));
         if(previous){
-          const operationValid=edge.operation.every((scheduled,index)=>canPlaceTask(problem,scheduled,scheduled.start,
+          const operationValid=edge.operation.every((scheduled,index)=>canPlaceCoreTask(scheduled,scheduled.start,
             [...witnessPlaced,...edge.operation.slice(0,index)],meals));
           if(!operationValid){
             const previousPosition=matching.get(previous.task.id)!;
@@ -1678,7 +1702,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
           const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
           evidence.architecturesChecked += 1;
-          const rejection = proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots });
+          const rejection = fixedIds.size===0?proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots }):null;
           if (rejection) {
             evidence.architecturesStructurallyRejected += 1;
             evidence.structuralRejectionsByReason[rejection] =
@@ -1696,7 +1720,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }
           evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
           currentArchitecture = architectureKey;
-          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
+          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], fixedPlacements, new Set(), 0,
             timeline?.key ?? null);
           currentArchitecture = null;
           if (result === "BUDGET_EXHAUSTED")
