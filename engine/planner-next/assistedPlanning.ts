@@ -99,9 +99,9 @@ export function buildAssistedProblem(
   for (const placement of protectedPlacements) {
     const task = tasksById.get(placement.id);
     if (!task) throw new Error("UNKNOWN_PROTECTED_PLACEMENT_TASK_ID");
-    if (placement.start >= placement.end || placement.end - placement.start !== task.duration) throw new Error("INVALID_PROTECTED_PLACEMENT");
+    if (placement.start >= placement.end || placement.end - placement.start !== placement.duration) throw new Error("INVALID_PROTECTED_PLACEMENT");
     const { start: _start, end: _end, ...placedTask } = placement;
-    if (JSON.stringify(placedTask) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
+    if (JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
   }
 
   const included = new Set([...scopeIds, ...protectedIds]);
@@ -194,11 +194,13 @@ export function buildAssistedProblem(
         : Object.fromEntries(Object.entries(space.setupPolicy.preparationMinutesByFamily).filter(([family]) => presentFamilies.has(family))),
     } };
   });
-  const originalValidationProblem = structuredClone(problem);
   problem.tasks = problem.tasks.map((task) => {
     const fixed = fixedById.get(task.id);
-    return fixed ? { ...task, availability: [{ start: fixed.start, end: fixed.end }] } : task;
+    if(!fixed)return task;
+    const {start: _start,end: _end,...acceptedTask}=fixed;
+    return {...acceptedTask,availability:[{start:fixed.start,end:fixed.end}]};
   });
+  const originalValidationProblem = structuredClone(problem);
 
   return {
     problem,
@@ -224,7 +226,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     return exactAcceptedFixedBaseline&&unstructured.every(code=>code==="BLOCK_VIOLATION");
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:acceptedKeys.size>0 });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -249,8 +251,11 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const searchHardValid = Boolean(searchValidation && protectedPreserved
     && (searchValidation.hardValid || acceptsValidation(searchValidation)));
   const hardValid = Boolean(validation?.hardValid && protectedPreserved);
+  const fixedMainParticipants=new Set(input.protectedPlacements.filter(task=>task.kind==="main")
+    .flatMap(task=>task.participantId?[task.participantId]:[]));
   const proposal = completeForScope && searchHardValid
-    ? scheduled.filter(({ id }) => input.scope.resolvedTaskIds.includes(id)) : null;
+    ? scheduled.filter(task=>input.automaticTaskIds.includes(task.id)&&(input.scope.resolvedTaskIds.includes(task.id)
+      ||(task.kind==="vocal"&&task.participantId!==undefined&&fixedMainParticipants.has(task.participantId)))) : null;
   const resultReasonCodes = result && "evidence" in result && Array.isArray(result.evidence.reasonCodes)
     ? result.evidence.reasonCodes : result && "metrics" in result ? result.metrics.reasonCodes : [];
   const reasonCodes: string[] = [...resultReasonCodes, ...(validation?.reasonCodes ?? [])];

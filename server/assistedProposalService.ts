@@ -66,7 +66,7 @@ export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlan
   const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
   if(touched.some(id=>!canonicalByProduct.has(id)))return null;
   const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
-  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),task=canonical?taskById.get(canonical):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
+  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),task=canonical?taskById.get(canonical):undefined;const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);return task?[{...task,duration:end-start,start,end}]:[];});
   const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
   const assisted=buildAssistedProblem(adapter.problem,scope,protectedPlacements);
   const evidence=executeAssistedPlanning(assisted).evidence;
@@ -133,7 +133,8 @@ export class AssistedProposalService {
     const baseSnapshot=stage.snapshotJson as unknown as AssistedPlanningSnapshotV1;
     const protectedPlacements: ScheduledTask[]=baseSnapshot.tasks.flatMap(row=>{
       if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const task=id?taskById.get(id):undefined;
-      return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];
+      const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
+      return task?[{...task,duration:end-start,start,end}]:[];
     });
     const productByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));

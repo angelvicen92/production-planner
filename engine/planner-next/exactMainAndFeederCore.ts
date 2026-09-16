@@ -624,14 +624,6 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const diagnoseCoreTask=(task:Task,start:number,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]=[])=>
     diagnoseTaskPlacement(problem,task,start,placementContext(task,placed),meals);
   const fixedPlacements=[...protectedPlacements];
-  for(const fixed of protectedPlacements){
-    const task=problem.tasks.find(({id})=>id===fixed.id);
-    if(task?.kind!=="main")continue;
-    const operation=materializeAnchoredOperation(problem,task,fixed.start,
-      protectedPlacements.filter(({id})=>id!==fixed.id),[],(candidate,start,placed,meals)=>
-        canPlaceTask(problem,candidate,start,placementContext(candidate,placed),meals));
-    if(operation)for(const item of operation.tasks)if(!fixedIds.has(item.id)){fixedPlacements.push(item);fixedIds.add(item.id);}
-  }
   evidence.causalDiagnostic=diagnostic;
   const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
   const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
@@ -641,7 +633,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
       remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), evidence };
   };
-  const contextIds=new Set(fixedPlacements.map(({id})=>id));
+  // Fixed identity is input-authoritative. Structural obligations inferred from a
+  // fixed main are still automatic variables, never accepted/fixed placements.
+  const contextIds=new Set(protectedPlacements.map(({id})=>id));
   const mains = canonical(problem.tasks.filter((task) => task.kind === "main"&&!contextIds.has(task.id)));
   const vocals = canonical(problem.tasks.filter((task) => task.kind === "vocal"&&!contextIds.has(task.id)));
   const feederByMain = new Map<string, Task>();
@@ -654,7 +648,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
     else feederByMain.set(main.id, { ...matching[0]!, dependencies: [...matching[0]!.dependencies] });
   }
-  if (unsupported.length > 0 || mains.length === 0)
+  const fixedMainFeeders: Array<{main:Task;placement:ScheduledTask;feeder:Task}> = [];
+  for(const placement of protectedPlacements){
+    const main=problem.tasks.find(task=>task.id===placement.id);
+    if(main?.kind!=="main")continue;
+    const matching=problem.tasks.filter(task=>task.kind==="vocal"&&task.participantId===main.participantId);
+    if(matching.length!==1)unsupported.push(`${matching.length===0?"MISSING":"MULTIPLE"}_VOCAL_FEEDER:${main.id}`);
+    else if(!main.dependencies.includes(matching[0]!.id))unsupported.push(`UNSUPPORTED_FEEDER_DEPENDENCY:${main.id}`);
+    else if(!fixedIds.has(matching[0]!.id))fixedMainFeeders.push({main,placement,feeder:{...matching[0]!,dependencies:[...matching[0]!.dependencies]}});
+  }
+  const hasFixedMain=protectedPlacements.some(placement=>problem.tasks.find(task=>task.id===placement.id)?.kind==="main");
+  if (unsupported.length > 0 || (mains.length === 0&&!hasFixedMain))
     return fail("UNSUPPORTED_CORE_SHAPE", unsupported.length ? unsupported : ["MISSING_MAIN_TASK"]);
   const preflightReasons = preflight(problem);
   if (preflightReasons.length > 0) return fail("PREFLIGHT_FAILED", preflightReasons);
@@ -663,6 +667,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const applicableContracts = canonical((problem.anchoredAccompaniments ?? []).filter((contract) => mainIds.has(contract.anchorTaskId)));
   const coreIds = new Set([...mainIds, ...feederByMain.values()].map((value) => typeof value === "string" ? value : value.id));
   for(const id of contextIds)coreIds.add(id);
+  for(const {feeder} of fixedMainFeeders)coreIds.add(feeder.id);
+  const fixedMainIds=new Set(protectedPlacements.flatMap(placement=>
+    problem.tasks.find(task=>task.id===placement.id)?.kind==="main"?[placement.id]:[]));
+  const fixedMainContracts=canonical((problem.anchoredAccompaniments??[]).filter(contract=>fixedMainIds.has(contract.anchorTaskId)));
+  for(const contract of fixedMainContracts)for(const id of [...contract.beforeTaskIds,...contract.afterTaskIds])coreIds.add(id);
   for (const contract of applicableContracts) for (const id of [...contract.beforeTaskIds, ...contract.afterTaskIds]) coreIds.add(id);
   if (!options.fixedPlacementsAsContext&&[...anchoredIds].some((id) => !coreIds.has(id))) return fail("UNSUPPORTED_CORE_SHAPE", ["UNSUPPORTED_NON_MAIN_ANCHORED_OPERATION"], coreIds);
 
@@ -684,7 +693,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     evidence.residualMatchingBranchesExplored += 1;
     return true;
   };
-  const duration = mains[0]!.duration;
+  const duration = mains[0]?.duration??0;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
   if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
@@ -704,11 +713,69 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return valid;
   };
 
+  const fixedStructuralBase=():ScheduledTask[]|null=>{
+    const placed=[...fixedPlacements];
+    for(const anchorPlacement of protectedPlacements){
+      const anchor=problem.tasks.find(task=>task.id===anchorPlacement.id);
+      if(anchor?.kind!=="main")continue;
+      const contract=(problem.anchoredAccompaniments??[]).find(item=>item.anchorTaskId===anchor.id);
+      if(!contract)continue;
+      const operationIds=new Set([anchor.id,...contract.beforeTaskIds,...contract.afterTaskIds]);
+      const operation=materializeAnchoredOperation(problem,anchor,anchorPlacement.start,
+        protectedPlacements.filter(item=>!operationIds.has(item.id)),[],(candidate,start,external,meals)=>
+          canPlaceTask(problem,candidate,start,placementContext(candidate,external),meals));
+      if(!operation)return null;
+      for(const item of operation.tasks){
+        const accepted=protectedPlacements.find(candidate=>candidate.id===item.id);
+        if(accepted){if(accepted.start!==item.start||accepted.end!==item.end)return null;continue;}
+        if(!placed.some(candidate=>candidate.id===item.id))placed.push(item);
+      }
+    }
+    return placed;
+  };
+  const searchPendingFixedFeeders=(placed:ScheduledTask[],meals:ScheduledSpaceMeal[],index:number,
+    continuation:(scheduled:ScheduledTask[])=>SearchOutcome):SearchOutcome=>{
+    if(index===fixedMainFeeders.length)return continuation(placed);
+    const {main,placement,feeder}=fixedMainFeeders[index]!;
+    const deadline=latestFeederEndBeforeMain(problem,feeder,main.spaceId,placement.start,placement.start);
+    const domain=exactFeederStartDomain(problem,feeder,deadline-feeder.duration,placed,options.feederStartDomainMode);
+    for(const start of domain.starts()){
+      if(!consumeBranch("FIXED_MAIN_FEEDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",index))return "BUDGET_EXHAUSTED";
+      if(!canPlaceCoreTask(feeder,start,placed,meals))continue;
+      const result=searchPendingFixedFeeders([...placed,{...feeder,start,end:start+feeder.duration}],meals,index+1,continuation);
+      if(result!=="DEAD_END")return result;
+      evidence.backtracks++;
+    }
+    return "DEAD_END";
+  };
+  const structuralBase=fixedStructuralBase();
+  if(!structuralBase)return fail("INFEASIBLE",["FIXED_MAIN_STRUCTURAL_OPERATION_INFEASIBLE"],coreIds);
+
+  if(mains.length===0){
+    const outcome=searchPendingFixedFeeders(structuralBase,[],0,(placed)=>{
+      const expected=[...coreIds].sort(),actual=placed.map(({id})=>id).sort();
+      if(actual.length!==expected.length||actual.some((id,index)=>id!==expected[index]))return "DEAD_END";
+      const validation=validatePlan({...problem,tasks:problem.tasks.filter(task=>coreIds.has(task.id))
+        .map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))}))},
+        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})));
+      if(!validation.hardValid&&!options.acceptsValidation?.(validation))return "DEAD_END";
+      const ordered=[...placed].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      const continuation=options.onHardValidCoreLeaf?.({tasks:ordered,meals:[],remainingTaskIds:[],
+        fingerprint:fingerprint(ordered,[],[])})??"ACCEPT";
+      if(continuation!=="ACCEPT")return continuation==="BUDGET_EXHAUSTED"?continuation:"DEAD_END";
+      selected={tasks:ordered,meals:[],pattern:[]};return "FOUND";
+    });
+    if(outcome==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",[exhaustionReason],coreIds);
+    if(outcome!=="FOUND")return fail("INFEASIBLE",["NO_COMPLETE_HARD_VALID_CORE"],coreIds);
+  }
+
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
     meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, depth: number,
-    timelineKey: string | null, certificate?: ResidualMatchingCertificate): SearchOutcome => {
+    timelineKey: string | null, certificate?: ResidualMatchingCertificate,fixedFeedersPlaced=false): SearchOutcome => {
     evidence.maximumDepth = Math.max(evidence.maximumDepth, depth);
     if (depth === mains.length) {
+      if(!fixedFeedersPlaced)return searchPendingFixedFeeders(placed,meals,0,scheduled=>
+        search(pattern,slots,composite,meals,scheduled,used,depth,timelineKey,certificate,true));
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
       const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
@@ -1589,7 +1656,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { outcome: "FOUND", certificate };
   };
 
-  outer: for (const pattern of patterns.patterns) {
+  outer: if(mains.length>0) for (const pattern of patterns.patterns) {
     if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
       return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
     evidence.patternCandidatesExplored += 1;
@@ -1720,8 +1787,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }
           evidence.feederOrderBranchesByArchitecture[architectureKey] ??= 0;
           currentArchitecture = architectureKey;
-          const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], fixedPlacements, new Set(), 0,
-            timeline?.key ?? null);
+          const initialMeals=timeline?[timeline.meal]:[];
+          const result = search(pattern,slots,composite,initialMeals,structuralBase,new Set(),0,timeline?.key??null);
           currentArchitecture = null;
           if (result === "BUDGET_EXHAUSTED")
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
