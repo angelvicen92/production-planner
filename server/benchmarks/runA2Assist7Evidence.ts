@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import { executeAssistedPlanning, type AssistedProblem } from "../../engine/planner-next/assistedPlanning";
-import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
+import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, minuteToEngineTime } from "../../engine/planner-next/integration/engineInputAdapter";
 import type { IStorage } from "../storage";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
@@ -118,17 +118,7 @@ export async function runA2Assist7Evidence() {
     }
     return rebuilt;
   };
-  const baseManualHarness = createManualDeltaValidationHarness(validationProblem, identity);
-  let validateAcceptedHard = true;
-  const manualHarness = (engineInput: typeof input, draft: AssistedPlanningSnapshotV1, touched: readonly number[]) => {
-    if (!validateAcceptedHard) return baseManualHarness(engineInput, draft, touched);
-    const validationDraft = structuredClone(draft);
-    const firstPlacement = validationDraft.tasks.find(row => row.taskId === first.id)!;
-    const secondPlacement = validationDraft.tasks.find(row => row.taskId === second.id)! as { startPlanned: string | null; endPlanned: string | null };
-    secondPlacement.startPlanned = firstPlacement.startPlanned;
-    secondPlacement.endPlanned = firstPlacement.endPlanned;
-    return baseManualHarness(engineInput, validationDraft, touched);
-  };
+  const manualHarness = createManualDeltaValidationHarness(validationProblem, identity);
   const planning = new AssistedPlanningService(storage, rpc as any, { buildInput, buildConfigRevision: ({ planId: id }) => ({ contractVersion: 1, planId: id, components: [], configurationFingerprint: configFingerprint() }), validateManual: manualHarness as any });
   const runAccess: AssistedProposalRunAccess = {
     create: async values => { const id = nextRunId++; runs.set(id, { id, ...values }); return { data: { id }, error: null }; },
@@ -170,17 +160,36 @@ export async function runA2Assist7Evidence() {
   const firstRow = (configStage.snapshotJson as AssistedPlanningSnapshotV1).tasks.find(row => row.taskId === first.id)!;
   const secondRow = (configStage.snapshotJson as AssistedPlanningSnapshotV1).tasks.find(row => row.taskId === second.id)!;
   assert.ok(firstRow.startPlanned && firstRow.endPlanned && secondRow.startPlanned && secondRow.endPlanned);
-  const hardBlockMembers = [first.id, second.id].sort((left, right) => {
-    const rows = (configStage.snapshotJson as AssistedPlanningSnapshotV1).tasks;
-    return rows.find(row => row.taskId === left)!.startPlanned!.localeCompare(rows.find(row => row.taskId === right)!.startPlanned!);
-  });
-  await planning.editPlanningBlocks(planId, session.draftFingerprint, configStage.id, { kind: "CREATE_BLOCK", memberTaskIds: hardBlockMembers });
+  const movedDuration = engineTimeToMinute(secondRow.endPlanned) - engineTimeToMinute(secondRow.startPlanned);
+  const conflictPlacement = {
+    taskId: second.id,
+    startPlanned: firstRow.startPlanned,
+    endPlanned: minuteToEngineTime(engineTimeToMinute(firstRow.startPlanned) + movedDuration),
+  };
+  await planning.patchDraft(planId, session.draftFingerprint, configStage.id, [conflictPlacement]);
   await planning.validateDraft(planId, session.draftFingerprint, configStage.id);
   const hardReport = validation.reportJson; assert.equal(hardReport.hardValid, false); assert.ok(hardReport.newHardCount > 0);
+  const materialViolation = hardReport.violations.find((item: any) => item.severity === "HARD" && [first.id, second.id].every(id => item.affectedTaskIds.includes(id)));
+  assert.ok(materialViolation, "real overlapping placements did not produce a shared HARD identity");
   await assert.rejects(() => planning.accept(planId, userId, session.draftFingerprint, configStage.id), (error: any) => error instanceof AssistedPlanningError && error.code === "HARD_CONFIRMATION_REQUIRED");
+  const acceptedConflictFingerprint = session.draftFingerprint;
   await planning.accept(planId, userId, session.draftFingerprint, configStage.id, "HARD_EXCEPTIONS");
-  validateAcceptedHard = false;
-  const conflictStage = stages.at(-1)!; assert.ok(exceptions.length > 0);
+  const conflictStage = stages.at(-1)!;
+  const persistedConflictPlacement = (conflictStage.snapshotJson as AssistedPlanningSnapshotV1).tasks.find(row => row.taskId === second.id);
+  const materiallyPresentInAcceptedStage = persistedConflictPlacement?.startPlanned === conflictPlacement.startPlanned && persistedConflictPlacement.endPlanned === conflictPlacement.endPlanned;
+  assert.equal(materiallyPresentInAcceptedStage, true);
+  assert.equal(conflictStage.snapshotFingerprint, acceptedConflictFingerprint);
+  const acceptedException = exceptions.find(item => item.stageId === conflictStage.id && item.status === "ACTIVE" && item.severity === materialViolation.severity && item.violationKey === materialViolation.violationKey);
+  assert.ok(acceptedException, "accepted conflict stage has no ACTIVE exception for its material HARD");
+  const exceptionSnapshotMatchesStage = acceptedException.snapshotFingerprint === conflictStage.snapshotFingerprint;
+  assert.equal(exceptionSnapshotMatchesStage, true);
+  assert.ok([first.id, second.id].every(id => acceptedException.affectedTaskIdsJson.includes(id)));
+  const reproduced = manualHarness(input, conflictStage.snapshotJson, [second.id]);
+  const materialIdentity = `${materialViolation.severity}:${materialViolation.violationKey}`;
+  const reproducedViolationIdentities = reproduced.structuredViolations.map(item => `${item.severity}:${item.violationKey}`);
+  const violationIdentityReproduced = reproducedViolationIdentities.includes(materialIdentity);
+  assert.equal(violationIdentityReproduced, true);
+  const exceptionCountBeforeFollowup = exceptions.length;
   // Deterministically choose the first later canonical main scope that the current
   // solver can complete around the inherited accepted HARD baseline.
   let followupRun: Awaited<ReturnType<typeof proposal.run>> | undefined;
@@ -196,6 +205,8 @@ export async function runA2Assist7Evidence() {
   assert.ok(acceptedBaselineCounts.at(-1)! > 0);
   assert.equal(followupRun.outcome, "PROPOSAL");
   assert.equal(followupRun.evidence.newHardViolationCount, 0);
+  const exceptionCountAfterFollowup = exceptions.length;
+  assert.equal(exceptionCountAfterFollowup, exceptionCountBeforeFollowup);
 
   const currentRevision = session.currentConfigRevisionId;
   await planning.rollback(planId, configStage.id);
@@ -217,7 +228,7 @@ export async function runA2Assist7Evidence() {
   const activeState = await planning.state(planId); assert.equal(activeState.acceptedExceptions.length, 0);
   assert.deepEqual(dailyTasks, divergentStage.snapshotJson);
 
-  const evidence = { benchmark: "A2-ASSIST-4-7", status: "PASS", sourceObligationCount, stages: { s0: s0.id, s1: s1.id, s2: s2.id, configStage: configStage.id, conflictStage: conflictStage.id, divergentStage: divergentStage.id }, secondScopeThroughRequestRun: true, s1Protection: { checkedPlacementCount: protectedComparisons.length, exact: s1ProtectedExactly }, configRefresh: { changeKind: candidate.preview.changes[0].kind, oldDuration, materializedDuration: materializedTemplate.defaultDuration, consumedDuration: consumedTargetDurations[1], buildInputCalls, consumedNewValue: consumedTargetDurations[1] === newTemplate.defaultDuration && consumedTargetDurations[1] !== oldDuration }, configRevision: { before: 40, after: currentRevision, rollbackPreservedCurrent: session.currentConfigRevisionId === currentRevision }, proposalConsumedRevisionIds: consumedRevisions, protectedPlacementCounts: protectedCounts, hardConflict: { hardValid: hardReport.hardValid, acceptedExceptionCount: exceptions.length, followupTaskId, followupBaselineCount: acceptedBaselineCounts.at(-1), followupNewCount: followupRun.evidence.newHardViolationCount, followupOutcome: followupRun.outcome }, rollback: { exactSnapshot: true, exactDraft: true, exactFingerprint: true, exactActiveAndBaseStage: true, redoOldFutureBeforeDivergence: true }, divergence: { parentIsRestoredCheckpoint: divergentStage.parentStageId === configStage.id, oldFutureArchived: Boolean(conflictStage.archivedAt), oldRedoUnavailable: true, activeAcceptedExceptionCount: activeState.acceptedExceptions.length, dailyTasksAtLatestActiveCheckpoint: JSON.stringify(dailyTasks) === JSON.stringify(divergentStage.snapshotJson) }, productDefectFound: true, productDefects: ["scoped structured-space policies retained absent families/spaces", "resource violation identity rejected adapter namespaces"], migration084: false };
+  const evidence = { benchmark: "A2-ASSIST-4-7", status: "PASS", sourceObligationCount, stages: { s0: s0.id, s1: s1.id, s2: s2.id, configStage: configStage.id, conflictStage: conflictStage.id, divergentStage: divergentStage.id }, secondScopeThroughRequestRun: true, s1Protection: { checkedPlacementCount: protectedComparisons.length, exact: s1ProtectedExactly }, configRefresh: { changeKind: candidate.preview.changes[0].kind, oldDuration, materializedDuration: materializedTemplate.defaultDuration, consumedDuration: consumedTargetDurations[1], buildInputCalls, consumedNewValue: consumedTargetDurations[1] === newTemplate.defaultDuration && consumedTargetDurations[1] !== oldDuration }, configRevision: { before: 40, after: currentRevision, rollbackPreservedCurrent: session.currentConfigRevisionId === currentRevision }, proposalConsumedRevisionIds: consumedRevisions, protectedPlacementCounts: protectedCounts, hardConflict: { hardValid: hardReport.hardValid, editedTaskId: second.id, conflictingTaskIds: materialViolation.affectedTaskIds, acceptedViolationIdentity: materialIdentity, reproducedViolationIdentities, materiallyPresentInAcceptedStage, acceptedFingerprintMatchesDraft: conflictStage.snapshotFingerprint === acceptedConflictFingerprint, exceptionSnapshotMatchesStage, violationIdentityReproduced, acceptedExceptionCount: exceptionCountBeforeFollowup, exceptionCountBeforeFollowup, exceptionCountAfterFollowup, followupTaskId, followupBaselineCount: acceptedBaselineCounts.at(-1), followupNewCount: followupRun.evidence.newHardViolationCount, followupOutcome: followupRun.outcome }, rollback: { exactSnapshot: true, exactDraft: true, exactFingerprint: true, exactActiveAndBaseStage: true, redoOldFutureBeforeDivergence: true }, divergence: { parentIsRestoredCheckpoint: divergentStage.parentStageId === configStage.id, oldFutureArchived: Boolean(conflictStage.archivedAt), oldRedoUnavailable: true, activeAcceptedExceptionCount: activeState.acceptedExceptions.length, dailyTasksAtLatestActiveCheckpoint: JSON.stringify(dailyTasks) === JSON.stringify(divergentStage.snapshotJson) }, productDefectFound: true, productDefects: ["scoped structured-space policies retained absent families/spaces", "resource violation identity rejected adapter namespaces"], migration084: false };
   writeFileSync("docs/evidence/A2-ASSIST-7-assisted-causal-chain.json", `${JSON.stringify(evidence, null, 2)}\n`);
   return evidence;
 }

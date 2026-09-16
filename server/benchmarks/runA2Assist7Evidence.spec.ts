@@ -14,6 +14,14 @@ test("ASST-010 proves the canonical assisted chain through rollback and divergen
   assert.equal(evidence.configRefresh.materializedDuration, evidence.configRefresh.consumedDuration);
   assert.equal(evidence.configRefresh.consumedNewValue, true);
   assert.equal(evidence.hardConflict.hardValid, false);
+  assert.equal(evidence.hardConflict.materiallyPresentInAcceptedStage, true);
+  assert.equal(evidence.hardConflict.acceptedFingerprintMatchesDraft, true);
+  assert.equal(evidence.hardConflict.exceptionSnapshotMatchesStage, true);
+  assert.equal(evidence.hardConflict.violationIdentityReproduced, true);
+  assert.ok(evidence.hardConflict.conflictingTaskIds.includes(evidence.hardConflict.editedTaskId));
+  assert.ok(evidence.hardConflict.reproducedViolationIdentities.includes(evidence.hardConflict.acceptedViolationIdentity));
+  assert.ok(evidence.hardConflict.exceptionCountBeforeFollowup > 0);
+  assert.equal(evidence.hardConflict.exceptionCountAfterFollowup, evidence.hardConflict.exceptionCountBeforeFollowup);
   assert.ok(Number(evidence.hardConflict.followupBaselineCount) > 0);
   assert.equal(evidence.hardConflict.followupOutcome, "PROPOSAL");
   assert.equal(evidence.hardConflict.followupNewCount, 0);
