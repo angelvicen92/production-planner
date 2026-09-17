@@ -6,8 +6,9 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
   const first = await runA2Assist8Evidence({ branchBudget: 1_000 });
   const second = await runA2Assist8Evidence({ branchBudget: 1_000 });
   assert.equal(first.sourceObligationCount, 266);
-  assert.equal(first.iterations[0]?.scopeSelector.kind, "TASK_IDS");
+  assert.equal(first.iterations[0]?.scopeSelector.kind, "SPACE");
   assert.equal(first.iterations[0]?.resolvedTaskIds.length, 19);
+  assert.ok(first.iterations[0]?.visibleProposalTaskIds.length === 0 || first.iterations[0]?.visibleProposalTaskIds.length === 19);
   assert.equal(first.iterations[0]?.includePrerequisites, false);
   assert.equal(first.remainingObligationCount, 266 - first.completedObligationCount);
   assert.equal(first.manualChanges, 0); assert.equal(first.rollbackCount, 0);

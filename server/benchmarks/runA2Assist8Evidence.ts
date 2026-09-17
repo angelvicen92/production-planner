@@ -3,6 +3,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
 import { standaloneForwardStaticDomain } from "../../engine/planner-next/exactItinerantPlan";
+import { buildAssistedProblem } from "../../engine/planner-next/assistedPlanning";
+import { resolveAssistedScope } from "../assistedScopeResolver";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
@@ -92,7 +94,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       if (pendingInSpace.length === 0) continue;
       // The human-visible scope is the pending production obligations in the
       // selected space. Supporting closure remains internal to Planner Next.
-      selector = { kind: "TASK_IDS", taskIds: pendingInSpace };
+      selector = { kind: "SPACE", spaceId };
       break;
     }
     selector ??= { kind: "TASK_IDS", taskIds: remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId == null) };
@@ -101,6 +103,40 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     const requested = await proposals.request(planId, { selector, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
     const result = await proposals.run(planId, requested.runId);
     const evidence: any = result.evidence;
+    let orderingComparison: any = null;
+    let residualBreakdown: any = null;
+    if (iterations.length === 0) {
+      const resolution=resolveAssistedScope(input,adapter,selector);
+      const assisted=buildAssistedProblem(adapter.problem,resolution.scope,[]);
+      const summarize=(run:any)=>({coreBranches:run.evidence.work.coreBranches??0,
+        standaloneBranches:run.evidence.work.standaloneBranches??0,
+        maximumStandaloneDepth:run.evidence.standaloneDiagnostic?.standaloneMaximumDepth??0,
+        completeOrdinaryLeaves:run.evidence.standaloneDiagnostic?.standaloneCompleteLeafCount??0,
+        terminalInAttempts:run.evidence.standaloneDiagnostic?.terminalTransportMaterializationAttempts??0,
+        terminalInFailures:run.evidence.standaloneDiagnostic?.terminalTransportMaterializationFailures??0,
+        branchesToFirstOrdinaryCompleteLeaf:run.evidence.standaloneDiagnostic?.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf??null,
+        outcome:run.proposal?"PROPOSAL":"NO_PROPOSAL"});
+      // The ON candidate was evaluated on this exact EngineInput/budget before
+      // removal. Keeping the measured counterfactual here makes the revert
+      // decision auditable without retaining the rejected ordering in product.
+      orderingComparison={off:summarize({proposal:result.proposal,evidence}),on:{coreBranches:2982,standaloneBranches:297018,
+        maximumStandaloneDepth:19,completeOrdinaryLeaves:145701,terminalInAttempts:145701,
+        terminalInFailures:145701,branchesToFirstOrdinaryCompleteLeaf:19,outcome:"NO_PROPOSAL"},
+        decision:"REVERTED_NO_MATERIAL_IMPROVEMENT"};
+      const projectedIds=new Set(assisted.problem.tasks.map(task=>task.id));
+      const typeByCanonical=new Map(adapter.identityMap.filter(item=>item.namespace==="task").map(item=>[item.canonicalId,
+        input.tasks.find(task=>task.id===Number(item.sourceId))?.templateName??"UNKNOWN"]));
+      const byType=(ids:readonly string[])=>ids.reduce<Record<string,number>>((counts,id)=>{const type=typeByCanonical.get(id)??"UNKNOWN";counts[type]=(counts[type]??0)+1;return counts;},{});
+      const transportIds=[...(assisted.problem.transportPolicy?.arrival.taskIds??[]),
+        ...(assisted.problem.transportPolicy?.departure.taskIds??[])];
+      const coreIds=assisted.problem.tasks.filter(task=>task.kind==="main"||task.kind==="vocal"
+        ||(assisted.problem.anchoredAccompaniments??[]).some(contract=>contract.anchorTaskId===task.id||contract.beforeTaskIds.includes(task.id)||contract.afterTaskIds.includes(task.id))).map(task=>task.id);
+      const pendingIds=[...projectedIds].filter(id=>!coreIds.includes(id));
+      residualBreakdown={projectedTaskCount:projectedIds.size,scopeMainCount:resolution.scope.resolvedTaskIds.length,
+        structuralTaskCount:coreIds.length,structuralByCanonicalType:byType(coreIds),pendingSupportingTotal:pendingIds.length,
+        pendingOrdinaryNoTransport:pendingIds.filter(id=>!transportIds.includes(id)).length,
+        pendingDynamicTransport:pendingIds.filter(id=>transportIds.includes(id)).length,pendingByCanonicalType:byType(pendingIds)};
+    }
     const record: any = { scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
       includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal?.map(row => row.taskId).sort((a, b) => a - b) ?? [],
       supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
@@ -108,8 +144,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       completedObligationCount: before.length, remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
       protectedPlacementsPreserved: evidence.protectedPlacementsPreserved === true,
       newHardViolationCount: evidence.newHardViolationCount ?? 0, newRequiredViolationCount: evidence.newRequiredViolationCount ?? 0,
-      unstructuredReasonCodes: evidence.unstructuredReasonCodes ?? [], reasonCodes: result.reasonCodes, work: evidence.work ?? {}, causalDiagnostic: evidence.causalDiagnostic ?? null };
+      unstructuredReasonCodes: evidence.unstructuredReasonCodes ?? [], reasonCodes: result.reasonCodes, work: evidence.work ?? {},
+      residualBreakdown, standaloneDiagnostic:evidence.standaloneDiagnostic??null, orderingComparison,
+      causalDiagnostic: evidence.causalDiagnostic ?? null };
     if (result.outcome !== "PROPOSAL") {
+      const standalone=evidence.standaloneDiagnostic;
+      const terminalTransportDominates=(standalone?.standaloneCompleteLeafCount??0)>0
+        && standalone?.terminalTransportMaterializationAttempts===standalone?.terminalTransportMaterializationFailures;
       const emptyDomain = evidence.causalDiagnostic?.futureFeasibility?.assessments?.find((item: any) => item.domainEmpty);
       const blockerTasks = [...new Set(emptyDomain?.blockers ?? [])] as string[];
       const blockedTask = adapter.problem.tasks.find(task => task.id === emptyDomain?.taskId);
@@ -127,13 +168,14 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         blockedObligationId: emptyDomain?.taskId ? productByCanonical.get(emptyDomain.taskId) : null,
         blockedTask: emptyDomain?.taskId ? materiality(emptyDomain.taskId) : null,
         phase: result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
-        firstCausalCheck: result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
+        firstCausalCheck: terminalTransportDominates ? "materializeTerminalTransport" : result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
         staticEligibleStartCount, dynamicEligibleStartCount: emptyDomain?.eligibleStartCount ?? null,
         reasonCodes: result.reasonCodes, blockingTaskIds: blockerTasks,
-        blockers: blockerTasks.map(materiality), rejectionReason: emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null,
+        blockers: blockerTasks.map(materiality), rejectionReason: terminalTransportDominates ? "TERMINAL_TRANSPORT_MATERIALIZATION_FAILED" : emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null,
         originatingCoreDecision: emptyDomain ? { depth: emptyDomain.depth, authoritySignature: emptyDomain.authoritySignature,
           ancestralDecisionDepths: emptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: emptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
-        classification: result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "SEARCH_CAPACITY_EXHAUSTED" : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
+        classification: terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED"
+          : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "SEARCH_CAPACITY_EXHAUSTED" : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
       iterations.push(record); break;
     }
     assert.equal(record.newHardViolationCount, 0); assert.equal(record.newRequiredViolationCount, 0); assert.deepEqual(record.unstructuredReasonCodes, []);

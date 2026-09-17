@@ -80,6 +80,24 @@ export interface ExactItinerantPlanEvidence {
   standaloneBacktracks: number;
   standaloneMaximumDepth: number;
   standaloneCompleteLeafCount: number;
+  standaloneBranchesByDepth: Record<string, number>;
+  standaloneSelectionsByTaskId: Record<string, number>;
+  standaloneCandidateStartsByTaskId: Record<string, number>;
+  standaloneFirstSelectedTaskId: string | null;
+  standaloneDominantPathFirst20: Array<{ taskId: string; start: number }>;
+  standaloneFirstDominantBlocker: { taskId: string; count: number } | null;
+  standaloneBranchesBeforeFirstOrdinaryCompleteLeaf: number | null;
+  standaloneBranchesAfterFirstOrdinaryCompleteLeaf: number;
+  terminalTransportMaterializationAttempts: number;
+  terminalTransportMaterializationFailures: number;
+  firstHardValidCoreLeaf: {
+    coreTaskCount: number;
+    coreTasksByKind: Record<string, number>;
+    pendingSupportingTotal: number;
+    pendingOrdinaryNoTransport: number;
+    pendingDynamicTransport: number;
+    pendingTasksByKind: Record<string, number>;
+  } | null;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
   standaloneSearchInvocations: number;
@@ -401,9 +419,9 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
-  technicalChainStartDomainMode:TechnicalChainStartDomainMode, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],
-  assistedPrerequisiteOrdering=false): StandaloneSearchResult {
+  technicalChainStartDomainMode:TechnicalChainStartDomainMode, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"]): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
+  const invocationStartBranches = ledger.standaloneBranches;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
@@ -427,13 +445,15 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       setupFamilyId: task.setupFamilyId ?? null, kind: task.kind,
     };
   };
-  const consumeLeafBranch = (): boolean => {
+  const consumeLeafBranch = (depth: number): boolean => {
     if (!ledger.consume("STANDALONE")) return false;
     evidence.standaloneLeafSearchBranches += 1;
+    evidence.standaloneBranchesByDepth[String(depth)] = (evidence.standaloneBranchesByDepth[String(depth)] ?? 0) + 1;
     return true;
   };
   const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
-    if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+    evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf ??= ledger.standaloneBranches - invocationStartBranches;
+    if (!consumeLeafBranch(selectionOrder.length)) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
     const substantive = orderScheduled([...coreTasks, ...placed]);
     const expected = [...problem.tasks].sort(byId).map(({ id }) => id);
@@ -448,7 +468,9 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if(operationalMealWitness?.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
+    if (mealWitness?.complete) evidence.terminalTransportMaterializationAttempts += 1;
     const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled) : null;
+    if (mealWitness?.complete && transport === null) evidence.terminalTransportMaterializationFailures += 1;
     const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
     const actual = [...candidate].sort(byId).map(({ id }) => id);
     const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
@@ -501,18 +523,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       }
       alternatives.push({ task, starts: [...domain.starts()], effectiveDeadline: effectiveDeadline(problem, task) });
     }
-    const placedDependentStart=(task:Task):number|null=>{
-      const starts=allPlaced.filter(dependent=>dependent.dependencies.includes(task.id)).map(dependent=>dependent.start);
-      return starts.length>0?Math.min(...starts):null;
-    };
-    const prerequisiteSlack=(position:Positions):number=>{
-      const deadline=placedDependentStart(position.task);
-      return deadline===null?Number.POSITIVE_INFINITY:deadline-position.task.duration-position.starts[0]!;
-    };
-    alternatives.sort((a, b) => (assistedPrerequisiteOrdering
-      ? Number(placedDependentStart(b.task)!==null)-Number(placedDependentStart(a.task)!==null)
-        || prerequisiteSlack(a)-prerequisiteSlack(b)
-      : 0) || a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
+    alternatives.sort((a, b) => a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
       || b.task.duration - a.task.duration
       || (b.task.requiredResourceIds?.length ?? 0) - (a.task.requiredResourceIds?.length ?? 0)
       || a.task.id.localeCompare(b.task.id));
@@ -520,6 +531,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     // Prepare the lightweight set of still-pending hard predecessors once for
     // this ordinary node, not once per candidate start.
     evidence.standaloneTaskSelections += 1;
+    evidence.standaloneFirstSelectedTaskId ??= choice.task.id;
+    evidence.standaloneSelectionsByTaskId[choice.task.id] = (evidence.standaloneSelectionsByTaskId[choice.task.id] ?? 0) + 1;
     evidence.ordinaryMRVSelections += 1;
     evidence.ordinaryExactStartEnumerations += 1;
     const feasibleStarts = choice.starts.filter((start) => {
@@ -527,6 +540,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.standaloneStartChecks += 1;
       return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals);
     });
+    evidence.standaloneCandidateStartsByTaskId[choice.task.id]
+      = (evidence.standaloneCandidateStartsByTaskId[choice.task.id] ?? 0) + feasibleStarts.length;
     if (feasibleStarts.length === 0) {
       evidence.standaloneZeroAlternativePrunes += 1;
       recordBlockingTask(choice.task);
@@ -535,13 +550,15 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const orderedStarts = feasibleStarts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
       allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
         || a.scheduled.id.localeCompare(b.scheduled.id));
-    if(assistedPrerequisiteOrdering&&placedDependentStart(choice.task)!==null)
-      orderedStarts.sort((a,b)=>b.scheduled.start-a.scheduled.start||a.scheduled.id.localeCompare(b.scheduled.id));
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)
       .sort(byId);
     for (const { scheduled } of orderedStarts) {
-      if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+      if (!consumeLeafBranch(depth)) return "BUDGET_EXHAUSTED";
+      if (depth + 1 > evidence.standaloneDominantPathFirst20.length && depth < 20) {
+        evidence.standaloneDominantPathFirst20 = [...selectionOrder.map((taskId) => ({ taskId, start: placed.find(task=>task.id===taskId)!.start })),
+          { taskId: choice.task.id, start: scheduled.start }].slice(0, 20);
+      }
       evidence.ordinaryBranchesExplored += 1;
       evidence.ordinaryIndividualForwardChecks += 1;
       evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
@@ -800,6 +817,11 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
 };
 const searchOutcome = searchMacroUnits(macroUnits, [], [], [], 0, []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
+evidence.standaloneBranchesAfterFirstOrdinaryCompleteLeaf = evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf === null
+  ? 0 : ledger.standaloneBranches - invocationStartBranches - evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf;
+const dominantBlocker = Object.entries(evidence.standaloneBlockingTaskCounts)
+  .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0];
+evidence.standaloneFirstDominantBlocker = dominantBlocker ? { taskId: dominantBlocker[0], count: dominantBlocker[1] } : null;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
 }
 
@@ -821,8 +843,6 @@ export interface ExactItinerantPlanSearchOptions {
   /** Immutable Assisted placements, materialized before residual search. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
-  /** Assisted-only ordering for pending prerequisites of already placed work. */
-  assistedPrerequisiteOrdering?: boolean;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -844,6 +864,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainRootStartsConsidered:0,technicalChainRootStartsFeasible:0,technicalChainBranchesExplored:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
+    standaloneBranchesByDepth:{},standaloneSelectionsByTaskId:{},standaloneCandidateStartsByTaskId:{},
+    standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
+    standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
+    terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,firstHardValidCoreLeaf:null,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
@@ -1072,13 +1096,20 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "CONTINUE";
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
+    if (evidence.firstHardValidCoreLeaf === null) {
+      const counts=(tasks:readonly {kind:string}[])=>tasks.reduce<Record<string,number>>((result,task)=>{
+        result[task.kind]=(result[task.kind]??0)+1;return result;},{});
+      const dynamicTransport=transportTaskIds(problem);
+      evidence.firstHardValidCoreLeaf={coreTaskCount:candidate.tasks.length,coreTasksByKind:counts(candidate.tasks),
+        pendingSupportingTotal:standaloneTasks.length,pendingOrdinaryNoTransport:standaloneTasks.filter(task=>!dynamicTransport.has(task.id)).length,
+        pendingDynamicTransport:standaloneTasks.filter(task=>dynamicTransport.has(task.id)).length,pendingTasksByKind:counts(standaloneTasks)};
+    }
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const immutableCoreTasks=[...candidate.tasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,
-      options.assistedPrerequisiteOrdering??false);
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -1223,7 +1254,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,assistedPrerequisiteOrdering=false): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false): ExactItinerantPlanResult {
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
@@ -1235,6 +1266,6 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, assistedPrerequisiteOrdering,
+    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext,
   });
 }

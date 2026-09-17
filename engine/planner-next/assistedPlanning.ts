@@ -7,6 +7,7 @@ import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
 import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
+import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 
 export type AssistedPlanningReasonCode =
@@ -39,6 +40,12 @@ export interface AssistedPlanningEvidence {
   readonly fingerprint: string | null;
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
+  readonly standaloneDiagnostic?: Pick<ExactItinerantPlanEvidence,
+    "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
+    | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
+    | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
+    | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
+    | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -225,7 +232,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true, assistedPrerequisiteOrdering:true });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -263,7 +270,13 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const work = Object.fromEntries(["branchesExplored", "backtracks", "patternsGenerated", "branchBudgetConsumed",
+  const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
+    "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
+    "terminalTransportMaterializationFailures","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
+    "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
+    "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf"] as const;
+  const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
+  const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
     "feederCandidatesEvaluated", "architecturesChecked", "feederOrderBranches", "feederSlotMatchingChecks",
     "feederSlotMatchingEdgeChecks", "feederSlotMatchingAugmentTraversals", "feederSlotMatchingBranchesExplored",
@@ -293,6 +306,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
+    standaloneDiagnostic,
     reasonCodes: [...new Set(reasonCodes)].sort(),
     violations: validation?.violations??[],
     unstructuredReasonCodes: validation?.unstructuredReasonCodes??[],
