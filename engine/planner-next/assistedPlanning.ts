@@ -225,7 +225,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true, assistedPrerequisiteOrdering:true });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];

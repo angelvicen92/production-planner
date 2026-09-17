@@ -214,3 +214,13 @@ test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent O
   assert.ok(arrival.end <= vocal.start);
   assert.deepEqual(problem, snapshot);
 });
+
+test("terminal IN materialization rejects a jointly incompatible grouping witness",()=>{
+  const problem=arrivalWorkStyleDepartureProblem(false,4);
+  problem.transportPolicy!.arrival.minGapMinutes=5;
+  const result=executePlannerNext(problem,{fixedPlacementsAsContext:true,assistedPrerequisiteOrdering:true});
+  assert.equal(result.kind,"EXACT_CONSTRUCTIVE");
+  assert.equal(result.result?.complete,false);
+  assert.ok((result.result?.evidence.standaloneCompleteLeafCount??0)>0,
+    "ordinary witnesses must reach terminal grouped-transport materialization before rejection");
+});

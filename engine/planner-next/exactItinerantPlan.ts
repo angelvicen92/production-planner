@@ -401,7 +401,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
-  technicalChainStartDomainMode:TechnicalChainStartDomainMode, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"]): StandaloneSearchResult {
+  technicalChainStartDomainMode:TechnicalChainStartDomainMode, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],
+  assistedPrerequisiteOrdering=false): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
@@ -500,7 +501,18 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       }
       alternatives.push({ task, starts: [...domain.starts()], effectiveDeadline: effectiveDeadline(problem, task) });
     }
-    alternatives.sort((a, b) => a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
+    const placedDependentStart=(task:Task):number|null=>{
+      const starts=allPlaced.filter(dependent=>dependent.dependencies.includes(task.id)).map(dependent=>dependent.start);
+      return starts.length>0?Math.min(...starts):null;
+    };
+    const prerequisiteSlack=(position:Positions):number=>{
+      const deadline=placedDependentStart(position.task);
+      return deadline===null?Number.POSITIVE_INFINITY:deadline-position.task.duration-position.starts[0]!;
+    };
+    alternatives.sort((a, b) => (assistedPrerequisiteOrdering
+      ? Number(placedDependentStart(b.task)!==null)-Number(placedDependentStart(a.task)!==null)
+        || prerequisiteSlack(a)-prerequisiteSlack(b)
+      : 0) || a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
       || b.task.duration - a.task.duration
       || (b.task.requiredResourceIds?.length ?? 0) - (a.task.requiredResourceIds?.length ?? 0)
       || a.task.id.localeCompare(b.task.id));
@@ -523,6 +535,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const orderedStarts = feasibleStarts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
       allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
         || a.scheduled.id.localeCompare(b.scheduled.id));
+    if(assistedPrerequisiteOrdering&&placedDependentStart(choice.task)!==null)
+      orderedStarts.sort((a,b)=>b.scheduled.start-a.scheduled.start||a.scheduled.id.localeCompare(b.scheduled.id));
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)
       .sort(byId);
@@ -807,6 +821,8 @@ export interface ExactItinerantPlanSearchOptions {
   /** Immutable Assisted placements, materialized before residual search. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
+  /** Assisted-only ordering for pending prerequisites of already placed work. */
+  assistedPrerequisiteOrdering?: boolean;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -1061,7 +1077,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const immutableCoreTasks=[...candidate.tasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation);
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,
+      options.assistedPrerequisiteOrdering??false);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -1206,7 +1223,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,assistedPrerequisiteOrdering=false): ExactItinerantPlanResult {
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
@@ -1218,6 +1235,6 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext,
+    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, assistedPrerequisiteOrdering,
   });
 }

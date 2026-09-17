@@ -6,7 +6,6 @@ import { standaloneForwardStaticDomain } from "../../engine/planner-next/exactIt
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
-import { resolveAssistedScope } from "../assistedScopeResolver";
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
@@ -91,9 +90,9 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     for (const spaceId of orderedSpaceIds) {
       const pendingInSpace = remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId === spaceId);
       if (pendingInSpace.length === 0) continue;
-      const spaceSelector = { kind: "SPACE" as const, spaceId };
-      const resolved = resolveAssistedScope(input, adapter, spaceSelector).productTaskIds.filter(id => sourceSet.has(id));
-      selector = resolved.every(id => !acceptedIds.has(id)) ? spaceSelector : { kind: "TASK_IDS", taskIds: pendingInSpace };
+      // The human-visible scope is the pending production obligations in the
+      // selected space. Supporting closure remains internal to Planner Next.
+      selector = { kind: "TASK_IDS", taskIds: pendingInSpace };
       break;
     }
     selector ??= { kind: "TASK_IDS", taskIds: remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId == null) };

@@ -217,3 +217,53 @@ test("scope projection preserves surviving setup families and removes only absen
   });
   assert.deepEqual(source, before);
 });
+
+function fixedMainPrerequisiteProblem(entryCount=1): { problem: PlannerNextProblem; fixed: ScheduledTask[] } {
+  const problem=fixture();
+  problem.tasks=Array.from({length:entryCount},(_,index)=>({id:`entry-${index}`,kind:"auxiliary" as const,
+    duration:10,spaceId:"other-space",participantId:`entry-p-${index}`,dependencies:[]}));
+  problem.tasks.push(...Array.from({length:entryCount},(_,index)=>({id:`vocal-${index}`,kind:"vocal" as const,
+    duration:5,spaceId:"vocal-space",participantId:`entry-p-${index}`,coachId:"coach",dependencies:[]})));
+  problem.participants=Array.from({length:entryCount},(_,index)=>({id:`entry-p-${index}`,availability:[{start:0,end:180}]}));
+  const fixed=Array.from({length:entryCount},(_,index)=>({id:`main-${index}`,kind:"main" as const,duration:10,
+    spaceId:"main-space",participantId:`entry-p-${index}`,coachId:"coach",blockKey:"coach",requiredResourceIds:["coach"],dependencies:[`vocal-${index}`,`entry-${index}`],
+    start:60+index*10,end:70+index*10}));
+  problem.tasks.push(...fixed.map(({start:_start,end:_end,...task})=>task));
+  problem.mainFlow={...problem.mainFlow!,minTasksPerBlock:entryCount};
+  return {problem,fixed};
+}
+
+test("Assisted ordinary prerequisites try the latest hard-valid start first and remain deterministic",()=>{
+  const {problem,fixed}=fixedMainPrerequisiteProblem();
+  const options={fixedPlacements:fixed,fixedPlacementsAsContext:true,assistedPrerequisiteOrdering:true};
+  const first=executePlannerNext(problem,options),second=executePlannerNext(structuredClone(problem),options);
+  assert.equal(first.result?.complete,true,JSON.stringify(first.result));
+  // Vocal work plus participant transitions make 35 the last feasible grid start.
+  assert.equal(first.result?.scheduledTasks.find(task=>task.id==="entry-0")?.start,35);
+  assert.equal(first.result?.evidence.fullFingerprint,second.result?.evidence.fullFingerprint);
+});
+
+test("Assisted prerequisites sharing a space are constructed jointly without overlap",()=>{
+  const {problem,fixed}=fixedMainPrerequisiteProblem(2);
+  const result=executePlannerNext(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,assistedPrerequisiteOrdering:true});
+  assert.equal(result.result?.complete,true,JSON.stringify(result.result));
+  const entries=result.result!.scheduledTasks.filter(task=>task.id.startsWith("entry-")).sort((a,b)=>a.start-b.start);
+  assert.equal(entries.length,2);assert.ok(entries[0]!.end<=entries[1]!.start);
+  assert.equal(validatePlan(problem,result.result!.scheduledTasks).hardValid,true);
+});
+
+test("Assisted rejects collectively impossible prerequisites despite nonempty individual domains",()=>{
+  const {problem,fixed}=fixedMainPrerequisiteProblem(2);
+  fixed[1]={...fixed[1]!,start:60,end:70};
+  problem.day.end=70;problem.spaces.find(space=>space.id==="other-space")!.availability=[{start:45,end:60}];
+  problem.participants.forEach(participant=>participant.availability=[{start:45,end:70}]);
+  const result=executePlannerNext(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,assistedPrerequisiteOrdering:true});
+  assert.equal(result.result?.complete,false);
+});
+
+test("normal exact search retains its previous ordinary start ordering",()=>{
+  const {problem,fixed}=fixedMainPrerequisiteProblem();
+  const result=executePlannerNext(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true});
+  assert.equal(result.result?.complete,true,JSON.stringify(result.result));
+  assert.notEqual(result.result?.scheduledTasks.find(task=>task.id==="entry-0")?.start,50);
+});
