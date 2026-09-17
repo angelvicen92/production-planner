@@ -25,6 +25,8 @@ test("ASST-010 proves the canonical assisted chain through rollback and divergen
   assert.ok(Number(evidence.hardConflict.followupBaselineCount) > 0);
   assert.equal(evidence.hardConflict.followupOutcome, "PROPOSAL");
   assert.equal(evidence.hardConflict.followupNewCount, 0);
+  assert.deepEqual(evidence.hardConflict.followupUnstructuredReasonCodes, []);
+  assert.equal(evidence.hardConflict.followupFixedPlacementsPreserved, true);
   assert.deepEqual(evidence.rollback, { exactSnapshot: true, exactDraft: true, exactFingerprint: true, exactActiveAndBaseStage: true, redoOldFutureBeforeDivergence: true });
   assert.equal(evidence.configRevision.rollbackPreservedCurrent, true);
   assert.equal(evidence.divergence.parentIsRestoredCheckpoint, true);

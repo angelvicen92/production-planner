@@ -112,6 +112,7 @@ test("protected-vs-protected inherited incompatibility remains an ASST-008 Accep
   const accepted=executeAssistedPlanning(assisted,{violations:validatePlan(assisted.originalValidationProblem,protectedPlacements).violations?.filter(item=>item.ruleCode==="OVERLAP_VIOLATION")??[]});
   assert.deepEqual(accepted.proposal?.map(task=>task.id),["main"]);
   assert.equal(accepted.evidence.hardValid,false);
+  assert.deepEqual(accepted.evidence.unstructuredReasonCodes,[]);
 });
 
 test("a fixed main keeps its pending feeder automatic, while an accepted feeder is not duplicated",()=>{

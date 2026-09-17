@@ -222,8 +222,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     const violations=summary.violations??[];
     const exactAcceptedFixedBaseline=violations.length>0&&violations.every(item=>acceptedKeys.has(violationIdentity(item))
       &&item.affectedTaskIds.length>0&&item.affectedTaskIds.every(id=>protectedIds.has(id)));
-    const unstructured=summary.unstructuredReasonCodes??[];
-    return exactAcceptedFixedBaseline&&unstructured.every(code=>code==="BLOCK_VIOLATION");
+    return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });

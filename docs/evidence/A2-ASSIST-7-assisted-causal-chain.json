@@ -59,6 +59,8 @@
     "followupTaskId": 10031,
     "followupBaselineCount": 1,
     "followupNewCount": 0,
+    "followupUnstructuredReasonCodes": [],
+    "followupFixedPlacementsPreserved": true,
     "followupOutcome": "PROPOSAL"
   },
   "rollback": {

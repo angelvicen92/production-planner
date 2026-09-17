@@ -24,6 +24,16 @@ export function projectPlannerViolations(details:readonly ValidationViolationDet
       violationKey:createViolationKey({ruleCode:detail.ruleCode,affectedTaskIds,affectedResourceIds,affectedSpaceIds,dimensions:detail.dimensions})};});
 }
 
+export function evaluateAcceptedViolationDelta(candidateViolations:readonly StageViolation[],acceptedBaseline:readonly {severity:string;violationKey:string}[],unstructuredReasonCodes:readonly string[]=[]){
+  const inheritedKeys=new Set(candidateViolations.filter(candidate=>acceptedBaseline.some(accepted=>accepted.severity===candidate.severity&&accepted.violationKey===candidate.violationKey)).map(item=>item.violationKey));
+  const inheritedHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&inheritedKeys.has(item.violationKey)).length;
+  const inheritedRequiredViolationCount=candidateViolations.filter(item=>item.severity==="REQUIRED"&&inheritedKeys.has(item.violationKey)).length;
+  const newHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&!inheritedKeys.has(item.violationKey)).length+unstructuredReasonCodes.length;
+  const newRequiredViolationCount=candidateViolations.filter(item=>item.severity==="REQUIRED"&&!inheritedKeys.has(item.violationKey)).length;
+  return {inheritedHardViolationCount,inheritedRequiredViolationCount,newHardViolationCount,newRequiredViolationCount,
+    proposalEligible:newHardViolationCount===0&&newRequiredViolationCount===0};
+}
+
 export type AssistedProposalErrorCode = "INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
 export class AssistedProposalError extends Error {
   constructor(readonly code: AssistedProposalErrorCode, readonly status: 404|409|422) { super(code); }
@@ -151,20 +161,14 @@ export class AssistedProposalService {
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
     const candidateDetails=(execution.evidence as any).violations as ValidationViolationDetail[]|undefined;
     const candidateViolations=projectPlannerViolations(candidateDetails??[],adapter.identityMap);
-    const inheritedHard=candidateViolations.filter(item=>item.severity==="HARD"&&acceptedBaseline.some(exception=>exception.severity==="HARD"&&exception.violationKey===item.violationKey));
-    const inheritedRequired=candidateViolations.filter(item=>item.severity==="REQUIRED"&&acceptedBaseline.some(exception=>exception.severity==="REQUIRED"&&exception.violationKey===item.violationKey));
-    const inheritedKeys=new Set([...inheritedHard,...inheritedRequired].map(item=>item.violationKey));
     const unstructured=(execution.evidence as any).unstructuredReasonCodes as string[]|undefined;
-    // Validator reason codes aggregate the same failures that carry exact
-    // structured identities. Only codes without a structured counterpart are
-    // additional violations; otherwise an accepted fixed↔fixed identity would
-    // be counted again as a new anonymous HARD.
-    const unmatchedUnstructured=candidateViolations.length===0?(unstructured??[]):[];
-    const newHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&!inheritedKeys.has(item.violationKey)).length+unmatchedUnstructured.length;
-    const newRequiredViolationCount=candidateViolations.filter(item=>item.severity==="REQUIRED"&&!inheritedKeys.has(item.violationKey)).length;
-    const proposalEligible=newHardViolationCount===0&&newRequiredViolationCount===0;
+    // validatePlan has already removed reason codes represented by structured
+    // violations. Every remaining code is therefore a distinct anonymous HARD
+    // and cannot inherit an AcceptedException without an exact identity.
+    const delta=evaluateAcceptedViolationDelta(candidateViolations,acceptedBaseline,unstructured);
+    const {newHardViolationCount,newRequiredViolationCount,proposalEligible}=delta;
     const evidence={...execution.evidence,hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
-      inheritedAcceptedHardViolationCount:inheritedHard.length,inheritedAcceptedRequiredViolationCount:inheritedRequired.length,
+      inheritedAcceptedHardViolationCount:delta.inheritedHardViolationCount,inheritedAcceptedRequiredViolationCount:delta.inheritedRequiredViolationCount,
       newHardViolationCount,newRequiredViolationCount,proposalEligible,violations:candidateDetails??[]};
     const safeProposal=proposal&&proposalEligible?proposal:null;
     const safeSnapshot=safeProposal?proposedDraftSnapshot:null,safeFingerprint=safeProposal?proposedDraftFingerprint:null;
