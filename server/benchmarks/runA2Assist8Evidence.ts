@@ -187,10 +187,14 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.completedObligationCount = after.length; record.remainingObligationCount = sourceIds.length - after.length;
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
     iterations.push(record);
+    // A2-ASSIST-8 is the S1 gate. Later scopes belong to separate iterations and
+    // must not be accepted merely to make this causal benchmark look complete.
+    break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
-  const evidence = { benchmark: "A2-ASSIST-8", status: finalIds.length === 266 ? "PASS" : "BLOCKED", sourceObligationCount: 266,
+  const evidence = { benchmark: "A2-ASSIST-8", status: finalIds.length === 266 ? "PASS"
+    : iterations.length === 1 && iterations[0]?.proposalOutcome === "PROPOSAL" ? "S1_PASS" : "BLOCKED", sourceObligationCount: 266,
     completedObligationCount: finalIds.length, remainingObligationCount: 266 - finalIds.length, scopeCount: iterations.length, stageCount: stages.length - 1,
     automaticPlacements: finalIds.length, manualChanges: 0, acceptedHardExceptions: 0, rollbackCount: 0,
     finalCompletionPercentage: Number((finalIds.length / 266 * 100).toFixed(6)), finalObligationIds: finalIds, duplicateFinalIds: finalIds.length - new Set(finalIds).size,

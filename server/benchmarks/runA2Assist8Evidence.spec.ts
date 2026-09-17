@@ -22,6 +22,9 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
   if (first.status === "PASS") {
     assert.equal(first.completedObligationCount, 266); assert.equal(first.remainingObligationCount, 0); assert.equal(first.firstBlocker, null);
     assert.equal(first.finalObligationIdsMatchSource, true);
+  } else if (first.status === "S1_PASS") {
+    assert.equal(first.completedObligationCount, 19); assert.equal(first.remainingObligationCount, 247);
+    assert.equal(first.iterations.length, 1); assert.equal(first.firstBlocker, null);
   } else {
     assert.equal(first.status, "BLOCKED"); assert.ok(first.completedObligationCount < 266); assert.ok(first.firstBlocker);
   }

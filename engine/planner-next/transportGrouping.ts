@@ -1,7 +1,30 @@
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
 import { canPlaceTask } from "./placement";
+import { createHash } from "node:crypto";
 
 export type TransportDirection = "arrival" | "departure";
+
+export interface TransportMaterializationDirectionEvidence {
+  direction: TransportDirection;
+  orderedTaskIds: string[];
+  orderedParticipantIds: string[];
+  packetSizes: number[];
+  packetMembers: string[][];
+  starts: number[];
+  minGapMinutes: number;
+  construction: "canonical" | "fallback";
+  alternativesExplored: number;
+}
+
+export interface TransportMaterializationEvidence {
+  directions: TransportMaterializationDirectionEvidence[];
+  fingerprint: string;
+}
+
+export interface TransportMaterializationOptions {
+  consumeFallbackBranch?: () => boolean;
+  onEvidence?: (evidence: TransportMaterializationEvidence) => void;
+}
 
 const byId = (left: Task, right: Task): number => left.id.localeCompare(right.id);
 
@@ -42,14 +65,15 @@ export function transportGroupCandidates(
   tasks: readonly Task[],
   policy: Readonly<TransportGroupingPolicy>,
 ): Task[][] {
-  const ordered = [...tasks].sort(byId);
+  const ordered = [...tasks];
   const [first, ...rest] = ordered;
   if (!first) return [];
   const sizes = Array.from(
     { length: Math.min(policy.maximumGroupSize, ordered.length) - policy.minimumGroupSize + 1 },
     (_, index) => policy.minimumGroupSize + index,
   ).filter((size) => canPartitionTransportCount(ordered.length - size, policy.minimumGroupSize, policy.maximumGroupSize));
-  if (policy.groupingWeight > 0) sizes.sort((left, right) => right - left);
+  const target = Math.max(policy.minimumGroupSize, Math.min(policy.targetGroupSize ?? 1, policy.maximumGroupSize));
+  sizes.sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || left - right);
   return sizes.flatMap((size) => combinations(rest, size - 1).map((tail) => [first, ...tail]));
 }
 
@@ -63,25 +87,42 @@ export function transportContiguousGroupSizes(
   direction: TransportDirection,
 ): number[] | null {
   if (count < 0 || !Number.isInteger(count)) return null;
-  const target = Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize);
-  const sizes: number[] = [];
-  let remaining = count;
-  while (remaining > 0) {
-    const size = Math.min(target, remaining);
-    sizes.push(size);
-    remaining -= size;
-  }
-  return sizes;
+  if (!canPartitionTransportCount(count, policy.minimumGroupSize, policy.maximumGroupSize)) return null;
+  const target = Math.max(policy.minimumGroupSize,
+    Math.min(policy.targetGroupSize ?? (direction === "arrival" ? 3 : 1), policy.maximumGroupSize));
+  const memo = new Map<number, number[] | null>();
+  const best = (remaining: number): number[] | null => {
+    if (remaining === 0) return [];
+    if (memo.has(remaining)) return memo.get(remaining)!;
+    const candidates = Array.from({ length: Math.min(policy.maximumGroupSize, remaining) - policy.minimumGroupSize + 1 },
+      (_, index) => policy.minimumGroupSize + index)
+      .filter((size) => canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
+      .map((size) => ({ size, tail: best(remaining - size) }))
+      .filter((candidate): candidate is { size: number; tail: number[] } => candidate.tail !== null)
+      .map(({ size, tail }) => [size, ...tail])
+      .sort((left, right) => {
+        const leftCost = left.reduce((sum, size) => sum + Math.abs(size - target), 0);
+        const rightCost = right.reduce((sum, size) => sum + Math.abs(size - target), 0);
+        const difference = left.findIndex((size, index) => size !== right[index]);
+        return leftCost - rightCost || left.length - right.length
+          || (difference >= 0 ? left[difference]! - right[difference]! : 0);
+      });
+    const result = candidates[0] ?? null;
+    memo.set(remaining, result);
+    return result;
+  };
+  return best(count);
 }
 
 /**
- * Deterministic terminal logistics. Membership is fixed by participant boundary order and
- * contiguous slicing; only the canonical latest-IN/earliest-OUT starts are considered.
+ * Deterministic terminal logistics. The preferred witness uses contiguous boundary-ordered
+ * packets; an exact fallback explores hard-valid packet sizes and memberships.
  */
 export function materializeTerminalTransport(
   problem: PlannerNextProblem,
   substantive: readonly ScheduledTask[],
   participantMeals: readonly ScheduledParticipantMeal[] = [],
+  options: Readonly<TransportMaterializationOptions> = {},
 ): ScheduledTask[] | null {
   if (!problem.transportPolicy) return [];
   const transportIds = transportTaskIds(problem);
@@ -90,6 +131,7 @@ export function materializeTerminalTransport(
     ...participantMeals.filter((meal) => meal.participantId === participantId),
   ];
   const placed: ScheduledTask[] = [];
+  const directionEvidence: TransportMaterializationDirectionEvidence[] = [];
   for (const direction of ["arrival", "departure"] as const) {
     const policy = problem.transportPolicy[direction];
     const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)
@@ -104,12 +146,21 @@ export function materializeTerminalTransport(
       });
     const sizes = transportContiguousGroupSizes(tasks.length, policy, direction);
     if (!sizes) return null;
+    const canonicalGroups: Task[][] = [];
     let offset = 0;
-    const starts: number[] = [];
-    for (const size of sizes) {
-      const group = tasks.slice(offset, offset + size);
-      offset += size;
-      const boundary = direction === "arrival"
+    for (const size of sizes) { canonicalGroups.push(tasks.slice(offset, offset + size)); offset += size; }
+    let alternativesExplored = 0;
+    const scheduleGroups = (groups: readonly Task[][], construction: "canonical" | "fallback"): ScheduledTask[] | null => {
+      const local: ScheduledTask[] = [];
+      const groupStarts = new Array<number>(groups.length);
+      const indices = direction === "arrival"
+        ? groups.map((_, index) => index).reverse()
+        : groups.map((_, index) => index);
+      const visit = (position: number): boolean => {
+        if (position === indices.length) return true;
+        const index = indices[position]!;
+        const group = groups[index]!;
+        const boundary = direction === "arrival"
         ? Math.min(...group.map((task) => {
           const obligations = obligationsFor(task.participantId!);
           return obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end;
@@ -118,15 +169,55 @@ export function materializeTerminalTransport(
           const obligations = obligationsFor(task.participantId!);
           return obligations.length ? Math.max(...obligations.map(({ end }) => end)) : problem.day.start;
         }));
-      const candidates = transportGroupStarts(problem, group, [...substantive, ...placed], starts, policy)
-        .filter((start) => direction === "arrival" ? start + group[0]!.duration <= boundary : start >= boundary)
-        .sort((left, right) => direction === "arrival" ? right - left : left - right);
-      const start = candidates[0];
-      if (start === undefined) return null;
-      placed.push(...scheduleTransportGroup(group, start));
-      starts.push(start);
+        const directionalLimit = direction === "arrival"
+          ? (index + 1 < groups.length ? groupStarts[index + 1]! - policy.minGapMinutes : Number.POSITIVE_INFINITY)
+          : (index > 0 ? groupStarts[index - 1]! + policy.minGapMinutes : Number.NEGATIVE_INFINITY);
+        const candidates = transportGroupStarts(problem, group, [...substantive, ...placed, ...local], [], policy)
+          .filter((start) => direction === "arrival" ? start + group[0]!.duration <= boundary : start >= boundary)
+          .filter((start) => direction === "arrival" ? start <= directionalLimit : start >= directionalLimit)
+          .sort((left, right) => direction === "arrival" ? right - left : left - right);
+        for (const start of candidates) {
+          if (construction === "fallback") {
+            alternativesExplored += 1;
+            if (options.consumeFallbackBranch && !options.consumeFallbackBranch()) return false;
+          }
+          const scheduled = scheduleTransportGroup(group, start);
+          local.push(...scheduled); groupStarts[index] = start;
+          if (visit(position + 1)) return true;
+          local.splice(local.length - scheduled.length, scheduled.length);
+        }
+        return false;
+      };
+      if (!visit(0)) return null;
+      directionEvidence.push({ direction, orderedTaskIds: tasks.map(({ id }) => id),
+        orderedParticipantIds: tasks.map(({ participantId }) => participantId!),
+        packetSizes: groups.map(({ length }) => length), packetMembers: groups.map((group) => group.map(({ id }) => id)),
+        starts: groupStarts, minGapMinutes: policy.minGapMinutes, construction, alternativesExplored });
+      return local;
+    };
+    let scheduledDirection = scheduleGroups(canonicalGroups, "canonical");
+    if (!scheduledDirection) {
+      const partitions = function* (remaining: readonly Task[], groups: Task[][] = []): Generator<Task[][]> {
+        if (remaining.length === 0) { yield groups; return; }
+        for (const group of transportGroupCandidates(remaining, policy)) {
+          const ids = new Set(group.map(({ id }) => id));
+          yield* partitions(remaining.filter(({ id }) => !ids.has(id)), [...groups, group]);
+        }
+      };
+      for (const groups of partitions(tasks)) {
+        if (groups.length === canonicalGroups.length
+          && groups.every((group, index) => group.map(({ id }) => id).join() === canonicalGroups[index]!.map(({ id }) => id).join())) continue;
+        alternativesExplored += 1;
+        if (options.consumeFallbackBranch && !options.consumeFallbackBranch()) break;
+        scheduledDirection = scheduleGroups(groups, "fallback");
+        if (scheduledDirection) break;
+      }
     }
+    if (!scheduledDirection) return null;
+    placed.push(...scheduledDirection);
   }
+  const fingerprint = createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex");
+  options.onEvidence?.({ directions: directionEvidence, fingerprint });
   return placed;
 }
 
@@ -215,7 +306,7 @@ export function validateTransportGrouping(
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    if (groups.some((group) => group.length === 0 || group.length > policy.maximumGroupSize
+    if (groups.some((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize
       || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) violationCount += 1;
     for (let index = 1; index < groups.length; index += 1) {
       if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;

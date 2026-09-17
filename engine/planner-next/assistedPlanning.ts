@@ -44,6 +44,7 @@ export interface AssistedPlanningEvidence {
     "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
     | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
+    | "terminalTransportWitness"
     | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
     | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf">;
   readonly reasonCodes: readonly string[];
@@ -272,7 +273,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
   const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
-    "terminalTransportMaterializationFailures","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
+    "terminalTransportMaterializationFailures","terminalTransportWitness","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];

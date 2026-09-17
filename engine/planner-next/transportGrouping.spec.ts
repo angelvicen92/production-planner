@@ -6,6 +6,7 @@ import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
   transportGroupCandidates,
   transportContiguousGroupSizes,
+  materializeTerminalTransport,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -29,20 +30,20 @@ test("candidate partitions honor minimum, maximum, and never leave a small resid
 
 test("terminal contiguous grouping uses directional defaults and preserves explicit targets", () => {
   assert.deepEqual(transportContiguousGroupSizes(6, policy(1, 6), "arrival"), [3, 3]);
-  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 3, 1]);
-  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 3, 2]);
-  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 3, 1]);
+  assert.deepEqual(transportContiguousGroupSizes(7, policy(3, 6), "arrival"), [3, 4]);
+  assert.deepEqual(transportContiguousGroupSizes(8, policy(3, 6), "arrival"), [3, 5]);
+  assert.deepEqual(transportContiguousGroupSizes(10, policy(3, 6), "arrival"), [3, 3, 4]);
   assert.deepEqual(transportContiguousGroupSizes(3, policy(1, 6), "departure"), [1, 1, 1]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 2 }, "arrival"), [2, 2, 2]);
   assert.deepEqual(transportContiguousGroupSizes(6, { ...policy(1, 6), targetGroupSize: 3 }, "departure"), [3, 3]);
 });
 
-test("terminal validation permits a final group below the legacy compatibility minimum", () => {
+test("terminal validation enforces the hard minimum group size", () => {
   const problem = validationProblem(7);
   const [a, b, c, d, e, f, g] = problem.tasks;
   const groups = [a, b, c].map((task) => scheduled(task!, 600))
     .concat([d, e, f].map((task) => scheduled(task!, 620)), [scheduled(g!, 640)]);
-  assert.equal(validateTransportGrouping(problem, groups).violationCount, 0);
+  assert.ok(validateTransportGrouping(problem, groups).violationCount > 0);
 });
 
 function validationProblem(count = 7): PlannerNextProblem {
@@ -215,12 +216,81 @@ test("exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent O
   assert.deepEqual(problem, snapshot);
 });
 
-test("terminal IN materialization rejects a jointly incompatible grouping witness",()=>{
+test("terminal IN materialization finds the backward-propagated witness",()=>{
   const problem=arrivalWorkStyleDepartureProblem(false,4);
   problem.transportPolicy!.arrival.minGapMinutes=5;
   const result=executePlannerNext(problem,{fixedPlacementsAsContext:true});
   assert.equal(result.kind,"EXACT_CONSTRUCTIVE");
-  assert.equal(result.result?.complete,false);
+  assert.equal(result.result?.complete,true);
   assert.ok((result.result?.evidence.standaloneCompleteLeafCount??0)>0,
     "ordinary witnesses must reach terminal grouped-transport materialization before rejection");
+});
+
+function terminalDirectionProblem(direction: "arrival" | "departure"): { problem: PlannerNextProblem; substantive: ScheduledTask[] } {
+  const window = [{ start: 0, end: 100 }];
+  const people = ["a", "b", "c", "d"];
+  const transport = people.map((participantId, index): Task => ({
+    id: `${direction}-${participantId}`, kind: "auxiliary", participantId, duration: 10,
+    spaceId: `transport-${participantId}`, dependencies: [],
+    availability: direction === "arrival"
+      ? [{ start: index < 2 ? 0 : 40, end: 50 }]
+      : [{ start: index < 2 ? 50 : 70, end: index < 2 ? 70 : 100 }],
+  }));
+  const work = people.map((participantId, index): Task => ({ id: `work-${participantId}`, kind: "auxiliary",
+    participantId, duration: 10, spaceId: `work-${participantId}`, dependencies: [] }));
+  const substantive = work.map((task, index) => scheduled(task, direction === "arrival" ? (index < 2 ? 50 : 80) : (index < 2 ? 40 : 60)));
+  return { problem: { day: { start: 0, end: 100 }, protectedMeal: { start: 95, end: 100 }, resources: [],
+    spaces: [{ id: "main", availability: window }, ...[...transport, ...work].map(({ spaceId }) => ({ id: spaceId, availability: window }))],
+    participants: people.map((id) => ({ id, availability: window })), coaches: [], tasks: [...transport, ...work],
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    budget: { bestK: 1, maxBacktracks: 10, maxPatterns: 10, maxBranchExpansions: 100 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
+    mainFlow: { spaceId: "main", preferredEnd: 90, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+    transportPolicy: {
+      arrival: { ...policy(2, 2, 20), targetGroupSize: 2, taskIds: direction === "arrival" ? transport.map(({ id }) => id) : [] },
+      departure: { ...policy(2, 2, 20), targetGroupSize: 2, taskIds: direction === "departure" ? transport.map(({ id }) => id) : [] },
+    } }, substantive };
+}
+
+test("canonical IN places consecutive boundary packets last-to-first at their latest valid starts", () => {
+  const { problem, substantive } = terminalDirectionProblem("arrival");
+  let evidence: any;
+  const result = materializeTerminalTransport(problem, substantive, [], { onEvidence: (value) => { evidence = value; } });
+  assert.ok(result);
+  assert.deepEqual(result.map(({ id, start }) => [id, start]), [
+    ["arrival-c", 40], ["arrival-d", 40], ["arrival-a", 20], ["arrival-b", 20],
+  ]);
+  assert.deepEqual(evidence.directions[0].packetSizes, [2, 2]);
+  assert.deepEqual(evidence.directions[0].starts, [20, 40]);
+  assert.equal(evidence.directions[0].construction, "canonical");
+});
+
+test("canonical OUT places consecutive boundary packets first-to-last at earliest valid starts", () => {
+  const { problem, substantive } = terminalDirectionProblem("departure");
+  let evidence: any;
+  const result = materializeTerminalTransport(problem, substantive, [], { onEvidence: (value) => { evidence = value; } });
+  assert.ok(result);
+  assert.deepEqual(evidence.directions[1].starts, [50, 70]);
+  assert.equal(evidence.directions[1].construction, "canonical");
+});
+
+test("exact fallback changes membership when the preferred contiguous packets are impossible", () => {
+  const { problem, substantive } = terminalDirectionProblem("arrival");
+  for (const task of problem.tasks.filter(({ id }) => id.startsWith("arrival-"))) {
+    task.availability = [{ start: task.id.endsWith("a") || task.id.endsWith("c") ? 0 : 20,
+      end: task.id.endsWith("a") || task.id.endsWith("c") ? 10 : 30 }];
+  }
+  let consumed = 0;
+  let evidence: any;
+  const result = materializeTerminalTransport(problem, substantive, [], {
+    consumeFallbackBranch: () => { consumed += 1; return true; },
+    onEvidence: (value) => { evidence = value; },
+  });
+  assert.ok(result);
+  assert.equal(evidence.directions[0].construction, "fallback");
+  assert.deepEqual(evidence.directions[0].packetMembers, [
+    ["arrival-a", "arrival-c"], ["arrival-b", "arrival-d"],
+  ]);
+  assert.deepEqual(evidence.directions[0].starts, [0, 20]);
+  assert.equal(evidence.directions[0].alternativesExplored, consumed);
 });

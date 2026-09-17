@@ -26,7 +26,7 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
+import { materializeTerminalTransport, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
@@ -90,6 +90,7 @@ export interface ExactItinerantPlanEvidence {
   standaloneBranchesAfterFirstOrdinaryCompleteLeaf: number;
   terminalTransportMaterializationAttempts: number;
   terminalTransportMaterializationFailures: number;
+  terminalTransportWitness: TransportMaterializationEvidence | null;
   firstHardValidCoreLeaf: {
     coreTaskCount: number;
     coreTasksByKind: Record<string, number>;
@@ -469,13 +470,18 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     if (mealWitness?.complete) evidence.terminalTransportMaterializationAttempts += 1;
-    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled) : null;
+    let terminalTransportWitness: TransportMaterializationEvidence | null = null;
+    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled, {
+      consumeFallbackBranch: () => ledger.consume("STANDALONE"),
+      onEvidence: (witness) => { terminalTransportWitness = witness; },
+    }) : null;
     if (mealWitness?.complete && transport === null) evidence.terminalTransportMaterializationFailures += 1;
     const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
     const actual = [...candidate].sort(byId).map(({ id }) => id);
     const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
     const validation = validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness?.scheduled ?? []],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness?.scheduled ?? []]);
     if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && (validation.hardValid || acceptsValidation?.(validation))) {
+      evidence.terminalTransportWitness = terminalTransportWitness;
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
         maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
@@ -867,7 +873,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneBranchesByDepth:{},standaloneSelectionsByTaskId:{},standaloneCandidateStartsByTaskId:{},
     standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
     standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
-    terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,firstHardValidCoreLeaf:null,
+    terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,terminalTransportWitness:null,firstHardValidCoreLeaf:null,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
