@@ -155,7 +155,12 @@ export class AssistedProposalService {
     const inheritedRequired=candidateViolations.filter(item=>item.severity==="REQUIRED"&&acceptedBaseline.some(exception=>exception.severity==="REQUIRED"&&exception.violationKey===item.violationKey));
     const inheritedKeys=new Set([...inheritedHard,...inheritedRequired].map(item=>item.violationKey));
     const unstructured=(execution.evidence as any).unstructuredReasonCodes as string[]|undefined;
-    const newHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&!inheritedKeys.has(item.violationKey)).length+(unstructured?.length??0);
+    // Validator reason codes aggregate the same failures that carry exact
+    // structured identities. Only codes without a structured counterpart are
+    // additional violations; otherwise an accepted fixed↔fixed identity would
+    // be counted again as a new anonymous HARD.
+    const unmatchedUnstructured=candidateViolations.length===0?(unstructured??[]):[];
+    const newHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&!inheritedKeys.has(item.violationKey)).length+unmatchedUnstructured.length;
     const newRequiredViolationCount=candidateViolations.filter(item=>item.severity==="REQUIRED"&&!inheritedKeys.has(item.violationKey)).length;
     const proposalEligible=newHardViolationCount===0&&newRequiredViolationCount===0;
     const evidence={...execution.evidence,hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,

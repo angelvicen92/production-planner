@@ -1686,6 +1686,18 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         : [...new Set([
           problem.mainFlow.preferredEnd,
           problem.day.start + pattern.length * duration,
+          // Accepted mains participate in the same canonical main-flow geometry
+          // even though they are immutable context rather than search variables.
+          // Expose both exact adjacency boundaries so pending mains can be packed
+          // before or after the accepted block without moving it.
+          ...(() => {
+            const acceptedMains = protectedPlacements.filter((placement) =>
+              problem.tasks.find((task) => task.id === placement.id)?.kind === "main");
+            return acceptedMains.length === 0 ? [] : [
+              Math.min(...acceptedMains.map(({ start }) => start)),
+              Math.max(...acceptedMains.map(({ end }) => end)) + pattern.length * duration,
+            ];
+          })(),
           // Structural lower-bound events let backward packing move away from an
           // unusably early preferred end without sweeping human clock values.  The
           // exact closure still decides whether either vocal/styling order works.

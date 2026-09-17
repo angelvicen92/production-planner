@@ -1214,7 +1214,10 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
-    standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET",
+    // Assisted search protects an accepted baseline and needs one canonical
+    // hard-valid completion around it; spending the full residual budget on
+    // incumbent domination cannot improve the human-protected placements.
+    standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
     causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext,
   });
 }
