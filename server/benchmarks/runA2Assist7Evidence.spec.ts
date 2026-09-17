@@ -1,0 +1,37 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { runA2Assist7Evidence } from "./runA2Assist7Evidence";
+
+test("ASST-010 proves the canonical assisted chain through rollback and divergence", async () => {
+  const evidence = await runA2Assist7Evidence();
+  assert.equal(evidence.status, "PASS");
+  assert.equal(evidence.sourceObligationCount, 266);
+  assert.equal(evidence.secondScopeThroughRequestRun, true);
+  assert.ok(evidence.s1Protection.checkedPlacementCount > 0);
+  assert.equal(evidence.s1Protection.exact, true);
+  assert.equal(evidence.configRefresh.changeKind, "MODIFIED");
+  assert.notEqual(evidence.configRefresh.oldDuration, evidence.configRefresh.materializedDuration);
+  assert.equal(evidence.configRefresh.materializedDuration, evidence.configRefresh.consumedDuration);
+  assert.equal(evidence.configRefresh.consumedNewValue, true);
+  assert.equal(evidence.hardConflict.hardValid, false);
+  assert.equal(evidence.hardConflict.materiallyPresentInAcceptedStage, true);
+  assert.equal(evidence.hardConflict.acceptedFingerprintMatchesDraft, true);
+  assert.equal(evidence.hardConflict.exceptionSnapshotMatchesStage, true);
+  assert.equal(evidence.hardConflict.violationIdentityReproduced, true);
+  assert.ok(evidence.hardConflict.conflictingTaskIds.includes(evidence.hardConflict.editedTaskId));
+  assert.ok(evidence.hardConflict.reproducedViolationIdentities.includes(evidence.hardConflict.acceptedViolationIdentity));
+  assert.ok(evidence.hardConflict.exceptionCountBeforeFollowup > 0);
+  assert.equal(evidence.hardConflict.exceptionCountAfterFollowup, evidence.hardConflict.exceptionCountBeforeFollowup);
+  assert.ok(Number(evidence.hardConflict.followupBaselineCount) > 0);
+  assert.equal(evidence.hardConflict.followupOutcome, "PROPOSAL");
+  assert.equal(evidence.hardConflict.followupNewCount, 0);
+  assert.deepEqual(evidence.hardConflict.followupUnstructuredReasonCodes, []);
+  assert.equal(evidence.hardConflict.followupFixedPlacementsPreserved, true);
+  assert.deepEqual(evidence.rollback, { exactSnapshot: true, exactDraft: true, exactFingerprint: true, exactActiveAndBaseStage: true, redoOldFutureBeforeDivergence: true });
+  assert.equal(evidence.configRevision.rollbackPreservedCurrent, true);
+  assert.equal(evidence.divergence.parentIsRestoredCheckpoint, true);
+  assert.equal(evidence.divergence.oldFutureArchived, true);
+  assert.equal(evidence.divergence.oldRedoUnavailable, true);
+  assert.equal(evidence.divergence.activeAcceptedExceptionCount, 0);
+  assert.equal(evidence.divergence.dailyTasksAtLatestActiveCheckpoint, true);
+});

@@ -99,9 +99,9 @@ export function buildAssistedProblem(
   for (const placement of protectedPlacements) {
     const task = tasksById.get(placement.id);
     if (!task) throw new Error("UNKNOWN_PROTECTED_PLACEMENT_TASK_ID");
-    if (placement.start >= placement.end || placement.end - placement.start !== task.duration) throw new Error("INVALID_PROTECTED_PLACEMENT");
+    if (placement.start >= placement.end || placement.end - placement.start !== placement.duration) throw new Error("INVALID_PROTECTED_PLACEMENT");
     const { start: _start, end: _end, ...placedTask } = placement;
-    if (JSON.stringify(placedTask) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
+    if (JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
   }
 
   const included = new Set([...scopeIds, ...protectedIds]);
@@ -177,11 +177,30 @@ export function buildAssistedProblem(
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
   problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
-  const originalValidationProblem = structuredClone(problem);
+  // Structured-space policies describe the tasks that survive projection. An
+  // unrelated required-continuity/setup space must not make a small scope fail
+  // preflight, and absent setup families cannot remain mandatory in the scope.
+  problem.spaces = problem.spaces.map((space) => {
+    const ownTasks = problem.tasks.filter((task) => task.spaceId === space.id);
+    if (ownTasks.length === 0) {
+      const { secondaryContinuity: _secondary, setupPolicy: _setup, ...plain } = space;
+      return plain;
+    }
+    if (!space.setupPolicy) return space;
+    const presentFamilies = new Set(ownTasks.flatMap((task) => task.setupFamilyId ? [task.setupFamilyId] : []));
+    return { ...space, setupPolicy: { ...space.setupPolicy,
+      familyOrder: space.setupPolicy.familyOrder.filter((family) => presentFamilies.has(family)),
+      preparationMinutesByFamily: space.setupPolicy.preparationMinutesByFamily === undefined ? undefined
+        : Object.fromEntries(Object.entries(space.setupPolicy.preparationMinutesByFamily).filter(([family]) => presentFamilies.has(family))),
+    } };
+  });
   problem.tasks = problem.tasks.map((task) => {
     const fixed = fixedById.get(task.id);
-    return fixed ? { ...task, availability: [{ start: fixed.start, end: fixed.end }] } : task;
+    if(!fixed)return task;
+    const {start: _start,end: _end,...acceptedTask}=fixed;
+    return {...acceptedTask,availability:[{start:fixed.start,end:fixed.end}]};
   });
+  const originalValidationProblem = structuredClone(problem);
 
   return {
     problem,
@@ -198,10 +217,15 @@ export function buildAssistedProblem(
 export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
   const searchProblem=input.problem;
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
-  const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>
-    (summary.unstructuredReasonCodes?.length??0)===0 && (summary.violations??[]).every(item=>acceptedKeys.has(violationIdentity(item)));
+  const protectedIds=new Set(input.protectedPlacements.map(({id})=>id));
+  const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>{
+    const violations=summary.violations??[];
+    const exactAcceptedFixedBaseline=violations.length>0&&violations.every(item=>acceptedKeys.has(violationIdentity(item))
+      &&item.affectedTaskIds.length>0&&item.affectedTaskIds.every(id=>protectedIds.has(id)));
+    return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
+  };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -226,8 +250,11 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const searchHardValid = Boolean(searchValidation && protectedPreserved
     && (searchValidation.hardValid || acceptsValidation(searchValidation)));
   const hardValid = Boolean(validation?.hardValid && protectedPreserved);
+  const fixedMainParticipants=new Set(input.protectedPlacements.filter(task=>task.kind==="main")
+    .flatMap(task=>task.participantId?[task.participantId]:[]));
   const proposal = completeForScope && searchHardValid
-    ? scheduled.filter(({ id }) => input.scope.resolvedTaskIds.includes(id)) : null;
+    ? scheduled.filter(task=>input.automaticTaskIds.includes(task.id)&&(input.scope.resolvedTaskIds.includes(task.id)
+      ||(task.kind==="vocal"&&task.participantId!==undefined&&fixedMainParticipants.has(task.participantId)))) : null;
   const resultReasonCodes = result && "evidence" in result && Array.isArray(result.evidence.reasonCodes)
     ? result.evidence.reasonCodes : result && "metrics" in result ? result.metrics.reasonCodes : [];
   const reasonCodes: string[] = [...resultReasonCodes, ...(validation?.reasonCodes ?? [])];

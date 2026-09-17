@@ -12,7 +12,7 @@ import type {
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
 process.env.SUPABASE_ANON_KEY ??= "test-anon-key";
-const { AssistedProposalError, AssistedProposalService, projectPlannerViolations } = await import("./assistedProposalService");
+const { AssistedProposalError, AssistedProposalService, evaluateAcceptedViolationDelta, projectPlannerViolations } = await import("./assistedProposalService");
 
 const planId = 701;
 const request = { selector: { kind: "TASK_IDS" as const, taskIds: [101] }, includePrerequisites: false,
@@ -225,4 +225,31 @@ test("canonical violation projection is lossless and fails closed for every miss
   const identities=[{namespace:"task",sourceId:"1",canonicalId:"t"},{namespace:"resource",sourceId:"2",canonicalId:"r"},{namespace:"space",sourceId:"3",canonicalId:"s"}];
   assert.deepEqual(projectPlannerViolations([detail],identities)[0]?.affectedTaskIds,[1]);
   for(const namespace of ["task","resource","space"])assert.throws(()=>projectPlannerViolations([detail],identities.filter(item=>item.namespace!==namespace)),/UNPROJECTABLE_VALIDATION_IDENTITY/);
+});
+
+test("proposal eligibility grandfathers only exact structured identities and rejects every anonymous or new HARD",()=>{
+  const accepted={ruleCode:"OVERLAP_VIOLATION",severity:"HARD" as const,affectedTaskIds:[101,105],affectedResourceIds:[],affectedSpaceIds:[301],details:{dimensions:{edge:"accepted"}},inheritedAcceptedExceptionId:null,violationKey:"accepted-key"};
+  const different={...accepted,affectedTaskIds:[101,103],violationKey:"different-key"};
+  const cases=[
+    {name:"A accepted structured HARD with no unstructured",candidate:[accepted],unstructured:[],eligible:true,newHard:0},
+    {name:"B accepted structured HARD plus unstructured BLOCK",candidate:[accepted],unstructured:["BLOCK_VIOLATION"],eligible:false,newHard:1},
+    {name:"C accepted structured HARD plus another unstructured rule",candidate:[accepted],unstructured:["SETUP_POLICY_VIOLATION"],eligible:false,newHard:1},
+    {name:"D new structured HARD",candidate:[accepted,different],unstructured:[],eligible:false,newHard:1},
+    {name:"E different AcceptedException identity",candidate:[different],unstructured:[],eligible:false,newHard:1},
+  ];
+  for(const scenario of cases){
+    const delta=evaluateAcceptedViolationDelta(scenario.candidate,[accepted],scenario.unstructured);
+    assert.equal(delta.proposalEligible,scenario.eligible,scenario.name);
+    assert.equal(delta.newHardViolationCount,scenario.newHard,scenario.name);
+  }
+});
+
+test("projects resource violations from adapter plan-resource identities", () => {
+  const detail = { ruleCode: "OVERLAP_VIOLATION", severity: "HARD", affectedTaskIds: ["task:1"], affectedResourceIds: ["plan-resource:9"], affectedSpaceIds: ["space:2"], dimensions: {} } as const;
+  const projected = projectPlannerViolations([detail as any], [
+    { namespace: "task", sourceId: "1", canonicalId: "task:1" },
+    { namespace: "plan-resource", sourceId: "9", canonicalId: "plan-resource:9" },
+    { namespace: "space", sourceId: "2", canonicalId: "space:2" },
+  ]);
+  assert.deepEqual(projected[0]?.affectedResourceIds, [9]);
 });

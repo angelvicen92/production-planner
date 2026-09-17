@@ -806,6 +806,7 @@ export interface ExactItinerantPlanSearchOptions {
   acceptsValidation?: (validation: import("./contracts").ValidationSummary) => boolean;
   /** Immutable Assisted placements, materialized before residual search. */
   fixedPlacements?: readonly ScheduledTask[];
+  fixedPlacementsAsContext?: boolean;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -908,8 +909,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
-  for (const id of anchoredTaskIds(problem)) staticCoreIds.add(id);
   const fixedIds=new Set((options.fixedPlacements??[]).map(item=>item.id));
+  for (const id of anchoredTaskIds(problem)) staticCoreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !staticCoreIds.has(id)&&!fixedIds.has(id)).sort(byId);
   const unsupported = unsupportedShapeReasons(problem, standaloneTasks, staticCoreIds);
   if (unsupported.length) {
@@ -952,7 +953,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     futureAssessments.set(key,state);
     return certified;
   };
-  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, acceptsValidation:options.acceptsValidation, causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
+  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, acceptsValidation:options.acceptsValidation,
+    fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
+    causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
       ||(candidate.depth===evidence.deepestCoreDepthReached
@@ -1203,15 +1206,18 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[]): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false): ExactItinerantPlanResult {
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements});
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
-    standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET",
-    causalDiagnostic, acceptsValidation, fixedPlacements,
+    // Assisted search protects an accepted baseline and needs one canonical
+    // hard-valid completion around it; spending the full residual budget on
+    // incumbent domination cannot improve the human-protected placements.
+    standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
+    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext,
   });
 }

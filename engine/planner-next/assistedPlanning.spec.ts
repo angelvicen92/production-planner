@@ -3,6 +3,7 @@ import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "./assistedPlanning";
 import { validatePlan } from "./validate";
+import { executePlannerNext } from "./executePlannerNext";
 
 function fixture(): PlannerNextProblem {
   return {
@@ -111,6 +112,44 @@ test("protected-vs-protected inherited incompatibility remains an ASST-008 Accep
   const accepted=executeAssistedPlanning(assisted,{violations:validatePlan(assisted.originalValidationProblem,protectedPlacements).violations?.filter(item=>item.ruleCode==="OVERLAP_VIOLATION")??[]});
   assert.deepEqual(accepted.proposal?.map(task=>task.id),["main"]);
   assert.equal(accepted.evidence.hardValid,false);
+  assert.deepEqual(accepted.evidence.unstructuredReasonCodes,[]);
+});
+
+test("a fixed main keeps its pending feeder automatic, while an accepted feeder is not duplicated",()=>{
+  const source=fixture();
+  const main={...source.tasks.find(task=>task.id==="main")!,start:60,end:75} as ScheduledTask;
+  const scope=createPlanningScope({kind:"ids",value:"main"},{},["main"]);
+  const pending=buildAssistedProblem(source,scope,[main]);
+  const pendingExecution=executePlannerNext(pending.problem,{fixedPlacements:pending.protectedPlacements,
+    fixedPlacementsAsContext:true});
+  assert.equal(pendingExecution.kind,"EXACT_CONSTRUCTIVE");
+  assert.equal(pendingExecution.result?.complete,true,JSON.stringify(pendingExecution.result));
+  assert.deepEqual(pendingExecution.result?.scheduledTasks.filter(task=>task.id==="main"),[main]);
+  assert.equal(pendingExecution.result?.scheduledTasks.filter(task=>task.id==="feed").length,1);
+  assert.ok(pendingExecution.result!.scheduledTasks.find(task=>task.id==="feed")!.end<=main.start);
+
+  const feeder={...source.tasks.find(task=>task.id==="feed")!,start:40,end:50} as ScheduledTask;
+  const accepted=buildAssistedProblem(source,scope,[main,feeder]);
+  const acceptedExecution=executePlannerNext(accepted.problem,{fixedPlacements:accepted.protectedPlacements,
+    fixedPlacementsAsContext:true});
+  assert.equal(acceptedExecution.result?.complete,true);
+  assert.deepEqual(acceptedExecution.result?.scheduledTasks.filter(task=>task.id==="main"),[main]);
+  assert.deepEqual(acceptedExecution.result?.scheduledTasks.filter(task=>task.id==="feed"),[feeder]);
+});
+
+test("an unaccepted anchored support remains automatic around a fixed main",()=>{
+  const source=fixture();
+  source.tasks.push({id:"support",kind:"auxiliary",duration:5,spaceId:"main-space",participantId:"p1",dependencies:[]});
+  source.anchoredAccompaniments=[{id:"operation",anchorTaskId:"main",beforeTaskIds:["support"],afterTaskIds:[],
+    adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED"}];
+  const main={...source.tasks.find(task=>task.id==="main")!,start:60,end:75} as ScheduledTask;
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[main]);
+  assert.deepEqual(assisted.protectedPlacements.map(task=>task.id),["main"]);
+  const execution=executePlannerNext(assisted.problem,{fixedPlacements:assisted.protectedPlacements,
+    fixedPlacementsAsContext:true});
+  assert.equal(execution.result?.complete,true,JSON.stringify(execution.result));
+  assert.deepEqual(execution.result?.scheduledTasks.find(task=>task.id==="main"),main);
+  assert.deepEqual(execution.result?.scheduledTasks.filter(task=>task.id==="support").map(task=>[task.start,task.end]),[[55,60]]);
 });
 
 test("canonical validator emits separate exact structured overlap identities",()=>{
@@ -146,4 +185,35 @@ test("one shared closure keeps every hard-coupled structure intact and explains 
   assert.match(result.supportingReasonByTaskId.anchor.join(), /ANCHORED_WITH:joint-peer/);
   assert.match(result.supportingReasonByTaskId["chain-peer"].join(), /TECHNICAL_CHAIN:c/);
   assert.match(result.supportingReasonByTaskId["round-peer"].join(), /ROUND_SYNCHRONIZATION:r/);
+});
+
+test("scope projection removes structured-space requirements with no surviving tasks", () => {
+  const source = fixture();
+  source.spaces.find(space => space.id === "other-space")!.secondaryContinuity = "REQUIRED";
+  source.spaces.find(space => space.id === "other-space")!.setupPolicy = { familyOrder: ["absent"], reentry: "FORBIDDEN" };
+  const result = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: "main" }, {}, ["main"]), []);
+  const unrelated = result.problem.spaces.find(space => space.id === "other-space")!;
+  assert.equal(unrelated.secondaryContinuity, undefined);
+  assert.equal(unrelated.setupPolicy, undefined);
+  assert.equal(source.spaces.find(space => space.id === "other-space")!.secondaryContinuity, "REQUIRED");
+});
+
+test("scope projection preserves surviving setup families and removes only absent families immutably", () => {
+  const source = fixture();
+  source.tasks.find(task => task.id === "main")!.setupFamilyId = "present";
+  source.spaces.find(space => space.id === "main-space")!.setupPolicy = {
+    familyOrder: ["present", "absent"],
+    reentry: "FORBIDDEN",
+    preparationMinutesByFamily: { present: 4, absent: 9 },
+  };
+  const before = structuredClone(source);
+
+  const result = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: "main" }, {}, ["main"]), []);
+
+  assert.deepEqual(result.problem.spaces.find(space => space.id === "main-space")!.setupPolicy, {
+    familyOrder: ["present"],
+    reentry: "FORBIDDEN",
+    preparationMinutesByFamily: { present: 4 },
+  });
+  assert.deepEqual(source, before);
 });

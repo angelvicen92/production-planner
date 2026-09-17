@@ -493,7 +493,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     // preferredEnd guides search/ranking; hard validity does not require the final main to end there.
     for (let index = 1; index < mains.length; index += 1) {
       const previous = mains[index - 1]; const current = mains[index];
-      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];const connected=between.slice(1).every((x,i)=>between[i]!.end===x.start)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
+      const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];
+      // Continuity detects positive gaps. An overlap is governed separately by
+      // OVERLAP_VIOLATION and must not manufacture a second anonymous BLOCK.
+      const connected=between.slice(1).every((x,i)=>x.start<=between[i]!.end)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
     }
     const runs: Array<{ key: string; count: number }> = [];
     for (const task of mains) {
