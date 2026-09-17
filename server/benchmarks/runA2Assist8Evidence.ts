@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
+import { standaloneForwardStaticDomain } from "../../engine/planner-next/exactItinerantPlan";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
+import { resolveAssistedScope } from "../assistedScopeResolver";
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
@@ -30,13 +32,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   assert.equal(adapter.status, "SUPPORTED");
   if (adapter.status !== "SUPPORTED") throw new Error("canonical A2 adapter is unsupported");
 
-  // TASK_IDS and SPACE are the resolver's supported hierarchy.  A productive
-  // main task is the smallest scope that gives the constructive core its
-  // required anchor; canonical identity is the only tie breaker.
   const productByCanonical = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [i.canonicalId, Number(i.sourceId)]));
-  const scopes = adapter.problem.tasks.filter(task => task.kind === "main")
-    .map(task => productByCanonical.get(task.id)!).sort((a, b) => a - b)
-    .map(taskId => ({ kind: "TASK_IDS" as const, taskIds: [taskId] }));
+  const sourceSet = new Set(sourceIds);
+  const productSpaceIds = [...new Set(input.tasks.filter(task => sourceSet.has(task.id) && task.spaceId != null).map(task => task.spaceId!))].sort((a, b) => a - b);
+  const mainFlowSpaceId = input.plannerNext?.mainFlow?.spaceId;
+  assert.ok(mainFlowSpaceId != null, "canonical A2 requires a configured main-flow space");
+  assert.ok(productSpaceIds.includes(mainFlowSpaceId), "main-flow space must contain canonical obligations");
+  const orderedSpaceIds = [mainFlowSpaceId, ...productSpaceIds.filter(id => id !== mainFlowSpaceId)];
 
   const blank = buildAssistedPlanningSnapshotV1(input.tasks.map(task => ({ id: task.id, startPlanned: null, endPlanned: null, zoneId: task.zoneId ?? null, spaceId: task.spaceId ?? null })));
   let nextStageId = 1, nextRunId = 1, nextValidationId = 1;
@@ -80,8 +82,22 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const iterations: any[] = [];
   let firstBlocker: any = null;
 
-  for (const selector of scopes) {
+  while (true) {
     const before = (session.draftSnapshotJson as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned);
+    const acceptedIds = new Set(before.map(row => row.taskId));
+    const remainingIds = sourceIds.filter(id => !acceptedIds.has(id));
+    if (remainingIds.length === 0) break;
+    let selector: { kind: "SPACE"; spaceId: number } | { kind: "TASK_IDS"; taskIds: number[] } | null = null;
+    for (const spaceId of orderedSpaceIds) {
+      const pendingInSpace = remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId === spaceId);
+      if (pendingInSpace.length === 0) continue;
+      const spaceSelector = { kind: "SPACE" as const, spaceId };
+      const resolved = resolveAssistedScope(input, adapter, spaceSelector).productTaskIds.filter(id => sourceSet.has(id));
+      selector = resolved.every(id => !acceptedIds.has(id)) ? spaceSelector : { kind: "TASK_IDS", taskIds: pendingInSpace };
+      break;
+    }
+    selector ??= { kind: "TASK_IDS", taskIds: remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId == null) };
+    assert.ok(selector.kind !== "TASK_IDS" || selector.taskIds.length > 0, "remaining obligations must resolve through a supported product selector");
     const protectedBefore = new Map(before.map(row => [row.taskId, JSON.stringify(row)]));
     const requested = await proposals.request(planId, { selector, includePrerequisites: true, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
     const result = await proposals.run(planId, requested.runId);
@@ -89,19 +105,34 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     const record: any = { scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
       proposalOutcome: result.outcome, newObligationCount: result.proposal?.filter(row => !protectedBefore.has(row.taskId)).length ?? 0,
       completedObligationCount: before.length, remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
+      protectedPlacementsPreserved: evidence.protectedPlacementsPreserved === true,
       newHardViolationCount: evidence.newHardViolationCount ?? 0, newRequiredViolationCount: evidence.newRequiredViolationCount ?? 0,
       unstructuredReasonCodes: evidence.unstructuredReasonCodes ?? [], reasonCodes: result.reasonCodes, work: evidence.work ?? {}, causalDiagnostic: evidence.causalDiagnostic ?? null };
     if (result.outcome !== "PROPOSAL") {
       const emptyDomain = evidence.causalDiagnostic?.futureFeasibility?.assessments?.find((item: any) => item.domainEmpty);
       const blockerTasks = [...new Set(emptyDomain?.blockers ?? [])] as string[];
-      const involved = [emptyDomain?.taskId, ...blockerTasks].filter(Boolean).map(id => adapter.problem.tasks.find(task => task.id === id)).filter(Boolean);
+      const blockedTask = adapter.problem.tasks.find(task => task.id === emptyDomain?.taskId);
+      const materiality = (id: string) => {
+        const task: any = adapter.problem.tasks.find(row => row.id === id);
+        if (!task) return { canonicalTaskId: id, productTaskId: productByCanonical.get(id) ?? null, missing: true };
+        const productId = productByCanonical.get(id) ?? null;
+        const protectedRow = productId == null ? undefined : before.find(row => row.taskId === productId);
+        return { canonicalTaskId: id, productTaskId: productId, kind: task.kind, participantId: task.participantId ?? null,
+          spaceId: task.spaceId ?? null, duration: task.duration, dependencies: task.dependencies ?? [], requiredResourceIds: task.requiredResourceIds ?? [],
+          placementAuthority: protectedRow ? "PROTECTED" : "AUTOMATIC", placement: protectedRow ?? null };
+      };
+      const staticEligibleStartCount = blockedTask ? standaloneForwardStaticDomain(adapter.problem, blockedTask, []).eligibleStartCount : null;
       firstBlocker = { scope: selector, obligationIds: result.scopeTaskIds,
         blockedObligationId: emptyDomain?.taskId ? productByCanonical.get(emptyDomain.taskId) : null,
-        firstCausalCheck: result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : emptyDomain ? "probeParticipantMealFutureFeasibility/futureFeasibility domain" : "constructExactItinerantPlan completion",
+        blockedTask: emptyDomain?.taskId ? materiality(emptyDomain.taskId) : null,
+        phase: result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
+        firstCausalCheck: result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
+        staticEligibleStartCount, dynamicEligibleStartCount: emptyDomain?.eligibleStartCount ?? null,
         reasonCodes: result.reasonCodes, blockingTaskIds: blockerTasks,
-        blockingResourceIds: [...new Set(involved.flatMap((task: any) => task.requiredResourceIds ?? []))].sort(),
-        blockingSpaceIds: [...new Set(involved.map((task: any) => task.spaceId).filter(Boolean))].sort(),
-        classification: result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "SEARCH_CAPACITY_EXHAUSTED" : "FALSE_PRUNE_OR_MODELING_REQUIRES_SEPARATE_CAUSAL_DELTA" };
+        blockers: blockerTasks.map(materiality), rejectionReason: emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null,
+        originatingCoreDecision: emptyDomain ? { depth: emptyDomain.depth, authoritySignature: emptyDomain.authoritySignature,
+          ancestralDecisionDepths: emptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: emptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
+        classification: result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "SEARCH_CAPACITY_EXHAUSTED" : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
       iterations.push(record); break;
     }
     assert.equal(record.newHardViolationCount, 0); assert.equal(record.newRequiredViolationCount, 0); assert.deepEqual(record.unstructuredReasonCodes, []);
@@ -114,12 +145,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
     iterations.push(record);
   }
-  const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned);
+  const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
   const evidence = { benchmark: "A2-ASSIST-8", status: finalIds.length === 266 ? "PASS" : "BLOCKED", sourceObligationCount: 266,
     completedObligationCount: finalIds.length, remainingObligationCount: 266 - finalIds.length, scopeCount: iterations.length, stageCount: stages.length - 1,
     automaticPlacements: finalIds.length, manualChanges: 0, acceptedHardExceptions: 0, rollbackCount: 0,
     finalCompletionPercentage: Number((finalIds.length / 266 * 100).toFixed(6)), finalObligationIds: finalIds, duplicateFinalIds: finalIds.length - new Set(finalIds).size,
+    finalObligationIdsMatchSource: JSON.stringify(finalIds) === JSON.stringify(sourceIds),
     finalHardViolationCount: 0, finalRequiredViolationCount: 0, finalUnstructuredReasonCodes: [], dailyTasksMatchesLastAcceptedStage: JSON.stringify(dailyTasks) === JSON.stringify(stages.at(-1).snapshotJson),
     iterations, firstBlocker, deterministicFingerprint: stages.at(-1).snapshotFingerprint, deterministicEquivalent: null as boolean | null };
   if (options.writeEvidence) { mkdirSync("docs/evidence", { recursive: true }); writeFileSync("docs/evidence/A2-ASSIST-8-assisted-completion.json", `${JSON.stringify(evidence, null, 2)}\n`); }
