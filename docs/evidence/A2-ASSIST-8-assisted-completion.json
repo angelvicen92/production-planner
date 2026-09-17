@@ -1,0 +1,1310 @@
+{
+  "benchmark": "A2-ASSIST-8",
+  "status": "BLOCKED",
+  "sourceObligationCount": 266,
+  "completedObligationCount": 6,
+  "remainingObligationCount": 260,
+  "scopeCount": 2,
+  "stageCount": 1,
+  "automaticPlacements": 6,
+  "manualChanges": 0,
+  "acceptedHardExceptions": 0,
+  "rollbackCount": 0,
+  "finalCompletionPercentage": 2.255639,
+  "finalObligationIds": [
+    10002,
+    10003,
+    10006,
+    10009,
+    10010,
+    10011
+  ],
+  "duplicateFinalIds": 0,
+  "finalHardViolationCount": 0,
+  "finalRequiredViolationCount": 0,
+  "finalUnstructuredReasonCodes": [],
+  "dailyTasksMatchesLastAcceptedStage": true,
+  "iterations": [
+    {
+      "scopeSelector": {
+        "kind": "TASK_IDS",
+        "taskIds": [
+          10002
+        ]
+      },
+      "resolvedTaskIds": [
+        10002,
+        10003,
+        10006,
+        10009,
+        10010,
+        10011
+      ],
+      "baseStageId": 1,
+      "configRevisionId": 1,
+      "proposalOutcome": "PROPOSAL",
+      "newObligationCount": 6,
+      "completedObligationCount": 6,
+      "remainingObligationCount": 260,
+      "protectedPlacementCount": 0,
+      "newHardViolationCount": 0,
+      "newRequiredViolationCount": 0,
+      "unstructuredReasonCodes": [],
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "work": {
+        "branchesExplored": 25,
+        "coreMaximumDepth": 1,
+        "patternCandidatesExplored": 1,
+        "timelineCandidatesExplored": 1,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 1,
+        "architecturesChecked": 1,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 1,
+        "feederSlotMatchingEdgeChecks": 1,
+        "feederSlotMatchingAugmentTraversals": 1,
+        "feederSlotMatchingBranchesExplored": 2,
+        "residualMatchingInvocations": 3,
+        "residualMatchingFullBuilds": 2,
+        "residualMatchingIncrementalUpdates": 1,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 1,
+        "residualMatchingAugmentTraversals": 1,
+        "residualMatchingBranchesExplored": 2,
+        "mainRunWitnessAttempts": 1,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "standaloneForwardChecks": 1,
+        "standaloneForwardStartChecks": 1,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 1
+      },
+      "causalDiagnostic": {
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 2,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 18,
+            "total": 20
+          },
+          "1": {
+            "mainCandidate": 0,
+            "feederStart": 1,
+            "residualMatching": 2,
+            "continuation": 1,
+            "participantMeal": 0,
+            "standaloneForward": 1,
+            "other": 0,
+            "total": 5
+          }
+        },
+        "feederByDepth": {
+          "1": {
+            "startsConsidered": 34,
+            "startsCoachEliminated": 0,
+            "startsEvaluated": 1,
+            "valid": 1,
+            "invalid": 0,
+            "mainChoicesReachingFeeder": 1,
+            "mainChoicesWithValidFeeder": 1
+          }
+        },
+        "feederRejections": [],
+        "feederCoachDomainEliminations": [],
+        "futureFeasibility": {
+          "totalEvaluations": 1,
+          "uniqueAuthorityStates": 1,
+          "repeatedEvaluations": 0,
+          "authorityResultCollisions": 0,
+          "negativeEvaluations": 0,
+          "repeatedNegativeEvaluations": 0,
+          "rejectsWithCertifiedBackjumpTarget": 0,
+          "evaluationsByDepth": {
+            "1": 1
+          },
+          "repeatedByDepth": {},
+          "negativeByDepth": {},
+          "assessments": [
+            {
+              "depth": 1,
+              "taskId": "task:10003",
+              "authoritySignature": "8480ec04cbb13385e72151f0f56905710770a5d9cee6ac8392c5c36c72980552",
+              "resultSignature": "83badeae19272e6905ae77a8ae23baeb8b403799014d829086ff4b509cfe1fcb",
+              "domainEmpty": false,
+              "eligibleStartCount": 37,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            }
+          ],
+          "collisions": []
+        }
+      },
+      "acceptedStageId": 2,
+      "acceptedStageFingerprint": "59a3d26864a0dd988ec9b8fea684ff74e68115d5682a8de758da13b9c1d5505d",
+      "protectedPlacementsPreserved": true
+    },
+    {
+      "scopeSelector": {
+        "kind": "TASK_IDS",
+        "taskIds": [
+          10017
+        ]
+      },
+      "resolvedTaskIds": [
+        10017,
+        10018,
+        10021,
+        10024
+      ],
+      "baseStageId": 2,
+      "configRevisionId": 1,
+      "proposalOutcome": "NO_PROPOSAL",
+      "newObligationCount": 0,
+      "completedObligationCount": 6,
+      "remainingObligationCount": 260,
+      "protectedPlacementCount": 6,
+      "newHardViolationCount": 0,
+      "newRequiredViolationCount": 0,
+      "unstructuredReasonCodes": [],
+      "reasonCodes": [
+        "ASSISTED_SCOPE_INCOMPLETE",
+        "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
+      ],
+      "work": {
+        "branchesExplored": 4890,
+        "coreMaximumDepth": 1,
+        "patternCandidatesExplored": 1,
+        "timelineCandidatesExplored": 8,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 70,
+        "architecturesChecked": 8,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 70,
+        "feederSlotMatchingEdgeChecks": 70,
+        "feederSlotMatchingAugmentTraversals": 70,
+        "feederSlotMatchingBranchesExplored": 210,
+        "residualMatchingInvocations": 82,
+        "residualMatchingFullBuilds": 12,
+        "residualMatchingIncrementalUpdates": 70,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 7,
+        "residualMatchingAugmentTraversals": 10,
+        "residualMatchingBranchesExplored": 17,
+        "mainRunWitnessAttempts": 10,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "standaloneForwardChecks": 70,
+        "standaloneForwardStartChecks": 70,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 70
+      },
+      "causalDiagnostic": {
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 12,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 4462,
+            "total": 4474
+          },
+          "1": {
+            "mainCandidate": 0,
+            "feederStart": 70,
+            "residualMatching": 215,
+            "continuation": 61,
+            "participantMeal": 0,
+            "standaloneForward": 70,
+            "other": 0,
+            "total": 416
+          }
+        },
+        "feederByDepth": {
+          "1": {
+            "startsConsidered": 81,
+            "startsCoachEliminated": 11,
+            "startsEvaluated": 70,
+            "valid": 70,
+            "invalid": 0,
+            "mainChoicesReachingFeeder": 5,
+            "mainChoicesWithValidFeeder": 5
+          }
+        },
+        "feederRejections": [],
+        "feederCoachDomainEliminations": [
+          {
+            "depth": 1,
+            "mainTaskId": "task:10017",
+            "feederTaskId": "task:10024",
+            "participantId": "participant:202",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "task:10009",
+            "startsEliminated": 8,
+            "blockingDecisionDepth": null,
+            "blockingDecisionMainTaskId": null
+          },
+          {
+            "depth": 1,
+            "mainTaskId": "task:10017",
+            "feederTaskId": "task:10024",
+            "participantId": "participant:202",
+            "reason": "TRANSITION_COACH",
+            "blockingPlacedTaskId": "task:10002",
+            "startsEliminated": 3,
+            "blockingDecisionDepth": null,
+            "blockingDecisionMainTaskId": null
+          }
+        ],
+        "futureFeasibility": {
+          "totalEvaluations": 79,
+          "uniqueAuthorityStates": 79,
+          "repeatedEvaluations": 0,
+          "authorityResultCollisions": 0,
+          "negativeEvaluations": 9,
+          "repeatedNegativeEvaluations": 0,
+          "rejectsWithCertifiedBackjumpTarget": 0,
+          "evaluationsByDepth": {
+            "1": 79
+          },
+          "repeatedByDepth": {},
+          "negativeByDepth": {
+            "1": 9
+          },
+          "assessments": [
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "05fc8e277b9afc255886b956dc162bb9628d784af0755e6eda833ba1e236a1b3",
+              "resultSignature": "bff5baa57f2d5a86d737cd5cddd4b0db75b7fb39d9c36af92d2ff421101ed383",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "0666da7d2becb14cda7dd85124726930f8ade11e85e5c96faccfb865feba75c4",
+              "resultSignature": "6cbbb5fb6023115b8b7ea11902926098668f321b2530baf381008917ea88aaa4",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "0695bb3bce736ce5528e145b8305068b711ef1a38deef8821b30b24c6bb0eea2",
+              "resultSignature": "6f6bdc75f366c530aa911edb37f9bfdb4388a503052d43fa3262ff5291ec726d",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "08c71dc1cd52b64475cbca6370929d8c69603ecc089f33bbb9bee61c78e42364",
+              "resultSignature": "5e35586657e94f599f7ea27501989f515eefd96dca9a154fe49c6cd8e061ae54",
+              "domainEmpty": false,
+              "eligibleStartCount": 6,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "09af5c6b91f8bfe3012605b6d2bf72703679956419e3b287a823fc4e638426ff",
+              "resultSignature": "30a2d428702169faf1199ab5106426012da9832275667a2febe2225fa1d8359a",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "09cc2a14b1a6d19138927ba60462908f048767f74d5967259b55d99581e70394",
+              "resultSignature": "f65eafc831c9ffd176ad0c5adff53a33b3d354da582b80fd15964007d4e0b139",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "09f03031d627bc763dbc75d094147215b54115d0d9c27128294372722d267e01",
+              "resultSignature": "83118abdcd0aeff4333e1d155c2c0e5f41cc8febce501567e1c5057f42295567",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "0fbe7918d9b9894230874f2dfa8c63b0f72d5e7658788775971cfce42afca74f",
+              "resultSignature": "632c449cd64d2d427bf35962a6abfc304ad9f9e93e959fa612bc7769d8e704e3",
+              "domainEmpty": false,
+              "eligibleStartCount": 36,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "105def8afbf54e08e388f19a3c2e9cb43b7001523577e69b06e03d393e936c4d",
+              "resultSignature": "dec89ee505f3796bbdbce8ed8c7f89e121491559ab84541667378c073dbda50a",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "11ff667d47a0714109ded244289a74973dc7c6b1959eee29e796885b5a8e2814",
+              "resultSignature": "42c52bcdbb8f8ad9039aacb01f4e25ed84c5e8cf04c691a069efdc71badbb8e7",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "122aa5d8dabb88dd46a09c6f3d324982bfba7d732b5dca4611e3a7199c259a83",
+              "resultSignature": "6a5e1820ac6e8490353acc6494d8bd969d3fa9580486d2b809b3940606ebdf8c",
+              "domainEmpty": false,
+              "eligibleStartCount": 5,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "15920ac441edfad7d2ee72b99c6f9e4c483aa02fa7b94e8bb0f5890f2f9b5f31",
+              "resultSignature": "97da4b112dcf064276537e177fcdf66b10ac04259953d615f9cc69e75f81f089",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "22c10bd526a257f5c643cb5e2156312ae53a694b63171c0ae92543e59707f741",
+              "resultSignature": "5a4708f04b29c1d8a4a4894a5a535fd6e6f138d917c10d367ce51ba9ab4d4343",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "267fb6bd462c155cf906246a06cbae9ee2b8cf89b763fb57e359433d3d9dfbf6",
+              "resultSignature": "e63683f38033d8b2ab848bf5ee2bc225fa88abd44e17f1a7d1dab21cd7191179",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "2a4401618a15eeb46ad0251cf9580d16b7848284c19080d9541a03ea5aa43664",
+              "resultSignature": "f2a5b06bfd95f4943998cc3e61816ce7f3f09c29a2cc06b2488cdb80b9edb58e",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "2e5ad38e6a432b50a2333a7b4eb891d9801d4fa76104a8fb3433ac9d70e7e868",
+              "resultSignature": "a86409b38bf6c441b8a48f4967b645cefa0413b5c1360b80d221ad829d48b016",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "307e1e02d9d48fbbb9dd6f1f787ca98a5939034b8ff4d9ae531519e8f967eb44",
+              "resultSignature": "bff6e054e017bf666eb11cb3bf6a771f6ce01f466757233d029a296e4d0fe5f8",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "3371101bef64b1b74f539d1f955cbed728541dd757c5ac3cfec07983eac561cf",
+              "resultSignature": "7d545bb7898e7011966df77b600495740e83b99ad42df9de95d5f3b62d57f371",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "3430c87eb7106c52c367b72486b53656c21ef3a8a2e137bc4250bfe59380b0a0",
+              "resultSignature": "64cc499c0b41e9b8e0430408db0cb95352a84a04a7499d6cef7c6196c17f1d28",
+              "domainEmpty": false,
+              "eligibleStartCount": 6,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "3c7198701a3db2ce8e863164c2c19ef0a884225ed58fddb56a3fcfddacea00aa",
+              "resultSignature": "4136e223669a76b77a5377da2dc743197dbb524a2ec6b7ac7b0f5d1a817c957b",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "40ab065f335f92296d7d8fecbf77ebf7ab0e8ad5178a69e5de481c66c035a58f",
+              "resultSignature": "d53b0dc0a7f0f21f31c790e2d3ec09e625d7587204d811cba153376ce1378527",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "41fec48ceabdecf8d89f9b5abb15d83127134262f4b6ac6dbf0e633520e6150c",
+              "resultSignature": "4be34c6b8b3905d219fb19b1e70ce395bf5a654d2ee355d40d8c838438f58a06",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "42056d7e247249c82c53812591e416b22d21a8241c52efc34803d81eb2298d45",
+              "resultSignature": "e3c1897011de133c6d0be7d4938ba6a114d4eca20d5ae51dfe1aa52a76373a93",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "4e3efb3350321fb3229e47dc8eba6b7b8fab1fd685b9b70a382ea4dea701581f",
+              "resultSignature": "90801e6c1cbed77fe9856acc4593823b894160f1d093cec025e4b0999ad7fd19",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "50e5c3e907817a984a06ecf1f6fe366f347c1e5f44c3aff295a8a518fe280546",
+              "resultSignature": "a3a0b576a3aaf1de1cd608fc1be65eb3d8736ef5bdee234e03942a67064b899e",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "567647f38c9a13c9cf67ca16286d795ecf3c8b92ea51dd60ef970352ee2dbe07",
+              "resultSignature": "7db655adf2af889892e4346cc5c06128dd2bb5566a98d1df8deee6f83322eb94",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "59cd61ad992892ab3fcb42cf136f719e302e66a7d98b8d9ec540274b63c66237",
+              "resultSignature": "765b4fa7cb3c6d235303d8a33fe4f80f5ae88299878dcea362fd9dd0459d541d",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "64620e863fbe21ef7ac91dc8306e442a3eeb8c469fb07097fc18ab529d6185f9",
+              "resultSignature": "61b9c9689a04dffa0264f39eb9324e07bb10c7d071300a34d4498b97b07acc4f",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "6af08b877142efb6506e318d36efd9d489aca0d91d86c59758625c2f6374dc1f",
+              "resultSignature": "acf31ccaf980431f0028951564f5bd83dce13880cfb59af8da29b58a04ffb609",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "6c4302e6ecaf15b114469763e8f6aaf37a86633c5036b823aa7924cfdb24caa8",
+              "resultSignature": "e1a24fb109391c5c7394018383a8e21ad2eb3170517da1c45178f779e886dbe7",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "72a625a360564bcd7b2a0374f264d0bf7fd8fd249a11d9421d367ef5c20a515c",
+              "resultSignature": "6754fce296b799dec8a148df8624f8e8f41f4c3ce60b5e98242dc476d6188ba7",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "77dc84fd03a77819ac7e9a670ef14dc37f8b170f2f6ca3339f520f2a042929cd",
+              "resultSignature": "f77fa37d3acd2daeaa89174c6e9e1cf4b35c746c3ebec955d8248952d6121d63",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "78e4f224954f0b79e2a5475a292c4b96d947bb3e7978ad5a316491b4113f1cb8",
+              "resultSignature": "e2f68e44fbaa927c2d80d81c91d6d8037e22d7fc41762682c6f0713260d8ad8e",
+              "domainEmpty": false,
+              "eligibleStartCount": 42,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "7cefd4a5ab40040a430c32e439dc3530db7748fcc4ea55d227e16300c844fbed",
+              "resultSignature": "f206e62a78551a9ae82e9dd0fd87176add91b4e90e875c484cb5833c5343524a",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "7e55f9b016b1dbee2ceffa4644ad187e64c43bd9c32a48b5772348d888ecc549",
+              "resultSignature": "51b5977f7d679e41ded485b39e98063b427e44042928949b38cf2373d0130bf9",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "803803f922a9933cde9f49149db630463b3c966cff6e9fac6d51ee08dffd8adb",
+              "resultSignature": "5e9cdf73a434173ffbbfb28ea0382792d488edc8feaaf73dd01813dd96e8aea2",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "8081b3e3f14a2562a8c279d2fb4c13cacecd4bbf9bd00c9cd3be8b4b858fa776",
+              "resultSignature": "d992a8e83a13865ff1c019d417d4a9d320b5f120191364514f212dfcf27cba93",
+              "domainEmpty": false,
+              "eligibleStartCount": 37,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "849bf96620242436c234b8480b461105fbf7ffe8c30cb8e4fc2839bf949b4ae5",
+              "resultSignature": "11a7dd46fcbc444d9f159603b8c8ed5e25f7c2913de749f2522c814290dd9134",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "875433ce1b2743de5f9a3d0c4d36e7cf31d73dede1fc53fc80ffdc231a9f741c",
+              "resultSignature": "e2503433d8a9e249caa9f443da1ff6aaf2b0439de55db34bebbf7577878f08a6",
+              "domainEmpty": false,
+              "eligibleStartCount": 43,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "92a88d560e3c4461986e92be90dc9ea4ad332660225e6652c53b892e7050dc15",
+              "resultSignature": "92f1c9a0503246461cc95e7f68741feefa120dac6b831bd20108e55d286b2bb6",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "95de5d13c80c2716094925424ac791e83668d030c2c66ae593354096024c612e",
+              "resultSignature": "3c9c9a8bada405e45ce4d6f9754a31863414c808a008b7e75d1bafcbcf0d76fb",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "97a6cdf1344e5cba9f81a78277be6e3eb509cb16f103988b874a7d91620fd5ff",
+              "resultSignature": "d7d324183464268d16fe9d81e32127c773a6c71ff94452195a7db596be4b1064",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "9b67084fc5bd01d45072ec67f84aa1295478cc8d79a7231b5e717bafaa875fcc",
+              "resultSignature": "f321ab8ef7daa6ea86dfcab13c999cac3868350ca496631bbb0ec0ac49a9e3ee",
+              "domainEmpty": false,
+              "eligibleStartCount": 5,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "9d05941aa4bf60e0ad1f716e6757588f55eab96d9ed110c0c5a132d635ad889d",
+              "resultSignature": "3ef1b3aa4ebdc94027f6aef5889ee8b482a472e4e2d2da8e9258e3edd6b893b1",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "9dc9fe1c38f7560cdbdb90fc16ffa8279af4a39dbab2bf5b5428f4e5d021382c",
+              "resultSignature": "ee53527b1846a476c4a60da8bea6e5012a2b37cf21c5ca3a6dd0c5f18d3ffb0b",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "a5996e8602ba3d3785d04193d5d8d04dfc2f120f733ffc55e5e6387d7d716ff2",
+              "resultSignature": "d08e095d2dfaec1f9d97256e1ac2387f8952f64c091f3fe38215fda38e9a52a8",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "afd01cc4a7d8f0201452c6e899b530dbaa69c23a0036eb4b970d59599c92e50e",
+              "resultSignature": "4352e4ea683f2630bc43c62f3c478ad28e38def8d428a2887cb9267f38b0a4bd",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "b422dac16231d1ee34c59c903f6802904275c25e2d3204a8c367ea1e0ce51fda",
+              "resultSignature": "6aed04e475a77acfaa8631df70f6fbac7153028d7b4c3537ca4d81e2f07aa89a",
+              "domainEmpty": false,
+              "eligibleStartCount": 44,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "b48cf2532d0f2a8b314cea0944d54787b27ef74e6b7c029c4a593ee659d079e5",
+              "resultSignature": "a7f758413bc254defbd930da94800e22003f1c179edb159059c869b7889d0367",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "be094d336cac07056dfd9462595900fb40dcea6110f09931984421f793d8f717",
+              "resultSignature": "0f5ead19b0f264afe8b947243eef426d70a80d74cd48572f070550766b3890aa",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "be831de9ec8cdd154961bb31dc43881b4fefde4b30736eeca8c9981d97934114",
+              "resultSignature": "6fe4ea535dcc789e084fcdd8019e68de8505919c8d96cc73d4b14fab0abcaa57",
+              "domainEmpty": false,
+              "eligibleStartCount": 5,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "bf86cc124159614a16d0e381add71901f6c40d41c7f56a9d21018840e462e92d",
+              "resultSignature": "a9ab083e4ae47a3633e7807a30d8549a42b417d1317e6841dad756e874fd0eea",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "c6a788104edb56b00dfe4c9672dcddd851516325e0483142db4e6374b3e0fa7e",
+              "resultSignature": "32ee59f3669fe5763b92631d20fad5f7594abb9ceb0479450968b1e1217e28cb",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "c7ed1eb91f50f8d028cd3b54076cebdf2e22e40a43f974338c509cc1c154b36c",
+              "resultSignature": "f486212c2bbde22cc817a3a514b92c75712dae98eca4fab14084eb3ef0b870f7",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "cdae6b85af4c4c9789496fa90ebff2baf88ea216c2295854508bbef70f6b0d4b",
+              "resultSignature": "586ab812a92d2e267ca878a1097d2d978a3537e8aec62df9b76f90c53c58f6ee",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "cfb838bc248c1549600b78c8be93de1224620396076b118fc2ba431fbff464cd",
+              "resultSignature": "c4fc84d79ae6faf0d30e7befb9d04d7778bd7af3b9ec8d1008214be1f772dcbd",
+              "domainEmpty": false,
+              "eligibleStartCount": 41,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "cfd507301e93d9c5f892a26653be9ed9b901bf3f5515ce44a31463b56127dd5a",
+              "resultSignature": "0124ca55055ab1deca96fad79f0a1bf1556865387828986ee0cf555d674d8328",
+              "domainEmpty": false,
+              "eligibleStartCount": 38,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "d078e986fb97893913b18202422c9d7a9d2f4dbe0dc9b3b403cd15870a05864a",
+              "resultSignature": "c2ed2c443639301cb2e8eae33dcd02d91c65d655eb69ac49e74a86ac970f7c84",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "d7fa8e21b7e601510563dff2225bcbef04d9b46954ea9d80080e9a34390d9c43",
+              "resultSignature": "ffcc4b0224f59b250baef00076d891a1b06e8878f3528ae93f06c0c32017f5e7",
+              "domainEmpty": false,
+              "eligibleStartCount": 8,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "e030bf4a5a3969ee5518d1ae086d56ba1b63886c005c8e1bd9cdf9c4c9f3790e",
+              "resultSignature": "a50a3da2bcd0e61316f9a1d8d0a6d17caa3ce04115dcda9ee0dda7f3afc40ecb",
+              "domainEmpty": false,
+              "eligibleStartCount": 7,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "e1e01c01dcad7b3c3bbb0ef5a3d49a65a407ec2d3f84d98c624956370d2e8133",
+              "resultSignature": "9eee595871b34369f5cb143cff86b5f0398b8b283a540293c5ffa3d882b041c9",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "e353ebe404bc1075735be430ca1a71d7a3ae342b5f690607484c158a0c9f84da",
+              "resultSignature": "3407fea406930c371c54991840d5f477015a36529fd49cdb8515666bec3fa32e",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "e35513ddbb2e7d30005de1ffa47b4e84fe8754f73255e412db99c34c6ab0b07a",
+              "resultSignature": "b963ba2c63dd3f2e12ec6c73151599090965bbaccd4460af6a8ae765bbda281e",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "ec577ea51af4df701d9720c56540a6d302f8ba0b965386ee4fa23db7723c4206",
+              "resultSignature": "9827af5610e920dfb5631b80259d8f553c0cc64206fc41ab8f69aaef04a8a151",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "edade8971f577d31cace717d5ed5d86ede579d2d070f3b5240fe47dd782b627e",
+              "resultSignature": "9e4db5180938c35aee8008082610179046245452be74bb636897b4e5d0a03996",
+              "domainEmpty": false,
+              "eligibleStartCount": 35,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "ef80d623dda37924b3f4098e9cccccc7af83f57112597b63db9e031b26f5dcb2",
+              "resultSignature": "125a6e24c511665243b3b3847829ca94309cce01490f8d32fb4bd96b8b011266",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "f1573b13761b57eea0bda4c54421d0fa90308d567623a62d74aa785833844979",
+              "resultSignature": "e3ee1ca24303a0125a8656992a00ff8defb5b01e69ce4d7c3c34d4405a47a7ec",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "f1f951d09600f55fd27d373d4f1439f50a8be9b4e6a76e6cd40cca628cb6ee29",
+              "resultSignature": "a3790e891a1dfd821a6e30258b2dd2a5c3278a2b18e7d5dad8539ac9547ece10",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "f4992e5486cd8f680e07d2c25d7117dd67379586748c15d8b4478564ecedc978",
+              "resultSignature": "e6f4f32044824e907d23fb8316f0668c0d7d39f94181d0aa309c1bf707ff5f21",
+              "domainEmpty": false,
+              "eligibleStartCount": 40,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10018",
+              "authoritySignature": "fc9ae75542423619e639f350b6c0100461d72be284baeea0f5b580484d871edb",
+              "resultSignature": "ebbf6cfa0e5c94f85e7cd0b0f42bc829fcff1cd527d5d5eaf5ecd287c87705e8",
+              "domainEmpty": false,
+              "eligibleStartCount": 34,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "1938ac7af23ec437119b2c6d2a5bf70f81882493224cc48e3a16fe8e64261ec5",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "32f726e9af85c920b7683ce654843c861ca9ac28d68c1c1b63da0ad5e498631f",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "69ee596a5f173da9a16bd5a944d4cb1d0a5266aee7d11b29f209aabfad6627af",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "6d33732eb0fea2fc669a919194010442139418e0f1a8df70de95fbdabe71cdc5",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "9c464dc924d7af89ab1bc167ca572fc1040bee2588acb2a370a11b597e59e134",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "abe2b535d7f9f49c79588c98b4724b1a2f80b4484d93b14a45e1ed32f1293085",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "bd2096b5072c47f8fb24a834e49d746c0dac5360025cde18564e740a089964ee",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "dddbaa5976578dcd83d3b4c51976f9527b66ee57d289549839dd0577c5d8f955",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 1,
+              "taskId": "task:10021",
+              "authoritySignature": "e373762b1f627839d5f37f009c50d1b3bc59888bc112e100a6699cc182401039",
+              "resultSignature": "93d1f66add06a729cd87e082f1328d9788cd47a3ab0247af3f006dddf92ae782",
+              "domainEmpty": true,
+              "eligibleStartCount": 0,
+              "blockers": [
+                "task:10006",
+                "task:10017",
+                "task:10024"
+              ],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            }
+          ],
+          "collisions": []
+        }
+      }
+    }
+  ],
+  "firstBlocker": {
+    "scope": {
+      "kind": "TASK_IDS",
+      "taskIds": [
+        10017
+      ]
+    },
+    "obligationIds": [
+      10017,
+      10018,
+      10021,
+      10024
+    ],
+    "blockedObligationId": 10021,
+    "firstCausalCheck": "probeParticipantMealFutureFeasibility/futureFeasibility domain",
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
+    ],
+    "blockingTaskIds": [
+      "task:10006",
+      "task:10017",
+      "task:10024"
+    ],
+    "blockingResourceIds": [],
+    "blockingSpaceIds": [
+      "space:3003",
+      "space:3004",
+      "space:3023"
+    ],
+    "classification": "FALSE_PRUNE_OR_MODELING_REQUIRES_SEPARATE_CAUSAL_DELTA"
+  },
+  "deterministicFingerprint": "59a3d26864a0dd988ec9b8fea684ff74e68115d5682a8de758da13b9c1d5505d",
+  "deterministicEquivalent": true
+}
