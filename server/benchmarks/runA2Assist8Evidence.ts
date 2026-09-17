@@ -99,10 +99,12 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     selector ??= { kind: "TASK_IDS", taskIds: remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId == null) };
     assert.ok(selector.kind !== "TASK_IDS" || selector.taskIds.length > 0, "remaining obligations must resolve through a supported product selector");
     const protectedBefore = new Map(before.map(row => [row.taskId, JSON.stringify(row)]));
-    const requested = await proposals.request(planId, { selector, includePrerequisites: true, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
+    const requested = await proposals.request(planId, { selector, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
     const result = await proposals.run(planId, requested.runId);
     const evidence: any = result.evidence;
     const record: any = { scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
+      includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal?.map(row => row.taskId).sort((a, b) => a - b) ?? [],
+      supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
       proposalOutcome: result.outcome, newObligationCount: result.proposal?.filter(row => !protectedBefore.has(row.taskId)).length ?? 0,
       completedObligationCount: before.length, remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
       protectedPlacementsPreserved: evidence.protectedPlacementsPreserved === true,
