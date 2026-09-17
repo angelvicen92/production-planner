@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
-import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
+import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
 
 const task=(id:string,duration:number,dependencies:string[]=[],availability?:Array<{start:number;end:number}>):Task=>({id,kind:"auxiliary",participantId:"person",duration,spaceId:"room",dependencies,...(availability?{availability}: {})});
 const problem=(tasks:Task[]):PlannerNextProblem=>({day:{start:0,end:100},spaces:[{id:"room",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],resources:[],participants:[{id:"person",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],coaches:[],tasks,mainFlow:{spaceId:"other",preferredEnd:100,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:0,maxPatterns:1,maxBranchExpansions:1000},searchPolicy:"EXACT_CONSTRUCTIVE"});
@@ -26,4 +26,21 @@ test("transitive prerequisite chains are checked jointly before the placed desce
 });
 
 test("unrelated impossible ordinary work is not checked and results are order invariant",()=>{const prerequisite=task("required",10,[],[{start:20,end:30}]),successor=task("successor",10,[prerequisite.id]),unrelated=task("unrelated",10,[],[]),trigger=scheduled(task("trigger",5),70,{participantId:"other",spaceId:"other"});const p=problem([prerequisite,successor,unrelated]);const placed=[scheduled(successor,50)];const forward=checkMacroPendingPrerequisites(p,[prerequisite,unrelated],placed,[trigger]),reversed=checkMacroPendingPrerequisites({...p,tasks:[...p.tasks].reverse()},[unrelated,prerequisite],placed,[trigger]);assert.equal(forward.feasible,true);assert.deepEqual(reversed,forward);
+});
+
+test("individual reservation enforces the placed-successor deadline without certifying the branch",()=>{
+ const inbound=task("inbound",5,[],[{start:540,end:600}]),successor=task("successor",5,[inbound.id]);
+ const p=problem([inbound,successor]);p.day={start:0,end:600};p.spaces.forEach(space=>space.availability=[{start:0,end:600}]);p.participants.forEach(person=>person.availability=[{start:0,end:600}]);
+ const blocked=checkIndividualPendingPrerequisiteReservations(p,[inbound],[],[scheduled(successor,540)]);
+ assert.deepEqual(blocked,{feasible:false,tasksChecked:1,witnesses:0,blockingTaskId:"inbound",deadline:540,duration:5,
+   earliestFeasibleStart:540,latestFeasibleStart:535,failure:"INDIVIDUAL_ZERO_DOMAIN"});
+ const inconclusive=checkIndividualPendingPrerequisiteReservations(p,[inbound],[],[scheduled(successor,550)]);
+ assert.equal(inconclusive.feasible,true);assert.equal(inconclusive.witnesses,1);
+});
+
+test("individual reservation propagates a deadline through a pending successor",()=>{
+ const inbound=task("inbound",5,[],[{start:540,end:600}]),pending=task("pending",5,[inbound.id]),placed=task("placed",5,[pending.id]);
+ const p=problem([inbound,pending,placed]);p.day={start:0,end:600};p.spaces.forEach(space=>space.availability=[{start:0,end:600}]);p.participants.forEach(person=>person.availability=[{start:0,end:600}]);
+ const result=checkIndividualPendingPrerequisiteReservations(p,[inbound,pending],[],[scheduled(placed,545)]);
+ assert.equal(result.feasible,false);assert.equal(result.blockingTaskId,"inbound");assert.equal(result.deadline,540);
 });
