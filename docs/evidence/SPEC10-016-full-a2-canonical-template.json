@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "19b3cfe2692c9b98f2c0494e7fecaeb0d49e9a987becbe0b35c61b18ba21a707",
-  "expansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+  "manifestFingerprint": "2aa0faa44c8fe5ad0e74ed06c5f378eb24709faf502b9b52ca6457a79ed3fef8",
+  "expansionFingerprint": "ca1cfb006f829ca66acda9fb2ad4cc06ec45240feec3ef12739c1fce34c9dc8e",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -1192,8 +1192,8 @@
     "transportPolicy": {
       "arrival": {
         "targetGroupSize": 3,
-        "maximumGroupSize": 6,
-        "minGapMinutes": 35,
+        "maximumGroupSize": 3,
+        "minGapMinutes": 30,
         "groupingWeight": 3
       },
       "departure": {
@@ -1597,7 +1597,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "5997a76131566ce26acd81b3972803b19e69c27de36f16d3f22c5e432c76c647",
+    "shuffledExpansionFingerprint": "ca1cfb006f829ca66acda9fb2ad4cc06ec45240feec3ef12739c1fce34c9dc8e",
     "matches": true
   },
   "inputImmutable": {

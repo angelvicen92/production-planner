@@ -1648,7 +1648,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       input.arrivalGroupingTarget, settings?.arrivalTargetGroupSize,
       input.departureGroupingTarget, settings?.departureTargetGroupSize,
     ];
-    const maximums = [input.vanCapacity, input.transportVanCapacity, settings?.vehicleCapacity, settings?.vanCapacity]
+    const legacyMaximums = [input.vanCapacity, input.transportVanCapacity, settings?.vehicleCapacity, settings?.vanCapacity]
+      .filter((value): value is number => value != null);
+    const arrivalMaximums = [input.arrivalMaximumGroupSize, settings?.arrivalMaximumGroupSize, ...legacyMaximums]
+      .filter((value): value is number => value != null);
+    const departureMaximums = [input.departureMaximumGroupSize, settings?.departureMaximumGroupSize, ...legacyMaximums]
       .filter((value): value is number => value != null);
     const sizes = [input.arrivalGroupingTarget, input.departureGroupingTarget, input.vanCapacity,
       settings?.arrivalTargetGroupSize, settings?.departureTargetGroupSize];
@@ -1662,19 +1666,24 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       && sizes.every(positiveInteger)
       && gaps.every(nonNegativeInteger)
       && nonNegativeFinite(settings.groupingWeight)
-      && maximums.length > 0 && maximums.every(positiveInteger)
+      && arrivalMaximums.length > 0 && arrivalMaximums.every(positiveInteger)
+      && departureMaximums.length > 0 && departureMaximums.every(positiveInteger)
       && aliasesAgree([input.arrivalGroupingTarget, settings.arrivalTargetGroupSize])
       && aliasesAgree([input.departureGroupingTarget, settings.departureTargetGroupSize])
       && aliasesAgree([input.arrivalMinGapMinutes, settings.arrivalMinGapMinutes])
       && aliasesAgree([input.departureMinGapMinutes, settings.departureMinGapMinutes])
-      && aliasesAgree(maximums)
-      && minimums.every((minimum) => minimum! <= maximums[0]!)
+      && aliasesAgree([input.arrivalMaximumGroupSize, settings.arrivalMaximumGroupSize])
+      && aliasesAgree([input.departureMaximumGroupSize, settings.departureMaximumGroupSize])
+      && (!input.arrivalMaximumGroupSize && !settings.arrivalMaximumGroupSize ? aliasesAgree(legacyMaximums) : true)
+      && minimums[0]! <= arrivalMaximums[0]! && minimums[1]! <= arrivalMaximums[0]!
+      && minimums[2]! <= departureMaximums[0]! && minimums[3]! <= departureMaximums[0]!
       && input.tasks.some((task) => task.operationalRole === "transport_arrival")
       && input.tasks.some((task) => task.operationalRole === "transport_departure")
       && input.tasks.every((task) => {
         if (task.operationalRole !== "transport_arrival" && task.operationalRole !== "transport_departure") return task.transportGroupCapacity == null && task.transportGroupingTarget == null && task.transportGroupingWeight == null;
         const minimum = task.operationalRole === "transport_arrival" ? input.arrivalGroupingTarget : input.departureGroupingTarget;
-        return (task.transportGroupCapacity == null || task.transportGroupCapacity === maximums[0])
+        const maximum = task.operationalRole === "transport_arrival" ? arrivalMaximums[0] : departureMaximums[0];
+        return (task.transportGroupCapacity == null || task.transportGroupCapacity === maximum)
           && (task.transportGroupingTarget == null || task.transportGroupingTarget === minimum)
           && (task.transportGroupingWeight == null || task.transportGroupingWeight === settings.groupingWeight);
       });

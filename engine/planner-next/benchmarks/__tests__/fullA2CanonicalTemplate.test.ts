@@ -103,7 +103,7 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.rules.inTransport.targetGroupSize = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C01.end = "15:31"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.participantAvailability.C02.end = "18:39"; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
-  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 30; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
+  assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.minGapMinutes = 35; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.targetGroupSize = 4; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.departure.minGapMinutes = 25; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");
   assertInvariantFails((e) => { e.effectiveConfiguration.transportPolicy.arrival.maximumGroupSize = 5; }, "EFFECTIVE_CONFIGURATION", "EFFECTIVE_CONFIGURATION_DRIFT");

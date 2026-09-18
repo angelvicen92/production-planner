@@ -61,6 +61,13 @@ export interface ExactMainAndFeederCoreEvidence {
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
+  prerequisiteSharedCapacityChecks: number;
+  prerequisiteSharedCapacityPrunes: number;
+  prerequisiteSharedCapacityAbstentions: number;
+  firstSharedCapacityPrune: { architecture: string; pattern: string[]; horizon: number;
+    requiredCount: number; maximumFeedableCount: number; authority: "TRANSPORT" | "ENTRY_STYLING" | "COMBINED" } | null;
+  firstSharedCapacityPass: { architecture: string; pattern: string[] } | null;
+  sharedCapacityFingerprint: string | null;
   firstExactArchitecture: string | null;
   firstFeedableRunSizes: number[];
   feederOrderBranchesByArchitecture: Record<string, number>;
@@ -591,6 +598,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
     architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
+    prerequisiteSharedCapacityChecks:0,prerequisiteSharedCapacityPrunes:0,prerequisiteSharedCapacityAbstentions:0,
+    firstSharedCapacityPrune:null,firstSharedCapacityPass:null,sharedCapacityFingerprint:null,
     firstExactArchitecture: null, firstFeedableRunSizes: [], feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
     feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
     feederSlotMatchingChecks:0,feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,
@@ -1781,7 +1790,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
           const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
           evidence.architecturesChecked += 1;
-          const rejection = fixedIds.size===0?proveMainFeederArchitectureImpossible(problem, mains, feederByMain, { pattern, slots }):null;
+          const rejection = fixedIds.size===0?proveMainFeederArchitectureImpossible(problem, mains, feederByMain,
+            { pattern, slots }, certificate=>{
+              evidence.prerequisiteSharedCapacityChecks += certificate.checks.length;
+              evidence.prerequisiteSharedCapacityAbstentions += Number(certificate.abstained);
+              evidence.sharedCapacityFingerprint = certificate.fingerprint;
+              const failed=certificate.checks.find(check=>check.requiredCount>check.maximumFeedableCount);
+              if(failed){evidence.prerequisiteSharedCapacityPrunes+=1;if(!evidence.firstSharedCapacityPrune)
+                evidence.firstSharedCapacityPrune={architecture:architectureKey,pattern:[...pattern],...failed};}
+              else if(!certificate.abstained&&!evidence.firstSharedCapacityPass)
+                evidence.firstSharedCapacityPass={architecture:architectureKey,pattern:[...pattern]};
+            }):null;
           if (rejection) {
             evidence.architecturesStructurallyRejected += 1;
             evidence.structuralRejectionsByReason[rejection] =

@@ -40,6 +40,12 @@ export interface AssistedPlanningEvidence {
   readonly fingerprint: string | null;
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
+  readonly prerequisiteSharedCapacityChecks?: number;
+  readonly prerequisiteSharedCapacityPrunes?: number;
+  readonly prerequisiteSharedCapacityAbstentions?: number;
+  readonly firstSharedCapacityPrune?: unknown;
+  readonly firstSharedCapacityPass?: unknown;
+  readonly sharedCapacityFingerprint?: string | null;
   readonly standaloneDiagnostic?: Pick<ExactItinerantPlanEvidence,
     "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
@@ -305,6 +311,13 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     proposalCount: proposal ? 1 : 0,
     completeForScope,
     hardValid,
+    prerequisiteSharedCapacityChecks: Number(evidenceRecord.prerequisiteSharedCapacityChecks ?? 0),
+    prerequisiteSharedCapacityPrunes: Number(evidenceRecord.prerequisiteSharedCapacityPrunes ?? 0),
+    prerequisiteSharedCapacityAbstentions: Number(evidenceRecord.prerequisiteSharedCapacityAbstentions ?? 0),
+    firstSharedCapacityPrune: evidenceRecord.firstSharedCapacityPrune ?? null,
+    firstSharedCapacityPass: evidenceRecord.firstSharedCapacityPass ?? null,
+    sharedCapacityFingerprint: typeof evidenceRecord.sharedCapacityFingerprint === "string"
+      ? evidenceRecord.sharedCapacityFingerprint : null,
     // Planner Next still reports HARD + REQUIRED through one strict search validator.
     // A returned assisted proposal therefore proves REQUIRED compliance even if
     // the combined state retains an inherited, human-accepted HARD exception.

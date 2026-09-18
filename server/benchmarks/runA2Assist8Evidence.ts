@@ -145,6 +145,15 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       protectedPlacementsPreserved: evidence.protectedPlacementsPreserved === true,
       newHardViolationCount: evidence.newHardViolationCount ?? 0, newRequiredViolationCount: evidence.newRequiredViolationCount ?? 0,
       unstructuredReasonCodes: evidence.unstructuredReasonCodes ?? [], reasonCodes: result.reasonCodes, work: evidence.work ?? {},
+      sharedCapacityDiagnostic: {
+        prerequisiteSharedCapacityChecks: evidence.prerequisiteSharedCapacityChecks ?? 0,
+        prerequisiteSharedCapacityPrunes: evidence.prerequisiteSharedCapacityPrunes ?? 0,
+        prerequisiteSharedCapacityAbstentions: evidence.prerequisiteSharedCapacityAbstentions ?? 0,
+        firstSharedCapacityPrune: evidence.firstSharedCapacityPrune ?? null,
+        firstSharedCapacityPass: evidence.firstSharedCapacityPass ?? null,
+        capacityFingerprint: evidence.sharedCapacityFingerprint ?? null,
+        nominalIdentityBeginsAt: "exactMainAndFeederCore residual matching",
+      },
       residualBreakdown, standaloneDiagnostic:evidence.standaloneDiagnostic??null, orderingComparison,
       causalDiagnostic: evidence.causalDiagnostic ?? null };
     if (result.outcome !== "PROPOSAL") {
@@ -193,14 +202,19 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
-  const evidence = { benchmark: "A2-ASSIST-8", status: finalIds.length === 266 ? "PASS"
+  const evidence = { benchmark: "A2-ASSIST-8", effectiveInConfiguration: {
+    targetGroupSize: input.arrivalGroupingTarget, maximumGroupSize: input.arrivalMaximumGroupSize ?? input.vanCapacity,
+    minGapMinutes: input.arrivalMinGapMinutes,
+  }, status: finalIds.length === 266 ? "PASS"
     : iterations.length === 1 && iterations[0]?.proposalOutcome === "PROPOSAL" ? "S1_PASS" : "BLOCKED", sourceObligationCount: 266,
     completedObligationCount: finalIds.length, remainingObligationCount: 266 - finalIds.length, scopeCount: iterations.length, stageCount: stages.length - 1,
     automaticPlacements: finalIds.length, manualChanges: 0, acceptedHardExceptions: 0, rollbackCount: 0,
     finalCompletionPercentage: Number((finalIds.length / 266 * 100).toFixed(6)), finalObligationIds: finalIds, duplicateFinalIds: finalIds.length - new Set(finalIds).size,
     finalObligationIdsMatchSource: JSON.stringify(finalIds) === JSON.stringify(sourceIds),
     finalHardViolationCount: 0, finalRequiredViolationCount: 0, finalUnstructuredReasonCodes: [], dailyTasksMatchesLastAcceptedStage: JSON.stringify(dailyTasks) === JSON.stringify(stages.at(-1).snapshotJson),
-    iterations, firstBlocker, deterministicFingerprint: stages.at(-1).snapshotFingerprint, deterministicEquivalent: null as boolean | null };
+    iterations, firstBlocker, finalInGroups: iterations.at(-1)?.standaloneDiagnostic?.terminalTransportWitness?.directions
+      ?.find((direction: any) => direction.direction === "arrival") ?? null,
+    deterministicFingerprint: stages.at(-1).snapshotFingerprint, deterministicEquivalent: null as boolean | null };
   if (options.writeEvidence) { mkdirSync("docs/evidence", { recursive: true }); writeFileSync("docs/evidence/A2-ASSIST-8-assisted-completion.json", `${JSON.stringify(evidence, null, 2)}\n`); }
   return evidence;
 }

@@ -220,12 +220,12 @@ function withEntryClosure(fixture: ReturnType<typeof firstCoachRun>, stylingAvai
 test("structural matching rejects a cohort position whose IN, styling and vocal closure cannot finish", () => {
   const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 35, end: 55 }]);
   assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
-    twoSlotArchitecture), "PREREQUISITE_WINDOW");
+    twoSlotArchitecture), "FEEDER_PREREQUISITE_PREFIX_CAPACITY");
 });
 
 test("structural matching preserves both legal styling/vocal orders without fixing cohort order", () => {
-  const beforeVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 5, end: 20 }]);
-  const afterVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 20, end: 40 }]);
+  const beforeVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 5, end: 25 }]);
+  const afterVocal = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 20, end: 45 }]);
   assert.equal(proveMainFeederArchitectureImpossible(beforeVocal.problem, beforeVocal.mains,
     beforeVocal.feeders, twoSlotArchitecture), null);
   assert.equal(proveMainFeederArchitectureImpossible(afterVocal.problem, afterVocal.mains,
@@ -247,7 +247,44 @@ test("prerequisite closure is an event proof and does not scan the temporal grid
   }
   const late = { pattern: ["a", "a"], slots: [1_000, 1_010] } as const;
   assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders, late), null);
-  assert.ok(availabilityReads <= 4, `analytic closure read availability ${availabilityReads} times`);
+  assert.ok(availabilityReads <= 8, `analytic closure read availability ${availabilityReads} times`);
+});
+
+test("shared IN and styling capacity rejects only the early architecture and is identity invariant", () => {
+  const source = prefixProblem(10);
+  const mains = source.mains.filter(({ blockKey }) => blockKey === "a");
+  const taskIds = new Set(mains.flatMap((main) => [main.id, main.dependencies[0]!]));
+  const fixture = withEntryClosure({ problem: { ...source.problem,
+    tasks: source.problem.tasks.filter(({ id }) => taskIds.has(id)) }, mains,
+  feeders: new Map(mains.map((main) => [main.id, source.feeders.get(main.id)!])) }, [{ start: 0, end: 120 }]);
+  fixture.problem.transportPolicy!.arrival.maximumGroupSize = 3;
+  fixture.problem.transportPolicy!.arrival.targetGroupSize = 1;
+  fixture.problem.transportPolicy!.arrival.minGapMinutes = 30;
+  for (const arrival of fixture.problem.tasks.filter(({ id }) => id.startsWith("arrival-"))) arrival.duration = 10;
+  for (const styling of fixture.problem.tasks.filter(({ id }) => id.startsWith("styling-"))) styling.duration = 5;
+  const early = { pattern: ["a", "a", "a", "a"], slots: [25, 30, 35, 40] } as const;
+  const late = { pattern: ["a", "a", "a", "a"], slots: [55, 60, 65, 70] } as const;
+  let firstFingerprint = "", firstFailure: unknown;
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, mains, fixture.feeders, early, (certificate) => {
+    firstFingerprint = certificate.fingerprint;
+    firstFailure = certificate.checks.find((check) => check.requiredCount > check.maximumFeedableCount);
+  }), "FEEDER_PREREQUISITE_PREFIX_CAPACITY");
+  assert.deepEqual(firstFailure, { horizon: 40, requiredCount: 4, maximumFeedableCount: 3, authority: "COMBINED" });
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, mains, fixture.feeders, late), null);
+  fixture.problem.tasks.reverse(); mains.reverse();
+  let reversedFingerprint = "";
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, mains, fixture.feeders, early,
+    (certificate) => { reversedFingerprint = certificate.fingerprint; }), "FEEDER_PREREQUISITE_PREFIX_CAPACITY");
+  assert.equal(reversedFingerprint, firstFingerprint);
+});
+
+test("participant-specific prerequisite authority makes shared capacity abstain", () => {
+  const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 0, end: 120 }]);
+  fixture.problem.tasks.find(({ id }) => id.startsWith("arrival-"))!.availability = [{ start: 5, end: 120 }];
+  let abstained = false;
+  assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    twoSlotArchitecture, (certificate) => { abstained = certificate.abstained; }), null);
+  assert.equal(abstained, true);
 });
 
 function feederPrefixFixture(firstMainStart: number) {

@@ -472,6 +472,8 @@ export interface EngineInput {
   departureGroupingTarget?: number;
   arrivalMinGapMinutes?: number;
   departureMinGapMinutes?: number;
+  arrivalMaximumGroupSize?: number;
+  departureMaximumGroupSize?: number;
   vanCapacity?: number;
   /** Explicit alias used by space-capacity validation for transport tasks. */
   transportVanCapacity?: number;
@@ -488,6 +490,8 @@ export interface EngineInput {
     departureTargetGroupSize?: number | null;
     arrivalMinGapMinutes?: number | null;
     departureMinGapMinutes?: number | null;
+    arrivalMaximumGroupSize?: number | null;
+    departureMaximumGroupSize?: number | null;
     vehicleCapacity?: number | null;
     vanCapacity?: number | null;
     transportSpaceId?: number | null;
