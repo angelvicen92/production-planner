@@ -1704,28 +1704,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
     const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-      ? (()=>{
-        const base=candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut));
-        const taskById=new Map(problem.tasks.map(task=>[task.id,task]));
-        const before=Math.max(0,...(problem.anchoredAccompaniments??[]).map(contract=>contract.beforeTaskIds
-          .reduce((sum,id)=>sum+(taskById.get(id)?.duration??0),0)));
-        const after=Math.max(0,...(problem.anchoredAccompaniments??[]).map(contract=>contract.afterTaskIds
-          .reduce((sum,id)=>sum+(taskById.get(id)?.duration??0),0)));
-        const cleared=base.flatMap(timeline=>before===0&&after===0?[]:[{...timeline,
-          key:`${timeline.key}|ANCHOR_CLEARANCE:${before}:${after}`,
-          slots:timeline.slots.map((slot,index)=>index<timeline.splitIndex?slot-after:slot+before),
-          strategyRank:timeline.strategyRank+1}]);
-        const acceptedMains=protectedPlacements.filter(placement=>problem.tasks.find(task=>task.id===placement.id)?.kind==="main");
-        const acceptedAdjacent=base.flatMap(timeline=>acceptedMains.flatMap(accepted=>{
-          const variants:MainFlowTimeline[]=[];
-          if(timeline.splitIndex===pattern.length){const delta=accepted.start-(timeline.slots.at(-1)!+duration);
-            variants.push({...timeline,key:`${timeline.key}|BEFORE_ACCEPTED:${accepted.start}`,slots:timeline.slots.map(slot=>slot+delta),strategyRank:timeline.strategyRank+1});}
-          if(timeline.splitIndex===0){const delta=accepted.end-timeline.slots[0]!;
-            variants.push({...timeline,key:`${timeline.key}|AFTER_ACCEPTED:${accepted.end}`,slots:timeline.slots.map(slot=>slot+delta),strategyRank:timeline.strategyRank+1});}
-          return variants;
-        }));
-        return orderTimelines([...base,...cleared,...acceptedAdjacent]);
-      })() : [undefined];
+      ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
       const departureEnds = [...latestDepartureStart.values()];
       const historicalEnds = [...new Set([
