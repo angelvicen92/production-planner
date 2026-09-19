@@ -62,8 +62,7 @@ test("Full A2 first executable integration reports an atomic completion count", 
     assert.equal(executionEvidence.deepestPartialMainRunsClosed,executionEvidence.deepestPartialFeederRunsClosed);
     assert.ok(executionEvidence.coreCompleteLeafCount>0);
     assert.equal(executionEvidence.deepestPartialCoreTasksRemaining,0);
-    assert.ok(["CORE","STANDALONE"].includes(executionEvidence.lastExhaustionPhase!));
-    if(executionEvidence.lastExhaustionPhase==="CORE")assert.ok(executionEvidence.coreBranches>executionEvidence.standaloneBranches);
+    assert.equal(executionEvidence.lastExhaustionPhase,"STANDALONE");
     assert.equal(executionEvidence.feederSlotMatchingBranchesExplored,
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);
