@@ -27,6 +27,9 @@ export function runA2AnonymousPipelineWitnessProbe() {
     problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
   assert.equal(generated.exhausted,false);
   const runCount=(pattern:readonly string[])=>pattern.reduce((n,k,i)=>n+(i===0||pattern[i-1]!==k?1:0),0);
+  const runLengths=(pattern:readonly string[])=>pattern.reduce<number[]>((lengths,key,index)=>{
+    if(index===0||pattern[index-1]!==key)lengths.push(1);else lengths[lengths.length-1]!+=1;return lengths;
+  },[]);
   const increment=(histogram:Record<string,number>,key:string)=>{histogram[key]=(histogram[key]??0)+1;};
   const structuralSubauthority=(reason:MainFeederStructuralRejection,certificate?:SharedPrerequisiteCapacityCertificate):string=>{
     if(reason==="FEEDER_PREREQUISITE_PREFIX_CAPACITY")
@@ -42,6 +45,7 @@ export function runA2AnonymousPipelineWitnessProbe() {
       diagnostic.anchorsCompleted?2:diagnostic.mainMatchingCompleted?1:0;
   const phaseNames=["structural preproof","Main matching","anchors","feeder runs","Styling matching","IN","FEASIBLE"];
   const families=[]; let firstFeasible: ReturnType<typeof buildAnonymousPipelineWitness>|null=null;
+  let firstFeasibleDiagnostic:AnonymousPipelineWitnessDiagnostic|null=null;
   let firstRunCount4Inconclusive:({pattern:string[];slots:number[];reason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
   let firstRunCount4FeederFailure:({pattern:string[];slots:number[];status:string;reason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
   let firstRunCount4PastFeeder:({pattern:string[];slots:number[];status:string;nextReason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
@@ -53,7 +57,11 @@ export function runA2AnonymousPipelineWitnessProbe() {
     const structuralRejectionsBySubauthority:Record<string,number>={};
     const witnessOutcomesByStatusAndReason:Record<string,number>={};
     let familyStatus:"FEASIBLE"|"INFEASIBLE"|"INCONCLUSIVE"="INFEASIBLE";
-    for(const pattern of generated.patterns.filter(p=>runCount(p)===count)){
+    const familyPatterns=generated.patterns.filter(p=>runCount(p)===count).sort((left,right)=>{
+      const a=runLengths(left),b=runLengths(right);
+      return Math.max(...b)-Math.max(...a)||(a[0]??0)-(b[0]??0)||left.join("|").localeCompare(right.join("|"),"en");
+    });
+    for(const pattern of familyPatterns){
       const duration=mains[0]!.duration;
       const architectures=hasMainFlowMeal(problem)
         ? orderTimelines(candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut))).map(x=>x.slots)
@@ -89,7 +97,8 @@ export function runA2AnonymousPipelineWitnessProbe() {
         }
         if(witness.status==="INCONCLUSIVE")familyStatus="INCONCLUSIVE";
         if(witness.status==="FEASIBLE"){
-          familyStatus="FEASIBLE"; feasibleArchitecture={pattern:[...pattern],slots}; firstFeasible??=witness; break;
+          familyStatus="FEASIBLE"; feasibleArchitecture={pattern:[...pattern],slots};
+          if(!firstFeasible){firstFeasible=witness;firstFeasibleDiagnostic=diagnostic;} break;
         }
       }
       if(feasibleArchitecture)break;
@@ -122,6 +131,14 @@ export function runA2AnonymousPipelineWitnessProbe() {
       anchoredOperationCount:firstFeasible.anchoredOperationSpots.length,
       anchoredOperationSpots:firstFeasible.anchoredOperationSpots,
       profileCount:firstFeasible.profileCount,fingerprint:firstFeasible.fingerprint}:null,
+    operationalMealPoliciesChecked:firstFeasibleDiagnostic?.operationalMealPoliciesChecked??0,
+    operationalMealFutureFeasible:firstFeasibleDiagnostic?.operationalMealFutureFeasible??null,
+    operationalMealBlockingPolicyIds:firstFeasibleDiagnostic?.operationalMealBlockingPolicyIds??[],
+    operationalMealBranchesExplored:firstFeasibleDiagnostic?.operationalMealBranchesExplored??0,
+    participantMealsChecked:firstFeasibleDiagnostic?.participantMealsChecked??0,
+    participantMealFutureFeasible:firstFeasibleDiagnostic?.participantMealFutureFeasible??null,
+    participantMealBlockingTaskIds:firstFeasibleDiagnostic?.participantMealBlockingTaskIds??[],
+    participantMealAnalyticDomainBuilds:firstFeasibleDiagnostic?.participantMealAnalyticDomainBuilds??0,
     pipelineWitnessBuildMs,inputImmutable:JSON.stringify(problem)===before};
 }
 

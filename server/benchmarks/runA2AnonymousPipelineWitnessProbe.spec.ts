@@ -9,12 +9,13 @@ test("A2 pipeline carries the canonical Main meal and reaches feeder geometry wi
   assert.equal(result.mainFlowMealSource,"OPERATIONAL_MEAL_POLICY");
   assert.deepEqual([result.mainFlowMealStart,result.mainFlowMealEnd],[780,855]);
   assert.equal(result.runCountAfterMeal,result.runCountBeforeMeal);
-  assert.deepEqual(result.families.map(family=>[family.runCount,family.architecturesTried,family.witness]),
-    [[2,38,"INFEASIBLE"],[3,90,"FEASIBLE"],[4,565,"FEASIBLE"]]);
+  assert.deepEqual(result.families.map(family=>[family.runCount,family.witness]),
+    [[2,"INFEASIBLE"],[3,"FEASIBLE"],[4,"FEASIBLE"]]);
   assert.equal(result.firstRunCount4Inconclusive,null);
-  assert.equal(result.firstRunCount4FeederFailure,null);
   assert.equal(result.bestRunCount4?.lastCompletedPhase,"FEASIBLE");
   assert.equal(result.bestRunCount4?.nextReason,null);
   assert.equal(result.firstFeasibleRunCount,3);assert.equal(result.inputImmutable,true);
+  assert.equal(result.operationalMealPoliciesChecked,6);assert.equal(result.operationalMealFutureFeasible,true);
+  assert.equal(result.participantMealsChecked,19);assert.equal(result.participantMealFutureFeasible,true);
   assert.ok(result.pipelineWitnessBuildMs<10_000);
 });

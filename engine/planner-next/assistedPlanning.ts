@@ -196,7 +196,11 @@ export function buildAssistedProblem(
     problem.transportPolicy.arrival.taskIds = problem.transportPolicy.arrival.taskIds.filter((id) => included.has(id));
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
-  problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
+  // Pending/interrupted participant meals are future-feasibility context, not scope
+  // variables. Keeping them here does not add their source tasks to `included` (and
+  // therefore cannot expose them through automaticTaskIds or a proposal).
+  problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId)
+    || meal.status === "pending" || meal.status === "interrupted");
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail
   // preflight, and absent setup families cannot remain mandatory in the scope.

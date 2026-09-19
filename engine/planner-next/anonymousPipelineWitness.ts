@@ -6,6 +6,9 @@ import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
 import { exactTaskStartDomain } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching } from "./exactMainAndFeederCore";
+import { assessOperationalMealFutureFeasibility } from "./operationalMeals";
+import { probeParticipantMealFutureFeasibility } from "./participantMeals";
+import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
 export interface AnonymousPipelineSpot { id:string; start:number; end:number; profileKey?:string; tokenId?:string; coachKey?:string; feederRunId?:string; mainRunId?:string }
@@ -38,6 +41,14 @@ export interface AnonymousPipelineWitnessDiagnostic {
     candidateStartBoundaryCount:number; blockStartCandidatesEvaluated:number; perfectMatchingChecks:number }[];
   stylingCandidateStartBoundaryCount: number;
   anchoredOperationIntervals: readonly { id:string; start:number; end:number }[];
+  operationalMealPoliciesChecked: number;
+  operationalMealFutureFeasible: boolean | null;
+  operationalMealBlockingPolicyIds: readonly string[];
+  operationalMealBranchesExplored: number;
+  participantMealsChecked: number;
+  participantMealFutureFeasible: boolean | null;
+  participantMealBlockingTaskIds: readonly string[];
+  participantMealAnalyticDomainBuilds: number;
 }
 
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
@@ -55,6 +66,10 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void): AnonymousPipelineWitness {
   let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
   let arrivalSolverExecuted=false,stylingCandidateStartBoundaryCount=0;
+  let operationalMealPoliciesChecked=0,operationalMealFutureFeasible:boolean|null=null,operationalMealBranchesExplored=0;
+  let operationalMealBlockingPolicyIds:string[]=[];
+  let participantMealsChecked=0,participantMealFutureFeasible:boolean|null=null,participantMealAnalyticDomainBuilds=0;
+  let participantMealBlockingTaskIds:string[]=[];
   const diagnosticMainRuns: Array<{id:string;coach:string;firstMain:{id:string;start:number;end:number};
     lastMain:{id:string;start:number;end:number};positions:number[]}>=[];
   const diagnosticFeederRuns: Array<{id:string;coach:string;deadline:number;blockStart?:number;blockEnd?:number;size:number;
@@ -63,7 +78,10 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   const diagnosticAnchors: Array<{id:string;start:number;end:number}>=[];
   const emitDiagnostic=()=>onDiagnostic?.({mainMatchingCompleted,anchorsCompleted,feederGeometryCompleted,
     stylingGeometryCompleted,arrivalSolverExecuted,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
-    stylingCandidateStartBoundaryCount,anchoredOperationIntervals:diagnosticAnchors});
+    stylingCandidateStartBoundaryCount,anchoredOperationIntervals:diagnosticAnchors,
+    operationalMealPoliciesChecked,operationalMealFutureFeasible,operationalMealBlockingPolicyIds,
+    operationalMealBranchesExplored,participantMealsChecked,participantMealFutureFeasible,
+    participantMealBlockingTaskIds,participantMealAnalyticDomainBuilds});
   const empty = (status:AnonymousPipelineWitnessStatus, reason:string):AnonymousPipelineWitness => ({ status, reason,
     runCount: architecture.pattern.reduce((n,k,i)=>n+(i===0||architecture.pattern[i-1]!==k?1:0),0),
     pattern:[...architecture.pattern], mainSpots:[], feederSpots:[], stylingSpots:[], inGroups:[], anchoredOperationSpots:[], assignments:[],
@@ -307,6 +325,44 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     end:arrival.evidence.starts[i]!+anonymousArrivals[0]!.duration,size}));
   const inGroupByToken=new Map<string,string>();
   arrival.evidence.packetMembers.forEach((members,i)=>members.forEach(id=>inGroupByToken.set(id.slice(3),`in-group:${i}`)));
+  // Reattach anonymous geometry to its original tasks only for the existing meal
+  // authorities. These nominal identities never enter the public witness/fingerprint.
+  const internalSchedule:ScheduledTask[] = assigned.flatMap(x=>{
+    const main=mainSpots[x.position]!, feeder=feederSpots.find(s=>s.tokenId===x.tokenId)!;
+    const styling=stylingSpots.find(s=>s.tokenId===x.tokenId)!;
+    const group=inGroups.find(g=>g.id===inGroupByToken.get(x.tokenId))!;
+    const operation=anchoredOperations.get(x.tokenId);
+    return [
+      {...x.main,start:main.start,end:main.end},
+      {...x.feeder,start:feeder.start,end:feeder.end},
+      {...x.styling,start:styling.start,end:styling.end},
+      {...x.arrival,start:group.start,end:group.end},
+      ...(operation?.tasks??[]),
+    ];
+  });
+  const mainMealAuthority=mainFlowMealPolicy(problem as PlannerNextProblem);
+  const fixedMainMeals=mainMealAuthority ? (problem.operationalMealPolicies??[])
+    .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id))
+    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);return {
+      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,
+      start:meal.start,end:meal.end,
+    };}) : [];
+  operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
+  const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
+    {remaining:problem.budget.maxBranchExpansions},"PROBE",fixedMainMeals);
+  operationalMealFutureFeasible=operational.complete;
+  operationalMealBlockingPolicyIds=[...operational.blockingPolicyIds];
+  operationalMealBranchesExplored=operational.branchesExplored;
+  if(!operational.complete)return rejected(operational.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED")
+    ? "INCONCLUSIVE":"INFEASIBLE","OPERATIONAL_MEAL_FUTURE_INFEASIBLE");
+  if((problem.participantMeals?.length??0)>0){
+    const participant=probeParticipantMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule);
+    participantMealsChecked=participant.affectedObligationsChecked;
+    participantMealFutureFeasible=participant.feasible;
+    participantMealBlockingTaskIds=[...participant.blockingMealTaskIds];
+    participantMealAnalyticDomainBuilds=participant.analyticDomainBuilds;
+    if(!participant.feasible)return rejected("INFEASIBLE","PARTICIPANT_MEAL_FUTURE_INFEASIBLE");
+  }else participantMealFutureFeasible=true;
   const assignments=assigned.map(x=>({tokenId:x.tokenId,profileKey:x.profileKey,mainSpotId:`main:${x.position}`,
     feederSpotId:`feeder:${x.tokenId}`,stylingSpotId:stylingSpots.find(s=>s.tokenId===x.tokenId)!.id,
     inGroupId:inGroupByToken.get(x.tokenId)!,mainRunId:runForPosition(x.position).id,
