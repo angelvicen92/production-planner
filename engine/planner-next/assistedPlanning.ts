@@ -217,8 +217,10 @@ export function buildAssistedProblem(
     const presentFamilies = new Set(ownTasks.flatMap((task) => task.setupFamilyId ? [task.setupFamilyId] : []));
     return { ...space, setupPolicy: { ...space.setupPolicy,
       familyOrder: space.setupPolicy.familyOrder.filter((family) => presentFamilies.has(family)),
-      preparationMinutesByFamily: space.setupPolicy.preparationMinutesByFamily === undefined ? undefined
-        : Object.fromEntries(Object.entries(space.setupPolicy.preparationMinutesByFamily).filter(([family]) => presentFamilies.has(family))),
+      ...(space.setupPolicy.preparationMinutesByFamily === undefined ? {} : {
+        preparationMinutesByFamily: Object.fromEntries(Object.entries(space.setupPolicy.preparationMinutesByFamily)
+          .filter(([family]) => presentFamilies.has(family))),
+      }),
     } };
   });
   problem.tasks = problem.tasks.map((task) => {
@@ -278,11 +280,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const searchHardValid = Boolean(searchValidation && protectedPreserved
     && (searchValidation.hardValid || acceptsValidation(searchValidation)));
   const hardValid = Boolean(validation?.hardValid && protectedPreserved);
-  const fixedMainParticipants=new Set(input.protectedPlacements.filter(task=>task.kind==="main")
-    .flatMap(task=>task.participantId?[task.participantId]:[]));
   const proposal = completeForScope && searchHardValid
-    ? scheduled.filter(task=>input.automaticTaskIds.includes(task.id)&&(input.scope.resolvedTaskIds.includes(task.id)
-      ||(task.kind==="vocal"&&task.participantId!==undefined&&fixedMainParticipants.has(task.participantId)))) : null;
+    ? scheduled.filter(task=>input.automaticTaskIds.includes(task.id)&&input.scope.resolvedTaskIds.includes(task.id)) : null;
   const resultReasonCodes = result && "evidence" in result && Array.isArray(result.evidence.reasonCodes)
     ? result.evidence.reasonCodes : result && "metrics" in result ? result.metrics.reasonCodes : [];
   const reasonCodes: string[] = [...resultReasonCodes, ...(validation?.reasonCodes ?? [])];

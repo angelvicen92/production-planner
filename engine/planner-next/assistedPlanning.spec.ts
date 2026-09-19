@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "./assistedPlanning";
-import { validatePlan } from "./validate";
+import { preflight, validatePlan } from "./validate";
 import { executePlannerNext } from "./executePlannerNext";
 
 function fixture(): PlannerNextProblem {
@@ -145,6 +145,10 @@ test("a fixed main keeps its pending feeder automatic, while an accepted feeder 
   assert.deepEqual(pendingExecution.result?.scheduledTasks.filter(task=>task.id==="main"),[main]);
   assert.equal(pendingExecution.result?.scheduledTasks.filter(task=>task.id==="feed").length,1);
   assert.ok(pendingExecution.result!.scheduledTasks.find(task=>task.id==="feed")!.end<=main.start);
+  const pendingProposal=executeAssistedPlanning(pending);
+  assert.equal(pendingProposal.evidence.completeForScope,true,pendingProposal.evidence.reasonCodes.join(","));
+  assert.deepEqual(pendingProposal.proposal?.map(task=>task.id),[],
+    "the pending feeder gates search feasibility without entering the visible scope proposal");
 
   const feeder={...source.tasks.find(task=>task.id==="feed")!,start:40,end:50} as ScheduledTask;
   const accepted=buildAssistedProblem(source,scope,[main,feeder]);
@@ -153,6 +157,21 @@ test("a fixed main keeps its pending feeder automatic, while an accepted feeder 
   assert.equal(acceptedExecution.result?.complete,true);
   assert.deepEqual(acceptedExecution.result?.scheduledTasks.filter(task=>task.id==="main"),[main]);
   assert.deepEqual(acceptedExecution.result?.scheduledTasks.filter(task=>task.id==="feed"),[feeder]);
+});
+
+test("an impossible pending feeder still rejects a fixed-main proposal",()=>{
+  const source=fixture();
+  source.tasks.find(task=>task.id==="feed")!.availability=[{start:70,end:80}];
+  const main={...source.tasks.find(task=>task.id==="main")!,start:60,end:75} as ScheduledTask;
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[main]);
+
+  assert.deepEqual(assisted.supportingTaskIds,["feed"]);
+  assert.equal(assisted.automaticTaskIds.includes("feed"),true);
+  const result=executeAssistedPlanning(assisted);
+  assert.equal(result.proposal,null);
+  assert.equal(result.evidence.proposalCount,0);
+  assert.ok(result.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE")
+    ||result.evidence.reasonCodes.includes("ASSISTED_HARD_VALIDATION_FAILED"));
 });
 
 test("an unaccepted anchored support remains automatic around a fixed main",()=>{
@@ -234,4 +253,25 @@ test("scope projection preserves surviving setup families and removes only absen
     preparationMinutesByFamily: { present: 4 },
   });
   assert.deepEqual(source, before);
+});
+
+test("scope projection preserves flexible setup preparation without materializing fixed-family preparation", () => {
+  const source = fixture();
+  source.tasks.filter(task => task.spaceId === "other-space").forEach(task => { task.setupFamilyId = "present"; });
+  const setupSpace = source.spaces.find(space => space.id === "other-space")!;
+  setupSpace.secondaryContinuity = "REQUIRED";
+  setupSpace.setupPolicy = {
+    familyOrder: ["present", "absent"], flexibleFamilyOrder: true, reentry: "FORBIDDEN",
+    preparationMinutesBetweenFamilies: 10,
+  };
+
+  const result = buildAssistedProblem(source,
+    createPlanningScope({ kind: "ids", value: "setup" }, {}, ["protected", "outside"]), []);
+  const policy = result.problem.spaces.find(space => space.id === "other-space")!.setupPolicy!;
+
+  assert.equal(Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily"), false);
+  assert.deepEqual(policy.familyOrder, ["present"]);
+  assert.equal(policy.flexibleFamilyOrder, true);
+  assert.equal(policy.preparationMinutesBetweenFamilies, 10);
+  assert.deepEqual(preflight(result.problem), []);
 });
