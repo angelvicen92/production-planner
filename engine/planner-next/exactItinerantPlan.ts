@@ -26,11 +26,11 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { materializeTerminalTransport, transportTaskIds } from "./transportGrouping";
+import { assessCoreArrivalTransportFeasibility, materializeTerminalTransport, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
+import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -80,6 +80,29 @@ export interface ExactItinerantPlanEvidence {
   standaloneBacktracks: number;
   standaloneMaximumDepth: number;
   standaloneCompleteLeafCount: number;
+  standaloneBranchesByDepth: Record<string, number>;
+  standaloneSelectionsByTaskId: Record<string, number>;
+  standaloneCandidateStartsByTaskId: Record<string, number>;
+  standaloneFirstSelectedTaskId: string | null;
+  standaloneDominantPathFirst20: Array<{ taskId: string; start: number }>;
+  standaloneFirstDominantBlocker: { taskId: string; count: number } | null;
+  standaloneBranchesBeforeFirstOrdinaryCompleteLeaf: number | null;
+  standaloneBranchesAfterFirstOrdinaryCompleteLeaf: number;
+  terminalTransportMaterializationAttempts: number;
+  terminalTransportMaterializationFailures: number;
+  terminalTransportWitness: TransportMaterializationEvidence | null;
+  coreLeafTransportPrunes: number;
+  transportContiguousStates: number;
+  membershipFallbackEntered: number;
+  coreLeafArrivalEvidence: TransportMaterializationEvidence["directions"][number] | null;
+  firstHardValidCoreLeaf: {
+    coreTaskCount: number;
+    coreTasksByKind: Record<string, number>;
+    pendingSupportingTotal: number;
+    pendingOrdinaryNoTransport: number;
+    pendingDynamicTransport: number;
+    pendingTasksByKind: Record<string, number>;
+  } | null;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
   standaloneSearchInvocations: number;
@@ -269,6 +292,11 @@ export interface ExactItinerantPlanEvidence {
   ordinaryIndividualForwardBlockingTaskCounts: Record<string, number>;
   ordinaryIndividualForwardChecksByDepth: Record<string, number>;
   ordinaryIndividualForwardFirstPrune: { causingTaskId: string; blockingTaskId: string; depth: number } | null;
+  corePrerequisiteReservationChecks: number;
+  corePrerequisiteReservationPrunes: number;
+  ordinaryPrerequisiteReservationChecks: number;
+  ordinaryPrerequisiteReservationPrunes: number;
+  firstPrerequisiteReservationPrune: { phase:"CORE"|"ORDINARY"; causingTaskId:string; blockingPrerequisiteId:string; depth:number; deadline:number; duration:number; earliestFeasibleStart:number|null; latestFeasibleStart:number|null; failure:"INDIVIDUAL_ZERO_DOMAIN" } | null;
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealCheapProbes:number; participantMealAffectedObligationsChecked:number; participantMealAnalyticDomainBuilds:number; participantMealLogicalGridStarts:number; participantMealAnalyticallyEliminatedStarts:number; participantMealActuallyEvaluatedStarts:number; participantMealZeroDomainPrunes:number; participantMealAnalyticCollectivePrunes:number; participantMealExactSearchesAvoided:number; participantMealExactMaterializations:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
@@ -403,6 +431,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
   technicalChainStartDomainMode:TechnicalChainStartDomainMode, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"]): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
+  const invocationStartBranches = ledger.standaloneBranches;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
@@ -426,13 +455,15 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       setupFamilyId: task.setupFamilyId ?? null, kind: task.kind,
     };
   };
-  const consumeLeafBranch = (): boolean => {
+  const consumeLeafBranch = (depth: number): boolean => {
     if (!ledger.consume("STANDALONE")) return false;
     evidence.standaloneLeafSearchBranches += 1;
+    evidence.standaloneBranchesByDepth[String(depth)] = (evidence.standaloneBranchesByDepth[String(depth)] ?? 0) + 1;
     return true;
   };
   const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
-    if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+    evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf ??= ledger.standaloneBranches - invocationStartBranches;
+    if (!consumeLeafBranch(selectionOrder.length)) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
     const substantive = orderScheduled([...coreTasks, ...placed]);
     const expected = [...problem.tasks].sort(byId).map(({ id }) => id);
@@ -447,12 +478,26 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if(operationalMealWitness?.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";
     const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
-    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled) : null;
+    if (mealWitness?.complete) evidence.terminalTransportMaterializationAttempts += 1;
+    let terminalTransportWitness: TransportMaterializationEvidence | null = null;
+    const transport = mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled, {
+      consumeFallbackBranch: () => ledger.consume("STANDALONE"),
+      onEvidence: (witness) => { terminalTransportWitness = witness; },
+    }) : null;
+    const observedTerminalTransportWitness = terminalTransportWitness as TransportMaterializationEvidence | null;
+    if (observedTerminalTransportWitness) {
+      evidence.transportContiguousStates += observedTerminalTransportWitness.directions
+        .reduce((sum, item) => sum + item.contiguousStatesExplored, 0);
+      evidence.membershipFallbackEntered += observedTerminalTransportWitness.directions
+        .filter((item) => item.membershipFallbackEntered).length;
+    }
+    if (mealWitness?.complete && transport === null) evidence.terminalTransportMaterializationFailures += 1;
     const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
     const actual = [...candidate].sort(byId).map(({ id }) => id);
     const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
     const validation = validatePlan(problem, candidate, preparations, coreMeals,[...mealWitness?.scheduled ?? []],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness?.scheduled ?? []]);
     if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && (validation.hardValid || acceptsValidation?.(validation))) {
+      evidence.terminalTransportWitness = terminalTransportWitness;
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
         maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
@@ -508,6 +553,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     // Prepare the lightweight set of still-pending hard predecessors once for
     // this ordinary node, not once per candidate start.
     evidence.standaloneTaskSelections += 1;
+    evidence.standaloneFirstSelectedTaskId ??= choice.task.id;
+    evidence.standaloneSelectionsByTaskId[choice.task.id] = (evidence.standaloneSelectionsByTaskId[choice.task.id] ?? 0) + 1;
     evidence.ordinaryMRVSelections += 1;
     evidence.ordinaryExactStartEnumerations += 1;
     const feasibleStarts = choice.starts.filter((start) => {
@@ -515,6 +562,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.standaloneStartChecks += 1;
       return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals);
     });
+    evidence.standaloneCandidateStartsByTaskId[choice.task.id]
+      = (evidence.standaloneCandidateStartsByTaskId[choice.task.id] ?? 0) + feasibleStarts.length;
     if (feasibleStarts.length === 0) {
       evidence.standaloneZeroAlternativePrunes += 1;
       recordBlockingTask(choice.task);
@@ -526,9 +575,37 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)
       .sort(byId);
+    const pendingReservationPrerequisites=[...ordinaryForwardObligations,
+      ...pending.filter(task=>transportTaskIds(problem).has(task.id)&&!allPlaced.some(placedTask=>placedTask.id===task.id))]
+      .filter((task,index,tasks)=>tasks.findIndex(other=>other.id===task.id)===index).sort(byId);
     for (const { scheduled } of orderedStarts) {
-      if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
+      if (!consumeLeafBranch(depth)) return "BUDGET_EXHAUSTED";
+      if (depth + 1 > evidence.standaloneDominantPathFirst20.length && depth < 20) {
+        evidence.standaloneDominantPathFirst20 = [...selectionOrder.map((taskId) => ({ taskId, start: placed.find(task=>task.id===taskId)!.start })),
+          { taskId: choice.task.id, start: scheduled.start }].slice(0, 20);
+      }
       evidence.ordinaryBranchesExplored += 1;
+      evidence.ordinaryPrerequisiteReservationChecks += 1;
+      const reservation=checkIndividualPendingPrerequisiteReservations(problem,pendingReservationPrerequisites,allPlaced,[scheduled],coreMeals);
+      if(!reservation.feasible){
+        evidence.ordinaryPrerequisiteReservationPrunes += 1;
+        evidence.ordinaryIndividualForwardChecks += 1;
+        evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
+          = (evidence.ordinaryIndividualForwardChecksByDepth[String(depth)] ?? 0) + 1;
+        evidence.ordinaryIndividualForwardTasksChecked += reservation.tasksChecked;
+        evidence.ordinaryIndividualForwardExactDomainChecks += reservation.tasksChecked;
+        evidence.ordinaryIndividualForwardZeroDomainPrunes += 1;
+        evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id]
+          = (evidence.ordinaryIndividualForwardCausingTaskCounts[choice.task.id] ?? 0) + 1;
+        evidence.ordinaryIndividualForwardBlockingTaskCounts[reservation.blockingTaskId!]
+          = (evidence.ordinaryIndividualForwardBlockingTaskCounts[reservation.blockingTaskId!] ?? 0) + 1;
+        evidence.ordinaryIndividualForwardFirstPrune ??= {causingTaskId:choice.task.id,blockingTaskId:reservation.blockingTaskId!,depth};
+        evidence.firstPrerequisiteReservationPrune??={phase:"ORDINARY",causingTaskId:choice.task.id,blockingPrerequisiteId:reservation.blockingTaskId!,depth,
+          deadline:reservation.deadline!,duration:reservation.duration!,earliestFeasibleStart:reservation.earliestFeasibleStart,
+          latestFeasibleStart:reservation.latestFeasibleStart,failure:"INDIVIDUAL_ZERO_DOMAIN"};
+        evidence.standaloneBacktracks += 1;
+        continue;
+      }
       evidence.ordinaryIndividualForwardChecks += 1;
       evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
         = (evidence.ordinaryIndividualForwardChecksByDepth[String(depth)] ?? 0) + 1;
@@ -786,6 +863,11 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
 };
 const searchOutcome = searchMacroUnits(macroUnits, [], [], [], 0, []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
+evidence.standaloneBranchesAfterFirstOrdinaryCompleteLeaf = evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf === null
+  ? 0 : ledger.standaloneBranches - invocationStartBranches - evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf;
+const dominantBlocker = Object.entries(evidence.standaloneBlockingTaskCounts)
+  .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0];
+evidence.standaloneFirstDominantBlocker = dominantBlocker ? { taskId: dominantBlocker[0], count: dominantBlocker[1] } : null;
 return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
 }
 
@@ -828,6 +910,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainRootStartsConsidered:0,technicalChainRootStartsFeasible:0,technicalChainBranchesExplored:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
     standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
+    standaloneBranchesByDepth:{},standaloneSelectionsByTaskId:{},standaloneCandidateStartsByTaskId:{},
+    standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
+    standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
+    terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,terminalTransportWitness:null,
+    coreLeafTransportPrunes:0,transportContiguousStates:0,membershipFallbackEntered:0,coreLeafArrivalEvidence:null,firstHardValidCoreLeaf:null,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
@@ -904,6 +991,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryIndividualForwardWitnesses:0,ordinaryIndividualForwardCausingTaskCounts:{},
     ordinaryIndividualForwardBlockingTaskCounts:{},ordinaryIndividualForwardChecksByDepth:{},
     ordinaryIndividualForwardFirstPrune:null,
+    corePrerequisiteReservationChecks:0,corePrerequisiteReservationPrunes:0,
+    ordinaryPrerequisiteReservationChecks:0,ordinaryPrerequisiteReservationPrunes:0,firstPrerequisiteReservationPrune:null,
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
   };
@@ -976,6 +1065,15 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
     if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return "REJECT";}}
+    evidence.corePrerequisiteReservationChecks+=1;
+    const reservation=checkIndividualPendingPrerequisiteReservations(problem,standaloneTasks,candidate.tasks.filter(task=>!candidate.addedTasks.some(added=>added.id===task.id)),candidate.addedTasks,candidate.meals);
+    if(!reservation.feasible){
+      evidence.corePrerequisiteReservationPrunes+=1;
+      evidence.firstPrerequisiteReservationPrune??={phase:"CORE",causingTaskId:[...candidate.addedTasks].sort(byId)[0]?.id??candidate.mainTaskId,
+        blockingPrerequisiteId:reservation.blockingTaskId!,depth:candidate.depth,deadline:reservation.deadline!,duration:reservation.duration!,
+        earliestFeasibleStart:reservation.earliestFeasibleStart,latestFeasibleStart:reservation.latestFeasibleStart,failure:"INDIVIDUAL_ZERO_DOMAIN"};
+      return "REJECT";
+    }
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
     evidence.standaloneForwardChecks += 1;
@@ -1056,9 +1154,27 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "CONTINUE";
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
+    if (evidence.firstHardValidCoreLeaf === null) {
+      const counts=(tasks:readonly {kind:string}[])=>tasks.reduce<Record<string,number>>((result,task)=>{
+        result[task.kind]=(result[task.kind]??0)+1;return result;},{});
+      const dynamicTransport=transportTaskIds(problem);
+      evidence.firstHardValidCoreLeaf={coreTaskCount:candidate.tasks.length,coreTasksByKind:counts(candidate.tasks),
+        pendingSupportingTotal:standaloneTasks.length,pendingOrdinaryNoTransport:standaloneTasks.filter(task=>!dynamicTransport.has(task.id)).length,
+        pendingDynamicTransport:standaloneTasks.filter(task=>dynamicTransport.has(task.id)).length,pendingTasksByKind:counts(standaloneTasks)};
+    }
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const immutableCoreTasks=[...candidate.tasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
+    const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
+      consumeFallbackBranch: () => ledger.consume("STANDALONE"),
+    });
+    evidence.coreLeafArrivalEvidence = arrival.evidence;
+    evidence.transportContiguousStates += arrival.evidence.contiguousStatesExplored;
+    if (arrival.evidence.membershipFallbackEntered) evidence.membershipFallbackEntered += 1;
+    if (arrival.status === "INFEASIBLE") {
+      evidence.coreLeafTransportPrunes += 1;
+      return "REJECT";
+    }
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation);

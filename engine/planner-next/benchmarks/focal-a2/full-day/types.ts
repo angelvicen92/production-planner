@@ -195,7 +195,7 @@ export interface CanonicalTemplateRules {
     readonly minutes: 30;
     readonly scope: "coach";
   };
-  readonly inTransport: { readonly targetGroupSize: 3; readonly maximumGroupSize: 6; readonly minGapMinutes: 35; readonly groupingWeight: 3 };
+  readonly inTransport: { readonly targetGroupSize: 3; readonly maximumGroupSize: 3; readonly minGapMinutes: 30; readonly groupingWeight: 3 };
   readonly outTransport: { readonly targetGroupSize: 1; readonly maximumGroupSize: 6; readonly minGapMinutes: 20; readonly groupingWeight: 3 };
   readonly ignoredEditorialNotes: readonly ["NO_P15", "instrument", "wardrobe", "prop"];
 }

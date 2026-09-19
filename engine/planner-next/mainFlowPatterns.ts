@@ -1,5 +1,6 @@
 import type { PlannerNextProblem, Resource, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
+import { createHash } from "node:crypto";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
   | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY"
@@ -8,6 +9,25 @@ export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
   slots: readonly number[];
+}
+
+export type SharedPrerequisiteCapacityAuthority = "TRANSPORT" | "ENTRY_STYLING" | "COMBINED";
+export interface SharedPrerequisiteCapacityCheck {
+  horizon: number;
+  requiredCount: number;
+  maximumFeedableCount: number;
+  authority: SharedPrerequisiteCapacityAuthority;
+}
+export interface SharedPrerequisiteCapacityAbstention {
+  horizon: number;
+  authority: SharedPrerequisiteCapacityAuthority;
+}
+export interface SharedPrerequisiteCapacityCertificate {
+  checks: readonly SharedPrerequisiteCapacityCheck[];
+  abstentions: readonly SharedPrerequisiteCapacityAbstention[];
+  /** @deprecated Prefer the per-authority `abstentions` collection. */
+  abstained: boolean;
+  fingerprint: string;
 }
 
 /** Optimistic participant-serial load which must precede a target task. */
@@ -80,6 +100,7 @@ export function proveMainFeederArchitectureImpossible(
   mains: readonly Task[],
   feederByMain: ReadonlyMap<string, Task>,
   architecture: MainFeederArchitecture,
+  onSharedCapacity?: (certificate: SharedPrerequisiteCapacityCertificate) => void,
 ): MainFeederStructuralRejection | null {
   if (architecture.pattern.length !== mains.length || architecture.slots.length !== mains.length)
     return "LOAD_CAPACITY";
@@ -167,6 +188,96 @@ export function proveMainFeederArchitectureImpossible(
   };
   const participantClosureFits = (main: Task, mainStart: number): boolean =>
     prerequisiteClosureFits(main, mainStart, main);
+
+  // Anonymous shared-capacity relaxation. Participant-specific constraints belong to
+  // the residual matching below: ignoring them here can only raise these upper bounds.
+  const sharedCapacityChecks: SharedPrerequisiteCapacityCheck[] = [];
+  const sharedCapacityAbstentions: SharedPrerequisiteCapacityAbstention[] = [];
+  const arrivalPolicy = problem.transportPolicy?.arrival;
+  const arrivalIds = new Set(arrivalPolicy?.taskIds ?? []);
+  const closureFor = (main: Task): Task[] => {
+    const result = new Map<string, Task>();
+    const visit = (id: string): void => {
+      const task = taskById.get(id);
+      if (!task || task.participantId !== main.participantId || result.has(id)) return;
+      result.set(id, task); task.dependencies.forEach(visit);
+    };
+    main.dependencies.forEach(visit);
+    return [...result.values()];
+  };
+  const closures = mains.map((main) => closureFor(main));
+  const arrivals = closures.map((closure) => closure.filter((task) => arrivalIds.has(task.id)));
+  const feederIds = new Set([...feederByMain.values()].map(({ id }) => id));
+  const styling = closures.map((closure) => closure.filter((task) => !arrivalIds.has(task.id)
+    && !feederIds.has(task.id) && arrivals.some((tasks) => tasks.some((arrival) => task.dependencies.includes(arrival.id)))));
+  const structurallyCommonLayer = (layers: readonly Task[][]): Task[] | null => {
+    if (!layers.length || layers.some((layer) => layer.length !== 1)) return null;
+    const tasks = layers.map((layer) => layer[0]!);
+    return new Set(tasks.map(({ duration }) => duration)).size === 1 ? tasks : null;
+  };
+  const arrivalTasks = arrivalPolicy ? structurallyCommonLayer(arrivals) : null;
+  const stylingLayer = structurallyCommonLayer(styling);
+  const stylingTasks = stylingLayer && new Set(stylingLayer.map(({ spaceId }) => spaceId)).size === 1
+    ? stylingLayer : null;
+  const sharedIntervalsBefore = (deadline: number,
+    sharedAvailability: readonly { start: number; end: number }[] | undefined): Array<{start:number;end:number}> => {
+    if (deadline <= problem.day.start) return [];
+    let intervals = [{ start: problem.day.start, end: Math.min(problem.day.end, deadline) }];
+    if (sharedAvailability?.length) intervals = intervals.flatMap((left) => sharedAvailability.flatMap((right) => {
+      const start = Math.max(left.start, right.start), end = Math.min(left.end, right.end);
+      return start < end ? [{ start, end }] : [];
+    }));
+    return intervals.sort((a, b) => a.start - b.start || a.end - b.end);
+  };
+  const maximumArrivalCount = (deadline: number): number => {
+    if (!arrivalPolicy || !arrivalTasks) return Number.POSITIVE_INFINITY;
+    const task = arrivalTasks[0]!;
+    const commonSpaceId = new Set(arrivalTasks.map(({ spaceId }) => spaceId)).size === 1 ? task.spaceId : null;
+    const intervals = sharedIntervalsBefore(deadline,
+      commonSpaceId === null ? undefined : spaceById.get(commonSpaceId)?.availability);
+    let groups = 0, previous = Number.NEGATIVE_INFINITY;
+    for (const interval of intervals) {
+      let start = Math.max(interval.start, previous + arrivalPolicy.minGapMinutes);
+      while (start + task.duration <= interval.end) { groups += 1; previous = start;
+        start += Math.max(arrivalPolicy.minGapMinutes, task.duration); }
+    }
+    return Math.min(arrivalTasks.length, groups * arrivalPolicy.maximumGroupSize);
+  };
+  const maximumSerialCount = (tasks: readonly Task[], deadline: number): number => {
+    const task = tasks[0]; if (!task) return Number.POSITIVE_INFINITY;
+    let count = 0;
+    for (const interval of sharedIntervalsBefore(deadline, spaceById.get(task.spaceId)?.availability))
+      count += Math.floor((interval.end - interval.start) / task.duration);
+    return Math.min(tasks.length, count);
+  };
+  for (const horizon of [...new Set(architecture.slots)].sort((a, b) => a - b)) {
+    const requiredCount = architecture.slots.filter((slot) => slot <= horizon).length;
+    const capacities: SharedPrerequisiteCapacityCheck[] = [];
+    if (arrivalTasks) capacities.push({ horizon, requiredCount,
+      maximumFeedableCount: maximumArrivalCount(horizon), authority: "TRANSPORT" });
+    else sharedCapacityAbstentions.push({ horizon, authority: "TRANSPORT" });
+    if (stylingTasks) capacities.push({ horizon, requiredCount,
+      maximumFeedableCount: maximumSerialCount(stylingTasks, horizon), authority: "ENTRY_STYLING" });
+    else sharedCapacityAbstentions.push({ horizon, authority: "ENTRY_STYLING" });
+    if (arrivalTasks && stylingTasks) capacities.push({ horizon, requiredCount,
+      maximumFeedableCount: Math.min(maximumArrivalCount(horizon - stylingTasks[0]!.duration),
+        maximumSerialCount(stylingTasks, horizon)),
+      authority: "COMBINED" });
+    else sharedCapacityAbstentions.push({ horizon, authority: "COMBINED" });
+    sharedCapacityChecks.push(...capacities);
+    const failed = capacities.find((check) => check.requiredCount > check.maximumFeedableCount);
+      if (failed) {
+        onSharedCapacity?.({ checks: sharedCapacityChecks, abstentions: sharedCapacityAbstentions,
+          abstained: sharedCapacityAbstentions.length > 0,
+          fingerprint: createHash("sha256").update(JSON.stringify({ checks: sharedCapacityChecks,
+            abstentions: sharedCapacityAbstentions })).digest("hex") });
+        return "FEEDER_PREREQUISITE_PREFIX_CAPACITY";
+      }
+  }
+  onSharedCapacity?.({ checks: sharedCapacityChecks, abstentions: sharedCapacityAbstentions,
+    abstained: sharedCapacityAbstentions.length > 0,
+    fingerprint: createHash("sha256").update(JSON.stringify({ checks: sharedCapacityChecks,
+      abstentions: sharedCapacityAbstentions })).digest("hex") });
 
   // A bipartite cover is necessary: each main must own a distinct compatible architecture slot.
   const owner = new Map<number, string>();

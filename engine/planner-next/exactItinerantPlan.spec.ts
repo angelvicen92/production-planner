@@ -128,6 +128,9 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
   const candidate = { ...auxiliary("a", "a-person", [{ start: 0, end: 20 }]), duration: 20,
     dependencies: [prerequisite.id], spaceId: "forward-space" };
   const input = ordinaryForwardProblem([candidate, prerequisite]);
+  input.transportPolicy = { arrival: { taskIds: [prerequisite.id], targetGroupSize: 1, minimumGroupSize: 1,
+    maximumGroupSize: 1, minGapMinutes: 0, groupingWeight: 1 }, departure: { taskIds: [], targetGroupSize: 1,
+    minimumGroupSize: 1, maximumGroupSize: 1, minGapMinutes: 0, groupingWeight: 1 } };
   const core = constructExactMainAndFeederCore(input);
   assert.equal(canPlaceTask(input, candidate, 0, core.scheduledTasks, core.scheduledSpaceMeals), true,
     "the singleton is legal for A itself before the pending prerequisite is materialized");
@@ -135,6 +138,8 @@ test("singleton ordinary candidate that destroys the last analytic prerequisite 
   const result = runExactItinerantPlanSearch(input);
   assert.equal(result.status, "INFEASIBLE", result.evidence.reasonCodes.join(","));
   assert.ok(result.evidence.ordinaryIndividualForwardChecks > 0);
+  assert.ok(result.evidence.ordinaryPrerequisiteReservationPrunes > 0,
+    "terminal prerequisites excluded from ordinary DFS remain virtually reserved");
   assert.ok(result.evidence.ordinaryIndividualForwardZeroDomainPrunes > 0);
   assert.equal(result.evidence.ordinaryIndividualForwardCausingTaskCounts[candidate.id],
     result.evidence.ordinaryIndividualForwardZeroDomainPrunes);

@@ -164,6 +164,8 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;
   input.arrivalMinGapMinutes = config.transportPolicy.arrival.minGapMinutes;
   input.departureMinGapMinutes = config.transportPolicy.departure.minGapMinutes;
+  input.arrivalMaximumGroupSize = config.transportPolicy.arrival.maximumGroupSize;
+  input.departureMaximumGroupSize = config.transportPolicy.departure.maximumGroupSize;
   input.vanCapacity = config.transportPolicy.arrival.maximumGroupSize;
   input.transportVanCapacity = config.transportPolicy.arrival.maximumGroupSize;
   input.transportSettings = {
@@ -171,6 +173,8 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     departureTargetGroupSize: config.transportPolicy.departure.targetGroupSize,
     arrivalMinGapMinutes: config.transportPolicy.arrival.minGapMinutes,
     departureMinGapMinutes: config.transportPolicy.departure.minGapMinutes,
+    arrivalMaximumGroupSize: config.transportPolicy.arrival.maximumGroupSize,
+    departureMaximumGroupSize: config.transportPolicy.departure.maximumGroupSize,
     vanCapacity: config.transportPolicy.arrival.maximumGroupSize,
     vehicleCapacity: config.transportPolicy.arrival.maximumGroupSize,
     groupingWeight: config.transportPolicy.arrival.groupingWeight,

@@ -7,6 +7,7 @@ import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
 import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
+import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 
 export type AssistedPlanningReasonCode =
@@ -39,6 +40,25 @@ export interface AssistedPlanningEvidence {
   readonly fingerprint: string | null;
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
+  readonly prerequisiteSharedCapacityChecks?: number;
+  readonly prerequisiteSharedCapacityPrunes?: number;
+  readonly prerequisiteSharedCapacityAbstentions?: number;
+  readonly prerequisiteSharedCapacityChecksByAuthority?: Readonly<Record<string, number>>;
+  readonly prerequisiteSharedCapacityAbstentionsByAuthority?: Readonly<Record<string, number>>;
+  readonly firstSharedCapacityPrune?: unknown;
+  readonly firstSharedCapacityPass?: unknown;
+  readonly sharedCapacityFingerprint?: string | null;
+  readonly standaloneDiagnostic?: Pick<ExactItinerantPlanEvidence,
+    "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
+    | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
+    | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
+    | "terminalTransportWitness"
+    | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
+    | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf"
+    | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
+    | "corePrerequisiteReservationChecks" | "corePrerequisiteReservationPrunes"
+    | "ordinaryPrerequisiteReservationChecks" | "ordinaryPrerequisiteReservationPrunes"
+    | "firstPrerequisiteReservationPrune">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -263,7 +283,16 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const work = Object.fromEntries(["branchesExplored", "backtracks", "patternsGenerated", "branchBudgetConsumed",
+  const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
+    "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
+    "terminalTransportMaterializationFailures","terminalTransportWitness","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
+    "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
+    "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",
+    "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
+    "corePrerequisiteReservationChecks","corePrerequisiteReservationPrunes",
+    "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune"] as const;
+  const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
+  const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
     "feederCandidatesEvaluated", "architecturesChecked", "feederOrderBranches", "feederSlotMatchingChecks",
     "feederSlotMatchingEdgeChecks", "feederSlotMatchingAugmentTraversals", "feederSlotMatchingBranchesExplored",
@@ -271,7 +300,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "residualMatchingEdgeCacheHits", "residualMatchingEdgeCacheMisses", "residualMatchingPositionChecks",
     "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
     "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "standaloneForwardChecks",
-    "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses"]
+    "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
+    "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
@@ -286,6 +316,17 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     proposalCount: proposal ? 1 : 0,
     completeForScope,
     hardValid,
+    prerequisiteSharedCapacityChecks: Number(evidenceRecord.prerequisiteSharedCapacityChecks ?? 0),
+    prerequisiteSharedCapacityPrunes: Number(evidenceRecord.prerequisiteSharedCapacityPrunes ?? 0),
+    prerequisiteSharedCapacityAbstentions: Number(evidenceRecord.prerequisiteSharedCapacityAbstentions ?? 0),
+    prerequisiteSharedCapacityChecksByAuthority:
+      (evidenceRecord.prerequisiteSharedCapacityChecksByAuthority as Record<string, number> | undefined) ?? {},
+    prerequisiteSharedCapacityAbstentionsByAuthority:
+      (evidenceRecord.prerequisiteSharedCapacityAbstentionsByAuthority as Record<string, number> | undefined) ?? {},
+    firstSharedCapacityPrune: evidenceRecord.firstSharedCapacityPrune ?? null,
+    firstSharedCapacityPass: evidenceRecord.firstSharedCapacityPass ?? null,
+    sharedCapacityFingerprint: typeof evidenceRecord.sharedCapacityFingerprint === "string"
+      ? evidenceRecord.sharedCapacityFingerprint : null,
     // Planner Next still reports HARD + REQUIRED through one strict search validator.
     // A returned assisted proposal therefore proves REQUIRED compliance even if
     // the combined state retains an inherited, human-accepted HARD exception.
@@ -293,6 +334,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
+    standaloneDiagnostic,
     reasonCodes: [...new Set(reasonCodes)].sort(),
     violations: validation?.violations??[],
     unstructuredReasonCodes: validation?.unstructuredReasonCodes??[],

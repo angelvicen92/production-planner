@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
-import { canPlaceTask, exactStartDomainFromIntervals, exactTaskStartDomain, type ExactStartInterval } from "./placement";
+import { canPlaceTask, exactStartDomainFromIntervals, exactTaskStartDomain, exactTaskStaticStartDomain, type ExactStartInterval } from "./placement";
 import { tasksCanAffectEachOther } from "./exactItinerantPlan";
 
 export interface MacroPendingPrerequisiteForwardCheckResult {
@@ -22,6 +22,17 @@ export interface MacroPendingPrerequisiteForwardCheckResult {
 }
 
 export type MacroPendingPrerequisiteForwardCache = Map<string, Omit<MacroPendingPrerequisiteForwardCheckResult,"cacheHit">>;
+export interface IndividualPrerequisiteReservationResult {
+  feasible: boolean;
+  tasksChecked: number;
+  witnesses: number;
+  blockingTaskId: string | null;
+  deadline: number | null;
+  duration: number | null;
+  earliestFeasibleStart: number | null;
+  latestFeasibleStart: number | null;
+  failure: "INDIVIDUAL_ZERO_DOMAIN" | null;
+}
 // Joint proof is deliberately limited to small connected sets. Larger sets are
 // left to the real search: declining to prune is safe, while an unbounded
 // feasibility search here would amount to running a second planner per macro.
@@ -30,6 +41,38 @@ const byId=<T extends{id:string}>(a:T,b:T)=>a.id.localeCompare(b.id);
 const mergeIntervals=(intervals:ExactStartInterval[]):ExactStartInterval[]=>{const merged:ExactStartInterval[]=[];for(const interval of [...intervals].sort((a,b)=>a.start-b.start||a.end-b.end)){const previous=merged.at(-1);if(previous&&interval.start<=previous.end)previous.end=Math.max(previous.end,interval.end);else merged.push({...interval});}return merged;};
 const intervalMinutes=(intervals:ExactStartInterval[])=>mergeIntervals(intervals).reduce((sum,{start,end})=>sum+Math.max(0,end-start),0);
 const exclusiveAuthorities=(task:Task)=>[{key:`space:${task.spaceId}`,id:task.spaceId},...(task.requiredResourceIds??[]).map(id=>({key:`resource:${id}`,id}))].sort((a,b)=>a.key.localeCompare(b.key));
+
+/**
+ * Necessary-only reservation for pending prerequisites. A non-empty individual
+ * domain is deliberately not a joint-feasibility certificate.
+ */
+export function checkIndividualPendingPrerequisiteReservations(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
+  candidate:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[]=[]):IndividualPrerequisiteReservationResult{
+  const provisional=[...previouslyPlaced,...candidate].sort(byId),pendingById=new Map(pending.map(task=>[task.id,task]));
+  const successors=new Map<string,string[]>();for(const task of problem.tasks)for(const dependency of task.dependencies)successors.set(dependency,[...(successors.get(dependency)??[]),task.id]);
+  const placedById=new Map(provisional.map(task=>[task.id,task])),deadlineMemo=new Map<string,number>();
+  const deadline=(id:string,visiting=new Set<string>()):number=>{const hit=deadlineMemo.get(id);if(hit!==undefined)return hit;if(visiting.has(id))return problem.day.end;
+    const next=new Set(visiting).add(id),values=(successors.get(id)??[]).flatMap(successorId=>{const placed=placedById.get(successorId);if(placed)return[placed.start];const successor=pendingById.get(successorId);return successor?[deadline(successorId,next)-successor.duration]:[];});
+    const value=Math.min(problem.day.end,...values);deadlineMemo.set(id,value);return value;};
+  const ancestors=new Set<string>();
+  const visitAncestors=(id:string)=>{const task=problem.tasks.find(item=>item.id===id);for(const dependency of task?.dependencies??[])if(pendingById.has(dependency)&&!ancestors.has(dependency)){ancestors.add(dependency);visitAncestors(dependency);}};
+  for(const {id} of candidate)visitAncestors(id);
+  const required=[...pending].filter(task=>deadline(task.id)<problem.day.end);
+  const affected=new Set([...ancestors,...required.filter(task=>candidate.some(item=>tasksCanAffectEachOther(task,item))).map(task=>task.id)]);
+  const relevant=required.filter(task=>affected.has(task.id)).sort(byId);
+  let witnesses=0;
+  for(const task of relevant){
+    const taskDeadline=deadline(task.id),limit=taskDeadline-task.duration;
+    const unrestricted=exactTaskStartDomain(problem,task,provisional,[...meals]);
+    const intervals=unrestricted.intervals.flatMap(interval=>interval.start<=Math.min(interval.end,limit)?[{start:interval.start,end:Math.min(interval.end,limit)}]:[]);
+    const domain=exactStartDomainFromIntervals(problem,intervals);
+    if(domain.eligibleStartCount>0){witnesses+=1;continue;}
+    const staticDomain=exactTaskStaticStartDomain(problem,task,[...meals]);
+    return{feasible:false,tasksChecked:relevant.length,witnesses,blockingTaskId:task.id,deadline:taskDeadline,duration:task.duration,
+      earliestFeasibleStart:staticDomain.intervals[0]?.start??null,latestFeasibleStart:Math.min(staticDomain.intervals.at(-1)?.end??limit,limit),failure:"INDIVIDUAL_ZERO_DOMAIN"};
+  }
+  return{feasible:true,tasksChecked:relevant.length,witnesses,blockingTaskId:null,deadline:null,duration:null,earliestFeasibleStart:null,latestFeasibleStart:null,failure:null};
+}
 
 /** Exact, read-only existence proof for pending ancestors affected by one provisional macro placement. */
 export function checkMacroPendingPrerequisites(problem:PlannerNextProblem,pending:readonly Task[],previouslyPlaced:readonly ScheduledTask[],
