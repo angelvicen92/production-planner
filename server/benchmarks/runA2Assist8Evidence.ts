@@ -84,6 +84,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   let firstBlocker: any = null;
 
   while (true) {
+    const iterationStartedAt = performance.now();
     const before = (session.draftSnapshotJson as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned);
     const acceptedIds = new Set(before.map(row => row.taskId));
     const remainingIds = sourceIds.filter(id => !acceptedIds.has(id));
@@ -138,7 +139,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         pendingDynamicTransport:pendingIds.filter(id=>transportIds.includes(id)).length,pendingByCanonicalType:byType(pendingIds)};
     }
     const record: any = { scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
-      includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal?.map(row => row.taskId).sort((a, b) => a - b) ?? [],
+      includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal ? [...result.scopeTaskIds] : [],
       supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
       proposalOutcome: result.outcome, newObligationCount: result.proposal?.filter(row => !protectedBefore.has(row.taskId)).length ?? 0,
       completedObligationCount: before.length, remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
@@ -160,6 +161,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       causalDiagnostic: evidence.causalDiagnostic ?? null };
     if (result.outcome !== "PROPOSAL") {
       const standalone=evidence.standaloneDiagnostic;
+      const preflightFailure = result.reasonCodes.includes("CORE_PREFLIGHT_FAILED");
       const terminalTransportDominates=(standalone?.standaloneCompleteLeafCount??0)>0
         && standalone?.terminalTransportMaterializationAttempts===standalone?.terminalTransportMaterializationFailures;
       const emptyDomain = evidence.causalDiagnostic?.futureFeasibility?.assessments?.find((item: any) => item.domainEmpty);
@@ -176,17 +178,30 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       };
       const staticEligibleStartCount = blockedTask ? standaloneForwardStaticDomain(adapter.problem, blockedTask, []).eligibleStartCount : null;
       firstBlocker = { scope: selector, obligationIds: result.scopeTaskIds,
+        baseStageId: session.draftBaseStageId, completedObligationCount: before.length,
+        remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
+        protectedPlacementsPreserved: record.protectedPlacementsPreserved,
+        proposalOutcome: result.outcome, newHardViolationCount: record.newHardViolationCount,
+        newRequiredViolationCount: record.newRequiredViolationCount,
+        supportingTaskIds: record.supportingTaskIds,
+        branches: { core: record.work.coreBranches ?? 0, standalone: record.work.standaloneBranches ?? 0 },
         blockedObligationId: emptyDomain?.taskId ? productByCanonical.get(emptyDomain.taskId) : null,
         blockedTask: emptyDomain?.taskId ? materiality(emptyDomain.taskId) : null,
-        phase: result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
-        firstCausalCheck: terminalTransportDominates ? "materializeTerminalTransport" : result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
+        affected: { taskIds: result.scopeTaskIds, resourceIds: [], spaceId: selector.kind === "SPACE" ? selector.spaceId : null },
+        causalAuthority: preflightFailure ? "Planner Next preflight / setup preparation policy" : emptyDomain?.authoritySignature ?? null,
+        failureCategory: preflightFailure ? "VALIDATION" : terminalTransportDominates ? "MATERIALIZATION"
+          : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "BUDGET" : emptyDomain ? "GEOMETRY_OR_MATCHING" : "UNKNOWN",
+        phase: preflightFailure ? "preflight" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
+        firstCausalCheck: preflightFailure ? result.reasonCodes.find((code: string) => code !== "ASSISTED_SCOPE_INCOMPLETE" && code !== "CORE_PREFLIGHT_FAILED") ?? "CORE_PREFLIGHT_FAILED"
+          : terminalTransportDominates ? "materializeTerminalTransport" : result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
         staticEligibleStartCount, dynamicEligibleStartCount: emptyDomain?.eligibleStartCount ?? null,
         reasonCodes: result.reasonCodes, blockingTaskIds: blockerTasks,
-        blockers: blockerTasks.map(materiality), rejectionReason: terminalTransportDominates ? "TERMINAL_TRANSPORT_MATERIALIZATION_FAILED" : emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null,
+        blockers: blockerTasks.map(materiality), rejectionReason: preflightFailure ? "PREFLIGHT_REJECTED" : terminalTransportDominates ? "TERMINAL_TRANSPORT_MATERIALIZATION_FAILED" : emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null,
         originatingCoreDecision: emptyDomain ? { depth: emptyDomain.depth, authoritySignature: emptyDomain.authoritySignature,
           ancestralDecisionDepths: emptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: emptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
-        classification: terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED"
+        classification: preflightFailure ? "PREFLIGHT_VALIDATION_REJECTED" : terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED"
           : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "SEARCH_CAPACITY_EXHAUSTED" : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
+      record.durationMs = Math.round(performance.now() - iterationStartedAt);
       iterations.push(record); break;
     }
     assert.equal(record.newHardViolationCount, 0); assert.equal(record.newRequiredViolationCount, 0); assert.deepEqual(record.unstructuredReasonCodes, []);
@@ -197,18 +212,21 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     assert.ok([...protectedBefore].every(([id, value]) => JSON.stringify(after.find(row => row.taskId === id)) === value));
     record.completedObligationCount = after.length; record.remainingObligationCount = sourceIds.length - after.length;
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
+    record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
-    // A2-ASSIST-8 is the S1 gate. Later scopes belong to separate iterations and
-    // must not be accepted merely to make this causal benchmark look complete.
-    break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
+  const pass = finalIds.length === 266
+    && JSON.stringify(finalIds) === JSON.stringify(sourceIds)
+    && finalIds.length === new Set(finalIds).size
+    && iterations.every(row => row.protectedPlacementsPreserved === true)
+    && iterations.every(row => row.newHardViolationCount === 0 && row.newRequiredViolationCount === 0)
+    && JSON.stringify(dailyTasks) === JSON.stringify(stages.at(-1).snapshotJson);
   const evidence = { benchmark: "A2-ASSIST-8", effectiveInConfiguration: {
     targetGroupSize: input.arrivalGroupingTarget, maximumGroupSize: input.arrivalMaximumGroupSize ?? input.vanCapacity,
     minGapMinutes: input.arrivalMinGapMinutes,
-  }, status: finalIds.length === 266 ? "PASS"
-    : iterations.length === 1 && iterations[0]?.proposalOutcome === "PROPOSAL" ? "S1_PASS" : "BLOCKED", sourceObligationCount: 266,
+  }, status: pass ? "PASS" : "BLOCKED", milestone: `S${stages.length - 1}`, sourceObligationCount: 266,
     completedObligationCount: finalIds.length, remainingObligationCount: 266 - finalIds.length, scopeCount: iterations.length, stageCount: stages.length - 1,
     automaticPlacements: finalIds.length, manualChanges: 0, acceptedHardExceptions: 0, rollbackCount: 0,
     finalCompletionPercentage: Number((finalIds.length / 266 * 100).toFixed(6)), finalObligationIds: finalIds, duplicateFinalIds: finalIds.length - new Set(finalIds).size,
