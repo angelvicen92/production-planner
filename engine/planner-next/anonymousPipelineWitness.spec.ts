@@ -37,8 +37,44 @@ describe("anonymous structural pipeline witness",()=>{
 
   it("keeps separate feeder cohorts for separate runs of the same coach",()=>{
     const p=problem(["A","B","A"],["coach-a","coach-b","coach-a"]);p.day.start=40;p.spaces.filter(s=>s.id.startsWith("car-")).forEach(s=>s.availability=[{start:70,end:260}]);p.coaches.forEach(x=>x.availability=[{start:70,end:260}]);
-    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","B","A"],slots:[100,150,200]});assert.equal(witness.status,"FEASIBLE");
+    let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","B","A"],slots:[100,150,200]},value=>{diagnostic=value;});assert.equal(witness.status,"FEASIBLE");
     assert.equal(new Set(witness.feederSpots.map(x=>x.feederRunId)).size,3);assert.ok(witness.feederSpots.some(x=>x.coachKey==="coach-a"&&x.start>=115));
+    assert.ok((diagnostic?.feederRuns[2]?.exactDomainIntervalCount??0)>(diagnostic?.feederRuns[0]?.exactDomainIntervalCount??0));
+  });
+
+  it("finds a feasible start exposed only by an exact participant-domain boundary",()=>{
+    const p=problem();p.tasks.find(t=>t.id==="feed0")!.availability=[{start:83,end:98}];
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[120]});
+    assert.equal(witness.status,"FEASIBLE");assert.equal(witness.feederSpots[0]?.start,83);
+  });
+
+  it("uses perfect matching to exchange equivalent feeders between ordinals",()=>{
+    const p=problem(["A","A"]);p.tasks.find(t=>t.id==="feed0")!.availability=[{start:40,end:55}];
+    p.tasks.find(t=>t.id==="feed1")!.availability=[{start:40,end:70}];
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","A"],slots:[120,135]});
+    assert.equal(witness.status,"FEASIBLE",witness.reason);
+    assert.equal(witness.feederSpots.find(spot=>spot.start===55)?.tokenId,
+      witness.assignments.find(item=>item.mainSpotId==="main:0")?.tokenId);
+  });
+
+  it("returns an exact infeasible result when no block start has a perfect matching",()=>{
+    const p=problem(["A","A"]);p.tasks.filter(t=>t.kind==="vocal").forEach(t=>t.availability=[{start:0,end:15}]);
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","A"],slots:[45,60]});
+    assert.equal(witness.status,"INFEASIBLE");assert.equal(witness.reason,"FEEDER_RUN_GEOMETRY");
+  });
+
+  it("splits exact coach domains at an intermediate fixed Main",()=>{
+    const p=problem(["A","B","A"],["coach-a","coach-b","coach-a"]);
+    let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","B","A"],slots:[60,120,180]},value=>{diagnostic=value;});
+    assert.equal(witness.status,"FEASIBLE");assert.ok((diagnostic?.feederRuns[2]?.exactDomainIntervalCount??0)>1);
+  });
+
+  it("reports unsupported feeder-to-feeder dependencies as inconclusive",()=>{
+    const p=problem(["A","A"]);p.tasks.find(t=>t.id==="feed1")!.dependencies.push("feed0");
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","A"],slots:[100,115]});
+    assert.equal(witness.status,"INCONCLUSIVE");assert.equal(witness.reason,"UNSUPPORTED_FEEDER_RUN_DEPENDENCY");
   });
 
   it("proves infeasible when a feeder cohort cannot clear its route transition",()=>{

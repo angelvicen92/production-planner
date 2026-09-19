@@ -4,7 +4,8 @@ import type { MainFeederArchitecture } from "./mainFlowPatterns";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
-import { canPlaceTask } from "./placement";
+import { exactTaskStartDomain } from "./placement";
+import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching } from "./exactMainAndFeederCore";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
 export interface AnonymousPipelineSpot { id:string; start:number; end:number; profileKey?:string; tokenId?:string; coachKey?:string; feederRunId?:string; mainRunId?:string }
@@ -32,7 +33,9 @@ export interface AnonymousPipelineWitnessDiagnostic {
   arrivalSolverExecuted: boolean;
   mainRuns: readonly { id:string; coach:string; firstMain:{id:string;start:number;end:number};
     lastMain:{id:string;start:number;end:number}; positions:readonly number[] }[];
-  feederRuns: readonly { id:string; deadline:number; candidateStartBoundaryCount:number }[];
+  feederRuns: readonly { id:string; coach:string; deadline:number; blockStart?:number; blockEnd?:number; size:number;
+    matching?:readonly {tokenId:string;ordinal:number}[]; exactDomainIntervalCount:number;
+    candidateStartBoundaryCount:number; blockStartCandidatesEvaluated:number; perfectMatchingChecks:number }[];
   stylingCandidateStartBoundaryCount: number;
   anchoredOperationIntervals: readonly { id:string; start:number; end:number }[];
 }
@@ -54,7 +57,9 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   let arrivalSolverExecuted=false,stylingCandidateStartBoundaryCount=0;
   const diagnosticMainRuns: Array<{id:string;coach:string;firstMain:{id:string;start:number;end:number};
     lastMain:{id:string;start:number;end:number};positions:number[]}>=[];
-  const diagnosticFeederRuns: Array<{id:string;deadline:number;candidateStartBoundaryCount:number}>=[];
+  const diagnosticFeederRuns: Array<{id:string;coach:string;deadline:number;blockStart?:number;blockEnd?:number;size:number;
+    matching?:readonly {tokenId:string;ordinal:number}[];exactDomainIntervalCount:number;
+    candidateStartBoundaryCount:number;blockStartCandidatesEvaluated:number;perfectMatchingChecks:number}>=[];
   const diagnosticAnchors: Array<{id:string;start:number;end:number}>=[];
   const emitDiagnostic=()=>onDiagnostic?.({mainMatchingCompleted,anchorsCompleted,feederGeometryCompleted,
     stylingGeometryCompleted,arrivalSolverExecuted,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
@@ -185,41 +190,52 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     if(cohort.some(x=>x.feeder.coachId!==coachKey))return rejected("INFEASIBLE","FEEDER_COACH_MISMATCH");
     const deadline=architecture.slots[run.startPosition]!
       - effectiveCoachTransitionMinutes(problem as PlannerNextProblem,coachKey,cohort.at(-1)!.feeder.spaceId,cohort[0]!.main.spaceId);
-    const duration=cohort.reduce((sum,x)=>sum+x.feeder.duration,0);
+    const durations=new Set(cohort.map(x=>x.feeder.duration));
+    if(durations.size!==1)return rejected("INCONCLUSIVE","HETEROGENEOUS_FEEDER_RUN_GEOMETRY");
+    const slotDuration=cohort[0]!.feeder.duration,duration=slotDuration*cohort.length;
+    if(new Set(cohort.map(x=>x.feeder.spaceId)).size!==1)
+      return rejected("INCONCLUSIVE","HETEROGENEOUS_FEEDER_RUN_SPACE");
+    const feederIds=new Set(cohort.map(x=>x.feeder.id));
+    if(cohort.some(x=>x.feeder.dependencies.some(id=>feederIds.has(id))))
+      return rejected("INCONCLUSIVE","UNSUPPORTED_FEEDER_RUN_DEPENDENCY");
     const coachWindows=orderedWindows(problem.coaches.find(c=>c.id===coachKey)?.availability,problem.day);
-    let starts=[{start:problem.day.start,end:deadline-duration}];
-    for(const windows of [coachWindows,orderedWindows(problem.spaces.find(s=>s.id===cohort[0]!.feeder.spaceId)?.availability,problem.day)])
-      starts=starts.flatMap(a=>windows.flatMap(w=>{const start=Math.max(a.start,w.start),end=Math.min(a.end,w.end-duration);return start<=end?[{start,end}]:[];}));
     const fixed=[...mainOwner].flatMap(([position,x])=>anchoredOperations.get(x.tokenId)?.tasks
       ?? [{...x.main,start:architecture.slots[position]!,end:architecture.slots[position]!+x.main.duration}]);
-    const occupationBoundaries=fixed.filter(task=>task.coachId===coachKey).flatMap(task=>cohort.map((x,index)=>
-      task.end+effectiveCoachTransitionMinutes(problem,coachKey,task.spaceId,x.feeder.spaceId)
-        - cohort.slice(0,index).reduce((sum,item)=>sum+item.feeder.duration,0)));
-    const participantBoundaries=fixed.flatMap(task=>cohort.filter(x=>x.feeder.participantId===task.participantId)
-      .map(()=>task.start-duration-problem.participantTransitionMinutes));
-    const boundaries=[...starts.flatMap(interval=>[interval.end,interval.start]),...occupationBoundaries,...participantBoundaries]
-      .filter(start=>starts.some(interval=>interval.start<=start&&start<=interval.end)).sort((a,b)=>b-a);
-    diagnosticFeederRuns.push({id:feederRunId,deadline,candidateStartBoundaryCount:new Set(boundaries).size});
-    let selected:AnonymousPipelineSpot[]|undefined;
     const priorFeeders=feederSpots.map(spot=>{const x=assigned.find(item=>item.tokenId===spot.tokenId)!;return {...x.feeder,start:spot.start,end:spot.end};});
+    const placed=[...fixed,...priorFeeders];
+    const domains=cohort.map(x=>({x,domain:exactTaskStartDomain(problem,x.feeder,placed)}));
+    const certificate=deriveFeederCohortRelaxedCertificate(problem,
+      cohort.map(({feeder})=>({task:feeder,deadline})),placed);
+    const maximumStart=deadline-duration;
+    const allowed=certificate.applicable?certificate.contiguousBlockStartIntervals:[{start:problem.day.start,end:maximumStart}];
+    const structuralStarts=domains.flatMap(({domain})=>domain.intervals.flatMap(interval=>cohort.flatMap((_,ordinal)=>
+      [interval.start-ordinal*slotDuration,interval.end-ordinal*slotDuration])))
+      .concat(allowed.flatMap(interval=>[interval.start,interval.end]),maximumStart)
+      .filter(start=>start>=problem.day.start&&start<=maximumStart
+        && allowed.some(interval=>interval.start<=start&&start<=interval.end));
+    const boundaries=[...new Set(structuralStarts)].sort((a,b)=>b-a);
+    const diagnostic:typeof diagnosticFeederRuns[number]={id:feederRunId,coach:coachKey,deadline,size:cohort.length,
+      exactDomainIntervalCount:domains.reduce((sum,{domain})=>sum+domain.intervals.length,0),
+      candidateStartBoundaryCount:boundaries.length,blockStartCandidatesEvaluated:0,perfectMatchingChecks:0};
+    diagnosticFeederRuns.push(diagnostic);
+    let selected:AnonymousPipelineSpot[]|undefined;
     for(const start of [...new Set(boundaries)]){
-      if(new Set(cohort.map(x=>x.feeder.duration)).size!==1)continue;
-      const slotDuration=cohort[0]!.feeder.duration,owner=new Map<number,typeof cohort[number]>();
-      const augmentFeeder=(x:typeof cohort[number],seen:Set<number>):boolean=>{
-        for(let i=0;i<cohort.length;i++){
-          if(seen.has(i))continue;const at=start+i*slotDuration;
-          if(!canPlaceTask(problem,x.feeder,at,[...fixed,...priorFeeders]))continue;
-          seen.add(i);const prior=owner.get(i);if(!prior||augmentFeeder(prior,seen)){owner.set(i,x);return true;}
-        }return false;
-      };
-      if(cohort.every(x=>augmentFeeder(x,new Set()))){selected=[...owner].sort((a,b)=>a[0]-b[0]).map(([i,x])=>({
-        id:`feeder:${x.tokenId}`,start:start+i*slotDuration,end:start+(i+1)*slotDuration,
-        profileKey:x.profileKey,tokenId:x.tokenId,coachKey,feederRunId,mainRunId:run.id}));break;}
+      diagnostic.blockStartCandidatesEvaluated++;
+      const edges=new Map(domains.map(({x,domain})=>[x.tokenId,cohort.map((_,ordinal)=>ordinal).filter(ordinal=>{
+        const at=start+ordinal*slotDuration;return domain.intervals.some(interval=>interval.start<=at&&at<=interval.end);
+      })]));
+      diagnostic.perfectMatchingChecks++;
+      const matching=exactFeederOrdinalPerfectMatching(cohort.map(x=>x.tokenId),edges);
+      if(matching){selected=cohort.map(x=>{const ordinal=matching.get(x.tokenId)!;return {
+        id:`feeder:${x.tokenId}`,start:start+ordinal*slotDuration,end:start+(ordinal+1)*slotDuration,
+        profileKey:x.profileKey,tokenId:x.tokenId,coachKey,feederRunId,mainRunId:run.id};});
+        diagnostic.blockStart=start;diagnostic.blockEnd=start+duration;
+        diagnostic.matching=[...matching].map(([tokenId,ordinal])=>({tokenId,ordinal})).sort((a,b)=>a.ordinal-b.ordinal);break;}
     }
     if(!selected){
       const available=coachWindows.reduce((sum,w)=>sum+Math.max(0,Math.min(w.end,deadline)-Math.max(w.start,problem.day.start)),0);
       if(available<duration)return rejected("INFEASIBLE","FEEDER_RUN_CAPACITY");
-      return rejected("INCONCLUSIVE","FEEDER_RUN_GEOMETRY");
+      return rejected("INFEASIBLE","FEEDER_RUN_GEOMETRY");
     }
     feederSpots.push(...selected);
   }

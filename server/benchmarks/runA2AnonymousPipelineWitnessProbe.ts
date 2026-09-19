@@ -42,6 +42,8 @@ export function runA2AnonymousPipelineWitnessProbe() {
   const phaseNames=["structural preproof","Main matching","anchors","feeder runs","Styling matching","IN","FEASIBLE"];
   const families=[]; let firstFeasible: ReturnType<typeof buildAnonymousPipelineWitness>|null=null;
   let firstRunCount4Inconclusive:({pattern:string[];slots:number[];reason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
+  let firstRunCount4FeederFailure:({pattern:string[];slots:number[];status:string;reason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
+  let firstRunCount4PastFeeder:({pattern:string[];slots:number[];status:string;nextReason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
   let bestRunCount4:{pattern:string[];slots:number[];lastCompletedPhase:string;nextReason:string|null;phase:number}|null=null;
   const started=performance.now();
   for(const count of [...new Set(generated.patterns.map(runCount))].sort((a,b)=>a-b)){
@@ -79,6 +81,10 @@ export function runA2AnonymousPipelineWitnessProbe() {
             lastCompletedPhase:phaseNames[completed]!,nextReason:witness.reason??null,phase:completed};
           if(witness.status==="INCONCLUSIVE"&&!firstRunCount4Inconclusive)firstRunCount4Inconclusive={pattern:[...pattern],
             slots:[...slots],reason:witness.reason??null,...diagnostic};
+          if(witness.reason==="FEEDER_RUN_GEOMETRY"&&!firstRunCount4FeederFailure)firstRunCount4FeederFailure={pattern:[...pattern],
+            slots:[...slots],status:witness.status,reason:witness.reason??null,...diagnostic};
+          if(diagnostic.feederGeometryCompleted&&!firstRunCount4PastFeeder)firstRunCount4PastFeeder={pattern:[...pattern],
+            slots:[...slots],status:witness.status,nextReason:witness.reason??null,...diagnostic};
         }
         if(witness.status==="INCONCLUSIVE")familyStatus="INCONCLUSIVE";
         if(witness.status==="FEASIBLE"){
@@ -94,6 +100,7 @@ export function runA2AnonymousPipelineWitnessProbe() {
   const pipelineWitnessBuildMs=Number((performance.now()-started).toFixed(3));
   assert.equal(JSON.stringify(problem),before); assert.ok(pipelineWitnessBuildMs<10_000);
   return {families,firstFeasibleRunCount:firstFeasible?.runCount??null,firstRunCount4Inconclusive,
+    firstRunCount4FeederFailure,firstRunCount4PastFeeder,
     bestRunCount4:bestRunCount4&&(({phase:_,...candidate})=>candidate)(bestRunCount4),
     firstFeasible:firstFeasible?{mainSpotCount:firstFeasible.mainSpots.length,
       feederSpotCount:firstFeasible.feederSpots.length,stylingSpotCount:firstFeasible.stylingSpots.length,

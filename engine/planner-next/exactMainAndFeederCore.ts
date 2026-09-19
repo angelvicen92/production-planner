@@ -316,6 +316,22 @@ export interface ExactFeederStartDomain {
 
 export type ExactFeederSlotAnalyticCertificate = "NO_PERFECT_MATCH" | "NOT_PROVEN" | "NOT_APPLICABLE";
 
+/** Deterministic augmenting-path authority for the feeder-to-ordinal bipartite graph. */
+export function exactFeederOrdinalPerfectMatching(feederIds:readonly string[],
+  edges:ReadonlyMap<string,readonly number[]>):ReadonlyMap<string,number>|null {
+  const owner=new Map<number,string>();
+  const augment=(feederId:string,seen:Set<number>):boolean=>{
+    for(const ordinal of edges.get(feederId)??[]){
+      if(seen.has(ordinal))continue;
+      seen.add(ordinal);const previous=owner.get(ordinal);
+      if(previous===undefined||augment(previous,seen)){owner.set(ordinal,feederId);return true;}
+    }
+    return false;
+  };
+  for(const feederId of feederIds)if(!augment(feederId,new Set()))return null;
+  return new Map([...owner].map(([ordinal,feederId])=>[feederId,ordinal]));
+}
+
 /** Negative certificate using only deadlines and feeder-domain interval geometry.
  * NOT_PROVEN never establishes feasibility; the exact checks remain authoritative. */
 export function exactFeederSlotAnalyticCertificate(blockStart:number,duration:number,slotCount:number,
