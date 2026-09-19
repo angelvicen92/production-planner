@@ -26,7 +26,7 @@ import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerpri
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { materializeTerminalTransport, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
+import { assessCoreArrivalTransportFeasibility, materializeTerminalTransport, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
@@ -91,6 +91,10 @@ export interface ExactItinerantPlanEvidence {
   terminalTransportMaterializationAttempts: number;
   terminalTransportMaterializationFailures: number;
   terminalTransportWitness: TransportMaterializationEvidence | null;
+  coreLeafTransportPrunes: number;
+  transportContiguousStates: number;
+  membershipFallbackEntered: number;
+  coreLeafArrivalEvidence: TransportMaterializationEvidence["directions"][number] | null;
   firstHardValidCoreLeaf: {
     coreTaskCount: number;
     coreTasksByKind: Record<string, number>;
@@ -480,6 +484,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       consumeFallbackBranch: () => ledger.consume("STANDALONE"),
       onEvidence: (witness) => { terminalTransportWitness = witness; },
     }) : null;
+    if (terminalTransportWitness) {
+      evidence.transportContiguousStates += terminalTransportWitness.directions.reduce((sum, item) => sum + item.contiguousStatesExplored, 0);
+      evidence.membershipFallbackEntered += terminalTransportWitness.directions.filter((item) => item.membershipFallbackEntered).length;
+    }
     if (mealWitness?.complete && transport === null) evidence.terminalTransportMaterializationFailures += 1;
     const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
     const actual = [...candidate].sort(byId).map(({ id }) => id);
@@ -902,7 +910,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneBranchesByDepth:{},standaloneSelectionsByTaskId:{},standaloneCandidateStartsByTaskId:{},
     standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
     standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
-    terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,terminalTransportWitness:null,firstHardValidCoreLeaf:null,
+    terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,terminalTransportWitness:null,
+    coreLeafTransportPrunes:0,transportContiguousStates:0,membershipFallbackEntered:0,coreLeafArrivalEvidence:null,firstHardValidCoreLeaf:null,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
@@ -1153,6 +1162,16 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const immutableCoreTasks=[...candidate.tasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
+    const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
+      consumeFallbackBranch: () => ledger.consume("STANDALONE"),
+    });
+    evidence.coreLeafArrivalEvidence = arrival.evidence;
+    evidence.transportContiguousStates += arrival.evidence.contiguousStatesExplored;
+    if (arrival.evidence.membershipFallbackEntered) evidence.membershipFallbackEntered += 1;
+    if (arrival.status === "INFEASIBLE") {
+      evidence.coreLeafTransportPrunes += 1;
+      return "REJECT";
+    }
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, standaloneTasks, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation);

@@ -6,6 +6,8 @@ import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import {
   transportGroupCandidates,
   transportContiguousGroupSizes,
+  classifyTransportContext,
+  assessCoreArrivalTransportFeasibility,
   materializeTerminalTransport,
   validateTransportGrouping,
 } from "./transportGrouping";
@@ -262,7 +264,8 @@ test("canonical IN places consecutive boundary packets last-to-first at their la
   ]);
   assert.deepEqual(evidence.directions[0].packetSizes, [2, 2]);
   assert.deepEqual(evidence.directions[0].starts, [20, 40]);
-  assert.equal(evidence.directions[0].construction, "canonical");
+  assert.equal(evidence.directions[0].construction, "fallback");
+  assert.equal(evidence.directions[0].classification, "MEMBERSHIP_REQUIRED");
 });
 
 test("canonical OUT places consecutive boundary packets first-to-last at earliest valid starts", () => {
@@ -271,7 +274,8 @@ test("canonical OUT places consecutive boundary packets first-to-last at earlies
   const result = materializeTerminalTransport(problem, substantive, [], { onEvidence: (value) => { evidence = value; } });
   assert.ok(result);
   assert.deepEqual(evidence.directions[1].starts, [50, 70]);
-  assert.equal(evidence.directions[1].construction, "canonical");
+  assert.equal(evidence.directions[1].construction, "fallback");
+  assert.equal(evidence.directions[1].classification, "MEMBERSHIP_REQUIRED");
 });
 
 test("exact fallback changes membership when the preferred contiguous packets are impossible", () => {
@@ -293,4 +297,87 @@ test("exact fallback changes membership when the preferred contiguous packets ar
   ]);
   assert.deepEqual(evidence.directions[0].starts, [0, 20]);
   assert.equal(evidence.directions[0].alternativesExplored, consumed);
+});
+
+function interchangeableArrivalProblem(deadlines: readonly number[], reverse = false): { problem: PlannerNextProblem; core: ScheduledTask[] } {
+  const window = [{ start: 0, end: 140 }];
+  const arrivals = deadlines.map((_, index): Task => ({ id: `in-${index}`, kind: "auxiliary", participantId: `person-${index}`,
+    duration: 10, spaceId: "transport", dependencies: [], availability: window }));
+  const work = deadlines.map((deadline, index): ScheduledTask => ({ id: `obligation-${index}`, kind: "auxiliary",
+    participantId: `person-${index}`, duration: 10, spaceId: `work-${index}`, dependencies: [], start: deadline, end: deadline + 10 }));
+  const problem: PlannerNextProblem = { day: { start: 0, end: 140 }, protectedMeal: { start: 130, end: 140 }, resources: [],
+    spaces: [{ id: "transport", availability: window }, ...deadlines.map((_, index) => ({ id: `work-${index}`, availability: window }))],
+    participants: deadlines.map((_, index) => ({ id: `person-${index}`, availability: window })), coaches: [], tasks: arrivals,
+    mainFlow: { spaceId: "transport", preferredEnd: 120, continuity: "REQUIRED", maxBlocksByKey: 1, minTasksPerBlock: 1 },
+    participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    budget: { bestK: 1, maxBacktracks: 10, maxPatterns: 10, maxBranchExpansions: 1_000 },
+    auxiliaryPolicy: { participantPresencePreference: "OFF" }, searchPolicy: "EXACT_CONSTRUCTIVE",
+    transportPolicy: { arrival: { ...policy(1, 3, 20), targetGroupSize: 3, taskIds: arrivals.map(({ id }) => id) },
+      departure: { ...policy(1, 3, 20), taskIds: [] } } };
+  if (reverse) { problem.tasks.reverse(); problem.participants.reverse(); problem.transportPolicy!.arrival.taskIds.reverse(); }
+  return { problem, core: work };
+}
+
+test("different arrival deadlines remain CONTIGUOUS_EXACT and input order does not change the witness", () => {
+  const original = interchangeableArrivalProblem([20, 20, 20, 100, 100]);
+  const snapshot = structuredClone(original.problem);
+  assert.deepEqual(classifyTransportContext(original.problem, original.problem.tasks), { classification: "CONTIGUOUS_EXACT", breakers: [] });
+  const first = assessCoreArrivalTransportFeasibility(original.problem, original.core);
+  const reversed = interchangeableArrivalProblem([20, 20, 20, 100, 100], true);
+  const second = assessCoreArrivalTransportFeasibility(reversed.problem, reversed.core);
+  assert.equal(first.status, "FEASIBLE");
+  assert.deepEqual(first.evidence.packetSizes, [3, 2], "target [2,3] fails, so the exact contiguous solver must try [3,2]");
+  assert.deepEqual(first.evidence.packetSizes, second.evidence.packetSizes);
+  assert.deepEqual(first.evidence.starts, second.evidence.starts);
+  assert.deepEqual(first.evidence.packetMembers, second.evidence.packetMembers);
+  assert.ok(first.evidence.contiguousStatesExplored > 0);
+  assert.equal(first.evidence.membershipFallbackEntered, false);
+  assert.deepEqual(original.problem, snapshot);
+});
+
+test("contiguous arrival infeasibility is exact and never enters membership enumeration", () => {
+  const fixture = interchangeableArrivalProblem([20, 20, 20, 20, 20]);
+  const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core);
+  assert.equal(result.status, "INFEASIBLE");
+  assert.equal(result.evidence.classification, "CONTIGUOUS_EXACT");
+  assert.equal(result.evidence.membershipFallbackEntered, false);
+  assert.ok(result.evidence.contiguousStatesExplored > 0);
+});
+
+test("individual availability holes and fixed identities require membership search", () => {
+  const fixture = interchangeableArrivalProblem([20, 20, 100]);
+  fixture.problem.tasks[1]!.availability = [{ start: 0, end: 10 }, { start: 40, end: 80 }];
+  assert.deepEqual(classifyTransportContext(fixture.problem, fixture.problem.tasks), {
+    classification: "MEMBERSHIP_REQUIRED", breakers: ["HARD_TRANSPORT_CONTEXT"],
+  });
+  const restored = interchangeableArrivalProblem([20, 20, 100]);
+  assert.deepEqual(classifyTransportContext(restored.problem, restored.problem.tasks, new Set(["in-1"])), {
+    classification: "MEMBERSHIP_REQUIRED", breakers: ["FIXED_START_OR_LOCK"],
+  });
+});
+
+test("core arrival gate rejects collective infeasibility and allows a feedable leaf", () => {
+  const blocked = arrivalWorkStyleDepartureProblem(false, 4);
+  for (const task of blocked.tasks.filter(({ id }) => id.startsWith("in-"))) {
+    task.spaceId = "shared-in"; task.availability = [{ start: 0, end: 10 }];
+  }
+  blocked.spaces.push({ id: "shared-in", availability: [{ start: 0, end: 140 }] });
+  blocked.transportPolicy!.arrival.minimumGroupSize = 2;
+  blocked.transportPolicy!.arrival.maximumGroupSize = 2;
+  blocked.transportPolicy!.arrival.minGapMinutes = 20;
+  const rejected = executePlannerNext(blocked);
+  assert.ok((rejected.result?.evidence.coreLeafTransportPrunes ?? 0) > 0);
+  assert.equal(rejected.result?.evidence.standaloneSearchInvocations, 0);
+
+  const feedable = arrivalWorkStyleDepartureProblem(false, 4);
+  for (const task of feedable.tasks.filter(({ id }) => id.startsWith("in-"))) {
+    task.spaceId = "shared-in"; task.availability = [{ start: 0, end: 40 }];
+  }
+  feedable.spaces.push({ id: "shared-in", availability: [{ start: 0, end: 140 }] });
+  feedable.transportPolicy!.arrival.minimumGroupSize = 2;
+  feedable.transportPolicy!.arrival.maximumGroupSize = 2;
+  feedable.transportPolicy!.arrival.minGapMinutes = 20;
+  const continued = executePlannerNext(feedable);
+  assert.equal(continued.result?.evidence.coreLeafTransportPrunes, 0);
+  assert.ok((continued.result?.evidence.standaloneSearchInvocations ?? 0) > 0);
 });
