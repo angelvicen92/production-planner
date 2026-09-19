@@ -3,7 +3,7 @@ import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 
-test("PREFERRED resource concentration orders patterns without removing interleaved alternatives", () => {
+test("minimum block families are exhausted before PREFERRED resource concentration", () => {
   const mains = [
     ...["r1", "r2", "r3"].map((id) => ({ id, kind: "main" as const, duration: 10, spaceId: "main",
       blockKey: "r", dependencies: [], requiredResourceIds: ["resource"] })),
@@ -17,6 +17,10 @@ test("PREFERRED resource concentration orders patterns without removing interlea
     "a single resource run is preferred regardless of which end contains it");
   assert.ok(result.patterns.some((pattern) => pattern.join() === "r,n,r,n,r"),
     "the soft preference retains a hard-valid interleaved architecture");
+  const runCount = (pattern: readonly string[]) => pattern.reduce((count, key, index) =>
+    count + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0);
+  assert.deepEqual(result.patterns.map(runCount), [...result.patterns.map(runCount)].sort((a, b) => a - b),
+    "an authorised soft preference must not move an N+1 family before N");
   // Rename the requirement consistently; neither task input order nor opaque IDs are an ordering signal.
   const renamedTasks = [...mains].reverse().map((task) => ({ ...task, id: `x-${task.id}`,
     requiredResourceIds: task.requiredResourceIds?.map(() => "x-resource") }));

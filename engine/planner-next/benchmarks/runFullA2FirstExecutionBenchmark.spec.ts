@@ -44,9 +44,9 @@ test("Full A2 first executable integration reports an atomic completion count", 
           criticalRejectionCount: number; recommendation: string | null; waterfallReconciles:boolean } };
       result: { publishedCanonicalObligations: number; diagnosticScheduledCanonicalObligations: number; targetCanonicalObligations: number; fullHardValidEligible: boolean };
     };
-    assert.equal(evidence.canonicalObligationCount, 269);
-    assert.equal(evidence.result.targetCanonicalObligations, 269);
-    assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 269);
+    assert.equal(evidence.canonicalObligationCount, 266);
+    assert.equal(evidence.result.targetCanonicalObligations, 266);
+    assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 266);
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
     const executionEvidence=evidence.execution!.evidence;

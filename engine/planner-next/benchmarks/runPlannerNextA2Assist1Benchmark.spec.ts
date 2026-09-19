@@ -22,7 +22,10 @@ test("A2-ASSIST-1 deterministically reaches the next structural core run within 
   assert.ok(first.work.residualMatchingAugmentTraversals < 10_000);
   assert.equal(Object.values(first.causalDiagnostic!.waterfallByDepth)
     .reduce((sum, row) => sum + row.total, 0), first.work.branchesExplored);
-  assert.ok(first.causalDiagnostic!.futureFeasibility.repeatedEvaluations > 0);
+  assert.ok(first.causalDiagnostic!.futureFeasibility.totalEvaluations > 0);
+  assert.equal(first.causalDiagnostic!.futureFeasibility.totalEvaluations,
+    first.causalDiagnostic!.futureFeasibility.uniqueAuthorityStates
+      + first.causalDiagnostic!.futureFeasibility.repeatedEvaluations);
   assert.ok(first.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED"));
   assert.equal(first.fingerprint, second.fingerprint);
   assert.deepEqual(first, second);
