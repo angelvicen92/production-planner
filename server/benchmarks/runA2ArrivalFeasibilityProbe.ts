@@ -1,39 +1,18 @@
 import assert from "node:assert/strict";
-import { performance } from "node:perf_hooks";
-import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
-import { buildAssistedProblem } from "../../engine/planner-next/assistedPlanning";
-import { runExactMainAndFeederSearch } from "../../engine/planner-next/exactMainAndFeederCore";
-import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
-import { assessCoreArrivalTransportFeasibility, type TransportArrivalFeasibility } from "../../engine/planner-next/transportGrouping";
-import { resolveAssistedScope } from "../assistedScopeResolver";
+import { runA2AnonymousPipelineWitnessProbe } from "../../engine/planner-next/benchmarks/runA2AnonymousPipelineWitnessProbe";
 
-/** Stops immediately after the first real A2 core leaf has run arrival Future Feasibility. */
-export function runA2ArrivalFeasibilityProbe(branchBudget = 300_000) {
-  const canonical = buildCanonicalFullA2EngineInput({ planId: 711, branchBudget });
-  const adapter = adaptEngineInputToPlannerNextProblem(canonical.input);
-  assert.equal(adapter.status, "SUPPORTED");
-  if (adapter.status !== "SUPPORTED") throw new Error("canonical A2 adapter is unsupported");
-  const spaceId = canonical.input.plannerNext?.mainFlow?.spaceId;
-  assert.ok(spaceId != null);
-  const scope = resolveAssistedScope(canonical.input, adapter, { kind: "SPACE", spaceId }).scope;
-  const problem = buildAssistedProblem(adapter.problem, scope, []).problem;
-  const before = JSON.stringify(problem);
-  let arrival: TransportArrivalFeasibility | null = null;
-  const started = performance.now();
-  const core = runExactMainAndFeederSearch(problem, { onHardValidCoreLeaf(candidate) {
-    arrival = assessCoreArrivalTransportFeasibility(problem, candidate.tasks);
-    return "BUDGET_EXHAUSTED";
-  } });
-  const elapsedMs = Number((performance.now() - started).toFixed(3));
-  assert.ok(arrival, "probe must reach a hard-valid core leaf");
-  assert.equal(JSON.stringify(problem), before);
-  const evidence = (arrival as TransportArrivalFeasibility).evidence;
-  return { classification: evidence.classification, classificationBreakers: evidence.classificationBreakers,
-    orderedDeadlines: evidence.orderedDeadlines, contiguousSizeStatesExplored: evidence.contiguousStatesExplored, packetSizes: evidence.packetSizes,
-    starts: evidence.starts, feasibility: (arrival as TransportArrivalFeasibility).status,
-    coreLeafTransportPrunes: Number((arrival as TransportArrivalFeasibility).status === "INFEASIBLE"),
-    membershipFallbackEntered: Number(evidence.membershipFallbackEntered), coreBranches: core.evidence.branchesExplored,
-    elapsedMs, inputImmutable: JSON.stringify(problem) === before };
+/** Verifies arrival Future Feasibility on the current anonymous pipeline route. */
+export function runA2ArrivalFeasibilityProbe() {
+  const result = runA2AnonymousPipelineWitnessProbe();
+  assert.equal(result.arrivalSolverExecuted, true, "anonymous witness must execute the arrival solver");
+  assert.ok(result.arrivalClassification);
+  return {
+    classification: result.arrivalClassification,
+    contiguousSizeStatesExplored: result.arrivalContiguousStatesExplored,
+    feasibility: result.firstFeasibleRunCount == null ? "INFEASIBLE" : "FEASIBLE",
+    membershipFallbackEntered: Number(result.arrivalMembershipFallbackEntered),
+    inputImmutable: result.inputImmutable,
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`)

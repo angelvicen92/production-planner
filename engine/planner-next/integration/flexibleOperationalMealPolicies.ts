@@ -76,13 +76,16 @@ export function resolveFlexibleOperationalMealPolicies(
 
     const rawResources = Array.isArray(policy.planResourceItemIds) ? policy.planResourceItemIds : [];
     const canonicalResources = [...new Set(rawResources.filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
-    if (rawResources.length === 0 || canonicalResources.length !== rawResources.length) defects.push("INVALID_RESOURCE");
+    if (canonicalResources.length !== rawResources.length) defects.push("INVALID_RESOURCE");
     if (canonicalResources.some((id) => !resourceIds.has(id))) defects.push("MISSING_RESOURCE");
 
     const rawSpaces = Array.isArray(policy.spaceIds) ? policy.spaceIds : [];
     const canonicalSpaces = [...new Set(rawSpaces.filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
     if (canonicalSpaces.length !== rawSpaces.length) defects.push("INVALID_SPACE");
     if (canonicalSpaces.some((id) => !spaceIds.has(id))) defects.push("MISSING_SPACE");
+    // An operational obligation may be owned solely by a physical space. Requiring a
+    // made-up resource here would create a second, unrelated authority for that meal.
+    if (canonicalResources.length === 0 && canonicalSpaces.length === 0) defects.push("INVALID_RESOURCE");
 
     return { id, window: { start, end }, duration, resourceIds: canonicalResources, spaceIds: canonicalSpaces, defects };
   }).sort((left, right) => compare(left.id, right.id));

@@ -155,6 +155,15 @@ test("planner-next remains isolated from legacy and production", () => {
     "server/assistedProposalService.ts",
     "server/assistedScopeResolver.ts",
   ]);
+  // Historical server-side evidence runners are diagnostics, not production
+  // entry points. Keep their existing boundary explicit; new Planner Next probes
+  // belong under engine/planner-next/benchmarks instead.
+  const historicalDiagnosticBoundary = new Set([
+    "server/benchmarks/runA2ArrivalFeasibilityProbe.ts",
+    "server/benchmarks/runA2Assist7Evidence.ts",
+    "server/benchmarks/runA2Assist8Evidence.ts",
+    "server/benchmarks/runA2SharedCapacityStructuralProbe.ts",
+  ]);
   const referencedBoundaryFiles = new Set<string>();
 
   for (const file of sourceFiles("engine/planner-next").filter((name) => !name.endsWith(".spec.ts"))) {
@@ -164,7 +173,9 @@ test("planner-next remains isolated from legacy and production", () => {
   for (const root of ["server", "client", "shared"]) {
     for (const file of sourceFiles(root)) {
       const referencesPlannerNext = /planner-next/.test(readFileSync(file, "utf8"));
-      if (productionBoundaryAllowlist.has(file)) {
+      if (historicalDiagnosticBoundary.has(file)) {
+        assert.equal(referencesPlannerNext, true, `${file} must retain its historical diagnostic reference`);
+      } else if (productionBoundaryAllowlist.has(file)) {
         assert.equal(referencesPlannerNext, true, `${file} must retain its authorized Planner Next reference`);
         referencedBoundaryFiles.add(file);
       } else {
