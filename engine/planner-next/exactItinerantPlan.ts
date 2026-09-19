@@ -484,9 +484,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       consumeFallbackBranch: () => ledger.consume("STANDALONE"),
       onEvidence: (witness) => { terminalTransportWitness = witness; },
     }) : null;
-    if (terminalTransportWitness) {
-      evidence.transportContiguousStates += terminalTransportWitness.directions.reduce((sum, item) => sum + item.contiguousStatesExplored, 0);
-      evidence.membershipFallbackEntered += terminalTransportWitness.directions.filter((item) => item.membershipFallbackEntered).length;
+    const observedTerminalTransportWitness = terminalTransportWitness as TransportMaterializationEvidence | null;
+    if (observedTerminalTransportWitness) {
+      evidence.transportContiguousStates += observedTerminalTransportWitness.directions
+        .reduce((sum, item) => sum + item.contiguousStatesExplored, 0);
+      evidence.membershipFallbackEntered += observedTerminalTransportWitness.directions
+        .filter((item) => item.membershipFallbackEntered).length;
     }
     if (mealWitness?.complete && transport === null) evidence.terminalTransportMaterializationFailures += 1;
     const candidate = transport === null ? substantive : orderScheduled([...substantive, ...transport]);
