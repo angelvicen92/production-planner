@@ -3,8 +3,9 @@ import { performance } from "node:perf_hooks";
 import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import { buildAssistedProblem } from "../../engine/planner-next/assistedPlanning";
 import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
-import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible } from "../../engine/planner-next/mainFlowPatterns";
-import { buildAnonymousPipelineWitness } from "../../engine/planner-next/anonymousPipelineWitness";
+import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible,
+  type MainFeederStructuralRejection, type SharedPrerequisiteCapacityCertificate } from "../../engine/planner-next/mainFlowPatterns";
+import { buildAnonymousPipelineWitness, type AnonymousPipelineWitnessDiagnostic } from "../../engine/planner-next/anonymousPipelineWitness";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines } from "../../engine/planner-next/mainFlowMeal";
 import { resolveAssistedScope } from "../assistedScopeResolver";
 
@@ -25,10 +26,29 @@ export function runA2AnonymousPipelineWitnessProbe() {
     problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
   assert.equal(generated.exhausted,false);
   const runCount=(pattern:readonly string[])=>pattern.reduce((n,k,i)=>n+(i===0||pattern[i-1]!==k?1:0),0);
+  const increment=(histogram:Record<string,number>,key:string)=>{histogram[key]=(histogram[key]??0)+1;};
+  const structuralSubauthority=(reason:MainFeederStructuralRejection,certificate?:SharedPrerequisiteCapacityCertificate):string=>{
+    if(reason==="FEEDER_PREREQUISITE_PREFIX_CAPACITY")
+      return certificate?.checks.find(check=>check.requiredCount>check.maximumFeedableCount)?.authority??"FEEDER_PREFIX";
+    const authorities:Record<MainFeederStructuralRejection,string>={LOAD_CAPACITY:"LOAD_CAPACITY",FEEDER_CAPACITY:"FEEDER_CAPACITY",
+      RESOURCE_WINDOW:"RESOURCE_WINDOW",TRANSITION_CAPACITY:"TRANSITION_CAPACITY",FEEDER_CONTIGUOUS_CAPACITY:"FEEDER_CAPACITY",
+      FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY:"FEEDER_CAPACITY",PREREQUISITE_WINDOW:"PREREQUISITE_WINDOW",
+      FEEDER_PREREQUISITE_PREFIX_CAPACITY:"FEEDER_PREFIX"};
+    return authorities[reason];
+  };
+  const phase=(witness:ReturnType<typeof buildAnonymousPipelineWitness>,diagnostic:AnonymousPipelineWitnessDiagnostic):number=>
+    witness.status==="FEASIBLE"?6:diagnostic.stylingGeometryCompleted?4:diagnostic.feederGeometryCompleted?3:
+      diagnostic.anchorsCompleted?2:diagnostic.mainMatchingCompleted?1:0;
+  const phaseNames=["structural preproof","Main matching","anchors","feeder runs","Styling matching","IN","FEASIBLE"];
   const families=[]; let firstFeasible: ReturnType<typeof buildAnonymousPipelineWitness>|null=null;
+  let firstRunCount4Inconclusive:({pattern:string[];slots:number[];reason:string|null}&AnonymousPipelineWitnessDiagnostic)|null=null;
+  let bestRunCount4:{pattern:string[];slots:number[];lastCompletedPhase:string;nextReason:string|null;phase:number}|null=null;
   const started=performance.now();
   for(const count of [...new Set(generated.patterns.map(runCount))].sort((a,b)=>a-b)){
     let tried=0, firstReason:string|undefined, feasibleArchitecture:{pattern:string[];slots:number[]}|undefined;
+    const structuralRejectionsByReason:Record<string,number>={};
+    const structuralRejectionsBySubauthority:Record<string,number>={};
+    const witnessOutcomesByStatusAndReason:Record<string,number>={};
     let familyStatus:"FEASIBLE"|"INFEASIBLE"|"INCONCLUSIVE"="INFEASIBLE";
     for(const pattern of generated.patterns.filter(p=>runCount(p)===count)){
       const duration=mains[0]!.duration;
@@ -46,9 +66,20 @@ export function runA2AnonymousPipelineWitnessProbe() {
           .map(end=>pattern.map((_,i)=>end-pattern.length*duration+i*duration));
       for(const slots of architectures){
         tried++;
-        const structural=proveMainFeederArchitectureImpossible(problem,mains,feeders,{pattern,slots});
-        if(structural){firstReason??=structural;continue;}
-        const witness=buildAnonymousPipelineWitness(problem,{pattern,slots}); firstReason??=witness.reason;
+        let sharedCapacity:SharedPrerequisiteCapacityCertificate|undefined;
+        const structural=proveMainFeederArchitectureImpossible(problem,mains,feeders,{pattern,slots},certificate=>{sharedCapacity=certificate;});
+        if(structural){firstReason??=structural;increment(structuralRejectionsByReason,structural);
+          increment(structuralRejectionsBySubauthority,structuralSubauthority(structural,sharedCapacity));continue;}
+        let diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+        const witness=buildAnonymousPipelineWitness(problem,{pattern,slots},value=>{diagnostic=value;}); firstReason??=witness.reason;
+        assert.ok(diagnostic);increment(witnessOutcomesByStatusAndReason,`${witness.status}:${witness.reason??"NONE"}`);
+        if(count===4){
+          const completed=phase(witness,diagnostic);
+          if(!bestRunCount4||completed>bestRunCount4.phase)bestRunCount4={pattern:[...pattern],slots:[...slots],
+            lastCompletedPhase:phaseNames[completed]!,nextReason:witness.reason??null,phase:completed};
+          if(witness.status==="INCONCLUSIVE"&&!firstRunCount4Inconclusive)firstRunCount4Inconclusive={pattern:[...pattern],
+            slots:[...slots],reason:witness.reason??null,...diagnostic};
+        }
         if(witness.status==="INCONCLUSIVE")familyStatus="INCONCLUSIVE";
         if(witness.status==="FEASIBLE"){
           familyStatus="FEASIBLE"; feasibleArchitecture={pattern:[...pattern],slots}; firstFeasible??=witness; break;
@@ -56,12 +87,14 @@ export function runA2AnonymousPipelineWitnessProbe() {
       }
       if(feasibleArchitecture)break;
     }
-    families.push({runCount:count,architecturesTried:tried,witness:familyStatus,
+    families.push({runCount:count,architecturesTried:tried,witness:familyStatus,structuralRejectionsByReason,
+      structuralRejectionsBySubauthority,witnessOutcomesByStatusAndReason,
       firstRejectionReason:firstReason??null,firstFeasibleArchitecture:feasibleArchitecture??null});
   }
   const pipelineWitnessBuildMs=Number((performance.now()-started).toFixed(3));
   assert.equal(JSON.stringify(problem),before); assert.ok(pipelineWitnessBuildMs<10_000);
-  return {families,firstFeasibleRunCount:firstFeasible?.runCount??null,
+  return {families,firstFeasibleRunCount:firstFeasible?.runCount??null,firstRunCount4Inconclusive,
+    bestRunCount4:bestRunCount4&&(({phase:_,...candidate})=>candidate)(bestRunCount4),
     firstFeasible:firstFeasible?{mainSpotCount:firstFeasible.mainSpots.length,
       feederSpotCount:firstFeasible.feederSpots.length,stylingSpotCount:firstFeasible.stylingSpots.length,
       mainRunCount:new Set(firstFeasible.mainSpots.map(spot=>spot.mainRunId)).size,

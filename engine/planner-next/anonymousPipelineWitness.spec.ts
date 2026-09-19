@@ -60,4 +60,16 @@ describe("anonymous structural pipeline witness",()=>{
       tasks:[...p.tasks].reverse().map(t=>({...t,participantId:`renamed-${t.participantId}`}))} as PlannerNextProblem,{pattern:["A"],slots:[200]});
     assert.equal(a.status,"FEASIBLE");assert.equal(a.fingerprint,b.fingerprint);assert.equal(JSON.stringify(p),before);
   });
+
+  it("reports read-only phase and boundary diagnostics without changing the witness",()=>{
+    const p=problem();anchor(p,0);let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
+    const without=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[200]});
+    const withDiagnostic=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[200]},value=>{diagnostic=value;});
+    assert.deepEqual(withDiagnostic,without);assert.ok(diagnostic);
+    assert.equal(diagnostic.mainMatchingCompleted,true);assert.equal(diagnostic.anchorsCompleted,true);
+    assert.equal(diagnostic.feederGeometryCompleted,true);assert.equal(diagnostic.stylingGeometryCompleted,true);
+    assert.equal(diagnostic.arrivalSolverExecuted,true);assert.equal(diagnostic.mainRuns.length,1);
+    assert.ok((diagnostic.feederRuns[0]?.candidateStartBoundaryCount??0)>0);
+    assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
+  });
 });

@@ -24,6 +24,18 @@ export interface AnonymousPipelineWitness {
   tokenCount: number;
   fingerprint: string;
 }
+export interface AnonymousPipelineWitnessDiagnostic {
+  mainMatchingCompleted: boolean;
+  anchorsCompleted: boolean;
+  feederGeometryCompleted: boolean;
+  stylingGeometryCompleted: boolean;
+  arrivalSolverExecuted: boolean;
+  mainRuns: readonly { id:string; coach:string; firstMain:{id:string;start:number;end:number};
+    lastMain:{id:string;start:number;end:number}; positions:readonly number[] }[];
+  feederRuns: readonly { id:string; deadline:number; candidateStartBoundaryCount:number }[];
+  stylingCandidateStartBoundaryCount: number;
+  anchoredOperationIntervals: readonly { id:string; start:number; end:number }[];
+}
 
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
 const orderedWindows = (windows: readonly Window[] | undefined, fallback:Window): Window[] =>
@@ -36,16 +48,29 @@ const signatureWindows = (windows: readonly Window[] | undefined) => orderedWind
  * Nominal ids are used only to read the source dependency graph, then discarded before
  * profiles, tokens, matching and the returned certificate are built.
  */
-export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture): AnonymousPipelineWitness {
+export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture,
+  onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void): AnonymousPipelineWitness {
+  let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
+  let arrivalSolverExecuted=false,stylingCandidateStartBoundaryCount=0;
+  const diagnosticMainRuns: Array<{id:string;coach:string;firstMain:{id:string;start:number;end:number};
+    lastMain:{id:string;start:number;end:number};positions:number[]}>=[];
+  const diagnosticFeederRuns: Array<{id:string;deadline:number;candidateStartBoundaryCount:number}>=[];
+  const diagnosticAnchors: Array<{id:string;start:number;end:number}>=[];
+  const emitDiagnostic=()=>onDiagnostic?.({mainMatchingCompleted,anchorsCompleted,feederGeometryCompleted,
+    stylingGeometryCompleted,arrivalSolverExecuted,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
+    stylingCandidateStartBoundaryCount,anchoredOperationIntervals:diagnosticAnchors});
   const empty = (status:AnonymousPipelineWitnessStatus, reason:string):AnonymousPipelineWitness => ({ status, reason,
     runCount: architecture.pattern.reduce((n,k,i)=>n+(i===0||architecture.pattern[i-1]!==k?1:0),0),
     pattern:[...architecture.pattern], mainSpots:[], feederSpots:[], stylingSpots:[], inGroups:[], anchoredOperationSpots:[], assignments:[],
     profileCount:0, tokenCount:0, fingerprint:stable({status,reason,pattern:architecture.pattern,slots:architecture.slots}) });
+  const rejected=(status:AnonymousPipelineWitnessStatus,reason:string):AnonymousPipelineWitness=>{
+    const result=empty(status,reason);emitDiagnostic();return result;
+  };
   const mains = problem.tasks.filter(t=>t.kind==="main");
   if (mains.length !== architecture.slots.length || architecture.pattern.length !== architecture.slots.length)
-    return empty("INFEASIBLE", "MAIN_ARCHITECTURE_CARDINALITY");
+    return rejected("INFEASIBLE", "MAIN_ARCHITECTURE_CARDINALITY");
   const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
-  if (!problem.transportPolicy?.arrival) return empty("INCONCLUSIVE", "ARRIVAL_POLICY_ABSENT");
+  if (!problem.transportPolicy?.arrival) return rejected("INCONCLUSIVE", "ARRIVAL_POLICY_ABSENT");
   const raw:Array<Omit<Layer,"profileKey"|"tokenId">>=[];
   for(const main of mains){
     const participant=main.participantId;
@@ -53,9 +78,9 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     const arrival=problem.tasks.find(t=>t.participantId===participant&&arrivalIds.has(t.id));
     const styling=problem.tasks.find(t=>t.participantId===participant&&t.kind==="auxiliary"
       && t.dependencies.some(id=>id===arrival?.id)&&main.dependencies.includes(t.id));
-    if(!feeder||!arrival||!styling)return empty("INCONCLUSIVE","UNSUPPORTED_PIPELINE_SHAPE");
+    if(!feeder||!arrival||!styling)return rejected("INCONCLUSIVE","UNSUPPORTED_PIPELINE_SHAPE");
     if(main.kind==="technical"||feeder.kind==="technical"||arrival.kind==="technical"||styling.kind==="technical")
-      return empty("INCONCLUSIVE","UNSUPPORTED_TECHNICAL_PIPELINE_SHAPE");
+      return rejected("INCONCLUSIVE","UNSUPPORTED_TECHNICAL_PIPELINE_SHAPE");
     raw.push({main,feeder,arrival,styling});
   }
   const resources=(t:Task)=>(t.requiredResourceIds??[]).slice().sort().map(id=>{
@@ -114,7 +139,8 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     }
     return false;
   };
-  if(!assignMain(0,new Map()))return empty("INFEASIBLE","MAIN_PROFILE_MATCHING");
+  if(!assignMain(0,new Map()))return rejected("INFEASIBLE","MAIN_PROFILE_MATCHING");
+  mainMatchingCompleted=true;
   const assigned: Array<Layer & {position:number}> = [...mainOwner].sort((a,b)=>a[0]-b[0]).map(([position,x])=>({...x,position}));
   const runs:{id:string;startPosition:number;endPosition:number;key:string}[]=[];
   architecture.pattern.forEach((key,position)=>{const prior=runs.at(-1);if(!prior||prior.key!==key)runs.push({id:`main-run:${runs.length}`,startPosition:position,endPosition:position,key});else prior.endPosition=position;});
@@ -128,18 +154,27 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   for(const x of assigned){
     if(!anchorIndex.has(x.main.id))continue;
     const operation=materializeAnchoredOperation(problem,x.main,architecture.slots[x.position]!,[]);
-    if(!operation)return empty("INFEASIBLE","ANCHORED_OPERATION_GEOMETRY");
+    if(!operation)return rejected("INFEASIBLE","ANCHORED_OPERATION_GEOMETRY");
     anchoredOperations.set(x.tokenId,operation);
   }
   const operations=[...anchoredOperations.entries()];
   for(let i=0;i<operations.length;i++)for(let j=i+1;j<operations.length;j++){
     const left=operations[i]![1],right=operations[j]![1];
     if(left.contract.itinerantUnitId&&left.contract.itinerantUnitId===right.contract.itinerantUnitId
-      && left.start<right.end&&right.start<left.end)return empty("INFEASIBLE","ANCHORED_ITINERANT_UNIT_EXCLUSIVITY");
+      && left.start<right.end&&right.start<left.end)return rejected("INFEASIBLE","ANCHORED_ITINERANT_UNIT_EXCLUSIVITY");
   }
   const anchoredOperationSpots:AnonymousAnchoredOperationSpot[]=operations.map(([tokenId,operation])=>{const x=assigned.find(item=>item.tokenId===tokenId)!;return {
     id:`anchored:${tokenId}`,operationId:stable(material(x)).slice(0,16),start:operation.start,end:operation.end,
     profileKey:x.profileKey,tokenId,mainRunId:runForPosition(x.position).id};});
+  diagnosticAnchors.push(...anchoredOperationSpots.map(({id,start,end})=>({id,start,end})));
+  for(const run of runs){
+    const cohort=assigned.filter(x=>run.startPosition<=x.position&&x.position<=run.endPosition).sort((a,b)=>a.position-b.position);
+    const first=mainSpots[run.startPosition]!,last=mainSpots[run.endPosition]!;
+    diagnosticMainRuns.push({id:run.id,coach:cohort[0]?.main.coachId??"",
+      firstMain:{id:first.id,start:first.start,end:first.end},lastMain:{id:last.id,start:last.start,end:last.end},
+      positions:cohort.map(x=>x.position)});
+  }
+  anchorsCompleted=true;
 
   // Each actual contiguous Main run owns exactly one feeder cohort. A coach may therefore
   // prepare a later cohort between two of their Main runs instead of before their first run.
@@ -147,7 +182,7 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   for(const run of runs){
     const cohort=assigned.filter(x=>run.startPosition<=x.position&&x.position<=run.endPosition).sort((a,b)=>a.position-b.position);
     const coachKey=cohort[0]?.main.coachId??""; const feederRunId=`feeder-run:${run.id.slice(9)}`;
-    if(cohort.some(x=>x.feeder.coachId!==coachKey))return empty("INFEASIBLE","FEEDER_COACH_MISMATCH");
+    if(cohort.some(x=>x.feeder.coachId!==coachKey))return rejected("INFEASIBLE","FEEDER_COACH_MISMATCH");
     const deadline=architecture.slots[run.startPosition]!
       - effectiveCoachTransitionMinutes(problem as PlannerNextProblem,coachKey,cohort.at(-1)!.feeder.spaceId,cohort[0]!.main.spaceId);
     const duration=cohort.reduce((sum,x)=>sum+x.feeder.duration,0);
@@ -164,6 +199,7 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
       .map(()=>task.start-duration-problem.participantTransitionMinutes));
     const boundaries=[...starts.flatMap(interval=>[interval.end,interval.start]),...occupationBoundaries,...participantBoundaries]
       .filter(start=>starts.some(interval=>interval.start<=start&&start<=interval.end)).sort((a,b)=>b-a);
+    diagnosticFeederRuns.push({id:feederRunId,deadline,candidateStartBoundaryCount:new Set(boundaries).size});
     let selected:AnonymousPipelineSpot[]|undefined;
     const priorFeeders=feederSpots.map(spot=>{const x=assigned.find(item=>item.tokenId===spot.tokenId)!;return {...x.feeder,start:spot.start,end:spot.end};});
     for(const start of [...new Set(boundaries)]){
@@ -182,16 +218,17 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     }
     if(!selected){
       const available=coachWindows.reduce((sum,w)=>sum+Math.max(0,Math.min(w.end,deadline)-Math.max(w.start,problem.day.start)),0);
-      if(available<duration)return empty("INFEASIBLE","FEEDER_RUN_CAPACITY");
-      return empty("INCONCLUSIVE","FEEDER_RUN_GEOMETRY");
+      if(available<duration)return rejected("INFEASIBLE","FEEDER_RUN_CAPACITY");
+      return rejected("INCONCLUSIVE","FEEDER_RUN_GEOMETRY");
     }
     feederSpots.push(...selected);
   }
+  feederGeometryCompleted=true;
 
   // Styling geometry is a serial set of latest boundary-derived spots, not grid points.
   const styleSpace=layers[0]!.styling.spaceId;
   if(layers.some(x=>x.styling.spaceId!==styleSpace||x.styling.duration!==layers[0]!.styling.duration))
-    return empty("INCONCLUSIVE","HETEROGENEOUS_STYLING_GEOMETRY");
+    return rejected("INCONCLUSIVE","HETEROGENEOUS_STYLING_GEOMETRY");
   const duration=layers[0]!.styling.duration;
   const styleWindows=orderedWindows(problem.spaces.find(s=>s.id===styleSpace)?.availability,problem.day);
   let stylingSpots:AnonymousPipelineSpot[]=[];
@@ -205,7 +242,8 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     ...anchoredOperationSpots.flatMap(spot=>[spot.start-duration,spot.end])])
     .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end))
     .sort((a,b)=>b-a);
-  if(!styleStarts.length)return empty("INCONCLUSIVE","STYLING_CAPACITY");
+  stylingCandidateStartBoundaryCount=new Set(styleStarts).size;
+  if(!styleStarts.length)return rejected("INCONCLUSIVE","STYLING_CAPACITY");
 
   // Bipartite matching couples Styling with the already concrete Vocal/Main route and
   // admits either Styling->Vocal or Vocal->Styling, but never overlap.
@@ -231,7 +269,8 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     for(const x of assigned)if(!augment(x,new Set())){matched=false;break;}
     if(matched){stylingMatched=true;break;}
   }
-  if(!stylingMatched)return empty("INCONCLUSIVE","JOINT_STYLING_FEEDER_MATCHING");
+  if(!stylingMatched)return rejected("INCONCLUSIVE","JOINT_STYLING_FEEDER_MATCHING");
+  stylingGeometryCompleted=true;
   for(const [i,x] of styleOwner){stylingSpots[i]={...stylingSpots[i]!,profileKey:x.profileKey,tokenId:x.tokenId};}
 
   // Reuse the exact contiguous arrival authority with anonymous token ids at its API edge.
@@ -245,8 +284,9 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   const anonymousProblem={...problem,participants:anonymousParticipants,
     tasks:[...problem.tasks.filter(t=>!arrivalIds.has(t.id)),...anonymousArrivals],
     transportPolicy:{...problem.transportPolicy,arrival:{...problem.transportPolicy.arrival,taskIds:anonymousArrivals.map(t=>t.id)}}} as PlannerNextProblem;
+  arrivalSolverExecuted=true;
   const arrival=assessCoreArrivalTransportFeasibility(anonymousProblem,obligations);
-  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return empty(arrival.status,"JOINT_ARRIVAL_GEOMETRY");
+  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return rejected(arrival.status,"JOINT_ARRIVAL_GEOMETRY");
   const inGroups=arrival.evidence.packetSizes.map((size,i)=>({id:`in-group:${i}`,start:arrival.evidence.starts[i]!,
     end:arrival.evidence.starts[i]!+anonymousArrivals[0]!.duration,size}));
   const inGroupByToken=new Map<string,string>();
@@ -258,5 +298,5 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     ...(anchoredOperations.has(x.tokenId)?{anchoredOperationSpotId:`anchored:${x.tokenId}`}:{})})).sort((a,b)=>a.tokenId.localeCompare(b.tokenId));
   const payload={runCount:empty("FEASIBLE","").runCount,pattern:[...architecture.pattern],mainSpots,feederSpots,
     stylingSpots,inGroups,anchoredOperationSpots,assignments,profileCount:ordinal.size,tokenCount:layers.length};
-  return {status:"FEASIBLE",...payload,fingerprint:stable(payload)};
+  const result={status:"FEASIBLE" as const,...payload,fingerprint:stable(payload)};emitDiagnostic();return result;
 }
