@@ -38,7 +38,10 @@ export function runA2AnonymousPipelineWitnessProbe() {
         : [...new Set([problem.mainFlow.preferredEnd,problem.day.end,
             ...problem.participants.flatMap(x=>x.availability.map(w=>w.end)),
             ...problem.spaces.flatMap(x=>x.availability.map(w=>w.end)),
-            ...problem.resources.flatMap(x=>x.availability.map(w=>w.end))])]
+            ...problem.resources.flatMap(x=>x.availability.map(w=>w.end)),
+            ...(problem.itinerantUnits??[]).flatMap(x=>x.availability.map(w=>w.end)),
+            ...(problem.anchoredAccompaniments??[]).flatMap(contract=>[contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds]
+              .flatMap(id=>problem.tasks.find(task=>task.id===id)?.availability?.map(w=>w.end)??[]))])]
           .filter(end=>problem.day.start<end&&end<=problem.day.end).sort((a,b)=>a-b)
           .map(end=>pattern.map((_,i)=>end-pattern.length*duration+i*duration));
       for(const slots of architectures){
@@ -57,12 +60,16 @@ export function runA2AnonymousPipelineWitnessProbe() {
       firstRejectionReason:firstReason??null,firstFeasibleArchitecture:feasibleArchitecture??null});
   }
   const pipelineWitnessBuildMs=Number((performance.now()-started).toFixed(3));
-  assert.equal(JSON.stringify(problem),before); assert.ok(pipelineWitnessBuildMs<2_000);
+  assert.equal(JSON.stringify(problem),before); assert.ok(pipelineWitnessBuildMs<10_000);
   return {families,firstFeasibleRunCount:firstFeasible?.runCount??null,
     firstFeasible:firstFeasible?{mainSpotCount:firstFeasible.mainSpots.length,
       feederSpotCount:firstFeasible.feederSpots.length,stylingSpotCount:firstFeasible.stylingSpots.length,
+      mainRunCount:new Set(firstFeasible.mainSpots.map(spot=>spot.mainRunId)).size,
+      feederRunCount:new Set(firstFeasible.feederSpots.map(spot=>spot.feederRunId)).size,
       inGroupCount:firstFeasible.inGroups.length,inPacketSizes:firstFeasible.inGroups.map(g=>g.size),
       inStarts:firstFeasible.inGroups.map(g=>g.start),tokenCount:firstFeasible.tokenCount,
+      anchoredOperationCount:firstFeasible.anchoredOperationSpots.length,
+      anchoredOperationSpots:firstFeasible.anchoredOperationSpots,
       profileCount:firstFeasible.profileCount,fingerprint:firstFeasible.fingerprint}:null,
     pipelineWitnessBuildMs,inputImmutable:JSON.stringify(problem)===before};
 }

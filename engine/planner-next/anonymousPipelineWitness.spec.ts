@@ -1,81 +1,63 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildCanonicalFullA2EngineInput } from "./benchmarks/canonicalFullA2EngineInput";
-import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
-import { buildAssistedProblem } from "./assistedPlanning";
-import { resolveAssistedScope } from "../../server/assistedScopeResolver";
+import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { buildAnonymousPipelineWitness } from "./anonymousPipelineWitness";
-import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
-import type { PlannerNextProblem } from "./contracts";
 
-function fixture(): {problem:PlannerNextProblem; architecture:MainFeederArchitecture} {
-  const canonical=buildCanonicalFullA2EngineInput({planId:711,branchBudget:10_000});
-  const adapted=adaptEngineInputToPlannerNextProblem(canonical.input); assert.equal(adapted.status,"SUPPORTED");
-  if(adapted.status!=="SUPPORTED")throw new Error();
-  const spaceId=canonical.input.plannerNext!.mainFlow!.spaceId;
-  const scope=resolveAssistedScope(canonical.input,adapted,{kind:"SPACE",spaceId}).scope;
-  const problem=buildAssistedProblem(adapted.problem,scope,[]).problem;
-  const mains=problem.tasks.filter(t=>t.kind==="main");
-  const patterns=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources).patterns;
-  const feeders=new Map(mains.map(main=>[main.id,problem.tasks.find(t=>t.kind==="vocal"&&t.participantId===main.participantId)!]));
-  const ends=[...new Set(problem.participants.flatMap(x=>x.availability.map(w=>w.end)))].sort((a,b)=>a-b);
-  for(const pattern of patterns)for(const end of ends){
-    const slots=pattern.map((_,i)=>end-pattern.length*mains[0]!.duration+i*mains[0]!.duration);
-    if(!proveMainFeederArchitectureImpossible(problem,mains,feeders,{pattern,slots})){
-      const witness=buildAnonymousPipelineWitness(problem,{pattern,slots});
-      if(witness.status==="FEASIBLE")return {problem,architecture:{pattern,slots}};
-    }
-  }
-  throw new Error("A2 fixture must expose a feasible architecture");
+const windows=[{start:0,end:300}];
+function problem(keys:string[]=["A"], coachIds:string[]=["coach-a"]):PlannerNextProblem{
+  const tasks:ParticipantTask[]=[];
+  keys.forEach((blockKey,i)=>{const participantId=`p${i}`,coachId=coachIds[i]??coachIds[0]!;
+    tasks.push(
+      {id:`in${i}`,kind:"auxiliary",participantId,duration:10,spaceId:"in",dependencies:[]},
+      {id:`style${i}`,kind:"auxiliary",participantId,duration:10,spaceId:"style",dependencies:[`in${i}`]},
+      {id:`feed${i}`,kind:"vocal",participantId,coachId,duration:15,spaceId:`car-${coachId}`,dependencies:[`in${i}`]},
+      {id:`main${i}`,kind:"main",participantId,coachId,blockKey,duration:15,spaceId:"main",dependencies:[`feed${i}`,`style${i}`]},
+    );
+  });
+  return {day:{start:0,end:300},spaces:["in","style","main",...new Set(coachIds.map(x=>`car-${x}`))].map(id=>({id,availability:windows})),
+    resources:[],participants:keys.map((_,i)=>({id:`p${i}`,availability:windows})),coaches:[...new Set(coachIds)].map(id=>({id,availability:windows})),tasks,
+    mainFlow:{spaceId:"main",preferredEnd:240,continuity:"REQUIRED",maxBlocksByKey:4,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
+    budget:{bestK:1,maxBacktracks:100,maxPatterns:100,maxBranchExpansions:100},transportPolicy:{arrival:{taskIds:keys.map((_,i)=>`in${i}`),minimumGroupSize:1,maximumGroupSize:3,minGapMinutes:0,groupingWeight:1},departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:3,minGapMinutes:0,groupingWeight:1}}};
+}
+function anchor(p:PlannerNextProblem,index:number,unit="unit"){
+  const main=p.tasks.find(t=>t.id===`main${index}`)!;main.itinerantUnitId=unit;
+  const before={...main,id:`before${index}`,kind:"auxiliary" as const,coachId:undefined,blockKey:undefined,duration:15,spaceId:"reality",dependencies:[]};
+  const after={...before,id:`after${index}`};p.tasks.push(before,after);if(!p.spaces.some(s=>s.id==="reality"))p.spaces.push({id:"reality",availability:windows});
+  p.itinerantUnits??=[];if(!p.itinerantUnits.some(x=>x.id===unit))p.itinerantUnits.push({id:unit,availability:windows});
+  p.anchoredAccompaniments??=[];p.anchoredAccompaniments.push({id:`op${index}`,anchorTaskId:main.id,beforeTaskIds:[before.id],afterTaskIds:[after.id],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED",itinerantUnitId:unit});
 }
 
 describe("anonymous structural pipeline witness",()=>{
-  it("rejects an early jointly impossible geometry and accepts a sufficient shift",()=>{
-    const {problem,architecture}=fixture();
-    // Each layer has standalone aggregate capacity at this boundary (19 Styling slots,
-    // two parallel coach prefixes, and seven legal IN packets), but their deadlines do
-    // not admit one simultaneous token realization.
-    const early={...architecture,slots:architecture.slots.map(x=>x-145)};
-    assert.ok(19*10<=problem.day.end-problem.day.start);
-    assert.ok(10*15<=early.slots[0]!-problem.day.start);
-    assert.ok(Math.ceil(19/problem.transportPolicy!.arrival.maximumGroupSize)>=1);
-    assert.equal(buildAnonymousPipelineWitness(problem,early).status,"INFEASIBLE");
-    const shifted={...architecture,slots:architecture.slots.map(x=>x-140)};
-    assert.equal(buildAnonymousPipelineWitness(problem,shifted).status,"FEASIBLE");
+  it("rejects a bare valid Main when its 15+15+15 anchor does not fit, then accepts a shifted operation",()=>{
+    const p=problem();anchor(p,0);p.itinerantUnits![0]!.availability=[{start:185,end:240}];
+    assert.notEqual(buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[185]}).status,"FEASIBLE");
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[200]});assert.equal(witness.status,"FEASIBLE");
+    assert.deepEqual(witness.anchoredOperationSpots.map(x=>[x.start,x.end]),[[185,230]]);
   });
 
-  it("realizes both permitted Styling/Vocal orders without overlap on the exclusive Styling space",()=>{
-    const {problem,architecture}=fixture(); const witness=buildAnonymousPipelineWitness(problem,architecture);
-    assert.equal(witness.status,"FEASIBLE");
-    const byToken=(spots:typeof witness.stylingSpots)=>new Map(spots.map(x=>[x.tokenId,x]));
-    const styling=byToken(witness.stylingSpots), feeder=byToken(witness.feederSpots);
-    assert.ok(witness.assignments.some(x=>styling.get(x.tokenId)!.end<=feeder.get(x.tokenId)!.start));
-    assert.ok(witness.assignments.some(x=>feeder.get(x.tokenId)!.end<=styling.get(x.tokenId)!.start));
-    const ordered=[...witness.stylingSpots].sort((a,b)=>a.start-b.start);
-    assert.ok(ordered.slice(1).every((spot,i)=>ordered[i]!.end<=spot.start));
+  it("keeps separate feeder cohorts for separate runs of the same coach",()=>{
+    const p=problem(["A","B","A"],["coach-a","coach-b","coach-a"]);p.day.start=40;p.spaces.filter(s=>s.id.startsWith("car-")).forEach(s=>s.availability=[{start:70,end:260}]);p.coaches.forEach(x=>x.availability=[{start:70,end:260}]);
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A","B","A"],slots:[100,150,200]});assert.equal(witness.status,"FEASIBLE");
+    assert.equal(new Set(witness.feederSpots.map(x=>x.feederRunId)).size,3);assert.ok(witness.feederSpots.some(x=>x.coachKey==="coach-a"&&x.start>=115));
   });
 
-  it("uses every anonymous token once, respects coach compatibility, and ignores target as a hard size",()=>{
-    const {problem,architecture}=fixture(); const witness=buildAnonymousPipelineWitness(problem,architecture);
-    assert.equal(witness.status,"FEASIBLE");
-    assert.equal(new Set(witness.assignments.map(x=>x.tokenId)).size,witness.tokenCount);
-    assert.equal(witness.assignments.length,witness.tokenCount);
-    for(const assignment of witness.assignments){
-      const main=witness.mainSpots.find(x=>x.id===assignment.mainSpotId)!;
-      const feeder=witness.feederSpots.find(x=>x.id===assignment.feederSpotId)!;
-      assert.equal(main.coachKey,feeder.coachKey);
-    }
-    const changed={...problem,transportPolicy:{...problem.transportPolicy!,arrival:{...problem.transportPolicy!.arrival,targetGroupSize:1}}};
-    assert.equal(buildAnonymousPipelineWitness(changed,architecture).status,"FEASIBLE");
+  it("proves infeasible when a feeder cohort cannot clear its route transition",()=>{
+    const p=problem();p.day.start=80;p.spaces.forEach(s=>s.availability=[{start:80,end:300}]);p.participants[0]!.availability=[{start:80,end:300}];p.coaches[0]!.availability=[{start:80,end:300}];
+    p.coachRouteTransitions=[{coachId:"coach-a",fromSpaceId:"car-coach-a",toSpaceId:"main",minutes:20}];
+    assert.equal(buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[100]}).status,"INFEASIBLE");
+  });
+
+  it("enforces itinerant-unit and participant exclusivity across anchored operations",()=>{
+    const p=problem(["A","B"],["coach-a","coach-b"]);anchor(p,0);anchor(p,1);
+    assert.equal(buildAnonymousPipelineWitness(p,{pattern:["A","B"],slots:[100,115]}).status,"INFEASIBLE");
+    const single=problem();anchor(single,0);single.tasks.find(t=>t.id==="style0")!.availability=[{start:90,end:100}];
+    assert.notEqual(buildAnonymousPipelineWitness(single,{pattern:["A"],slots:[100]}).status,"FEASIBLE");
   });
 
   it("is deterministic, nominal-order invariant, and input immutable",()=>{
-    const {problem,architecture}=fixture(); const before=JSON.stringify(problem);
-    const first=buildAnonymousPipelineWitness(problem,architecture);
-    const second=buildAnonymousPipelineWitness({...problem,tasks:[...problem.tasks].reverse()} as PlannerNextProblem,architecture);
-    assert.equal(first.fingerprint,second.fingerprint);
-    assert.equal(JSON.stringify(problem),before);
-    assert.ok(first.assignments.every(x=>!x.tokenId.includes("participant:")));
+    const p=problem();anchor(p,0);const before=JSON.stringify(p),a=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[200]});
+    const b=buildAnonymousPipelineWitness({...p,tasks:[...p.tasks].reverse(),participants:p.participants.map(x=>({...x,id:`renamed-${x.id}`})),
+      tasks:[...p.tasks].reverse().map(t=>({...t,participantId:`renamed-${t.participantId}`}))} as PlannerNextProblem,{pattern:["A"],slots:[200]});
+    assert.equal(a.status,"FEASIBLE");assert.equal(a.fingerprint,b.fingerprint);assert.equal(JSON.stringify(p),before);
   });
 });
