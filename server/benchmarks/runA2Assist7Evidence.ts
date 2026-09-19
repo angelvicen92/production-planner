@@ -180,7 +180,7 @@ export async function runA2Assist7Evidence() {
   assert.equal(materiallyPresentInAcceptedStage, true);
   assert.equal(conflictStage.snapshotFingerprint, acceptedConflictFingerprint);
   const acceptedException = exceptions.find(item => item.stageId === conflictStage.id && item.status === "ACTIVE" && item.severity === materialViolation.severity && item.violationKey === materialViolation.violationKey);
-  assert.ok(acceptedException, "accepted conflict stage has no ACTIVE exception for its material HARD");
+  assert.ok(acceptedException, `accepted conflict stage has no ACTIVE exception for its material HARD: ${JSON.stringify({ conflictStageId: conflictStage.id, materialViolation, exceptions })}`);
   const exceptionSnapshotMatchesStage = acceptedException.snapshotFingerprint === conflictStage.snapshotFingerprint;
   assert.equal(exceptionSnapshotMatchesStage, true);
   assert.ok([first.id, second.id].every(id => acceptedException.affectedTaskIdsJson.includes(id)));
