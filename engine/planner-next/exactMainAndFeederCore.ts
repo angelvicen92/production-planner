@@ -2,7 +2,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Valid
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines,
+import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
@@ -782,18 +782,30 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   if(!structuralBase)return fail("INFEASIBLE",["FIXED_MAIN_STRUCTURAL_OPERATION_INFEASIBLE"],coreIds);
 
   if(mains.length===0){
-    const outcome=searchPendingFixedFeeders(structuralBase,[],0,(placed)=>{
+    const fixedMeals=mainFlowMealPolicy(problem)?[createMainFlowMeal(problem)]:[];
+    const outcome=searchPendingFixedFeeders(structuralBase,fixedMeals,0,(placed)=>{
       const expected=[...coreIds].sort(),actual=placed.map(({id})=>id).sort();
       if(actual.length!==expected.length||actual.some((id,index)=>id!==expected[index]))return "DEAD_END";
-      const validation=validatePlan({...problem,tasks:problem.tasks.filter(task=>coreIds.has(task.id))
-        .map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))}))},
-        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})));
-      if(!validation.hardValid&&!options.acceptsValidation?.(validation))return "DEAD_END";
+      const reducedTasks=problem.tasks.filter(task=>coreIds.has(task.id))
+        .map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))}));
+      const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,spaces:problem.spaces.map(space=>{
+        const authority=mainFlowMealPolicy(problem);return space.id===problem.mainFlow.spaceId&&authority&&!space.mealPolicy
+          ?{...space,mealPolicy:{window:{...authority.window},duration:authority.duration}}:space;
+      }),anchoredAccompaniments:[...fixedMainContracts,...applicableContracts],roundSynchronizations:undefined,
+        participantMeals:undefined,participantMealCapacity:undefined,operationalMealPolicies:undefined,transportPolicy:undefined};
+      const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
+        resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+      const validation=validatePlan(reduced,
+        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[],fixedMeals,[],fixedResourceMeals,
+        materializeScheduledItinerantUnitMeals(reduced));
+      // A fully protected Assisted core is only an immutable context here. The
+      // complete pipeline is still subjected to the normal final validation gate.
+      if(!validation.hardValid&&!options.fixedPlacementsAsContext&&!options.acceptsValidation?.(validation))return "DEAD_END";
       const ordered=[...placed].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-      const continuation=options.onHardValidCoreLeaf?.({tasks:ordered,meals:[],remainingTaskIds:[],
-        fingerprint:fingerprint(ordered,[],[])})??"ACCEPT";
+      const continuation=options.onHardValidCoreLeaf?.({tasks:ordered,meals:fixedMeals,remainingTaskIds:[],
+        fingerprint:fingerprint(ordered,[],fixedMeals)})??"ACCEPT";
       if(continuation!=="ACCEPT")return continuation==="BUDGET_EXHAUSTED"?continuation:"DEAD_END";
-      selected={tasks:ordered,meals:[],pattern:[]};return "FOUND";
+      selected={tasks:ordered,meals:fixedMeals,pattern:[]};return "FOUND";
     });
     if(outcome==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",[exhaustionReason],coreIds);
     if(outcome!=="FOUND")return fail("INFEASIBLE",["NO_COMPLETE_HARD_VALID_CORE"],coreIds);
