@@ -75,7 +75,8 @@ test("an out-of-scope pending participant meal remains analytic without becoming
   source.participantMeals=[{id:"meal",sourceTaskId:"outside",participantId:"p2",duration:15,
     window:{start:60,end:120},status:"pending"}];
   const assisted=buildAssistedProblem(source,createPlanningScope({kind:"space",value:"main-space"},{},["main"]),[]);
-  assert.equal(assisted.problem.participantMeals?.[0]?.sourceTaskId,"outside");
+  assert.deepEqual(assisted.problem.participantMeals,[]);
+  assert.equal(assisted.analyticalParticipantMeals[0]?.sourceTaskId,"outside");
   assert.equal(assisted.automaticTaskIds.includes("outside"),false);
   const result=executeAssistedPlanning(assisted);
   assert.equal(result.proposal?.some(task=>task.id==="outside"),false);

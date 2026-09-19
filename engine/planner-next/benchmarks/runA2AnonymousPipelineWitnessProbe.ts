@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import { performance } from "node:perf_hooks";
-import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
-import { buildAssistedProblem } from "../../engine/planner-next/assistedPlanning";
-import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
+import { buildCanonicalFullA2EngineInput } from "./canonicalFullA2EngineInput";
+import { buildAssistedProblem, createPlanningScope } from "../assistedPlanning";
+import { adaptEngineInputToPlannerNextProblem } from "../integration/engineInputAdapter";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible,
-  type MainFeederStructuralRejection, type SharedPrerequisiteCapacityCertificate } from "../../engine/planner-next/mainFlowPatterns";
-import { buildAnonymousPipelineWitness, type AnonymousPipelineWitnessDiagnostic } from "../../engine/planner-next/anonymousPipelineWitness";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines } from "../../engine/planner-next/mainFlowMeal";
-import { resolveAssistedScope } from "../assistedScopeResolver";
+  type MainFeederStructuralRejection, type SharedPrerequisiteCapacityCertificate } from "../mainFlowPatterns";
+import { buildAnonymousPipelineWitness, type AnonymousPipelineWitnessDiagnostic } from "../anonymousPipelineWitness";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines } from "../mainFlowMeal";
 
 /** A2 S1 structural probe. It deliberately stops before nominal core or standalone search. */
 export function runA2AnonymousPipelineWitnessProbe() {
@@ -15,8 +14,11 @@ export function runA2AnonymousPipelineWitnessProbe() {
   const adapted=adaptEngineInputToPlannerNextProblem(canonical.input); assert.equal(adapted.status,"SUPPORTED");
   if(adapted.status!=="SUPPORTED")throw new Error("canonical A2 adapter unsupported");
   const spaceId=canonical.input.plannerNext?.mainFlow?.spaceId; assert.ok(spaceId);
-  const scope=resolveAssistedScope(canonical.input,adapted,{kind:"SPACE",spaceId}).scope;
-  const problem=buildAssistedProblem(adapted.problem,scope,[]).problem;
+  const sourceTaskIds=new Set(canonical.input.tasks.filter(task=>(task.status==="pending"||task.status==="interrupted")&&task.spaceId===spaceId).map(task=>String(task.id)));
+  const scopeTaskIds=adapted.identityMap.filter(item=>item.namespace==="task"&&sourceTaskIds.has(item.sourceId)).map(item=>item.canonicalId);
+  const scope=createPlanningScope({kind:"SPACE",value:String(spaceId)},{spaceId},scopeTaskIds);
+  const assisted=buildAssistedProblem(adapted.problem,scope,[]);
+  const problem=assisted.problem;
   const before=JSON.stringify(problem); const mains=problem.tasks.filter(t=>t.kind==="main");
   const mealAuthority=mainFlowMealPolicy(problem);
   const feeders=new Map(mains.flatMap(main=>{
@@ -82,7 +84,7 @@ export function runA2AnonymousPipelineWitnessProbe() {
         if(structural){firstReason??=structural;increment(structuralRejectionsByReason,structural);
           increment(structuralRejectionsBySubauthority,structuralSubauthority(structural,sharedCapacity));continue;}
         let diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
-        const witness=buildAnonymousPipelineWitness(problem,{pattern,slots},value=>{diagnostic=value;}); firstReason??=witness.reason;
+        const witness=buildAnonymousPipelineWitness(problem,{pattern,slots},value=>{diagnostic=value;},assisted.analyticalParticipantMeals); firstReason??=witness.reason;
         assert.ok(diagnostic);increment(witnessOutcomesByStatusAndReason,`${witness.status}:${witness.reason??"NONE"}`);
         if(count===4){
           const completed=phase(witness,diagnostic);
@@ -139,6 +141,10 @@ export function runA2AnonymousPipelineWitnessProbe() {
     participantMealFutureFeasible:firstFeasibleDiagnostic?.participantMealFutureFeasible??null,
     participantMealBlockingTaskIds:firstFeasibleDiagnostic?.participantMealBlockingTaskIds??[],
     participantMealAnalyticDomainBuilds:firstFeasibleDiagnostic?.participantMealAnalyticDomainBuilds??0,
+    arrivalSolverExecuted:firstFeasibleDiagnostic?.arrivalSolverExecuted??false,
+    arrivalClassification:firstFeasibleDiagnostic?.arrivalClassification??null,
+    arrivalContiguousStatesExplored:firstFeasibleDiagnostic?.arrivalContiguousStatesExplored??0,
+    arrivalMembershipFallbackEntered:firstFeasibleDiagnostic?.arrivalMembershipFallbackEntered??false,
     pipelineWitnessBuildMs,inputImmutable:JSON.stringify(problem)===before};
 }
 

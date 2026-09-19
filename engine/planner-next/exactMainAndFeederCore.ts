@@ -2,7 +2,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Valid
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -813,8 +813,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const deferredSetupSpaceIds = new Set(problem.spaces.filter((space) => space.setupPolicy !== undefined
         && !reducedTasks.some((task) => task.spaceId === space.id)).map(({ id }) => id));
       const reduced: PlannerNextProblem = { ...problem, tasks: reducedTasks,
-        spaces: problem.spaces.map((space) => deferredSetupSpaceIds.has(space.id)
-          ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space),
+        spaces: problem.spaces.map((space) => {
+          const projected = deferredSetupSpaceIds.has(space.id)
+            ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space;
+          const authority = mainFlowMealPolicy(problem);
+          return space.id === problem.mainFlow.spaceId && authority && !projected.mealPolicy
+            ? { ...projected, mealPolicy: { window: { ...authority.window }, duration: authority.duration } } : projected;
+        }),
         anchoredAccompaniments: applicableContracts, roundSynchronizations: undefined,
         participantMeals: undefined, participantMealCapacity: undefined, operationalMealPolicies: undefined,
         transportPolicy: undefined };
@@ -1699,7 +1704,28 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
     const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-      ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
+      ? (()=>{
+        const base=candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut));
+        const taskById=new Map(problem.tasks.map(task=>[task.id,task]));
+        const before=Math.max(0,...(problem.anchoredAccompaniments??[]).map(contract=>contract.beforeTaskIds
+          .reduce((sum,id)=>sum+(taskById.get(id)?.duration??0),0)));
+        const after=Math.max(0,...(problem.anchoredAccompaniments??[]).map(contract=>contract.afterTaskIds
+          .reduce((sum,id)=>sum+(taskById.get(id)?.duration??0),0)));
+        const cleared=base.flatMap(timeline=>before===0&&after===0?[]:[{...timeline,
+          key:`${timeline.key}|ANCHOR_CLEARANCE:${before}:${after}`,
+          slots:timeline.slots.map((slot,index)=>index<timeline.splitIndex?slot-after:slot+before),
+          strategyRank:timeline.strategyRank+1}]);
+        const acceptedMains=protectedPlacements.filter(placement=>problem.tasks.find(task=>task.id===placement.id)?.kind==="main");
+        const acceptedAdjacent=base.flatMap(timeline=>acceptedMains.flatMap(accepted=>{
+          const variants:MainFlowTimeline[]=[];
+          if(timeline.splitIndex===pattern.length){const delta=accepted.start-(timeline.slots.at(-1)!+duration);
+            variants.push({...timeline,key:`${timeline.key}|BEFORE_ACCEPTED:${accepted.start}`,slots:timeline.slots.map(slot=>slot+delta),strategyRank:timeline.strategyRank+1});}
+          if(timeline.splitIndex===0){const delta=accepted.end-timeline.slots[0]!;
+            variants.push({...timeline,key:`${timeline.key}|AFTER_ACCEPTED:${accepted.end}`,slots:timeline.slots.map(slot=>slot+delta),strategyRank:timeline.strategyRank+1});}
+          return variants;
+        }));
+        return orderTimelines([...base,...cleared,...acceptedAdjacent]);
+      })() : [undefined];
     for (const timeline of timelines) {
       const departureEnds = [...latestDepartureStart.values()];
       const historicalEnds = [...new Set([

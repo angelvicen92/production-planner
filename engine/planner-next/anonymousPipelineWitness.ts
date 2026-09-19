@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
+import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import type { MainFeederArchitecture } from "./mainFlowPatterns";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
@@ -34,6 +34,9 @@ export interface AnonymousPipelineWitnessDiagnostic {
   feederGeometryCompleted: boolean;
   stylingGeometryCompleted: boolean;
   arrivalSolverExecuted: boolean;
+  arrivalClassification: string | null;
+  arrivalContiguousStatesExplored: number;
+  arrivalMembershipFallbackEntered: boolean;
   mainRuns: readonly { id:string; coach:string; firstMain:{id:string;start:number;end:number};
     lastMain:{id:string;start:number;end:number}; positions:readonly number[] }[];
   feederRuns: readonly { id:string; coach:string; deadline:number; blockStart?:number; blockEnd?:number; size:number;
@@ -63,9 +66,11 @@ const signatureWindows = (windows: readonly Window[] | undefined) => orderedWind
  * profiles, tokens, matching and the returned certificate are built.
  */
 export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture,
-  onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void): AnonymousPipelineWitness {
+  onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void,
+  analyticalParticipantMeals:readonly ParticipantMealObligation[]=[]): AnonymousPipelineWitness {
   let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
-  let arrivalSolverExecuted=false,stylingCandidateStartBoundaryCount=0;
+  let arrivalSolverExecuted=false,arrivalClassification:string|null=null,arrivalContiguousStatesExplored=0;
+  let arrivalMembershipFallbackEntered=false,stylingCandidateStartBoundaryCount=0;
   let operationalMealPoliciesChecked=0,operationalMealFutureFeasible:boolean|null=null,operationalMealBranchesExplored=0;
   let operationalMealBlockingPolicyIds:string[]=[];
   let participantMealsChecked=0,participantMealFutureFeasible:boolean|null=null,participantMealAnalyticDomainBuilds=0;
@@ -77,7 +82,8 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     candidateStartBoundaryCount:number;blockStartCandidatesEvaluated:number;perfectMatchingChecks:number}>=[];
   const diagnosticAnchors: Array<{id:string;start:number;end:number}>=[];
   const emitDiagnostic=()=>onDiagnostic?.({mainMatchingCompleted,anchorsCompleted,feederGeometryCompleted,
-    stylingGeometryCompleted,arrivalSolverExecuted,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
+    stylingGeometryCompleted,arrivalSolverExecuted,arrivalClassification,arrivalContiguousStatesExplored,
+    arrivalMembershipFallbackEntered,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
     stylingCandidateStartBoundaryCount,anchoredOperationIntervals:diagnosticAnchors,
     operationalMealPoliciesChecked,operationalMealFutureFeasible,operationalMealBlockingPolicyIds,
     operationalMealBranchesExplored,participantMealsChecked,participantMealFutureFeasible,
@@ -320,6 +326,9 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     transportPolicy:{...problem.transportPolicy,arrival:{...problem.transportPolicy.arrival,taskIds:anonymousArrivals.map(t=>t.id)}}} as PlannerNextProblem;
   arrivalSolverExecuted=true;
   const arrival=assessCoreArrivalTransportFeasibility(anonymousProblem,obligations);
+  arrivalClassification=arrival.evidence.classification;
+  arrivalContiguousStatesExplored=arrival.evidence.contiguousStatesExplored;
+  arrivalMembershipFallbackEntered=arrival.evidence.membershipFallbackEntered;
   if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return rejected(arrival.status,"JOINT_ARRIVAL_GEOMETRY");
   const inGroups=arrival.evidence.packetSizes.map((size,i)=>({id:`in-group:${i}`,start:arrival.evidence.starts[i]!,
     end:arrival.evidence.starts[i]!+anonymousArrivals[0]!.duration,size}));
@@ -355,8 +364,9 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
   operationalMealBranchesExplored=operational.branchesExplored;
   if(!operational.complete)return rejected(operational.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED")
     ? "INCONCLUSIVE":"INFEASIBLE","OPERATIONAL_MEAL_FUTURE_INFEASIBLE");
-  if((problem.participantMeals?.length??0)>0){
-    const participant=probeParticipantMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule);
+  const participantMealProblem={...problem,participantMeals:[...(problem.participantMeals??[]),...analyticalParticipantMeals]};
+  if((participantMealProblem.participantMeals?.length??0)>0){
+    const participant=probeParticipantMealFutureFeasibility(participantMealProblem as PlannerNextProblem,internalSchedule);
     participantMealsChecked=participant.affectedObligationsChecked;
     participantMealFutureFeasible=participant.feasible;
     participantMealBlockingTaskIds=[...participant.blockingMealTaskIds];

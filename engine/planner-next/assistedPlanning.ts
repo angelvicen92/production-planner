@@ -1,4 +1,5 @@
 import type {
+  ParticipantMealObligation,
   PlannerNextProblem,
   PlanningScope,
   ScheduledTask,
@@ -19,6 +20,8 @@ export type AssistedPlanningReasonCode =
 export interface AssistedProblem {
   readonly problem: PlannerNextProblem;
   readonly originalValidationProblem: PlannerNextProblem;
+  /** Pending obligations outside the executable projection, for read-only future-feasibility probes. */
+  readonly analyticalParticipantMeals: readonly ParticipantMealObligation[];
   readonly scope: PlanningScope;
   readonly protectedPlacements: readonly ScheduledTask[];
   readonly automaticTaskIds: readonly string[];
@@ -196,11 +199,11 @@ export function buildAssistedProblem(
     problem.transportPolicy.arrival.taskIds = problem.transportPolicy.arrival.taskIds.filter((id) => included.has(id));
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
-  // Pending/interrupted participant meals are future-feasibility context, not scope
-  // variables. Keeping them here does not add their source tasks to `included` (and
-  // therefore cannot expose them through automaticTaskIds or a proposal).
-  problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId)
-    || meal.status === "pending" || meal.status === "interrupted");
+  const analyticalParticipantMeals = (problem.participantMeals ?? []).filter((meal) =>
+    !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"));
+  // The executable problem must remain referentially closed. Obligations whose
+  // source is outside scope are analytical context, never hidden search variables.
+  problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail
   // preflight, and absent setup families cannot remain mandatory in the scope.
@@ -229,6 +232,7 @@ export function buildAssistedProblem(
   return {
     problem,
     originalValidationProblem,
+    analyticalParticipantMeals: structuredClone(analyticalParticipantMeals),
     scope,
     protectedPlacements: structuredClone(protectedPlacements),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
