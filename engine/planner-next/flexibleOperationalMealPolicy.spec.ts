@@ -98,3 +98,11 @@ test("shared resources cannot receive duplicate operational meals", () => {
   assert.equal(preflight.status, "UNSUPPORTED");
   assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_OPERATIONAL_MEAL_POLICY"));
 });
+
+test("a space-only operational meal needs no invented resource and projects immutably", () => {
+  const input=fixture();input.operationalMealPolicies=[{id:"main-space",window:{start:"13:00",end:"16:30"},durationMinutes:75,planResourceItemIds:[],spaceIds:[301]}];
+  const before=structuredClone(input),adapted=adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(adapted.status,"SUPPORTED",JSON.stringify(adapted.issues));
+  assert.deepEqual(adapted.problem?.operationalMealPolicies,[{id:"break:main-space",window:{start:780,end:990},duration:75,resourceIds:[],spaceIds:["space:301"]}]);
+  assert.deepEqual(input,before);
+});

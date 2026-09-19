@@ -6,7 +6,7 @@ import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection, type SharedPrerequisiteCapacityCertificate } from "../../engine/planner-next/mainFlowPatterns";
 import { buildAnonymousPipelineWitness, type AnonymousPipelineWitnessDiagnostic } from "../../engine/planner-next/anonymousPipelineWitness";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines } from "../../engine/planner-next/mainFlowMeal";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines } from "../../engine/planner-next/mainFlowMeal";
 import { resolveAssistedScope } from "../assistedScopeResolver";
 
 /** A2 S1 structural probe. It deliberately stops before nominal core or standalone search. */
@@ -18,6 +18,7 @@ export function runA2AnonymousPipelineWitnessProbe() {
   const scope=resolveAssistedScope(canonical.input,adapted,{kind:"SPACE",spaceId}).scope;
   const problem=buildAssistedProblem(adapted.problem,scope,[]).problem;
   const before=JSON.stringify(problem); const mains=problem.tasks.filter(t=>t.kind==="main");
+  const mealAuthority=mainFlowMealPolicy(problem);
   const feeders=new Map(mains.flatMap(main=>{
     const feeder=problem.tasks.find(t=>t.kind==="vocal"&&t.participantId===main.participantId);
     return feeder?[[main.id,feeder] as const]:[];
@@ -99,7 +100,17 @@ export function runA2AnonymousPipelineWitnessProbe() {
   }
   const pipelineWitnessBuildMs=Number((performance.now()-started).toFixed(3));
   assert.equal(JSON.stringify(problem),before); assert.ok(pipelineWitnessBuildMs<10_000);
-  return {families,firstFeasibleRunCount:firstFeasible?.runCount??null,firstRunCount4Inconclusive,
+  const representativePattern=generated.patterns[0]??[];
+  const representativeTimeline=mealAuthority&&representativePattern.length
+    ? buildTimeline(problem,representativePattern,mains[0]!.duration,candidateCuts(representativePattern)[0]!) : null;
+  const representativeRunCount=runCount(representativePattern);
+  return {mainFlowMealAuthorityPresent:mealAuthority!==undefined,
+    mainFlowMealWindow:mealAuthority?.window??null,mainFlowMealDuration:mealAuthority?.duration??null,
+    mainFlowMealSource:mealAuthority?.source??null,
+    mainFlowMealTimelineCandidate:representativeTimeline?{splitIndex:representativeTimeline.splitIndex,slots:representativeTimeline.slots}:null,
+    mainFlowMealStart:representativeTimeline?.meal.start??null,mainFlowMealEnd:representativeTimeline?.meal.end??null,
+    runCountBeforeMeal:representativeRunCount,runCountAfterMeal:representativeRunCount,
+    families,firstFeasibleRunCount:firstFeasible?.runCount??null,firstRunCount4Inconclusive,
     firstRunCount4FeederFailure,firstRunCount4PastFeeder,
     bestRunCount4:bestRunCount4&&(({phase:_,...candidate})=>candidate)(bestRunCount4),
     firstFeasible:firstFeasible?{mainSpotCount:firstFeasible.mainSpots.length,

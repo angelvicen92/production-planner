@@ -49,6 +49,18 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(witness.status,"FEASIBLE");assert.equal(witness.feederSpots[0]?.start,83);
   });
 
+  it("allows another-space feeder work during the Main-space meal but keeps an independent coach meal hard",()=>{
+    const p=problem();
+    p.operationalMealPolicies=[{id:"main-meal",window:{start:120,end:180},duration:60,resourceIds:[],spaceIds:["main"]}];
+    p.tasks.find(t=>t.id==="feed0")!.availability=[{start:130,end:145}];
+    const duringMainMeal=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[200]});
+    assert.equal(duringMainMeal.status,"FEASIBLE",duringMainMeal.reason);
+    assert.deepEqual(duringMainMeal.feederSpots.map(spot=>[spot.start,spot.end]),[[130,145]]);
+    p.coaches[0]!.availability=[{start:0,end:120},{start:180,end:300}];
+    const ownCoachMeal=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[200]});
+    assert.equal(ownCoachMeal.status,"INFEASIBLE");
+  });
+
   it("uses perfect matching to exchange equivalent feeders between ordinals",()=>{
     const p=problem(["A","A"]);p.tasks.find(t=>t.id==="feed0")!.availability=[{start:40,end:55}];
     p.tasks.find(t=>t.id==="feed1")!.availability=[{start:40,end:70}];
