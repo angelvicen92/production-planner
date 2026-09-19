@@ -6,12 +6,12 @@
     "minGapMinutes": 30
   },
   "status": "BLOCKED",
-  "milestone": "S6",
+  "milestone": "S8",
   "sourceObligationCount": 266,
   "completedObligationCount": 120,
   "remainingObligationCount": 146,
-  "scopeCount": 7,
-  "stageCount": 6,
+  "scopeCount": 9,
+  "stageCount": 8,
   "automaticPlacements": 120,
   "manualChanges": 0,
   "acceptedHardExceptions": 0,
@@ -559,7 +559,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "902c2684dae4cb4ca46b2d1954b29f1ae3d2fb114f40ded086fd4b28b61d6a5e",
-      "durationMs": 5347
+      "durationMs": 4529
     },
     {
       "scopeSelector": {
@@ -650,9 +650,9 @@
       ],
       "supportingTaskCount": 63,
       "proposalOutcome": "PROPOSAL",
-      "newObligationCount": 24,
-      "completedObligationCount": 43,
-      "remainingObligationCount": 223,
+      "newObligationCount": 5,
+      "completedObligationCount": 24,
+      "remainingObligationCount": 242,
       "protectedPlacementCount": 19,
       "protectedPlacementsPreserved": true,
       "newHardViolationCount": 0,
@@ -931,8 +931,690 @@
         }
       },
       "acceptedStageId": 3,
+      "acceptedStageFingerprint": "bbe3c98ddd905c79e29c9b9d00c1f9f3e8cf990684b9c5aeb967fc51b30f266d",
+      "durationMs": 4191
+    },
+    {
+      "scopeSelector": {
+        "kind": "SPACE",
+        "spaceId": 3002
+      },
+      "resolvedTaskIds": [
+        10063,
+        10080,
+        10095,
+        10108,
+        10123,
+        10138,
+        10153,
+        10224,
+        10236,
+        10249,
+        10262
+      ],
+      "baseStageId": 3,
+      "configRevisionId": 1,
+      "includePrerequisites": false,
+      "visibleProposalTaskIds": [
+        10063,
+        10080,
+        10095,
+        10108,
+        10123,
+        10138,
+        10153,
+        10224,
+        10236,
+        10249,
+        10262
+      ],
+      "supportingTaskIds": [
+        "task:10003",
+        "task:10006",
+        "task:10009",
+        "task:10010",
+        "task:10011",
+        "task:10018",
+        "task:10021",
+        "task:10024",
+        "task:10032",
+        "task:10034",
+        "task:10037",
+        "task:10044",
+        "task:10047",
+        "task:10050",
+        "task:10057",
+        "task:10060",
+        "task:10064",
+        "task:10065",
+        "task:10073",
+        "task:10077",
+        "task:10089",
+        "task:10092",
+        "task:10103",
+        "task:10105",
+        "task:10109",
+        "task:10110",
+        "task:10117",
+        "task:10120",
+        "task:10132",
+        "task:10135",
+        "task:10148",
+        "task:10150",
+        "task:10162",
+        "task:10165",
+        "task:10168",
+        "task:10176",
+        "task:10180",
+        "task:10183",
+        "task:10191",
+        "task:10194",
+        "task:10197",
+        "task:10204",
+        "task:10207",
+        "task:10210",
+        "task:10219",
+        "task:10221",
+        "task:10230",
+        "task:10233",
+        "task:10244",
+        "task:10246",
+        "task:10257",
+        "task:10259"
+      ],
+      "supportingTaskCount": 52,
+      "proposalOutcome": "PROPOSAL",
+      "newObligationCount": 11,
+      "completedObligationCount": 35,
+      "remainingObligationCount": 231,
+      "protectedPlacementCount": 24,
+      "protectedPlacementsPreserved": true,
+      "newHardViolationCount": 0,
+      "newRequiredViolationCount": 0,
+      "unstructuredReasonCodes": [],
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "work": {
+        "branchesExplored": 415,
+        "coreBranches": 0,
+        "standaloneBranches": 415,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 0,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 3152,
+        "membershipFallbackEntered": 0
+      },
+      "sharedCapacityDiagnostic": {
+        "prerequisiteSharedCapacityChecks": 0,
+        "prerequisiteSharedCapacityPrunes": 0,
+        "prerequisiteSharedCapacityAbstentions": 0,
+        "checksByAuthority": {},
+        "abstentionsByAuthority": {},
+        "firstSharedCapacityPrune": null,
+        "firstSharedCapacityPass": null,
+        "capacityFingerprint": null,
+        "nominalIdentityBeginsAt": "exactMainAndFeederCore residual matching"
+      },
+      "residualBreakdown": null,
+      "standaloneDiagnostic": {
+        "standaloneBranchesByDepth": {
+          "0": 1
+        },
+        "standaloneSelectionsByTaskId": {},
+        "standaloneCandidateStartsByTaskId": {},
+        "standaloneMaximumDepth": 0,
+        "standaloneCompleteLeafCount": 1,
+        "terminalTransportMaterializationAttempts": 0,
+        "terminalTransportMaterializationFailures": 0,
+        "terminalTransportWitness": null,
+        "standaloneFirstSelectedTaskId": null,
+        "standaloneDominantPathFirst20": [],
+        "standaloneFirstDominantBlocker": null,
+        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 0,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 6,
+        "firstHardValidCoreLeaf": {
+          "coreTaskCount": 49,
+          "coreTasksByKind": {
+            "vocal": 19,
+            "auxiliary": 11,
+            "main": 19
+          },
+          "pendingSupportingTotal": 38,
+          "pendingOrdinaryNoTransport": 19,
+          "pendingDynamicTransport": 19,
+          "pendingTasksByKind": {
+            "auxiliary": 38
+          }
+        },
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 3152,
+        "membershipFallbackEntered": 0,
+        "coreLeafArrivalEvidence": {
+          "direction": "arrival",
+          "orderedTaskIds": [
+            "task:10221",
+            "task:10233",
+            "task:10021",
+            "task:10246",
+            "task:10259",
+            "task:10034",
+            "task:10060",
+            "task:10105",
+            "task:10047",
+            "task:10077",
+            "task:10165",
+            "task:10092",
+            "task:10180",
+            "task:10194",
+            "task:10006",
+            "task:10120",
+            "task:10207",
+            "task:10135",
+            "task:10150"
+          ],
+          "orderedParticipantIds": [
+            "participant:216",
+            "participant:217",
+            "participant:202",
+            "participant:218",
+            "participant:219",
+            "participant:203",
+            "participant:205",
+            "participant:208",
+            "participant:204",
+            "participant:206",
+            "participant:212",
+            "participant:207",
+            "participant:213",
+            "participant:214",
+            "participant:201",
+            "participant:209",
+            "participant:215",
+            "participant:210",
+            "participant:211"
+          ],
+          "packetSizes": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            2
+          ],
+          "orderedDeadlines": [
+            545,
+            545,
+            575,
+            575,
+            575,
+            605,
+            605,
+            605,
+            635,
+            635,
+            635,
+            665,
+            665,
+            665,
+            695,
+            695,
+            695,
+            745,
+            745
+          ],
+          "packetMembers": [
+            [
+              "task:10221",
+              "task:10233"
+            ],
+            [
+              "task:10021",
+              "task:10246",
+              "task:10259"
+            ],
+            [
+              "task:10034",
+              "task:10060",
+              "task:10105"
+            ],
+            [
+              "task:10047",
+              "task:10077",
+              "task:10165"
+            ],
+            [
+              "task:10092",
+              "task:10180",
+              "task:10194"
+            ],
+            [
+              "task:10006",
+              "task:10120",
+              "task:10207"
+            ],
+            [
+              "task:10135",
+              "task:10150"
+            ]
+          ],
+          "starts": [
+            540,
+            570,
+            600,
+            630,
+            660,
+            690,
+            740
+          ],
+          "minGapMinutes": 30,
+          "construction": "contiguous",
+          "alternativesExplored": 409,
+          "classification": "CONTIGUOUS_EXACT",
+          "classificationBreakers": [],
+          "contiguousStatesExplored": 3152,
+          "membershipFallbackEntered": false
+        },
+        "corePrerequisiteReservationChecks": 0,
+        "corePrerequisiteReservationPrunes": 0,
+        "ordinaryPrerequisiteReservationChecks": 0,
+        "ordinaryPrerequisiteReservationPrunes": 0,
+        "firstPrerequisiteReservationPrune": null
+      },
+      "orderingComparison": null,
+      "causalDiagnostic": {
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 0,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 415,
+            "total": 415
+          }
+        },
+        "feederByDepth": {},
+        "feederRejections": [],
+        "feederCoachDomainEliminations": [],
+        "futureFeasibility": {
+          "totalEvaluations": 0,
+          "uniqueAuthorityStates": 0,
+          "repeatedEvaluations": 0,
+          "authorityResultCollisions": 0,
+          "negativeEvaluations": 0,
+          "repeatedNegativeEvaluations": 0,
+          "rejectsWithCertifiedBackjumpTarget": 0,
+          "evaluationsByDepth": {},
+          "repeatedByDepth": {},
+          "negativeByDepth": {},
+          "assessments": [],
+          "collisions": []
+        }
+      },
+      "acceptedStageId": 4,
+      "acceptedStageFingerprint": "a120866f490dde275e045d924676adeebef5473841d0a26f1f7587cc09184d38",
+      "durationMs": 4408
+    },
+    {
+      "scopeSelector": {
+        "kind": "SPACE",
+        "spaceId": 3003
+      },
+      "resolvedTaskIds": [
+        10009,
+        10024,
+        10037,
+        10050,
+        10168,
+        10183,
+        10197,
+        10210
+      ],
+      "baseStageId": 4,
+      "configRevisionId": 1,
+      "includePrerequisites": false,
+      "visibleProposalTaskIds": [
+        10009,
+        10024,
+        10037,
+        10050,
+        10168,
+        10183,
+        10197,
+        10210
+      ],
+      "supportingTaskIds": [
+        "task:10003",
+        "task:10006",
+        "task:10010",
+        "task:10011",
+        "task:10018",
+        "task:10021",
+        "task:10032",
+        "task:10034",
+        "task:10044",
+        "task:10047",
+        "task:10057",
+        "task:10060",
+        "task:10064",
+        "task:10065",
+        "task:10073",
+        "task:10077",
+        "task:10089",
+        "task:10092",
+        "task:10103",
+        "task:10105",
+        "task:10109",
+        "task:10110",
+        "task:10117",
+        "task:10120",
+        "task:10132",
+        "task:10135",
+        "task:10148",
+        "task:10150",
+        "task:10162",
+        "task:10165",
+        "task:10176",
+        "task:10180",
+        "task:10191",
+        "task:10194",
+        "task:10204",
+        "task:10207",
+        "task:10219",
+        "task:10221",
+        "task:10230",
+        "task:10233",
+        "task:10244",
+        "task:10246",
+        "task:10257",
+        "task:10259"
+      ],
+      "supportingTaskCount": 44,
+      "proposalOutcome": "PROPOSAL",
+      "newObligationCount": 8,
+      "completedObligationCount": 43,
+      "remainingObligationCount": 223,
+      "protectedPlacementCount": 35,
+      "protectedPlacementsPreserved": true,
+      "newHardViolationCount": 0,
+      "newRequiredViolationCount": 0,
+      "unstructuredReasonCodes": [],
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "work": {
+        "branchesExplored": 415,
+        "coreBranches": 0,
+        "standaloneBranches": 415,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 0,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 3152,
+        "membershipFallbackEntered": 0
+      },
+      "sharedCapacityDiagnostic": {
+        "prerequisiteSharedCapacityChecks": 0,
+        "prerequisiteSharedCapacityPrunes": 0,
+        "prerequisiteSharedCapacityAbstentions": 0,
+        "checksByAuthority": {},
+        "abstentionsByAuthority": {},
+        "firstSharedCapacityPrune": null,
+        "firstSharedCapacityPass": null,
+        "capacityFingerprint": null,
+        "nominalIdentityBeginsAt": "exactMainAndFeederCore residual matching"
+      },
+      "residualBreakdown": null,
+      "standaloneDiagnostic": {
+        "standaloneBranchesByDepth": {
+          "0": 1
+        },
+        "standaloneSelectionsByTaskId": {},
+        "standaloneCandidateStartsByTaskId": {},
+        "standaloneMaximumDepth": 0,
+        "standaloneCompleteLeafCount": 1,
+        "terminalTransportMaterializationAttempts": 0,
+        "terminalTransportMaterializationFailures": 0,
+        "terminalTransportWitness": null,
+        "standaloneFirstSelectedTaskId": null,
+        "standaloneDominantPathFirst20": [],
+        "standaloneFirstDominantBlocker": null,
+        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 0,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 6,
+        "firstHardValidCoreLeaf": {
+          "coreTaskCount": 49,
+          "coreTasksByKind": {
+            "vocal": 19,
+            "auxiliary": 11,
+            "main": 19
+          },
+          "pendingSupportingTotal": 38,
+          "pendingOrdinaryNoTransport": 19,
+          "pendingDynamicTransport": 19,
+          "pendingTasksByKind": {
+            "auxiliary": 38
+          }
+        },
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 3152,
+        "membershipFallbackEntered": 0,
+        "coreLeafArrivalEvidence": {
+          "direction": "arrival",
+          "orderedTaskIds": [
+            "task:10221",
+            "task:10233",
+            "task:10021",
+            "task:10246",
+            "task:10259",
+            "task:10034",
+            "task:10060",
+            "task:10105",
+            "task:10047",
+            "task:10077",
+            "task:10165",
+            "task:10092",
+            "task:10180",
+            "task:10194",
+            "task:10006",
+            "task:10120",
+            "task:10207",
+            "task:10135",
+            "task:10150"
+          ],
+          "orderedParticipantIds": [
+            "participant:216",
+            "participant:217",
+            "participant:202",
+            "participant:218",
+            "participant:219",
+            "participant:203",
+            "participant:205",
+            "participant:208",
+            "participant:204",
+            "participant:206",
+            "participant:212",
+            "participant:207",
+            "participant:213",
+            "participant:214",
+            "participant:201",
+            "participant:209",
+            "participant:215",
+            "participant:210",
+            "participant:211"
+          ],
+          "packetSizes": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            2
+          ],
+          "orderedDeadlines": [
+            545,
+            545,
+            575,
+            575,
+            575,
+            605,
+            605,
+            605,
+            635,
+            635,
+            635,
+            665,
+            665,
+            665,
+            695,
+            695,
+            695,
+            745,
+            745
+          ],
+          "packetMembers": [
+            [
+              "task:10221",
+              "task:10233"
+            ],
+            [
+              "task:10021",
+              "task:10246",
+              "task:10259"
+            ],
+            [
+              "task:10034",
+              "task:10060",
+              "task:10105"
+            ],
+            [
+              "task:10047",
+              "task:10077",
+              "task:10165"
+            ],
+            [
+              "task:10092",
+              "task:10180",
+              "task:10194"
+            ],
+            [
+              "task:10006",
+              "task:10120",
+              "task:10207"
+            ],
+            [
+              "task:10135",
+              "task:10150"
+            ]
+          ],
+          "starts": [
+            540,
+            570,
+            600,
+            630,
+            660,
+            690,
+            740
+          ],
+          "minGapMinutes": 30,
+          "construction": "contiguous",
+          "alternativesExplored": 409,
+          "classification": "CONTIGUOUS_EXACT",
+          "classificationBreakers": [],
+          "contiguousStatesExplored": 3152,
+          "membershipFallbackEntered": false
+        },
+        "corePrerequisiteReservationChecks": 0,
+        "corePrerequisiteReservationPrunes": 0,
+        "ordinaryPrerequisiteReservationChecks": 0,
+        "ordinaryPrerequisiteReservationPrunes": 0,
+        "firstPrerequisiteReservationPrune": null
+      },
+      "orderingComparison": null,
+      "causalDiagnostic": {
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 0,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 415,
+            "total": 415
+          }
+        },
+        "feederByDepth": {},
+        "feederRejections": [],
+        "feederCoachDomainEliminations": [],
+        "futureFeasibility": {
+          "totalEvaluations": 0,
+          "uniqueAuthorityStates": 0,
+          "repeatedEvaluations": 0,
+          "authorityResultCollisions": 0,
+          "negativeEvaluations": 0,
+          "repeatedNegativeEvaluations": 0,
+          "rejectsWithCertifiedBackjumpTarget": 0,
+          "evaluationsByDepth": {},
+          "repeatedByDepth": {},
+          "negativeByDepth": {},
+          "assessments": [],
+          "collisions": []
+        }
+      },
+      "acceptedStageId": 5,
       "acceptedStageFingerprint": "c49ac6a8dcf3fea596999f8243db681ea1859420578a7412b80e5e92d2c5bfb9",
-      "durationMs": 5048
+      "durationMs": 4348
     },
     {
       "scopeSelector": {
@@ -948,7 +1630,7 @@
         10193,
         10206
       ],
-      "baseStageId": 3,
+      "baseStageId": 5,
       "configRevisionId": 1,
       "includePrerequisites": false,
       "visibleProposalTaskIds": [
@@ -1314,9 +1996,9 @@
           "collisions": []
         }
       },
-      "acceptedStageId": 4,
+      "acceptedStageId": 6,
       "acceptedStageFingerprint": "f5cc370be0e7b9751ca9c33402a47fd823416ac665bfa48c78631193823a5b0d",
-      "durationMs": 5234
+      "durationMs": 4319
     },
     {
       "scopeSelector": {
@@ -1344,7 +2026,7 @@
         10248,
         10261
       ],
-      "baseStageId": 4,
+      "baseStageId": 6,
       "configRevisionId": 1,
       "includePrerequisites": false,
       "visibleProposalTaskIds": [
@@ -1806,9 +2488,9 @@
           "collisions": []
         }
       },
-      "acceptedStageId": 5,
+      "acceptedStageId": 7,
       "acceptedStageFingerprint": "29deb4fef8872b34c5edc9b4601f5bb67448f32c1aaecef3f3c00f5501596bce",
-      "durationMs": 5900
+      "durationMs": 4570
     },
     {
       "scopeSelector": {
@@ -1849,7 +2531,7 @@
         10254,
         10264
       ],
-      "baseStageId": 5,
+      "baseStageId": 7,
       "configRevisionId": 1,
       "includePrerequisites": false,
       "visibleProposalTaskIds": [
@@ -2367,9 +3049,9 @@
           "collisions": []
         }
       },
-      "acceptedStageId": 6,
+      "acceptedStageId": 8,
       "acceptedStageFingerprint": "f96c7b4440b4cb116e601ddea4110f38db65dbc582e1a2d9f8f62aa8e60daab0",
-      "durationMs": 5748
+      "durationMs": 4721
     },
     {
       "scopeSelector": {
@@ -2397,7 +3079,7 @@
         10242,
         10255
       ],
-      "baseStageId": 6,
+      "baseStageId": 8,
       "configRevisionId": 1,
       "includePrerequisites": false,
       "visibleProposalTaskIds": [
@@ -2723,9 +3405,9 @@
           "collisions": []
         }
       },
-      "acceptedStageId": 7,
+      "acceptedStageId": 9,
       "acceptedStageFingerprint": "90ee686a9785989e187bec022e1db9aaadc3abfa09e08e60b9c85825ba6fe23b",
-      "durationMs": 6549
+      "durationMs": 5240
     },
     {
       "scopeSelector": {
@@ -2751,7 +3433,7 @@
         10232,
         10251
       ],
-      "baseStageId": 7,
+      "baseStageId": 9,
       "configRevisionId": 1,
       "includePrerequisites": false,
       "visibleProposalTaskIds": [],
@@ -2813,8 +3495,8 @@
       "unstructuredReasonCodes": [],
       "reasonCodes": [
         "ASSISTED_SCOPE_INCOMPLETE",
-        "CORE_PREFLIGHT_FAILED",
-        "INVALID_SETUP_PREPARATION_POLICY"
+        "CORE_INFEASIBLE",
+        "NO_COMPLETE_HARD_VALID_CORE"
       ],
       "work": {
         "branchesExplored": 0,
@@ -2908,7 +3590,7 @@
           "collisions": []
         }
       },
-      "durationMs": 3496
+      "durationMs": 2979
     }
   ],
   "firstBlocker": {
@@ -2935,7 +3617,7 @@
       10232,
       10251
     ],
-    "baseStageId": 7,
+    "baseStageId": 9,
     "completedObligationCount": 120,
     "remainingObligationCount": 146,
     "protectedPlacementCount": 120,
@@ -2995,20 +3677,6 @@
     },
     "blockedObligationId": null,
     "blockedTask": null,
-    "phase": "preflight",
-    "firstCausalCheck": "INVALID_SETUP_PREPARATION_POLICY",
-    "staticEligibleStartCount": null,
-    "dynamicEligibleStartCount": null,
-    "reasonCodes": [
-      "ASSISTED_SCOPE_INCOMPLETE",
-      "CORE_PREFLIGHT_FAILED",
-      "INVALID_SETUP_PREPARATION_POLICY"
-    ],
-    "blockingTaskIds": [],
-    "blockers": [],
-    "rejectionReason": "PREFLIGHT_REJECTED",
-    "originatingCoreDecision": null,
-    "classification": "PREFLIGHT_VALIDATION_REJECTED",
     "affected": {
       "taskIds": [
         10020,
@@ -3032,8 +3700,22 @@
       "resourceIds": [],
       "spaceId": 3009
     },
-    "causalAuthority": "Planner Next preflight / setup preparation policy",
-    "failureCategory": "VALIDATION"
+    "causalAuthority": null,
+    "failureCategory": "UNKNOWN",
+    "phase": "constructExactItinerantPlan completion",
+    "firstCausalCheck": "constructExactItinerantPlan completion",
+    "staticEligibleStartCount": null,
+    "dynamicEligibleStartCount": null,
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "CORE_INFEASIBLE",
+      "NO_COMPLETE_HARD_VALID_CORE"
+    ],
+    "blockingTaskIds": [],
+    "blockers": [],
+    "rejectionReason": null,
+    "originatingCoreDecision": null,
+    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "90ee686a9785989e187bec022e1db9aaadc3abfa09e08e60b9c85825ba6fe23b",
