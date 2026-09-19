@@ -15,9 +15,6 @@ export function taskId(participantId: string, type: TaskType): string {
   return `${participantId}.${type.toLowerCase()}`;
 }
 
-const TECHNICAL_CHAIN_ID = "technical.reality-eva-transfer-totales-post";
-const TECHNICAL_RESOURCE_IDS = ["cam-3", "cam-4", "son-1", "eva"] as const;
-
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -98,26 +95,6 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
   });
 }
 
-function technicalTasks(template: CanonicalFullA2Template): CanonicalTask[] {
-  const orderedTypes: readonly TaskType[] = ["TECH_REALITY_EVA", "TECH_DESMONTAJE_TRASLADO", "TECH_TOTALES_POST"];
-  return orderedTypes.map((type, index) => {
-    const definition = template.taskTypes[type];
-    const id = `TECH.${type.toLowerCase()}`;
-    const previous = index === 0 ? null : `TECH.${orderedTypes[index - 1]!.toLowerCase()}`;
-    return {
-      id,
-      type,
-      duration: definition.duration,
-      spaceId: definition.spaceId,
-      dependencies: previous ? [previous] : [],
-      operationalKind: "technical",
-      requiredResourceIds: [...TECHNICAL_RESOURCE_IDS],
-      technicalChainId: TECHNICAL_CHAIN_ID,
-      editorialTags: [],
-    } satisfies CanonicalTask;
-  });
-}
-
 function anchoredOperations(template: CanonicalFullA2Template): AnchoredOperationContract[] {
   return template.itinerantOperations.filter((operation) => operation.kind === "anchored").map((operation) => {
     const participantId = operation.participantId;
@@ -162,21 +139,12 @@ function jointOperations(): JointOperationContract[] {
 }
 
 function technicalChains(): TechnicalChainContract[] {
-  return [{
-    id: TECHNICAL_CHAIN_ID,
-    orderedTaskIds: ["TECH.tech_reality_eva", "TECH.tech_desmontaje_traslado", "TECH.tech_totales_post"],
-    adjacency: "REQUIRED",
-    resourceContinuity: "REQUIRED",
-    requiredResourceIds: [...TECHNICAL_RESOURCE_IDS],
-  }];
+  return [];
 }
 
 export function expandCanonicalFullA2Template(template: CanonicalFullA2Template): ExpandedCanonicalFullA2Template {
   const participants = [...template.participants].sort();
-  const tasks = sorted([
-    ...participants.flatMap((participantId) => participantTasks(template, participantId as ParticipantId)),
-    ...technicalTasks(template),
-  ], (task) => task.id);
+  const tasks = sorted(participants.flatMap((participantId) => participantTasks(template, participantId as ParticipantId)), (task) => task.id);
   const countsByType = Object.fromEntries(Object.keys(template.taskTypes).map((type) => [type, 0])) as Record<TaskType, number>;
   for (const task of tasks) countsByType[task.type] += 1;
   return deepFreeze({

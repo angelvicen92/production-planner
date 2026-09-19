@@ -4,6 +4,7 @@ import { executePlannerNext } from "../executePlannerNext";
 import { adaptEngineInputToPlannerNextProblem } from "../integration/engineInputAdapter";
 import { preflightEngineInputForPlannerNext } from "../integration/engineInputPreflight";
 import { buildCanonicalFullA2EngineInput } from "./canonicalFullA2EngineInput";
+import { CANONICAL_OBLIGATION_COUNT } from "./focal-a2/full-day/manifest";
 
 const PLAN_ID = 27001;
 const EVIDENCE_PATH = "docs/evidence/A2-FULL-EXEC-001-first-execution.json";
@@ -67,7 +68,7 @@ const diagnosticReport = diagnostic ? {
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
-  canonicalObligationCount: expansion.tasks.length,
+  canonicalObligationCount: CANONICAL_OBLIGATION_COUNT,
   canonicalValidationStatus: validation.status,
   engineInput: {
     taskCount: input.tasks.length,
@@ -106,8 +107,8 @@ const evidence = {
   result: {
     publishedCanonicalObligations,
     diagnosticScheduledCanonicalObligations: scheduledCanonicalObligations,
-    targetCanonicalObligations: expansion.tasks.length,
-    fullHardValidEligible: Boolean(exactResult?.complete && publishedCanonicalObligations === expansion.tasks.length && itineraryAvailabilityProjected),
+    targetCanonicalObligations: CANONICAL_OBLIGATION_COUNT,
+    fullHardValidEligible: Boolean(exactResult?.complete && publishedCanonicalObligations === CANONICAL_OBLIGATION_COUNT && itineraryAvailabilityProjected),
   },
 };
 

@@ -131,7 +131,7 @@ const evidence = {
     "anchoredOperations.empty",
     "anchoredOperations.omitC05",
     "jointOperations.empty",
-    "technicalChains.empty",
+    "technicalChains.nonCanonical",
     "itinerantUnits.empty",
     "itinerantOperations.c05WrongUnit",
     "itinerantResources.removeSon2",
@@ -146,12 +146,6 @@ const evidence = {
     "counts.recomputedAgainstTasks",
     "croma.addSon2",
     "croma.addCanonicalSound",
-    "technicalChain.adjacencyLost",
-    "technicalChain.resourceContinuityLost",
-    "technicalChain.orderChanged",
-    "technicalChain.contractResourceLost",
-    "technicalChain.taskExtraResource",
-    "technicalChain.durationChanged",
     "itinerantOperation.kindChanged",
     "effectiveConfiguration.participantAvailability.C01.end",
     "effectiveConfiguration.participantAvailability.C02-C19.end",
@@ -183,7 +177,7 @@ writeStable("docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md", `# SPEC10-016 — Pl
 
 ## Día expresado
 
-La plantilla anónima expresa ${evidence.participantCount} concursantes, ${evidence.contestantTaskCount} tareas de concursante, ${evidence.technicalTaskCount} tareas técnicas y ${evidence.totalTaskCount} tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
+La plantilla anónima expresa ${evidence.participantCount} concursantes y ${evidence.totalTaskCount} obligaciones canónicas. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales. La cabecera Reality/EVA no se materializa como obligaciones técnicas adicionales.
 
 ## Unidades itinerantes A2
 

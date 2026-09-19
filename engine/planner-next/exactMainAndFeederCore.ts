@@ -2,7 +2,8 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Valid
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines,
+  preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -315,6 +316,22 @@ export interface ExactFeederStartDomain {
 }
 
 export type ExactFeederSlotAnalyticCertificate = "NO_PERFECT_MATCH" | "NOT_PROVEN" | "NOT_APPLICABLE";
+
+/** Deterministic augmenting-path authority for the feeder-to-ordinal bipartite graph. */
+export function exactFeederOrdinalPerfectMatching(feederIds:readonly string[],
+  edges:ReadonlyMap<string,readonly number[]>):ReadonlyMap<string,number>|null {
+  const owner=new Map<number,string>();
+  const augment=(feederId:string,seen:Set<number>):boolean=>{
+    for(const ordinal of edges.get(feederId)??[]){
+      if(seen.has(ordinal))continue;
+      seen.add(ordinal);const previous=owner.get(ordinal);
+      if(previous===undefined||augment(previous,seen)){owner.set(ordinal,feederId);return true;}
+    }
+    return false;
+  };
+  for(const feederId of feederIds)if(!augment(feederId,new Set()))return null;
+  return new Map([...owner].map(([ordinal,feederId])=>[feederId,ordinal]));
+}
 
 /** Negative certificate using only deadlines and feeder-domain interval geometry.
  * NOT_PROVEN never establishes feasibility; the exact checks remain authoritative. */
@@ -797,8 +814,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const deferredSetupSpaceIds = new Set(problem.spaces.filter((space) => space.setupPolicy !== undefined
         && !reducedTasks.some((task) => task.spaceId === space.id)).map(({ id }) => id));
       const reduced: PlannerNextProblem = { ...problem, tasks: reducedTasks,
-        spaces: problem.spaces.map((space) => deferredSetupSpaceIds.has(space.id)
-          ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space),
+        spaces: problem.spaces.map((space) => {
+          const projected = deferredSetupSpaceIds.has(space.id)
+            ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space;
+          const authority = mainFlowMealPolicy(problem);
+          return space.id === problem.mainFlow.spaceId && authority && !projected.mealPolicy
+            ? { ...projected, mealPolicy: { window: { ...authority.window }, duration: authority.duration } } : projected;
+        }),
         anchoredAccompaniments: applicableContracts, roundSynchronizations: undefined,
         participantMeals: undefined, participantMealCapacity: undefined, operationalMealPolicies: undefined,
         transportPolicy: undefined };
@@ -1669,7 +1691,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { outcome: "FOUND", certificate };
   };
 
-  outer: if(mains.length>0) for (const pattern of patterns.patterns) {
+  const timelineCutTiers = hasMainFlowMeal(problem)
+    ? [preferredCandidateCuts, fallbackCandidateCuts] : [preferredCandidateCuts];
+  outer: if(mains.length>0) for (const candidateCutsForTier of timelineCutTiers) for (const pattern of patterns.patterns) {
     if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
       return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
     evidence.patternCandidatesExplored += 1;
@@ -1683,7 +1707,26 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
     const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
-      ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
+      ? (() => {
+        const base = candidateCutsForTier(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut));
+        const acceptedMains = protectedPlacements.filter((placement) =>
+          problem.tasks.find((task) => task.id === placement.id)?.kind === "main");
+        const acceptedAdjacent = base.flatMap((timeline) => acceptedMains.flatMap((accepted) => {
+          const variants: MainFlowTimeline[] = [];
+          if (timeline.splitIndex === pattern.length) {
+            const delta = accepted.start - (timeline.slots.at(-1)! + duration);
+            variants.push({ ...timeline, key: `${timeline.key}|BEFORE_ACCEPTED:${accepted.start}`,
+              slots: timeline.slots.map((slot) => slot + delta), strategyRank: timeline.strategyRank + 1 });
+          }
+          if (timeline.splitIndex === 0) {
+            const delta = accepted.end - timeline.slots[0]!;
+            variants.push({ ...timeline, key: `${timeline.key}|AFTER_ACCEPTED:${accepted.end}`,
+              slots: timeline.slots.map((slot) => slot + delta), strategyRank: timeline.strategyRank + 1 });
+          }
+          return variants;
+        }));
+        return orderTimelines([...base, ...acceptedAdjacent]);
+      })() : [undefined];
     for (const timeline of timelines) {
       const departureEnds = [...latestDepartureStart.values()];
       const historicalEnds = [...new Set([

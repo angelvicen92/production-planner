@@ -582,7 +582,12 @@ export function generateMainFlowPatterns(
     for (let index = 0; index < a.length; index += 1) if (a[index] !== b[index]) return a[index]! - b[index]!;
     return 0;
   };
-  output.sort((a, b) => compareTuple(concentrationSignature(a), concentrationSignature(b))
-    || runCount(a) - runCount(b) || a.join("|").localeCompare(b.join("|")));
+  // Block count is a structural objective, while concentration is only an
+  // authorised preference.  Keeping it as the first key also means the exact
+  // caller exhausts every N-block architecture before observing N+1; otherwise
+  // a preferred-resource signature could silently interleave larger families.
+  output.sort((a, b) => runCount(a) - runCount(b)
+    || compareTuple(concentrationSignature(a), concentrationSignature(b))
+    || a.join("|").localeCompare(b.join("|")));
   return { patterns: output, exhausted };
 }

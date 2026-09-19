@@ -117,6 +117,7 @@ export function assessOperationalMealFutureFeasibility(
   tasks: readonly ScheduledTask[],
   budget: OperationalMealSearchBudget,
   mode: OperationalMealAssessmentMode,
+  fixedMeals: readonly ScheduledOperationalMeal[] = [],
 ): OperationalMealWitness {
   const policies = [...(problem.operationalMealPolicies ?? [])].sort(byIdentity);
   if (policies.length === 0) {
@@ -183,7 +184,20 @@ export function assessOperationalMealFutureFeasibility(
     return null;
   };
 
-  const scheduled = search(policies, [], []);
+  const policyById = new Map(policies.map((policy) => [policy.id, policy]));
+  const fixedById = new Map(fixedMeals.map((meal) => [meal.id, meal]));
+  const invalidFixed = fixedMeals.filter((meal) => {
+    const policy = policyById.get(meal.id);
+    return !policy || meal.duration !== policy.duration || meal.end - meal.start !== policy.duration
+      || meal.start < policy.window.start || meal.end > policy.window.end
+      || [...meal.resourceIds].sort().join("\0") !== [...policy.resourceIds].sort().join("\0")
+      || [...meal.spaceIds].sort().join("\0") !== [...policy.spaceIds].sort().join("\0")
+      || !scopeAvailable(problem, policy, meal.start, meal.end)
+      || tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, meal));
+  });
+  const pending = policies.filter((policy) => !fixedById.has(policy.id));
+  const scheduled = invalidFixed.length ? null : search(pending, [...fixedMeals], []);
+  invalidFixed.forEach((meal) => blockers.add(meal.id));
   if (!scheduled && !exhausted && blockers.size === 0) policies.forEach(({ id }) => blockers.add(id));
   return freeze({
     complete: scheduled !== null,
@@ -197,7 +211,8 @@ export function assessOperationalMealFutureFeasibility(
     backtracks,
     reasonCodes: scheduled
       ? []
-      : [exhausted ? "OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED" : "OPERATIONAL_MEALS_JOINTLY_INFEASIBLE"],
+      : [invalidFixed.length ? "INVALID_FIXED_OPERATIONAL_MEAL"
+        : exhausted ? "OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED" : "OPERATIONAL_MEALS_JOINTLY_INFEASIBLE"],
     readOnly: true,
   });
 }

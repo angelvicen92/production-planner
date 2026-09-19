@@ -34,10 +34,9 @@ export const EXPECTED_COUNTS_BY_TYPE: Readonly<Record<TaskType, number>> = Objec
   REALITY_CORNER_MUSIC: 1,
   REALITY_INFLUENCER: 1,
   REALITY_MANZANO: 1,
-  TECH_DESMONTAJE_TRASLADO: 1,
-  TECH_REALITY_EVA: 1,
-  TECH_TOTALES_POST: 1,
 });
+
+export const CANONICAL_OBLIGATION_COUNT = Object.values(EXPECTED_COUNTS_BY_TYPE).reduce((sum, count) => sum + count, 0);
 
 export const EXPECTED_PARTICIPANT_TASK_MATRIX: Readonly<Record<string, readonly TaskType[]>> = Object.freeze({
   C01: ["IN", "ESTILISMO_ENTRADA", "CROMA", "PRUEBA_VOCAL_LUCIA", "REALITY_PLATO_ANTES", "ENSAYO_ESTUDIO_7", "REALITY_PLATO_DESPUES", "REDES", "PASILLO", "TOTALES_1", "SODEXO", "GIRATUTO", "ESTILISMO_SALIDA", "OUT"],
@@ -115,9 +114,6 @@ export const TASK_TYPES: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>>
   TOTALES_POST_CONJUNTO: { label: "Totales Post conjunto", duration: 5, spaceId: "totales-post", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   ESTILISMO_SALIDA: { label: "Estilismo salida", duration: 5, spaceId: "styling", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   OUT: { label: "OUT", duration: 5, spaceId: "transport-out", operationalKind: "transport_departure", exclusiveSpaceUse: "not_applicable", knownResourceIds: [], blocksParticipant: true },
-  TECH_REALITY_EVA: { label: "Reality con EVA", duration: 20, spaceId: "reality-control", operationalKind: "technical", exclusiveSpaceUse: true, knownResourceIds: ["cam-3", "cam-4", "son-1", "eva"], blocksParticipant: false },
-  TECH_DESMONTAJE_TRASLADO: { label: "Desmontaje y traslado", duration: 5, spaceId: "technical-transfer", operationalKind: "technical", exclusiveSpaceUse: true, knownResourceIds: ["cam-3", "cam-4", "son-1", "eva"], blocksParticipant: false },
-  TECH_TOTALES_POST: { label: "Totales Post técnico", duration: 5, spaceId: "totales-post", operationalKind: "technical", exclusiveSpaceUse: true, knownResourceIds: ["cam-3", "cam-4", "son-1", "eva"], blocksParticipant: false },
 });
 
 export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
@@ -144,7 +140,6 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
   { id: "reality-corner-music", label: "Reality - Corner Music", exclusivity: "exclusive", capacityKnown: 1 },
   { id: "alfombra-roja", label: "Alfombra Roja", exclusivity: "exclusive", capacityKnown: 1 },
   { id: "totales-post", label: "Totales Post", exclusivity: "exclusive", capacityKnown: 1 },
-  { id: "technical-transfer", label: "Desmontaje y traslado", exclusivity: "exclusive", capacityKnown: 1 },
 ]);
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([

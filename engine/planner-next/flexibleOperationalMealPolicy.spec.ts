@@ -6,7 +6,7 @@ import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputA
 import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";
 import { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
 import { resolveFlexibleOperationalMealPolicies } from "./integration/flexibleOperationalMealPolicies";
-import { operationalMealCandidates } from "./operationalMeals";
+import { assessOperationalMealFutureFeasibility, operationalMealCandidates } from "./operationalMeals";
 import { validatePlan } from "./validate";
 
 // Core-leaf validation intentionally precedes operational-meal materialization; this regression
@@ -97,4 +97,26 @@ test("shared resources cannot receive duplicate operational meals", () => {
   const preflight = preflightEngineInputForPlannerNext(input);
   assert.equal(preflight.status, "UNSUPPORTED");
   assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_OPERATIONAL_MEAL_POLICY"));
+});
+
+test("a space-only operational meal needs no invented resource and projects immutably", () => {
+  const input=fixture();input.operationalMealPolicies=[{id:"main-space",window:{start:"13:00",end:"16:30"},durationMinutes:75,planResourceItemIds:[],spaceIds:[301]}];
+  const before=structuredClone(input),adapted=adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(adapted.status,"SUPPORTED",JSON.stringify(adapted.issues));
+  assert.deepEqual(adapted.problem?.operationalMealPolicies,[{id:"break:main-space",window:{start:780,end:990},duration:75,resourceIds:[],spaceIds:["space:301"]}]);
+  assert.deepEqual(input,before);
+});
+
+test("a fixed operational meal is satisfied once, keeps its complete scope, and blocks shared meals",()=>{
+  const p=exactMealProblem();
+  p.operationalMealPolicies=[
+    {id:"main",window:{start:20,end:40},duration:10,resourceIds:["unit"],spaceIds:["main"]},
+    {id:"other",window:{start:20,end:30},duration:10,resourceIds:["unit"],spaceIds:[]},
+  ];
+  const fixed={id:"main",start:20,end:30,duration:10,resourceIds:["unit"],spaceIds:["main"]};
+  const probe=assessOperationalMealFutureFeasibility(p,[],{remaining:100},"MATERIALIZE",[fixed]);
+  assert.equal(probe.complete,false);assert.deepEqual(probe.blockingPolicyIds,["other"]);
+  p.operationalMealPolicies.pop();
+  const materialized=assessOperationalMealFutureFeasibility(p,[],{remaining:100},"MATERIALIZE",[fixed]);
+  assert.equal(materialized.complete,true);assert.deepEqual(materialized.scheduled,[fixed]);
 });

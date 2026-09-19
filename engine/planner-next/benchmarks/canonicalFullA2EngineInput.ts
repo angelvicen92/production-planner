@@ -156,6 +156,13 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     durationMinutes: config.meals.operational.defaultDurationMinutes,
     planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
   }));
+  input.operationalMealPolicies.push({
+    id: "main-flow-space",
+    window: { ...config.meals.effectiveWindow },
+    durationMinutes: config.meals.operational.defaultDurationMinutes,
+    planResourceItemIds: [],
+    spaceIds: [spaceId.get(expansion.rules.mainFlow.spaceId)!],
+  });
   input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailability).map(([canonicalId, availability]) => ({
     itinerantTeamId: itinerantUnitId.get(canonicalId)!,
     windows: [{ start: availability.start, end: availability.end }],
