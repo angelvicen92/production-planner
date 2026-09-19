@@ -1837,6 +1837,75 @@
           ],
           "collisions": []
         }
+      },
+      "sharedCapacityDiagnostic": {
+        "prerequisiteSharedCapacityChecks": 3672,
+        "prerequisiteSharedCapacityPrunes": 8,
+        "prerequisiteSharedCapacityAbstentions": 0,
+        "checksByAuthority": {
+          "TRANSPORT": 1224,
+          "ENTRY_STYLING": 1224,
+          "COMBINED": 1224
+        },
+        "abstentionsByAuthority": {
+          "TRANSPORT": 0,
+          "ENTRY_STYLING": 0,
+          "COMBINED": 0
+        },
+        "firstSharedCapacityPrune": {
+          "architecture": "plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005::END:825::",
+          "pattern": [
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005"
+          ],
+          "horizon": 540,
+          "requiredCount": 1,
+          "maximumFeedableCount": 0,
+          "authority": "TRANSPORT"
+        },
+        "firstSharedCapacityPass": {
+          "architecture": "plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4004|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005|plan-resource:4005::END:1260::",
+          "pattern": [
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005"
+          ]
+        },
+        "capacityFingerprint": "075788c81ad46ebdebc03af9b187917bf8d5dae85d3d92731a0d65e1c43629e5",
+        "nominalIdentityBeginsAt": "exactMainAndFeederCore residual matching"
       }
     }
   ],
@@ -1883,5 +1952,10 @@
     "classification": "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED"
   },
   "deterministicFingerprint": "ff3d51582cec7c0e7e2c27fb29536a0d0de213dc4097b3adc016838f1a097ca4",
-  "deterministicEquivalent": true
+  "deterministicEquivalent": true,
+  "effectiveInConfiguration": {
+    "targetGroupSize": 3,
+    "maximumGroupSize": 3,
+    "minGapMinutes": 30
+  }
 }

@@ -64,6 +64,8 @@ export interface ExactMainAndFeederCoreEvidence {
   prerequisiteSharedCapacityChecks: number;
   prerequisiteSharedCapacityPrunes: number;
   prerequisiteSharedCapacityAbstentions: number;
+  prerequisiteSharedCapacityChecksByAuthority: Record<"TRANSPORT" | "ENTRY_STYLING" | "COMBINED", number>;
+  prerequisiteSharedCapacityAbstentionsByAuthority: Record<"TRANSPORT" | "ENTRY_STYLING" | "COMBINED", number>;
   firstSharedCapacityPrune: { architecture: string; pattern: string[]; horizon: number;
     requiredCount: number; maximumFeedableCount: number; authority: "TRANSPORT" | "ENTRY_STYLING" | "COMBINED" } | null;
   firstSharedCapacityPass: { architecture: string; pattern: string[] } | null;
@@ -599,6 +601,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
     architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
     prerequisiteSharedCapacityChecks:0,prerequisiteSharedCapacityPrunes:0,prerequisiteSharedCapacityAbstentions:0,
+    prerequisiteSharedCapacityChecksByAuthority:{TRANSPORT:0,ENTRY_STYLING:0,COMBINED:0},
+    prerequisiteSharedCapacityAbstentionsByAuthority:{TRANSPORT:0,ENTRY_STYLING:0,COMBINED:0},
     firstSharedCapacityPrune:null,firstSharedCapacityPass:null,sharedCapacityFingerprint:null,
     firstExactArchitecture: null, firstFeedableRunSizes: [], feederOrderBranchesByArchitecture: {}, feederOrderBranches:0,
     feederSlotAnalyticChecks:0,feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,
@@ -1793,7 +1797,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           const rejection = fixedIds.size===0?proveMainFeederArchitectureImpossible(problem, mains, feederByMain,
             { pattern, slots }, certificate=>{
               evidence.prerequisiteSharedCapacityChecks += certificate.checks.length;
-              evidence.prerequisiteSharedCapacityAbstentions += Number(certificate.abstained);
+              for(const check of certificate.checks)
+                evidence.prerequisiteSharedCapacityChecksByAuthority[check.authority]+=1;
+              evidence.prerequisiteSharedCapacityAbstentions += certificate.abstentions.length;
+              for(const abstention of certificate.abstentions)
+                evidence.prerequisiteSharedCapacityAbstentionsByAuthority[abstention.authority]+=1;
               evidence.sharedCapacityFingerprint = certificate.fingerprint;
               const failed=certificate.checks.find(check=>check.requiredCount>check.maximumFeedableCount);
               if(failed){evidence.prerequisiteSharedCapacityPrunes+=1;if(!evidence.firstSharedCapacityPrune)

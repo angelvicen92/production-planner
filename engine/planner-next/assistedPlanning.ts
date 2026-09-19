@@ -43,6 +43,8 @@ export interface AssistedPlanningEvidence {
   readonly prerequisiteSharedCapacityChecks?: number;
   readonly prerequisiteSharedCapacityPrunes?: number;
   readonly prerequisiteSharedCapacityAbstentions?: number;
+  readonly prerequisiteSharedCapacityChecksByAuthority?: Readonly<Record<string, number>>;
+  readonly prerequisiteSharedCapacityAbstentionsByAuthority?: Readonly<Record<string, number>>;
   readonly firstSharedCapacityPrune?: unknown;
   readonly firstSharedCapacityPass?: unknown;
   readonly sharedCapacityFingerprint?: string | null;
@@ -314,6 +316,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     prerequisiteSharedCapacityChecks: Number(evidenceRecord.prerequisiteSharedCapacityChecks ?? 0),
     prerequisiteSharedCapacityPrunes: Number(evidenceRecord.prerequisiteSharedCapacityPrunes ?? 0),
     prerequisiteSharedCapacityAbstentions: Number(evidenceRecord.prerequisiteSharedCapacityAbstentions ?? 0),
+    prerequisiteSharedCapacityChecksByAuthority:
+      (evidenceRecord.prerequisiteSharedCapacityChecksByAuthority as Record<string, number> | undefined) ?? {},
+    prerequisiteSharedCapacityAbstentionsByAuthority:
+      (evidenceRecord.prerequisiteSharedCapacityAbstentionsByAuthority as Record<string, number> | undefined) ?? {},
     firstSharedCapacityPrune: evidenceRecord.firstSharedCapacityPrune ?? null,
     firstSharedCapacityPass: evidenceRecord.firstSharedCapacityPass ?? null,
     sharedCapacityFingerprint: typeof evidenceRecord.sharedCapacityFingerprint === "string"

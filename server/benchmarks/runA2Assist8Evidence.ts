@@ -149,6 +149,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         prerequisiteSharedCapacityChecks: evidence.prerequisiteSharedCapacityChecks ?? 0,
         prerequisiteSharedCapacityPrunes: evidence.prerequisiteSharedCapacityPrunes ?? 0,
         prerequisiteSharedCapacityAbstentions: evidence.prerequisiteSharedCapacityAbstentions ?? 0,
+        checksByAuthority: evidence.prerequisiteSharedCapacityChecksByAuthority ?? {},
+        abstentionsByAuthority: evidence.prerequisiteSharedCapacityAbstentionsByAuthority ?? {},
         firstSharedCapacityPrune: evidence.firstSharedCapacityPrune ?? null,
         firstSharedCapacityPass: evidence.firstSharedCapacityPass ?? null,
         capacityFingerprint: evidence.sharedCapacityFingerprint ?? null,

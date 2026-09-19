@@ -217,10 +217,10 @@ function withEntryClosure(fixture: ReturnType<typeof firstCoachRun>, stylingAvai
   return fixture;
 }
 
-test("structural matching rejects a cohort position whose IN, styling and vocal closure cannot finish", () => {
+test("individual styling windows remain a nominal matching concern", () => {
   const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 35, end: 55 }]);
   assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
-    twoSlotArchitecture), "FEEDER_PREREQUISITE_PREFIX_CAPACITY");
+    twoSlotArchitecture), "PREREQUISITE_WINDOW");
 });
 
 test("structural matching preserves both legal styling/vocal orders without fixing cohort order", () => {
@@ -278,13 +278,28 @@ test("shared IN and styling capacity rejects only the early architecture and is 
   assert.equal(reversedFingerprint, firstFingerprint);
 });
 
-test("participant-specific prerequisite authority makes shared capacity abstain", () => {
+test("participant-specific availability is ignored by the anonymous upper bound", () => {
   const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 0, end: 120 }]);
   fixture.problem.tasks.find(({ id }) => id.startsWith("arrival-"))!.availability = [{ start: 5, end: 120 }];
-  let abstained = false;
+  let certificateSeen: Parameters<NonNullable<Parameters<typeof proveMainFeederArchitectureImpossible>[4]>>[0] | null = null;
   assert.equal(proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
-    twoSlotArchitecture, (certificate) => { abstained = certificate.abstained; }), null);
-  assert.equal(abstained, true);
+    twoSlotArchitecture, (certificate) => { certificateSeen = certificate; }), null);
+  assert.equal(certificateSeen!.abstained, false);
+  assert.ok(certificateSeen!.checks.some(({ authority }) => authority === "TRANSPORT"));
+});
+
+test("transport remains applicable when shared styling cannot be proved", () => {
+  const fixture = withEntryClosure(firstCoachRun(prefixProblem(10)), [{ start: 0, end: 120 }]);
+  const styling = fixture.problem.tasks.find(({ id }) => id.startsWith("styling-"))!;
+  styling.spaceId = "participant-only-styling";
+  fixture.problem.spaces.push({ id: styling.spaceId, availability: [{ start: 0, end: 120 }] });
+  let certificateSeen: Parameters<NonNullable<Parameters<typeof proveMainFeederArchitectureImpossible>[4]>>[0] | null = null;
+  proveMainFeederArchitectureImpossible(fixture.problem, fixture.mains, fixture.feeders,
+    twoSlotArchitecture, (certificate) => { certificateSeen = certificate; });
+  assert.ok(certificateSeen!.checks.some(({ authority }) => authority === "TRANSPORT"));
+  assert.ok(certificateSeen!.abstentions.some(({ authority }) => authority === "ENTRY_STYLING"));
+  assert.ok(certificateSeen!.abstentions.some(({ authority }) => authority === "COMBINED"));
+  assert.ok(!certificateSeen!.abstentions.some(({ authority }) => authority === "TRANSPORT"));
 });
 
 function feederPrefixFixture(firstMainStart: number) {
