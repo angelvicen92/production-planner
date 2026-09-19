@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { buildAnonymousPipelineWitness } from "./anonymousPipelineWitness";
+import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness } from "./anonymousPipelineWitness";
 
 const windows=[{start:0,end:300}];
 function problem(keys:string[]=["A"], coachIds:string[]=["coach-a"]):PlannerNextProblem{
@@ -116,6 +116,16 @@ describe("anonymous structural pipeline witness",()=>{
     const b=buildAnonymousPipelineWitness({...p,tasks:[...p.tasks].reverse(),participants:p.participants.map(x=>({...x,id:`renamed-${x.id}`})),
       tasks:[...p.tasks].reverse().map(t=>({...t,participantId:`renamed-${t.participantId}`}))} as PlannerNextProblem,{pattern:["A"],slots:[200]});
     assert.equal(a.status,"FEASIBLE");assert.equal(a.fingerprint,b.fingerprint);assert.equal(JSON.stringify(p),before);
+  });
+
+  it("keeps nominal materialization internal to the anonymous deterministic certificate",()=>{
+    const p=problem();anchor(p,0);const architecture={pattern:["A"],slots:[200]};
+    const publicWitness=buildAnonymousPipelineWitness(p,architecture);
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    assert.deepEqual(nominal.witness,publicWitness);
+    assert.equal(new Set(nominal.scheduledTasks.map(task=>task.id)).size,nominal.scheduledTasks.length);
+    assert.ok(nominal.scheduledTasks.some(task=>task.id==="main0"));
+    assert.equal(JSON.stringify(publicWitness).includes("main0"),false);
   });
 
   it("reports read-only phase and boundary diagnostics without changing the witness",()=>{

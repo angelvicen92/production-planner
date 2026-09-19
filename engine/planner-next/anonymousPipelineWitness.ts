@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
-import type { MainFeederArchitecture } from "./mainFlowPatterns";
+import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
@@ -65,9 +66,10 @@ const signatureWindows = (windows: readonly Window[] | undefined) => orderedWind
  * Nominal ids are used only to read the source dependency graph, then discarded before
  * profiles, tokens, matching and the returned certificate are built.
  */
-export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture,
+function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture,
   onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void,
-  analyticalParticipantMeals:readonly ParticipantMealObligation[]=[]): AnonymousPipelineWitness {
+  analyticalParticipantMeals:readonly ParticipantMealObligation[]=[],
+  onNominalSchedule?: (scheduled:readonly ScheduledTask[])=>void): AnonymousPipelineWitness {
   let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
   let arrivalSolverExecuted=false,arrivalClassification:string|null=null,arrivalContiguousStatesExplored=0;
   let arrivalMembershipFallbackEntered=false,stylingCandidateStartBoundaryCount=0;
@@ -346,7 +348,7 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
       {...x.feeder,start:feeder.start,end:feeder.end},
       {...x.styling,start:styling.start,end:styling.end},
       {...x.arrival,start:group.start,end:group.end},
-      ...(operation?.tasks??[]),
+      ...(operation?.tasks.filter(task=>task.id!==x.main.id)??[]),
     ];
   });
   const mainMealAuthority=mainFlowMealPolicy(problem as PlannerNextProblem);
@@ -380,5 +382,50 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
     ...(anchoredOperations.has(x.tokenId)?{anchoredOperationSpotId:`anchored:${x.tokenId}`}:{})})).sort((a,b)=>a.tokenId.localeCompare(b.tokenId));
   const payload={runCount:empty("FEASIBLE","").runCount,pattern:[...architecture.pattern],mainSpots,feederSpots,
     stylingSpots,inGroups,anchoredOperationSpots,assignments,profileCount:ordinal.size,tokenCount:layers.length};
+  onNominalSchedule?.(internalSchedule);
   const result={status:"FEASIBLE" as const,...payload,fingerprint:stable(payload)};emitDiagnostic();return result;
+}
+
+/** Public certificate. Nominal task identity is deliberately absent from its result and fingerprint. */
+export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture,
+  onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void,
+  analyticalParticipantMeals:readonly ParticipantMealObligation[]=[]): AnonymousPipelineWitness {
+  return buildPipelineWitness(problem,architecture,onDiagnostic,analyticalParticipantMeals);
+}
+
+/** Internal constructive projection of the already-proved anonymous assignments. */
+export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture):
+  { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[] } {
+  let scheduledTasks:readonly ScheduledTask[]=[];
+  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;});
+  return {witness,scheduledTasks};
+}
+
+/** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */
+export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerNextProblem>):
+  { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[] }|null {
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  if(!mains.length)return null;
+  const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
+    &&task.participantId===main.participantId);return feeder?[[main.id,feeder] as const]:[];}));
+  const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
+    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
+  for(const pattern of generated.patterns){
+    const duration=mains[0]!.duration;
+    const slots=hasMainFlowMeal(problem)
+      ?orderTimelines(candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut))).map(row=>row.slots)
+      :[problem.mainFlow.preferredEnd,problem.day.end].filter((end,index,ends)=>ends.indexOf(end)===index)
+        .map(end=>pattern.map((_,index)=>end-pattern.length*duration+index*duration));
+    for(const timeline of slots){
+      const architecture={pattern,timeline:undefined,slots:timeline};
+      if(proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture))continue;
+      const materialized=materializeNominalPipelineWitness(problem,architecture);
+      const orderedMains=materialized.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start);
+      const meal=mainFlowMealPolicy(problem)?createMainFlowMeal(problem):null;
+      const continuous=orderedMains.slice(1).every((task,index)=>orderedMains[index]!.end===task.start
+        ||Boolean(meal&&orderedMains[index]!.end===meal.start&&task.start===meal.end));
+      if(materialized.witness.status==="FEASIBLE"&&continuous)return materialized;
+    }
+  }
+  return null;
 }

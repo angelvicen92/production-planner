@@ -26,7 +26,7 @@ import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "
 import { canPlaceTask } from "./placement";
 import { createScheduledSpaceMeal, spaceMealAvoidsAssignedResourceTasks, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
 import { operationalMealCandidates } from "./operationalMeals";
-import { mainFlowMealAligned, hasMainFlowMeal } from "./mainFlowMeal";
+import { mainFlowMealAligned, hasMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { evaluateResourcePresence } from "./resourcePresence";
 import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
@@ -488,6 +488,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let mainFlowMeal = 0;
   const mainPolicy = problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)?.mealPolicy;
   const ownMeals = meals.filter(x=>x.spaceId===problem.mainFlow.spaceId);
+  const mainFlowOperationalAuthority=mainFlowMealPolicy(problem);
+  const mainFlowOperationalMeal=mainFlowOperationalAuthority?.source==="OPERATIONAL_MEAL_POLICY"
+    ?operationalMeals.find(meal=>mainFlowOperationalAuthority.sourceIds.includes(meal.id)):undefined;
   if (mainPolicy) {
     const meal=ownMeals[0], mealStart=meal?.start??problem.mainFlow.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
     const consecutive=(xs:ScheduledTask[])=>xs.slice(1).every((x,i)=>xs[i]?.end===x.start);
@@ -501,7 +504,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const between=previous&&current?mainFlowOccupations.filter(x=>previous.start<=x.start&&x.end<=current.end):[];const ownMeal=ownMeals[0];
       // Continuity detects positive gaps. An overlap is governed separately by
       // OVERLAP_VIOLATION and must not manufacture a second anonymous BLOCK.
-      const connected=between.slice(1).every((x,i)=>x.start<=between[i]!.end)||(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end));if (!previous || !current || !connected) block += 1;
+      const connected=between.slice(1).every((x,i)=>x.start<=between[i]!.end)
+        ||Boolean(mainPolicy&&ownMeal&&between.some(x=>x.end===ownMeal.start)&&between.some(x=>x.start===ownMeal.end))
+        ||Boolean(mainFlowOperationalMeal&&between.some(x=>x.end===mainFlowOperationalMeal.start)
+          &&between.some(x=>x.start===mainFlowOperationalMeal.end));if (!previous || !current || !connected) block += 1;
     }
     const runs: Array<{ key: string; count: number }> = [];
     for (const task of mains) {
