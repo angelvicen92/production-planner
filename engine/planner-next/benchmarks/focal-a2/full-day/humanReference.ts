@@ -3,7 +3,7 @@ import { createCanonicalFullA2Template } from "./manifest";
 import { expandCanonicalFullA2Template, taskId } from "./expand";
 import type { CanonicalTask, ExpandedCanonicalFullA2Template, ParticipantId, TaskType } from "./types";
 
-export const HUMAN_A2_REFERENCE_CONTRACT_VERSION = "A2.human-reference.v1" as const;
+export const HUMAN_A2_REFERENCE_CONTRACT_VERSION = "A2.human-reference.v2" as const;
 
 export interface HumanA2ReferenceInterval {
   readonly taskId: string;
@@ -74,12 +74,6 @@ const participantStarts: Readonly<Record<ParticipantId, readonly (readonly [Task
   C19: [["IN", "12:30"], ["ESTILISMO_ENTRADA", "12:40"], ["CROMA", "13:10"], ["PASILLO", "13:20"], ["REDES", "13:25"], ["REALITY_CORNER_MUSIC", "13:30"], ["CORNER_INFLUENCER", "14:20"], ["PRUEBA_VOCAL_JOSE_MARIA", "14:45"], ["TOTALES_COREO", "15:00"], ["SODEXO", "15:35"], ["ENSAYO_ESTUDIO_7", "17:00"], ["ESTILISMO_SALIDA", "17:15"], ["OUT", "17:25"]],
 };
 
-const technicalStarts: Readonly<Record<string, string>> = {
-  "TECH.tech_reality_eva": "16:00",
-  "TECH.tech_desmontaje_traslado": "16:20",
-  "TECH.tech_totales_post": "16:25",
-};
-
 function canonicalProjection(intervals: readonly HumanA2ReferenceInterval[], preparations: readonly HumanA2ReferencePreparation[]): unknown {
   return {
     intervals: intervals.map(({ taskId: id, start, end, duration }) => ({ id, start, end, duration })),
@@ -122,10 +116,6 @@ function buildStarts(): Map<string, number> {
       starts.set(id, minutes(start));
     }
   }
-  for (const [id, start] of Object.entries(technicalStarts)) {
-    if (starts.has(id)) throw new Error(`Duplicate human reference task ${id}`);
-    starts.set(id, minutes(start));
-  }
   return starts;
 }
 
@@ -147,7 +137,7 @@ export function createHumanA2Reference(expanded: ExpandedCanonicalFullA2Template
     referenceOnly: true,
     forbiddenAsPlannerInput: true,
     sourceDocuments: Object.freeze(["ENSAYO_A2_LV.pdf", "ENSAYO_A2_LV 15 JUNIO 2025 - DESGLOSE A2.pdf", "DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md"] as const),
-    appliedCorrections: Object.freeze(["C09_DUPLICATE_SODEXO_REMOVED", "C12_SODEXO_40_MINUTES_AT_C11_REFERENCE_WINDOW", "C13_FINAL_C_IS_ESTILISMO_SALIDA", "C06_C10_JOINT_ALFOMBRA_ROJA_10_MINUTES", "C06_C10_JOINT_TOTALES_POST_5_MINUTES", "C16_ALFOMBRA_ROJA_WITHOUT_TOTALES_POST", "REALITY_EVA_TECHNICAL_CHAIN_HAS_NO_PARTICIPANT"]),
+    appliedCorrections: Object.freeze(["C09_DUPLICATE_SODEXO_REMOVED", "C12_SODEXO_40_MINUTES_AT_C11_REFERENCE_WINDOW", "C13_FINAL_C_IS_ESTILISMO_SALIDA", "C06_C10_JOINT_ALFOMBRA_ROJA_10_MINUTES", "C06_C10_JOINT_TOTALES_POST_5_MINUTES", "C16_ALFOMBRA_ROJA_WITHOUT_TOTALES_POST", "REALITY_EVA_HEADER_IS_CONFIGURATION_NOT_OBLIGATIONS"]),
     sourceAudit: Object.freeze({
       status: "REQUIRES_CONFIGURATION_CLARIFICATION" as const,
       knownAmbiguities: Object.freeze([

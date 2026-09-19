@@ -2,7 +2,7 @@
 
 ## Día expresado
 
-La plantilla anónima expresa 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
+La plantilla anónima expresa 19 concursantes y 266 obligaciones canónicas. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales. La cabecera Reality/EVA no se materializa como obligaciones técnicas adicionales.
 
 ## Unidades itinerantes A2
 

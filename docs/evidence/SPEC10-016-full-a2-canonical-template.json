@@ -1,5 +1,5 @@
 {
-  "contractVersion": "A2-FULL-009.full-a2-template.v4",
+  "contractVersion": "A2-FULL-009.full-a2-template.v5",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -22,12 +22,12 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "2aa0faa44c8fe5ad0e74ed06c5f378eb24709faf502b9b52ca6457a79ed3fef8",
-  "expansionFingerprint": "ca1cfb006f829ca66acda9fb2ad4cc06ec45240feec3ef12739c1fce34c9dc8e",
+  "manifestFingerprint": "2e9b6a255ad97e4e117aa5f38cb9f5a336a127df8d2cf648ce5a50fbd8fb8eb7",
+  "expansionFingerprint": "7e4c0637e07bd0621f67ce3d42f6d8edb232578093a39bfb45441769b5983af5",
   "participantCount": 19,
   "contestantTaskCount": 266,
-  "technicalTaskCount": 3,
-  "totalTaskCount": 269,
+  "technicalTaskCount": 0,
+  "totalTaskCount": 266,
   "countsByType": {
     "IN": 19,
     "ESTILISMO_ENTRADA": 19,
@@ -59,10 +59,7 @@
     "ALFOMBRA_ROJA_CONJUNTA": 2,
     "TOTALES_POST_CONJUNTO": 2,
     "ESTILISMO_SALIDA": 19,
-    "OUT": 19,
-    "TECH_REALITY_EVA": 1,
-    "TECH_DESMONTAJE_TRASLADO": 1,
-    "TECH_TOTALES_POST": 1
+    "OUT": 19
   },
   "canonicalResources": [
     {
@@ -743,24 +740,7 @@
         "sequenceAfterJointGroupId": "joint.alfombra-roja.C06-C10"
       }
     ],
-    "technicalChains": [
-      {
-        "id": "technical.reality-eva-transfer-totales-post",
-        "orderedTaskIds": [
-          "TECH.tech_reality_eva",
-          "TECH.tech_desmontaje_traslado",
-          "TECH.tech_totales_post"
-        ],
-        "adjacency": "REQUIRED",
-        "resourceContinuity": "REQUIRED",
-        "requiredResourceIds": [
-          "cam-3",
-          "cam-4",
-          "son-1",
-          "eva"
-        ]
-      }
-    ],
+    "technicalChains": [],
     "itinerantOperations": [
       {
         "id": "itinerant.reality-unit-a.C01.reality-plato",
@@ -1597,7 +1577,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "ca1cfb006f829ca66acda9fb2ad4cc06ec45240feec3ef12739c1fce34c9dc8e",
+    "shuffledExpansionFingerprint": "7e4c0637e07bd0621f67ce3d42f6d8edb232578093a39bfb45441769b5983af5",
     "matches": true
   },
   "inputImmutable": {
@@ -1607,7 +1587,7 @@
     "anchoredOperations.empty",
     "anchoredOperations.omitC05",
     "jointOperations.empty",
-    "technicalChains.empty",
+    "technicalChains.nonCanonical",
     "itinerantUnits.empty",
     "itinerantOperations.c05WrongUnit",
     "itinerantResources.removeSon2",
@@ -1622,12 +1602,6 @@
     "counts.recomputedAgainstTasks",
     "croma.addSon2",
     "croma.addCanonicalSound",
-    "technicalChain.adjacencyLost",
-    "technicalChain.resourceContinuityLost",
-    "technicalChain.orderChanged",
-    "technicalChain.contractResourceLost",
-    "technicalChain.taskExtraResource",
-    "technicalChain.durationChanged",
     "itinerantOperation.kindChanged",
     "effectiveConfiguration.participantAvailability.C01.end",
     "effectiveConfiguration.participantAvailability.C02-C19.end",
