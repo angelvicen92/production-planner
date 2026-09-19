@@ -4,7 +4,8 @@ import { buildTimeline, candidateCuts, fallbackCandidateCuts, mainFlowMealAligne
   preferredCandidateCuts } from "./mainFlowMeal";
 import { mainFlowMealScenario } from "./scenarios/mainFlowMealScenario";
 import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
-import { preflight } from "./validate";
+import { preflight, validatePlan } from "./validate";
+import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 
 describe("NEXT-017 main flow meal",()=>{
   it("prefers all-morning and block boundaries, while retaining every task boundary",()=>{
@@ -30,6 +31,23 @@ describe("NEXT-017 main flow meal",()=>{
     assert.deepEqual(authority,{window:{start:780,end:990},duration:75,source:"OPERATIONAL_MEAL_POLICY",sourceIds:["main-pause"]});
     assert.deepEqual(timeline.slots,[810,825,915,930]);
     assert.equal(timeline.slots[2]!-825,90);assert.equal(beforeRuns,2);
+  });
+
+  it("connects Main continuity only through the scheduled authorized operational meal",()=>{
+    const availability=[{start:0,end:60}];
+    const p:PlannerNextProblem={day:{start:0,end:60},spaces:[{id:"main",availability}],resources:[],
+      participants:[{id:"a",availability},{id:"b",availability}],coaches:[],tasks:[
+        {id:"first",kind:"main",participantId:"a",duration:10,spaceId:"main",dependencies:[],blockKey:"same"},
+        {id:"second",kind:"main",participantId:"b",duration:10,spaceId:"main",dependencies:[],blockKey:"same"}],
+      mainFlow:{spaceId:"main",preferredEnd:10,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},
+      participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:0,maxPatterns:1,maxBranchExpansions:10},
+      operationalMealPolicies:[{id:"authorized",window:{start:10,end:20},duration:10,resourceIds:[],spaceIds:["main"]}]};
+    const scheduled=p.tasks.map((task,index)=>({...task,start:index*20,end:index*20+10})) as ScheduledTask[];
+    const authorized=[{id:"authorized",resourceIds:[],spaceIds:["main"],duration:10,start:10,end:20}];
+    assert.equal(validatePlan(p,scheduled,[],[],[],[],[],[],authorized).hardValid,true);
+    const arbitraryGap=validatePlan({...p,operationalMealPolicies:undefined},scheduled);
+    assert.equal(arbitraryGap.hardValid,false);
+    assert.ok(arbitraryGap.blockViolationCount>0);
   });
 
   it("preserves historical space policy, canonicalizes an equivalent pair, and rejects a contradiction",()=>{

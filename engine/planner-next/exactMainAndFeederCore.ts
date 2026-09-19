@@ -788,19 +788,25 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(actual.length!==expected.length||actual.some((id,index)=>id!==expected[index]))return "DEAD_END";
       const reducedTasks=problem.tasks.filter(task=>coreIds.has(task.id))
         .map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))}));
+      const mainMealAuthority=mainFlowMealPolicy(problem);
+      const operationalMainMealPolicies=mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
+        ?(problem.operationalMealPolicies??[]).filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)):[];
       const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,spaces:problem.spaces.map(space=>{
-        const authority=mainFlowMealPolicy(problem);return space.id===problem.mainFlow.spaceId&&authority&&!space.mealPolicy
-          ?{...space,mealPolicy:{window:{...authority.window},duration:authority.duration}}:space;
+        return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
+          &&mainMealAuthority&&!space.mealPolicy
+          ?{...space,mealPolicy:{window:{...mainMealAuthority.window},duration:mainMealAuthority.duration}}:space;
       }),anchoredAccompaniments:[...fixedMainContracts,...applicableContracts],roundSynchronizations:undefined,
-        participantMeals:undefined,participantMealCapacity:undefined,operationalMealPolicies:undefined,transportPolicy:undefined};
+        participantMeals:undefined,participantMealCapacity:undefined,
+        operationalMealPolicies:operationalMainMealPolicies.length?operationalMainMealPolicies:undefined,transportPolicy:undefined};
       const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
         resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+      const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>({id:policy.id,resourceIds:[...policy.resourceIds],
+        spaceIds:[...policy.spaceIds],duration:policy.duration,start:fixedMeals[0]!.start,end:fixedMeals[0]!.end}));
       const validation=validatePlan(reduced,
-        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[],fixedMeals,[],fixedResourceMeals,
-        materializeScheduledItinerantUnitMeals(reduced));
-      // A fully protected Assisted core is only an immutable context here. The
-      // complete pipeline is still subjected to the normal final validation gate.
-      if(!validation.hardValid&&!options.fixedPlacementsAsContext&&!options.acceptsValidation?.(validation))return "DEAD_END";
+        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[],
+        mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:fixedMeals,[],fixedResourceMeals,
+        materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
+      if(!validation.hardValid&&!options.acceptsValidation?.(validation))return "DEAD_END";
       const ordered=[...placed].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
       const continuation=options.onHardValidCoreLeaf?.({tasks:ordered,meals:fixedMeals,remainingTaskIds:[],
         fingerprint:fingerprint(ordered,[],fixedMeals)})??"ACCEPT";

@@ -97,6 +97,12 @@ test("a fixed placement violation requires its exact accepted baseline", () => {
   protectedTask.availability = [{ start: 0, end: 10 }];
   const protectedPlacement = { ...protectedTask, start: 140, end: 150 } as ScheduledTask;
   const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "space", value: "main-space" }, {}, ["main"]), [protectedPlacement]);
+  const direct = executePlannerNext(assisted.problem, {
+    fixedPlacements: assisted.protectedPlacements,
+    fixedPlacementsAsContext: true,
+  });
+  assert.equal(direct.result?.complete, false,
+    "fixed context must not bypass a new HARD violation without acceptsValidation");
   const result = executeAssistedPlanning(assisted);
   assert.equal(result.proposal,null);
   assert.equal(result.evidence.protectedPlacementsPreserved, true);
