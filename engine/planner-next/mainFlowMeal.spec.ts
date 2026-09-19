@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildTimeline, candidateCuts, mainFlowMealAligned, mainFlowMealPolicy } from "./mainFlowMeal";
+import { buildTimeline, candidateCuts, fallbackCandidateCuts, mainFlowMealAligned, mainFlowMealPolicy,
+  preferredCandidateCuts } from "./mainFlowMeal";
 import { mainFlowMealScenario } from "./scenarios/mainFlowMealScenario";
 import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { preflight } from "./validate";
@@ -9,6 +10,8 @@ describe("NEXT-017 main flow meal",()=>{
   it("prefers all-morning and block boundaries, while retaining every task boundary",()=>{
     const p=mainFlowMealScenario(),pattern=["a","a","b","b"];
     assert.deepEqual(candidateCuts(pattern),[4,2,1,3]);
+    assert.deepEqual(preferredCandidateCuts(pattern),[4,2]);
+    assert.deepEqual(fallbackCandidateCuts(pattern),[1,3]);
     assert.deepEqual(buildTimeline(p,pattern,15,2).slots,[810,825,900,915]);
     assert.equal(mainFlowMealAligned(p),true);
   });

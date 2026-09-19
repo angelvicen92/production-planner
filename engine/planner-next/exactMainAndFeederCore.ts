@@ -2,7 +2,8 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Valid
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines,
+  preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
@@ -1690,7 +1691,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { outcome: "FOUND", certificate };
   };
 
-  outer: if(mains.length>0) for (const pattern of patterns.patterns) {
+  const timelineCutTiers = hasMainFlowMeal(problem)
+    ? [preferredCandidateCuts, fallbackCandidateCuts] : [preferredCandidateCuts];
+  outer: if(mains.length>0) for (const candidateCutsForTier of timelineCutTiers) for (const pattern of patterns.patterns) {
     if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
       return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
     evidence.patternCandidatesExplored += 1;
@@ -1705,7 +1708,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? (() => {
-        const base = candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut));
+        const base = candidateCutsForTier(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut));
         const acceptedMains = protectedPlacements.filter((placement) =>
           problem.tasks.find((task) => task.id === placement.id)?.kind === "main");
         const acceptedAdjacent = base.flatMap((timeline) => acceptedMains.flatMap((accepted) => {
