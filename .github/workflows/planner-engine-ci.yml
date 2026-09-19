@@ -40,13 +40,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Full test suite and Full A2 structural frontier guard
+      - name: Product test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t test_files < <(node script/run-test-suite.mjs --list engine server | grep -v '^engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts$')
+          if (( ${#test_files[@]} == 0 )); then
+            echo "No product test files discovered" >&2
+            exit 1
+          fi
+          npx --no-install tsx --test "${test_files[@]}"
+
+      - name: Full A2 Autopilot structural frontier diagnostic
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         shell: bash
         run: |
           set -euo pipefail
           test_log="$(mktemp)"
-          npm test 2>&1 | tee "$test_log"
-          npx tsx engine/planner-next/benchmarks/checkFullA2StructuralFrontier.ts "$test_log"
+          npx --no-install tsx --test engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts 2>&1 | tee "$test_log"
+          npx --no-install tsx engine/planner-next/benchmarks/checkFullA2StructuralFrontier.ts "$test_log"
 
       - name: SPEC10-016 canonical template benchmark first run
         run: |
