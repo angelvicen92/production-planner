@@ -62,6 +62,11 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
       assert.ok(first.firstBlocker.blockingMeal?.sourceTaskId);
       assert.equal(first.firstBlocker.participantMealPrune.candidateCount,0);
       assert.ok(first.firstBlocker.participantMealPrune.reasonCodes.length>0);
+      assert.equal(first.firstBlocker.failureCategory,"FUTURE_FEASIBILITY");
+      assert.equal(first.firstBlocker.firstCausalCheck,"participantMealFutureFeasibility probe");
+      assert.equal(first.firstBlocker.rejectionReason,first.firstBlocker.participantMealPrune.reasonCodes[0]);
+      assert.deepEqual(first.firstBlocker.blockingTaskIds,[first.firstBlocker.participantMealPrune.blockingMealTaskId]);
+      assert.deepEqual(first.firstBlocker.blockers,[]);
     }
   }
   assert.deepEqual({ stages: first.iterations.map(row => [row.resolvedTaskIds, row.proposalOutcome, row.acceptedStageFingerprint]), fingerprint: first.deterministicFingerprint },

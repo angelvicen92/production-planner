@@ -1892,7 +1892,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "durationMs": 1582
+      "durationMs": 1929
     },
     {
       "scopeSelector": {
@@ -3716,7 +3716,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "4b161e5f6809790a23c6780d42e82411aea691795096b64b66e6d5769452be80",
-      "durationMs": 500
+      "durationMs": 1218
     },
     {
       "scopeSelector": {
@@ -5714,7 +5714,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "72cc33e7fa71d2cf7f251b453bcbfeab961fb5dd0afa7340453b8b2550c553c2",
-      "durationMs": 500
+      "durationMs": 1065
     },
     {
       "scopeSelector": {
@@ -7828,7 +7828,7 @@
       },
       "acceptedStageId": 5,
       "acceptedStageFingerprint": "a0ca65ddc4454c4e9caec891e3e5bfb0e1c9308e8625a2908a2ad2913d2ea017",
-      "durationMs": 398
+      "durationMs": 678
     },
     {
       "scopeSelector": {
@@ -10116,7 +10116,7 @@
       },
       "acceptedStageId": 6,
       "acceptedStageFingerprint": "58f383ddefec214aec077578d8ce97556fdf87769dfbbb08008510d16a45c159",
-      "durationMs": 371
+      "durationMs": 950
     },
     {
       "scopeSelector": {
@@ -12905,7 +12905,7 @@
       },
       "acceptedStageId": 7,
       "acceptedStageFingerprint": "24e04744eb9bb5a3d2d35c44f60aa68320abe93cb27bdd4f886b60ec755bd815",
-      "durationMs": 510
+      "durationMs": 521
     },
     {
       "scopeSelector": {
@@ -14711,7 +14711,7 @@
           "collisions": []
         }
       },
-      "durationMs": 360
+      "durationMs": 476
     }
   ],
   "firstBlocker": {
@@ -14883,9 +14883,9 @@
       "participantId": "participant:201"
     },
     "causalAuthority": "participantMealFutureFeasibility",
-    "failureCategory": "UNKNOWN",
+    "failureCategory": "FUTURE_FEASIBILITY",
     "phase": "constructExactItinerantPlan/standalone participant-meal probe",
-    "firstCausalCheck": "constructExactItinerantPlan completion",
+    "firstCausalCheck": "participantMealFutureFeasibility probe",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
@@ -14897,7 +14897,7 @@
       "task:10013"
     ],
     "blockers": [],
-    "rejectionReason": null,
+    "rejectionReason": "PARTICIPANT_MEAL_ZERO_DOMAIN",
     "originatingCoreDecision": null,
     "classification": "PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE"
   },

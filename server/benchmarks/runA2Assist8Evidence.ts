@@ -225,8 +225,12 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       const terminalCause=standalone?.firstTerminalCompletionRejection?.cause;
       const participantMealPrune=evidence.participantMealFutureFeasibility.firstPrune;
       const emptyDomain = evidence.causalDiagnostic?.futureFeasibility?.assessments?.find((item: any) => item.domainEmpty);
-      const blockerTasks = [...new Set(emptyDomain?.blockers ?? [])] as string[];
-      const blockedTask = adapter.problem.tasks.find(task => task.id === emptyDomain?.taskId);
+      // A demonstrated participant-meal prune is the earliest causal authority
+      // for this failure. Do not mix a later domain assessment from another
+      // authority into the blocker record.
+      const causalEmptyDomain = participantMealPrune ? undefined : emptyDomain;
+      const blockerTasks = [...new Set(causalEmptyDomain?.blockers ?? [])] as string[];
+      const blockedTask = adapter.problem.tasks.find(task => task.id === causalEmptyDomain?.taskId);
       const materiality = (id: string) => {
         const task: any = adapter.problem.tasks.find(row => row.id === id);
         if (!task) return { canonicalTaskId: id, productTaskId: productByCanonical.get(id) ?? null, missing: true };
@@ -245,8 +249,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         newRequiredViolationCount: record.newRequiredViolationCount,
         supportingTaskIds: record.supportingTaskIds,
         branches: { core: record.work.coreBranches ?? 0, standalone: record.work.standaloneBranches ?? 0 },
-        blockedObligationId: emptyDomain?.taskId ? productByCanonical.get(emptyDomain.taskId) : null,
-        blockedTask: emptyDomain?.taskId ? materiality(emptyDomain.taskId) : null,
+        blockedObligationId: causalEmptyDomain?.taskId ? productByCanonical.get(causalEmptyDomain.taskId) : null,
+        blockedTask: causalEmptyDomain?.taskId ? materiality(causalEmptyDomain.taskId) : null,
         affected: { taskIds: result.scopeTaskIds, resourceIds: [], spaceId: selector.kind === "SPACE" ? selector.spaceId : null },
         participantMealPrune,
         causingTask:participantMealPrune?materiality(participantMealPrune.causingTaskId):null,
@@ -255,17 +259,18 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
           productTaskId:productByCanonical.get(participantMealPrune.blockingMealTaskId)??null,
           participantId:participantMealPrune.participantId,
         }:null,
-        causalAuthority: preflightFailure ? "Planner Next preflight / setup preparation policy" : participantMealPrune?"participantMealFutureFeasibility":emptyDomain?.authoritySignature ?? null,
-        failureCategory: preflightFailure ? "VALIDATION" : terminalCause==="VALIDATION_REJECTED" ? "VALIDATION" : terminalTransportDominates ? "MATERIALIZATION"
-          : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "BUDGET" : emptyDomain ? "GEOMETRY_OR_MATCHING" : "UNKNOWN",
-        phase: preflightFailure ? "preflight" : participantMealPrune?`constructExactItinerantPlan/${participantMealPrune.phase.toLowerCase()} participant-meal probe`:result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
+        causalAuthority: preflightFailure ? "Planner Next preflight / setup preparation policy" : participantMealPrune?"participantMealFutureFeasibility":causalEmptyDomain?.authoritySignature ?? null,
+        failureCategory: preflightFailure ? "VALIDATION" : participantMealPrune ? "FUTURE_FEASIBILITY" : terminalCause==="VALIDATION_REJECTED" ? "VALIDATION" : terminalTransportDominates ? "MATERIALIZATION"
+          : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "BUDGET" : causalEmptyDomain ? "GEOMETRY_OR_MATCHING" : "UNKNOWN",
+        phase: preflightFailure ? "preflight" : participantMealPrune?`constructExactItinerantPlan/${participantMealPrune.phase.toLowerCase()} participant-meal probe`:result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : causalEmptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
         firstCausalCheck: preflightFailure ? result.reasonCodes.find((code: string) => code !== "ASSISTED_SCOPE_INCOMPLETE" && code !== "CORE_PREFLIGHT_FAILED") ?? "CORE_PREFLIGHT_FAILED"
-          : terminalCause ? standalone.firstTerminalCompletionRejection.phase : result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
-        staticEligibleStartCount, dynamicEligibleStartCount: emptyDomain?.eligibleStartCount ?? null,
+          : participantMealPrune ? "participantMealFutureFeasibility probe"
+          : terminalCause ? standalone.firstTerminalCompletionRejection.phase : result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : causalEmptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
+        staticEligibleStartCount, dynamicEligibleStartCount: causalEmptyDomain?.eligibleStartCount ?? null,
         reasonCodes: participantMealPrune?[...new Set([...result.reasonCodes,...participantMealPrune.reasonCodes])]:result.reasonCodes, blockingTaskIds: participantMealPrune?[participantMealPrune.blockingMealTaskId]:blockerTasks,
-        blockers: blockerTasks.map(materiality), rejectionReason: preflightFailure ? "PREFLIGHT_REJECTED" : terminalCause??(emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null),
-        originatingCoreDecision: emptyDomain ? { depth: emptyDomain.depth, authoritySignature: emptyDomain.authoritySignature,
-          ancestralDecisionDepths: emptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: emptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
+        blockers: blockerTasks.map(materiality), rejectionReason: preflightFailure ? "PREFLIGHT_REJECTED" : participantMealPrune?.reasonCodes[0]??terminalCause??(causalEmptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null),
+        originatingCoreDecision: causalEmptyDomain ? { depth: causalEmptyDomain.depth, authoritySignature: causalEmptyDomain.authoritySignature,
+          ancestralDecisionDepths: causalEmptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: causalEmptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
         classification: preflightFailure ? "PREFLIGHT_VALIDATION_REJECTED" : participantMealPrune?"PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE":terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED" : terminalCause ? `ORDINARY_COMPLETE_${terminalCause}`
           : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "SEARCH_CAPACITY_EXHAUSTED" : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
       record.durationMs = Math.round(performance.now() - iterationStartedAt);
