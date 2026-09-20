@@ -67,6 +67,11 @@ export interface AssistedPlanningEvidence {
     readonly analyticChecks:number; readonly branchesConsumed:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
   };
+  readonly technicalChainFutureReservation: {
+    readonly checks:number; readonly passes:number; readonly prunes:number; readonly abstentions:number;
+    readonly branchesConsumed:number;
+    readonly firstPrune:ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"];
+  };
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
@@ -220,6 +225,11 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  problem.analyticalFutureTechnicalChains = (problem.technicalChains ?? [])
+    .filter((policy) => policy.adjacency === "REQUIRED" && policy.resourceContinuity === "REQUIRED"
+      && policy.orderedTaskIds.every((id) => analyticalFutureEligibleTaskIds.has(id) && !included.has(id)))
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((policy) => ({ policy: structuredClone(policy), tasks: policy.orderedTaskIds.map((id) => structuredClone(tasksById.get(id)!)) }));
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
@@ -424,6 +434,12 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       collectivePrunes:Number(evidenceRecord.participantFutureCollectivePrunes??0),compatiblePairChecks:Number(evidenceRecord.participantFutureCompatiblePairChecks??0),
       analyticChecks:Number(evidenceRecord.participantFutureAnalyticChecks??0),branchesConsumed:Number(evidenceRecord.participantFutureBranchesConsumed??0),
       firstPrune:(evidenceRecord.firstParticipantFutureReservationPrune as ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"]|undefined)??null,
+    },
+    technicalChainFutureReservation:{
+      checks:Number(evidenceRecord.technicalChainFutureReservationChecks??0),passes:Number(evidenceRecord.technicalChainFutureReservationPasses??0),
+      prunes:Number(evidenceRecord.technicalChainFutureReservationPrunes??0),abstentions:Number(evidenceRecord.technicalChainFutureReservationAbstentions??0),
+      branchesConsumed:Number(evidenceRecord.technicalChainFutureBranchesConsumed??0),
+      firstPrune:(evidenceRecord.firstTechnicalChainFutureReservationPrune as ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"]|undefined)??null,
     },
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,

@@ -6,38 +6,18 @@
     "minGapMinutes": 30
   },
   "status": "BLOCKED",
-  "milestone": "S1",
+  "milestone": "S0",
   "sourceObligationCount": 266,
-  "completedObligationCount": 19,
-  "remainingObligationCount": 247,
-  "scopeCount": 2,
-  "stageCount": 1,
-  "automaticPlacements": 19,
+  "completedObligationCount": 0,
+  "remainingObligationCount": 266,
+  "scopeCount": 1,
+  "stageCount": 0,
+  "automaticPlacements": 0,
   "manualChanges": 0,
   "acceptedHardExceptions": 0,
   "rollbackCount": 0,
-  "finalCompletionPercentage": 7.142857,
-  "finalObligationIds": [
-    10002,
-    10017,
-    10031,
-    10043,
-    10056,
-    10072,
-    10088,
-    10102,
-    10116,
-    10131,
-    10147,
-    10161,
-    10175,
-    10190,
-    10203,
-    10218,
-    10229,
-    10243,
-    10256
-  ],
+  "finalCompletionPercentage": 0,
+  "finalObligationIds": [],
   "duplicateFinalIds": 0,
   "finalObligationIdsMatchSource": false,
   "finalHardViolationCount": 0,
@@ -74,266 +54,11 @@
       "baseStageId": 1,
       "configRevisionId": 1,
       "selectorAuthority": "resolveAssistedScope/product selector",
-      "newVisibleTasks": [
-        {
-          "taskId": 10002,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 201,
-          "spaceId": 3004,
-          "start": "15:00",
-          "end": "15:15",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4002,
-            4005,
-            4007
-          ]
-        },
-        {
-          "taskId": 10017,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 202,
-          "spaceId": 3004,
-          "start": "17:30",
-          "end": "17:45",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10031,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 203,
-          "spaceId": 3004,
-          "start": "17:15",
-          "end": "17:30",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10043,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 204,
-          "spaceId": 3004,
-          "start": "17:00",
-          "end": "17:15",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10056,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 205,
-          "spaceId": 3004,
-          "start": "11:45",
-          "end": "12:00",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4003,
-            4004,
-            4008
-          ]
-        },
-        {
-          "taskId": 10072,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 206,
-          "spaceId": 3004,
-          "start": "16:15",
-          "end": "16:30",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10088,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 207,
-          "spaceId": 3004,
-          "start": "16:00",
-          "end": "16:15",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10102,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 208,
-          "spaceId": 3004,
-          "start": "12:00",
-          "end": "12:15",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4002,
-            4004,
-            4007
-          ]
-        },
-        {
-          "taskId": 10116,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 209,
-          "spaceId": 3004,
-          "start": "15:45",
-          "end": "16:00",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10131,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 210,
-          "spaceId": 3004,
-          "start": "14:45",
-          "end": "15:00",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10147,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 211,
-          "spaceId": 3004,
-          "start": "14:30",
-          "end": "14:45",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10161,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 212,
-          "spaceId": 3004,
-          "start": "16:45",
-          "end": "17:00",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10175,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 213,
-          "spaceId": 3004,
-          "start": "16:30",
-          "end": "16:45",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10190,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 214,
-          "spaceId": 3004,
-          "start": "15:30",
-          "end": "15:45",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10203,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 215,
-          "spaceId": 3004,
-          "start": "15:15",
-          "end": "15:30",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4005
-          ]
-        },
-        {
-          "taskId": 10218,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 216,
-          "spaceId": 3004,
-          "start": "14:15",
-          "end": "14:30",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10229,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 217,
-          "spaceId": 3004,
-          "start": "12:45",
-          "end": "13:00",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10243,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 218,
-          "spaceId": 3004,
-          "start": "12:30",
-          "end": "12:45",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        },
-        {
-          "taskId": 10256,
-          "templateName": "ENSAYO_ESTUDIO_7",
-          "participantId": 219,
-          "spaceId": 3004,
-          "start": "12:15",
-          "end": "12:30",
-          "durationMinutes": 15,
-          "resourceIds": [
-            4004
-          ]
-        }
-      ],
+      "newVisibleTasks": [],
       "acceptedSnapshotBefore": [],
       "acceptedSnapshotFingerprintBefore": "92541a8396180e9d9130e33c7050c9c72d41ba4a5e5009a27943f90b02805556",
       "includePrerequisites": false,
-      "visibleProposalTaskIds": [
-        10002,
-        10017,
-        10031,
-        10043,
-        10056,
-        10072,
-        10088,
-        10102,
-        10116,
-        10131,
-        10147,
-        10161,
-        10175,
-        10190,
-        10203,
-        10218,
-        10229,
-        10243,
-        10256
-      ],
+      "visibleProposalTaskIds": [],
       "supportingTaskIds": [
         "task:10003",
         "task:10006",
@@ -603,1759 +328,6 @@
         "pendingDynamicTransport": 19,
         "pendingTasksByKind": {
           "auxiliary": 38
-        }
-      },
-      "operationalMeals": [
-        {
-          "id": "break:main-flow",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 75,
-          "resourceIds": [],
-          "spaceIds": [
-            "space:3004"
-          ],
-          "witness": {
-            "id": "break:main-flow",
-            "resourceIds": [],
-            "spaceIds": [
-              "space:3004"
-            ],
-            "duration": 75,
-            "start": 780,
-            "end": 855
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        },
-        {
-          "id": "break:p14-operations",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 75,
-          "resourceIds": [],
-          "spaceIds": [
-            "space:3005",
-            "space:3006",
-            "space:3007"
-          ],
-          "witness": {
-            "id": "break:p14-operations",
-            "resourceIds": [],
-            "spaceIds": [
-              "space:3005",
-              "space:3006",
-              "space:3007"
-            ],
-            "duration": 75,
-            "start": 780,
-            "end": 855
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        },
-        {
-          "id": "break:p15-operations",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 75,
-          "resourceIds": [],
-          "spaceIds": [
-            "space:3008",
-            "space:3009"
-          ],
-          "witness": {
-            "id": "break:p15-operations",
-            "resourceIds": [],
-            "spaceIds": [
-              "space:3008",
-              "space:3009"
-            ],
-            "duration": 75,
-            "start": 780,
-            "end": 855
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        },
-        {
-          "id": "break:reality-a",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 75,
-          "resourceIds": [
-            "plan-resource:4002",
-            "plan-resource:4007"
-          ],
-          "spaceIds": [],
-          "witness": {
-            "id": "break:reality-a",
-            "resourceIds": [
-              "plan-resource:4002",
-              "plan-resource:4007"
-            ],
-            "spaceIds": [],
-            "duration": 75,
-            "start": 780,
-            "end": 855
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        },
-        {
-          "id": "break:reality-b",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 75,
-          "resourceIds": [
-            "plan-resource:4003",
-            "plan-resource:4008"
-          ],
-          "spaceIds": [],
-          "witness": {
-            "id": "break:reality-b",
-            "resourceIds": [
-              "plan-resource:4003",
-              "plan-resource:4008"
-            ],
-            "spaceIds": [],
-            "duration": 75,
-            "start": 780,
-            "end": 855
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        },
-        {
-          "id": "break:totales-operations",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 75,
-          "resourceIds": [],
-          "spaceIds": [
-            "space:3019",
-            "space:3020"
-          ],
-          "witness": {
-            "id": "break:totales-operations",
-            "resourceIds": [],
-            "spaceIds": [
-              "space:3019",
-              "space:3020"
-            ],
-            "duration": 75,
-            "start": 780,
-            "end": 855
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        }
-      ],
-      "coachMeals": [
-        {
-          "id": "break:coach-jose-maria",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 45,
-          "resourceIds": [
-            "plan-resource:4004"
-          ],
-          "spaceIds": [],
-          "witness": {
-            "id": "break:coach-jose-maria",
-            "resourceIds": [
-              "plan-resource:4004"
-            ],
-            "spaceIds": [],
-            "duration": 45,
-            "start": 900,
-            "end": 945
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        },
-        {
-          "id": "break:coach-lucia",
-          "window": {
-            "start": 780,
-            "end": 990
-          },
-          "durationMinutes": 45,
-          "resourceIds": [
-            "plan-resource:4005"
-          ],
-          "spaceIds": [],
-          "witness": {
-            "id": "break:coach-lucia",
-            "resourceIds": [
-              "plan-resource:4005"
-            ],
-            "spaceIds": [],
-            "duration": 45,
-            "start": 945,
-            "end": 990
-          },
-          "diagnostic": {
-            "phase": "ACCEPTED_WITNESS",
-            "complete": true,
-            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
-          }
-        }
-      ],
-      "sodexoMeals": {
-        "count": 19,
-        "obligations": [
-          {
-            "id": "participant-meal:10013",
-            "sourceTaskId": "task:10013",
-            "participantId": "participant:201",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 930
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10013",
-              "sourceTaskId": "task:10013",
-              "participantId": "participant:201",
-              "duration": 40,
-              "start": 805,
-              "end": 845
-            }
-          },
-          {
-            "id": "participant-meal:10027",
-            "sourceTaskId": "task:10027",
-            "participantId": "participant:202",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10027",
-              "sourceTaskId": "task:10027",
-              "participantId": "participant:202",
-              "duration": 40,
-              "start": 780,
-              "end": 820
-            }
-          },
-          {
-            "id": "participant-meal:10039",
-            "sourceTaskId": "task:10039",
-            "participantId": "participant:203",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10039",
-              "sourceTaskId": "task:10039",
-              "participantId": "participant:203",
-              "duration": 40,
-              "start": 855,
-              "end": 895
-            }
-          },
-          {
-            "id": "participant-meal:10052",
-            "sourceTaskId": "task:10052",
-            "participantId": "participant:204",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10052",
-              "sourceTaskId": "task:10052",
-              "participantId": "participant:204",
-              "duration": 40,
-              "start": 950,
-              "end": 990
-            }
-          },
-          {
-            "id": "participant-meal:10067",
-            "sourceTaskId": "task:10067",
-            "participantId": "participant:205",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10067",
-              "sourceTaskId": "task:10067",
-              "participantId": "participant:205",
-              "duration": 40,
-              "start": 780,
-              "end": 820
-            }
-          },
-          {
-            "id": "participant-meal:10083",
-            "sourceTaskId": "task:10083",
-            "participantId": "participant:206",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10083",
-              "sourceTaskId": "task:10083",
-              "participantId": "participant:206",
-              "duration": 40,
-              "start": 910,
-              "end": 950
-            }
-          },
-          {
-            "id": "participant-meal:10098",
-            "sourceTaskId": "task:10098",
-            "participantId": "participant:207",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10098",
-              "sourceTaskId": "task:10098",
-              "participantId": "participant:207",
-              "duration": 40,
-              "start": 910,
-              "end": 950
-            }
-          },
-          {
-            "id": "participant-meal:10112",
-            "sourceTaskId": "task:10112",
-            "participantId": "participant:208",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10112",
-              "sourceTaskId": "task:10112",
-              "participantId": "participant:208",
-              "duration": 40,
-              "start": 780,
-              "end": 820
-            }
-          },
-          {
-            "id": "participant-meal:10127",
-            "sourceTaskId": "task:10127",
-            "participantId": "participant:209",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10127",
-              "sourceTaskId": "task:10127",
-              "participantId": "participant:209",
-              "duration": 40,
-              "start": 895,
-              "end": 935
-            }
-          },
-          {
-            "id": "participant-meal:10142",
-            "sourceTaskId": "task:10142",
-            "participantId": "participant:210",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10142",
-              "sourceTaskId": "task:10142",
-              "participantId": "participant:210",
-              "duration": 40,
-              "start": 815,
-              "end": 855
-            }
-          },
-          {
-            "id": "participant-meal:10157",
-            "sourceTaskId": "task:10157",
-            "participantId": "participant:211",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10157",
-              "sourceTaskId": "task:10157",
-              "participantId": "participant:211",
-              "duration": 40,
-              "start": 825,
-              "end": 865
-            }
-          },
-          {
-            "id": "participant-meal:10171",
-            "sourceTaskId": "task:10171",
-            "participantId": "participant:212",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10171",
-              "sourceTaskId": "task:10171",
-              "participantId": "participant:212",
-              "duration": 40,
-              "start": 950,
-              "end": 990
-            }
-          },
-          {
-            "id": "participant-meal:10186",
-            "sourceTaskId": "task:10186",
-            "participantId": "participant:213",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10186",
-              "sourceTaskId": "task:10186",
-              "participantId": "participant:213",
-              "duration": 40,
-              "start": 950,
-              "end": 990
-            }
-          },
-          {
-            "id": "participant-meal:10199",
-            "sourceTaskId": "task:10199",
-            "participantId": "participant:214",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10199",
-              "sourceTaskId": "task:10199",
-              "participantId": "participant:214",
-              "duration": 40,
-              "start": 785,
-              "end": 825
-            }
-          },
-          {
-            "id": "participant-meal:10213",
-            "sourceTaskId": "task:10213",
-            "participantId": "participant:215",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10213",
-              "sourceTaskId": "task:10213",
-              "participantId": "participant:215",
-              "duration": 40,
-              "start": 855,
-              "end": 895
-            }
-          },
-          {
-            "id": "participant-meal:10226",
-            "sourceTaskId": "task:10226",
-            "participantId": "participant:216",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10226",
-              "sourceTaskId": "task:10226",
-              "participantId": "participant:216",
-              "duration": 40,
-              "start": 870,
-              "end": 910
-            }
-          },
-          {
-            "id": "participant-meal:10239",
-            "sourceTaskId": "task:10239",
-            "participantId": "participant:217",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10239",
-              "sourceTaskId": "task:10239",
-              "participantId": "participant:217",
-              "duration": 40,
-              "start": 780,
-              "end": 820
-            }
-          },
-          {
-            "id": "participant-meal:10252",
-            "sourceTaskId": "task:10252",
-            "participantId": "participant:218",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10252",
-              "sourceTaskId": "task:10252",
-              "participantId": "participant:218",
-              "duration": 40,
-              "start": 780,
-              "end": 820
-            }
-          },
-          {
-            "id": "participant-meal:10265",
-            "sourceTaskId": "task:10265",
-            "participantId": "participant:219",
-            "durationMinutes": 40,
-            "window": {
-              "start": 780,
-              "end": 990
-            },
-            "status": "MATERIALIZED",
-            "diagnostic": {
-              "phase": "ACCEPTED_WITNESS",
-              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
-              "selected": true,
-              "reasonCodes": []
-            },
-            "witness": {
-              "id": "participant-meal:10265",
-              "sourceTaskId": "task:10265",
-              "participantId": "participant:219",
-              "duration": 40,
-              "start": 780,
-              "end": 820
-            }
-          }
-        ],
-        "futureFeasibilityChecks": 1,
-        "futureInfeasibleBranches": 0,
-        "affectedObligationsChecked": 0,
-        "zeroDomainPrunes": 0,
-        "analyticCollectivePrunes": 0,
-        "blockingMealTaskIds": [],
-        "firstPrune": null,
-        "exactMaterializations": 1
-      },
-      "participantFutureReservation": {
-        "checks": 0,
-        "passes": 0,
-        "prunes": 0,
-        "abstentions": 0,
-        "affectedParticipants": 0,
-        "affectedFutureTasksChecked": 0,
-        "affectedMealsChecked": 0,
-        "individualDomainChecks": 0,
-        "individualZeroDomainPrunes": 0,
-        "jointTaskMealChecks": 0,
-        "jointTaskMealPrunes": 0,
-        "collectiveChecks": 0,
-        "collectivePrunes": 0,
-        "compatiblePairChecks": 0,
-        "analyticChecks": 0,
-        "branchesConsumed": 0,
-        "firstPrune": null
-      },
-      "transportWitness": null,
-      "hardRequiredValidation": {
-        "hardValid": true,
-        "requiredValid": true,
-        "newHardViolationCount": 0,
-        "newRequiredViolationCount": 0
-      },
-      "proposalOutcome": "PROPOSAL",
-      "newObligationCount": 19,
-      "completedObligationCount": 19,
-      "remainingObligationCount": 247,
-      "protectedPlacementCount": 0,
-      "protectedPlacementsPreserved": true,
-      "newHardViolationCount": 0,
-      "newRequiredViolationCount": 0,
-      "unstructuredReasonCodes": [],
-      "reasonCodes": [
-        "ASSISTED_SCOPE_COMPLETE"
-      ],
-      "work": {
-        "branchesExplored": 28,
-        "coreBranches": 0,
-        "standaloneBranches": 28,
-        "coreMaximumDepth": 0,
-        "patternCandidatesExplored": 0,
-        "timelineCandidatesExplored": 0,
-        "mainCandidatesEvaluated": 0,
-        "feederCandidatesEvaluated": 0,
-        "architecturesChecked": 0,
-        "feederOrderBranches": 0,
-        "feederSlotMatchingChecks": 0,
-        "feederSlotMatchingEdgeChecks": 0,
-        "feederSlotMatchingAugmentTraversals": 0,
-        "feederSlotMatchingBranchesExplored": 0,
-        "residualMatchingInvocations": 0,
-        "residualMatchingFullBuilds": 0,
-        "residualMatchingIncrementalUpdates": 0,
-        "residualMatchingEdgeCacheHits": 0,
-        "residualMatchingEdgeCacheMisses": 0,
-        "residualMatchingPositionChecks": 0,
-        "residualMatchingAugmentTraversals": 0,
-        "residualMatchingBranchesExplored": 0,
-        "mainRunWitnessAttempts": 0,
-        "mainRunWitnessRepairs": 0,
-        "mainRunEquivalentOrdersCollapsed": 0,
-        "standaloneForwardChecks": 0,
-        "standaloneForwardStartChecks": 0,
-        "standaloneForwardWitnessCacheHits": 0,
-        "standaloneForwardWitnessCacheMisses": 0,
-        "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 12,
-        "membershipFallbackEntered": 0,
-        "participantMealFutureFeasibilityChecks": 1,
-        "participantMealFutureInfeasibleBranches": 0,
-        "participantMealAffectedObligationsChecked": 0,
-        "participantMealZeroDomainPrunes": 0,
-        "participantMealAnalyticCollectivePrunes": 0,
-        "participantMealExactMaterializations": 1
-      },
-      "sharedCapacityDiagnostic": {
-        "prerequisiteSharedCapacityChecks": 0,
-        "prerequisiteSharedCapacityPrunes": 0,
-        "prerequisiteSharedCapacityAbstentions": 0,
-        "checksByAuthority": {},
-        "abstentionsByAuthority": {},
-        "firstSharedCapacityPrune": null,
-        "firstSharedCapacityPass": null,
-        "capacityFingerprint": null,
-        "nominalIdentityBeginsAt": "exactMainAndFeederCore residual matching"
-      },
-      "residualBreakdown": {
-        "projectedTaskCount": 82,
-        "scopeMainCount": 19,
-        "structuralTaskCount": 44,
-        "structuralByCanonicalType": {
-          "ENSAYO_ESTUDIO_7": 19,
-          "PRUEBA_VOCAL_LUCIA": 8,
-          "REALITY_PLATO_ANTES": 3,
-          "REALITY_PLATO_DESPUES": 3,
-          "PRUEBA_VOCAL_JOSE_MARIA": 11
-        },
-        "pendingSupportingTotal": 38,
-        "pendingOrdinaryNoTransport": 19,
-        "pendingDynamicTransport": 19,
-        "pendingByCanonicalType": {
-          "ESTILISMO_ENTRADA": 19,
-          "IN": 19
-        }
-      },
-      "standaloneDiagnostic": {
-        "standaloneBranchesByDepth": {
-          "0": 1
-        },
-        "standaloneSelectionsByTaskId": {},
-        "standaloneCandidateStartsByTaskId": {},
-        "standaloneMaximumDepth": 0,
-        "standaloneCompleteLeafCount": 1,
-        "terminalTransportMaterializationAttempts": 0,
-        "terminalTransportMaterializationFailures": 0,
-        "terminalTransportWitness": null,
-        "terminalCompletionRejectionsByCause": {
-          "SUBSTANTIVE_IDENTITY_INCOMPLETE": 0,
-          "PARTICIPANT_MEAL_WITNESS_INCOMPLETE": 0,
-          "OPERATIONAL_MEAL_WITNESS_INCOMPLETE": 0,
-          "TRANSPORT_MATERIALIZATION_FAILED": 0,
-          "CANDIDATE_IDENTITY_MISMATCH": 0,
-          "VALIDATION_REJECTED": 0
-        },
-        "firstTerminalCompletionRejection": null,
-        "standaloneFirstSelectedTaskId": null,
-        "standaloneDominantPathFirst20": [],
-        "standaloneFirstDominantBlocker": null,
-        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 0,
-        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 27,
-        "firstHardValidCoreLeaf": {
-          "coreTaskCount": 44,
-          "coreTasksByKind": {
-            "vocal": 19,
-            "auxiliary": 6,
-            "main": 19
-          },
-          "pendingSupportingTotal": 38,
-          "pendingOrdinaryNoTransport": 19,
-          "pendingDynamicTransport": 19,
-          "pendingTasksByKind": {
-            "auxiliary": 38
-          }
-        },
-        "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 12,
-        "membershipFallbackEntered": 0,
-        "coreLeafArrivalEvidence": {
-          "direction": "arrival",
-          "orderedTaskIds": [
-            "task:10135",
-            "task:10150",
-            "task:10221",
-            "task:10233",
-            "task:10060",
-            "task:10246",
-            "task:10259",
-            "task:10021",
-            "task:10034",
-            "task:10105",
-            "task:10047",
-            "task:10165",
-            "task:10180",
-            "task:10077",
-            "task:10092",
-            "task:10120",
-            "task:10006",
-            "task:10194",
-            "task:10207"
-          ],
-          "orderedParticipantIds": [
-            "participant:210",
-            "participant:211",
-            "participant:216",
-            "participant:217",
-            "participant:205",
-            "participant:218",
-            "participant:219",
-            "participant:202",
-            "participant:203",
-            "participant:208",
-            "participant:204",
-            "participant:212",
-            "participant:213",
-            "participant:206",
-            "participant:207",
-            "participant:209",
-            "participant:201",
-            "participant:214",
-            "participant:215"
-          ],
-          "packetSizes": [
-            2,
-            2,
-            3,
-            3,
-            3,
-            3,
-            3
-          ],
-          "orderedDeadlines": [
-            545,
-            545,
-            575,
-            575,
-            605,
-            605,
-            605,
-            635,
-            635,
-            635,
-            665,
-            665,
-            665,
-            715,
-            715,
-            715,
-            765,
-            765,
-            765
-          ],
-          "packetMembers": [
-            [
-              "task:10135",
-              "task:10150"
-            ],
-            [
-              "task:10221",
-              "task:10233"
-            ],
-            [
-              "task:10060",
-              "task:10246",
-              "task:10259"
-            ],
-            [
-              "task:10021",
-              "task:10034",
-              "task:10105"
-            ],
-            [
-              "task:10047",
-              "task:10165",
-              "task:10180"
-            ],
-            [
-              "task:10077",
-              "task:10092",
-              "task:10120"
-            ],
-            [
-              "task:10006",
-              "task:10194",
-              "task:10207"
-            ]
-          ],
-          "starts": [
-            540,
-            570,
-            600,
-            630,
-            660,
-            710,
-            760
-          ],
-          "minGapMinutes": 30,
-          "construction": "contiguous",
-          "alternativesExplored": 1,
-          "classification": "CONTIGUOUS_EXACT",
-          "classificationBreakers": [],
-          "contiguousStatesExplored": 12,
-          "membershipFallbackEntered": false
-        },
-        "corePrerequisiteReservationChecks": 0,
-        "corePrerequisiteReservationPrunes": 0,
-        "ordinaryPrerequisiteReservationChecks": 0,
-        "ordinaryPrerequisiteReservationPrunes": 0,
-        "firstPrerequisiteReservationPrune": null,
-        "firstStandaloneDeadEndCause": null
-      },
-      "orderingComparison": {
-        "off": {
-          "coreBranches": 0,
-          "standaloneBranches": 28,
-          "maximumStandaloneDepth": 0,
-          "completeOrdinaryLeaves": 1,
-          "terminalInAttempts": 0,
-          "terminalInFailures": 0,
-          "branchesToFirstOrdinaryCompleteLeaf": 0,
-          "outcome": "PROPOSAL"
-        },
-        "on": {
-          "coreBranches": 2982,
-          "standaloneBranches": 297018,
-          "maximumStandaloneDepth": 19,
-          "completeOrdinaryLeaves": 145701,
-          "terminalInAttempts": 145701,
-          "terminalInFailures": 145701,
-          "branchesToFirstOrdinaryCompleteLeaf": 19,
-          "outcome": "NO_PROPOSAL"
-        },
-        "decision": "REVERTED_NO_MATERIAL_IMPROVEMENT"
-      },
-      "causalDiagnostic": {
-        "waterfallByDepth": {
-          "0": {
-            "mainCandidate": 0,
-            "feederStart": 0,
-            "residualMatching": 0,
-            "continuation": 0,
-            "participantMeal": 0,
-            "standaloneForward": 0,
-            "other": 28,
-            "total": 28
-          }
-        },
-        "feederByDepth": {},
-        "feederRejections": [],
-        "feederCoachDomainEliminations": [],
-        "futureFeasibility": {
-          "totalEvaluations": 0,
-          "uniqueAuthorityStates": 0,
-          "repeatedEvaluations": 0,
-          "authorityResultCollisions": 0,
-          "negativeEvaluations": 0,
-          "repeatedNegativeEvaluations": 0,
-          "rejectsWithCertifiedBackjumpTarget": 0,
-          "evaluationsByDepth": {},
-          "repeatedByDepth": {},
-          "negativeByDepth": {},
-          "assessments": [],
-          "collisions": []
-        }
-      },
-      "acceptedSnapshotAfter": [
-        {
-          "taskId": 10002,
-          "startPlanned": "15:00",
-          "endPlanned": "15:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10017,
-          "startPlanned": "17:30",
-          "endPlanned": "17:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10031,
-          "startPlanned": "17:15",
-          "endPlanned": "17:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10043,
-          "startPlanned": "17:00",
-          "endPlanned": "17:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10056,
-          "startPlanned": "11:45",
-          "endPlanned": "12:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10072,
-          "startPlanned": "16:15",
-          "endPlanned": "16:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10088,
-          "startPlanned": "16:00",
-          "endPlanned": "16:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10102,
-          "startPlanned": "12:00",
-          "endPlanned": "12:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10116,
-          "startPlanned": "15:45",
-          "endPlanned": "16:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10131,
-          "startPlanned": "14:45",
-          "endPlanned": "15:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10147,
-          "startPlanned": "14:30",
-          "endPlanned": "14:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10161,
-          "startPlanned": "16:45",
-          "endPlanned": "17:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10175,
-          "startPlanned": "16:30",
-          "endPlanned": "16:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10190,
-          "startPlanned": "15:30",
-          "endPlanned": "15:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10203,
-          "startPlanned": "15:15",
-          "endPlanned": "15:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10218,
-          "startPlanned": "14:15",
-          "endPlanned": "14:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10229,
-          "startPlanned": "12:45",
-          "endPlanned": "13:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10243,
-          "startPlanned": "12:30",
-          "endPlanned": "12:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10256,
-          "startPlanned": "12:15",
-          "endPlanned": "12:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        }
-      ],
-      "acceptedSnapshotFingerprintAfter": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "protectedEqualityProof": {
-        "beforeCount": 0,
-        "afterCount": 0,
-        "equal": true
-      },
-      "acceptedStageId": 2,
-      "acceptedStageFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "durationMs": 1829
-    },
-    {
-      "scopeSelector": {
-        "kind": "SPACE",
-        "spaceId": 3001
-      },
-      "resolvedTaskIds": [
-        10041,
-        10069,
-        10129,
-        10173,
-        10215
-      ],
-      "baseStageId": 2,
-      "configRevisionId": 1,
-      "selectorAuthority": "resolveAssistedScope/product selector",
-      "newVisibleTasks": [],
-      "acceptedSnapshotBefore": [
-        {
-          "taskId": 10002,
-          "startPlanned": "15:00",
-          "endPlanned": "15:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10017,
-          "startPlanned": "17:30",
-          "endPlanned": "17:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10031,
-          "startPlanned": "17:15",
-          "endPlanned": "17:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10043,
-          "startPlanned": "17:00",
-          "endPlanned": "17:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10056,
-          "startPlanned": "11:45",
-          "endPlanned": "12:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10072,
-          "startPlanned": "16:15",
-          "endPlanned": "16:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10088,
-          "startPlanned": "16:00",
-          "endPlanned": "16:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10102,
-          "startPlanned": "12:00",
-          "endPlanned": "12:15",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10116,
-          "startPlanned": "15:45",
-          "endPlanned": "16:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10131,
-          "startPlanned": "14:45",
-          "endPlanned": "15:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10147,
-          "startPlanned": "14:30",
-          "endPlanned": "14:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10161,
-          "startPlanned": "16:45",
-          "endPlanned": "17:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10175,
-          "startPlanned": "16:30",
-          "endPlanned": "16:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10190,
-          "startPlanned": "15:30",
-          "endPlanned": "15:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10203,
-          "startPlanned": "15:15",
-          "endPlanned": "15:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10218,
-          "startPlanned": "14:15",
-          "endPlanned": "14:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10229,
-          "startPlanned": "12:45",
-          "endPlanned": "13:00",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10243,
-          "startPlanned": "12:30",
-          "endPlanned": "12:45",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        },
-        {
-          "taskId": 10256,
-          "startPlanned": "12:15",
-          "endPlanned": "12:30",
-          "zoneId": 6004,
-          "spaceId": 3004,
-          "locationLabel": null,
-          "durationOverride": null,
-          "camerasOverride": null
-        }
-      ],
-      "acceptedSnapshotFingerprintBefore": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "includePrerequisites": false,
-      "visibleProposalTaskIds": [],
-      "supportingTaskIds": [
-        "task:10003",
-        "task:10006",
-        "task:10009",
-        "task:10010",
-        "task:10011",
-        "task:10018",
-        "task:10021",
-        "task:10024",
-        "task:10032",
-        "task:10034",
-        "task:10037",
-        "task:10044",
-        "task:10047",
-        "task:10050",
-        "task:10057",
-        "task:10060",
-        "task:10063",
-        "task:10064",
-        "task:10065",
-        "task:10073",
-        "task:10077",
-        "task:10080",
-        "task:10081",
-        "task:10089",
-        "task:10092",
-        "task:10095",
-        "task:10103",
-        "task:10105",
-        "task:10108",
-        "task:10109",
-        "task:10110",
-        "task:10117",
-        "task:10120",
-        "task:10123",
-        "task:10132",
-        "task:10135",
-        "task:10138",
-        "task:10148",
-        "task:10150",
-        "task:10153",
-        "task:10154",
-        "task:10162",
-        "task:10165",
-        "task:10168",
-        "task:10169",
-        "task:10176",
-        "task:10180",
-        "task:10183",
-        "task:10191",
-        "task:10194",
-        "task:10197",
-        "task:10204",
-        "task:10207",
-        "task:10210",
-        "task:10219",
-        "task:10221",
-        "task:10224",
-        "task:10230",
-        "task:10233",
-        "task:10236",
-        "task:10244",
-        "task:10246",
-        "task:10249",
-        "task:10257",
-        "task:10259",
-        "task:10262"
-      ],
-      "supportingTaskCount": 66,
-      "supportingReasonByTaskId": {
-        "task:10003": [
-          "DEPENDENCY_OF:task:10002"
-        ],
-        "task:10006": [
-          "DEPENDENCY_OF:task:10003"
-        ],
-        "task:10009": [
-          "DEPENDENCY_OF:task:10002"
-        ],
-        "task:10010": [
-          "DEPENDENCY_OF:task:10002"
-        ],
-        "task:10011": [
-          "ANCHORED_WITH:task:10002"
-        ],
-        "task:10018": [
-          "DEPENDENCY_OF:task:10017"
-        ],
-        "task:10021": [
-          "DEPENDENCY_OF:task:10018"
-        ],
-        "task:10024": [
-          "DEPENDENCY_OF:task:10017"
-        ],
-        "task:10032": [
-          "DEPENDENCY_OF:task:10031"
-        ],
-        "task:10034": [
-          "DEPENDENCY_OF:task:10032"
-        ],
-        "task:10037": [
-          "DEPENDENCY_OF:task:10031"
-        ],
-        "task:10044": [
-          "DEPENDENCY_OF:task:10041"
-        ],
-        "task:10047": [
-          "DEPENDENCY_OF:task:10044"
-        ],
-        "task:10050": [
-          "DEPENDENCY_OF:task:10043"
-        ],
-        "task:10057": [
-          "DEPENDENCY_OF:task:10056"
-        ],
-        "task:10060": [
-          "DEPENDENCY_OF:task:10057"
-        ],
-        "task:10063": [
-          "DEPENDENCY_OF:task:10056"
-        ],
-        "task:10064": [
-          "DEPENDENCY_OF:task:10056"
-        ],
-        "task:10065": [
-          "ANCHORED_WITH:task:10056"
-        ],
-        "task:10073": [
-          "DEPENDENCY_OF:task:10069"
-        ],
-        "task:10077": [
-          "DEPENDENCY_OF:task:10073"
-        ],
-        "task:10080": [
-          "DEPENDENCY_OF:task:10072"
-        ],
-        "task:10081": [
-          "TECHNICAL_CHAIN:technical-chain:continuity.reality-c-eva-alfombra"
-        ],
-        "task:10089": [
-          "DEPENDENCY_OF:task:10088"
-        ],
-        "task:10092": [
-          "DEPENDENCY_OF:task:10089"
-        ],
-        "task:10095": [
-          "DEPENDENCY_OF:task:10088"
-        ],
-        "task:10103": [
-          "DEPENDENCY_OF:task:10102"
-        ],
-        "task:10105": [
-          "DEPENDENCY_OF:task:10103"
-        ],
-        "task:10108": [
-          "DEPENDENCY_OF:task:10102"
-        ],
-        "task:10109": [
-          "DEPENDENCY_OF:task:10102"
-        ],
-        "task:10110": [
-          "ANCHORED_WITH:task:10102"
-        ],
-        "task:10117": [
-          "DEPENDENCY_OF:task:10116"
-        ],
-        "task:10120": [
-          "DEPENDENCY_OF:task:10117"
-        ],
-        "task:10123": [
-          "DEPENDENCY_OF:task:10116"
-        ],
-        "task:10132": [
-          "DEPENDENCY_OF:task:10129"
-        ],
-        "task:10135": [
-          "DEPENDENCY_OF:task:10132"
-        ],
-        "task:10138": [
-          "DEPENDENCY_OF:task:10131"
-        ],
-        "task:10148": [
-          "DEPENDENCY_OF:task:10147"
-        ],
-        "task:10150": [
-          "DEPENDENCY_OF:task:10148"
-        ],
-        "task:10153": [
-          "DEPENDENCY_OF:task:10147"
-        ],
-        "task:10154": [
-          "TECHNICAL_CHAIN:technical-chain:continuity.reality-c-eva-alfombra"
-        ],
-        "task:10162": [
-          "DEPENDENCY_OF:task:10161"
-        ],
-        "task:10165": [
-          "DEPENDENCY_OF:task:10162"
-        ],
-        "task:10168": [
-          "DEPENDENCY_OF:task:10161"
-        ],
-        "task:10169": [
-          "TECHNICAL_CHAIN:technical-chain:continuity.reality-c-eva-alfombra"
-        ],
-        "task:10176": [
-          "DEPENDENCY_OF:task:10173"
-        ],
-        "task:10180": [
-          "DEPENDENCY_OF:task:10176"
-        ],
-        "task:10183": [
-          "DEPENDENCY_OF:task:10175"
-        ],
-        "task:10191": [
-          "DEPENDENCY_OF:task:10190"
-        ],
-        "task:10194": [
-          "DEPENDENCY_OF:task:10191"
-        ],
-        "task:10197": [
-          "DEPENDENCY_OF:task:10190"
-        ],
-        "task:10204": [
-          "DEPENDENCY_OF:task:10203"
-        ],
-        "task:10207": [
-          "DEPENDENCY_OF:task:10204"
-        ],
-        "task:10210": [
-          "DEPENDENCY_OF:task:10203"
-        ],
-        "task:10219": [
-          "DEPENDENCY_OF:task:10215"
-        ],
-        "task:10221": [
-          "DEPENDENCY_OF:task:10219"
-        ],
-        "task:10224": [
-          "DEPENDENCY_OF:task:10218"
-        ],
-        "task:10230": [
-          "DEPENDENCY_OF:task:10229"
-        ],
-        "task:10233": [
-          "DEPENDENCY_OF:task:10230"
-        ],
-        "task:10236": [
-          "DEPENDENCY_OF:task:10229"
-        ],
-        "task:10244": [
-          "DEPENDENCY_OF:task:10243"
-        ],
-        "task:10246": [
-          "DEPENDENCY_OF:task:10244"
-        ],
-        "task:10249": [
-          "DEPENDENCY_OF:task:10243"
-        ],
-        "task:10257": [
-          "DEPENDENCY_OF:task:10256"
-        ],
-        "task:10259": [
-          "DEPENDENCY_OF:task:10257"
-        ],
-        "task:10262": [
-          "DEPENDENCY_OF:task:10256"
-        ]
-      },
-      "internalPlacements": {
-        "coreTaskCount": 44,
-        "coreTasksByKind": {
-          "vocal": 19,
-          "auxiliary": 6,
-          "main": 19
-        },
-        "pendingSupportingTotal": 46,
-        "pendingOrdinaryNoTransport": 27,
-        "pendingDynamicTransport": 19,
-        "pendingTasksByKind": {
-          "auxiliary": 46
         }
       },
       "operationalMeals": [
@@ -2948,6 +920,27 @@
         "branchesConsumed": 0,
         "firstPrune": null
       },
+      "technicalChainFutureReservation": {
+        "checks": 1,
+        "passes": 0,
+        "prunes": 1,
+        "abstentions": 0,
+        "branchesConsumed": 117,
+        "firstPrune": {
+          "phase": "CORE",
+          "causingTaskId": "task:10072",
+          "causingCandidateStart": 975,
+          "depth": 44,
+          "affectedStructures": 1,
+          "structuresChecked": 1,
+          "branchesConsumed": 117,
+          "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+          "workItemKey": "technical-chain:task:10081",
+          "candidateCount": 0,
+          "status": "PRUNE",
+          "result": "ZERO_DOMAIN"
+        }
+      },
       "transportWitness": null,
       "hardRequiredValidation": {
         "hardValid": true,
@@ -2957,9 +950,9 @@
       },
       "proposalOutcome": "NO_PROPOSAL",
       "newObligationCount": 0,
-      "completedObligationCount": 19,
-      "remainingObligationCount": 247,
-      "protectedPlacementCount": 19,
+      "completedObligationCount": 0,
+      "remainingObligationCount": 266,
+      "protectedPlacementCount": 0,
       "protectedPlacementsPreserved": true,
       "newHardViolationCount": 0,
       "newRequiredViolationCount": 0,
@@ -2969,9 +962,9 @@
         "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
       ],
       "work": {
-        "branchesExplored": 118,
-        "coreBranches": 0,
-        "standaloneBranches": 118,
+        "branchesExplored": 2575,
+        "coreBranches": 2574,
+        "standaloneBranches": 1,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -2999,7 +992,7 @@
         "standaloneForwardWitnessCacheHits": 0,
         "standaloneForwardWitnessCacheMisses": 0,
         "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 12,
+        "transportContiguousStates": 13,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 0,
         "participantMealFutureInfeasibleBranches": 0,
@@ -3019,7 +1012,25 @@
         "capacityFingerprint": null,
         "nominalIdentityBeginsAt": "exactMainAndFeederCore residual matching"
       },
-      "residualBreakdown": null,
+      "residualBreakdown": {
+        "projectedTaskCount": 82,
+        "scopeMainCount": 19,
+        "structuralTaskCount": 44,
+        "structuralByCanonicalType": {
+          "ENSAYO_ESTUDIO_7": 19,
+          "PRUEBA_VOCAL_LUCIA": 8,
+          "REALITY_PLATO_ANTES": 3,
+          "REALITY_PLATO_DESPUES": 3,
+          "PRUEBA_VOCAL_JOSE_MARIA": 11
+        },
+        "pendingSupportingTotal": 38,
+        "pendingOrdinaryNoTransport": 19,
+        "pendingDynamicTransport": 19,
+        "pendingByCanonicalType": {
+          "ESTILISMO_ENTRADA": 19,
+          "IN": 19
+        }
+      },
       "standaloneDiagnostic": {
         "standaloneBranchesByDepth": {},
         "standaloneSelectionsByTaskId": {},
@@ -3040,10 +1051,7 @@
         "firstTerminalCompletionRejection": null,
         "standaloneFirstSelectedTaskId": null,
         "standaloneDominantPathFirst20": [],
-        "standaloneFirstDominantBlocker": {
-          "taskId": "task:10041",
-          "count": 1
-        },
+        "standaloneFirstDominantBlocker": null,
         "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": null,
         "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 0,
         "firstHardValidCoreLeaf": {
@@ -3053,15 +1061,15 @@
             "auxiliary": 6,
             "main": 19
           },
-          "pendingSupportingTotal": 46,
-          "pendingOrdinaryNoTransport": 27,
+          "pendingSupportingTotal": 38,
+          "pendingOrdinaryNoTransport": 19,
           "pendingDynamicTransport": 19,
           "pendingTasksByKind": {
-            "auxiliary": 46
+            "auxiliary": 38
           }
         },
         "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 12,
+        "transportContiguousStates": 13,
         "membershipFallbackEntered": 0,
         "coreLeafArrivalEvidence": {
           "direction": "arrival",
@@ -3070,42 +1078,42 @@
             "task:10150",
             "task:10221",
             "task:10233",
-            "task:10060",
             "task:10246",
             "task:10259",
+            "task:10105",
+            "task:10060",
             "task:10021",
             "task:10034",
-            "task:10105",
             "task:10047",
-            "task:10165",
-            "task:10180",
             "task:10077",
             "task:10092",
+            "task:10165",
             "task:10120",
-            "task:10006",
+            "task:10180",
             "task:10194",
-            "task:10207"
+            "task:10207",
+            "task:10006"
           ],
           "orderedParticipantIds": [
             "participant:210",
             "participant:211",
             "participant:216",
             "participant:217",
-            "participant:205",
             "participant:218",
             "participant:219",
+            "participant:208",
+            "participant:205",
             "participant:202",
             "participant:203",
-            "participant:208",
             "participant:204",
-            "participant:212",
-            "participant:213",
             "participant:206",
             "participant:207",
+            "participant:212",
             "participant:209",
-            "participant:201",
+            "participant:213",
             "participant:214",
-            "participant:215"
+            "participant:215",
+            "participant:201"
           ],
           "packetSizes": [
             2,
@@ -3117,25 +1125,25 @@
             3
           ],
           "orderedDeadlines": [
-            545,
-            545,
-            575,
-            575,
-            605,
-            605,
-            605,
-            635,
-            635,
-            635,
-            665,
-            665,
-            665,
-            715,
-            715,
-            715,
+            555,
+            570,
+            585,
+            600,
+            615,
+            630,
+            645,
+            660,
+            750,
             765,
-            765,
-            765
+            780,
+            780,
+            795,
+            795,
+            810,
+            810,
+            825,
+            840,
+            855
           ],
           "packetMembers": [
             [
@@ -3147,46 +1155,46 @@
               "task:10233"
             ],
             [
-              "task:10060",
               "task:10246",
-              "task:10259"
-            ],
-            [
-              "task:10021",
-              "task:10034",
+              "task:10259",
               "task:10105"
             ],
             [
+              "task:10060",
+              "task:10021",
+              "task:10034"
+            ],
+            [
               "task:10047",
+              "task:10077",
+              "task:10092"
+            ],
+            [
               "task:10165",
+              "task:10120",
               "task:10180"
             ],
             [
-              "task:10077",
-              "task:10092",
-              "task:10120"
-            ],
-            [
-              "task:10006",
               "task:10194",
-              "task:10207"
+              "task:10207",
+              "task:10006"
             ]
           ],
           "starts": [
-            540,
-            570,
-            600,
-            630,
-            660,
-            710,
-            760
+            545,
+            575,
+            605,
+            650,
+            755,
+            785,
+            815
           ],
           "minGapMinutes": 30,
           "construction": "contiguous",
           "alternativesExplored": 1,
           "classification": "CONTIGUOUS_EXACT",
           "classificationBreakers": [],
-          "contiguousStatesExplored": 12,
+          "contiguousStatesExplored": 13,
           "membershipFallbackEntered": false
         },
         "corePrerequisiteReservationChecks": 0,
@@ -3194,31 +1202,31 @@
         "ordinaryPrerequisiteReservationChecks": 0,
         "ordinaryPrerequisiteReservationPrunes": 0,
         "firstPrerequisiteReservationPrune": null,
-        "firstStandaloneDeadEndCause": {
-          "kind": "MACRO_ZERO_DOMAIN",
-          "phase": "MACRO",
-          "depth": 0,
-          "workItemId": "technical-chain:task:10081",
-          "workItemKind": "TECHNICAL_CHAIN",
-          "taskIds": [
-            "task:10041",
-            "task:10069",
-            "task:10081",
-            "task:10154",
-            "task:10169",
-            "task:10173",
-            "task:10215"
-          ],
-          "domainBefore": 0,
-          "domainAfter": 0,
-          "candidatesEvaluated": 0,
-          "blockingTaskId": null,
-          "blockingAuthority": "probeExactTechnicalChainMacroDomain",
-          "firstPlacementRejection": null,
-          "ancestralDecisions": []
-        }
+        "firstStandaloneDeadEndCause": null
       },
-      "orderingComparison": null,
+      "orderingComparison": {
+        "off": {
+          "coreBranches": 2574,
+          "standaloneBranches": 1,
+          "maximumStandaloneDepth": 0,
+          "completeOrdinaryLeaves": 0,
+          "terminalInAttempts": 0,
+          "terminalInFailures": 0,
+          "branchesToFirstOrdinaryCompleteLeaf": null,
+          "outcome": "NO_PROPOSAL"
+        },
+        "on": {
+          "coreBranches": 2982,
+          "standaloneBranches": 297018,
+          "maximumStandaloneDepth": 19,
+          "completeOrdinaryLeaves": 145701,
+          "terminalInAttempts": 145701,
+          "terminalInFailures": 145701,
+          "branchesToFirstOrdinaryCompleteLeaf": 19,
+          "outcome": "NO_PROPOSAL"
+        },
+        "decision": "REVERTED_NO_MATERIAL_IMPROVEMENT"
+      },
       "causalDiagnostic": {
         "waterfallByDepth": {
           "0": {
@@ -3228,8 +1236,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 118,
-            "total": 118
+            "other": 2575,
+            "total": 2575
           }
         },
         "feederByDepth": {},
@@ -3250,25 +1258,39 @@
           "collisions": []
         }
       },
-      "durationMs": 449
+      "durationMs": 1321
     }
   ],
   "firstBlocker": {
     "scope": {
       "kind": "SPACE",
-      "spaceId": 3001
+      "spaceId": 3004
     },
     "obligationIds": [
-      10041,
-      10069,
-      10129,
-      10173,
-      10215
+      10002,
+      10017,
+      10031,
+      10043,
+      10056,
+      10072,
+      10088,
+      10102,
+      10116,
+      10131,
+      10147,
+      10161,
+      10175,
+      10190,
+      10203,
+      10218,
+      10229,
+      10243,
+      10256
     ],
-    "baseStageId": 2,
-    "completedObligationCount": 19,
-    "remainingObligationCount": 247,
-    "protectedPlacementCount": 19,
+    "baseStageId": 1,
+    "completedObligationCount": 0,
+    "remainingObligationCount": 266,
+    "protectedPlacementCount": 0,
     "protectedPlacementsPreserved": true,
     "proposalOutcome": "NO_PROPOSAL",
     "newHardViolationCount": 0,
@@ -3296,7 +1318,6 @@
       "task:10073",
       "task:10077",
       "task:10080",
-      "task:10081",
       "task:10089",
       "task:10092",
       "task:10095",
@@ -3314,11 +1335,9 @@
       "task:10148",
       "task:10150",
       "task:10153",
-      "task:10154",
       "task:10162",
       "task:10165",
       "task:10168",
-      "task:10169",
       "task:10176",
       "task:10180",
       "task:10183",
@@ -3342,66 +1361,88 @@
       "task:10262"
     ],
     "branches": {
-      "core": 0,
-      "standalone": 118
+      "core": 2574,
+      "standalone": 1
     },
     "blockedObligationId": null,
     "blockedTask": null,
     "affected": {
       "taskIds": [
-        10041,
-        10069,
-        10129,
-        10173,
-        10215
+        10002,
+        10017,
+        10031,
+        10043,
+        10056,
+        10072,
+        10088,
+        10102,
+        10116,
+        10131,
+        10147,
+        10161,
+        10175,
+        10190,
+        10203,
+        10218,
+        10229,
+        10243,
+        10256
       ],
       "resourceIds": [],
-      "spaceId": 3001
+      "spaceId": 3004
     },
     "participantMealPrune": null,
     "participantFuturePrune": null,
-    "causingTask": null,
-    "blockingMeal": null,
-    "standaloneDeadEnd": {
-      "kind": "MACRO_ZERO_DOMAIN",
-      "phase": "MACRO",
-      "depth": 0,
-      "workItemId": "technical-chain:task:10081",
-      "workItemKind": "TECHNICAL_CHAIN",
-      "taskIds": [
-        "task:10041",
-        "task:10069",
-        "task:10081",
-        "task:10154",
-        "task:10169",
-        "task:10173",
-        "task:10215"
-      ],
-      "domainBefore": 0,
-      "domainAfter": 0,
-      "candidatesEvaluated": 0,
-      "blockingTaskId": null,
-      "blockingAuthority": "probeExactTechnicalChainMacroDomain",
-      "firstPlacementRejection": null,
-      "ancestralDecisions": []
+    "technicalChainFuturePrune": {
+      "phase": "CORE",
+      "causingTaskId": "task:10072",
+      "causingCandidateStart": 975,
+      "depth": 44,
+      "affectedStructures": 1,
+      "structuresChecked": 1,
+      "branchesConsumed": 117,
+      "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+      "workItemKey": "technical-chain:task:10081",
+      "candidateCount": 0,
+      "status": "PRUNE",
+      "result": "ZERO_DOMAIN"
     },
-    "causalAuthority": "probeExactTechnicalChainMacroDomain",
-    "failureCategory": "GEOMETRY_OR_MATCHING",
-    "phase": "constructExactItinerantPlan/macro depth 0",
-    "firstCausalCheck": "MACRO_ZERO_DOMAIN",
+    "causingTask": {
+      "canonicalTaskId": "task:10072",
+      "productTaskId": 10072,
+      "kind": "main",
+      "participantId": "participant:206",
+      "spaceId": "space:3004",
+      "duration": 15,
+      "dependencies": [
+        "task:10073",
+        "task:10080"
+      ],
+      "requiredResourceIds": [],
+      "placementAuthority": "AUTOMATIC",
+      "placement": null
+    },
+    "blockingMeal": null,
+    "standaloneDeadEnd": null,
+    "causalAuthority": "technicalChainFutureReservation",
+    "failureCategory": "FUTURE_FEASIBILITY",
+    "phase": "constructExactItinerantPlan/core technical-chain future reservation",
+    "firstCausalCheck": "technicalChainFutureReservation exact probe",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
       "ASSISTED_SCOPE_INCOMPLETE",
       "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
     ],
-    "blockingTaskIds": [],
+    "blockingTaskIds": [
+      "technical-chain:task:10081"
+    ],
     "blockers": [],
-    "rejectionReason": "MACRO_ZERO_DOMAIN",
+    "rejectionReason": "ZERO_DOMAIN",
     "originatingCoreDecision": null,
-    "classification": "STANDALONE_MACRO_ZERO_DOMAIN"
+    "classification": "TECHNICAL_CHAIN_FUTURE_RESERVATION_PRUNE"
   },
   "finalInGroups": null,
-  "deterministicFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
+  "deterministicFingerprint": "92541a8396180e9d9130e33c7050c9c72d41ba4a5e5009a27943f90b02805556",
   "deterministicEquivalent": true
 }

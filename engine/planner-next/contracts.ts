@@ -149,6 +149,8 @@ export interface PlannerNextProblem {
   tasks: Task[];
   /** Read-only Assisted context. These tasks are never ordinary search variables. */
   analyticalFutureParticipantTasks?: Task[];
+  /** Read-only Assisted structures. Their members are probes, never search variables. */
+  analyticalFutureTechnicalChains?: Array<{ policy: TechnicalChainPolicy; tasks: Task[] }>;
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;
