@@ -30,7 +30,7 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
   const pendingIds = new Set(pending.map(task => task.id));
   for(const id of jointGroupIds(pending)) {
     const members=jointGroupMembers(pending,id);
-    if (members.some(task => task.dependencies.some(dep => pendingIds.has(dep)))) continue;
+    if (members.some(task => chainIds.has(task.id) || task.dependencies.some(dep => pendingIds.has(dep)))) continue;
     let count=0;
     const duration=members[0]?.duration??0;
     for(let start=problem.day.start;start+duration<=problem.day.end;start+=5) {
