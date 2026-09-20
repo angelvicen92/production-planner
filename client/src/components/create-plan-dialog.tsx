@@ -38,7 +38,7 @@ export function CreatePlanDialog() {
     const {workStart,workEnd,mealStart,mealEnd,mealMode,...ordinary}=data;
     createPlan.mutate({...ordinary,configuration:{
       workday:overrideWork?{intent:"OVERRIDE",value:{start:workStart,end:workEnd}}:{intent:"INHERIT"},
-      meal:overrideMeal?{intent:"OVERRIDE",value:{start:mealStart,end:mealEnd,mode:mealMode}}:{intent:"INHERIT"},
+      meal:overrideMeal?{intent:"OVERRIDE",value:{start:mealStart,end:mealEnd,mode:mealMode === "global_hard_break" ? "global_hard_break" : "flexible_meal_window"}}:{intent:"INHERIT"},
     }}, { onSuccess: () => { setOpen(false); setOverrideWork(false); setOverrideMeal(false); form.reset(emptyForm); } });
   }
 
@@ -62,6 +62,7 @@ export function CreatePlanDialog() {
               <FormField control={form.control} name="mealStart" render={({field}) => <FormItem><FormLabel>Inicio de comida</FormLabel><FormControl><Input type="time" disabled={!overrideMeal} {...field}/></FormControl><FormMessage/></FormItem>}/>
               <FormField control={form.control} name="mealEnd" render={({field}) => <FormItem><FormLabel>Fin de comida</FormLabel><FormControl><Input type="time" disabled={!overrideMeal} {...field}/></FormControl><FormMessage/></FormItem>}/>
             </div>
+            <FormField control={form.control} name="mealMode" render={({field}) => <FormItem><FormLabel>Modo de comida</FormLabel><FormControl><select aria-label="Modo de comida" disabled={!overrideMeal} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50" {...field}><option value="flexible_meal_window">Ventana flexible de comida</option><option value="global_hard_break">Parada global de comida</option></select></FormControl><FormMessage/></FormItem>}/>
             <Button type="submit" className="w-full" disabled={createPlan.isPending}>{createPlan.isPending ? "Creando…" : "Crear día"}</Button>
           </form></Form>}
     </DialogContent>

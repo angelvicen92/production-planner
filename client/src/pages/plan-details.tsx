@@ -1965,6 +1965,7 @@ ${reasonMessage}` : message,
     workEnd: "",
     mealStart: "",
     mealEnd: "",
+    mealMode: "flexible_meal_window" as "flexible_meal_window" | "global_hard_break",
     contestantMealDurationMinutes: 75,
     contestantMealMaxSimultaneous: 10,
     spaceMealBreakMinutes: "",
@@ -1992,6 +1993,7 @@ ${reasonMessage}` : message,
       workEnd: plan.workEnd || "",
       mealStart: plan.mealStart || "",
       mealEnd: plan.mealEnd || "",
+      mealMode: plan.mealMode === "global_hard_break" ? "global_hard_break" : "flexible_meal_window",
       contestantMealDurationMinutes: plan.contestantMealDurationMinutes ?? 75,
       contestantMealMaxSimultaneous: plan.contestantMealMaxSimultaneous ?? 10,
       spaceMealBreakMinutes: plan.spaceMealBreakMinutes == null ? "" : String(plan.spaceMealBreakMinutes),
@@ -2371,6 +2373,7 @@ ${reasonMessage}` : message,
       workEnd: plan.workEnd || "",
       mealStart: plan.mealStart || "",
       mealEnd: plan.mealEnd || "",
+      mealMode: plan.mealMode === "global_hard_break" ? "global_hard_break" : "flexible_meal_window",
       contestantMealDurationMinutes: plan.contestantMealDurationMinutes ?? 75,
       contestantMealMaxSimultaneous: plan.contestantMealMaxSimultaneous ?? 10,
       spaceMealBreakMinutes: plan.spaceMealBreakMinutes == null ? "" : String(plan.spaceMealBreakMinutes),
@@ -5298,6 +5301,13 @@ ${reasonMessage}` : message,
                   type="time"
                   step={60}
                 />
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="day-meal-mode">Modo de comida</Label>
+                <select id="day-meal-mode" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={edit.mealMode} onChange={(event) => setEdit((previous) => ({ ...previous, mealMode: event.target.value as typeof previous.mealMode }))}>
+                  <option value="flexible_meal_window">Ventana flexible de comida</option>
+                  <option value="global_hard_break">Parada global de comida</option>
+                </select>
               </div>
               <div className="space-y-2">
                 <Label>Duración comida concursantes (min)</Label>

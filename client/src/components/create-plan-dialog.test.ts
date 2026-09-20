@@ -21,4 +21,15 @@ test("CreatePlanDialog does not contain a hidden productive 09:00–18:00 fallba
   assert.doesNotMatch(source,/workStart:\s*["']09:00["']/);
   assert.doesNotMatch(source,/workEnd:\s*["']18:00["']/);
   assert.match(source,/No se pudo cargar el horario habitual/);
+  assert.match(source,/Ventana flexible de comida/);
+  assert.match(source,/Parada global de comida/);
+  assert.match(source,/disabled=\{!overrideMeal\}/);
+});
+
+test("Plan Details sends an explicit typed meal mode with daily edits",()=>{
+  const source=readFileSync(new URL("../pages/plan-details.tsx",import.meta.url),"utf8");
+  assert.match(source,/id="day-meal-mode"/);
+  assert.match(source,/value="flexible_meal_window"/);
+  assert.match(source,/value="global_hard_break"/);
+  assert.match(source,/\.\.\.edit/);
 });

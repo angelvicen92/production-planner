@@ -56,6 +56,7 @@ import {
   buildPlanResourceBundleSnapshotCandidateV1,
   RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE,
 } from "./planResourceBundleSnapshot";
+import { initializeDayConfigurationRevision } from "./dayConfigurationService";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -173,7 +174,7 @@ export interface IStorage {
   // Plans
   getPlans(): Promise<PlanSummary[]>;
   getPlan(id: number): Promise<Plan | undefined>;
-  createPlan(plan: any): Promise<Plan>;
+  createPlan(plan: Omit<InsertPlan, "workStart" | "workEnd" | "mealStart" | "mealEnd" | "mealMode"> & { configuration: import("../shared/dayConfig").CreateDayConfigurationIntent; configurationActorId: string }): Promise<Plan>;
   deletePlan(planId: number): Promise<boolean>;
 
   // Contestants
@@ -1306,7 +1307,7 @@ export class SupabaseStorage implements IStorage {
     return data as Plan;
   }
 
-  async createPlan(plan: any): Promise<Plan> {
+  async createPlan(plan: Omit<InsertPlan, "workStart" | "workEnd" | "mealStart" | "mealEnd" | "mealMode"> & { configuration: import("../shared/dayConfig").CreateDayConfigurationIntent; configurationActorId: string }): Promise<Plan> {
     const [
       { data: settings, error: settingsError },
       { data: zoneCatalog, error: zonesError },
@@ -1824,8 +1825,13 @@ export class SupabaseStorage implements IStorage {
       return throwAfterPlanCreationFailure(Number(data.id), e, "Failed to snapshot staff defaults for plan");
     }
 
-    await this.syncPlanMealBreaks(Number((data as any).id));
-    return data as Plan;
+    try {
+      await this.syncPlanMealBreaks(Number((data as any).id));
+      const revisionId = await initializeDayConfigurationRevision(Number((data as any).id), plan.configurationActorId, this);
+      return { ...data, currentConfigRevisionId: revisionId } as Plan;
+    } catch (configurationRevisionError: unknown) {
+      return throwAfterPlanCreationFailure(Number(data.id), configurationRevisionError, "Failed to initialize canonical plan configuration revision");
+    }
   }
 
   async deletePlan(planId: number): Promise<boolean> {

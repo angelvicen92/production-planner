@@ -131,7 +131,7 @@ export function useCreatePlan() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (plan: any) =>
+    mutationFn: (plan: import("zod").infer<typeof api.plans.create.input>) =>
       apiRequest<Plan>("POST", api.plans.create.path, plan),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.plans.list.path] });
@@ -181,10 +181,11 @@ export function useUpdatePlan() {
     mutationFn: async ({ id, patch }: { id: number; patch: any }) => {
       const {workStart,workEnd,mealStart,mealEnd,mealMode,...ordinary}=patch;
       if(workStart!==undefined||workEnd!==undefined||mealStart!==undefined||mealEnd!==undefined||mealMode!==undefined){
-        const current=queryClient.getQueryData<any>(planQueryKey(id));
+        if ((workStart === undefined) !== (workEnd === undefined)) throw new Error("La edición de jornada requiere inicio y fin explícitos");
+        if ([mealStart, mealEnd, mealMode].some(value => value !== undefined) && [mealStart, mealEnd, mealMode].some(value => value === undefined)) throw new Error("La edición de comida requiere inicio, fin y modo explícitos");
         await apiRequest("PUT",buildUrl(api.plans.dayConfiguration.edit.path,{id}),{
-          ...((workStart!==undefined||workEnd!==undefined)?{workday:{start:workStart??current?.workStart,end:workEnd??current?.workEnd}}:{}),
-          ...((mealStart!==undefined||mealEnd!==undefined||mealMode!==undefined)?{meal:{start:mealStart??current?.mealStart,end:mealEnd??current?.mealEnd,mode:mealMode??current?.mealMode??"flexible_meal_window"}}:{}),
+          ...(workStart!==undefined&&workEnd!==undefined?{workday:{start:workStart,end:workEnd}}:{}),
+          ...(mealStart!==undefined&&mealEnd!==undefined&&mealMode!==undefined?{meal:{start:mealStart,end:mealEnd,mode:mealMode}}:{}),
         });
       }
       return Object.keys(ordinary).length ? apiRequest("PATCH",buildUrl(api.plans.update.path,{id}),ordinary) : undefined;

@@ -38,3 +38,5 @@ export const dayConfigRefreshSchema = z.object({
 
 export type CreateDayConfigurationIntent = z.infer<typeof createDayConfigurationIntentSchema>;
 export type DayConfigEdit = z.infer<typeof dayConfigEditSchema>;
+export type DayConfigRestore = z.infer<typeof dayConfigRestoreSchema>;
+export type DayConfigRefresh = z.infer<typeof dayConfigRefreshSchema>;
