@@ -9,6 +9,8 @@ import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
 import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
 import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
+import { participantMealWitnessFingerprint } from "./participantMeals";
+import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 
 export type AssistedPlanningReasonCode =
@@ -41,6 +43,21 @@ export interface AssistedPlanningEvidence {
   readonly hardValid: boolean;
   readonly requiredValid: boolean;
   readonly fingerprint: string | null;
+  /** Solver-selected analytical witnesses. They are Evidence only, never proposal placements. */
+  readonly selectedMealWitnesses: {
+    readonly participant: { readonly scheduled: readonly import("./contracts").ScheduledParticipantMeal[];
+      readonly fingerprint: string; readonly finalSelectionOrder: readonly string[] } | null;
+    readonly operational: { readonly scheduled: readonly import("./contracts").ScheduledOperationalMeal[];
+      readonly fingerprint: string } | null;
+    readonly resource: readonly import("./contracts").ScheduledResourceMeal[];
+    readonly itinerantUnit: readonly import("./contracts").ScheduledItinerantUnitMeal[];
+  } | null;
+  readonly participantMealFutureFeasibility: {
+    readonly futureFeasibilityChecks:number; readonly futureInfeasibleBranches:number;
+    readonly affectedObligationsChecked:number; readonly zeroDomainPrunes:number;
+    readonly analyticCollectivePrunes:number; readonly blockingMealTaskIds:readonly string[];
+    readonly firstPrune: ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"];
+  };
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
@@ -332,11 +349,18 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "standaloneForwardChecks",
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
-    "participantMealFutureFeasibilityChecks","participantMealAffectedObligationsChecked","participantMealExactMaterializations"]
+    "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
+    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
     }));
+  const selectedMealWitnesses=result?.complete?{
+    participant:{scheduled:structuredClone(result.scheduledParticipantMeals),fingerprint:participantMealWitnessFingerprint(result.scheduledParticipantMeals),
+      finalSelectionOrder:[...(evidenceRecord.participantMealFinalSelectionOrder as string[]|undefined)??[]]},
+    operational:{scheduled:structuredClone(result.scheduledOperationalMeals??[]),fingerprint:operationalMealWitnessFingerprint(result.scheduledOperationalMeals??[])},
+    resource:structuredClone(result.scheduledResourceMeals),itinerantUnit:structuredClone(result.scheduledItinerantUnitMeals),
+  }:null;
   return { proposal, evidence: {
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
@@ -363,6 +387,16 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     // the combined state retains an inherited, human-accepted HARD exception.
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
+    selectedMealWitnesses,
+    participantMealFutureFeasibility:{
+      futureFeasibilityChecks:Number(evidenceRecord.participantMealFutureFeasibilityChecks??metricsRecord.participantMealFutureFeasibilityChecks??0),
+      futureInfeasibleBranches:Number(evidenceRecord.participantMealFutureInfeasibleBranches??0),
+      affectedObligationsChecked:Number(evidenceRecord.participantMealAffectedObligationsChecked??0),
+      zeroDomainPrunes:Number(evidenceRecord.participantMealZeroDomainPrunes??0),
+      analyticCollectivePrunes:Number(evidenceRecord.participantMealAnalyticCollectivePrunes??0),
+      blockingMealTaskIds:[...((evidenceRecord.participantMealBlockingTaskIds as string[]|undefined)??[])],
+      firstPrune:(evidenceRecord.firstParticipantMealFuturePrune as ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"]|undefined)??null,
+    },
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     standaloneDiagnostic,

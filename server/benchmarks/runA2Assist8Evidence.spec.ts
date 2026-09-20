@@ -19,7 +19,11 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
     assert.equal(firstStandalone.terminalTransportMaterializationFailures,0);
   }
   for (const row of first.iterations) {
-    if (row.proposalOutcome === "PROPOSAL") assert.deepEqual(row.visibleProposalTaskIds, row.resolvedTaskIds);
+    if (row.proposalOutcome === "PROPOSAL") {
+      assert.deepEqual(row.visibleProposalTaskIds, row.resolvedTaskIds);
+      assert.ok(row.sodexoMeals.obligations.every((meal:any)=>meal.status!=="NOT_REACHED"));
+      assert.ok(row.operationalMeals.every((meal:any)=>meal.witness.status!=="ABSENT"));
+    }
   }
   assert.equal(first.remainingObligationCount, 266 - first.completedObligationCount);
   assert.equal(first.manualChanges, 0); assert.equal(first.rollbackCount, 0);
@@ -39,6 +43,7 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
       &&row.proposalOutcome==="NO_PROPOSAL");
     const diagnostic=blockerIteration?.standaloneDiagnostic;
     assert.ok(diagnostic?.firstTerminalCompletionRejection
+      ||first.firstBlocker.classification==="PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE"
       ||first.firstBlocker.classification==="SEARCH_CAPACITY_EXHAUSTED"
       ||(first.firstBlocker.classification==="INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
         &&first.firstBlocker.reasonCodes.includes("NO_COMPLETE_HARD_VALID_ITINERANT_PLAN")));
@@ -51,6 +56,12 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
       assert.equal(diagnostic.firstTerminalCompletionRejection.operationalMealWitness.complete,true);
       assert.ok(diagnostic.firstTerminalCompletionRejection.validation.reasonCodes.length>0);
       assert.ok(diagnostic.firstTerminalCompletionRejection.validation.violations.length>0);
+    }
+    if(first.firstBlocker.classification==="PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE") {
+      assert.ok(first.firstBlocker.causingTask?.canonicalTaskId);
+      assert.ok(first.firstBlocker.blockingMeal?.sourceTaskId);
+      assert.equal(first.firstBlocker.participantMealPrune.candidateCount,0);
+      assert.ok(first.firstBlocker.participantMealPrune.reasonCodes.length>0);
     }
   }
   assert.deepEqual({ stages: first.iterations.map(row => [row.resolvedTaskIds, row.proposalOutcome, row.acceptedStageFingerprint]), fingerprint: first.deterministicFingerprint },

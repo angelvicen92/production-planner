@@ -668,13 +668,19 @@
             "space:3004"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -691,13 +697,21 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -713,13 +727,20 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -735,13 +756,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -757,13 +785,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -779,13 +814,20 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -802,13 +844,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 900,
+            "end": 945
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -823,13 +871,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 945,
+            "end": 990
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -845,15 +899,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 805,
+              "end": 845
             }
           },
           {
@@ -865,15 +924,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -885,15 +949,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -905,15 +974,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 950,
+              "end": 990
             }
           },
           {
@@ -925,15 +999,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -945,15 +1024,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 910,
+              "end": 950
             }
           },
           {
@@ -965,15 +1049,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 910,
+              "end": 950
             }
           },
           {
@@ -985,15 +1074,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -1005,15 +1099,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -1025,15 +1124,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 815,
+              "end": 855
             }
           },
           {
@@ -1045,15 +1149,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -1065,15 +1174,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 950,
+              "end": 990
             }
           },
           {
@@ -1085,15 +1199,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 950,
+              "end": 990
             }
           },
           {
@@ -1105,15 +1224,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 785,
+              "end": 825
             }
           },
           {
@@ -1125,15 +1249,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -1145,15 +1274,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 870,
+              "end": 910
             }
           },
           {
@@ -1165,15 +1299,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -1185,15 +1324,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -1205,20 +1349,30 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "7ed3db4b5230b104a9f3769390eb0dd43b07e1b94b81fce082ae86b5c4957f12",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           }
         ],
         "futureFeasibilityChecks": 1,
+        "futureInfeasibleBranches": 0,
         "affectedObligationsChecked": 0,
+        "zeroDomainPrunes": 0,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [],
+        "firstPrune": null,
         "exactMaterializations": 1
       },
       "transportWitness": null,
@@ -1274,7 +1428,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 1,
+        "participantMealFutureInfeasibleBranches": 0,
         "participantMealAffectedObligationsChecked": 0,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
       "sharedCapacityDiagnostic": {
@@ -1735,7 +1892,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "durationMs": 1871
+      "durationMs": 1582
     },
     {
       "scopeSelector": {
@@ -2299,13 +2456,19 @@
             "space:3004"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -2322,13 +2485,21 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -2344,13 +2515,20 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -2366,13 +2544,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -2388,13 +2573,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -2410,13 +2602,20 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -2433,13 +2632,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 900,
+            "end": 945
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -2454,13 +2659,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 945,
+            "end": 990
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -2476,15 +2687,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 805,
+              "end": 845
             }
           },
           {
@@ -2496,15 +2712,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -2516,15 +2737,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -2536,15 +2762,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 795,
+              "end": 835
             }
           },
           {
@@ -2556,15 +2787,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -2576,15 +2812,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -2596,15 +2837,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -2616,15 +2862,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -2636,15 +2887,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -2656,15 +2912,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 845,
+              "end": 885
             }
           },
           {
@@ -2676,15 +2937,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -2696,15 +2962,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -2716,15 +2987,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -2736,15 +3012,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 785,
+              "end": 825
             }
           },
           {
@@ -2756,15 +3037,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -2776,15 +3062,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 870,
+              "end": 910
             }
           },
           {
@@ -2796,15 +3087,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -2816,15 +3112,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -2836,20 +3137,30 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           }
         ],
         "futureFeasibilityChecks": 2,
+        "futureInfeasibleBranches": 0,
         "affectedObligationsChecked": 1,
+        "zeroDomainPrunes": 0,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [],
+        "firstPrune": null,
         "exactMaterializations": 1
       },
       "transportWitness": null,
@@ -2905,7 +3216,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 2,
+        "participantMealFutureInfeasibleBranches": 0,
         "participantMealAffectedObligationsChecked": 1,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
       "sharedCapacityDiagnostic": {
@@ -3402,7 +3716,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "4b161e5f6809790a23c6780d42e82411aea691795096b64b66e6d5769452be80",
-      "durationMs": 598
+      "durationMs": 500
     },
     {
       "scopeSelector": {
@@ -4056,13 +4370,19 @@
             "space:3004"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -4079,13 +4399,21 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -4101,13 +4429,20 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -4123,13 +4458,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -4145,13 +4487,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -4167,13 +4516,20 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -4190,13 +4546,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 900,
+            "end": 945
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -4211,13 +4573,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 945,
+            "end": 990
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -4233,15 +4601,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 805,
+              "end": 845
             }
           },
           {
@@ -4253,15 +4626,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -4273,15 +4651,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -4293,15 +4676,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 795,
+              "end": 835
             }
           },
           {
@@ -4313,15 +4701,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -4333,15 +4726,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -4353,15 +4751,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -4373,15 +4776,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -4393,15 +4801,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -4413,15 +4826,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 845,
+              "end": 885
             }
           },
           {
@@ -4433,15 +4851,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -4453,15 +4876,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -4473,15 +4901,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -4493,15 +4926,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 785,
+              "end": 825
             }
           },
           {
@@ -4513,15 +4951,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -4533,15 +4976,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 870,
+              "end": 910
             }
           },
           {
@@ -4553,15 +5001,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -4573,15 +5026,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -4593,20 +5051,30 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           }
         ],
         "futureFeasibilityChecks": 1,
+        "futureInfeasibleBranches": 0,
         "affectedObligationsChecked": 0,
+        "zeroDomainPrunes": 0,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [],
+        "firstPrune": null,
         "exactMaterializations": 1
       },
       "transportWitness": null,
@@ -4662,7 +5130,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 1,
+        "participantMealFutureInfeasibleBranches": 0,
         "participantMealAffectedObligationsChecked": 0,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
       "sharedCapacityDiagnostic": {
@@ -5243,7 +5714,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "72cc33e7fa71d2cf7f251b453bcbfeab961fb5dd0afa7340453b8b2550c553c2",
-      "durationMs": 671
+      "durationMs": 500
     },
     {
       "scopeSelector": {
@@ -5933,13 +6404,19 @@
             "space:3004"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -5956,13 +6433,21 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -5978,13 +6463,20 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -6000,13 +6492,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -6022,13 +6521,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -6044,13 +6550,20 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -6067,13 +6580,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 900,
+            "end": 945
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         },
         {
@@ -6088,13 +6607,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 945,
+            "end": 990
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "3bccea1b0a98535cb051fd2b3904f897ba0629a55ea0d1c7b82c0aa956e3f168"
           }
         }
       ],
@@ -6110,15 +6635,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 805,
+              "end": 845
             }
           },
           {
@@ -6130,15 +6660,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -6150,15 +6685,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -6170,15 +6710,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 795,
+              "end": 835
             }
           },
           {
@@ -6190,15 +6735,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -6210,15 +6760,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -6230,15 +6785,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -6250,15 +6810,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -6270,15 +6835,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -6290,15 +6860,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 845,
+              "end": 885
             }
           },
           {
@@ -6310,15 +6885,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -6330,15 +6910,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -6350,15 +6935,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -6370,15 +6960,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 785,
+              "end": 825
             }
           },
           {
@@ -6390,15 +6985,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -6410,15 +7010,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 870,
+              "end": 910
             }
           },
           {
@@ -6430,15 +7035,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -6450,15 +7060,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -6470,20 +7085,30 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "2a9dd0a2867350add7deaf30ddd9efd904efe09db57a8711669bdbeabdf2d5d9",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           }
         ],
         "futureFeasibilityChecks": 1,
+        "futureInfeasibleBranches": 0,
         "affectedObligationsChecked": 0,
+        "zeroDomainPrunes": 0,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [],
+        "firstPrune": null,
         "exactMaterializations": 1
       },
       "transportWitness": null,
@@ -6539,7 +7164,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 1,
+        "participantMealFutureInfeasibleBranches": 0,
         "participantMealAffectedObligationsChecked": 0,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
       "sharedCapacityDiagnostic": {
@@ -7200,7 +7828,7 @@
       },
       "acceptedStageId": 5,
       "acceptedStageFingerprint": "a0ca65ddc4454c4e9caec891e3e5bfb0e1c9308e8625a2908a2ad2913d2ea017",
-      "durationMs": 546
+      "durationMs": 398
     },
     {
       "scopeSelector": {
@@ -7942,13 +8570,19 @@
             "space:3004"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         },
         {
@@ -7965,13 +8599,21 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 815,
+            "end": 890
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         },
         {
@@ -7987,13 +8629,20 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         },
         {
@@ -8009,13 +8658,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         },
         {
@@ -8031,13 +8687,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         },
         {
@@ -8053,13 +8716,20 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         }
       ],
@@ -8076,13 +8746,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 900,
+            "end": 945
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         },
         {
@@ -8097,13 +8773,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 945,
+            "end": 990
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "04c5756db82948602813e896b38da1f0e9aac681d0a65b37534628d4cbb9c14a"
           }
         }
       ],
@@ -8119,15 +8801,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 815,
+              "end": 855
             }
           },
           {
@@ -8139,15 +8826,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -8159,15 +8851,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -8179,15 +8876,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 795,
+              "end": 835
             }
           },
           {
@@ -8199,15 +8901,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -8219,15 +8926,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -8239,15 +8951,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -8259,15 +8976,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -8279,15 +9001,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 895,
+              "end": 935
             }
           },
           {
@@ -8299,15 +9026,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 830,
+              "end": 870
             }
           },
           {
@@ -8319,15 +9051,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -8339,15 +9076,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -8359,15 +9101,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 935,
+              "end": 975
             }
           },
           {
@@ -8379,15 +9126,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -8399,15 +9151,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -8419,15 +9176,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 870,
+              "end": 910
             }
           },
           {
@@ -8439,15 +9201,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -8459,15 +9226,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -8479,20 +9251,30 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "74245f6b8fa2b583b37f06de4267430d8cf42b35e0f5a30b4434390c83b6f6d2",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           }
         ],
         "futureFeasibilityChecks": 8,
+        "futureInfeasibleBranches": 0,
         "affectedObligationsChecked": 7,
+        "zeroDomainPrunes": 0,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [],
+        "firstPrune": null,
         "exactMaterializations": 1
       },
       "transportWitness": null,
@@ -8548,7 +9330,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 8,
+        "participantMealFutureInfeasibleBranches": 0,
         "participantMealAffectedObligationsChecked": 7,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
       "sharedCapacityDiagnostic": {
@@ -9331,7 +10116,7 @@
       },
       "acceptedStageId": 6,
       "acceptedStageFingerprint": "58f383ddefec214aec077578d8ce97556fdf87769dfbbb08008510d16a45c159",
-      "durationMs": 480
+      "durationMs": 371
     },
     {
       "scopeSelector": {
@@ -10287,13 +11072,19 @@
             "space:3004"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         },
         {
@@ -10310,13 +11101,21 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 885,
+            "end": 960
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         },
         {
@@ -10332,13 +11131,20 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         },
         {
@@ -10354,13 +11160,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         },
         {
@@ -10376,13 +11189,20 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         },
         {
@@ -10398,13 +11218,20 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         }
       ],
@@ -10421,13 +11248,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 900,
+            "end": 945
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         },
         {
@@ -10442,13 +11275,19 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 945,
+            "end": 990
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "ACCEPTED_WITNESS",
+            "complete": true,
+            "fingerprint": "9a22356cedadec32838b511b19fb71509b96fb0a8538a45f4f7747eb595ee528"
           }
         }
       ],
@@ -10464,15 +11303,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 815,
+              "end": 855
             }
           },
           {
@@ -10484,15 +11328,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 925,
+              "end": 965
             }
           },
           {
@@ -10504,15 +11353,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -10524,15 +11378,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 795,
+              "end": 835
             }
           },
           {
@@ -10544,15 +11403,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -10564,15 +11428,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 925,
+              "end": 965
             }
           },
           {
@@ -10584,15 +11453,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 810,
+              "end": 850
             }
           },
           {
@@ -10604,15 +11478,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -10624,15 +11503,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -10644,15 +11528,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 840,
+              "end": 880
             }
           },
           {
@@ -10664,15 +11553,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 885,
+              "end": 925
             }
           },
           {
@@ -10684,15 +11578,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 925,
+              "end": 965
             }
           },
           {
@@ -10704,15 +11603,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 925,
+              "end": 965
             }
           },
           {
@@ -10724,15 +11628,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 880,
+              "end": 920
             }
           },
           {
@@ -10744,15 +11653,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 855,
+              "end": 895
             }
           },
           {
@@ -10764,15 +11678,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 885,
+              "end": 925
             }
           },
           {
@@ -10784,15 +11703,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 790,
+              "end": 830
             }
           },
           {
@@ -10804,15 +11728,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -10824,20 +11753,43 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "ACCEPTED_WITNESS",
+              "fingerprint": "133747c26545820153744f962cd362b9e4c18d60e2858abdb212c73c58c4150e",
+              "selected": true,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           }
         ],
         "futureFeasibilityChecks": 26,
+        "futureInfeasibleBranches": 6,
         "affectedObligationsChecked": 25,
+        "zeroDomainPrunes": 6,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [
+          "task:10013"
+        ],
+        "firstPrune": {
+          "phase": "STANDALONE",
+          "causingTaskId": "task:10008",
+          "scheduledCandidateStart": 820,
+          "blockingMealTaskId": "task:10013",
+          "participantId": "participant:201",
+          "candidateCount": 0,
+          "domainResult": "ZERO_DOMAIN",
+          "reasonCodes": [
+            "PARTICIPANT_MEAL_ZERO_DOMAIN"
+          ]
+        },
         "exactMaterializations": 1
       },
       "transportWitness": null,
@@ -10893,7 +11845,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 26,
+        "participantMealFutureInfeasibleBranches": 6,
         "participantMealAffectedObligationsChecked": 25,
+        "participantMealZeroDomainPrunes": 6,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
       "sharedCapacityDiagnostic": {
@@ -11950,7 +12905,7 @@
       },
       "acceptedStageId": 7,
       "acceptedStageFingerprint": "24e04744eb9bb5a3d2d35c44f60aa68320abe93cb27bdd4f886b60ec755bd815",
-      "durationMs": 557
+      "durationMs": 510
     },
     {
       "scopeSelector": {
@@ -13448,7 +14403,25 @@
           }
         ],
         "futureFeasibilityChecks": 6,
+        "futureInfeasibleBranches": 6,
         "affectedObligationsChecked": 6,
+        "zeroDomainPrunes": 6,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [
+          "task:10013"
+        ],
+        "firstPrune": {
+          "phase": "STANDALONE",
+          "causingTaskId": "task:10012",
+          "scheduledCandidateStart": 820,
+          "blockingMealTaskId": "task:10013",
+          "participantId": "participant:201",
+          "candidateCount": 0,
+          "domainResult": "ZERO_DOMAIN",
+          "reasonCodes": [
+            "PARTICIPANT_MEAL_ZERO_DOMAIN"
+          ]
+        },
         "exactMaterializations": 0
       },
       "transportWitness": null,
@@ -13505,7 +14478,10 @@
         "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 6,
+        "participantMealFutureInfeasibleBranches": 6,
         "participantMealAffectedObligationsChecked": 6,
+        "participantMealZeroDomainPrunes": 6,
+        "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 0
       },
       "sharedCapacityDiagnostic": {
@@ -13735,7 +14711,7 @@
           "collisions": []
         }
       },
-      "durationMs": 416
+      "durationMs": 360
     }
   ],
   "firstBlocker": {
@@ -13875,21 +14851,55 @@
       "resourceIds": [],
       "spaceId": 3007
     },
-    "causalAuthority": null,
+    "participantMealPrune": {
+      "phase": "STANDALONE",
+      "causingTaskId": "task:10012",
+      "scheduledCandidateStart": 820,
+      "blockingMealTaskId": "task:10013",
+      "participantId": "participant:201",
+      "candidateCount": 0,
+      "domainResult": "ZERO_DOMAIN",
+      "reasonCodes": [
+        "PARTICIPANT_MEAL_ZERO_DOMAIN"
+      ]
+    },
+    "causingTask": {
+      "canonicalTaskId": "task:10012",
+      "productTaskId": 10012,
+      "kind": "auxiliary",
+      "participantId": "participant:201",
+      "spaceId": "space:3007",
+      "duration": 5,
+      "dependencies": [
+        "task:10003"
+      ],
+      "requiredResourceIds": [],
+      "placementAuthority": "AUTOMATIC",
+      "placement": null
+    },
+    "blockingMeal": {
+      "sourceTaskId": "task:10013",
+      "productTaskId": 10013,
+      "participantId": "participant:201"
+    },
+    "causalAuthority": "participantMealFutureFeasibility",
     "failureCategory": "UNKNOWN",
-    "phase": "constructExactItinerantPlan completion",
+    "phase": "constructExactItinerantPlan/standalone participant-meal probe",
     "firstCausalCheck": "constructExactItinerantPlan completion",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
       "ASSISTED_SCOPE_INCOMPLETE",
-      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
+      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN",
+      "PARTICIPANT_MEAL_ZERO_DOMAIN"
     ],
-    "blockingTaskIds": [],
+    "blockingTaskIds": [
+      "task:10013"
+    ],
     "blockers": [],
     "rejectionReason": null,
     "originatingCoreDecision": null,
-    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+    "classification": "PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "24e04744eb9bb5a3d2d35c44f60aa68320abe93cb27bdd4f886b60ec755bd815",

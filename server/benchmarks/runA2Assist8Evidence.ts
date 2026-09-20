@@ -145,11 +145,15 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         durationMinutes:task.durationOverrideMin,resourceIds:[...(task.assignedResourceIds??[])].sort()};
     }).sort((a,b)=>a.taskId-b.taskId);
     const terminalRejection=evidence.standaloneDiagnostic?.firstTerminalCompletionRejection;
+    const acceptedMeals=result.outcome==="PROPOSAL"?evidence.selectedMealWitnesses:null;
     const mealPolicies=(adapter.problem.operationalMealPolicies??[]).map(policy=>({id:policy.id,
       window:policy.window,durationMinutes:policy.duration,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],
-      witness:terminalRejection?.operationalMealWitness?.scheduled.find((meal:any)=>meal.id===policy.id)
+      witness:acceptedMeals?.operational?.scheduled.find((meal:any)=>meal.id===policy.id)
+        ??terminalRejection?.operationalMealWitness?.scheduled.find((meal:any)=>meal.id===policy.id)
         ??{status:"ABSENT",phase:terminalRejection?.phase??"NOT_REACHED",cause:terminalRejection?.cause??"NO_COMPLETE_TERMINAL_LEAF"},
-      diagnostic:evidence.standaloneDiagnostic?.firstTerminalCompletionRejection?.operationalMealWitness
+      diagnostic:acceptedMeals?.operational
+        ? {phase:"ACCEPTED_WITNESS",complete:true,fingerprint:acceptedMeals.operational.fingerprint}
+        : evidence.standaloneDiagnostic?.firstTerminalCompletionRejection?.operationalMealWitness
         ? {phase:"OPERATIONAL_MEALS",complete:terminalRejection.operationalMealWitness.complete,
           candidateCount:terminalRejection.operationalMealWitness.candidateCountByPolicyId[policy.id]??0,
           blocking:terminalRejection.operationalMealWitness.blockingPolicyIds.includes(policy.id),
@@ -157,16 +161,22 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         : {phase:evidence.standaloneDiagnostic?.firstTerminalCompletionRejection?.phase??"NOT_REACHED",
           cause:evidence.standaloneDiagnostic?.firstTerminalCompletionRejection?.cause??"NO_COMPLETE_TERMINAL_LEAF"}}));
     const participantWitness=terminalRejection?.participantMealWitness;
+    const acceptedParticipant=acceptedMeals?.participant;
     const participantMeals=(adapter.problem.participantMeals??[]).map(meal=>({
       id:meal.id,sourceTaskId:meal.sourceTaskId,participantId:meal.participantId,durationMinutes:meal.duration,
-      window:meal.window,status:participantWitness
+      window:meal.window,status:acceptedParticipant
+        ? acceptedParticipant.scheduled.some((scheduled:any)=>scheduled.sourceTaskId===meal.sourceTaskId)?"MATERIALIZED":"CHECKED_NOT_SELECTED"
+        :participantWitness
         ? participantWitness.scheduled.some((scheduled:any)=>scheduled.sourceTaskId===meal.sourceTaskId)?"MATERIALIZED"
           :(participantWitness.candidateCountByTaskId[meal.sourceTaskId]??0)>0?"UNSCHEDULED_WITH_CANDIDATES":"BLOCKED_NO_CANDIDATE"
         :"NOT_REACHED",
-      diagnostic:participantWitness?{phase:"PARTICIPANT_MEALS",candidateCount:participantWitness.candidateCountByTaskId[meal.sourceTaskId]??0,
+      diagnostic:acceptedParticipant?{phase:"ACCEPTED_WITNESS",fingerprint:acceptedParticipant.fingerprint,
+        selected:acceptedParticipant.scheduled.some((scheduled:any)=>scheduled.sourceTaskId===meal.sourceTaskId),reasonCodes:[]}
+        :participantWitness?{phase:"PARTICIPANT_MEALS",candidateCount:participantWitness.candidateCountByTaskId[meal.sourceTaskId]??0,
         blocking:participantWitness.blockingMealTaskIds.includes(meal.sourceTaskId),reasonCodes:participantWitness.reasonCodes}
         :{phase:terminalRejection?.phase??"NOT_REACHED",cause:terminalRejection?.cause??"NO_COMPLETE_TERMINAL_LEAF"},
-      witness:participantWitness?.scheduled.find((scheduled:any)=>scheduled.sourceTaskId===meal.sourceTaskId)
+      witness:acceptedParticipant?.scheduled.find((scheduled:any)=>scheduled.sourceTaskId===meal.sourceTaskId)
+        ??participantWitness?.scheduled.find((scheduled:any)=>scheduled.sourceTaskId===meal.sourceTaskId)
         ??{status:"ABSENT",phase:terminalRejection?.phase??"NOT_REACHED",cause:terminalRejection?.cause??"NO_COMPLETE_TERMINAL_LEAF"},
     }));
     const record: any = { scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
@@ -178,8 +188,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       operationalMeals:mealPolicies.filter(policy=>!policy.id.includes("coach")),
       coachMeals:mealPolicies.filter(policy=>policy.id.includes("coach")),
       sodexoMeals:{count:participantMeals.length,obligations:participantMeals,
-        futureFeasibilityChecks:evidence.work?.participantMealFutureFeasibilityChecks,
-        affectedObligationsChecked:evidence.work?.participantMealAffectedObligationsChecked,
+        futureFeasibilityChecks:evidence.participantMealFutureFeasibility.futureFeasibilityChecks,
+        futureInfeasibleBranches:evidence.participantMealFutureFeasibility.futureInfeasibleBranches,
+        affectedObligationsChecked:evidence.participantMealFutureFeasibility.affectedObligationsChecked,
+        zeroDomainPrunes:evidence.participantMealFutureFeasibility.zeroDomainPrunes,
+        analyticCollectivePrunes:evidence.participantMealFutureFeasibility.analyticCollectivePrunes,
+        blockingMealTaskIds:evidence.participantMealFutureFeasibility.blockingMealTaskIds,
+        firstPrune:evidence.participantMealFutureFeasibility.firstPrune,
         exactMaterializations:evidence.work?.participantMealExactMaterializations},
       transportWitness:evidence.standaloneDiagnostic?.terminalTransportWitness??null,
       hardRequiredValidation:{hardValid:evidence.hardValid??false,requiredValid:evidence.requiredValid??false,
@@ -208,6 +223,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       const terminalTransportDominates=(standalone?.terminalTransportMaterializationAttempts??0)>0
         && standalone?.terminalTransportMaterializationAttempts===standalone?.terminalTransportMaterializationFailures;
       const terminalCause=standalone?.firstTerminalCompletionRejection?.cause;
+      const participantMealPrune=evidence.participantMealFutureFeasibility.firstPrune;
       const emptyDomain = evidence.causalDiagnostic?.futureFeasibility?.assessments?.find((item: any) => item.domainEmpty);
       const blockerTasks = [...new Set(emptyDomain?.blockers ?? [])] as string[];
       const blockedTask = adapter.problem.tasks.find(task => task.id === emptyDomain?.taskId);
@@ -232,18 +248,25 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         blockedObligationId: emptyDomain?.taskId ? productByCanonical.get(emptyDomain.taskId) : null,
         blockedTask: emptyDomain?.taskId ? materiality(emptyDomain.taskId) : null,
         affected: { taskIds: result.scopeTaskIds, resourceIds: [], spaceId: selector.kind === "SPACE" ? selector.spaceId : null },
-        causalAuthority: preflightFailure ? "Planner Next preflight / setup preparation policy" : emptyDomain?.authoritySignature ?? null,
+        participantMealPrune,
+        causingTask:participantMealPrune?materiality(participantMealPrune.causingTaskId):null,
+        blockingMeal:participantMealPrune?{
+          sourceTaskId:participantMealPrune.blockingMealTaskId,
+          productTaskId:productByCanonical.get(participantMealPrune.blockingMealTaskId)??null,
+          participantId:participantMealPrune.participantId,
+        }:null,
+        causalAuthority: preflightFailure ? "Planner Next preflight / setup preparation policy" : participantMealPrune?"participantMealFutureFeasibility":emptyDomain?.authoritySignature ?? null,
         failureCategory: preflightFailure ? "VALIDATION" : terminalCause==="VALIDATION_REJECTED" ? "VALIDATION" : terminalTransportDominates ? "MATERIALIZATION"
           : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "BUDGET" : emptyDomain ? "GEOMETRY_OR_MATCHING" : "UNKNOWN",
-        phase: preflightFailure ? "preflight" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
+        phase: preflightFailure ? "preflight" : participantMealPrune?`constructExactItinerantPlan/${participantMealPrune.phase.toLowerCase()} participant-meal probe`:result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan/standalone search" : emptyDomain ? "constructExactItinerantPlan/onPartialCoreCandidate" : "constructExactItinerantPlan completion",
         firstCausalCheck: preflightFailure ? result.reasonCodes.find((code: string) => code !== "ASSISTED_SCOPE_INCOMPLETE" && code !== "CORE_PREFLIGHT_FAILED") ?? "CORE_PREFLIGHT_FAILED"
           : terminalCause ? standalone.firstTerminalCompletionRejection.phase : result.reasonCodes.includes("CORE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactMainAndFeederCore branch budget" : result.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED") ? "constructExactItinerantPlan standalone branch budget" : emptyDomain ? "standaloneForwardDynamicDomain" : "constructExactItinerantPlan completion",
         staticEligibleStartCount, dynamicEligibleStartCount: emptyDomain?.eligibleStartCount ?? null,
-        reasonCodes: result.reasonCodes, blockingTaskIds: blockerTasks,
+        reasonCodes: participantMealPrune?[...new Set([...result.reasonCodes,...participantMealPrune.reasonCodes])]:result.reasonCodes, blockingTaskIds: participantMealPrune?[participantMealPrune.blockingMealTaskId]:blockerTasks,
         blockers: blockerTasks.map(materiality), rejectionReason: preflightFailure ? "PREFLIGHT_REJECTED" : terminalCause??(emptyDomain ? "DYNAMIC_DOMAIN_EMPTY" : null),
         originatingCoreDecision: emptyDomain ? { depth: emptyDomain.depth, authoritySignature: emptyDomain.authoritySignature,
           ancestralDecisionDepths: emptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: emptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
-        classification: preflightFailure ? "PREFLIGHT_VALIDATION_REJECTED" : terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED" : terminalCause ? `ORDINARY_COMPLETE_${terminalCause}`
+        classification: preflightFailure ? "PREFLIGHT_VALIDATION_REJECTED" : participantMealPrune?"PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE":terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED" : terminalCause ? `ORDINARY_COMPLETE_${terminalCause}`
           : result.reasonCodes.some((code: string) => code.endsWith("BRANCH_BUDGET_EXHAUSTED")) ? "SEARCH_CAPACITY_EXHAUSTED" : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
       record.durationMs = Math.round(performance.now() - iterationStartedAt);
       iterations.push(record); break;
