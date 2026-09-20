@@ -16,7 +16,7 @@ import { preflight, validatePlan } from "./validate";
 import { canPlaceTask } from "./placement";
 import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
 import { participantPresenceSpan } from "./participantPresence";
-import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGapMinutes, secondaryStart, secondaryTasks } from "./secondaryContinuity";
+import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGapMinutes, secondaryPhysicalOccupations, secondaryStart, secondaryTasks } from "./secondaryContinuity";
 import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
 import { technicalMetrics } from "./technicalOperations";
@@ -453,7 +453,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
     const resourceRoute = resourceRouteMetrics(problem, ordered);
     const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const secondaryStartById: Record<string, number | null> = {}, secondaryEndById: Record<string, number | null> = {}, secondaryGapsById: Record<string, number> = {}, secondaryBlocksById: Record<string, number> = {};
-    for (const space of requiredSecondarySpaces(problem)) { const tasks = secondaryTasks(ordered, space.id); const occupations = spaceOccupations(tasks, preparations, space.id, meals); secondaryStartById[space.id] = secondaryStart(occupations); secondaryEndById[space.id] = secondaryEnd(occupations); secondaryGapsById[space.id] = secondaryGapMinutes(occupations); secondaryBlocksById[space.id] = secondaryBlockCount(occupations); }
+    for (const space of requiredSecondarySpaces(problem)) { const tasks = secondaryTasks(ordered, space.id); const occupations = secondaryPhysicalOccupations(spaceOccupations(tasks, preparations, space.id, meals)); secondaryStartById[space.id] = secondaryStart(occupations); secondaryEndById[space.id] = secondaryEnd(occupations); secondaryGapsById[space.id] = secondaryGapMinutes(occupations); secondaryBlocksById[space.id] = secondaryBlockCount(occupations); }
     const metrics: PlanMetrics = {
       ...validation,
       complete: true,

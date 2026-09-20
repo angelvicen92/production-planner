@@ -42,7 +42,10 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
   }
   const spaceIds = [...new Set(pending.filter(t => required.has(t.spaceId)).map(t => t.spaceId))].sort();
   for (const spaceId of spaceIds) {
-    const probe = probeBlock(secondaryTasks(pending, spaceId), placed, budget, problem.budget.bestK);
+    // A pending explicit chain owns its members. Its eventual placement establishes the
+    // continuity frontier, so probing the residual block before that is not a sound prune.
+    if(chains.some(chain=>chain.some(task=>task.spaceId===spaceId)))continue;
+    const probe = probeBlock(secondaryTasks(pending.filter(task=>!chainIds.has(task.id)), spaceId), placed, budget, problem.budget.bestK);
     if (probe.exhausted) return result(assessments, before, budget, true);
     assessments.push({ key: `space:${spaceId}`, kind: "space", alternativeCount: probe.count, feasible: probe.count > 0 });
   }

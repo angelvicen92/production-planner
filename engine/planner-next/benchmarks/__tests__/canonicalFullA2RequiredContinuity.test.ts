@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { buildCanonicalFullA2EngineInput } from "../canonicalFullA2EngineInput";
+import { adaptEngineInputToPlannerNextProblem } from "../../integration/engineInputAdapter";
+import { preflightEngineInputForPlannerNext } from "../../integration/engineInputPreflight";
+import { generateBlockCandidates } from "../../placeAuxiliaryTasks";
+import { generateTechnicalChainCandidates } from "../../technicalChains";
+import { preflight, validatePlan } from "../../validate";
+
+test("canonical Full A2 keeps Reality C+EVA and the joint Alfombra occupation continuous",()=>{
+  const canonical=buildCanonicalFullA2EngineInput();
+  assert.equal(canonical.input.tasks.length,266);
+  assert.equal(canonical.input.tasks.filter(task=>task.plannerNextKind==="technical").length,0);
+  assert.equal(preflightEngineInputForPlannerNext(canonical.input).status,"SUPPORTED");
+  const adapted=adaptEngineInputToPlannerNextProblem(canonical.input);assert.equal(adapted.status,"SUPPORTED");
+  if(adapted.status!=="SUPPORTED")return;
+  assert.ok(!preflight(adapted.problem).includes("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED"));
+  const chainPolicy=adapted.problem.technicalChains![0]!;
+  const chainTasks=chainPolicy.orderedTaskIds.map(id=>adapted.problem.tasks.find(task=>task.id===id)!);
+  const chain=generateTechnicalChainCandidates(adapted.problem,chainTasks,[],adapted.problem.budget.maxBranchExpansions,"PROBE",1).candidates[0]!;
+  const id=(source:string)=>`task:${canonical.taskId.get(source)}`;
+  const c04=chain.tasks.find(task=>task.id===id("C04.alfombra_roja_eva"))!,c13=chain.tasks.find(task=>task.id===id("C13.alfombra_roja_eva"))!;
+  assert.equal(c04.end,c13.start);
+  const residual=adapted.problem.tasks.filter(task=>[id("C06.alfombra_roja_conjunta"),id("C10.alfombra_roja_conjunta"),id("C16.alfombra_roja")].includes(task.id));
+  const block=generateBlockCandidates(adapted.problem,residual,chain.tasks,adapted.problem.budget.maxBranchExpansions).candidates[0]!;
+  const joint=block.tasks.filter(task=>task.jointGroupId!==undefined),c16=block.tasks.find(task=>task.id===id("C16.alfombra_roja"))!;
+  assert.equal(joint.length,2);assert.equal(joint[0]!.start,c13.end);assert.equal(joint[0]!.start,joint[1]!.start);assert.equal(joint[0]!.end,joint[1]!.end);assert.equal(joint[0]!.end-joint[0]!.start,10);assert.equal(c16.start,joint[0]!.end);assert.equal(c16.end-c16.start,10);
+  const validationProblem={...adapted.problem,tasks:[...chainTasks,...residual],spaces:adapted.problem.spaces.map(space=>space.id===c04.spaceId?space:{...space,secondaryContinuity:"OFF" as const})};
+  const validation=validatePlan(validationProblem,[...chain.tasks,...block.tasks]);assert.equal(validation.jointGroupViolationCount,0);assert.equal(validation.secondaryContinuityViolationCount,0);
+  const reversed=generateBlockCandidates(adapted.problem,[...residual].reverse(),chain.tasks,adapted.problem.budget.maxBranchExpansions).candidates[0]!;
+  assert.deepEqual(reversed.tasks,block.tasks);
+});

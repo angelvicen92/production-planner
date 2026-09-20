@@ -4,6 +4,7 @@ import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { longSecondaryBlockScenario } from "./scenarios/longSecondaryBlockScenario";
 import { hasRequiredSecondaryContinuity, secondaryBlockCount, secondaryGapMinutes } from "./secondaryContinuity";
 import { preflight, validatePlan } from "./validate";
+import { generateBlockCandidates } from "./placeAuxiliaryTasks";
 
 test("NEXT-006 schedules a required secondary space as one complete block", () => {
   const problem = longSecondaryBlockScenario();
@@ -57,4 +58,26 @@ test("secondary block branch exhaustion is explicit and atomic", () => {
   const result = planMainFlowAndFeeders(problem);
   assert.equal(result.complete, false); assert.deepEqual(result.scheduledTasks, []);
   assert.equal(result.metrics.searchStopReason, "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED");
+});
+
+test("required continuity treats a synchronized joint as one atomic physical occupation",()=>{
+  const make=()=>{const problem=longSecondaryBlockScenario();const own=problem.tasks.filter(task=>task.spaceId==="long-form-room");
+    own[0]!.duration=20;own[1]!.duration=10;own[1]!.jointGroupId="required-joint";
+    own[2]!.duration=10;own[2]!.jointGroupId="required-joint";own[3]!.duration=10;own[3]!.dependencies=[own[1]!.id,own[2]!.id];
+    return {problem,prior:{...own[0]!,start:problem.day.start,end:problem.day.start+20},pending:own.slice(1)};};
+  const first=make();assert.ok(!preflight(first.problem).includes("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED"));
+  const generated=generateBlockCandidates(first.problem,first.pending,[first.prior],first.problem.budget.maxBranchExpansions);
+  const candidate=generated.candidates[0]!;const joint=candidate.tasks.filter(task=>task.jointGroupId==="required-joint");
+  assert.equal(joint.length,2);assert.equal(joint[0]!.start,first.prior.end);assert.equal(joint[0]!.start,joint[1]!.start);assert.equal(joint[0]!.end,joint[1]!.end);
+  const later=candidate.tasks.find(task=>task.jointGroupId===undefined)!;assert.equal(later.start,joint[0]!.end);
+  assert.equal(Math.max(...candidate.tasks.map(task=>task.end))-first.prior.end,20);
+  const validation=validatePlan(first.problem,[first.prior,...candidate.tasks]);
+  assert.equal(validation.jointGroupViolationCount,0);assert.equal(validation.secondaryContinuityViolationCount,0);
+  const desynchronized=structuredClone(candidate.tasks);desynchronized.find(task=>task.id===joint[1]!.id)!.start+=5;desynchronized.find(task=>task.id===joint[1]!.id)!.end+=5;
+  const invalid=validatePlan(first.problem,[first.prior,...desynchronized]);assert.equal(invalid.jointGroupViolationCount,1);assert.equal(invalid.secondaryContinuityViolationCount,1);
+  const reversed=make();const again=generateBlockCandidates(reversed.problem,[...reversed.pending].reverse(),[reversed.prior],reversed.problem.budget.maxBranchExpansions);
+  assert.deepEqual(again.candidates[0]?.tasks,candidate.tasks);assert.deepEqual(generateBlockCandidates(first.problem,first.pending,[first.prior],first.problem.budget.maxBranchExpansions).candidates[0]?.tasks,candidate.tasks);
+  const setup=make();setup.problem.spaces.find(space=>space.id==="long-form-room")!.setupPolicy={familyOrder:["family"],reentry:"FORBIDDEN"};
+  setup.problem.tasks.filter(task=>task.spaceId==="long-form-room").forEach(task=>{task.setupFamilyId="family";});
+  assert.ok(preflight(setup.problem).includes("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED"));
 });

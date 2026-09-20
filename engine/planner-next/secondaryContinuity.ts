@@ -9,6 +9,17 @@ export function secondaryTasks<T extends Task>(tasks: T[], spaceId: string): T[]
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 export interface TemporalInterval { id:string; start:number; end:number }
+/** Physical occupancy collapses only demonstrably synchronized members of the same joint operation. */
+export function secondaryPhysicalOccupations<T extends TemporalInterval & {jointGroupId?:string}>(tasks:T[]):T[] {
+  const ordered=temporal(tasks), seen=new Set<string>();
+  return ordered.filter(task=>{
+    if(!task.jointGroupId)return true;
+    const members=ordered.filter(candidate=>candidate.jointGroupId===task.jointGroupId);
+    if(members.length<2||members.some(candidate=>candidate.start!==task.start||candidate.end!==task.end))return true;
+    const key=`${task.jointGroupId}\0${task.start}\0${task.end}`;
+    if(seen.has(key))return false;seen.add(key);return true;
+  });
+}
 function temporal<T extends TemporalInterval>(tasks: T[]): T[] {
   return [...tasks].sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id));
 }

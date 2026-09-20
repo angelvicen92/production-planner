@@ -18,10 +18,10 @@ import type {
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { effectiveResourceTransitionMinutes } from "./placement";
-import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
+import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryPhysicalOccupations, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupPolicy, hasSetupReentry, setupBlockCounts, setupFamilySequence, setupSpaces, setupTasks } from "./setupGrouping";
-import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
+import { canonicalResourceIds, jointGroupIds, jointGroupMembers, structurallyCompatibleJointGroup, synchronizedJointTasks } from "./jointTasks";
 import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "./technicalOperations";
 import { canPlaceTask } from "./placement";
 import { createScheduledSpaceMeal, spaceMealAvoidsAssignedResourceTasks, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
@@ -333,8 +333,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if(first && members.some(t=>t.setupFamilyId!==first.setupFamilyId)) reasons.add("JOINT_GROUP_SETUP_MISMATCH");
     const memberIds=new Set(members.map(t=>t.id));
     if(members.some(t=>t.dependencies.some(dep=>memberIds.has(dep)))) reasons.add("JOINT_GROUP_INTERNAL_DEPENDENCY_UNSUPPORTED");
+    const memberSpace=first&&spaces.find(s=>s.id===first.spaceId);
+    const supportedRequired=memberSpace?.secondaryContinuity==="REQUIRED"&&memberSpace.setupPolicy===undefined&&structurallyCompatibleJointGroup(members);
     const structured=members.some(t=>t.setupFamilyId!==undefined || spaces.find(s=>s.id===t.spaceId)?.secondaryContinuity==="REQUIRED" || spaces.find(s=>s.id===t.spaceId)?.setupPolicy!==undefined);
-    if(structured) reasons.add("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED");
+    if(structured&&!supportedRequired) reasons.add("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED");
   }
 
   for (const participant of participants) {
@@ -526,7 +528,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const space of requiredSecondarySpaces(problem)) {
     const expected = secondaryTasks(problem.tasks, space.id);
     const actual = secondaryTasks(scheduled, space.id);
-    const occupations = spaceOccupations(actual, preparations, space.id, meals);
+    const occupations = secondaryPhysicalOccupations(spaceOccupations(actual, preparations, space.id, meals));
     if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(occupations)) secondaryContinuity += 1;
   }
   for (const space of setupSpaces(problem)) {

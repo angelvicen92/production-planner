@@ -3,11 +3,11 @@ import { canPlaceTask } from "./placement";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { participantPresenceIncrement } from "./participantPresence";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
-import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
+import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryPhysicalOccupations, secondaryTasks } from "./secondaryContinuity";
 import { assessFutureFeasibility, type FutureBudget } from "./futureFeasibility";
 import { eligibleSetupTasksForPolicy } from "./setupGrouping";
 import { createSetupPreparation, preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationDuration, spaceOccupations } from "./setupPreparation";
-import { jointGroupIds, jointGroupMembers, jointGroupStarts, jointResources, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
+import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointGroupStarts, jointResources, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { canPlaceSpaceMeal, createScheduledSpaceMeal, isRequiredBlockMealSpace, pendingSpaceMealIds, spaceMealCandidateStarts, spaceMealPolicy } from "./spaceMeals";
 import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainProductiveDuration, technicalChainResourceIds, technicalChainWorkItemKey } from "./technicalChains";
 import { constructSaturatedResourceWindowBlockCandidates, deriveSaturatedResourceWindowBlocks } from "./saturatedResourceWindowBlock";
@@ -69,13 +69,17 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
       const joints=jointGroupIds(state.pending).flatMap(id=>{const tasks=jointGroupMembers(state.pending,id);return tasks.some(task=>task.dependencies.some(dep=>pendingIds.has(dep)))?[]:[{kind:"joint" as const,key:jointWorkItemKey(id),id,tasks,duration:tasks[0]?.duration??0,resources:jointResources(tasks).length,starts:jointGroupStarts(problem,tasks,state.placed)}]});
       const blocks: Array<{ kind: "space"; key: string; duration: number; resources: number; spaceId: string; candidates: BlockCandidate[]; alternativeCount: number }> = [];
       for (const spaceId of [...new Set(state.pending.filter((task) => required.has(task.spaceId)).map(({ spaceId }) => spaceId))].sort()) {
-        const tasks = secondaryTasks(state.pending, spaceId);
+        if(chainTasks.some(chain=>chain.some(task=>task.spaceId===spaceId)))continue;
+        const tasks = secondaryTasks(state.pending.filter(task=>!chainIds.has(task.id)), spaceId);
+        if(!tasks.length)continue;
         const generated = generateBlockCandidates(problem, tasks, state.placed, branchAllowance - branches, secondaryBranches,"SEARCH",1,state.meals);
         secondaryBranches = generated.secondaryBranches;
         spaceMealBranches += generated.diagnostics.mealAttemptsExplored ?? 0;
         branches += generated.consumed;
         if (generated.exhausted) return failed(true, state);
-        blocks.push({ kind: "space", key: `space:${spaceId}`, duration: tasks.reduce((sum, task) => sum + task.duration, 0), resources: tasks.reduce((sum, task) => sum + (task.requiredResourceIds?.length ?? 0), 0), spaceId, candidates: generated.candidates, alternativeCount: Math.min(generated.candidates.length, problem.budget.bestK) });
+        const grouped=new Set<string>();
+        const duration=tasks.reduce((sum,task)=>{if(!task.jointGroupId)return sum+task.duration;if(grouped.has(task.jointGroupId))return sum;grouped.add(task.jointGroupId);return sum+task.duration;},0);
+        blocks.push({ kind: "space", key: `space:${spaceId}`, duration, resources: tasks.reduce((sum, task) => sum + (task.requiredResourceIds?.length ?? 0), 0), spaceId, candidates: generated.candidates, alternativeCount: Math.min(generated.candidates.length, problem.budget.bestK) });
       }
       const mealChoices=pendingSpaceMealIds(problem,state.meals).map(spaceId=>{const starts=spaceMealCandidateStarts(problem,spaceId,state.placed,state.meals);return {kind:"meal" as const,key:`meal:${spaceId}`,spaceId,duration:spaceMealPolicy(problem,spaceId)!.duration,resources:0,starts}});
       const choices = [...individual, ...joints, ...blocks, ...chains,...mealChoices,...saturated].sort((a, b) => alternatives(a) - alternatives(b) || b.duration - a.duration || b.resources - a.resources || a.key.localeCompare(b.key));
@@ -123,25 +127,35 @@ function probeBlock(problem: PlannerNextProblem, tasks: Task[], placed: Schedule
 export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], allowance: number, priorSecondary = 0, mode: "SEARCH" | "PROBE" = "SEARCH", probeLimit = 1, existingMeals:ScheduledSpaceMeal[]=[]): BlockConstructionResult {
   const spaceId=taskSpace(tasks);
   if(spaceId&&isRequiredBlockMealSpace(problem,spaceId))return generateRequiredMealBlockCandidates(problem,tasks,placed,allowance,priorSecondary,mode,probeLimit,existingMeals);
-  type Partial = { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; remaining: Task[]; cost: number; start: number };
+  type WorkItem={key:string;tasks:Task[];duration:number};
+  type Partial = { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; remaining: WorkItem[]; cost: number; start: number };
   const complete: BlockCandidate[] = [];
   let consumed = 0, secondaryBranches = priorSecondary, startsExplored = 0, maximumPartialStatesPerStart = 0;
   const diagnostics = (): BlockConstructionDiagnostics => ({ startsExplored, expansions: consumed, completeCandidatesGenerated: complete.length, maximumPartialStatesPerStart });
   const finish = (exhausted: boolean): BlockConstructionResult => ({ candidates: complete, consumed, secondaryBranches, exhausted, diagnostics: diagnostics() });
-  const orderedTasks = [...tasks].sort((a,b)=>a.id.localeCompare(b.id));
+  const jointIds=new Set(jointGroupIds(tasks));
+  const orderedItems:WorkItem[]=[
+    ...[...jointIds].map(id=>{const members=jointGroupMembers(tasks,id);return {key:jointWorkItemKey(id),tasks:members,duration:members[0]?.duration??0};}),
+    ...tasks.filter(task=>task.jointGroupId===undefined).map(task=>({key:`task:${task.id}`,tasks:[task],duration:task.duration})),
+  ].sort((a,b)=>a.key.localeCompare(b.key));
+  const existingOccupations=spaceId
+    ?secondaryPhysicalOccupations(spaceOccupations(placed,[],spaceId,existingMeals)):[];
   for (let canonicalStart = problem.day.start; canonicalStart < problem.day.end; canonicalStart += 5) {
     startsExplored += 1;
-    let states: Partial[] = [{ tasks: [], preparations: [], remaining: orderedTasks, cost: 0, start: canonicalStart }];
+    let states: Partial[] = [{ tasks: [], preparations: [], remaining: orderedItems, cost: 0, start: canonicalStart }];
     maximumPartialStatesPerStart = Math.max(maximumPartialStatesPerStart, states.length);
-    for (let depth = 0; depth < orderedTasks.length; depth += 1) {
+    for (let depth = 0; depth < orderedItems.length; depth += 1) {
       const next: Partial[] = [];
-      for (const state of states) for (const task of (() => {
+      for (const state of states) for (const item of (() => {
         const policy = problem.spaces.find((space) => space.id === taskSpace(tasks))?.setupPolicy;
-        return policy ? eligibleSetupTasksForPolicy(state.remaining, state.tasks, policy) : state.remaining;
+        if(!policy)return state.remaining;
+        const eligible=new Set(eligibleSetupTasksForPolicy(state.remaining.flatMap(entry=>entry.tasks),state.tasks,policy).map(task=>task.id));
+        return state.remaining.filter(entry=>entry.tasks.every(task=>eligible.has(task.id)));
       })()) {
         if (consumed >= allowance) return finish(true);
         consumed += 1;
         if (mode === "SEARCH") secondaryBranches += 1;
+        const task=item.tasks[0]!;
         const policy = problem.spaces.find((space) => space.id === task.spaceId)?.setupPolicy;
         const firstOfFamily = !state.tasks.some((placedTask) => placedTask.setupFamilyId === task.setupFamilyId);
         const duration = task.setupFamilyId && firstOfFamily ? setupPreparationDuration(policy, task.setupFamilyId, state.tasks.some((placedTask) => placedTask.setupFamilyId !== undefined)) : undefined;
@@ -149,15 +163,18 @@ export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task
         const start = preparation?.end ?? state.tasks.at(-1)?.end ?? state.start;
         const space = problem.spaces.find((candidate) => candidate.id === task.spaceId);
         if (preparation && (!space || !preparationWithinDay(problem, preparation) || !preparationWithinAvailability(space.availability, preparation) || !occupationAvoidsProtectedMeal(problem,preparation.spaceId,preparation.start,preparation.end) || !preparationAvoidsOccupations(preparation, spaceOccupations([...placed, ...state.tasks], state.preparations, task.spaceId)))) continue;
-        if (!canPlaceTask(problem, task, start, [...placed, ...state.tasks])) continue;
-        const scored = scoreTask(problem, task, start, [...placed, ...state.tasks]);
-        next.push({ tasks: [...state.tasks, scored.scheduled], preparations: preparation ? [...state.preparations, preparation] : state.preparations, remaining: state.remaining.filter(({ id }) => id !== task.id), cost: state.cost + scored.cost, start: state.start });
+        const prior=[...placed,...state.tasks];
+        const added=item.tasks.length>1?scheduleJointGroup(item.tasks,start):[scoreTask(problem,task,start,prior).scheduled];
+        if(item.tasks.length>1?!canPlaceJointGroup(problem,item.tasks,start,prior):!canPlaceTask(problem,task,start,prior))continue;
+        const cost=item.tasks.length>1?scoreJoint(problem,added,prior):scoreTask(problem,task,start,prior).cost;
+        next.push({ tasks: [...state.tasks,...added], preparations: preparation ? [...state.preparations, preparation] : state.preparations, remaining: state.remaining.filter(({ key }) => key !== item.key), cost: state.cost + cost, start: state.start });
       }
       states = next.sort((a, b) => a.cost - b.cost || signature(a.tasks).localeCompare(signature(b.tasks))).slice(0, problem.budget.bestK);
       maximumPartialStatesPerStart = Math.max(maximumPartialStatesPerStart, states.length);
       if (!states.length) break;
     }
-    for (const state of states) if (state.remaining.length === 0) {
+    for (const state of states) if (state.remaining.length === 0
+      &&(!existingOccupations.length||hasRequiredSecondaryContinuity(secondaryPhysicalOccupations([...existingOccupations,...state.tasks])))) {
       complete.push({tasks:state.tasks,preparations:state.preparations,meals:[],cost:state.cost});
       if (mode === "PROBE" && complete.length >= probeLimit) return finish(false);
     }

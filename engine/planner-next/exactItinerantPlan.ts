@@ -17,7 +17,8 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
   exactTaskDynamicStartDomain, exactTaskStaticStartDomain, intersectExactStartIntervals } from "./placement";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
-import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
+import { generateBlockCandidates, scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
+import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
@@ -456,8 +457,7 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
     if (task.kind !== "auxiliary" && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
-    if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
-      reasons.push(`UNSUPPORTED_STANDALONE_REQUIRED_BLOCK:${task.id}`);
+    // REQUIRED secondary work is materialized below as one atomic physical block.
     if (space?.mealPolicy !== undefined)
       reasons.push(`UNSUPPORTED_STANDALONE_SECONDARY_MEAL:${task.id}`);
   }
@@ -754,9 +754,13 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.totalesAssignmentBranchesAvoided += delta.assignmentBranchesAvoided;
 };
 const dynamicTransportIds = transportTaskIds(problem);
-const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
-const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+const technicalItemIds=new Set(technicalItems.flatMap(({tasks})=>tasks.map(({id})=>id)));
+const requiredSpaceIds=new Set(requiredSecondarySpaces(problem).filter(space=>space.setupPolicy===undefined&&space.mealPolicy===undefined).map(space=>space.id));
+const requiredItems=[...requiredSpaceIds].sort().flatMap(spaceId=>{const tasks=secondaryTasks(pending.filter(task=>!technicalItemIds.has(task.id)),spaceId);return tasks.length?[{id:`required:${spaceId}`,kind:"REQUIRED_GROUP" as const,spaceId,tasks}]:[];});
+const requiredTaskIds=new Set(requiredItems.flatMap(({tasks})=>tasks.map(({id})=>id)));
+const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) })).filter(item=>item.tasks.every(task=>!requiredTaskIds.has(task.id)));
+const coupledTaskIds = new Set([...jointItems, ...technicalItems,...requiredItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
   && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
@@ -764,8 +768,8 @@ const roundItems = roundPolicies.map((policy) => ({ id: `round:${policy.id}`, ki
   tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
 const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
 type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
-  | typeof roundItems[number] | typeof setupItems[number];
-const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
+  | typeof roundItems[number] | typeof setupItems[number] | typeof requiredItems[number];
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...requiredItems,...resourceItems, ...roundItems, ...setupItems]
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
@@ -795,6 +799,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
     else if(unit.kind==="ROUND_SYNCHRONIZATION")measure=probeExactRoundSynchronizationMacroDomain(problem,unit.policy,allPlaced,preparations,roundPreparations,coreMeals);
     else if(unit.kind==="SETUP_GROUP")measure=probeExactSetupMacroDomain(problem,unit.tasks,allPlaced,preparations,coreMeals);
+    else if(unit.kind==="REQUIRED_GROUP")measure={domainSize:1};
     else measure={domainSize:probeExactTechnicalChainMacroDomain(problem,unit.tasks,allPlaced,technicalChainStartDomainMode,coreMeals)};
     if(macroDomainCache.size>=4096)macroDomainCache.delete(macroDomainCache.keys().next().value!);macroDomainCache.set(macroSignature,measure);
   }
@@ -869,7 +874,8 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
   roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
   if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder);
-  const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
+  const eligibleUnits=remainingUnits.filter(unit=>unit.kind!=="REQUIRED_GROUP"||!remainingUnits.some(candidate=>candidate.kind==="TECHNICAL_CHAIN"&&candidate.tasks.some(task=>task.spaceId===unit.spaceId)));
+  const constrained = eligibleUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
   const selected = selectMostConstrainedUnit(constrained)!;
   recordMacroDecision(depth, selected, constrained);
   const unit = selected.unit;
@@ -909,6 +915,12 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       evidence.criticalResourceMacroCandidates += 1; evidence.criticalResourceAssignments += scheduled.length;
       const child = recurse(scheduled); if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
     }
+  } else if (unit.kind === "REQUIRED_GROUP") {
+    const remaining=Math.max(0,ledger.limit-ledger.branchesExplored);
+    const generated=generateBlockCandidates(problem,unit.tasks,[...coreTasks,...placed],remaining,0,"SEARCH",1,coreMeals);
+    if(generated.consumed>0&&!ledger.consume("STANDALONE",generated.consumed))return "BUDGET_EXHAUSTED";
+    if(generated.exhausted)return "BUDGET_EXHAUSTED";
+    for(const candidate of generated.candidates){const child=recurse(candidate.tasks,[...preparations,...candidate.preparations]);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
     const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
