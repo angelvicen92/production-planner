@@ -138,9 +138,31 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         pendingOrdinaryNoTransport:pendingIds.filter(id=>!transportIds.includes(id)).length,
         pendingDynamicTransport:pendingIds.filter(id=>transportIds.includes(id)).length,pendingByCanonicalType:byType(pendingIds)};
     }
+    const proposedRows=(result.proposal??[]).filter(row=>!protectedBefore.has(row.taskId)).map(row=>{
+      const task=input.tasks.find(item=>item.id===row.taskId)!;
+      return {taskId:row.taskId,templateName:task.templateName,participantId:task.contestantId??null,
+        spaceId:task.spaceId??null,start:row.startPlanned,end:row.endPlanned,
+        durationMinutes:task.durationOverrideMin,resourceIds:[...(task.assignedResourceIds??[])].sort()};
+    }).sort((a,b)=>a.taskId-b.taskId);
+    const mealPolicies=(adapter.problem.operationalMealPolicies??[]).map(policy=>({id:policy.id,
+      window:policy.window,durationMinutes:policy.duration,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],
+      witness:evidence.scheduledOperationalMeals?.find((meal:any)=>meal.id===policy.id)??null}));
     const record: any = { scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
+      selectorAuthority:"resolveAssistedScope/product selector", newVisibleTasks:proposedRows,
+      acceptedSnapshotBefore:before, acceptedSnapshotFingerprintBefore:session.draftFingerprint,
       includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal ? [...result.scopeTaskIds] : [],
       supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
+      supportingReasonByTaskId:evidence.supportingReasonByTaskId??{}, internalPlacements:evidence.firstHardValidCoreLeaf??null,
+      operationalMeals:mealPolicies.filter(policy=>!policy.id.includes("coach")),
+      coachMeals:mealPolicies.filter(policy=>policy.id.includes("coach")),
+      sodexoMeals:{count:adapter.problem.participantMeals?.length??0,durationMinutes:40,
+        window:adapter.problem.participantMeals?.[0]?.window??null,
+        futureFeasibilityChecks:evidence.work?.participantMealFutureFeasibilityChecks??0,
+        affectedObligationsChecked:evidence.work?.participantMealAffectedObligationsChecked??0,
+        materializedWitnessCount:evidence.work?.participantMealWitnessCount??0},
+      transportWitness:evidence.standaloneDiagnostic?.terminalTransportWitness??null,
+      hardRequiredValidation:{hardValid:evidence.hardValid??false,requiredValid:evidence.requiredValid??false,
+        newHardViolationCount:evidence.newHardViolationCount??0,newRequiredViolationCount:evidence.newRequiredViolationCount??0},
       proposalOutcome: result.outcome, newObligationCount: result.proposal?.filter(row => !protectedBefore.has(row.taskId)).length ?? 0,
       completedObligationCount: before.length, remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
       protectedPlacementsPreserved: evidence.protectedPlacementsPreserved === true,
@@ -211,6 +233,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     const after = (session.draftSnapshotJson as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned);
     assert.ok([...protectedBefore].every(([id, value]) => JSON.stringify(after.find(row => row.taskId === id)) === value));
     record.completedObligationCount = after.length; record.remainingObligationCount = sourceIds.length - after.length;
+    record.acceptedSnapshotAfter=after;record.acceptedSnapshotFingerprintAfter=session.draftFingerprint;
+    record.protectedEqualityProof={beforeCount:protectedBefore.size,afterCount:after.filter(row=>protectedBefore.has(row.taskId)).length,equal:true};
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);

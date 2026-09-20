@@ -213,7 +213,7 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
       mainFlow: {
         spaceId: "estudio-7",
         continuity: "REQUIRED",
-        maxBlocksPerCoach: 2,
+        maxBlocksPerCoach: 19,
         blockKey: "coach",
         optimizationAfterFeasibility: "minimize_coach_blocks",
       },

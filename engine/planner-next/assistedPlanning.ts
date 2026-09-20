@@ -245,7 +245,11 @@ export function buildAssistedProblem(
 }
 
 export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
-  const searchProblem=input.problem;
+  // Future participant meals remain invisible obligations, but they must constrain
+  // every constructive/future-feasibility check performed for an Assisted scope.
+  const searchProblem:PlannerNextProblem={...input.problem,participantMeals:[
+    ...(input.problem.participantMeals??[]),...input.analyticalParticipantMeals,
+  ]};
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
   const protectedIds=new Set(input.protectedPlacements.map(({id})=>id));
   const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>{

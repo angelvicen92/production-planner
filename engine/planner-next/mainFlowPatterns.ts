@@ -527,7 +527,10 @@ export function generateMainFlowPatterns(
       const sameAsPrevious = runs.at(-1)?.key === key;
       const runsForKey = runs.filter((run) => run.key === key).length;
       if (available === 0 || sameAsPrevious || runsForKey >= maximumRunsByKey) continue;
-      for (let take = minimumRun; take <= available; take += 1) {
+      // Enumerate long runs first so a bounded prefix is also the minimum-block
+      // frontier. maximumRunsByKey remains only an admissibility ceiling; A2 can
+      // set it to the number of tasks without manufacturing a two-block HARD rule.
+      for (let take = available; take >= minimumRun; take -= 1) {
         remaining.set(key, available - take);
         visit(remaining, [...runs, { key, count: take }]);
         remaining.set(key, available);

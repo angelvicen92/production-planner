@@ -17,12 +17,17 @@ export function mainFlowMealPolicy(p:PlannerNextProblem):MainFlowMealAuthority|u
 export const hasMainFlowMeal=(p:PlannerNextProblem)=>mainFlowMealPolicy(p)!==undefined;
 export const mainFlowMealAligned=(p:PlannerNextProblem)=>{const x=mainFlowMealPolicy(p),m=p.protectedMeal;if(!x)return false;return m?x.window.start===m.start&&x.window.end===m.end&&x.duration===m.end-m.start&&p.mainFlow.preferredEnd===m.start:x.window.start<=p.mainFlow.preferredEnd&&p.mainFlow.preferredEnd+x.duration<=x.window.end};
 export const createMainFlowMeal=(p:PlannerNextProblem)=>{const policy=mainFlowMealPolicy(p)!;const latest=policy.window.end-policy.duration;const start=Math.min(Math.max(p.mainFlow.preferredEnd,policy.window.start),latest);return createScheduledSpaceMeal(p.mainFlow.spaceId,start,policy.duration)};
+/** Deterministic repair frontier: preference first, then every other complete slot. */
+export const mainFlowMealStarts=(p:PlannerNextProblem)=>{const policy=mainFlowMealPolicy(p)!;
+  const preferred=createMainFlowMeal(p).start,starts:number[]=[];
+  for(let start=policy.window.start;start+policy.duration<=policy.window.end;start+=5)starts.push(start);
+  return [preferred,...starts.filter(start=>start!==preferred)];};
 export const blockBoundaries=(pattern:string[])=>pattern.slice(1).flatMap((key,i)=>key!==pattern[i]?[i+1]:[]);
 export const isBlockBoundary=(pattern:string[],cut:number)=>cut>0&&cut<pattern.length&&pattern[cut-1]!==pattern[cut];
 export const preferredCandidateCuts=(pattern:string[])=>[pattern.length,...blockBoundaries(pattern).sort((a,b)=>b-a)];
 export const fallbackCandidateCuts=(pattern:string[])=>{const preferred=new Set(preferredCandidateCuts(pattern));return pattern.map((_,i)=>i).filter(cut=>cut>0&&!preferred.has(cut))};
 export const candidateCuts=(pattern:string[])=>[...preferredCandidateCuts(pattern),...fallbackCandidateCuts(pattern)];
-export function buildTimeline(p:PlannerNextProblem,pattern:string[],duration:number,cut:number):MainFlowTimeline{const mealAuthority=mainFlowMealPolicy(p)!;const meal=createMainFlowMeal(p),slots:number[]=[];for(let i=0;i<cut;i++)slots.push(meal.start-cut*duration+i*duration);for(let i=cut;i<pattern.length;i++)slots.push(meal.end+(i-cut)*duration);const key=`${cut===pattern.length?"ALL_MORNING":"SPLIT"}|${cut}|${pattern.join("|")}|${slots.join("|")}`;return{key,slots,meal,mealAuthority,splitIndex:cut,morningTaskCount:cut,afternoonTaskCount:pattern.length-cut,strategyRank:cut===pattern.length?0:isBlockBoundary(pattern,cut)?1:2}}
+export function buildTimeline(p:PlannerNextProblem,pattern:string[],duration:number,cut:number,mealStart=createMainFlowMeal(p).start):MainFlowTimeline{const mealAuthority=mainFlowMealPolicy(p)!;const meal=createScheduledSpaceMeal(p.mainFlow.spaceId,mealStart,mealAuthority.duration),slots:number[]=[];for(let i=0;i<cut;i++)slots.push(meal.start-cut*duration+i*duration);for(let i=cut;i<pattern.length;i++)slots.push(meal.end+(i-cut)*duration);const key=`${cut===pattern.length?"ALL_MORNING":"SPLIT"}|${cut}|MEAL:${mealStart}|${pattern.join("|")}|${slots.join("|")}`;return{key,slots,meal,mealAuthority,splitIndex:cut,morningTaskCount:cut,afternoonTaskCount:pattern.length-cut,strategyRank:cut===pattern.length?0:isBlockBoundary(pattern,cut)?1:2}}
 export const timelineSignature=(x:MainFlowTimeline)=>x.key;
 export const orderTimelines=(xs:MainFlowTimeline[])=>[...xs].sort((a,b)=>a.strategyRank-b.strategyRank||b.splitIndex-a.splitIndex||a.key.localeCompare(b.key));
 export const combineMainFlowOccupations=(tasks:ScheduledTask[],meal:ScheduledSpaceMeal)=>[...tasks,meal].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
