@@ -38,3 +38,42 @@ test("skips obligations independent of the provisional placement",()=>{
   const result=probeParticipantFutureReservations(problem({start:40,end:80}),[current("other")],[current("other")]);
   assert.equal(result.status,"PASS"); assert.equal(result.affectedFutureTasksChecked,0); assert.equal(result.jointTaskMealChecks,0);
 });
+
+test("abstains when individually viable future tasks share a hard authority without a collective certificate",()=>{
+  const source=problem({start:60,end:100});
+  source.participantMeals=[];
+  source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2",spaceId:"a",availability:[{start:20,end:60}]});
+  const result=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(result.status,"ABSTAIN");
+  assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE");
+  assert.equal(result.collectiveChecks,0); assert.equal(result.collectivePrunes,0);
+});
+
+test("passes multiple independent future tasks after individual checks without claiming collective work",()=>{
+  const source=problem({start:60,end:100}); source.participantMeals=[];
+  source.spaces.push({id:"c",availability:[{start:0,end:100}]});
+  source.participants.push({id:"q",availability:[{start:0,end:100}]});
+  source.analyticalFutureParticipantTasks![0].participantId="q"; source.analyticalFutureParticipantTasks![0].spaceId="c";
+  source.analyticalFutureParticipantTasks![0].dependencies=["current"];
+  source.analyticalFutureParticipantTasks!.push({id:"future-2",kind:"auxiliary",participantId:"p",spaceId:"b",duration:20,
+    availability:[{start:60,end:100}],dependencies:[]});
+  const result=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(result.status,"PASS"); assert.equal(result.affectedFutureTasksChecked,2);
+  assert.equal(result.collectiveChecks,0); assert.equal(result.collectivePrunes,0);
+});
+
+test("pair prune takes precedence over other future interactions",()=>{
+  const source=problem({start:40,end:80});
+  source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"later",availability:[{start:80,end:100}],duration:20});
+  const result=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(result.status,"PRUNE"); assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE");
+  assert.equal(result.collectiveChecks,0);
+});
+
+test("grid-aligned extrema do not falsely prune disjoint raw interval endpoints",()=>{
+  const source=problem({start:41,end:86});
+  source.analyticalFutureParticipantTasks![0].duration=35;
+  source.participantMeals![0]={...source.participantMeals![0],duration:5,window:{start:82,end:90}};
+  const result=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(result.status,"PASS"); assert.equal(result.compatiblePairCount,1);
+});

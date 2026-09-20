@@ -137,6 +137,7 @@ export function buildAssistedProblem(
   source: PlannerNextProblem,
   scope: PlanningScope,
   protectedPlacements: readonly ScheduledTask[],
+  analyticalFutureEligibleTaskIds: ReadonlySet<string> = new Set(),
 ): AssistedProblem {
   const problem = structuredClone(source);
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
@@ -217,7 +218,8 @@ export function buildAssistedProblem(
   // The search never iterates this collection: participant-causal probes alone
   // consult it after a provisional placement.
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
-    !included.has(task.id) && task.participantId !== undefined).map((task) => structuredClone(task));
+    analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
+    .map((task) => structuredClone(task));
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));

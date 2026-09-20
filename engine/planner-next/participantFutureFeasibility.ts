@@ -30,10 +30,23 @@ const affectedBy=(task:Task,added:readonly ScheduledTask[])=>task.participantId!
   current.participantId===task.participantId||current.id===task.id||current.dependencies.includes(task.id)||task.dependencies.includes(current.id));
 const unresolvedDependencies=(task:Task,placed:readonly ScheduledTask[],futureIds:Set<string>)=>task.dependencies.some(id=>
   !placed.some(candidate=>candidate.id===id)&&!futureIds.has(id));
-const firstStart=(domain:ExactTaskStartDomain)=>domain.intervals[0]?.start??null;
-const lastStart=(domain:ExactTaskStartDomain)=>domain.intervals.at(-1)?.end??null;
+const firstStart=(problem:PlannerNextProblem,domain:ExactTaskStartDomain)=>{
+  const start=domain.intervals[0]?.start;if(start===undefined)return null;
+  return problem.day.start+Math.max(0,Math.ceil((start-problem.day.start)/5))*5;
+};
+const lastStart=(problem:PlannerNextProblem,domain:ExactTaskStartDomain)=>{
+  const end=domain.intervals.at(-1)?.end;if(end===undefined)return null;
+  return problem.day.start+Math.floor((end-problem.day.start)/5)*5;
+};
 const firstMeal=(domain:AnalyticParticipantMealStartDomain)=>domain.ranges[0]?.first??null;
 const lastMeal=(domain:AnalyticParticipantMealStartDomain)=>domain.ranges.at(-1)?.last??null;
+const shareHardAuthority=(left:Task,right:Task)=>left.participantId!==undefined&&left.participantId===right.participantId
+  ||left.spaceId===right.spaceId
+  ||left.coachId!==undefined&&left.coachId===right.coachId
+  ||left.itinerantUnitId!==undefined&&left.itinerantUnitId===right.itinerantUnitId
+  ||left.dependencies.includes(right.id)||right.dependencies.includes(left.id)
+  ||left.jointGroupId!==undefined&&left.jointGroupId===right.jointGroupId
+  ||(left.requiredResourceIds??[]).some(id=>(right.requiredResourceIds??[]).includes(id));
 
 /**
  * Sound read-only reservation for out-of-scope participant work. It uses the
@@ -49,7 +62,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
     .sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId));
   const base={affectedParticipants,affectedFutureTasksChecked:future.length,affectedMealsChecked:meals.length,
     individualDomainChecks:0,individualZeroDomainPrunes:0,jointTaskMealChecks:0,jointTaskMealPrunes:0,
-    collectiveChecks:future.length>1?1:0,collectivePrunes:0,compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0 as const,
+    collectiveChecks:0,collectivePrunes:0,compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0 as const,
     reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0 as const};
   if(future.length===0)return {...base,status:"PASS" as const};
   const futureIds=new Set(future.map(task=>task.id));
@@ -65,7 +78,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
     for(const meal of meals.filter(candidate=>candidate.participantId===task.participantId)){
       const mealDomain=analyticParticipantMealDomain(problem,meal,placed); individual++; joint++; pairChecks++; analytic+=2;
       if(mealDomain.validStarts===0)continue; // Existing meal probe owns individual meal zero-domain evidence.
-      const taskFirst=firstStart(taskDomain)!,taskLast=lastStart(taskDomain)!;
+      const taskFirst=firstStart(problem,taskDomain)!,taskLast=lastStart(problem,taskDomain)!;
       const mealFirst=firstMeal(mealDomain)!,mealLast=lastMeal(mealDomain)!;
       const taskBeforeMeal=taskFirst+task.duration<=mealLast;
       const mealBeforeTask=mealFirst+meal.duration<=taskLast;
@@ -79,7 +92,9 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
         mealCandidateCount:mealDomain.validStarts,compatiblePairCount:0};
     }
   }
-  const inconclusive=unresolved[0];
+  const interactingPair=future.flatMap((task,index)=>future.slice(index+1).map(other=>[task,other] as const))
+    .find(([left,right])=>shareHardAuthority(left,right));
+  const inconclusive=unresolved[0]??interactingPair?.[0];
   return {...base,status:inconclusive?"ABSTAIN" as const:"PASS" as const,individualDomainChecks:individual,jointTaskMealChecks:joint,
     compatiblePairChecks:pairChecks,analyticChecks:analytic,compatiblePairCount:pairChecks>0?1:0,
     ...(inconclusive?{reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const,futureTaskId:inconclusive.id,

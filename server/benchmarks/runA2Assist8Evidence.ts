@@ -108,7 +108,11 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     let residualBreakdown: any = null;
     if (iterations.length === 0) {
       const resolution=resolveAssistedScope(input,adapter,selector);
-      const assisted=buildAssistedProblem(adapter.problem,resolution.scope,[]);
+      const futureEligible=new Set(input.tasks.filter(task=>task.status==="pending"||task.status==="interrupted").flatMap(task=>{
+        const identity=adapter.identityMap.find(item=>item.namespace==="task"&&Number(item.sourceId)===task.id);
+        return identity?[identity.canonicalId]:[];
+      }));
+      const assisted=buildAssistedProblem(adapter.problem,resolution.scope,[],futureEligible);
       const summarize=(run:any)=>({coreBranches:run.evidence.work.coreBranches??0,
         standaloneBranches:run.evidence.work.standaloneBranches??0,
         maximumStandaloneDepth:run.evidence.standaloneDiagnostic?.standaloneMaximumDepth??0,

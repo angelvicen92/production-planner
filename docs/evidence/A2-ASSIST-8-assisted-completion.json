@@ -1885,7 +1885,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "durationMs": 1905
+      "durationMs": 1985
     },
     {
       "scopeSelector": {
@@ -3168,7 +3168,7 @@
         "individualZeroDomainPrunes": 0,
         "jointTaskMealChecks": 6,
         "jointTaskMealPrunes": 0,
-        "collectiveChecks": 1,
+        "collectiveChecks": 0,
         "collectivePrunes": 0,
         "compatiblePairChecks": 6,
         "analyticChecks": 19,
@@ -3728,7 +3728,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "4b161e5f6809790a23c6780d42e82411aea691795096b64b66e6d5769452be80",
-      "durationMs": 509
+      "durationMs": 586
     },
     {
       "scopeSelector": {
@@ -5745,7 +5745,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "72cc33e7fa71d2cf7f251b453bcbfeab961fb5dd0afa7340453b8b2550c553c2",
-      "durationMs": 609
+      "durationMs": 694
     },
     {
       "scopeSelector": {
@@ -7878,7 +7878,7 @@
       },
       "acceptedStageId": 5,
       "acceptedStageFingerprint": "a0ca65ddc4454c4e9caec891e3e5bfb0e1c9308e8625a2908a2ad2913d2ea017",
-      "durationMs": 442
+      "durationMs": 491
     },
     {
       "scopeSelector": {
@@ -9111,7 +9111,7 @@
         "individualZeroDomainPrunes": 6,
         "jointTaskMealChecks": 3,
         "jointTaskMealPrunes": 3,
-        "collectiveChecks": 9,
+        "collectiveChecks": 0,
         "collectivePrunes": 0,
         "compatiblePairChecks": 3,
         "analyticChecks": 93,
@@ -9130,7 +9130,7 @@
           "individualZeroDomainPrunes": 0,
           "jointTaskMealChecks": 1,
           "jointTaskMealPrunes": 1,
-          "collectiveChecks": 1,
+          "collectiveChecks": 0,
           "collectivePrunes": 0,
           "compatiblePairChecks": 1,
           "analyticChecks": 3,
@@ -9432,7 +9432,7 @@
           "collisions": []
         }
       },
-      "durationMs": 372
+      "durationMs": 445
     }
   ],
   "firstBlocker": {
@@ -9537,7 +9537,7 @@
       "individualZeroDomainPrunes": 0,
       "jointTaskMealChecks": 1,
       "jointTaskMealPrunes": 1,
-      "collectiveChecks": 1,
+      "collectiveChecks": 0,
       "collectivePrunes": 0,
       "compatiblePairChecks": 1,
       "analyticChecks": 3,

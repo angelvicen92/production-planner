@@ -12,7 +12,7 @@ import type {
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
 process.env.SUPABASE_ANON_KEY ??= "test-anon-key";
-const { AssistedProposalError, AssistedProposalService, evaluateAcceptedViolationDelta, projectPlannerViolations } = await import("./assistedProposalService");
+const { AssistedProposalError, AssistedProposalService, analyticalFutureEligibleTaskIds, evaluateAcceptedViolationDelta, projectPlannerViolations } = await import("./assistedProposalService");
 
 const planId = 701;
 const request = { selector: { kind: "TASK_IDS" as const, taskIds: [101] }, includePrerequisites: false,
@@ -160,6 +160,10 @@ test("run derives protected placements only from the base stage and preserves th
   const result=await service.run(planId,9);
   assert.deepEqual(captured?.protectedPlacements.map(({id,start,end})=>({id,start,end})),[{id:"task:105",start:600,end:630}]);
   assert.equal(captured?.protectedPlacements.some(({id})=>id==="task:103"),false);
+  const expectedFuture=input.tasks.filter(task=>(task.status==="pending"||task.status==="interrupted")&&task.id!==101&&task.id!==105)
+    .map(task=>`task:${task.id}`).filter(id=>captured?.problem.tasks.every(task=>task.id!==id)).sort();
+  assert.deepEqual(captured?.problem.analyticalFutureParticipantTasks?.map(task=>task.id).sort(),expectedFuture);
+  assert.equal(captured?.problem.analyticalFutureParticipantTasks?.some(task=>task.id==="task:101"||task.id==="task:105"),false);
   assert.equal(result.outcome,"PROPOSAL"); assert.ok(result.proposedDraftFingerprint); assert.ok(finished); assert.deepEqual(writes,[]);
   assert.deepEqual(result.proposedDraftSnapshot?.planningBlocks,baseSnapshot.planningBlocks);
 });
@@ -259,4 +263,11 @@ test("projects resource violations from adapter plan-resource identities", () =>
     { namespace: "space", sourceId: "2", canonicalId: "space:2" },
   ]);
   assert.deepEqual(projected[0]?.affectedResourceIds, [9]);
+});
+
+test("future analytical authority selects exactly pending and interrupted canonical tasks",()=>{
+  const statuses=["pending","interrupted","done","in_progress","cancelled"] as const;
+  const authorityInput={...input,tasks:statuses.map((status,index)=>({...input.tasks[0],id:index+1,status}))};
+  const identities=statuses.map((_status,index)=>({namespace:"task",sourceId:String(index+1),canonicalId:`task:${index+1}`}));
+  assert.deepEqual([...analyticalFutureEligibleTaskIds(authorityInput as any,identities)].sort(),["task:1","task:2"]);
 });
