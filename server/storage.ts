@@ -1496,7 +1496,7 @@ export class SupabaseStorage implements IStorage {
       const optimizerBundle = buildPlanOptimizerSnapshotPersistenceBundleV1(Number(data.id), optimizerSnapshot);
       const { data: optimizerRow, error: optimizerSnapshotError } = await supabaseAdmin
         .from("plan_optimizer_snapshots")
-        .insert(optimizerBundle.snapshot)
+        .insert({ ...optimizerBundle.snapshot, baseline_snapshot: optimizerSnapshot })
         .select("id")
         .single();
       if (optimizerSnapshotError) throw optimizerSnapshotError;

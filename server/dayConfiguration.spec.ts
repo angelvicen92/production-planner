@@ -38,6 +38,14 @@ test("084 preserves 077 canonical revisions, safe legacy materialization, mutati
   assert.doesNotMatch(sql,/UPDATE public\.assisted_planning_stages|UPDATE public\.planning_accepted_exceptions|UPDATE public\.daily_tasks|UPDATE public\.locks/);
 });
 
+test("085 keeps optimizer baseline separate and restores without consulting General",()=>{
+  const sql=readFileSync(new URL("../supabase/migrations/085_optimizer_day_config_restore.sql",import.meta.url),"utf8");
+  for(const token of ["baseline_snapshot","LEGACY_BACKFILL","OPTIMIZER_RESTORE_NOT_AVAILABLE","p_candidate_replay->'optimizerSnapshot'","REVOKE ALL","service_role"]) assert.match(sql,new RegExp(token));
+  assert.match(sql,/p_operation='REFRESH'[\s\S]*optimizerBaseline/);
+  assert.match(sql,/p_operation='RESTORE'[\s\S]*baseline_snapshot IS NOT NULL/);
+  assert.doesNotMatch(sql,/FROM public\.optimizer_settings/);
+});
+
 test("canonical day revisions are built from the complete existing EngineInput authorities",()=>{
   const source=readFileSync(new URL("./dayConfigurationService.ts",import.meta.url),"utf8");
   for(const token of ["buildEngineInput","getPlanTaskTemplateSnapshots","getPlanOptimizerSnapshot","projectEffectiveAuthoritiesFromEngineInputV1","buildEffectivePlanConfigRevisionV1","buildEffectivePlanConfigReplaySnapshotV1"]) assert.match(source,new RegExp(token));
@@ -46,8 +54,8 @@ test("canonical day revisions are built from the complete existing EngineInput a
   assert.match(source,/p_candidate_identity: candidate\.identity/);
 });
 
-test("the 27-capability registry promotes only the two demonstrated capabilities",()=>{
+test("the 27-capability registry promotes the three demonstrated capabilities",()=>{
   assert.equal(configurabilityRegistry.length,27);
-  assert.deepEqual(configurabilityRegistry.filter(x=>x.status==="PRODUCTIVE").map(x=>x.capabilityId),["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK"]);
-  assert.equal(configurabilityCounts.PRODUCTIVE,2);
+  assert.deepEqual(configurabilityRegistry.filter(x=>x.status==="PRODUCTIVE").map(x=>x.capabilityId),["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK","OPTIMIZATION"]);
+  assert.equal(configurabilityCounts.PRODUCTIVE,3);
 });

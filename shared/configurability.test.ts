@@ -23,8 +23,8 @@ test("the v2.4 registry enforces semantic and security gates without count targe
   assert.equal(workday?.generalSource,"program_settings.default_work_start/default_work_end");
   for(const id of ["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK","OPTIMIZATION"]){
     const capability=configurabilityRegistry.find(c=>c.capabilityId===id);
-    assert.equal(capability?.status,"PARTIAL",id);
-    assert.ok(capability?.blockers.some(blocker=>/Restore inherited/.test(blocker)),id);
+    assert.equal(capability?.status,"PRODUCTIVE",id);
+    assert.equal(capability?.blockers.length,0,id);
   }
 });
 

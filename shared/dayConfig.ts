@@ -27,12 +27,13 @@ export const createDayConfigurationIntentSchema = z.object({
 export const dayConfigEditSchema = z.object({
   workday: timeWindowSchema.optional(),
   meal: mealConfigurationSchema.optional(),
-}).strict().refine(value => value.workday !== undefined || value.meal !== undefined, "At least one capability is required");
+  optimizer: z.record(z.string(), z.unknown()).optional(),
+}).strict().refine(value => value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined, "At least one capability is required");
 
-export const dayConfigCapabilitySchema = z.enum(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK"]);
+export const dayConfigCapabilitySchema = z.enum(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK", "OPTIMIZATION"]);
 export const dayConfigRestoreSchema = z.object({ capability: dayConfigCapabilitySchema }).strict();
 export const dayConfigRefreshSchema = z.object({
-  capabilities: z.array(dayConfigCapabilitySchema).min(1).max(2).transform(values => [...new Set(values)]),
+  capabilities: z.array(dayConfigCapabilitySchema).min(1).max(3).transform(values => [...new Set(values)]),
   legacyTreatment: z.enum(["KEEP_LEGACY", "ADOPT_GENERAL_AS_INHERITED"]).default("KEEP_LEGACY"),
 }).strict();
 

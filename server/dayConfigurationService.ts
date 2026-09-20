@@ -6,6 +6,8 @@ import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngi
 import type { IStorage } from "./storage";
 import { storage } from "./storage";
 import { supabaseAdmin } from "./supabase";
+import { normalizePlanOptimizerSnapshotV1, type PlanOptimizerSnapshotV1 } from "./planOptimizerSnapshot";
+import { buildPlanOptimizerRefreshPreviewV1 } from "./planOptimizerSnapshotRefreshPreview";
 
 type Operation = "EDIT" | "RESTORE" | "REFRESH";
 type OperationPayload = DayConfigEdit | DayConfigRestore | DayConfigRefresh;
@@ -20,7 +22,7 @@ const mapPlan = (p: PlanRow) => ({
 
 const provenance = (authority: string) => ({ authority, authorityContractVersion: 1 });
 
-export async function buildCanonicalPlanConfig(planId: number, repository: IStorage = storage, engineInput?: EngineInput) {
+export async function buildCanonicalPlanConfig(planId: number, repository: IStorage = storage, engineInput?: EngineInput, optimizerOverride?: PlanOptimizerSnapshotV1) {
   const [input, taskTemplateSnapshots, optimizerSnapshot] = await Promise.all([
     engineInput ?? buildEngineInput(planId, repository),
     repository.getPlanTaskTemplateSnapshots(planId),
@@ -29,7 +31,7 @@ export async function buildCanonicalPlanConfig(planId: number, repository: IStor
   const revisionInput = {
     planId,
     taskTemplateSnapshots,
-    optimizerSnapshot,
+    optimizerSnapshot: optimizerOverride ?? optimizerSnapshot,
     taskTemplateProvenance: provenance("plan_task_template_snapshots"),
     optimizerProvenance: provenance("plan_optimizer_snapshots"),
     authorities: projectEffectiveAuthoritiesFromEngineInputV1(input),
@@ -62,6 +64,7 @@ export async function previewDayConfigurationRefresh(planId: number) {
   return { ...current, generalCandidate: { workday: { start: g.default_work_start, end: g.default_work_end }, meal: { start: g.meal_start, end: g.meal_end, mode: g.meal_mode } }, effects: {
     WORKDAY_WINDOW: p.work_config_source === "LEGACY_BACKFILL" ? "REQUIRES_EXPLICIT_ADOPTION" : p.work_config_source === "DAY_OVERRIDE" ? "UPDATE_BASELINE_KEEP_EFFECTIVE" : "UPDATE_BASELINE_AND_EFFECTIVE",
     GLOBAL_MEAL_BREAK: p.meal_config_source === "LEGACY_BACKFILL" ? "REQUIRES_EXPLICIT_ADOPTION" : p.meal_config_source === "DAY_OVERRIDE" ? "UPDATE_BASELINE_KEEP_EFFECTIVE" : "UPDATE_BASELINE_AND_EFFECTIVE",
+    OPTIMIZATION: "VALIDATED_BY_OPTIMIZER_PREVIEW",
   } };
 }
 
@@ -97,16 +100,40 @@ function candidateInput(input: EngineInput, plan: PlanRow, general: PlanRow, ope
 }
 
 export async function applyDayConfigurationOperation(planId: number, actorId: string, operation: Operation, payload: OperationPayload, repository: IStorage = storage) {
-  const [{ data: plan, error: planError }, { data: general, error: generalError }] = await Promise.all([
+  const [{ data: plan, error: planError }, { data: general, error: generalError }, { data: optimizerState, error: optimizerStateError }] = await Promise.all([
     supabaseAdmin.from("plans").select("*").eq("id", planId).single(),
     supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode").eq("id", 1).single(),
+    supabaseAdmin.from("plan_optimizer_snapshots").select("baseline_snapshot").eq("plan_id", planId).single(),
   ]);
   if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: planError });
   if (generalError || !general) throw generalError;
+  if (optimizerStateError || !optimizerState) throw optimizerStateError;
   const current = await buildCanonicalPlanConfig(planId, repository);
-  const candidate = await buildCanonicalPlanConfig(planId, repository, candidateInput(current.input, plan, general, operation, payload));
-  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation", {
-    p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: payload,
+  let effectiveOptimizer = current.replay.optimizerSnapshot;
+  let optimizerBaseline: PlanOptimizerSnapshotV1 | undefined;
+  const optimizerSelected = operation === "RESTORE"
+    ? (payload as DayConfigRestore).capability === "OPTIMIZATION"
+    : operation === "REFRESH"
+      ? (payload as DayConfigRefresh).capabilities.includes("OPTIMIZATION")
+      : (payload as DayConfigEdit).optimizer !== undefined;
+  if (optimizerSelected) {
+    const rawBaseline = (optimizerState as any).baseline_snapshot;
+    if (operation === "RESTORE") {
+      if (!rawBaseline || current.replay.optimizerSnapshot.source !== "DAY_OVERRIDE") throw Object.assign(new Error("OPTIMIZER_RESTORE_NOT_AVAILABLE"), { status: 409 });
+      effectiveOptimizer = normalizePlanOptimizerSnapshotV1(rawBaseline, {}, "INHERITED");
+    } else if (operation === "EDIT") {
+      effectiveOptimizer = normalizePlanOptimizerSnapshotV1((payload as DayConfigEdit).optimizer, {}, "DAY_OVERRIDE");
+    } else {
+      const [settings, templates, input] = await Promise.all([repository.getOptimizerSettings(), repository.getPlanTaskTemplateSnapshots(planId), Promise.resolve(current.input)]);
+      const preview = buildPlanOptimizerRefreshPreviewV1({currentSnapshot:current.replay.optimizerSnapshot,globalOptimizerSettings:settings,dailyTemplateSnapshots:templates.map(t=>({sourceTemplateId:t.sourceTemplateId,templateName:t.templateName,planTemplateSnapshotId:t.planTemplateSnapshotId})),dailyZoneIds:(input.planZoneSettings??[]).map(z=>z.zoneId)});
+      if (preview.status !== "READY") throw Object.assign(new Error(preview.incompatibilities[0]?.code ?? "OPTIMIZER_REFRESH_BLOCKED"), { status: 422 });
+      optimizerBaseline = normalizePlanOptimizerSnapshotV1(preview.candidate, {}, "INHERITED");
+      effectiveOptimizer = current.replay.optimizerSnapshot.source === "DAY_OVERRIDE" ? current.replay.optimizerSnapshot : optimizerBaseline;
+    }
+  }
+  const candidate = await buildCanonicalPlanConfig(planId, repository, candidateInput(current.input, plan, general, operation, payload), effectiveOptimizer);
+  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v2", {
+    p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: {...payload,...(optimizerBaseline?{optimizerBaseline}: {})},
     p_expected_revision: plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id),
     p_expected_identity: current.identity, p_expected_replay: current.replay,
     p_candidate_identity: candidate.identity, p_candidate_replay: candidate.replay,

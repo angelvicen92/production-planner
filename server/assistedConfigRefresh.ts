@@ -91,9 +91,12 @@ export class AssistedConfigRefreshService {
     const templates=new Map(candidate.currentReplay.taskTemplateSnapshots.map(x=>[x.sourceTemplateId,x]));
     for(const change of candidate.preview.changes.filter(x=>selected.has(x.key)&&x.authority==="task_templates")){const id=Number(change.key.split(":")[1]);const next=candidate.candidateReplay.taskTemplateSnapshots.find(x=>x.sourceTemplateId===id);if(next)templates.set(id,next);else templates.delete(id);}
     const replayAuthorities=Object.fromEntries(Object.entries(candidate.currentReplay.authorities).map(([authority,semanticValue])=>[authority,{semanticValue,provenance:provenance(authority)}])) as any;
-    const replay=buildEffectivePlanConfigReplaySnapshotV1({taskTemplateSnapshots:[...templates.values()] as TaskTemplateOperationalSnapshotV1[],optimizerSnapshot:selected.has("optimizer:settings")?candidate.candidateReplay.optimizerSnapshot:candidate.currentReplay.optimizerSnapshot,authorities:replayAuthorities});
+    const refreshingOptimizer=selected.has("optimizer:settings");
+    const optimizerBaseline=refreshingOptimizer?{...candidate.candidateReplay.optimizerSnapshot,source:"INHERITED" as const}:undefined;
+    const optimizerSnapshot=refreshingOptimizer&&candidate.currentReplay.optimizerSnapshot.source!=="DAY_OVERRIDE"?optimizerBaseline!:candidate.currentReplay.optimizerSnapshot;
+    const replay=buildEffectivePlanConfigReplaySnapshotV1({taskTemplateSnapshots:[...templates.values()] as TaskTemplateOperationalSnapshotV1[],optimizerSnapshot,authorities:replayAuthorities});
     const identity=buildEffectivePlanConfigRevisionV1({planId,taskTemplateSnapshots:replay.taskTemplateSnapshots,optimizerSnapshot:replay.optimizerSnapshot,taskTemplateProvenance:provenance("plan_task_template_snapshots"),optimizerProvenance:provenance("plan_optimizer_snapshots"),authorities:Object.fromEntries(Object.entries(replay.authorities).map(([authority,semanticValue])=>[authority,{semanticValue,provenance:provenance(authority)}])) as any});
-    const diff={contractVersion:1,selectedChanges:candidate.preview.changes.filter(x=>selected.has(x.key))};
+    const diff={contractVersion:1,selectedChanges:candidate.preview.changes.filter(x=>selected.has(x.key)),...(optimizerBaseline?{optimizerBaseline}: {})};
     const {data,error}=await this.rpc("assisted_apply_config_refresh",{p_plan_id:planId,p_user_id:userId,p_expected_revision:expected,p_identity:identity,p_replay:replay,p_diff:diff});
     if(error){if(String((error as any).message).includes("STALE_CONFIG_REVISION"))throw new AssistedConfigRefreshError("STALE_CONFIG_REVISION",409);throw error;}
     return {revisionId:Number(data),identity,replay,diff};

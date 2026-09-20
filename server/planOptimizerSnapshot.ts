@@ -244,9 +244,11 @@ export function normalizePlanOptimizerSnapshotV1(
       "Optimizer settings input must be an object.",
     );
   }
+  const transport = asRecord(readPresent(record, "transport"));
 
+  const rawMode = readPresent(record, "optimizationMode", "optimization_mode", "editingMode", "editing_mode");
   const mode: PlanOptimizerEditingModeV1 = coerceOptimizationMode(
-    readPresent(record, "optimizationMode", "optimization_mode", "editingMode", "editing_mode"),
+    typeof rawMode === "string" ? rawMode.toLowerCase() : rawMode,
   ) === "advanced" ? "ADVANCED" : "BASIC";
 
   const prioritizeMainZone = legacyBoolean(
@@ -295,6 +297,7 @@ export function normalizePlanOptimizerSnapshotV1(
   );
   const directTransportWeight = clampAdvancedValue(
     readPresent(record, "weightArrivalDepartureGrouping", "weight_arrival_departure_grouping") ??
+      readPresent(transport, "groupingWeight", "grouping_weight") ??
       readPresent(readNestedHeuristic(record, "arrivalDepartureGrouping", "ARRIVAL_DEPARTURE_GROUPING"), "advancedValue", "advanced_value"),
   );
 
@@ -312,17 +315,17 @@ export function normalizePlanOptimizerSnapshotV1(
 
   const arrivalPlanTemplateSnapshotId = optionalPositiveInteger(
     references.arrivalPlanTemplateSnapshotId ??
-      readPresent(record, "arrivalPlanTemplateSnapshotId", "arrival_plan_template_snapshot_id"),
+      readPresent(record, "arrivalPlanTemplateSnapshotId", "arrival_plan_template_snapshot_id") ?? readPresent(transport, "arrivalPlanTemplateSnapshotId", "arrival_plan_template_snapshot_id"),
   );
   const departurePlanTemplateSnapshotId = optionalPositiveInteger(
     references.departurePlanTemplateSnapshotId ??
-      readPresent(record, "departurePlanTemplateSnapshotId", "departure_plan_template_snapshot_id"),
+      readPresent(record, "departurePlanTemplateSnapshotId", "departure_plan_template_snapshot_id") ?? readPresent(transport, "departurePlanTemplateSnapshotId", "departure_plan_template_snapshot_id"),
   );
   const arrivalGroupingTarget = nonNegativeInteger(
-    readPresent(record, "arrivalGroupingTarget", "arrival_grouping_target"),
+    readPresent(record, "arrivalGroupingTarget", "arrival_grouping_target") ?? readPresent(transport, "arrivalGroupingTarget", "arrival_grouping_target"),
   );
   const departureGroupingTarget = nonNegativeInteger(
-    readPresent(record, "departureGroupingTarget", "departure_grouping_target"),
+    readPresent(record, "departureGroupingTarget", "departure_grouping_target") ?? readPresent(transport, "departureGroupingTarget", "departure_grouping_target"),
   );
 
   if (directTransportWeight > 0 && arrivalGroupingTarget > 0 && arrivalPlanTemplateSnapshotId === null) {
@@ -354,9 +357,9 @@ export function normalizePlanOptimizerSnapshotV1(
       departurePlanTemplateSnapshotId,
       arrivalGroupingTarget,
       departureGroupingTarget,
-      arrivalMinGapMinutes: nonNegativeInteger(readPresent(record, "arrivalMinGapMinutes", "arrival_min_gap_minutes")),
-      departureMinGapMinutes: nonNegativeInteger(readPresent(record, "departureMinGapMinutes", "departure_min_gap_minutes")),
-      vanCapacity: nonNegativeInteger(readPresent(record, "vanCapacity", "van_capacity")),
+      arrivalMinGapMinutes: nonNegativeInteger(readPresent(record, "arrivalMinGapMinutes", "arrival_min_gap_minutes") ?? readPresent(transport, "arrivalMinGapMinutes", "arrival_min_gap_minutes")),
+      departureMinGapMinutes: nonNegativeInteger(readPresent(record, "departureMinGapMinutes", "departure_min_gap_minutes") ?? readPresent(transport, "departureMinGapMinutes", "departure_min_gap_minutes")),
+      vanCapacity: nonNegativeInteger(readPresent(record, "vanCapacity", "van_capacity") ?? readPresent(transport, "vanCapacity", "van_capacity")),
       groupingWeight: directTransportWeight,
     },
     nearHardBreaksMax: clampAdvancedValue(readPresent(record, "nearHardBreaksMax", "near_hard_breaks_max")),
