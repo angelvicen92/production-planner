@@ -252,9 +252,13 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
   ["TRANSPORT_RULE", (expansion) => expansion.rules.inTransport.targetGroupSize === 3 && expansion.rules.inTransport.maximumGroupSize === 3 && expansion.rules.inTransport.minGapMinutes === 30 && expansion.rules.outTransport.targetGroupSize === 1 && expansion.rules.outTransport.maximumGroupSize === 6 && expansion.rules.outTransport.minGapMinutes === 20 && expansion.tasks.filter((task) => task.type === "IN").every((task) => task.operationalKind === "transport_arrival" && task.transport?.direction === "arrival") && expansion.tasks.filter((task) => task.type === "OUT").every((task) => task.operationalKind === "transport_departure" && task.transport?.direction === "departure")
     ? []
     : [issue("TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED", "rules.inTransport", "Transport semantics or IN policy changed.")]],
-  ["TECHNICAL_CHAIN", (expansion) => expansion.technicalChains.length === 0
-    ? []
-    : [issue("TECHNICAL_CHAIN", "NON_CANONICAL_TECHNICAL_CHAIN", "technicalChains", "The Reality/EVA header does not create standalone canonical obligations.")]],
+  ["TECHNICAL_CHAIN", (expansion) => {
+    const expected=[taskId("C06","REALITY_HALL"),taskId("C12","REALITY_CONTROL_EVA"),taskId("C11","REALITY_BUGGY"),taskId("C04","ALFOMBRA_ROJA_EVA"),taskId("C13","ALFOMBRA_ROJA_EVA")];
+    const chain=expansion.technicalChains[0];
+    return expansion.technicalChains.length===1&&chain?.id==="continuity.reality-c-eva-to-alfombra-a2"&&JSON.stringify(chain.orderedTaskIds)===JSON.stringify(expected)
+      &&chain.adjacency==="REQUIRED"&&chain.resourceContinuity==="REQUIRED"&&JSON.stringify(chain.requiredResourceIds)===JSON.stringify(["cam-3","cam-4","son-1","eva"])
+      ? [] : [issue("TECHNICAL_CHAIN", "NON_CANONICAL_TECHNICAL_CHAIN", "technicalChains", "Reality C + EVA continuity must be represented without creating standalone obligations.")];
+  }],
   ["ITINERANT_UNITS", (expansion) => {
     const issues: ValidationIssue[] = [];
     const expectedUnitIds = CANONICAL_ITINERANT_UNITS.map((unit) => unit.id).sort();
@@ -291,7 +295,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     }
     for (const task of expansion.tasks) {
       for (const resourceId of task.requiredResourceIds) if (unitIds.has(resourceId)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_USED_AS_HARD_RESOURCE", task.id, "Itinerant unit identity must not be in requiredResourceIds."));
-      const evaAllowed = task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA";
+      const evaAllowed = task.itinerantUnitId === "reality-unit-combined";
       if (task.requiredResourceIds.includes("eva") && !evaAllowed) issues.push(issue("ITINERANT_UNITS", "EVA_RESOURCE_ON_NON_EVA_TASK", task.id, "EVA must only be added to tasks that explicitly require EVA."));
       if (task.itinerantUnitId && !claimedTaskIds.has(task.id)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_TASK_WITHOUT_EXPLICIT_OPERATION", task.id, "Itinerant task must be assigned through an explicit operation descriptor."));
     }
@@ -302,7 +306,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     const croma = expansion.tasks.filter((task) => task.type === "CROMA");
     const soundResourceIds = new Set(expansion.resources.filter((resource) => resource.kind === "sound").map((resource) => resource.id));
     if (croma.some((task) => !task.requiredResourceIds.includes("cam-2") || task.requiredResourceIds.some((resourceId) => soundResourceIds.has(resourceId)))) issues.push(issue("KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID", ids(croma).join(","), "Croma must keep CAM 2 and no canonical sound resource."));
-    const evaTasks = expansion.tasks.filter((task) => task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA");
+    const evaTasks = expansion.tasks.filter((task) => task.itinerantUnitId === "reality-unit-combined");
     if (evaTasks.some((task) => !task.requiredResourceIds.includes("eva"))) issues.push(issue("KNOWN_RESOURCES", "EVA_RESOURCE_LOST", ids(evaTasks).join(","), "EVA tasks must retain EVA resource."));
     const coached = expansion.tasks.filter((task) => task.type === "PRUEBA_VOCAL_LUCIA" || task.type === "PRUEBA_VOCAL_JOSE_MARIA" || task.type === "ENSAYO_ESTUDIO_7");
     if (coached.some((task) => !task.coachId || !task.requiredResourceIds.includes(task.coachId))) issues.push(issue("KNOWN_RESOURCES", "COACH_RESOURCE_LOST", ids(coached).join(","), "Coached tasks must keep effective coach resource."));

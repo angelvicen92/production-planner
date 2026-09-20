@@ -54,6 +54,11 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     if (type === "ENSAYO_ESTUDIO_7" && sourceTypes.includes("REALITY_PLATO_ANTES")) dependencies.add(taskId(participantId, "REALITY_PLATO_ANTES"));
     if (type === "REALITY_PLATO_DESPUES") dependencies.add(taskId(participantId, "ENSAYO_ESTUDIO_7"));
     if (type === "TOTALES_POST_CONJUNTO") dependencies.add(taskId(participantId, "ALFOMBRA_ROJA_CONJUNTA"));
+    if (type === "ALFOMBRA_ROJA_CONJUNTA") dependencies.add(taskId("C13", "ALFOMBRA_ROJA_EVA"));
+    if (participantId === "C16" && type === "ALFOMBRA_ROJA") {
+      dependencies.add(taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"));
+      dependencies.add(taskId("C10", "ALFOMBRA_ROJA_CONJUNTA"));
+    }
     if (type === "ESTILISMO_SALIDA") {
       for (const dependencyType of sourceTypes) {
         if (dependencyType !== "ESTILISMO_SALIDA" && dependencyType !== "OUT") dependencies.add(taskId(participantId, dependencyType));
@@ -71,6 +76,7 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     const requiredResourceIds = new Set<string>(definition.knownResourceIds);
     if (type === "ENSAYO_ESTUDIO_7" && coachId) requiredResourceIds.add(coachId);
     for (const resourceId of operation?.memberResourceIds ?? []) requiredResourceIds.add(resourceId);
+    if (operation?.itinerantUnitId === "reality-unit-combined") requiredResourceIds.add("eva");
 
     return {
       id,
@@ -139,7 +145,19 @@ function jointOperations(): JointOperationContract[] {
 }
 
 function technicalChains(): TechnicalChainContract[] {
-  return [];
+  return [{
+    id: "continuity.reality-c-eva-to-alfombra-a2",
+    orderedTaskIds: [
+      taskId("C06", "REALITY_HALL"),
+      taskId("C12", "REALITY_CONTROL_EVA"),
+      taskId("C11", "REALITY_BUGGY"),
+      taskId("C04", "ALFOMBRA_ROJA_EVA"),
+      taskId("C13", "ALFOMBRA_ROJA_EVA"),
+    ],
+    adjacency: "REQUIRED",
+    resourceContinuity: "REQUIRED",
+    requiredResourceIds: ["cam-3", "cam-4", "son-1", "eva"],
+  }];
 }
 
 export function expandCanonicalFullA2Template(template: CanonicalFullA2Template): ExpandedCanonicalFullA2Template {

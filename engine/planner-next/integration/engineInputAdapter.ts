@@ -205,12 +205,13 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     };
   });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));
+  const requiredContinuitySpaceIds = new Set(input.secondaryContinuitySpaceIds ?? []);
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {
     const availability = spatial.spacesById.get(id)?.effectiveWindow;
     if (!availability) throw new Error(`Preflight accepted unavailable space ${id}`);
     const setupPolicy = setupPoliciesBySpaceId.get(id);
     const canonicalSpace = canonical("space", id);
-    if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)] };
+    if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)], ...(requiredContinuitySpaceIds.has(id) ? { secondaryContinuity: "REQUIRED" as const } : {}) };
     const canonicalFamily = (family: string) => canonical("setup-family", `${id}:${family}`);
     if (setupPolicy.orderConstraint === "EXPLICIT") {
       const familyOrder = setupPolicy.familyOrder!.map(canonicalFamily);

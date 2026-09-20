@@ -308,6 +308,8 @@ export interface EngineInput {
   roundSynchronizations?: EngineInputRoundSynchronizationInput[];
   /** Explicit ordered technical operation; dependencies alone remain precedence-only. */
   technicalChains?: EngineInputTechnicalChainInput[];
+  /** Spaces whose productive tasks must form one REQUIRED contiguous block. */
+  secondaryContinuitySpaceIds?: number[];
   /** Directional hard travel time for one concrete coach between two spaces. */
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
   /** Flexible operational meals scoped by physical resources/spaces. */

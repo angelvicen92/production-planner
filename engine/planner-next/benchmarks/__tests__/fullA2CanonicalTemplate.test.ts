@@ -41,7 +41,7 @@ test("expands exact semantic full A2 template", () => {
   assert.equal(expansion.countsByType.ESTRELLAS, 8);
   assert.equal(expansion.anchoredOperations.length, 3);
   assert.equal(expansion.jointOperations.length, 2);
-  assert.equal(expansion.technicalChains.length, 0);
+  assert.deepEqual(expansion.technicalChains.map((chain)=>chain.orderedTaskIds), [["C06.reality_hall","C12.reality_control_eva","C11.reality_buggy","C04.alfombra_roja_eva","C13.alfombra_roja_eva"]]);
   assert.deepEqual(expansion.itinerantUnits.map((unit) => [unit.id, unit.memberResourceIds]), [["reality-unit-a", ["cam-3", "son-1"]], ["reality-unit-b", ["cam-4", "son-2"]], ["reality-unit-combined", ["cam-3", "cam-4", "son-1"]]]);
   assert.equal(expansion.resources.some((resource) => resource.id === "reality-unit-a"), false);
   assert.equal(expansion.tasks.some((task) => task.requiredResourceIds.includes("reality-unit-a") || task.requiredResourceIds.includes("reality-unit-b") || task.requiredResourceIds.includes("reality-unit-combined")), false);

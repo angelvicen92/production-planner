@@ -79,6 +79,7 @@ export type EngineInputPreflightReasonCode =
   | "UNSUPPORTED_SPACE_OCCUPANCY"
   | "UNSUPPORTED_TASK_ROLE"
   | "UNSUPPORTED_TECHNICAL_CHAIN"
+  | "UNSUPPORTED_SECONDARY_CONTINUITY"
   | "UNSUPPORTED_TASK_STATUS"
   | "UNSUPPORTED_TIME_GRID"
   | "UNSUPPORTED_TIME_VALUE"
@@ -892,6 +893,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       if(invalid)addIssue("UNSUPPORTED_TECHNICAL_CHAIN","technicalChain",typeof id==="string"?id:index,path,"Technical chain cannot be projected losslessly.");
     });
   }
+  const secondaryContinuitySpaceIds=(input as unknown as Record<string,unknown>).secondaryContinuitySpaceIds;
+  if(secondaryContinuitySpaceIds!==undefined&&(!Array.isArray(secondaryContinuitySpaceIds)
+    ||secondaryContinuitySpaceIds.some(id=>!Number.isSafeInteger(id)||!input.planSpaceSettings?.some(space=>space.spaceId===id))
+    ||new Set(secondaryContinuitySpaceIds).size!==secondaryContinuitySpaceIds.length))
+    addIssue("UNSUPPORTED_SECONDARY_CONTINUITY","plan",input.planId,"secondaryContinuitySpaceIds","Secondary continuity spaces must be unique configured plan spaces.");
 
   if (setupPoliciesPresent && setupPoliciesValue !== undefined && !Array.isArray(setupPoliciesValue)) {
     addIssue(

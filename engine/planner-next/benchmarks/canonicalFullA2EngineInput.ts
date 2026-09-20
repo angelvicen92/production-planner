@@ -135,6 +135,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     id:chain.id,orderedTaskIds:chain.orderedTaskIds.map(id=>taskId.get(id)!),adjacency:chain.adjacency,
     resourceContinuity:chain.resourceContinuity,requiredResourceIds:chain.requiredResourceIds.map(id=>resourceId.get(id)!),
   }));
+  input.secondaryContinuitySpaceIds=[spaceId.get("alfombra-roja")!];
   input.coachRouteTransitions = [
     ["coach-lucia", "caracola-lucia"],
     ["coach-jose-maria", "caracola-jose-maria"],

@@ -18,8 +18,9 @@ export function orderedTechnicalChainMembers(tasks:Task[]):Task[] { const p=buil
 export const technicalChainRoot=(tasks:Task[])=>orderedTechnicalChainMembers(tasks)[0];
 export const technicalChainRootTaskId=(tasks:Task[])=>technicalChainRoot(tasks)?.id;
 export const technicalChainWorkItemKey=(rootTaskId:string)=>`technical-chain:${rootTaskId}`;
-export function getTechnicalChains(tasks:Task[],policies:readonly TechnicalChainPolicy[]=[]):Task[][] { const tech=getTechnicalTasks(tasks),byId=new Map(tech.map(t=>[t.id,t]));
-  const explicit=[...policies].sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>policy.orderedTaskIds.map(id=>byId.get(id)).filter((task): task is NonNullable<typeof task> => task !== undefined)).filter(chain=>chain.length>=2);
+export function getTechnicalChains(tasks:Task[],policies:readonly TechnicalChainPolicy[]=[]):Task[][] { const tech=getTechnicalTasks(tasks),allById=new Map(tasks.map(t=>[t.id,t]));
+  const byId=new Map(tech.map(t=>[t.id,t]));
+  const explicit=[...policies].sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>policy.orderedTaskIds.map(id=>allById.get(id)).filter((task): task is NonNullable<typeof task> => task !== undefined)).filter(chain=>chain.length>=2);
   const owned=new Set(explicit.flatMap(chain=>chain.map(task=>task.id))),dep=buildTechnicalDependentMap(tech),roots=tech.filter(t=>!owned.has(t.id)&&t.dependencies.length===0&&(dep.get(t.id)?.length??0)>0).sort((a,b)=>a.id.localeCompare(b.id));
   return [...explicit,...roots.map(r=>{const out:Task[]=[];let x:Task|undefined=r;while(x&&!owned.has(x.id)){out.push(x);const nextId:string|undefined=dep.get(x.id)?.[0];x=nextId?byId.get(nextId):undefined;}return out;}).filter(chain=>chain.length>=2)]; }
 export function technicalChainForTask(tasks:Task[],id:string):Task[]|undefined{return getTechnicalChains(tasks).find(c=>c.some(t=>t.id===id));}
@@ -246,7 +247,8 @@ export function probeExactTechnicalChainMacroDomain(problem:PlannerNextProblem,c
 
 function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],allowance:number,
   mode:TechnicalChainMode,probeLimit:number,scheduledSpaceMeals:ScheduledSpaceMeal[]):TechnicalChainCandidateResult {
-  const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
+  const policy=explicitPolicyFor(problem,chainTasks);
+  const ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
   const complete:TechnicalChainCandidate[]=[];
   const diagnostics=():TechnicalChainDiagnostics=>({startsExplored,expansions:consumed,
     completeCandidatesGenerated:complete.length,completeCandidatesYielded:complete.length,
@@ -263,7 +265,9 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
     const task=ordered[depth]!,last=depth===ordered.length-1,next:Partial[]=[];
     for(const state of states){
       const earliest=state.tasks.at(-1)?.end??problem.day.start,prior=[...placed,...state.tasks];
-      for(let start=earliest;start+task.duration<=problem.day.end;start+=5){
+      if(policy?.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id)))continue;
+      const latest=policy?.adjacency==="REQUIRED"&&depth>0?earliest:problem.day.end-task.duration;
+      for(let start=earliest;start<=latest;start+=5){
         if(depth===0)startsExplored+=1;
         if(consumed>=allowance)return finish(true);
         consumed+=1;
