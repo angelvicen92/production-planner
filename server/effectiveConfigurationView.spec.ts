@@ -19,7 +19,7 @@ test("effective values without auditable provenance stay usable and do not degra
     assert.equal(value?.implementationStatus,"PRODUCTIVE");
   }
   assert.deepEqual(view.productCoverage,configurabilityCounts);
-  assert.equal(view.productCoverage.PRODUCTIVE,3);
+  assert.equal(view.productCoverage.PRODUCTIVE,2);
 });
 
 test("optimizer exposes only the provenance carried by its authoritative snapshot",async()=>{
