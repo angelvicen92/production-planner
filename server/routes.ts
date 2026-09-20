@@ -34,6 +34,7 @@ import { AssistedProposalError, AssistedProposalService } from "./assistedPropos
 import { assistedProposalApplySchema, assistedProposalRequestSchema } from "@shared/assistedProposalContracts";
 import { assistedConfigRefreshApplySchema } from "@shared/assistedConfigRefreshContracts";
 import { AssistedConfigRefreshError, AssistedConfigRefreshService } from "./assistedConfigRefresh";
+import { getEffectiveConfigurationResponse } from "./effectiveConfigurationHttp";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -3086,6 +3087,10 @@ function mapDeleteError(err: any, fallback: string) {
 
   // Health check
   app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+  app.get("/api/plans/:id/effective-configuration", async (req, res) => {
+    const result = await getEffectiveConfigurationResponse(storage, req.params.id);
+    return res.status(result.status).json(result.body);
+  });
   // Plans
   app.get(api.plans.list.path, async (req, res) => {
     const plans = await storage.getPlans();

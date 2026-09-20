@@ -12,6 +12,12 @@ export interface AssistedConfigRefreshChangeV1 {
   readonly kind: AssistedConfigRefreshChangeKind;
   readonly label: string;
   readonly localOverride: boolean;
+  readonly category?: "Tareas" | "Reglas de planificación";
+  readonly currentValue?: unknown;
+  readonly candidateValue?: unknown;
+  readonly currentSource?: "Heredado" | "Modificado para este día";
+  readonly impact?: "UNKNOWN" | "REVALIDATE" | "REPLAN";
+  readonly incompatibilities?: readonly string[];
 }
 export interface AssistedConfigRefreshPreviewV1 {
   readonly contractVersion: 1;

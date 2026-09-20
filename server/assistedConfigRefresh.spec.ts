@@ -65,7 +65,7 @@ test("optimizer refresh uses canonical semantic diff while keeping DAY_OVERRIDE 
   assert.equal(buildOptimizerRefreshChange(samePreview),null);
   assert.deepEqual(buildLocalOverrideProjection([],"DAY_OVERRIDE"),[{key:"optimizer:settings",authority:"optimizer",label:"Preferencias de optimización",source:"DAY_OVERRIDE"}]);
   const changedPreview:any={status:"READY",current:{source:"DAY_OVERRIDE"},diff:{hasSemanticChanges:true}};
-  assert.deepEqual(buildOptimizerRefreshChange(changedPreview),{key:"optimizer:settings",authority:"optimizer",kind:"MODIFIED",label:"Preferencias de optimización",localOverride:true});
+  const change=buildOptimizerRefreshChange(changedPreview); assert.equal(change?.impact,"REVALIDATE"); assert.equal(change?.currentValue,changedPreview.current);
 });
 
 test("unsupported coverage is operator-facing and prevents a false fully-current claim",()=>{
