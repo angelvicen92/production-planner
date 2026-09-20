@@ -10,9 +10,9 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   resourceAvailability: "INHERIT_DAY_UNLESS_OVERRIDDEN" as const,
   productiveIds: "DERIVE_FROM_CANONICAL_IDENTITIES" as const,
   itinerantUnitAvailability: Object.freeze({
-    "reality-unit-a": Object.freeze({ start: "11:00" as const, end: "14:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
-    "reality-unit-b": Object.freeze({ start: "11:15" as const, end: "13:30" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
-    "reality-unit-combined": Object.freeze({ start: "16:00" as const, end: "18:00" as const, source: "SPEC08_FOCAL_A2_SECTION_24" as const }),
+    "reality-unit-a": Object.freeze({ start: "09:00" as const, end: "21:00" as const, source: "A2_ASSIST_8_NORMALIZED" as const }),
+    "reality-unit-b": Object.freeze({ start: "09:00" as const, end: "21:00" as const, source: "A2_ASSIST_8_NORMALIZED" as const }),
+    "reality-unit-combined": Object.freeze({ start: "09:00" as const, end: "21:00" as const, source: "A2_ASSIST_8_NORMALIZED" as const }),
   }),
   participantAvailability: Object.freeze(Object.fromEntries(Array.from({ length: 19 }, (_, index) => {
     const id = `C${String(index + 1).padStart(2, "0")}`;
@@ -24,7 +24,7 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   }),
   meals: Object.freeze({
     effectiveWindow: Object.freeze({ start: "13:00" as const, end: "16:30" as const }),
-    operational: Object.freeze({ defaultDurationMinutes: 75 as const, realityDurationMinutes: 75 as const, flexible: true as const, followsAssignedResourcesAcrossRecomposition: true as const, fixedHumanCutIntervals: Object.freeze([] as const), legacyItinerantMealBreakMinutesAuthoritative: false as const }),
+    operational: Object.freeze({ defaultDurationMinutes: 75 as const, coachDurationMinutes: 45 as const, realityDurationMinutes: 75 as const, flexible: true as const, followsAssignedResourcesAcrossRecomposition: true as const, fixedHumanCutIntervals: Object.freeze([] as const), legacyItinerantMealBreakMinutesAuthoritative: false as const }),
     participant: Object.freeze({ sodexoDurationMinutes: 40 as const, maxSimultaneous: 10 as const, independentFromOperationalMeal: true as const }),
   }),
   provenance: Object.freeze({

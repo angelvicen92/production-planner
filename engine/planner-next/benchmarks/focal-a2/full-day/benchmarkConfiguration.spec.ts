@@ -15,9 +15,9 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.equal(config.resourceAvailability, "INHERIT_DAY_UNLESS_OVERRIDDEN");
   assert.equal(config.productiveIds, "DERIVE_FROM_CANONICAL_IDENTITIES");
   assert.deepEqual(config.itinerantUnitAvailability, {
-    "reality-unit-a": { start: "11:00", end: "14:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
-    "reality-unit-b": { start: "11:15", end: "13:30", source: "SPEC08_FOCAL_A2_SECTION_24" },
-    "reality-unit-combined": { start: "16:00", end: "18:00", source: "SPEC08_FOCAL_A2_SECTION_24" },
+    "reality-unit-a": { start: "09:00", end: "21:00", source: "A2_ASSIST_8_NORMALIZED" },
+    "reality-unit-b": { start: "09:00", end: "21:00", source: "A2_ASSIST_8_NORMALIZED" },
+    "reality-unit-combined": { start: "09:00", end: "21:00", source: "A2_ASSIST_8_NORMALIZED" },
   });
   assert.deepEqual(config.unresolvedCreationInputs, []);
   assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
@@ -26,6 +26,7 @@ test("A2 source configuration materializes all effective source decisions", () =
   assert.deepEqual(config.transportPolicy.arrival, { targetGroupSize: 3, maximumGroupSize: 3, minGapMinutes: 30, groupingWeight: 3 });
   assert.deepEqual(config.transportPolicy.departure, { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
+  assert.equal(config.meals.operational.coachDurationMinutes, 45);
   assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
 });
 

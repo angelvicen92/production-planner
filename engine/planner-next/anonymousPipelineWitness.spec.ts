@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness } from "./anonymousPipelineWitness";
+import { validatePlan } from "./validate";
 
 const windows=[{start:0,end:300}];
 function problem(keys:string[]=["A"], coachIds:string[]=["coach-a"]):PlannerNextProblem{
@@ -109,6 +110,24 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(buildAnonymousPipelineWitness(p,{pattern:["A","B"],slots:[100,115]}).status,"INFEASIBLE");
     const single=problem();anchor(single,0);single.tasks.find(t=>t.id==="style0")!.availability=[{start:90,end:100}];
     assert.notEqual(buildAnonymousPipelineWitness(single,{pattern:["A"],slots:[100]}).status,"FEASIBLE");
+  });
+
+  it("uses canonical participant transitions at the Styling/anchored-operation boundary",()=>{
+    const p=problem();anchor(p,0);p.participantTransitionMinutes=5;
+    const styling=p.tasks.find(t=>t.id==="style0")!;
+    p.tasks.find(t=>t.id==="feed0")!.availability=[{start:100,end:115}];
+    styling.availability=[{start:175,end:185}];
+    const adjacent=materializeNominalPipelineWitness(p,{pattern:["A"],slots:[200]});
+    assert.notEqual(adjacent.witness.status,"FEASIBLE");
+
+    styling.availability=[{start:170,end:180}];
+    const separated=materializeNominalPipelineWitness(p,{pattern:["A"],slots:[200]});
+    assert.equal(separated.witness.status,"FEASIBLE",separated.witness.reason);
+    const operation=separated.scheduledTasks.filter(t=>["before0","main0","after0"].includes(t.id)).sort((a,b)=>a.start-b.start);
+    assert.deepEqual(operation.map((task,index)=>index===0?null:task.start-operation[index-1]!.end),[null,0,0]);
+    const validation=validatePlan(p,[...separated.scheduledTasks]);
+    assert.equal(validation.reasonCodes.includes("TRANSITION_VIOLATION"),false,
+      JSON.stringify(validation.violations.filter(v=>v.ruleCode==="TRANSITION_VIOLATION")));
   });
 
   it("is deterministic, nominal-order invariant, and input immutable",()=>{

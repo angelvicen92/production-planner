@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "2e9b6a255ad97e4e117aa5f38cb9f5a336a127df8d2cf648ce5a50fbd8fb8eb7",
-  "expansionFingerprint": "7e4c0637e07bd0621f67ce3d42f6d8edb232578093a39bfb45441769b5983af5",
+  "manifestFingerprint": "78073779bed60eaa08527de76ee37d387d4d7b099969e0031ca121548d549f3c",
+  "expansionFingerprint": "24aeebecf9beea8f3c3cd549fe28fbb62e7a0ee20a33b21b0c9517f942f7aa54",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 0,
@@ -120,9 +120,9 @@
         "son-1"
       ],
       "availability": {
-        "start": "11:00",
-        "end": "14:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
+        "start": "09:00",
+        "end": "21:00",
+        "source": "A2_ASSIST_8_NORMALIZED"
       }
     },
     {
@@ -133,9 +133,9 @@
         "son-2"
       ],
       "availability": {
-        "start": "11:15",
-        "end": "13:30",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
+        "start": "09:00",
+        "end": "21:00",
+        "source": "A2_ASSIST_8_NORMALIZED"
       }
     },
     {
@@ -147,9 +147,9 @@
         "son-1"
       ],
       "availability": {
-        "start": "16:00",
-        "end": "18:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
+        "start": "09:00",
+        "end": "21:00",
+        "source": "A2_ASSIST_8_NORMALIZED"
       }
     }
   ],
@@ -1076,19 +1076,19 @@
     "productiveIds": "DERIVE_FROM_CANONICAL_IDENTITIES",
     "itinerantUnitAvailability": {
       "reality-unit-a": {
-        "start": "11:00",
-        "end": "14:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
+        "start": "09:00",
+        "end": "21:00",
+        "source": "A2_ASSIST_8_NORMALIZED"
       },
       "reality-unit-b": {
-        "start": "11:15",
-        "end": "13:30",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
+        "start": "09:00",
+        "end": "21:00",
+        "source": "A2_ASSIST_8_NORMALIZED"
       },
       "reality-unit-combined": {
-        "start": "16:00",
-        "end": "18:00",
-        "source": "SPEC08_FOCAL_A2_SECTION_24"
+        "start": "09:00",
+        "end": "21:00",
+        "source": "A2_ASSIST_8_NORMALIZED"
       }
     },
     "participantAvailability": {
@@ -1190,6 +1190,7 @@
       },
       "operational": {
         "defaultDurationMinutes": 75,
+        "coachDurationMinutes": 45,
         "realityDurationMinutes": 75,
         "flexible": true,
         "followsAssignedResourcesAcrossRecomposition": true,
@@ -1577,7 +1578,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "7e4c0637e07bd0621f67ce3d42f6d8edb232578093a39bfb45441769b5983af5",
+    "shuffledExpansionFingerprint": "24aeebecf9beea8f3c3cd549fe28fbb62e7a0ee20a33b21b0c9517f942f7aa54",
     "matches": true
   },
   "inputImmutable": {

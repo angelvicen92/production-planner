@@ -80,6 +80,9 @@ test("an out-of-scope pending participant meal remains analytic without becoming
   assert.equal(assisted.automaticTaskIds.includes("outside"),false);
   const result=executeAssistedPlanning(assisted);
   assert.equal(result.proposal?.some(task=>task.id==="outside"),false);
+  assert.equal(result.evidence.selectedMealWitnesses?.participant?.scheduled.some(meal=>meal.sourceTaskId==="outside"),true);
+  assert.equal(result.evidence.selectedMealWitnesses?.participant?.fingerprint.length,64);
+  assert.equal(result.evidence.standaloneDiagnostic?.firstTerminalCompletionRejection,null);
 });
 
 test("supporting closure does not infer feeders from task kind and participant", () => {

@@ -50,6 +50,23 @@ export function compareCompleteParticipantQuality(candidate: CompleteParticipant
 export type ExactItinerantPlanStatus = "COMPLETE" | "CORE_FAILED" | "UNSUPPORTED_STANDALONE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
+export type TerminalCompletionRejectionCause = "SUBSTANTIVE_IDENTITY_INCOMPLETE"
+  | "PARTICIPANT_MEAL_WITNESS_INCOMPLETE" | "OPERATIONAL_MEAL_WITNESS_INCOMPLETE"
+  | "TRANSPORT_MATERIALIZATION_FAILED" | "CANDIDATE_IDENTITY_MISMATCH" | "VALIDATION_REJECTED";
+
+export interface TerminalCompletionRejection {
+  readonly cause: TerminalCompletionRejectionCause;
+  readonly phase: "SUBSTANTIVE_IDENTITY" | "PARTICIPANT_MEALS" | "OPERATIONAL_MEALS"
+    | "TRANSPORT_MATERIALIZATION" | "CANDIDATE_IDENTITY" | "VALIDATION";
+  readonly expectedTaskCount: number;
+  readonly actualTaskCount: number;
+  readonly participantMealWitness: ParticipantMealWitness | null;
+  readonly operationalMealWitness: OperationalMealWitness | null;
+  readonly transportWitness: TransportMaterializationEvidence | null;
+  readonly validation: { readonly hardValid: boolean; readonly reasonCodes: readonly string[];
+    readonly violations: readonly import("./contracts").ValidationViolationDetail[] } | null;
+}
+
 export interface ExactItinerantPlanEvidence {
   branchesExplored: number;
   coreBranches: number;
@@ -93,6 +110,8 @@ export interface ExactItinerantPlanEvidence {
   terminalTransportMaterializationAttempts: number;
   terminalTransportMaterializationFailures: number;
   terminalTransportWitness: TransportMaterializationEvidence | null;
+  terminalCompletionRejectionsByCause: Record<TerminalCompletionRejectionCause, number>;
+  firstTerminalCompletionRejection: TerminalCompletionRejection | null;
   coreLeafTransportPrunes: number;
   transportContiguousStates: number;
   membershipFallbackEntered: number;
@@ -302,6 +321,9 @@ export interface ExactItinerantPlanEvidence {
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealCheapProbes:number; participantMealAffectedObligationsChecked:number; participantMealAnalyticDomainBuilds:number; participantMealLogicalGridStarts:number; participantMealAnalyticallyEliminatedStarts:number; participantMealActuallyEvaluatedStarts:number; participantMealZeroDomainPrunes:number; participantMealAnalyticCollectivePrunes:number; participantMealExactSearchesAvoided:number; participantMealExactMaterializations:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
+  firstParticipantMealFuturePrune:{ phase:"CORE"|"STANDALONE"; causingTaskId:string; scheduledCandidateStart:number;
+    blockingMealTaskId:string; participantId:string; candidateCount:number; domainResult:"ZERO_DOMAIN"|"ANALYTIC_COLLECTIVE_INFEASIBLE";
+    reasonCodes:string[] }|null;
   causalDiagnostic:ExactCoreCausalDiagnostic|null;
 }
 
@@ -509,7 +531,25 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
     const validationCoreMeals=mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:coreMeals;
     const validation = validatePlan(problem, candidate, preparations, validationCoreMeals,[...mealWitness?.scheduled ?? []],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness?.scheduled ?? []]);
-    if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && (validation.hardValid || acceptsValidation?.(validation))) {
+    const validationAccepted=validation.hardValid||Boolean(transport!==null&&exact&&mealWitness?.complete
+      &&operationalMealWitness?.complete&&acceptsValidation?.(validation));
+    const rejectionCause:TerminalCompletionRejectionCause|null=!exactSubstantive?"SUBSTANTIVE_IDENTITY_INCOMPLETE"
+      :!mealWitness?.complete?"PARTICIPANT_MEAL_WITNESS_INCOMPLETE"
+      :!operationalMealWitness?.complete?"OPERATIONAL_MEAL_WITNESS_INCOMPLETE"
+      :transport===null?"TRANSPORT_MATERIALIZATION_FAILED"
+      :!exact?"CANDIDATE_IDENTITY_MISMATCH"
+      :!validationAccepted?"VALIDATION_REJECTED":null;
+    if(rejectionCause){
+      evidence.terminalCompletionRejectionsByCause[rejectionCause]+=1;
+      evidence.firstTerminalCompletionRejection??={cause:rejectionCause,phase:({
+        SUBSTANTIVE_IDENTITY_INCOMPLETE:"SUBSTANTIVE_IDENTITY",PARTICIPANT_MEAL_WITNESS_INCOMPLETE:"PARTICIPANT_MEALS",
+        OPERATIONAL_MEAL_WITNESS_INCOMPLETE:"OPERATIONAL_MEALS",TRANSPORT_MATERIALIZATION_FAILED:"TRANSPORT_MATERIALIZATION",
+        CANDIDATE_IDENTITY_MISMATCH:"CANDIDATE_IDENTITY",VALIDATION_REJECTED:"VALIDATION",
+      } as const)[rejectionCause],expectedTaskCount:expected.length,actualTaskCount:actual.length,
+      participantMealWitness:mealWitness,operationalMealWitness,transportWitness:observedTerminalTransportWitness,
+      validation:{hardValid:validation.hardValid,reasonCodes:[...validation.reasonCodes],violations:[...(validation.violations??[])]}};
+    }
+    if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && validationAccepted) {
       evidence.terminalTransportWitness = terminalTransportWitness;
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
@@ -647,7 +687,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         evidence.standaloneBacktracks += 1;
         continue;
       }
-      if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);evidence.standaloneBacktracks+=1;continue;}}
+      if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,[...coreTasks,...placed,scheduled],[scheduled]);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);const blockingId=mealProbe.blockingMealTaskIds[0];const obligation=problem.participantMeals?.find(meal=>meal.sourceTaskId===blockingId);if(blockingId&&obligation)evidence.firstParticipantMealFuturePrune??={phase:"STANDALONE",causingTaskId:scheduled.id,scheduledCandidateStart:scheduled.start,blockingMealTaskId:blockingId,participantId:obligation.participantId,candidateCount:mealProbe.candidateCountByTaskId[blockingId]??0,domainResult:mealProbe.zeroDomainPrunes>0?"ZERO_DOMAIN":"ANALYTIC_COLLECTIVE_INFEASIBLE",reasonCodes:[...mealProbe.reasonCodes]};evidence.standaloneBacktracks+=1;continue;}}
       const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], preparations, roundPreparations, depth + 1,
         [...selectionOrder, choice.task.id]);
       if (child !== "DEAD_END") return child;
@@ -928,6 +968,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
     standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
     terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,terminalTransportWitness:null,
+    terminalCompletionRejectionsByCause:{SUBSTANTIVE_IDENTITY_INCOMPLETE:0,PARTICIPANT_MEAL_WITNESS_INCOMPLETE:0,
+      OPERATIONAL_MEAL_WITNESS_INCOMPLETE:0,TRANSPORT_MATERIALIZATION_FAILED:0,CANDIDATE_IDENTITY_MISMATCH:0,VALIDATION_REJECTED:0},
+    firstTerminalCompletionRejection:null,
     coreLeafTransportPrunes:0,transportContiguousStates:0,membershipFallbackEntered:0,coreLeafArrivalEvidence:null,firstHardValidCoreLeaf:null,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
@@ -1008,7 +1051,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     corePrerequisiteReservationChecks:0,corePrerequisiteReservationPrunes:0,
     ordinaryPrerequisiteReservationChecks:0,ordinaryPrerequisiteReservationPrunes:0,firstPrerequisiteReservationPrune:null,
     standaloneBlockingTaskDetails:{},
-    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],causalDiagnostic:null,
+    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],firstParticipantMealFuturePrune:null,causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
@@ -1078,7 +1121,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialCoreTasksRemaining=[...staticCoreIds].filter(id=>!scheduledIds.has(id)).length;
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
-    if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);return "REJECT";}}
+    if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);const blockingId=mealProbe.blockingMealTaskIds[0];const obligation=problem.participantMeals?.find(meal=>meal.sourceTaskId===blockingId);const causing=(obligation&&candidate.addedTasks.find(task=>task.participantId===obligation.participantId||task.id===obligation.sourceTaskId||task.dependencies.includes(obligation.sourceTaskId)||(obligation.dependencies??[]).includes(task.id)))??candidate.addedTasks[0];if(blockingId&&obligation&&causing)evidence.firstParticipantMealFuturePrune??={phase:"CORE",causingTaskId:causing.id,scheduledCandidateStart:causing.start,blockingMealTaskId:blockingId,participantId:obligation.participantId,candidateCount:mealProbe.candidateCountByTaskId[blockingId]??0,domainResult:mealProbe.zeroDomainPrunes>0?"ZERO_DOMAIN":"ANALYTIC_COLLECTIVE_INFEASIBLE",reasonCodes:[...mealProbe.reasonCodes]};return "REJECT";}}
     evidence.corePrerequisiteReservationChecks+=1;
     const reservation=checkIndividualPendingPrerequisiteReservations(problem,standaloneTasks,candidate.tasks.filter(task=>!candidate.addedTasks.some(added=>added.id===task.id)),candidate.addedTasks,candidate.meals);
     if(!reservation.feasible){

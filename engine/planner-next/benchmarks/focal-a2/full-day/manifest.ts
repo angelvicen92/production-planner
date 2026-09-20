@@ -213,7 +213,9 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
       mainFlow: {
         spaceId: "estudio-7",
         continuity: "REQUIRED",
-        maxBlocksPerCoach: 2,
+        // A2 has no HARD maximum of two coach blocks.  The canonical universe
+        // size is an explicit, non-restrictive upper bound for this fixture.
+        maxBlocksPerCoach: PARTICIPANT_IDS.length,
         blockKey: "coach",
         optimizationAfterFeasibility: "minimize_coach_blocks",
       },

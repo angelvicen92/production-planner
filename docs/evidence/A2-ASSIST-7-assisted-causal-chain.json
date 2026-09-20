@@ -20,7 +20,7 @@
     "oldDuration": 10,
     "materializedDuration": 20,
     "consumedDuration": 20,
-    "buildInputCalls": 42,
+    "buildInputCalls": 44,
     "consumedNewValue": true
   },
   "configRevision": {
@@ -30,6 +30,7 @@
   },
   "proposalConsumedRevisionIds": [
     40,
+    41,
     41,
     41,
     41,
@@ -68,27 +69,29 @@
     2,
     2,
     2,
+    2,
     2
   ],
   "hardConflict": {
     "hardValid": false,
-    "editedTaskId": 10017,
+    "editedTaskId": 10001,
     "conflictingTaskIds": [
-      10002,
-      10017
+      10001,
+      10002
     ],
-    "acceptedViolationIdentity": "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10002,10017],\"resourceIds\":[],\"spaceIds\":[3004],\"dimensions\":{\"coachId\":\"plan-resource:4005\",\"overlapEnd\":780,\"overlapStart\":765,\"participantId\":null}}",
+    "acceptedViolationIdentity": "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10001,10002],\"resourceIds\":[],\"spaceIds\":[3004,3008],\"dimensions\":{\"coachId\":null,\"overlapEnd\":775,\"overlapStart\":765,\"participantId\":\"participant:201\"}}",
     "reproducedViolationIdentities": [
-      "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10002,10017],\"resourceIds\":[],\"spaceIds\":[3004],\"dimensions\":{\"coachId\":\"plan-resource:4005\",\"overlapEnd\":780,\"overlapStart\":765,\"participantId\":null}}"
+      "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10001,10002],\"resourceIds\":[],\"spaceIds\":[3004,3008],\"dimensions\":{\"coachId\":null,\"overlapEnd\":775,\"overlapStart\":765,\"participantId\":\"participant:201\"}}",
+      "HARD:{\"ruleCode\":\"TRANSITION_VIOLATION\",\"taskIds\":[10001,10002],\"resourceIds\":[],\"spaceIds\":[3004,3008],\"dimensions\":{\"actualMinutes\":-10,\"identity\":\"participant:201\",\"identityKind\":\"participantId\",\"requiredMinutes\":5}}"
     ],
     "materiallyPresentInAcceptedStage": true,
     "acceptedFingerprintMatchesDraft": true,
     "exceptionSnapshotMatchesStage": true,
     "violationIdentityReproduced": true,
-    "acceptedExceptionCount": 1,
-    "exceptionCountBeforeFollowup": 1,
-    "exceptionCountAfterFollowup": 1,
-    "followupBaselineCount": 1,
+    "acceptedExceptionCount": 2,
+    "exceptionCountBeforeFollowup": 2,
+    "exceptionCountAfterFollowup": 2,
+    "followupBaselineCount": 2,
     "followupNewCount": 0,
     "followupUnstructuredReasonCodes": [],
     "followupFixedPlacementsPreserved": true,

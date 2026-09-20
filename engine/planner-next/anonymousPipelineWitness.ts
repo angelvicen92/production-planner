@@ -5,7 +5,7 @@ import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines } from ".
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
-import { exactTaskStartDomain } from "./placement";
+import { canPlaceTask, exactTaskStartDomain } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching } from "./exactMainAndFeederCore";
 import { assessOperationalMealFutureFeasibility } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
@@ -273,6 +273,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     return rejected("INCONCLUSIVE","HETEROGENEOUS_STYLING_GEOMETRY");
   const duration=layers[0]!.styling.duration;
   const styleWindows=orderedWindows(problem.spaces.find(s=>s.id===styleSpace)?.availability,problem.day);
+  const stylingDomains=layers.map(layer=>exactTaskStartDomain(problem,layer.styling,[]));
   let stylingSpots:AnonymousPipelineSpot[]=[];
   const deadlines=[...architecture.slots].sort((a,b)=>a-b)
     .map(deadline=>deadline-problem.participantTransitionMinutes);
@@ -280,6 +281,8 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   // an interval boundary/slack calculation; no clock grid is enumerated.
   const styleStarts=styleWindows.flatMap(window=>[window.start,window.end-layers.length*duration,
     ...deadlines.map((deadline,i)=>deadline-(i+1)*duration),
+    ...stylingDomains.flatMap(domain=>domain.intervals.flatMap(interval=>layers.flatMap((_,ordinal)=>
+      [interval.start-ordinal*duration,interval.end-ordinal*duration]))),
     ...feederSpots.flatMap(spot=>[spot.start-duration,spot.end]),
     ...anchoredOperationSpots.flatMap(spot=>[spot.start-duration,spot.end])])
     .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end))
@@ -294,13 +297,15 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!; const main=mainSpots[x.position]!;
     for(let i=0;i<stylingSpots.length;i++){
       if(seen.has(i))continue; const spot=stylingSpots[i]!;
-      if(!fits(x.styling,spot.start)||spot.end+problem.participantTransitionMinutes>main.start)continue;
       const operation=anchoredOperations.get(x.tokenId);
-      if(operation&&spot.start<operation.end&&operation.start<spot.end)continue;
-      const disjoint=spot.end+problem.participantTransitionMinutes<=vocal.start
-        ||vocal.end+problem.participantTransitionMinutes<=spot.start;
-      if(operation&&vocal.start<operation.end&&operation.start<vocal.end)continue;
-      if(!disjoint)continue; seen.add(i); const prior=styleOwner.get(i);
+      const placed=[{...x.feeder,start:vocal.start,end:vocal.end},
+        ...(operation?.tasks??[{...x.main,start:main.start,end:main.end}])];
+      // Styling is external to an anchored bundle. Delegate overlap, dependency,
+      // participant/resource transition and availability semantics to the same
+      // placement authority used by search and validation. Internal bundle phases
+      // remain adjacent because materializeAnchoredOperation validates them as one unit.
+      if(!canPlaceTask(problem,x.styling,spot.start,placed))continue;
+      seen.add(i); const prior=styleOwner.get(i);
       if(!prior||augment(prior,seen)){styleOwner.set(i,x);return true;}
     } return false;
   };

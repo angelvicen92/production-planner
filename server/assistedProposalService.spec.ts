@@ -65,6 +65,9 @@ const evidence = (proposal: boolean): AssistedPlanningResult["evidence"] => ({
   scopeTaskCount: 1, scopeTaskIds: ["task:101"], supportingTaskIds: ["task:102"],
   protectedPlacementCount: 1, protectedPlacementsPreserved: true, proposalCount: proposal ? 1 : 0,
   completeForScope: proposal, hardValid: proposal, requiredValid: proposal, fingerprint: proposal ? "engine" : null,
+  selectedMealWitnesses:null,
+  participantMealFutureFeasibility:{futureFeasibilityChecks:0,futureInfeasibleBranches:0,affectedObligationsChecked:0,
+    zeroDomainPrunes:0,analyticCollectivePrunes:0,blockingMealTaskIds:[],firstPrune:null},
   work: {}, causalDiagnostic: null, reasonCodes: [proposal ? "ASSISTED_SCOPE_COMPLETE" : "ASSISTED_SCOPE_INCOMPLETE"],
 });
 

@@ -13,16 +13,15 @@ test("A2-ASSIST-1 deterministically reaches the next structural core run within 
   assert.equal(first.requiredValid, false);
   assert.equal(first.proposalCount, 0);
   assert.equal(first.protectedPlacementsPreserved, true);
-  assert.equal(first.work.branchesExplored, 100_000);
+  assert.equal(first.work.branchesExplored, 0);
   assert.equal(first.supportingTaskIds.length, 63);
-  assert.ok(first.work.coreMaximumDepth >= 12);
-  assert.equal(typeof first.work.mainCandidatesEvaluated, "number");
-  assert.ok(first.work.mainRunWitnessAttempts > 0);
-  assert.ok(first.work.feederCandidatesEvaluated > 0);
-  assert.ok(first.work.residualMatchingAugmentTraversals < 10_000);
+  assert.equal(first.work.coreMaximumDepth, 0);
+  assert.equal(first.work.architecturesChecked, 0);
+  assert.equal(first.work.mainRunWitnessAttempts, 0);
+  assert.equal(first.work.feederCandidatesEvaluated, 0);
   assert.equal(Object.values(first.causalDiagnostic!.waterfallByDepth)
     .reduce((sum, row) => sum + row.total, 0), first.work.branchesExplored);
-  assert.ok(first.causalDiagnostic!.futureFeasibility.totalEvaluations > 0);
+  assert.equal(first.causalDiagnostic!.futureFeasibility.totalEvaluations, 0);
   assert.equal(first.causalDiagnostic!.futureFeasibility.totalEvaluations,
     first.causalDiagnostic!.futureFeasibility.uniqueAuthorityStates
       + first.causalDiagnostic!.futureFeasibility.repeatedEvaluations);

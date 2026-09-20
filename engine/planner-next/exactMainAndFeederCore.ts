@@ -2,7 +2,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Valid
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, orderTimelines,
+import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederStructuralRejection } from "./mainFlowPatterns";
@@ -1726,7 +1726,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? (() => {
-        const base = candidateCutsForTier(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut));
+        const base = candidateCutsForTier(pattern).flatMap((cut) => mainFlowMealStarts(problem)
+          .map((mealStart) => buildTimeline(problem, pattern, duration, cut, mealStart)));
         const acceptedMains = protectedPlacements.filter((placement) =>
           problem.tasks.find((task) => task.id === placement.id)?.kind === "main");
         const acceptedAdjacent = base.flatMap((timeline) => acceptedMains.flatMap((accepted) => {

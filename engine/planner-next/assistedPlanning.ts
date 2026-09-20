@@ -9,6 +9,8 @@ import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
 import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
 import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
+import { participantMealWitnessFingerprint } from "./participantMeals";
+import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 
 export type AssistedPlanningReasonCode =
@@ -41,6 +43,21 @@ export interface AssistedPlanningEvidence {
   readonly hardValid: boolean;
   readonly requiredValid: boolean;
   readonly fingerprint: string | null;
+  /** Solver-selected analytical witnesses. They are Evidence only, never proposal placements. */
+  readonly selectedMealWitnesses: {
+    readonly participant: { readonly scheduled: readonly import("./contracts").ScheduledParticipantMeal[];
+      readonly fingerprint: string; readonly finalSelectionOrder: readonly string[] } | null;
+    readonly operational: { readonly scheduled: readonly import("./contracts").ScheduledOperationalMeal[];
+      readonly fingerprint: string } | null;
+    readonly resource: readonly import("./contracts").ScheduledResourceMeal[];
+    readonly itinerantUnit: readonly import("./contracts").ScheduledItinerantUnitMeal[];
+  } | null;
+  readonly participantMealFutureFeasibility: {
+    readonly futureFeasibilityChecks:number; readonly futureInfeasibleBranches:number;
+    readonly affectedObligationsChecked:number; readonly zeroDomainPrunes:number;
+    readonly analyticCollectivePrunes:number; readonly blockingMealTaskIds:readonly string[];
+    readonly firstPrune: ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"];
+  };
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
@@ -56,6 +73,7 @@ export interface AssistedPlanningEvidence {
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
     | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
     | "terminalTransportWitness"
+    | "terminalCompletionRejectionsByCause" | "firstTerminalCompletionRejection"
     | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
     | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf"
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
@@ -199,11 +217,23 @@ export function buildAssistedProblem(
     problem.transportPolicy.arrival.taskIds = problem.transportPolicy.arrival.taskIds.filter((id) => included.has(id));
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
+  const analyticalMealSourceIds = new Set((problem.participantMeals ?? [])
+    .filter((meal) => !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"))
+    .map((meal) => meal.sourceTaskId));
   const analyticalParticipantMeals = (problem.participantMeals ?? []).filter((meal) =>
-    !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"));
+    analyticalMealSourceIds.has(meal.sourceTaskId)).map((meal) => ({ ...meal,
+      // An analytical obligation is context rather than a hidden search variable.
+      // Keep only prerequisite vertices represented in this projection.
+      dependencies: meal.dependencies?.filter((id) => included.has(id) || analyticalMealSourceIds.has(id)),
+    }));
   // The executable problem must remain referentially closed. Obligations whose
   // source is outside scope are analytical context, never hidden search variables.
-  problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
+  const retainedMealSourceIds = new Set((problem.participantMeals ?? [])
+    .filter((meal) => included.has(meal.sourceTaskId)).map((meal) => meal.sourceTaskId));
+  problem.participantMeals = problem.participantMeals?.filter((meal) => retainedMealSourceIds.has(meal.sourceTaskId))
+    .map((meal) => ({ ...meal,
+      dependencies: meal.dependencies?.filter((id) => included.has(id) || retainedMealSourceIds.has(id)),
+    }));
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail
   // preflight, and absent setup families cannot remain mandatory in the scope.
@@ -245,7 +275,11 @@ export function buildAssistedProblem(
 }
 
 export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
-  const searchProblem=input.problem;
+  // Future participant meals remain invisible obligations, but they must constrain
+  // every constructive/future-feasibility check performed for an Assisted scope.
+  const searchProblem:PlannerNextProblem={...input.problem,participantMeals:[
+    ...(input.problem.participantMeals??[]),...input.analyticalParticipantMeals,
+  ]};
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
   const protectedIds=new Set(input.protectedPlacements.map(({id})=>id));
   const acceptsValidation=(summary:import("./contracts").ValidationSummary)=>{
@@ -259,15 +293,21 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
+  const projectedParticipantMealSources=new Set((input.originalValidationProblem.participantMeals??[]).map(meal=>meal.sourceTaskId));
+  const projectedParticipantMeals=result?.complete
+    ? result.scheduledParticipantMeals.filter(meal=>projectedParticipantMealSources.has(meal.sourceTaskId)) : [];
   const scheduled = searchScheduled.map((task) => structuredClone(protectedById.get(task.id) ?? task));
   for(const fixed of input.protectedPlacements)if(!scheduled.some(task=>task.id===fixed.id))scheduled.push(structuredClone(fixed));
-  const searchValidation = result?.complete ? validatePlan(searchProblem, searchScheduled,
-    result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
+  // Analytical meals constrain construction but are deliberately not proposal
+  // obligations. Validate the materialized scope against the executable projected
+  // contract so invisible future context cannot make a complete local scope fail.
+  const searchValidation = result?.complete ? validatePlan(input.originalValidationProblem, searchScheduled,
+    result.scheduledSetupPreparations, result.scheduledSpaceMeals, projectedParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
     "scheduledOperationalMeals" in result ? result.scheduledOperationalMeals : []) : null;
   const validation = result?.complete ? validatePlan(input.originalValidationProblem, scheduled,
-    result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
+    result.scheduledSetupPreparations, result.scheduledSpaceMeals, projectedParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
     "scheduledOperationalMeals" in result ? result.scheduledOperationalMeals : []) : null;
@@ -292,7 +332,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
   const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
-    "terminalTransportMaterializationFailures","terminalTransportWitness","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
+    "terminalTransportMaterializationFailures","terminalTransportWitness","terminalCompletionRejectionsByCause","firstTerminalCompletionRejection","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
@@ -308,11 +348,19 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
     "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "standaloneForwardChecks",
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
-    "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered"]
+    "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
+    "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
+    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
     }));
+  const selectedMealWitnesses=result?.complete?{
+    participant:{scheduled:structuredClone(result.scheduledParticipantMeals),fingerprint:participantMealWitnessFingerprint(result.scheduledParticipantMeals),
+      finalSelectionOrder:[...(evidenceRecord.participantMealFinalSelectionOrder as string[]|undefined)??[]]},
+    operational:{scheduled:structuredClone(result.scheduledOperationalMeals??[]),fingerprint:operationalMealWitnessFingerprint(result.scheduledOperationalMeals??[])},
+    resource:structuredClone(result.scheduledResourceMeals),itinerantUnit:structuredClone(result.scheduledItinerantUnitMeals),
+  }:null;
   return { proposal, evidence: {
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
@@ -339,6 +387,16 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     // the combined state retains an inherited, human-accepted HARD exception.
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
+    selectedMealWitnesses,
+    participantMealFutureFeasibility:{
+      futureFeasibilityChecks:Number(evidenceRecord.participantMealFutureFeasibilityChecks??metricsRecord.participantMealFutureFeasibilityChecks??0),
+      futureInfeasibleBranches:Number(evidenceRecord.participantMealFutureInfeasibleBranches??0),
+      affectedObligationsChecked:Number(evidenceRecord.participantMealAffectedObligationsChecked??0),
+      zeroDomainPrunes:Number(evidenceRecord.participantMealZeroDomainPrunes??0),
+      analyticCollectivePrunes:Number(evidenceRecord.participantMealAnalyticCollectivePrunes??0),
+      blockingMealTaskIds:[...((evidenceRecord.participantMealBlockingTaskIds as string[]|undefined)??[])],
+      firstPrune:(evidenceRecord.firstParticipantMealFuturePrune as ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"]|undefined)??null,
+    },
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     standaloneDiagnostic,

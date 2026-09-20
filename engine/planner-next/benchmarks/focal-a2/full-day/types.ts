@@ -126,7 +126,7 @@ export interface CanonicalItinerantUnit {
   readonly id: string;
   readonly label: string;
   readonly memberResourceIds: readonly string[];
-  readonly availability: { readonly start: string; readonly end: string; readonly source: "SPEC08_FOCAL_A2_SECTION_24"; };
+  readonly availability: { readonly start: string; readonly end: string; readonly source: string; };
 }
 
 export interface CanonicalItinerantOperation {
@@ -163,7 +163,7 @@ export interface CanonicalTemplateRules {
   readonly mainFlow: {
     readonly spaceId: "estudio-7";
     readonly continuity: "REQUIRED";
-    readonly maxBlocksPerCoach: 2;
+    readonly maxBlocksPerCoach: number;
     readonly blockKey: "coach";
     readonly optimizationAfterFeasibility: "minimize_coach_blocks";
   };

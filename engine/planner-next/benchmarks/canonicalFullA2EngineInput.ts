@@ -80,7 +80,8 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.contestantAvailabilityById = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, { ...config.participantAvailability[id] }]));
   input.planResourceItems = expansion.resources.map((resource, index) => ({
     id: resourceId.get(resource.id)!, resourceItemId: 7001 + index, typeId: 8001 + index,
-    name: resource.id, isAvailable: true, availabilityStart: null, availabilityEnd: null,
+    name: resource.id, isAvailable: true, availabilityStart: resource.id === "eva" ? "16:00" : null,
+    availabilityEnd: resource.id === "eva" ? config.effectiveDayWindow.end : null,
   }));
   input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
   input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
@@ -94,7 +95,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     searchPolicy: "EXACT_CONSTRUCTIVE",
     searchBudget: { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: branchBudget },
     timeGridMinutes: 5,
-    participantTransitionMinutes: 0,
+    participantTransitionMinutes: 5,
     resourceTransitionMinutes: 0,
     mainFlow: {
       spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
@@ -143,26 +144,23 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     toSpaceId: spaceId.get("estudio-7")!,
     minutes: expansion.rules.coachTransition.minutes,
   }));
-  const operationalMealGroups: Array<[string, string[]]> = [
-    ["reality-operations", ["cam-3", "cam-4", "son-1", "son-2"]],
-    ["cam2-operations", ["cam-2"]],
-    ["eva-operations", ["eva"]],
-    ["coach-lucia", ["coach-lucia"]],
-    ["coach-jose-maria", ["coach-jose-maria"]],
+  const operationalMealGroups: Array<[string, string[], string[]]> = [
+    ["reality-a", ["cam-3", "son-1"], []],
+    ["reality-b", ["cam-4", "son-2"], []],
+    ["coach-lucia", ["coach-lucia"], []],
+    ["coach-jose-maria", ["coach-jose-maria"], []],
+    ["main-flow", [], ["estudio-7"]],
+    ["p14-operations", [], ["p14-recursos", "p14-pasillo", "p14-giratuto"]],
+    ["p15-operations", [], ["p15-croma", "p15-estrellas-sillon"]],
+    ["totales-operations", [], ["totales-1", "totales-coreo"]],
   ];
-  input.operationalMealPolicies = operationalMealGroups.map(([id, resources]) => ({
+  input.operationalMealPolicies = operationalMealGroups.map(([id, resources, spaces]) => ({
     id,
     window: { ...config.meals.effectiveWindow },
-    durationMinutes: config.meals.operational.defaultDurationMinutes,
+    durationMinutes: id.startsWith("coach-") ? config.meals.operational.coachDurationMinutes : config.meals.operational.defaultDurationMinutes,
     planResourceItemIds: resources.map((resource) => resourceId.get(resource)!),
+    spaceIds: spaces.map((space) => spaceId.get(space)!),
   }));
-  input.operationalMealPolicies.push({
-    id: "main-flow-space",
-    window: { ...config.meals.effectiveWindow },
-    durationMinutes: config.meals.operational.defaultDurationMinutes,
-    planResourceItemIds: [],
-    spaceIds: [spaceId.get(expansion.rules.mainFlow.spaceId)!],
-  });
   input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailability).map(([canonicalId, availability]) => ({
     itinerantTeamId: itinerantUnitId.get(canonicalId)!,
     windows: [{ start: availability.start, end: availability.end }],
