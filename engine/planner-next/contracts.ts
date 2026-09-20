@@ -48,6 +48,7 @@ export interface RoundSynchronizationPolicy {
 }
 
 export interface TechnicalChainPolicy {
+  /** Explicit chains may order any task kind; dependency-derived chains remain technical-only. */
   id: string;
   orderedTaskIds: string[];
   adjacency: "REQUIRED";

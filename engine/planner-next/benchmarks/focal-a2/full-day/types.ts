@@ -154,7 +154,7 @@ export interface TechnicalChainContract {
   readonly orderedTaskIds: readonly string[];
   readonly adjacency: "REQUIRED";
   readonly resourceContinuity: "REQUIRED";
-  readonly requiredResourceIds: readonly ["cam-3", "cam-4", "son-1", "eva"];
+  readonly requiredResourceIds: readonly string[];
 }
 
 export interface CanonicalTemplateRules {

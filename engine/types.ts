@@ -255,6 +255,7 @@ export interface EngineInputRoundSynchronizationInput {
 }
 
 export interface EngineInputTechnicalChainInput {
+  /** Ordered operation representatives. Explicit chains may include participant-bound tasks. */
   id: string;
   orderedTaskIds: number[];
   adjacency: "REQUIRED";

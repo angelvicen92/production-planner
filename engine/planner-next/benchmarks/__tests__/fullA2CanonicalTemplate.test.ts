@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { buildCanonicalFullA2EngineInput } from "../canonicalFullA2EngineInput";
+import { adaptEngineInputToPlannerNextProblem } from "../../integration/engineInputAdapter";
+import { generateTechnicalChainCandidates, getTechnicalChains } from "../../technicalChains";
 import {
   analyzeCanonicalFullA2Representability,
   canonicalFingerprint,
@@ -41,12 +44,58 @@ test("expands exact semantic full A2 template", () => {
   assert.equal(expansion.countsByType.ESTRELLAS, 8);
   assert.equal(expansion.anchoredOperations.length, 3);
   assert.equal(expansion.jointOperations.length, 2);
-  assert.equal(expansion.technicalChains.length, 0);
+  assert.equal(expansion.technicalChains.length, 1);
   assert.deepEqual(expansion.itinerantUnits.map((unit) => [unit.id, unit.memberResourceIds]), [["reality-unit-a", ["cam-3", "son-1"]], ["reality-unit-b", ["cam-4", "son-2"]], ["reality-unit-combined", ["cam-3", "cam-4", "son-1"]]]);
   assert.equal(expansion.resources.some((resource) => resource.id === "reality-unit-a"), false);
   assert.equal(expansion.tasks.some((task) => task.requiredResourceIds.includes("reality-unit-a") || task.requiredResourceIds.includes("reality-unit-b") || task.requiredResourceIds.includes("reality-unit-combined")), false);
   assert.equal(validation.status, "VALID", validation.issues.map((issue) => `${issue.code}:${issue.entityId}`).join("\n"));
   assert.ok(validation.invariants.every((entry) => entry.evaluated && entry.passed));
+});
+
+test("preserves the canonical Reality C plus EVA to Alfombra continuity as one gapless sequence", () => {
+  const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
+  const chain = expansion.technicalChains.find((entry) => entry.id === "continuity.reality-c-eva-alfombra");
+
+  assert.deepEqual(chain?.orderedTaskIds, [
+    taskId("C06", "REALITY_HALL"),
+    taskId("C12", "REALITY_CONTROL_EVA"),
+    taskId("C11", "REALITY_BUGGY"),
+    taskId("C04", "ALFOMBRA_ROJA_EVA"),
+    taskId("C13", "ALFOMBRA_ROJA_EVA"),
+    taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"),
+    taskId("C16", "ALFOMBRA_ROJA"),
+  ]);
+  assert.equal(chain?.adjacency, "REQUIRED");
+});
+
+test("projects and constructs the canonical continuity gaplessly with phase-specific resources", () => {
+  const { input, taskId: sourceTaskId } = buildCanonicalFullA2EngineInput();
+  const adapted = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(adapted.status, "SUPPORTED");
+  const problem = adapted.problem!;
+  const chain = getTechnicalChains(problem.tasks, problem.technicalChains)[0]!;
+  const result = generateTechnicalChainCandidates(problem, chain, [], 500);
+  const candidate = result.candidates[0]!;
+  const canonical = (id: string) => `task:${sourceTaskId.get(id)!}`;
+  const representativeIds = [
+    taskId("C06", "REALITY_HALL"), taskId("C12", "REALITY_CONTROL_EVA"),
+    taskId("C11", "REALITY_BUGGY"), taskId("C04", "ALFOMBRA_ROJA_EVA"),
+    taskId("C13", "ALFOMBRA_ROJA_EVA"), taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"),
+    taskId("C16", "ALFOMBRA_ROJA"),
+  ].map(canonical);
+  const representatives = representativeIds.map((id) => candidate.tasks.find((task) => task.id === id)!);
+  assert.ok(representatives.every(Boolean));
+  for (let index = 1; index < representatives.length; index += 1) {
+    assert.equal(representatives[index - 1]!.end, representatives[index]!.start);
+  }
+  const evaSourceId = input.planResourceItems.find((resource) => resource.name === "eva")!.id;
+  const eva = problem.resources.find((resource) => resource.id === `plan-resource:${evaSourceId}`)!;
+  assert.equal(eva.availability[0]?.start, 16 * 60);
+  assert.ok(representatives.slice(0, 5).every((task) => task.requiredResourceIds?.includes(eva.id)));
+  assert.ok(representatives.slice(5).every((task) => !(task.requiredResourceIds ?? []).includes(eva.id)));
+  const jointPeer = candidate.tasks.find((task) => task.id === canonical(taskId("C10", "ALFOMBRA_ROJA_CONJUNTA")))!;
+  assert.equal(jointPeer.start, representatives[5]!.start);
+  assert.equal(jointPeer.end, representatives[5]!.end);
 });
 
 test("dependency graph closes all participant obligations before OUT", () => {
@@ -65,7 +114,7 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).duration = 11; }, "DURATION_CATALOG", "DURATION_CHANGED");
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).requiredResourceIds.push("son-2"); }, "KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID");
   assertInvariantFails((e) => { e.resources.push({ id: "future-sound", label: "Future Sound", kind: "sound", availability: "creation_input_required" }); e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).requiredResourceIds.push("future-sound"); }, "KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID");
-  assertInvariantFails((e) => { e.technicalChains.push({ id: "non-canonical", orderedTaskIds: [], adjacency: "REQUIRED", resourceContinuity: "REQUIRED", requiredResourceIds: ["cam-3", "cam-4", "son-1", "eva"] }); }, "TECHNICAL_CHAIN", "NON_CANONICAL_TECHNICAL_CHAIN");
+  assertInvariantFails((e) => { e.technicalChains = []; }, "TECHNICAL_CHAIN", "CANONICAL_CONTINUITY_CHAIN_LOST");
   assertInvariantFails((e) => { e.itinerantOperations.find((operation: any) => operation.id === "itinerant.reality-unit-b.C05.reality-plato").kind = "standalone"; }, "ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.anchoredOperations = []; }, "ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.anchoredOperations = e.anchoredOperations.filter((operation: any) => operation.participantId !== "C05"); }, "ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID");

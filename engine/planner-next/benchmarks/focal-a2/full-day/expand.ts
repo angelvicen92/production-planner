@@ -71,6 +71,7 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     const requiredResourceIds = new Set<string>(definition.knownResourceIds);
     if (type === "ENSAYO_ESTUDIO_7" && coachId) requiredResourceIds.add(coachId);
     for (const resourceId of operation?.memberResourceIds ?? []) requiredResourceIds.add(resourceId);
+    if (operation?.itinerantUnitId === "reality-unit-combined") requiredResourceIds.add("eva");
 
     return {
       id,
@@ -139,7 +140,21 @@ function jointOperations(): JointOperationContract[] {
 }
 
 function technicalChains(): TechnicalChainContract[] {
-  return [];
+  return [{
+    id: "continuity.reality-c-eva-alfombra",
+    orderedTaskIds: [
+      taskId("C06", "REALITY_HALL"),
+      taskId("C12", "REALITY_CONTROL_EVA"),
+      taskId("C11", "REALITY_BUGGY"),
+      taskId("C04", "ALFOMBRA_ROJA_EVA"),
+      taskId("C13", "ALFOMBRA_ROJA_EVA"),
+      taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"),
+      taskId("C16", "ALFOMBRA_ROJA"),
+    ],
+    adjacency: "REQUIRED",
+    resourceContinuity: "REQUIRED",
+    requiredResourceIds: [],
+  }];
 }
 
 export function expandCanonicalFullA2Template(template: CanonicalFullA2Template): ExpandedCanonicalFullA2Template {
