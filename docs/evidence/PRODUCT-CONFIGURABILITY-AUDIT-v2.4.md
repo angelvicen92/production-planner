@@ -8,8 +8,8 @@ los gates semánticos y comprueba que cada path de test declarado existe.
 
 | Estado | Cantidad |
 |---|---:|
-| PRODUCTIVE | 0 |
-| PARTIAL | 16 |
+| PRODUCTIVE | 2 |
+| PARTIAL | 14 |
 | MISSING | 5 |
 | BLOCKED | 5 |
 | NOT_APPLICABLE | 1 |
@@ -22,19 +22,15 @@ ni una restauración de herencia correcta.
 
 | Capability | Valor efectivo / motor | Provenance demostrable | Restore inherited | Estado |
 |---|---|---|---|---|
-| `WORKDAY_WINDOW` | Sí; `plans.work_start/work_end` → `workDay` | **UNKNOWN**: el plan conserva el valor, no si fue heredado u override ni su baseline | No | PARTIAL |
-| `GLOBAL_MEAL_BREAK` | Sí; campos de comida de `plans` → `meal/mealMode` | **UNKNOWN**: no hay metadata diaria suficiente para distinguir herencia y override | No | PARTIAL |
-| `OPTIMIZATION` | Sí; snapshot versionado → configuración del motor | Explícita: `INHERITED`, `DAY_OVERRIDE` o `LEGACY_BACKFILL`, conservada en `optimizerSnapshotSource` | No; refresh produce candidato `DAY_OVERRIDE`, no elimina el override | PARTIAL |
+| `WORKDAY_WINDOW` | Sí; `plans.work_start/work_end` → `workDay` | Baseline diario y origen explícitos | Sí; restaura el baseline almacenado | PRODUCTIVE |
+| `GLOBAL_MEAL_BREAK` | Sí; campos de comida de `plans` → `meal/mealMode` | Baseline diario y origen explícitos | Sí; restaura el baseline almacenado | PRODUCTIVE |
+| `OPTIMIZATION` | Sí; snapshot versionado → configuración del motor | Effective y baseline diario separados; origen explícito | Sí; backend + UI de Restore usan el baseline almacenado | PARTIAL: falta edición diaria y comparación/confirmación de refresh en UI |
 
-En los dos primeros casos la vista efectiva sigue mostrando el valor actual y su
-validación diaria como válida, pero presenta origen desconocido. Esa falta de
-provenance es deuda de **product coverage**, no una razón causal para convertir el
-readiness del día en `INCOMPLETE`.
+La vista efectiva ya distingue origen y baseline para jornada, comida y optimización. En `OPTIMIZATION`, la persistencia y Restore están cubiertos, pero Fuente 04 exige además una superficie diaria de override y comparación previa de refresh antes de declarar el recorrido end-to-end como productivo.
 
 ## Clasificación de las 27 capabilities
 
-- **PARTIAL (16):** `WORKDAY_WINDOW`, `TIME_GRID`, `GLOBAL_MEAL_BREAK`,
-  `OPERATIONAL_MEAL_POLICIES`, `ITINERANT_UNITS`,
+- **PARTIAL (14):** `TIME_GRID`, `OPERATIONAL_MEAL_POLICIES`, `ITINERANT_UNITS`,
   `TRANSPORT_TARGET_GROUP_SIZE`, `TRANSPORT_MAXIMUM_GROUP_SIZE`, `MAIN_FLOW`,
   `SETUPS`, `ANCHORED_OPERATIONS`, `JOINT_OPERATIONS`, `SYNCHRONIZED_ROUNDS`,
   `TECHNICAL_CHAINS`, `OPTIMIZATION`, `SEARCH_POLICY_BUDGET` y
@@ -46,17 +42,12 @@ readiness del día en `INCOMPLETE`.
   las barreras RLS registradas en el registry.
 - **NOT_APPLICABLE (1):** `PROTECTED_STATE_LOCKS`, porque `done`, `in_progress` y
   locks son invariantes hard, no preferencias configurables.
-- **PRODUCTIVE (0):** ninguna capability auditada satisface hoy el gate completo
-  de Fuente 04 v2.4.
+- **PRODUCTIVE (2):** `WORKDAY_WINDOW` y `GLOBAL_MEAL_BREAK`.
 
 Para las capabilities no proyectadas por la vista efectiva no se atribuye provenance:
 su autoridad y gap concreto permanecen descritos por el registry. `DAY_SNAPSHOT`
 significa únicamente «valor materializado del día» y nunca prueba herencia.
 
-## Siguiente slice recomendado
+## Slice completado
 
-Implementar primero **Restore inherited de `OPTIMIZATION`**: ya existe provenance
-explícita y snapshot versionado, por lo que el slice puede definir una operación que
-elimine semánticamente `DAY_OVERRIDE`, rematerialice desde la autoridad general y
-conserve source/fingerprint correctos. Después deben diseñarse metadata persistida y
-baseline auditable para jornada y comida; esta auditoría no añade migraciones.
+`OPTIMIZATION` conserva ahora baseline y effective por separado: EDIT mantiene el baseline, REFRESH explícito lo actualiza sin borrar un override local y Restore usa exactamente ese baseline. `LEGACY_BACKFILL` permanece explícito y sin baseline inventado. El backend queda preparado, pero la capability permanece `PARTIAL` hasta añadir edición diaria y comparación/confirmación de refresh en UI.

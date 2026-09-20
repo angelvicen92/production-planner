@@ -50,6 +50,14 @@ function current(overrides: Record<string, unknown> = {}, source: "INHERITED" | 
   );
 }
 
+test("canonical daily snapshots round-trip without losing nested transport", () => {
+  const snapshot = current({}, "DAY_OVERRIDE");
+  const restored = normalizePlanOptimizerSnapshotV1(snapshot, {}, "INHERITED");
+  assert.deepEqual(restored.transport, snapshot.transport);
+  assert.equal(restored.configurationFingerprint, snapshot.configurationFingerprint);
+  assert.equal(restored.source, "INHERITED");
+});
+
 test("equivalent global defaults produce READY preview with provenance-only candidate", () => {
   const existing = current();
   const preview = buildPlanOptimizerRefreshPreviewV1({

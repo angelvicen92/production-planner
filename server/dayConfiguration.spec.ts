@@ -38,6 +38,24 @@ test("084 preserves 077 canonical revisions, safe legacy materialization, mutati
   assert.doesNotMatch(sql,/UPDATE public\.assisted_planning_stages|UPDATE public\.planning_accepted_exceptions|UPDATE public\.daily_tasks|UPDATE public\.locks/);
 });
 
+test("085 keeps optimizer baseline separate and restores without consulting General",()=>{
+  const sql=readFileSync(new URL("../supabase/migrations/085_optimizer_day_config_restore.sql",import.meta.url),"utf8");
+  for(const token of ["baseline_snapshot","LEGACY_BACKFILL","OPTIMIZER_RESTORE_NOT_AVAILABLE","p_candidate_replay->'optimizerSnapshot'","REVOKE ALL","service_role"]) assert.match(sql,new RegExp(token));
+  assert.match(sql,/plan_optimizer_snapshots_override_metadata_check[\s\S]*NOT VALID/);
+  assert.match(sql,/VALIDATE CONSTRAINT plan_optimizer_snapshots_override_metadata_check/);
+  assert.match(sql,/p_operation='REFRESH'[\s\S]*optimizerBaseline/);
+  assert.match(sql,/p_operation='RESTORE'[\s\S]*baseline_snapshot IS NOT NULL/);
+  assert.match(sql,/p_operation='RESTORE'[\s\S]*capability'='OPTIMIZATION'[\s\S]*apply_day_config_operation\([\s\S]*'EDIT'[\s\S]*UPDATE public\.plan_config_revisions SET source='RESTORE'/);
+  assert.doesNotMatch(sql,/FROM public\.optimizer_settings/);
+});
+
+test("optimizer restore leaves workday and meal unchanged in the canonical candidate",()=>{
+  const source=readFileSync(new URL("./dayConfigurationService.ts",import.meta.url),"utf8");
+  assert.match(source,/const capability = \(payload as DayConfigRestore\)\.capability/);
+  assert.match(source,/if \(capability === "WORKDAY_WINDOW"\)[\s\S]*else if \(capability === "GLOBAL_MEAL_BREAK"\)/);
+  assert.doesNotMatch(source,/operation === "RESTORE"[\s\S]{0,500}else \{[\s\S]{0,300}meal_baseline_start/);
+});
+
 test("canonical day revisions are built from the complete existing EngineInput authorities",()=>{
   const source=readFileSync(new URL("./dayConfigurationService.ts",import.meta.url),"utf8");
   for(const token of ["buildEngineInput","getPlanTaskTemplateSnapshots","getPlanOptimizerSnapshot","projectEffectiveAuthoritiesFromEngineInputV1","buildEffectivePlanConfigRevisionV1","buildEffectivePlanConfigReplaySnapshotV1"]) assert.match(source,new RegExp(token));
@@ -50,4 +68,5 @@ test("the 27-capability registry promotes only the two demonstrated capabilities
   assert.equal(configurabilityRegistry.length,27);
   assert.deepEqual(configurabilityRegistry.filter(x=>x.status==="PRODUCTIVE").map(x=>x.capabilityId),["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK"]);
   assert.equal(configurabilityCounts.PRODUCTIVE,2);
+  assert.equal(configurabilityRegistry.find(x=>x.capabilityId==="OPTIMIZATION")?.status,"PARTIAL");
 });
