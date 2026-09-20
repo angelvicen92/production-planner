@@ -56,6 +56,7 @@ import {
   buildPlanResourceBundleSnapshotCandidateV1,
   RESOURCE_BUNDLE_SIGNAL_UNAVAILABLE,
 } from "./planResourceBundleSnapshot";
+import { initializeDayConfigurationRevision } from "./dayConfigurationService";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -173,7 +174,7 @@ export interface IStorage {
   // Plans
   getPlans(): Promise<PlanSummary[]>;
   getPlan(id: number): Promise<Plan | undefined>;
-  createPlan(plan: InsertPlan | (Omit<InsertPlan, "workStart" | "workEnd"> & { workStart?: string; workEnd?: string })): Promise<Plan>;
+  createPlan(plan: Omit<InsertPlan, "workStart" | "workEnd" | "mealStart" | "mealEnd" | "mealMode"> & { configuration: import("../shared/dayConfig").CreateDayConfigurationIntent; configurationActorId: string }): Promise<Plan>;
   deletePlan(planId: number): Promise<boolean>;
 
   // Contestants
@@ -1306,7 +1307,7 @@ export class SupabaseStorage implements IStorage {
     return data as Plan;
   }
 
-  async createPlan(plan: InsertPlan | (Omit<InsertPlan, "workStart" | "workEnd"> & { workStart?: string; workEnd?: string })): Promise<Plan> {
+  async createPlan(plan: Omit<InsertPlan, "workStart" | "workEnd" | "mealStart" | "mealEnd" | "mealMode"> & { configuration: import("../shared/dayConfig").CreateDayConfigurationIntent; configurationActorId: string }): Promise<Plan> {
     const [
       { data: settings, error: settingsError },
       { data: zoneCatalog, error: zonesError },
@@ -1317,7 +1318,7 @@ export class SupabaseStorage implements IStorage {
       taskTemplateCatalog,
       { data: optimizerSettings, error: optimizerSettingsError },
     ] = await Promise.all([
-      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end").eq("id", 1).single(),
+      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end, meal_start, meal_end, meal_mode").eq("id", 1).single(),
       supabaseAdmin.from("zones").select("id, name, meal_start_preferred, meal_end_preferred, grouping_level, grouping_min_chain, max_template_changes, space_meal_break_minutes, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("spaces").select("id, name, zone_id, parent_space_id, priority_level, grouping_level, grouping_min_chain, grouping_apply_to_descendants, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("resource_bundles").select("id, name, description, bundle_type, is_active, metadata").eq("is_active", true).order("id"),
@@ -1355,8 +1356,14 @@ export class SupabaseStorage implements IStorage {
       validatedOptimizerSnapshotPreview,
       (zoneCatalog ?? []).map((row: any) => Number(row.id)),
     );
+    const workBaseline={start:String(settings.default_work_start),end:String(settings.default_work_end)};
+    const mealBaseline={start:String(settings.meal_start),end:String(settings.meal_end),mode:String(settings.meal_mode ?? "flexible_meal_window")};
+    const workIntent=plan.configuration.workday;
+    const mealIntent=plan.configuration.meal;
+    const workEffective=workIntent.intent === "OVERRIDE" ? workIntent.value : workBaseline;
+    const mealEffective=mealIntent.intent === "OVERRIDE" ? mealIntent.value : mealBaseline;
     const snapshotInput = {
-      requestedWorkDay: { start: plan.workStart, end: plan.workEnd },
+      requestedWorkDay: workEffective,
       defaultWorkDay: { start: settings.default_work_start, end: settings.default_work_end },
       zones: (zoneCatalog ?? []).map((row: any) => ({ ...row, id: Number(row.id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
       spaces: (spaceCatalog ?? []).map((row: any) => ({ ...row, id: Number(row.id), zoneId: Number(row.zone_id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
@@ -1368,9 +1375,20 @@ export class SupabaseStorage implements IStorage {
         date: plan.date,
         work_start: validatedSnapshots.workStart,
         work_end: validatedSnapshots.workEnd,
-        meal_start: plan.mealStart,
-        meal_end: plan.mealEnd,
-        meal_mode: plan.mealMode ?? "flexible_meal_window",
+        meal_start: mealEffective.start,
+        meal_end: mealEffective.end,
+        meal_mode: mealEffective.mode,
+        work_baseline_start: workBaseline.start,
+        work_baseline_end: workBaseline.end,
+        work_config_source: workIntent.intent === "OVERRIDE" ? "DAY_OVERRIDE" : "INHERITED",
+        work_override_by: workIntent.intent === "OVERRIDE" ? plan.configurationActorId : null,
+        work_override_at: workIntent.intent === "OVERRIDE" ? new Date().toISOString() : null,
+        meal_baseline_start: mealBaseline.start,
+        meal_baseline_end: mealBaseline.end,
+        meal_baseline_mode: mealBaseline.mode,
+        meal_config_source: mealIntent.intent === "OVERRIDE" ? "DAY_OVERRIDE" : "INHERITED",
+        meal_override_by: mealIntent.intent === "OVERRIDE" ? plan.configurationActorId : null,
+        meal_override_at: mealIntent.intent === "OVERRIDE" ? new Date().toISOString() : null,
 
         contestant_meal_duration_minutes:
           plan.contestantMealDurationMinutes ?? 75,
@@ -1807,8 +1825,13 @@ export class SupabaseStorage implements IStorage {
       return throwAfterPlanCreationFailure(Number(data.id), e, "Failed to snapshot staff defaults for plan");
     }
 
-    await this.syncPlanMealBreaks(Number((data as any).id));
-    return data as Plan;
+    try {
+      await this.syncPlanMealBreaks(Number((data as any).id));
+      const revisionId = await initializeDayConfigurationRevision(Number((data as any).id), plan.configurationActorId, this);
+      return { ...data, currentConfigRevisionId: revisionId } as Plan;
+    } catch (configurationRevisionError: unknown) {
+      return throwAfterPlanCreationFailure(Number(data.id), configurationRevisionError, "Failed to initialize canonical plan configuration revision");
+    }
   }
 
   async deletePlan(planId: number): Promise<boolean> {

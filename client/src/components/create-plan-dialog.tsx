@@ -21,6 +21,8 @@ const emptyForm: InsertPlan = {
 
 export function CreatePlanDialog() {
   const [open, setOpen] = useState(false);
+  const [overrideWork,setOverrideWork]=useState(false);
+  const [overrideMeal,setOverrideMeal]=useState(false);
   const createPlan = useCreatePlan();
   const defaultsQuery = useQuery<PlanCreationDefaults>({
     queryKey: [api.programSettings.get.path],
@@ -33,7 +35,11 @@ export function CreatePlanDialog() {
   }, [open, defaultsQuery.data, form]);
 
   function onSubmit(data: InsertPlan) {
-    createPlan.mutate(data, { onSuccess: () => { setOpen(false); form.reset(emptyForm); } });
+    const {workStart,workEnd,mealStart,mealEnd,mealMode,...ordinary}=data;
+    createPlan.mutate({...ordinary,configuration:{
+      workday:overrideWork?{intent:"OVERRIDE",value:{start:workStart,end:workEnd}}:{intent:"INHERIT"},
+      meal:overrideMeal?{intent:"OVERRIDE",value:{start:mealStart,end:mealEnd,mode:mealMode === "global_hard_break" ? "global_hard_break" : "flexible_meal_window"}}:{intent:"INHERIT"},
+    }}, { onSuccess: () => { setOpen(false); setOverrideWork(false); setOverrideMeal(false); form.reset(emptyForm); } });
   }
 
   const unavailable = defaultsQuery.isError || (!defaultsQuery.isLoading && !defaultsQuery.data);
@@ -47,14 +53,16 @@ export function CreatePlanDialog() {
           ? <div role="alert" className="rounded-md border border-destructive p-3 text-sm"><p>No se pudo cargar el horario habitual. No se creará el día con horas supuestas.</p><Button type="button" variant="outline" className="mt-2" onClick={() => void defaultsQuery.refetch()}>Reintentar</Button></div>
           : <Form {...form}><form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="date" render={({field}) => <FormItem><FormLabel>Fecha</FormLabel><FormControl><Input type="date" {...field}/></FormControl><FormMessage/></FormItem>}/>
-            <fieldset><legend className="mb-2 text-sm font-medium">Horario de este día</legend><p className="mb-3 text-xs text-muted-foreground">Se ha heredado del horario habitual. Los cambios realizados aquí sólo afectan a este día.</p><div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="workStart" render={({field}) => <FormItem><FormLabel>Inicio</FormLabel><FormControl><Input type="time" {...field}/></FormControl><FormMessage/></FormItem>}/>
-              <FormField control={form.control} name="workEnd" render={({field}) => <FormItem><FormLabel>Fin</FormLabel><FormControl><Input type="time" {...field}/></FormControl><FormMessage/></FormItem>}/>
+            <fieldset><legend className="mb-2 text-sm font-medium">Horario de este día</legend><p className="mb-3 text-xs text-muted-foreground">{overrideWork?"Modificar sólo para este día":"Usar configuración habitual"}</p><Button type="button" variant="outline" size="sm" className="mb-3" onClick={()=>setOverrideWork(v=>!v)}>{overrideWork?"Usar configuración habitual":"Modificar sólo para este día"}</Button><div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="workStart" render={({field}) => <FormItem><FormLabel>Inicio</FormLabel><FormControl><Input type="time" disabled={!overrideWork} {...field}/></FormControl><FormMessage/></FormItem>}/>
+              <FormField control={form.control} name="workEnd" render={({field}) => <FormItem><FormLabel>Fin</FormLabel><FormControl><Input type="time" disabled={!overrideWork} {...field}/></FormControl><FormMessage/></FormItem>}/>
             </div></fieldset>
+            <div><p className="mb-2 text-xs text-muted-foreground">{overrideMeal?"Comida modificada sólo para este día":"Comida habitual"}</p><Button type="button" variant="outline" size="sm" className="mb-3" onClick={()=>setOverrideMeal(v=>!v)}>{overrideMeal?"Usar configuración habitual":"Modificar sólo para este día"}</Button></div>
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="mealStart" render={({field}) => <FormItem><FormLabel>Inicio de comida</FormLabel><FormControl><Input type="time" {...field}/></FormControl><FormMessage/></FormItem>}/>
-              <FormField control={form.control} name="mealEnd" render={({field}) => <FormItem><FormLabel>Fin de comida</FormLabel><FormControl><Input type="time" {...field}/></FormControl><FormMessage/></FormItem>}/>
+              <FormField control={form.control} name="mealStart" render={({field}) => <FormItem><FormLabel>Inicio de comida</FormLabel><FormControl><Input type="time" disabled={!overrideMeal} {...field}/></FormControl><FormMessage/></FormItem>}/>
+              <FormField control={form.control} name="mealEnd" render={({field}) => <FormItem><FormLabel>Fin de comida</FormLabel><FormControl><Input type="time" disabled={!overrideMeal} {...field}/></FormControl><FormMessage/></FormItem>}/>
             </div>
+            <FormField control={form.control} name="mealMode" render={({field}) => <FormItem><FormLabel>Modo de comida</FormLabel><FormControl><select aria-label="Modo de comida" disabled={!overrideMeal} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50" {...field}><option value="flexible_meal_window">Ventana flexible de comida</option><option value="global_hard_break">Parada global de comida</option></select></FormControl><FormMessage/></FormItem>}/>
             <Button type="submit" className="w-full" disabled={createPlan.isPending}>{createPlan.isPending ? "Creando…" : "Crear día"}</Button>
           </form></Form>}
     </DialogContent>

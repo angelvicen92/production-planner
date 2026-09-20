@@ -20,6 +20,21 @@ export const plans = pgTable("plans", {
   mealEnd: text("meal_end").notNull(), // HH:mm
   mealMode: text("meal_mode").notNull().default("flexible_meal_window"),
 
+  // Fuente 04: the effective values above remain the engine authority. These
+  // columns preserve the immutable day baseline and explicit operator intent.
+  workBaselineStart: text("work_baseline_start").notNull(),
+  workBaselineEnd: text("work_baseline_end").notNull(),
+  workConfigSource: text("work_config_source").notNull(),
+  workOverrideBy: uuid("work_override_by"),
+  workOverrideAt: timestamp("work_override_at", { withTimezone: true }),
+  mealBaselineStart: text("meal_baseline_start").notNull(),
+  mealBaselineEnd: text("meal_baseline_end").notNull(),
+  mealBaselineMode: text("meal_baseline_mode").notNull(),
+  mealConfigSource: text("meal_config_source").notNull(),
+  mealOverrideBy: uuid("meal_override_by"),
+  mealOverrideAt: timestamp("meal_override_at", { withTimezone: true }),
+  currentConfigRevisionId: bigint("current_config_revision_id", { mode: "number" }),
+
   // ✅ Comida concursantes (por plan)
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
   contestantMealMaxSimultaneous: integer("contestant_meal_max_simultaneous").notNull().default(10),
@@ -768,7 +783,14 @@ export const dailyTasksRelations = relations(dailyTasks, ({ one, many }) => ({
 }));
 
 // Schemas & Types
-export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
+export const insertPlanSchema = createInsertSchema(plans).omit({
+  id: true,
+  workBaselineStart: true, workBaselineEnd: true, workConfigSource: true,
+  workOverrideBy: true, workOverrideAt: true,
+  mealBaselineStart: true, mealBaselineEnd: true, mealBaselineMode: true,
+  mealConfigSource: true, mealOverrideBy: true, mealOverrideAt: true,
+  currentConfigRevisionId: true,
+});
 export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
 export const insertSpaceSchema = createInsertSchema(spaces).omit({ id: true });
 export const insertPlanZoneSettingsSchema = createInsertSchema(planZoneSettings).omit({ id: true, createdAt: true, updatedAt: true });
