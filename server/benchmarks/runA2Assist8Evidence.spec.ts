@@ -44,6 +44,7 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
     const diagnostic=blockerIteration?.standaloneDiagnostic;
     assert.ok(diagnostic?.firstTerminalCompletionRejection
       ||first.firstBlocker.classification==="PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE"
+      ||first.firstBlocker.classification==="PARTICIPANT_FUTURE_RESERVATION_PRUNE"
       ||first.firstBlocker.classification==="SEARCH_CAPACITY_EXHAUSTED"
       ||(first.firstBlocker.classification==="INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
         &&first.firstBlocker.reasonCodes.includes("NO_COMPLETE_HARD_VALID_ITINERANT_PLAN")));

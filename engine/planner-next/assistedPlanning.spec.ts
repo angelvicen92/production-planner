@@ -238,6 +238,19 @@ test("scope projection removes structured-space requirements with no surviving t
   assert.equal(source.spaces.find(space => space.id === "other-space")!.secondaryContinuity, "REQUIRED");
 });
 
+test("future analytical authority excludes included and protected tasks and defaults to no fabricated future work",()=>{
+  const source=fixture();
+  const scope=createPlanningScope({kind:"ids",value:"main"},{},["main"]);
+  const protectedTask=source.tasks.find(task=>task.id==="protected")!;
+  const protectedPlacement={...protectedTask,start:60,end:60+protectedTask.duration};
+  const eligible=new Set(source.tasks.map(task=>task.id));
+  const assisted=buildAssistedProblem(source,scope,[protectedPlacement],eligible);
+  assert.equal(assisted.problem.analyticalFutureParticipantTasks?.some(task=>task.id==="main"),false);
+  assert.equal(assisted.problem.analyticalFutureParticipantTasks?.some(task=>task.id==="protected"),false);
+  assert.ok((assisted.problem.analyticalFutureParticipantTasks?.length??0)>0);
+  assert.deepEqual(buildAssistedProblem(source,scope,[]).problem.analyticalFutureParticipantTasks,[]);
+});
+
 test("scope projection preserves surviving setup families and removes only absent families immutably", () => {
   const source = fixture();
   source.tasks.find(task => task.id === "main")!.setupFamilyId = "present";

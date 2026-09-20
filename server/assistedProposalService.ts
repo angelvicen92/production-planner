@@ -24,6 +24,14 @@ export function projectPlannerViolations(details:readonly ValidationViolationDet
       violationKey:createViolationKey({ruleCode:detail.ruleCode,affectedTaskIds,affectedResourceIds,affectedSpaceIds,dimensions:detail.dimensions})};});
 }
 
+/** Projects the product status authority once, before status-free Planner Next. */
+export function analyticalFutureEligibleTaskIds(input:EngineInput,identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):ReadonlySet<string>{
+  const canonicalByProduct=new Map(identityMap.filter(item=>item.namespace==="task").map(item=>[Number(item.sourceId),item.canonicalId]));
+  return new Set(input.tasks.filter(task=>task.status==="pending"||task.status==="interrupted").flatMap(task=>{
+    const canonicalId=canonicalByProduct.get(task.id); return canonicalId?[canonicalId]:[];
+  }));
+}
+
 export function evaluateAcceptedViolationDelta(candidateViolations:readonly StageViolation[],acceptedBaseline:readonly {severity:string;violationKey:string}[],unstructuredReasonCodes:readonly string[]=[]){
   const inheritedKeys=new Set(candidateViolations.filter(candidate=>acceptedBaseline.some(accepted=>accepted.severity===candidate.severity&&accepted.violationKey===candidate.violationKey)).map(item=>item.violationKey));
   const inheritedHardViolationCount=candidateViolations.filter(item=>item.severity==="HARD"&&inheritedKeys.has(item.violationKey)).length;
@@ -154,7 +162,8 @@ export class AssistedProposalService {
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
-    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements),{violations:baselineViolations});
+    const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
+    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible),{violations:baselineViolations});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!; return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks) : null;
