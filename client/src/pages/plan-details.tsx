@@ -28,6 +28,7 @@ import {
   Lock,
   Pause,
   RotateCcw,
+  Settings2,
 } from "lucide-react";
 import { Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +134,7 @@ import { estimatedPlanningProgress, planningPhaseSteps } from "@shared/planning-
 import { usePlanningRun } from "@/hooks/use-planning-run";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { getPlanningRunUiState } from "@shared/planning-run-state";
+import { DayConfiguration } from "@/components/effective-configuration";
 
 function getRunProgress(args: {
   plannedCount: number;
@@ -1478,11 +1480,11 @@ export default function PlanDetailsPage() {
   });
 
   const [activeTab, setActiveTab] = useState<
-    "tasks" | "planning" | "resources" | "execution"
+    "tasks" | "planning" | "configuration" | "resources" | "staff" | "execution"
   >(() => {
     if (typeof window === "undefined") return "tasks";
     const tab = new URLSearchParams(window.location.search).get("tab");
-    return tab === "planning" || tab === "resources" || tab === "execution" ? tab : "tasks";
+    return tab === "planning" || tab === "configuration" || tab === "resources" || tab === "staff" || tab === "execution" ? tab : "tasks";
   });
   const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
   const [unplannedDialogOpen, setUnplannedDialogOpen] = useState(false);
@@ -2864,6 +2866,10 @@ ${reasonMessage}` : message,
             <TabsTrigger value="planning" className="flex items-center gap-2">
               <GanttChartSquare className="h-4 w-4" />
               Planning
+            </TabsTrigger>
+            <TabsTrigger value="configuration" className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4" />
+              Configuración del día
             </TabsTrigger>
             <TabsTrigger value="resources" className="flex items-center gap-2">
               <Video className="h-4 w-4" />
@@ -4902,6 +4908,9 @@ ${reasonMessage}` : message,
 
           <TabsContent value="resources" className="mt-0">
             <PlanResourcesTab planId={id} />
+          </TabsContent>
+          <TabsContent value="configuration" className="mt-0">
+            <DayConfiguration planId={id} />
           </TabsContent>
           <TabsContent value="staff" className="space-y-6 mt-0">
             <PlanStaffRolesTab
