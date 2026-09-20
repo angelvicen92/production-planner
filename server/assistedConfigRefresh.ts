@@ -47,14 +47,14 @@ export function buildLocalOverrideProjection(current:readonly TaskTemplateOperat
 
 export function buildOptimizerRefreshChange(optimizerPreview:ReturnType<typeof buildPlanOptimizerRefreshPreviewV1>):AssistedConfigRefreshChangeV1|null{
   if(optimizerPreview.status!=="READY"||!optimizerPreview.diff.hasSemanticChanges)return null;
-  return {key:"optimizer:settings",authority:"optimizer",kind:"MODIFIED",label:"Preferencias de optimización",localOverride:optimizerPreview.current.source==="DAY_OVERRIDE",category:"Reglas de planificación",currentValue:"AVAILABLE",candidateValue:"AVAILABLE",currentSource:optimizerPreview.current.source==="DAY_OVERRIDE"?"Modificado para este día":"Heredado",requiresReplan:true,incompatibilities:[]};
+  return {key:"optimizer:settings",authority:"optimizer",kind:"MODIFIED",label:"Preferencias de optimización",localOverride:optimizerPreview.current.source==="DAY_OVERRIDE",category:"Reglas de planificación",currentValue:optimizerPreview.current,candidateValue:optimizerPreview.candidate,currentSource:optimizerPreview.current.source==="DAY_OVERRIDE"?"Modificado para este día":"Heredado",impact:"REVALIDATE",incompatibilities:[]};
 }
 
 export function buildTaskTemplateRefreshChanges(current:readonly TaskTemplateOperationalSnapshotV1[],candidate:readonly TaskTemplateOperationalSnapshotV1[]){
   const changes:AssistedConfigRefreshChangeV1[]=[];
   const oldById=new Map(current.map(row=>[row.sourceTemplateId,row])),nextById=new Map(candidate.map(row=>[row.sourceTemplateId,row]));
-  for(const row of candidate){const old=oldById.get(row.sourceTemplateId);if(!old||!sameTaskTemplateOperationalSemantics(old,row))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:old?"MODIFIED":"NEW",label:row.templateName,localOverride:Boolean(old&&isAuthoritativeLocalTemplateOverride(old)),category:"Tareas",currentValue:old?"AVAILABLE":"NOT_PRESENT",candidateValue:"AVAILABLE",currentSource:old&&isAuthoritativeLocalTemplateOverride(old)?"Modificado para este día":"Heredado",requiresReplan:true,incompatibilities:[]});}
-  for(const row of current)if(!nextById.has(row.sourceTemplateId))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:"REMOVED",label:row.templateName,localOverride:isAuthoritativeLocalTemplateOverride(row),category:"Tareas",currentValue:"AVAILABLE",candidateValue:"REMOVED",currentSource:isAuthoritativeLocalTemplateOverride(row)?"Modificado para este día":"Heredado",requiresReplan:true,incompatibilities:[]});
+  for(const row of candidate){const old=oldById.get(row.sourceTemplateId);if(!old||!sameTaskTemplateOperationalSemantics(old,row))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:old?"MODIFIED":"NEW",label:row.templateName,localOverride:Boolean(old&&isAuthoritativeLocalTemplateOverride(old)),category:"Tareas",currentValue:old??null,candidateValue:row,currentSource:old&&isAuthoritativeLocalTemplateOverride(old)?"Modificado para este día":"Heredado",impact:"REVALIDATE",incompatibilities:[]});}
+  for(const row of current)if(!nextById.has(row.sourceTemplateId))changes.push({key:`task_templates:${row.sourceTemplateId}`,authority:"task_templates",kind:"REMOVED",label:row.templateName,localOverride:isAuthoritativeLocalTemplateOverride(row),category:"Tareas",currentValue:row,candidateValue:null,currentSource:isAuthoritativeLocalTemplateOverride(row)?"Modificado para este día":"Heredado",impact:"REVALIDATE",incompatibilities:[]});
   return changes;
 }
 

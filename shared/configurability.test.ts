@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { configurabilityCounts, configurabilityRegistry } from "./configurability";
 
-test("the v2.4 registry is stable, complete and deterministically ordered",()=>{
-  assert.deepEqual(configurabilityCounts,{PRODUCTIVE:11,PARTIAL:8,MISSING:2,BLOCKED:0,NOT_APPLICABLE:0});
+test("the v2.4 registry enforces semantic and security gates without count targets",()=>{
+  assert.equal(Object.values(configurabilityCounts).reduce((sum,count)=>sum+count,0),configurabilityRegistry.length);
   assert.equal(new Set(configurabilityRegistry.map(c=>c.capabilityId)).size,configurabilityRegistry.length);
   for(const capability of configurabilityRegistry){
     for(const key of ["name","owner","unit","generalSource","dailyPersistence","override","generalUi","dayUi","engineInputProjection","preflight","engineConsumer","validator","evidenceFingerprint","permissionsRls"] as const)assert.equal(typeof capability[key],"string",`${capability.capabilityId}.${key}`);
@@ -11,6 +12,18 @@ test("the v2.4 registry is stable, complete and deterministically ordered",()=>{
     if(capability.status==="PRODUCTIVE")assert.equal(capability.blockers.length,0);
     else assert.ok(capability.blockers.length>0);
   }
+  assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="PROTECTED_STATE_LOCKS")?.status,"NOT_APPLICABLE");
+  for(const id of ["PARTICIPANTS","TASKS_DEPENDENCIES","SPATIAL_AVAILABILITY","RESOURCE_CATALOG","PLAN_RESOURCE_ASSIGNMENTS"])
+    assert.equal(configurabilityRegistry.find(c=>c.capabilityId===id)?.status,"BLOCKED",id);
+  assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="SPACE_CAPACITY")?.status,"MISSING");
+  assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="TRANSITIONS")?.status,"MISSING");
+});
+
+test("documentary Evidence is checked against the canonical registry",()=>{
+  const evidence=readFileSync(new URL("../docs/evidence/PRODUCT-CONFIGURABILITY-AUDIT-v2.4.md",import.meta.url),"utf8");
+  assert.match(evidence,new RegExp(`Total: \\*\\*${configurabilityRegistry.length} capabilities\\*\\*`));
+  for(const [status,count] of Object.entries(configurabilityCounts))assert.match(evidence,new RegExp(`\\| ${status} \\| ${count} \\|`));
+  for(const capability of configurabilityRegistry.filter(item=>item.status==="PRODUCTIVE"))assert.ok(evidence.includes("`"+capability.capabilityId+"`"));
 });
 
 test("future contracts keep AUTO, fixed count, run overrides and causal outcomes distinct",()=>{
