@@ -14,7 +14,7 @@ ALTER TABLE public.plan_optimizer_snapshots
   ),
   ADD CONSTRAINT plan_optimizer_snapshots_override_metadata_check CHECK (
     (source='DAY_OVERRIDE')=(override_by IS NOT NULL AND override_at IS NOT NULL)
-  ),
+  ) NOT VALID,
   ADD CONSTRAINT plan_optimizer_snapshots_inherited_baseline_check CHECK (
     source<>'INHERITED' OR baseline_snapshot IS NOT NULL
   ) NOT VALID;
@@ -24,6 +24,10 @@ ALTER TABLE public.plan_optimizer_snapshots
 UPDATE public.plan_optimizer_snapshots
 SET source='LEGACY_BACKFILL', override_by=NULL, override_at=NULL
 WHERE baseline_snapshot IS NULL;
+
+ALTER TABLE public.plan_optimizer_snapshots
+  VALIDATE CONSTRAINT plan_optimizer_snapshots_override_metadata_check,
+  VALIDATE CONSTRAINT plan_optimizer_snapshots_inherited_baseline_check;
 
 CREATE OR REPLACE FUNCTION public.optimizer_snapshot_provenance_metadata()
 RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$
@@ -79,10 +83,22 @@ BEGIN
 
   -- Existing v1 operation remains the authority for canonical revision
   -- materialization, optimistic concurrency, plan fields and Assisted freshness.
-  new_revision := public.apply_day_config_operation(
-    p_plan_id,p_actor,p_operation,p_payload,p_expected_revision,p_expected_identity,
-    p_expected_replay,p_candidate_identity,p_candidate_replay,p_diff
-  );
+  -- v1 predates OPTIMIZATION and rejects RESTORE for that capability, so use an
+  -- empty EDIT only as the no-op plan-field materialization path, then correct
+  -- the revision source inside the same transaction before applying optimizer.
+  IF p_operation='RESTORE' AND p_payload->>'capability'='OPTIMIZATION' THEN
+    new_revision := public.apply_day_config_operation(
+      p_plan_id,p_actor,'EDIT','{}'::jsonb,p_expected_revision,p_expected_identity,
+      p_expected_replay,p_candidate_identity,p_candidate_replay,p_diff
+    );
+    UPDATE public.plan_config_revisions SET source='RESTORE'
+    WHERE id=new_revision AND plan_id=p_plan_id;
+  ELSE
+    new_revision := public.apply_day_config_operation(
+      p_plan_id,p_actor,p_operation,p_payload,p_expected_revision,p_expected_identity,
+      p_expected_replay,p_candidate_identity,p_candidate_replay,p_diff
+    );
+  END IF;
 
   IF NOT optimizer_selected THEN RETURN new_revision; END IF;
   optimizer := p_candidate_replay->'optimizerSnapshot';
