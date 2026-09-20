@@ -10,6 +10,14 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
   assert.equal(first.iterations[0]?.resolvedTaskIds.length, 19);
   assert.ok(first.iterations[0]?.visibleProposalTaskIds.length === 0 || first.iterations[0]?.visibleProposalTaskIds.length === 19);
   assert.equal(first.iterations[0]?.includePrerequisites, false);
+  assert.equal(first.iterations[0]?.sodexoMeals.obligations.length, 19);
+  assert.equal(new Set(first.iterations[0]?.sodexoMeals.obligations.map((meal:any)=>meal.sourceTaskId)).size, 19);
+  assert.ok(first.iterations[0]?.sodexoMeals.obligations.every((meal:any)=>meal.participantId&&meal.durationMinutes>0&&meal.window&&meal.status&&meal.diagnostic&&meal.witness));
+  const firstStandalone=first.iterations[0]?.standaloneDiagnostic;
+  if(firstStandalone?.standaloneCompleteLeafCount>0&&firstStandalone.terminalTransportMaterializationAttempts===0){
+    assert.notEqual(first.firstBlocker?.classification,"ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED");
+    assert.equal(firstStandalone.terminalTransportMaterializationFailures,0);
+  }
   for (const row of first.iterations) {
     if (row.proposalOutcome === "PROPOSAL") assert.deepEqual(row.visibleProposalTaskIds, row.resolvedTaskIds);
   }
@@ -27,6 +35,18 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
     assert.equal(first.finalObligationIdsMatchSource, true);
   } else {
     assert.equal(first.status, "BLOCKED"); assert.ok(first.completedObligationCount < 266); assert.ok(first.firstBlocker);
+    const diagnostic=first.iterations[0]?.standaloneDiagnostic;
+    assert.ok(diagnostic?.firstTerminalCompletionRejection||first.firstBlocker.classification==="SEARCH_CAPACITY_EXHAUSTED");
+    if(first.firstBlocker.classification==="ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED")
+      assert.ok(diagnostic.terminalTransportMaterializationAttempts>0);
+    if(diagnostic?.firstTerminalCompletionRejection)
+      assert.ok(diagnostic.terminalCompletionRejectionsByCause[diagnostic.firstTerminalCompletionRejection.cause]>0);
+    if(diagnostic?.firstTerminalCompletionRejection?.cause==="VALIDATION_REJECTED") {
+      assert.equal(diagnostic.firstTerminalCompletionRejection.participantMealWitness.complete,true);
+      assert.equal(diagnostic.firstTerminalCompletionRejection.operationalMealWitness.complete,true);
+      assert.ok(diagnostic.firstTerminalCompletionRejection.validation.reasonCodes.length>0);
+      assert.ok(diagnostic.firstTerminalCompletionRejection.validation.violations.length>0);
+    }
   }
   assert.deepEqual({ stages: first.iterations.map(row => [row.resolvedTaskIds, row.proposalOutcome, row.acceptedStageFingerprint]), fingerprint: first.deterministicFingerprint },
     { stages: second.iterations.map(row => [row.resolvedTaskIds, row.proposalOutcome, row.acceptedStageFingerprint]), fingerprint: second.deterministicFingerprint });

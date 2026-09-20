@@ -56,6 +56,7 @@ export interface AssistedPlanningEvidence {
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
     | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
     | "terminalTransportWitness"
+    | "terminalCompletionRejectionsByCause" | "firstTerminalCompletionRejection"
     | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
     | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf"
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
@@ -296,7 +297,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
   const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
-    "terminalTransportMaterializationFailures","terminalTransportWitness","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
+    "terminalTransportMaterializationFailures","terminalTransportWitness","terminalCompletionRejectionsByCause","firstTerminalCompletionRejection","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
@@ -312,7 +313,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
     "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "standaloneForwardChecks",
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
-    "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered"]
+    "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
+    "participantMealFutureFeasibilityChecks","participantMealAffectedObligationsChecked","participantMealExactMaterializations"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];

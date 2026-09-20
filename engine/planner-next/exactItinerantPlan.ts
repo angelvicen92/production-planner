@@ -50,6 +50,23 @@ export function compareCompleteParticipantQuality(candidate: CompleteParticipant
 export type ExactItinerantPlanStatus = "COMPLETE" | "CORE_FAILED" | "UNSUPPORTED_STANDALONE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
+export type TerminalCompletionRejectionCause = "SUBSTANTIVE_IDENTITY_INCOMPLETE"
+  | "PARTICIPANT_MEAL_WITNESS_INCOMPLETE" | "OPERATIONAL_MEAL_WITNESS_INCOMPLETE"
+  | "TRANSPORT_MATERIALIZATION_FAILED" | "CANDIDATE_IDENTITY_MISMATCH" | "VALIDATION_REJECTED";
+
+export interface TerminalCompletionRejection {
+  readonly cause: TerminalCompletionRejectionCause;
+  readonly phase: "SUBSTANTIVE_IDENTITY" | "PARTICIPANT_MEALS" | "OPERATIONAL_MEALS"
+    | "TRANSPORT_MATERIALIZATION" | "CANDIDATE_IDENTITY" | "VALIDATION";
+  readonly expectedTaskCount: number;
+  readonly actualTaskCount: number;
+  readonly participantMealWitness: ParticipantMealWitness | null;
+  readonly operationalMealWitness: OperationalMealWitness | null;
+  readonly transportWitness: TransportMaterializationEvidence | null;
+  readonly validation: { readonly hardValid: boolean; readonly reasonCodes: readonly string[];
+    readonly violations: readonly import("./contracts").ValidationViolationDetail[] } | null;
+}
+
 export interface ExactItinerantPlanEvidence {
   branchesExplored: number;
   coreBranches: number;
@@ -93,6 +110,8 @@ export interface ExactItinerantPlanEvidence {
   terminalTransportMaterializationAttempts: number;
   terminalTransportMaterializationFailures: number;
   terminalTransportWitness: TransportMaterializationEvidence | null;
+  terminalCompletionRejectionsByCause: Record<TerminalCompletionRejectionCause, number>;
+  firstTerminalCompletionRejection: TerminalCompletionRejection | null;
   coreLeafTransportPrunes: number;
   transportContiguousStates: number;
   membershipFallbackEntered: number;
@@ -509,7 +528,25 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
     const validationCoreMeals=mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:coreMeals;
     const validation = validatePlan(problem, candidate, preparations, validationCoreMeals,[...mealWitness?.scheduled ?? []],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness?.scheduled ?? []]);
-    if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && (validation.hardValid || acceptsValidation?.(validation))) {
+    const validationAccepted=validation.hardValid||Boolean(transport!==null&&exact&&mealWitness?.complete
+      &&operationalMealWitness?.complete&&acceptsValidation?.(validation));
+    const rejectionCause:TerminalCompletionRejectionCause|null=!exactSubstantive?"SUBSTANTIVE_IDENTITY_INCOMPLETE"
+      :!mealWitness?.complete?"PARTICIPANT_MEAL_WITNESS_INCOMPLETE"
+      :!operationalMealWitness?.complete?"OPERATIONAL_MEAL_WITNESS_INCOMPLETE"
+      :transport===null?"TRANSPORT_MATERIALIZATION_FAILED"
+      :!exact?"CANDIDATE_IDENTITY_MISMATCH"
+      :!validationAccepted?"VALIDATION_REJECTED":null;
+    if(rejectionCause){
+      evidence.terminalCompletionRejectionsByCause[rejectionCause]+=1;
+      evidence.firstTerminalCompletionRejection??={cause:rejectionCause,phase:({
+        SUBSTANTIVE_IDENTITY_INCOMPLETE:"SUBSTANTIVE_IDENTITY",PARTICIPANT_MEAL_WITNESS_INCOMPLETE:"PARTICIPANT_MEALS",
+        OPERATIONAL_MEAL_WITNESS_INCOMPLETE:"OPERATIONAL_MEALS",TRANSPORT_MATERIALIZATION_FAILED:"TRANSPORT_MATERIALIZATION",
+        CANDIDATE_IDENTITY_MISMATCH:"CANDIDATE_IDENTITY",VALIDATION_REJECTED:"VALIDATION",
+      } as const)[rejectionCause],expectedTaskCount:expected.length,actualTaskCount:actual.length,
+      participantMealWitness:mealWitness,operationalMealWitness,transportWitness:observedTerminalTransportWitness,
+      validation:{hardValid:validation.hardValid,reasonCodes:[...validation.reasonCodes],violations:[...(validation.violations??[])]}};
+    }
+    if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && validationAccepted) {
       evidence.terminalTransportWitness = terminalTransportWitness;
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
@@ -928,6 +965,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
     standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
     terminalTransportMaterializationAttempts:0,terminalTransportMaterializationFailures:0,terminalTransportWitness:null,
+    terminalCompletionRejectionsByCause:{SUBSTANTIVE_IDENTITY_INCOMPLETE:0,PARTICIPANT_MEAL_WITNESS_INCOMPLETE:0,
+      OPERATIONAL_MEAL_WITNESS_INCOMPLETE:0,TRANSPORT_MATERIALIZATION_FAILED:0,CANDIDATE_IDENTITY_MISMATCH:0,VALIDATION_REJECTED:0},
+    firstTerminalCompletionRejection:null,
     coreLeafTransportPrunes:0,transportContiguousStates:0,membershipFallbackEntered:0,coreLeafArrivalEvidence:null,firstHardValidCoreLeaf:null,
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
