@@ -58,6 +58,15 @@ export interface AssistedPlanningEvidence {
     readonly analyticCollectivePrunes:number; readonly blockingMealTaskIds:readonly string[];
     readonly firstPrune: ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"];
   };
+  readonly participantFutureReservation: {
+    readonly checks:number; readonly passes:number; readonly prunes:number; readonly abstentions:number;
+    readonly affectedParticipants:number; readonly affectedFutureTasksChecked:number; readonly affectedMealsChecked:number;
+    readonly individualDomainChecks:number; readonly individualZeroDomainPrunes:number;
+    readonly jointTaskMealChecks:number; readonly jointTaskMealPrunes:number;
+    readonly collectiveChecks:number; readonly collectivePrunes:number; readonly compatiblePairChecks:number;
+    readonly analyticChecks:number; readonly branchesConsumed:number;
+    readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
+  };
   readonly work: Readonly<Record<string, number>>;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
@@ -204,6 +213,11 @@ export function buildAssistedProblem(
   }
 
   const fixedById = new Map(protectedPlacements.map((placement) => [placement.id, placement]));
+  // Capture the full-problem authorities before projecting executable tasks.
+  // The search never iterates this collection: participant-causal probes alone
+  // consult it after a provisional placement.
+  problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
+    !included.has(task.id) && task.participantId !== undefined).map((task) => structuredClone(task));
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
@@ -396,6 +410,17 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       analyticCollectivePrunes:Number(evidenceRecord.participantMealAnalyticCollectivePrunes??0),
       blockingMealTaskIds:[...((evidenceRecord.participantMealBlockingTaskIds as string[]|undefined)??[])],
       firstPrune:(evidenceRecord.firstParticipantMealFuturePrune as ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"]|undefined)??null,
+    },
+    participantFutureReservation:{
+      checks:Number(evidenceRecord.participantFutureReservationChecks??0),passes:Number(evidenceRecord.participantFutureReservationPasses??0),
+      prunes:Number(evidenceRecord.participantFutureReservationPrunes??0),abstentions:Number(evidenceRecord.participantFutureReservationAbstentions??0),
+      affectedParticipants:Number(evidenceRecord.participantFutureAffectedParticipants??0),affectedFutureTasksChecked:Number(evidenceRecord.participantFutureTasksChecked??0),
+      affectedMealsChecked:Number(evidenceRecord.participantFutureMealsChecked??0),individualDomainChecks:Number(evidenceRecord.participantFutureIndividualDomainChecks??0),
+      individualZeroDomainPrunes:Number(evidenceRecord.participantFutureIndividualZeroDomainPrunes??0),jointTaskMealChecks:Number(evidenceRecord.participantFutureJointTaskMealChecks??0),
+      jointTaskMealPrunes:Number(evidenceRecord.participantFutureJointTaskMealPrunes??0),collectiveChecks:Number(evidenceRecord.participantFutureCollectiveChecks??0),
+      collectivePrunes:Number(evidenceRecord.participantFutureCollectivePrunes??0),compatiblePairChecks:Number(evidenceRecord.participantFutureCompatiblePairChecks??0),
+      analyticChecks:Number(evidenceRecord.participantFutureAnalyticChecks??0),branchesConsumed:Number(evidenceRecord.participantFutureBranchesConsumed??0),
+      firstPrune:(evidenceRecord.firstParticipantFutureReservationPrune as ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"]|undefined)??null,
     },
     work,
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,

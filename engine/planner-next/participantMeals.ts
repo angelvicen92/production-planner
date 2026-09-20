@@ -42,13 +42,13 @@ const intervalOverlaps = (a: Window, b: Window): boolean => a.start < b.end && b
 const freeze = <T>(value: T): T => { if (value && typeof value === "object" && !Object.isFrozen(value)) { Object.freeze(value); Object.values(value as Record<string, unknown>).forEach(freeze); } return value; };
 const GRID = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
 
-interface AnalyticStartDomain { ranges: { first:number; last:number }[]; logicalStarts:number; validStarts:number }
+export interface AnalyticParticipantMealStartDomain { ranges: { first:number; last:number }[]; logicalStarts:number; validStarts:number }
 const rangeCount = ({first,last}:{first:number;last:number}):number => last < first ? 0 : Math.floor((last-first)/GRID)+1;
 const firstGridAtOrAfter = (base:number, minute:number):number => base + Math.ceil((minute-base)/GRID)*GRID;
 const lastGridAtOrBefore = (base:number, minute:number):number => base + Math.floor((minute-base)/GRID)*GRID;
 
 /** Builds grid-aligned start ranges using interval arithmetic only; it never visits an individual start. */
-function analyticParticipantMealDomain(problem:PlannerNextProblem, obligation:ParticipantMealObligation, tasks:readonly ScheduledTask[]):AnalyticStartDomain {
+export function analyticParticipantMealDomain(problem:PlannerNextProblem, obligation:ParticipantMealObligation, tasks:readonly ScheduledTask[]):AnalyticParticipantMealStartDomain {
   const base=obligation.window.start, duration=obligation.duration;
   const initialFirst=obligation.fixedInterval?.start??base;
   const initialLast=obligation.fixedInterval?.start??lastGridAtOrBefore(base,obligation.window.end-duration);

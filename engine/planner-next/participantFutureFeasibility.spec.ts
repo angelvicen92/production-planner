@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { PlannerNextProblem, ScheduledTask } from "./contracts";
+import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
+
+const problem=(futureAvailability:{start:number;end:number},dependency:string[]=[]):PlannerNextProblem=>({
+  day:{start:0,end:100},spaces:[{id:"a",availability:[{start:0,end:100}]},{id:"b",availability:[{start:0,end:100}]}],
+  resources:[],participants:[{id:"p",availability:[{start:0,end:100}]},{id:"other",availability:[{start:0,end:100}]}],coaches:[],
+  tasks:[],analyticalFutureParticipantTasks:[{id:"future",kind:"auxiliary",participantId:"p",spaceId:"b",duration:40,
+    availability:[futureAvailability],dependencies:dependency}],mainFlow:{spaceId:"a",preferredEnd:100,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},
+  participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:10,maxPatterns:10,maxBranchExpansions:100},
+  participantMealCapacity:{maxSimultaneous:1},participantMeals:[{id:"meal",sourceTaskId:"meal-source",participantId:"p",duration:20,
+    window:{start:40,end:80},status:"pending"}],
+});
+const current=(participantId="p"):ScheduledTask=>({id:"current",kind:"auxiliary",participantId,spaceId:"a",duration:20,dependencies:[],start:0,end:20});
+
+test("prunes when a future task and meal have non-empty individual domains but no compatible pair",()=>{
+  const source=problem({start:40,end:80}),before=structuredClone(source);
+  const first=probeParticipantFutureReservations(source,[current()],[current()]);
+  const second=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(first.status,"PRUNE"); assert.equal(first.reasonCode,"FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE");
+  assert.ok(first.futureTaskCandidateCount>0); assert.ok(first.mealCandidateCount>0); assert.equal(first.compatiblePairCount,0);
+  assert.equal(first.branchesConsumed,0); assert.deepEqual(first,second); assert.deepEqual(source,before);
+});
+
+test("passes when at least one future task and meal pair is compatible",()=>{
+  const result=probeParticipantFutureReservations(problem({start:60,end:100}),[current()],[current()]);
+  assert.equal(result.status,"PASS"); assert.equal(result.jointTaskMealChecks,1); assert.equal(result.compatiblePairCount,1);
+});
+
+test("abstains for an unresolved future dependency",()=>{
+  const result=probeParticipantFutureReservations(problem({start:40,end:80},["unknown"]),[current()],[current()]);
+  assert.equal(result.status,"ABSTAIN"); assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE");
+  assert.equal(result.individualZeroDomainPrunes,0);
+});
+
+test("skips obligations independent of the provisional placement",()=>{
+  const result=probeParticipantFutureReservations(problem({start:40,end:80}),[current("other")],[current("other")]);
+  assert.equal(result.status,"PASS"); assert.equal(result.affectedFutureTasksChecked,0); assert.equal(result.jointTaskMealChecks,0);
+});

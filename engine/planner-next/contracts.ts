@@ -146,6 +146,8 @@ export interface PlannerNextProblem {
   /** Hard availability of itinerant compositions, independently of their members. */
   itinerantUnits?: ItinerantUnit[];
   tasks: Task[];
+  /** Read-only Assisted context. These tasks are never ordinary search variables. */
+  analyticalFutureParticipantTasks?: Task[];
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;
