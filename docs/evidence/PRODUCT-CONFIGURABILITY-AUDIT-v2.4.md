@@ -8,8 +8,8 @@ los gates semánticos y comprueba que cada path de test declarado existe.
 
 | Estado | Cantidad |
 |---|---:|
-| PRODUCTIVE | 3 |
-| PARTIAL | 13 |
+| PRODUCTIVE | 2 |
+| PARTIAL | 14 |
 | MISSING | 5 |
 | BLOCKED | 5 |
 | NOT_APPLICABLE | 1 |
@@ -24,19 +24,16 @@ ni una restauración de herencia correcta.
 |---|---|---|---|---|
 | `WORKDAY_WINDOW` | Sí; `plans.work_start/work_end` → `workDay` | Baseline diario y origen explícitos | Sí; restaura el baseline almacenado | PRODUCTIVE |
 | `GLOBAL_MEAL_BREAK` | Sí; campos de comida de `plans` → `meal/mealMode` | Baseline diario y origen explícitos | Sí; restaura el baseline almacenado | PRODUCTIVE |
-| `OPTIMIZATION` | Sí; snapshot versionado → configuración del motor | Effective y baseline diario separados; origen explícito | Sí; restaura exactamente el baseline almacenado | PRODUCTIVE |
+| `OPTIMIZATION` | Sí; snapshot versionado → configuración del motor | Effective y baseline diario separados; origen explícito | Sí; backend + UI de Restore usan el baseline almacenado | PARTIAL: falta edición diaria y comparación/confirmación de refresh en UI |
 
-En los dos primeros casos la vista efectiva sigue mostrando el valor actual y su
-validación diaria como válida, pero presenta origen desconocido. Esa falta de
-provenance es deuda de **product coverage**, no una razón causal para convertir el
-readiness del día en `INCOMPLETE`.
+La vista efectiva ya distingue origen y baseline para jornada, comida y optimización. En `OPTIMIZATION`, la persistencia y Restore están cubiertos, pero Fuente 04 exige además una superficie diaria de override y comparación previa de refresh antes de declarar el recorrido end-to-end como productivo.
 
 ## Clasificación de las 27 capabilities
 
-- **PARTIAL (13):** `TIME_GRID`, `OPERATIONAL_MEAL_POLICIES`, `ITINERANT_UNITS`,
+- **PARTIAL (14):** `TIME_GRID`, `OPERATIONAL_MEAL_POLICIES`, `ITINERANT_UNITS`,
   `TRANSPORT_TARGET_GROUP_SIZE`, `TRANSPORT_MAXIMUM_GROUP_SIZE`, `MAIN_FLOW`,
   `SETUPS`, `ANCHORED_OPERATIONS`, `JOINT_OPERATIONS`, `SYNCHRONIZED_ROUNDS`,
-  `TECHNICAL_CHAINS`, `SEARCH_POLICY_BUDGET` y
+  `TECHNICAL_CHAINS`, `OPTIMIZATION`, `SEARCH_POLICY_BUDGET` y
   `EFFECTIVE_CONFIG_REVIEW`.
 - **MISSING (5):** `SPACE_CAPACITY`, `TRANSPORT_VEHICLE_CAPACITY`, `TRANSITIONS`,
   `BLOCK_COUNT_POLICY` y `ASSISTED_PROPOSAL_TIME_LIMIT`.
@@ -45,7 +42,7 @@ readiness del día en `INCOMPLETE`.
   las barreras RLS registradas en el registry.
 - **NOT_APPLICABLE (1):** `PROTECTED_STATE_LOCKS`, porque `done`, `in_progress` y
   locks son invariantes hard, no preferencias configurables.
-- **PRODUCTIVE (3):** `WORKDAY_WINDOW`, `GLOBAL_MEAL_BREAK` y `OPTIMIZATION`.
+- **PRODUCTIVE (2):** `WORKDAY_WINDOW` y `GLOBAL_MEAL_BREAK`.
 
 Para las capabilities no proyectadas por la vista efectiva no se atribuye provenance:
 su autoridad y gap concreto permanecen descritos por el registry. `DAY_SNAPSHOT`
@@ -53,6 +50,4 @@ significa únicamente «valor materializado del día» y nunca prueba herencia.
 
 ## Slice completado
 
-`OPTIMIZATION` conserva ahora baseline y effective por separado: EDIT mantiene el
-baseline, REFRESH explícito lo actualiza sin borrar un override local y Restore usa
-exactamente ese baseline. `LEGACY_BACKFILL` permanece explícito y sin baseline inventado.
+`OPTIMIZATION` conserva ahora baseline y effective por separado: EDIT mantiene el baseline, REFRESH explícito lo actualiza sin borrar un override local y Restore usa exactamente ese baseline. `LEGACY_BACKFILL` permanece explícito y sin baseline inventado. El backend queda preparado, pero la capability permanece `PARTIAL` hasta añadir edición diaria y comparación/confirmación de refresh en UI.
