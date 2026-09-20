@@ -754,9 +754,10 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.totalesAssignmentBranchesAvoided += delta.assignmentBranchesAvoided;
 };
 const dynamicTransportIds = transportTaskIds(problem);
-const jointItems = jointGroupIds(pending).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
-const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+const technicalRepresentativeIds=new Set(technicalItems.flatMap(({tasks})=>tasks.map(({id})=>id)));
+const jointItems = jointGroupIds(pending).filter((id)=>!jointGroupMembers(pending,id).some(({id:taskId})=>technicalRepresentativeIds.has(taskId))).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
+const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
   && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
@@ -767,7 +768,7 @@ type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typ
   | typeof roundItems[number] | typeof setupItems[number];
 const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
   .sort((left, right) => left.id.localeCompare(right.id));
-const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.map(({ id }) => id)));
+const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
 const resourceAvailabilityMinutes = (tasks: readonly Task[]): number => {
   const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();

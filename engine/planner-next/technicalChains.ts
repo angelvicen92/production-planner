@@ -2,6 +2,7 @@ import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Techn
 import { performance } from "node:perf_hooks";
 import { canPlaceTask, exactTaskStartDomain, prepareTaskPlacementAuthority } from "./placement";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
+import { canPlaceJointGroup, jointGroupMembers, scheduleJointGroup } from "./jointTasks";
 
 export type TechnicalChainMode = "SEARCH" | "PROBE";
 export type TechnicalChainCandidate = { tasks: ScheduledTask[]; cost: number; rootTaskId: string; start: number; end: number };
@@ -18,8 +19,8 @@ export function orderedTechnicalChainMembers(tasks:Task[]):Task[] { const p=buil
 export const technicalChainRoot=(tasks:Task[])=>orderedTechnicalChainMembers(tasks)[0];
 export const technicalChainRootTaskId=(tasks:Task[])=>technicalChainRoot(tasks)?.id;
 export const technicalChainWorkItemKey=(rootTaskId:string)=>`technical-chain:${rootTaskId}`;
-export function getTechnicalChains(tasks:Task[],policies:readonly TechnicalChainPolicy[]=[]):Task[][] { const tech=getTechnicalTasks(tasks),byId=new Map(tech.map(t=>[t.id,t]));
-  const explicit=[...policies].sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>policy.orderedTaskIds.map(id=>byId.get(id)).filter((task): task is NonNullable<typeof task> => task !== undefined)).filter(chain=>chain.length>=2);
+export function getTechnicalChains(tasks:Task[],policies:readonly TechnicalChainPolicy[]=[]):Task[][] { const tech=getTechnicalTasks(tasks),allById=new Map(tasks.map(t=>[t.id,t])),byId=new Map(tech.map(t=>[t.id,t]));
+  const explicit=[...policies].sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>policy.orderedTaskIds.map(id=>allById.get(id)).filter((task): task is NonNullable<typeof task> => task !== undefined)).filter(chain=>chain.length>=2);
   const owned=new Set(explicit.flatMap(chain=>chain.map(task=>task.id))),dep=buildTechnicalDependentMap(tech),roots=tech.filter(t=>!owned.has(t.id)&&t.dependencies.length===0&&(dep.get(t.id)?.length??0)>0).sort((a,b)=>a.id.localeCompare(b.id));
   return [...explicit,...roots.map(r=>{const out:Task[]=[];let x:Task|undefined=r;while(x&&!owned.has(x.id)){out.push(x);const nextId:string|undefined=dep.get(x.id)?.[0];x=nextId?byId.get(nextId):undefined;}return out;}).filter(chain=>chain.length>=2)]; }
 export function technicalChainForTask(tasks:Task[],id:string):Task[]|undefined{return getTechnicalChains(tasks).find(c=>c.some(t=>t.id===id));}
@@ -79,11 +80,14 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
       let cursor=rootStart,cost=0;const scheduled:ScheduledTask[]=[];
       for(const task of ordered){
         if(policy.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))){scheduled.length=0;break;}
-        if(!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals)){scheduled.length=0;break;}
-        const item={...task,start:cursor,end:cursor+task.duration};scheduled.push(item);cursor=item.end;
-        cost+=[...new Set(task.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,[...placed,...scheduled.slice(0,-1)],item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);
+        const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
+        if(task.jointGroupId?!canPlaceJointGroup(problem,members,cursor,[...placed,...scheduled]):!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals)){scheduled.length=0;break;}
+        const items=task.jointGroupId?scheduleJointGroup(members,cursor):[{...task,start:cursor,end:cursor+task.duration}];
+        const scoringPlaced=[...placed,...scheduled];
+        for(const item of items){cost+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,scoringPlaced,item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);scoringPlaced.push(item);}
+        scheduled.push(...items);cursor+=task.duration;
       }
-      if(scheduled.length!==ordered.length)continue;
+      if(!ordered.every(task=>scheduled.some(item=>item.id===task.id)))continue;
       diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;
       diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;
       return {tasks:scheduled,cost,rootTaskId:ordered[0]!.id,start:rootStart,end:cursor};
@@ -246,7 +250,8 @@ export function probeExactTechnicalChainMacroDomain(problem:PlannerNextProblem,c
 
 function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],allowance:number,
   mode:TechnicalChainMode,probeLimit:number,scheduledSpaceMeals:ScheduledSpaceMeal[]):TechnicalChainCandidateResult {
-  const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
+  const policy=explicitPolicyFor(problem,chainTasks);
+  const ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
   const complete:TechnicalChainCandidate[]=[];
   const diagnostics=():TechnicalChainDiagnostics=>({startsExplored,expansions:consumed,
     completeCandidatesGenerated:complete.length,completeCandidatesYielded:complete.length,
@@ -263,15 +268,19 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
     const task=ordered[depth]!,last=depth===ordered.length-1,next:Partial[]=[];
     for(const state of states){
       const earliest=state.tasks.at(-1)?.end??problem.day.start,prior=[...placed,...state.tasks];
-      for(let start=earliest;start+task.duration<=problem.day.end;start+=5){
+      if(policy?.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id)))continue;
+      const latest=policy?.adjacency==="REQUIRED"&&depth>0?earliest:problem.day.end-task.duration;
+      for(let start=earliest;start<=latest;start+=5){
         if(depth===0)startsExplored+=1;
         if(consumed>=allowance)return finish(true);
         consumed+=1;
-        if(!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
-        const scheduled={...task,start,end:start+task.duration};
-        const incremental=[...new Set(task.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(item=>item.id===id);return sum+resourcePresenceIncrement(id,prior,scheduled)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0);
-        const candidate=partial([...state.tasks,scheduled],state.cost+incremental);
-        if(last){complete.push({tasks:candidate.tasks,cost:candidate.cost,rootTaskId:root.id,start:candidate.tasks[0]!.start,end:scheduled.end});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
+        const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
+        if(task.jointGroupId?!canPlaceJointGroup(problem,members,start,prior):!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
+        const scheduled=task.jointGroupId?scheduleJointGroup(members,start):[{...task,start,end:start+task.duration}];
+        let incremental=0;const scoringPlaced=[...prior];
+        for(const item of scheduled){incremental+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(candidate=>candidate.id===id);return sum+resourcePresenceIncrement(id,scoringPlaced,item)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0);scoringPlaced.push(item);}
+        const candidate=partial([...state.tasks,...scheduled],state.cost+incremental);
+        if(last){complete.push({tasks:candidate.tasks,cost:candidate.cost,rootTaskId:root.id,start:candidate.tasks[0]!.start,end:start+task.duration});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
         else next.push(candidate);
       }
     }

@@ -23,7 +23,7 @@
     }
   ],
   "manifestFingerprint": "78073779bed60eaa08527de76ee37d387d4d7b099969e0031ca121548d549f3c",
-  "expansionFingerprint": "24aeebecf9beea8f3c3cd549fe28fbb62e7a0ee20a33b21b0c9517f942f7aa54",
+  "expansionFingerprint": "7a8755905ee5f74e196a69d6671a95c92315ce8e551c80c7f42900e4bf2d41cb",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 0,
@@ -522,6 +522,7 @@
           "requiredResourceIds": [
             "cam-3",
             "cam-4",
+            "eva",
             "son-1"
           ]
         }
@@ -541,6 +542,7 @@
           "requiredResourceIds": [
             "cam-3",
             "cam-4",
+            "eva",
             "son-1"
           ]
         }
@@ -740,7 +742,23 @@
         "sequenceAfterJointGroupId": "joint.alfombra-roja.C06-C10"
       }
     ],
-    "technicalChains": [],
+    "technicalChains": [
+      {
+        "id": "continuity.reality-c-eva-alfombra",
+        "orderedTaskIds": [
+          "C06.reality_hall",
+          "C12.reality_control_eva",
+          "C11.reality_buggy",
+          "C04.alfombra_roja_eva",
+          "C13.alfombra_roja_eva",
+          "C06.alfombra_roja_conjunta",
+          "C16.alfombra_roja"
+        ],
+        "adjacency": "REQUIRED",
+        "resourceContinuity": "REQUIRED",
+        "requiredResourceIds": []
+      }
+    ],
     "itinerantOperations": [
       {
         "id": "itinerant.reality-unit-a.C01.reality-plato",
@@ -1578,7 +1596,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "24aeebecf9beea8f3c3cd549fe28fbb62e7a0ee20a33b21b0c9517f942f7aa54",
+    "shuffledExpansionFingerprint": "7a8755905ee5f74e196a69d6671a95c92315ce8e551c80c7f42900e4bf2d41cb",
     "matches": true
   },
   "inputImmutable": {

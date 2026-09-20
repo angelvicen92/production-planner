@@ -45,7 +45,7 @@ test("human P09 baseline proves anchored, joint, technical and Totales synchroni
   const p09 = report.kpis.P09_SPECIAL_SYNCHRONIZATION;
   assert.equal(p09.status, "AVAILABLE");
   if (p09.status !== "AVAILABLE") return;
-  assert.deepEqual(p09.value, { anchoredOperationCount: 3, anchoredViolationCount: 0, jointOperationCount: 2, jointViolationCount: 0, technicalChainCount: 0, technicalChainViolationCount: 0, synchronizedTotalesRoundCount: 9, totalesSynchronizationViolationCount: 0, residualTotales1RoundCount: 1, residualTotalesCoreoRoundCount: 0, completeAndSynchronized: true });
+  assert.deepEqual(p09.value, { anchoredOperationCount: 3, anchoredViolationCount: 0, jointOperationCount: 2, jointViolationCount: 0, technicalChainCount: 1, technicalChainViolationCount: 0, synchronizedTotalesRoundCount: 9, totalesSynchronizationViolationCount: 0, residualTotales1RoundCount: 1, residualTotalesCoreoRoundCount: 0, completeAndSynchronized: true });
 });
 
 test("quality evaluator blocks KPIs whose required operational configuration is not yet available instead of guessing", () => {
