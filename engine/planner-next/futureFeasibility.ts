@@ -16,7 +16,7 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
   const before = budget.remaining;
   const required = new Set(requiredSecondarySpaces(problem).map(x => x.id));
   const assessments: FutureWorkItemAssessment[] = [];
-  const chains=getTechnicalChains(pending), chainIds=new Set(chains.flat().map(t=>t.id));
+  const chains=getTechnicalChains(pending,problem.technicalChains), chainIds=new Set(chains.flatMap(tasks=>tasks.flatMap(task=>task.jointGroupId?jointGroupMembers(pending,task.jointGroupId).map(({id})=>id):[task.id])));
   for(const chain of chains){const generated=generateTechnicalChainCandidates(problem,chain,placed,budget.remaining,"PROBE",problem.budget.bestK,undefined,scheduledSpaceMeals);budget.remaining-=generated.consumed;if(generated.exhausted)return result(assessments,before,budget,true);const root=chain[0]!;assessments.push({key:technicalChainWorkItemKey(root.id),kind:"technical-chain",alternativeCount:generated.candidates.length,feasible:generated.candidates.length>0});}
   for (const task of [...pending].filter(t => !chainIds.has(t.id) && !required.has(t.spaceId) && t.jointGroupId === undefined).sort((a,b)=>a.id.localeCompare(b.id))) {
     let count = 0;
