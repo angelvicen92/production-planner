@@ -17,6 +17,9 @@ test("the v2.4 registry enforces semantic and security gates without count targe
     assert.equal(configurabilityRegistry.find(c=>c.capabilityId===id)?.status,"BLOCKED",id);
   assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="SPACE_CAPACITY")?.status,"MISSING");
   assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="TRANSITIONS")?.status,"MISSING");
+  const workday=configurabilityRegistry.find(c=>c.capabilityId==="WORKDAY_WINDOW");
+  assert.deepEqual(workday?.levels,["GENERAL","DAY_SNAPSHOT","DAY_OVERRIDE"]);
+  assert.equal(workday?.generalSource,"program_settings.default_work_start/default_work_end");
 });
 
 test("documentary Evidence is checked against the canonical registry",()=>{

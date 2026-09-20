@@ -20,8 +20,11 @@ catálogo/asignaciones de recursos y las tres semánticas de transporte.
 
 ## PRODUCTIVE (justificación exhaustiva)
 
-- `WORKDAY_WINDOW`: persistencia diaria, edición, proyección `workDay`, preflight,
-  consumidor, validación y Evidence de revisión están cableados.
+- `WORKDAY_WINDOW`: `program_settings.default_work_start/default_work_end` es la
+  autoridad GENERAL editable en «Ajustes generales del programa > Horario habitual
+  de la jornada»; al crear un día se materializa en `plans.work_start/work_end`, donde
+  el formulario permite una excepción DAY_OVERRIDE. Persistencia diaria, proyección
+  `workDay`, preflight, consumidor, validación y Evidence de revisión están cableados.
 - `GLOBAL_MEAL_BREAK`: default general, materialización diaria, proyección
   `meal/mealMode`, validación y consumidores productivos están cableados.
 - `OPTIMIZATION`: settings generales, snapshot diario versionado, override explícito,
