@@ -249,7 +249,8 @@ export function probeExactTechnicalChainMacroDomain(problem:PlannerNextProblem,c
 
 function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chainTasks:Task[],placed:ScheduledTask[],allowance:number,
   mode:TechnicalChainMode,probeLimit:number,scheduledSpaceMeals:ScheduledSpaceMeal[]):TechnicalChainCandidateResult {
-  const ordered=orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
+  const policy=explicitPolicyFor(problem,chainTasks);
+  const ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
   const complete:TechnicalChainCandidate[]=[];
   const diagnostics=():TechnicalChainDiagnostics=>({startsExplored,expansions:consumed,
     completeCandidatesGenerated:complete.length,completeCandidatesYielded:complete.length,
@@ -266,15 +267,18 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
     const task=ordered[depth]!,last=depth===ordered.length-1,next:Partial[]=[];
     for(const state of states){
       const earliest=state.tasks.at(-1)?.end??problem.day.start,prior=[...placed,...state.tasks];
-      for(let start=earliest;start+task.duration<=problem.day.end;start+=5){
+      if(policy?.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id)))continue;
+      const latest=policy?.adjacency==="REQUIRED"&&depth>0?earliest:problem.day.end-task.duration;
+      for(let start=earliest;start<=latest;start+=5){
         if(depth===0)startsExplored+=1;
         if(consumed>=allowance)return finish(true);
         consumed+=1;
-        if(!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
-        const scheduled={...task,start,end:start+task.duration};
-        const incremental=[...new Set(task.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(item=>item.id===id);return sum+resourcePresenceIncrement(id,prior,scheduled)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0);
-        const candidate=partial([...state.tasks,scheduled],state.cost+incremental);
-        if(last){complete.push({tasks:candidate.tasks,cost:candidate.cost,rootTaskId:root.id,start:candidate.tasks[0]!.start,end:scheduled.end});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
+        const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
+        if(task.jointGroupId?!canPlaceJointGroup(problem,members,start,prior):!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
+        const scheduled=task.jointGroupId?scheduleJointGroup(members,start):[{...task,start,end:start+task.duration}];
+        const incremental=scheduled.reduce((total,item)=>total+[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(candidate=>candidate.id===id);return sum+resourcePresenceIncrement(id,[...prior,...scheduled.filter(x=>x.id!==item.id)],item)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0),0);
+        const candidate=partial([...state.tasks,...scheduled],state.cost+incremental);
+        if(last){complete.push({tasks:candidate.tasks,cost:candidate.cost,rootTaskId:root.id,start:candidate.tasks[0]!.start,end:start+task.duration});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
         else next.push(candidate);
       }
     }
