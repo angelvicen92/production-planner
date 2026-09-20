@@ -12,6 +12,23 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 
+/** Identity-free future REQUIRED-chain context used when collapsing matching states. */
+const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
+  (problem.analyticalFutureTechnicalChains??[]).filter(structure=>
+    structure.tasks.some(task=>task.participantId===participantId)).map(structure=>{
+      const ordered=new Map(structure.policy.orderedTaskIds.map((id,index)=>[id,index]));
+      return {
+        policy:{adjacency:structure.policy.adjacency,resourceContinuity:structure.policy.resourceContinuity,
+          resources:[...structure.policy.requiredResourceIds].sort()},
+        tasks:structure.tasks.map(task=>({role:ordered.get(task.id)??null,kind:task.kind,duration:task.duration,
+          spaceId:task.spaceId,availability:task.availability??null,participant:task.participantId===participantId,
+          joint:task.jointGroupId===undefined?null:structure.tasks.filter(peer=>peer.jointGroupId===task.jointGroupId)
+            .map(peer=>ordered.get(peer.id)??null).sort(),resources:[...(task.requiredResourceIds??[])].sort(),
+          dependencies:task.dependencies.map(id=>ordered.get(id)??null).sort()}))
+          .sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),
+      };
+    }).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
 export type ExactMainAndFeederCoreStatus = "COMPLETE" | "PREFLIGHT_FAILED" | "UNSUPPORTED_CORE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
@@ -1165,7 +1182,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 availability:feeder.availability??null,
                 participantAvailability:problem.participants.find(item=>item.id===feeder.participantId)?.availability??null,
                 resources:[...(feeder.requiredResourceIds??[])].sort(),dependencies:feeder.dependencies.map(dependencyProfile),
-                deadline,domain:domain.intervals,future});};
+                deadline,domain:domain.intervals,future,
+                analyticalFutureTechnicalChains:analyticalTechnicalChainProfile(problem,feeder.participantId)});};
             const feederProfileById=new Map([...byFeederId.keys()].map(id=>[id,feederContextSignature(id)]));
             const pending:[ReadonlySet<string>,ReadonlyMap<string,number>,ReadonlyMap<string,number>][]=
               [[new Set(),new Map(),feederSlotMatching.matching]];
@@ -1456,6 +1474,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             dependencies:feeder.dependencies.map(dependencyProfile),resources:[...(feeder.requiredResourceIds??[])].sort(),
             transition:latestFeederEndBeforeMain(problem,feeder,task.spaceId,anchor.start,anchor.start)-anchor.start},
           future,continuity:problem.mainFlow.continuity,
+          analyticalFutureTechnicalChains:analyticalTechnicalChainProfile(problem,task.participantId),
         });
       };
       const contextualProfiles=assignedEdges.map(taskContextSignature);

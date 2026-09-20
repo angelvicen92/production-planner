@@ -1181,6 +1181,14 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
   const standaloneForwardWitnessCache=new Map<string,number>();
+  const coreDecisionDepthForTask=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],taskId:string):number|null=>{
+    const task=candidate.tasks.find(item=>item.id===taskId);if(!task)return null;
+    const mains=candidate.tasks.filter(item=>item.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+    const contracts=problem.anchoredAccompaniments??[];
+    const mainId=task.kind==="main"?task.id:mains.find(main=>main.dependencies.includes(task.id))?.id
+      ??contracts.find(contract=>[contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds].includes(task.id))?.anchorTaskId;
+    const index=mains.findIndex(main=>main.id===mainId);return index<0?null:index+1;
+  };
   const certifyFutureBackjump=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],task:Task,
     staticDomain:StandaloneForwardStaticDomain,dynamicDomain:StandaloneForwardDynamicDomain,witness:boolean):number|null=>{
     const blockers=staticDomain.eligibleStartCount>0&&dynamicDomain.eligibleStartCount===0
@@ -1234,7 +1242,12 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialCoreTasksRemaining=[...staticCoreIds].filter(id=>!scheduledIds.has(id)).length;
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,candidate.tasks,candidate.addedTasks,Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){const causing=[...candidate.addedTasks].sort(byId)[0];if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:candidate.depth,...reservation};return "REJECT";}}
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,candidate.tasks,candidate.addedTasks,Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
+      const causing=candidate.addedTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
+      if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:candidate.depth,...reservation};
+      const target=reservation.certifiedCausingTaskId===null?null:coreDecisionDepthForTask(candidate,reservation.certifiedCausingTaskId);
+      return target!==null&&target<=candidate.depth?{outcome:"CERTIFIED_BACKJUMP",targetDepth:target}:"REJECT";
+    }}
     if((problem.analyticalFutureParticipantTasks?.length??0)>0){const reservation=probeParticipantFutureReservations(problem,candidate.tasks,candidate.addedTasks);recordParticipantFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){const causing=[...candidate.addedTasks].sort(byId)[0];if(causing)evidence.firstParticipantFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:candidate.depth,...reservation};return "REJECT";}}
     if((problem.participantMeals?.length??0)>0){const mealProbe=probeParticipantMealFutureFeasibility(problem,candidate.tasks,candidate.addedTasks);evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;evidence.participantMealAffectedObligationsChecked+=mealProbe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=mealProbe.analyticDomainBuilds;evidence.participantMealLogicalGridStarts+=mealProbe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=mealProbe.analyticallyEliminatedStarts;evidence.participantMealActuallyEvaluatedStarts+=mealProbe.actuallyEvaluatedStarts;evidence.participantMealZeroDomainPrunes+=mealProbe.zeroDomainPrunes;evidence.participantMealAnalyticCollectivePrunes+=mealProbe.analyticCollectivePrunes;evidence.participantMealExactSearchesAvoided+=1;if(!mealProbe.feasible){evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealProbe.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);const blockingId=mealProbe.blockingMealTaskIds[0];const obligation=problem.participantMeals?.find(meal=>meal.sourceTaskId===blockingId);const causing=(obligation&&candidate.addedTasks.find(task=>task.participantId===obligation.participantId||task.id===obligation.sourceTaskId||task.dependencies.includes(obligation.sourceTaskId)||(obligation.dependencies??[]).includes(task.id)))??candidate.addedTasks[0];if(blockingId&&obligation&&causing)evidence.firstParticipantMealFuturePrune??={phase:"CORE",causingTaskId:causing.id,scheduledCandidateStart:causing.start,blockingMealTaskId:blockingId,participantId:obligation.participantId,candidateCount:mealProbe.candidateCountByTaskId[blockingId]??0,domainResult:mealProbe.zeroDomainPrunes>0?"ZERO_DOMAIN":"ANALYTIC_COLLECTIVE_INFEASIBLE",reasonCodes:[...mealProbe.reasonCodes]};return "REJECT";}}
     evidence.corePrerequisiteReservationChecks+=1;
@@ -1359,20 +1372,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // The nominal Assisted pipeline can materialize a complete core without
     // visiting partial-core callbacks. Apply the same exact reservation at that
     // boundary so no locally complete proposal can bypass future structures.
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,immutableCoreTasks,Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
-      // Publish an exact counterfactual cause, not merely the first task sharing
-      // an authority: removing this placement restores a complete chain witness.
-      let causing:ScheduledTask|undefined;
-      for(const candidate of [...immutableCoreTasks].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))){
-        const without=immutableCoreTasks.filter(task=>task.id!==candidate.id);
-        const counterfactual=probeTechnicalChainFutureReservations(problem,without,[candidate],Math.max(0,ledger.limit-ledger.branchesExplored));
-        if(counterfactual.branchesConsumed>0&&!ledger.consume("CORE",counterfactual.branchesConsumed))break;
-        if(counterfactual.status==="PASS"&&counterfactual.result==="WITNESS"){causing=candidate;break;}
-      }
-      causing??=[...immutableCoreTasks].sort((a,b)=>b.start-a.start||a.id.localeCompare(b.id)).find(task=>
-        problem.analyticalFutureTechnicalChains?.some(chain=>chain.tasks[0]?.participantId!==undefined
-          &&chain.tasks[0].participantId===task.participantId));
-      if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:immutableCoreTasks.length,...reservation};return "REJECT";}}
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,[],Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE")return "REJECT";}
     const remainingStandalone=standaloneTasks.filter(task=>!coreIds.has(task.id));
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",

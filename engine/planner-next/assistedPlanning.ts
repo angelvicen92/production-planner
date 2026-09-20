@@ -229,7 +229,16 @@ export function buildAssistedProblem(
     .filter((policy) => policy.adjacency === "REQUIRED" && policy.resourceContinuity === "REQUIRED"
       && policy.orderedTaskIds.every((id) => analyticalFutureEligibleTaskIds.has(id) && !included.has(id)))
     .sort((left, right) => left.id.localeCompare(right.id))
-    .map((policy) => ({ policy: structuredClone(policy), tasks: policy.orderedTaskIds.map((id) => structuredClone(tasksById.get(id)!)) }));
+    .map((policy) => {
+      const memberIds=new Set(policy.orderedTaskIds);
+      // Preserve joint peers needed by placement authority while keeping them
+      // inside read-only analytical context rather than executable search.
+      for(const id of policy.orderedTaskIds){
+        const group=tasksById.get(id)?.jointGroupId;
+        if(group)for(const task of problem.tasks)if(task.jointGroupId===group)memberIds.add(task.id);
+      }
+      return {policy:structuredClone(policy),tasks:[...memberIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
+    });
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
