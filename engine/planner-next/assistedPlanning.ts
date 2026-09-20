@@ -88,7 +88,7 @@ export interface AssistedPlanningEvidence {
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
     | "corePrerequisiteReservationChecks" | "corePrerequisiteReservationPrunes"
     | "ordinaryPrerequisiteReservationChecks" | "ordinaryPrerequisiteReservationPrunes"
-    | "firstPrerequisiteReservationPrune">;
+    | "firstPrerequisiteReservationPrune" | "firstStandaloneDeadEndCause">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -353,7 +353,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
     "corePrerequisiteReservationChecks","corePrerequisiteReservationPrunes",
-    "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune"] as const;
+    "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune",
+    "firstStandaloneDeadEndCause"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",

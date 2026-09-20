@@ -1605,7 +1605,8 @@
         "corePrerequisiteReservationPrunes": 0,
         "ordinaryPrerequisiteReservationChecks": 0,
         "ordinaryPrerequisiteReservationPrunes": 0,
-        "firstPrerequisiteReservationPrune": null
+        "firstPrerequisiteReservationPrune": null,
+        "firstStandaloneDeadEndCause": null
       },
       "orderingComparison": {
         "off": {
@@ -1861,7 +1862,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",
-      "durationMs": 1915
+      "durationMs": 1829
     },
     {
       "scopeSelector": {
@@ -3192,7 +3193,30 @@
         "corePrerequisiteReservationPrunes": 0,
         "ordinaryPrerequisiteReservationChecks": 0,
         "ordinaryPrerequisiteReservationPrunes": 0,
-        "firstPrerequisiteReservationPrune": null
+        "firstPrerequisiteReservationPrune": null,
+        "firstStandaloneDeadEndCause": {
+          "kind": "MACRO_ZERO_DOMAIN",
+          "phase": "MACRO",
+          "depth": 0,
+          "workItemId": "technical-chain:task:10081",
+          "workItemKind": "TECHNICAL_CHAIN",
+          "taskIds": [
+            "task:10041",
+            "task:10069",
+            "task:10081",
+            "task:10154",
+            "task:10169",
+            "task:10173",
+            "task:10215"
+          ],
+          "domainBefore": 0,
+          "domainAfter": 0,
+          "candidatesEvaluated": 0,
+          "blockingTaskId": null,
+          "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+          "firstPlacementRejection": null,
+          "ancestralDecisions": []
+        }
       },
       "orderingComparison": null,
       "causalDiagnostic": {
@@ -3226,7 +3250,7 @@
           "collisions": []
         }
       },
-      "durationMs": 442
+      "durationMs": 449
     }
   ],
   "firstBlocker": {
@@ -3338,10 +3362,33 @@
     "participantFuturePrune": null,
     "causingTask": null,
     "blockingMeal": null,
-    "causalAuthority": null,
-    "failureCategory": "UNKNOWN",
-    "phase": "constructExactItinerantPlan completion",
-    "firstCausalCheck": "constructExactItinerantPlan completion",
+    "standaloneDeadEnd": {
+      "kind": "MACRO_ZERO_DOMAIN",
+      "phase": "MACRO",
+      "depth": 0,
+      "workItemId": "technical-chain:task:10081",
+      "workItemKind": "TECHNICAL_CHAIN",
+      "taskIds": [
+        "task:10041",
+        "task:10069",
+        "task:10081",
+        "task:10154",
+        "task:10169",
+        "task:10173",
+        "task:10215"
+      ],
+      "domainBefore": 0,
+      "domainAfter": 0,
+      "candidatesEvaluated": 0,
+      "blockingTaskId": null,
+      "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+      "firstPlacementRejection": null,
+      "ancestralDecisions": []
+    },
+    "causalAuthority": "probeExactTechnicalChainMacroDomain",
+    "failureCategory": "GEOMETRY_OR_MATCHING",
+    "phase": "constructExactItinerantPlan/macro depth 0",
+    "firstCausalCheck": "MACRO_ZERO_DOMAIN",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
@@ -3350,9 +3397,9 @@
     ],
     "blockingTaskIds": [],
     "blockers": [],
-    "rejectionReason": null,
+    "rejectionReason": "MACRO_ZERO_DOMAIN",
     "originatingCoreDecision": null,
-    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+    "classification": "STANDALONE_MACRO_ZERO_DOMAIN"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "4806c3317265d05e414715f4be9d5bf6f984aea80a1f7c30ef4e409e25e0cede",

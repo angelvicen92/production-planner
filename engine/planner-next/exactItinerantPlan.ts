@@ -68,6 +68,27 @@ export interface TerminalCompletionRejection {
     readonly violations: readonly import("./contracts").ValidationViolationDetail[] } | null;
 }
 
+export type StandaloneDeadEndCauseKind = "MACRO_ZERO_DOMAIN" | "MACRO_CANDIDATES_EXHAUSTED"
+  | "PREREQUISITE_RESERVATION_PRUNE" | "ORDINARY_ZERO_DYNAMIC_DOMAIN" | "ORDINARY_STARTS_REJECTED";
+
+/** First material DFS dead-end. This is diagnostic only and never participates in search decisions. */
+export interface StandaloneDeadEndCause {
+  readonly kind: StandaloneDeadEndCauseKind;
+  readonly phase: "MACRO" | "ORDINARY";
+  readonly depth: number;
+  readonly workItemId: string;
+  readonly workItemKind: string;
+  readonly taskIds: readonly string[];
+  readonly domainBefore: number | null;
+  readonly domainAfter: number;
+  readonly candidatesEvaluated: number;
+  readonly blockingTaskId: string | null;
+  readonly blockingAuthority: string | null;
+  readonly firstPlacementRejection: { readonly start: number; readonly reason: string;
+    readonly blockingPlacedTaskId: string | null } | null;
+  readonly ancestralDecisions: readonly { readonly taskId: string; readonly start: number }[];
+}
+
 export interface ExactItinerantPlanEvidence {
   branchesExplored: number;
   coreBranches: number;
@@ -319,6 +340,7 @@ export interface ExactItinerantPlanEvidence {
   ordinaryPrerequisiteReservationChecks: number;
   ordinaryPrerequisiteReservationPrunes: number;
   firstPrerequisiteReservationPrune: { phase:"CORE"|"ORDINARY"; causingTaskId:string; blockingPrerequisiteId:string; depth:number; deadline:number; duration:number; earliestFeasibleStart:number|null; latestFeasibleStart:number|null; failure:"INDIVIDUAL_ZERO_DOMAIN" } | null;
+  firstStandaloneDeadEndCause: StandaloneDeadEndCause | null;
   standaloneBlockingTaskDetails: Record<string, { taskId: string; participantId: string | null; spaceId: string; duration: number; requiredResourceIds: string[]; setupFamilyId: string | null; kind: string }>;
   selectedRoundPreparationIds: string[];
   participantMealBranchesExplored:number; participantMealFutureFeasibilityChecks:number; participantMealFutureInfeasibleBranches:number; participantMealCheapProbes:number; participantMealAffectedObligationsChecked:number; participantMealAnalyticDomainBuilds:number; participantMealLogicalGridStarts:number; participantMealAnalyticallyEliminatedStarts:number; participantMealActuallyEvaluatedStarts:number; participantMealZeroDomainPrunes:number; participantMealAnalyticCollectivePrunes:number; participantMealExactSearchesAvoided:number; participantMealExactMaterializations:number; participantMealBlockingTaskIds:string[]; participantMealAcceptedWitnessFingerprint:string|null; participantMealFinalSelectionOrder:string[]; participantMealAttemptedSelectionTrace:string[];
@@ -498,6 +520,13 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
+  const recordDeadEnd = (cause: StandaloneDeadEndCause): void => {
+    evidence.firstStandaloneDeadEndCause ??= cause;
+  };
+  const ancestors = (selectionOrder: readonly string[], placed: readonly ScheduledTask[]) => selectionOrder
+    .map((taskId) => placed.find((task) => task.id === taskId))
+    .filter((task): task is ScheduledTask => task !== undefined)
+    .map(({ id: taskId, start }) => ({ taskId, start }));
   const recordBlockingTask = (task: Task): void => {
     evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
     evidence.standaloneBlockingTaskDetails[task.id] ??= {
@@ -619,6 +648,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       }
       evidence.ordinaryAnalyticEligibleStarts += domain.eligibleStartCount;
       if (domain.eligibleStartCount === 0) {
+        recordDeadEnd({kind:"ORDINARY_ZERO_DYNAMIC_DOMAIN",phase:"ORDINARY",depth,
+          workItemId:task.id,workItemKind:task.kind,taskIds:[task.id],domainBefore:staticDomain.eligibleStartCount,
+          domainAfter:0,candidatesEvaluated:0,blockingTaskId:null,blockingAuthority:"exactTaskDynamicStartDomain",
+          firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
         evidence.standaloneZeroAlternativePrunes += 1;
         recordBlockingTask(task);
         return "DEAD_END";
@@ -645,6 +678,14 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     evidence.standaloneCandidateStartsByTaskId[choice.task.id]
       = (evidence.standaloneCandidateStartsByTaskId[choice.task.id] ?? 0) + feasibleStarts.length;
     if (feasibleStarts.length === 0) {
+      const firstStart=choice.starts[0]!;
+      const rejection=diagnoseTaskPlacement(problem,choice.task,firstStart,allPlaced,coreMeals);
+      recordDeadEnd({kind:"ORDINARY_STARTS_REJECTED",phase:"ORDINARY",depth,workItemId:choice.task.id,
+        workItemKind:choice.task.kind,taskIds:[choice.task.id],domainBefore:ordinaryStaticDomain(choice.task).eligibleStartCount,
+        domainAfter:choice.starts.length,candidatesEvaluated:choice.starts.length,
+        blockingTaskId:rejection.blockingPlacedTaskId,blockingAuthority:rejection.firstRejectionReason,
+        firstPlacementRejection:{start:firstStart,reason:rejection.firstRejectionReason??"UNKNOWN",
+          blockingPlacedTaskId:rejection.blockingPlacedTaskId},ancestralDecisions:ancestors(selectionOrder,placed)});
       evidence.standaloneZeroAlternativePrunes += 1;
       recordBlockingTask(choice.task);
       return "DEAD_END";
@@ -668,6 +709,11 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.ordinaryPrerequisiteReservationChecks += 1;
       const reservation=checkIndividualPendingPrerequisiteReservations(problem,pendingReservationPrerequisites,allPlaced,[scheduled],coreMeals);
       if(!reservation.feasible){
+        recordDeadEnd({kind:"PREREQUISITE_RESERVATION_PRUNE",phase:"ORDINARY",depth,
+          workItemId:choice.task.id,workItemKind:choice.task.kind,taskIds:[choice.task.id],
+          domainBefore:choice.starts.length,domainAfter:feasibleStarts.length,candidatesEvaluated:1,
+          blockingTaskId:reservation.blockingTaskId??null,blockingAuthority:"pending-prerequisite-reservation",
+          firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
         evidence.ordinaryPrerequisiteReservationPrunes += 1;
         evidence.ordinaryIndividualForwardChecks += 1;
         evidence.ordinaryIndividualForwardChecksByDepth[String(depth)]
@@ -875,6 +921,15 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   recordMacroDecision(depth, selected, constrained);
   const unit = selected.unit;
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
+  let candidatesEvaluated=0;
+  const macroDomainAuthority=({JOINT:"standaloneJointGroupStartDomain",RESOURCE_TASK:"standaloneForwardDynamicDomain",
+    ROUND_SYNCHRONIZATION:"probeExactRoundSynchronizationMacroDomain",SETUP_GROUP:"probeExactSetupMacroDomain",
+    TECHNICAL_CHAIN:"probeExactTechnicalChainMacroDomain"} as const)[unit.kind];
+  if(selected.domainSize===0)recordDeadEnd({kind:"MACRO_ZERO_DOMAIN",phase:"MACRO",depth,
+    workItemId:unit.id,workItemKind:unit.kind,taskIds:unit.tasks.map(({id})=>id).sort(),
+    domainBefore:selected.structuralCandidateCount??selected.domainSize,
+    domainAfter:0,candidatesEvaluated:0,blockingTaskId:null,blockingAuthority:macroDomainAuthority,
+    firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
     const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache);
@@ -884,6 +939,11 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.macroPendingPrerequisiteWitnesses+=checked.witnesses;evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]=(evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]??0)+1;
     if(checked.cacheHit)evidence.macroPendingPrerequisiteCacheHits+=1;else evidence.macroPendingPrerequisiteCacheMisses+=1;
     if(!checked.feasible){evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
+      recordDeadEnd({kind:"PREREQUISITE_RESERVATION_PRUNE",phase:"MACRO",depth,workItemId:unit.id,
+        workItemKind:unit.kind,taskIds:unit.tasks.map(({id})=>id).sort(),domainBefore:selected.domainSize,
+        domainAfter:selected.domainSize,candidatesEvaluated,blockingTaskId:checked.blockingTaskId??null,
+        blockingAuthority:checked.authorityId??checked.failure??"pending-prerequisite-reservation",
+        firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
       evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};return "DEAD_END";}
@@ -903,6 +963,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     for (const start of starts) {
       if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
       evidence.jointGroupStartsEvaluated += 1; evidence.criticalResourceBranches += 1;
+      candidatesEvaluated += 1;
       if (unit.kind === "JOINT" && !canPlaceJointGroup(problem, unit.tasks, start, [...coreTasks, ...placed])) continue;
       if (unit.kind === "RESOURCE_TASK" && !canPlaceTask(problem, unit.tasks[0]!, start, [...coreTasks, ...placed], coreMeals)) continue;
       const scheduled = unit.kind === "JOINT" ? scheduleJointGroup(unit.tasks, start)
@@ -922,6 +983,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
     if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
     for (const candidate of generated.candidates) {
+      candidatesEvaluated += 1;
       const child = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
       if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
     }
@@ -930,16 +992,21 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
       roundPreparations, coreMeals, ledger, (candidate) => recurse(candidate.tasks, preparations,
         [...roundPreparations, ...candidate.preparations]));
+    candidatesEvaluated=explored.evidence.completeAssignments;
     mergeRoundEvidence(explored.evidence);
-    return explored.outcome;
+    if(explored.outcome!=="DEAD_END")return explored.outcome;
   } else {
     const explorer=createTechnicalChainExplorer(problem,unit.tasks,[...coreTasks,...placed],Math.max(0,ledger.limit-ledger.branchesExplored),
       technicalChainStartDomainMode,coreMeals,"INCREMENTAL_HEAP",false);
     const accounted={consumed:0,full:0,eligible:0,eliminated:0,complete:0,deferred:0,revisited:0,pushes:0,pops:0,builds:0,hits:0,scans:0,domainMs:0,checkMs:0,rootStarts:0};
     while(true){const candidate=explorer.nextCandidate();if(!mergeTechnicalDiagnostics(explorer,accounted))return "BUDGET_EXHAUSTED";
       if(explorer.exhausted){ledger.consume("STANDALONE");return "BUDGET_EXHAUSTED";}
-      if(!candidate)break;const child=recurse(candidate.tasks);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
+      if(!candidate)break;candidatesEvaluated+=1;const child=recurse(candidate.tasks);if(child!=="DEAD_END")return child;evidence.standaloneBacktracks+=1;}
   }
+  recordDeadEnd({kind:selected.domainSize===0?"MACRO_ZERO_DOMAIN":"MACRO_CANDIDATES_EXHAUSTED",phase:"MACRO",depth,
+    workItemId:unit.id,workItemKind:unit.kind,taskIds:unit.tasks.map(({id})=>id).sort(),domainBefore:selected.domainSize,
+    domainAfter:selected.domainSize,candidatesEvaluated,blockingTaskId:null,blockingAuthority:macroDomainAuthority,
+    firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
   for (const task of unit.tasks) recordBlockingTask(task);
   return "DEAD_END";
 };
@@ -1079,6 +1146,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryIndividualForwardFirstPrune:null,
     corePrerequisiteReservationChecks:0,corePrerequisiteReservationPrunes:0,
     ordinaryPrerequisiteReservationChecks:0,ordinaryPrerequisiteReservationPrunes:0,firstPrerequisiteReservationPrune:null,
+    firstStandaloneDeadEndCause:null,
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],firstParticipantMealFuturePrune:null,participantFutureReservationChecks:0,participantFutureReservationPasses:0,participantFutureReservationPrunes:0,participantFutureReservationAbstentions:0,participantFutureAffectedParticipants:0,participantFutureTasksChecked:0,participantFutureMealsChecked:0,participantFutureIndividualDomainChecks:0,participantFutureIndividualZeroDomainPrunes:0,participantFutureJointTaskMealChecks:0,participantFutureJointTaskMealPrunes:0,participantFutureCollectiveChecks:0,participantFutureCollectivePrunes:0,participantFutureCompatiblePairChecks:0,participantFutureAnalyticChecks:0,participantFutureBranchesConsumed:0,firstParticipantFutureReservationPrune:null,causalDiagnostic:null,
   };
