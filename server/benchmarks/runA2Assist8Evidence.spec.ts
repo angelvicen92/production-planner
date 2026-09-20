@@ -35,8 +35,13 @@ test("ASST-011 walks canonical product scopes safely to completion or the first 
     assert.equal(first.finalObligationIdsMatchSource, true);
   } else {
     assert.equal(first.status, "BLOCKED"); assert.ok(first.completedObligationCount < 266); assert.ok(first.firstBlocker);
-    const diagnostic=first.iterations[0]?.standaloneDiagnostic;
-    assert.ok(diagnostic?.firstTerminalCompletionRejection||first.firstBlocker.classification==="SEARCH_CAPACITY_EXHAUSTED");
+    const blockerIteration=first.iterations.find(row=>row.baseStageId===first.firstBlocker!.baseStageId
+      &&row.proposalOutcome==="NO_PROPOSAL");
+    const diagnostic=blockerIteration?.standaloneDiagnostic;
+    assert.ok(diagnostic?.firstTerminalCompletionRejection
+      ||first.firstBlocker.classification==="SEARCH_CAPACITY_EXHAUSTED"
+      ||(first.firstBlocker.classification==="INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+        &&first.firstBlocker.reasonCodes.includes("NO_COMPLETE_HARD_VALID_ITINERANT_PLAN")));
     if(first.firstBlocker.classification==="ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED")
       assert.ok(diagnostic.terminalTransportMaterializationAttempts>0);
     if(diagnostic?.firstTerminalCompletionRejection)

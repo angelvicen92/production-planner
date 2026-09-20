@@ -200,11 +200,23 @@ export function buildAssistedProblem(
     problem.transportPolicy.arrival.taskIds = problem.transportPolicy.arrival.taskIds.filter((id) => included.has(id));
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
+  const analyticalMealSourceIds = new Set((problem.participantMeals ?? [])
+    .filter((meal) => !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"))
+    .map((meal) => meal.sourceTaskId));
   const analyticalParticipantMeals = (problem.participantMeals ?? []).filter((meal) =>
-    !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"));
+    analyticalMealSourceIds.has(meal.sourceTaskId)).map((meal) => ({ ...meal,
+      // An analytical obligation is context rather than a hidden search variable.
+      // Keep only prerequisite vertices represented in this projection.
+      dependencies: meal.dependencies?.filter((id) => included.has(id) || analyticalMealSourceIds.has(id)),
+    }));
   // The executable problem must remain referentially closed. Obligations whose
   // source is outside scope are analytical context, never hidden search variables.
-  problem.participantMeals = problem.participantMeals?.filter((meal) => included.has(meal.sourceTaskId));
+  const retainedMealSourceIds = new Set((problem.participantMeals ?? [])
+    .filter((meal) => included.has(meal.sourceTaskId)).map((meal) => meal.sourceTaskId));
+  problem.participantMeals = problem.participantMeals?.filter((meal) => retainedMealSourceIds.has(meal.sourceTaskId))
+    .map((meal) => ({ ...meal,
+      dependencies: meal.dependencies?.filter((id) => included.has(id) || retainedMealSourceIds.has(id)),
+    }));
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail
   // preflight, and absent setup families cannot remain mandatory in the scope.
@@ -264,15 +276,21 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
+  const projectedParticipantMealSources=new Set((input.originalValidationProblem.participantMeals??[]).map(meal=>meal.sourceTaskId));
+  const projectedParticipantMeals=result?.complete
+    ? result.scheduledParticipantMeals.filter(meal=>projectedParticipantMealSources.has(meal.sourceTaskId)) : [];
   const scheduled = searchScheduled.map((task) => structuredClone(protectedById.get(task.id) ?? task));
   for(const fixed of input.protectedPlacements)if(!scheduled.some(task=>task.id===fixed.id))scheduled.push(structuredClone(fixed));
-  const searchValidation = result?.complete ? validatePlan(searchProblem, searchScheduled,
-    result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
+  // Analytical meals constrain construction but are deliberately not proposal
+  // obligations. Validate the materialized scope against the executable projected
+  // contract so invisible future context cannot make a complete local scope fail.
+  const searchValidation = result?.complete ? validatePlan(input.originalValidationProblem, searchScheduled,
+    result.scheduledSetupPreparations, result.scheduledSpaceMeals, projectedParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
     "scheduledOperationalMeals" in result ? result.scheduledOperationalMeals : []) : null;
   const validation = result?.complete ? validatePlan(input.originalValidationProblem, scheduled,
-    result.scheduledSetupPreparations, result.scheduledSpaceMeals, result.scheduledParticipantMeals,
+    result.scheduledSetupPreparations, result.scheduledSpaceMeals, projectedParticipantMeals,
     result.scheduledResourceMeals, result.scheduledItinerantUnitMeals,
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
     "scheduledOperationalMeals" in result ? result.scheduledOperationalMeals : []) : null;

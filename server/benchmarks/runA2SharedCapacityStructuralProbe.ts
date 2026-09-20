@@ -21,6 +21,8 @@ export function runA2SharedCapacityStructuralProbe(branchBudget = 300_000) {
   assert.equal(JSON.stringify(assisted.problem), before);
   const evidence = result.evidence;
   return {
+    coreStatus: result.status,
+    coreReasonCodes: evidence.reasonCodes,
     effectiveInConfiguration: {
       targetGroupSize: canonical.input.arrivalGroupingTarget,
       maximumGroupSize: canonical.input.arrivalMaximumGroupSize ?? canonical.input.vanCapacity,
