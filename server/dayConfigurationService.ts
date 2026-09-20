@@ -77,9 +77,10 @@ function candidateInput(input: EngineInput, plan: PlanRow, general: PlanRow, ope
     if (edit.workday) ({ start, end } = edit.workday);
     if (edit.meal) ({ start: mealStart, end: mealEnd, mode: mealMode } = edit.meal);
   } else if (operation === "RESTORE") {
-    if ((payload as DayConfigRestore).capability === "WORKDAY_WINDOW") {
+    const capability = (payload as DayConfigRestore).capability;
+    if (capability === "WORKDAY_WINDOW") {
       start = String(plan.work_baseline_start); end = String(plan.work_baseline_end);
-    } else {
+    } else if (capability === "GLOBAL_MEAL_BREAK") {
       mealStart = String(plan.meal_baseline_start); mealEnd = String(plan.meal_baseline_end);
       mealMode = String(plan.meal_baseline_mode) as EngineInput["mealMode"];
     }
