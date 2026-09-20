@@ -21,11 +21,14 @@ test("the v2.4 registry enforces semantic and security gates without count targe
   const workday=configurabilityRegistry.find(c=>c.capabilityId==="WORKDAY_WINDOW");
   assert.deepEqual(workday?.levels,["GENERAL","DAY_SNAPSHOT","DAY_OVERRIDE"]);
   assert.equal(workday?.generalSource,"program_settings.default_work_start/default_work_end");
-  for(const id of ["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK","OPTIMIZATION"]){
+  for(const id of ["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK"]){
     const capability=configurabilityRegistry.find(c=>c.capabilityId===id);
     assert.equal(capability?.status,"PRODUCTIVE",id);
     assert.equal(capability?.blockers.length,0,id);
   }
+  const optimization=configurabilityRegistry.find(c=>c.capabilityId==="OPTIMIZATION");
+  assert.equal(optimization?.status,"PARTIAL");
+  assert.ok(optimization?.blockers.some(blocker=>/superficie diaria|comparaci.n\/confirmaci.n/.test(blocker)));
 });
 
 test("every concrete registry test reference exists",()=>{
