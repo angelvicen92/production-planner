@@ -18,7 +18,7 @@ function writeStable(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-const { input, expansion, validation, config, itinerantUnitId, operationalMealGroups } = buildCanonicalFullA2EngineInput({
+const { input, expansion, validation, config, itinerantUnitId, taskId, operationalMealGroups } = buildCanonicalFullA2EngineInput({
   planId: PLAN_ID,
   branchBudget,
 });
@@ -41,6 +41,17 @@ const itineraryAvailabilityProjected = expansion.itinerantUnits.every((unit) => 
 });
 
 const diagnostic = exactResult?.evidence.causalDiagnostic ?? null;
+const fakeTechnicalTasks = expansion.tasks.filter((task) => task.operationalKind === "technical");
+const technicalChains = expansion.technicalChains.map((chain) => ({
+  id: chain.id,
+  representativeTaskIds: [...chain.orderedTaskIds],
+  representativeCount: chain.orderedTaskIds.length,
+}));
+const jointGroups = Object.entries(Object.groupBy(
+  expansion.tasks.filter((task) => task.jointGroupId !== undefined),
+  (task) => task.jointGroupId!,
+)).map(([id, tasks]) => ({ id, taskIds: tasks!.map((task) => task.id) }));
+const eva = input.planResourceItems.find((resource) => resource.name === "eva");
 const criticalDepth = exactResult?.evidence.coreMaximumDepth ?? null;
 const criticalRejections = diagnostic?.feederRejections.filter((row) => row.depth === criticalDepth).map(row=>({...row,causalCount:row.count,reason:row.firstRejectionReason})) ?? [];
 const criticalEliminations = diagnostic?.feederCoachDomainEliminations.filter((row) => row.depth === criticalDepth).map(row=>({...row,causalCount:row.startsEliminated})) ?? [];
@@ -65,13 +76,39 @@ const diagnosticReport = diagnostic ? {
   criticalRejectionCount,
   recommendation,
 } : null;
+const branchBudgetConsumed = exactResult?.evidence.branchesExplored ?? 0;
+const firstMaterialDeadEnd = exactResult?.evidence.firstStandaloneDeadEndCause ?? null;
+const executionBlocker = exactResult?.evidence.coreReasonCodes.includes("PATTERN_SEARCH_BUDGET_EXHAUSTED") ? {
+  phase: "MAIN_FLOW_PATTERN_GENERATION",
+  reasonCode: "PATTERN_SEARCH_BUDGET_EXHAUSTED",
+  authority: "generateMainFlowPatterns",
+  configuredMaxPatterns: input.plannerNext?.searchBudget.maxPatterns ?? null,
+  materialTaskIds: expansion.tasks.filter((task) => task.operationalKind === "main").map((task) => task.id),
+  materialEngineTaskIds: expansion.tasks.filter((task) => task.operationalKind === "main").map((task) => taskId.get(task.id)!),
+} : firstMaterialDeadEnd ? {
+  phase: firstMaterialDeadEnd.phase,
+  reasonCode: firstMaterialDeadEnd.kind,
+  authority: firstMaterialDeadEnd.blockingAuthority,
+  materialTaskIds: [...firstMaterialDeadEnd.taskIds],
+  blockingTaskId: firstMaterialDeadEnd.blockingTaskId,
+} : null;
 
 const evidence = {
   evidenceId: "A2-FULL-EXEC-001-first-execution",
   canonicalObligationCount: CANONICAL_OBLIGATION_COUNT,
   canonicalValidationStatus: validation.status,
+  canonicalProjection: {
+    fakeTechnicalTaskCount: fakeTechnicalTasks.length,
+    fakeTechnicalTaskIds: fakeTechnicalTasks.map((task) => task.id),
+    technicalChainCount: technicalChains.length,
+    technicalChains,
+    jointGroups,
+    evaAvailabilityStart: eva?.availabilityStart ?? null,
+    participantTransitionMinutes: input.plannerNext?.participantTransitionMinutes ?? null,
+  },
   engineInput: {
     taskCount: input.tasks.length,
+    fakeTechnicalTaskCount: fakeTechnicalTasks.length,
     participantCount: expansion.participants.length,
     sourceHumanTimesUsed: false,
     searchBudgetIsTechnicalExecutionConfiguration: true,
@@ -101,6 +138,13 @@ const evidence = {
     scheduledParticipantMealCount: exactResult?.scheduledParticipantMeals.length ?? 0,
     scheduledOperationalMealCount: exactResult?.scheduledOperationalMeals.length ?? 0,
     remainingTaskIds: exactResult?.remainingTaskIds ?? [],
+    branchBudget: {
+      consumed: branchBudgetConsumed,
+      maximum: branchBudget,
+      remaining: branchBudget - branchBudgetConsumed,
+    },
+    firstMaterialDeadEnd,
+    blocker: executionBlocker,
     evidence: exactResult?.evidence ?? null,
     diagnosticReport,
   } : null,

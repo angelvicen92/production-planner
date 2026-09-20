@@ -17,10 +17,16 @@ test("Full A2 first executable integration reports an atomic completion count", 
     const lines = child.stdout.trim().split(/\n/).filter(Boolean);
     const evidence = JSON.parse(lines.at(-1)!) as {
       canonicalObligationCount: number;
-      engineInput: { maxBranchExpansions: number };
+      canonicalProjection: { fakeTechnicalTaskCount:number; technicalChainCount:number;
+        technicalChains:Array<{id:string;representativeTaskIds:string[];representativeCount:number}>;
+        jointGroups:Array<{id:string;taskIds:string[]}>;evaAvailabilityStart:string|null;participantTransitionMinutes:number|null };
+      engineInput: { taskCount:number;fakeTechnicalTaskCount:number;maxBranchExpansions: number };
       preflight: { status: string; reasonCodes: string[] };
       adapter: { status: string; reasonCodes: string[] };
       execution: null | { kind: string; reasonCodes: string[]; status: string | null; complete: boolean;
+        branchBudget:{consumed:number;maximum:number;remaining:number};firstMaterialDeadEnd:unknown;
+        blocker:null|{phase:string;reasonCode:string;authority:string|null;configuredMaxPatterns?:number|null;
+          materialTaskIds:string[];materialEngineTaskIds?:number[]};
         evidence: { branchesExplored:number;coreBranches:number;standaloneBranches:number;
           coreMaximumDepth:number;coreCompleteLeafCount:number;deepestCoreDepthReached:number;
           deepestPartialScheduledTaskCount:number;deepestPartialMainRunsClosed:number;
@@ -46,6 +52,24 @@ test("Full A2 first executable integration reports an atomic completion count", 
     };
     assert.equal(evidence.canonicalObligationCount, 266);
     assert.equal(evidence.result.targetCanonicalObligations, 266);
+    assert.equal(evidence.engineInput.taskCount, 266);
+    assert.equal(evidence.engineInput.fakeTechnicalTaskCount, 0);
+    assert.equal(evidence.canonicalProjection.fakeTechnicalTaskCount, 0);
+    assert.equal(evidence.canonicalProjection.technicalChainCount, 1);
+    assert.deepEqual(evidence.canonicalProjection.technicalChains, [{
+      id: "continuity.reality-c-eva-alfombra",
+      representativeTaskIds: ["C06.reality_hall", "C12.reality_control_eva", "C11.reality_buggy",
+        "C04.alfombra_roja_eva", "C13.alfombra_roja_eva", "C06.alfombra_roja_conjunta", "C16.alfombra_roja"],
+      representativeCount: 7,
+    }]);
+    assert.deepEqual(evidence.canonicalProjection.jointGroups, [
+      { id: "joint.alfombra-roja.C06-C10", taskIds: ["C06.alfombra_roja_conjunta", "C10.alfombra_roja_conjunta"] },
+      { id: "joint.totales-post.C06-C10", taskIds: ["C06.totales_post_conjunto", "C10.totales_post_conjunto"] },
+    ]);
+    assert.equal(evidence.canonicalProjection.evaAvailabilityStart, "16:00");
+    assert.equal(evidence.canonicalProjection.participantTransitionMinutes, 5);
+    assert.equal(evidence.preflight.status, "SUPPORTED");
+    assert.equal(evidence.adapter.status, "SUPPORTED");
     assert.ok(evidence.result.publishedCanonicalObligations === 0 || evidence.result.publishedCanonicalObligations === 266);
     const report = evidence.execution?.diagnosticReport;
     assert.ok(report);
@@ -66,6 +90,15 @@ test("Full A2 first executable integration reports an atomic completion count", 
       executionEvidence.feederSlotMatchingEdgeChecks+executionEvidence.feederSlotMatchingAugmentTraversals
         +executionEvidence.feederMatchingWitnessRepairs);
     assert.equal(executionEvidence.branchesExplored,0);
+    assert.deepEqual(evidence.execution!.branchBudget,{consumed:0,maximum:300000,remaining:300000});
+    assert.equal(evidence.execution!.firstMaterialDeadEnd,null);
+    assert.deepEqual(evidence.execution!.blocker,{
+      phase:"MAIN_FLOW_PATTERN_GENERATION",reasonCode:"PATTERN_SEARCH_BUDGET_EXHAUSTED",
+      authority:"generateMainFlowPatterns",configuredMaxPatterns:200,
+      materialTaskIds:Array.from({length:19},(_,index)=>`C${String(index+1).padStart(2,"0")}.ensayo_estudio_7`),
+      materialEngineTaskIds:[10002,10017,10031,10043,10056,10072,10088,10102,10116,10131,
+        10147,10161,10175,10190,10203,10218,10229,10243,10256],
+    });
     assert.equal(executionEvidence.branchesExplored,
       executionEvidence.coreBranches+executionEvidence.standaloneBranches);
     assert.equal(executionEvidence.standaloneForwardWitnessCacheEntries,
