@@ -83,7 +83,8 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
         const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
         if(task.jointGroupId?!canPlaceJointGroup(problem,members,cursor,[...placed,...scheduled]):!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals)){scheduled.length=0;break;}
         const items=task.jointGroupId?scheduleJointGroup(members,cursor):[{...task,start:cursor,end:cursor+task.duration}];
-        for(const item of items)cost+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,[...placed,...scheduled],item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);
+        const scoringPlaced=[...placed,...scheduled];
+        for(const item of items){cost+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,scoringPlaced,item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);scoringPlaced.push(item);}
         scheduled.push(...items);cursor+=task.duration;
       }
       if(!ordered.every(task=>scheduled.some(item=>item.id===task.id)))continue;
@@ -276,7 +277,8 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
         const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
         if(task.jointGroupId?!canPlaceJointGroup(problem,members,start,prior):!canPlaceTask(problem,task,start,prior,scheduledSpaceMeals))continue;
         const scheduled=task.jointGroupId?scheduleJointGroup(members,start):[{...task,start,end:start+task.duration}];
-        const incremental=scheduled.reduce((total,item)=>total+[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(candidate=>candidate.id===id);return sum+resourcePresenceIncrement(id,[...prior,...scheduled.filter(x=>x.id!==item.id)],item)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0),0);
+        let incremental=0;const scoringPlaced=[...prior];
+        for(const item of scheduled){incremental+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>{const resource=problem.resources.find(candidate=>candidate.id===id);return sum+resourcePresenceIncrement(id,scoringPlaced,item)*presencePreferenceWeight(resource?.presencePreference??"OFF")},0);scoringPlaced.push(item);}
         const candidate=partial([...state.tasks,...scheduled],state.cost+incremental);
         if(last){complete.push({tasks:candidate.tasks,cost:candidate.cost,rootTaskId:root.id,start:candidate.tasks[0]!.start,end:start+task.duration});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
         else next.push(candidate);
