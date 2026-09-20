@@ -8,6 +8,8 @@ export interface EffectiveConfigurationValue {
   capabilityId:string; label:string; category:ConfigurationCategory; value:unknown;
   availability:EffectiveValueAvailability; unit:string; severity?:string;
   source:EffectiveValueSource; effectiveRevision?:number; fingerprint?:string;
+  baseline?:unknown; defaultGeneral?:unknown; canRestoreInherited?:boolean;
+  overrideMetadata?:{createdBy:string|null;createdAt:string|null};
   validationStatus:EffectiveValidationStatus; requiresReplan:"YES"|"NO"|"UNKNOWN";
   implementationStatus:CapabilityStatus; blockers:readonly string[];
   /** True only when the concrete day demonstrates that this capability is required. */

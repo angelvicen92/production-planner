@@ -131,7 +131,7 @@ export function useCreatePlan() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (plan: InsertPlan) =>
+    mutationFn: (plan: any) =>
       apiRequest<Plan>("POST", api.plans.create.path, plan),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.plans.list.path] });
@@ -178,8 +178,17 @@ export function useUpdatePlan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, patch }: { id: number; patch: any }) =>
-      apiRequest("PATCH", buildUrl(api.plans.update.path, { id }), patch),
+    mutationFn: async ({ id, patch }: { id: number; patch: any }) => {
+      const {workStart,workEnd,mealStart,mealEnd,mealMode,...ordinary}=patch;
+      if(workStart!==undefined||workEnd!==undefined||mealStart!==undefined||mealEnd!==undefined||mealMode!==undefined){
+        const current=queryClient.getQueryData<any>(planQueryKey(id));
+        await apiRequest("PUT",buildUrl(api.plans.dayConfiguration.edit.path,{id}),{
+          ...((workStart!==undefined||workEnd!==undefined)?{workday:{start:workStart??current?.workStart,end:workEnd??current?.workEnd}}:{}),
+          ...((mealStart!==undefined||mealEnd!==undefined||mealMode!==undefined)?{meal:{start:mealStart??current?.mealStart,end:mealEnd??current?.mealEnd,mode:mealMode??current?.mealMode??"flexible_meal_window"}}:{}),
+        });
+      }
+      return Object.keys(ordinary).length ? apiRequest("PATCH",buildUrl(api.plans.update.path,{id}),ordinary) : undefined;
+    },
     onMutate: async ({ id, patch }) => {
       const key = planQueryKey(id);
       await queryClient.cancelQueries({ queryKey: key });

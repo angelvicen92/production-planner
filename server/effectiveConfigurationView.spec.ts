@@ -16,10 +16,10 @@ test("effective values without auditable provenance stay usable and do not degra
     assert.equal(value?.availability,"AVAILABLE");
     assert.equal(value?.source,"UNKNOWN");
     assert.equal(value?.validationStatus,"VALID");
-    assert.equal(value?.implementationStatus,"PARTIAL");
+    assert.equal(value?.implementationStatus,"PRODUCTIVE");
   }
   assert.deepEqual(view.productCoverage,configurabilityCounts);
-  assert.ok(view.productCoverage.PARTIAL>0);
+  assert.equal(view.productCoverage.PRODUCTIVE,2);
 });
 
 test("optimizer exposes only the provenance carried by its authoritative snapshot",async()=>{

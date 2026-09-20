@@ -35,6 +35,7 @@ import { assistedProposalApplySchema, assistedProposalRequestSchema } from "@sha
 import { assistedConfigRefreshApplySchema } from "@shared/assistedConfigRefreshContracts";
 import { AssistedConfigRefreshError, AssistedConfigRefreshService } from "./assistedConfigRefresh";
 import { getEffectiveConfigurationResponse } from "./effectiveConfigurationHttp";
+import { applyDayConfigurationOperation, previewDayConfigurationRefresh } from "./dayConfigurationService";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -3206,7 +3207,7 @@ function mapDeleteError(err: any, fallback: string) {
   app.post(api.plans.create.path, async (req, res) => {
     try {
       const input = api.plans.create.input.parse(req.body);
-      const plan = await storage.createPlan(input);
+      const plan = await storage.createPlan({...input, configurationActorId:String((req as any).user.id)});
       res.status(201).json(plan);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -3276,6 +3277,23 @@ function mapDeleteError(err: any, fallback: string) {
       }
       return res.status(500).json({ message: "Internal Server Error" });
     }
+  });
+
+  app.put(api.plans.dayConfiguration.edit.path, async (req,res) => {
+    try { const payload=api.plans.dayConfiguration.edit.input.parse(req.body); res.json(await applyDayConfigurationOperation(Number(req.params.id),String((req as any).user.id),"EDIT",payload)); }
+    catch(err:any){ if(err instanceof z.ZodError)return res.status(400).json({message:err.errors[0].message}); return res.status(err?.status??500).json({message:err?.message??"Internal Server Error"}); }
+  });
+  app.post(api.plans.dayConfiguration.restore.path, async (req,res) => {
+    try { const payload=api.plans.dayConfiguration.restore.input.parse(req.body); res.json(await applyDayConfigurationOperation(Number(req.params.id),String((req as any).user.id),"RESTORE",payload)); }
+    catch(err:any){ if(err instanceof z.ZodError)return res.status(400).json({message:err.errors[0].message}); return res.status(err?.status??500).json({message:err?.message??"Internal Server Error"}); }
+  });
+  app.get(api.plans.dayConfiguration.previewRefresh.path, async (req,res) => {
+    try { res.json(await previewDayConfigurationRefresh(Number(req.params.id))); }
+    catch(err:any){ return res.status(err?.status??500).json({message:err?.message??"Internal Server Error"}); }
+  });
+  app.post(api.plans.dayConfiguration.refresh.path, async (req,res) => {
+    try { const payload=api.plans.dayConfiguration.refresh.input.parse(req.body); res.json(await applyDayConfigurationOperation(Number(req.params.id),String((req as any).user.id),"REFRESH",payload)); }
+    catch(err:any){ if(err instanceof z.ZodError)return res.status(400).json({message:err.errors[0].message}); return res.status(err?.status??500).json({message:err?.message??"Internal Server Error"}); }
   });
 
   // Delete Plan (blocked if any task is in_progress/done)

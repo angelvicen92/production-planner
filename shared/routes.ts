@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createDayConfigurationIntentSchema, dayConfigEditSchema, dayConfigRefreshSchema, dayConfigRestoreSchema } from "./dayConfig";
 import { optimizerHeuristicKeys } from "./optimizer";
 import {
   insertPlanSchema,
@@ -29,18 +30,6 @@ function validateWorkdayPair(
 
 export const updatePlanSchema = z
 .object({
-  workStart: canonicalResourceAvailabilityTime.optional(),
-  workEnd: canonicalResourceAvailabilityTime.optional(),
-  mealStart: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional(),
-  mealEnd: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional(),
-  mealMode: z.enum(["global_hard_break", "flexible_meal_window"]).optional(),
-
   contestantMealDurationMinutes: z.number().int().min(1).max(240).optional(),
   contestantMealMaxSimultaneous: z.number().int().min(1).max(50).optional(),
   spaceMealBreakMinutes: z.number().int().min(0).max(240).nullable().optional(),
@@ -414,8 +403,7 @@ export const api = {
     create: {
       method: "POST" as const,
       path: "/api/plans",
-      input: insertPlanSchema.extend({ workStart: canonicalResourceAvailabilityTime.optional(), workEnd: canonicalResourceAvailabilityTime.optional() })
-        .superRefine((value, context) => validateWorkdayPair(value, "workStart", "workEnd", context)),
+      input: insertPlanSchema.omit({workStart:true,workEnd:true,mealStart:true,mealEnd:true,mealMode:true}).extend({configuration:createDayConfigurationIntentSchema}),
       responses: {
         201: z.custom<typeof plans.$inferSelect>(),
         400: errorSchemas.validation,
@@ -430,6 +418,12 @@ export const api = {
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
       },
+    },
+    dayConfiguration: {
+      edit: { method:"PUT" as const, path:"/api/plans/:id/day-configuration", input:dayConfigEditSchema, responses:{200:z.any(),400:errorSchemas.validation,404:errorSchemas.notFound} },
+      restore: { method:"POST" as const, path:"/api/plans/:id/day-configuration/restore", input:dayConfigRestoreSchema, responses:{200:z.any(),400:errorSchemas.validation,404:errorSchemas.notFound} },
+      previewRefresh: { method:"GET" as const, path:"/api/plans/:id/day-configuration/refresh", responses:{200:z.any(),404:errorSchemas.notFound} },
+      refresh: { method:"POST" as const, path:"/api/plans/:id/day-configuration/refresh", input:dayConfigRefreshSchema, responses:{200:z.any(),400:errorSchemas.validation,404:errorSchemas.notFound} },
     },
     delete: {
       method: "DELETE" as const,

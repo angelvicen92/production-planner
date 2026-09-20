@@ -7,11 +7,11 @@ import type { IStorage } from "./storage";
 export type { EffectiveConfigurationValue, EffectiveConfigurationView } from "../shared/effectiveConfigurationContracts";
 
 const absent = (c:ConfigurabilityCapability):EffectiveConfigurationValue => ({capabilityId:c.capabilityId,label:c.name,category:c.category,value:null,availability:c.status==="MISSING"?"UNAVAILABLE":"UNKNOWN",unit:c.unit,source:"UNKNOWN",validationStatus:c.status==="MISSING"?"UNSUPPORTED":"UNKNOWN",requiresReplan:"UNKNOWN",implementationStatus:c.status,blockers:c.blockers,requiredForDay:false});
-function projected(c:ConfigurabilityCapability,input:EngineInput,revision?:number):EffectiveConfigurationValue {
+function projected(c:ConfigurabilityCapability,input:EngineInput,plan:any,general:any,revision?:number,fingerprint?:string):EffectiveConfigurationValue {
   const common={capabilityId:c.capabilityId,label:c.name,category:c.category,unit:c.unit,effectiveRevision:revision,requiresReplan:"UNKNOWN" as const,implementationStatus:c.status,blockers:c.blockers,requiredForDay:false};
   switch(c.capabilityId){
-    case "WORKDAY_WINDOW": return {...common,value:{start:input.workDay.start,end:input.workDay.end},availability:"AVAILABLE",source:"UNKNOWN",validationStatus:"VALID"};
-    case "GLOBAL_MEAL_BREAK": return {...common,value:{mode:input.mealMode??"global_hard_break",window:input.meal},availability:"AVAILABLE",source:"UNKNOWN",validationStatus:"VALID"};
+    case "WORKDAY_WINDOW": return {...common,value:{start:input.workDay.start,end:input.workDay.end},...(plan.work_config_source?{baseline:{start:plan.work_baseline_start,end:plan.work_baseline_end},defaultGeneral:{start:general.default_work_start,end:general.default_work_end},canRestoreInherited:plan.work_config_source==="DAY_OVERRIDE",overrideMetadata:{createdBy:plan.work_override_by??null,createdAt:plan.work_override_at??null},fingerprint}:{}),availability:"AVAILABLE",source:plan.work_config_source??"UNKNOWN",validationStatus:"VALID"};
+    case "GLOBAL_MEAL_BREAK": return {...common,value:{mode:input.mealMode??"global_hard_break",window:input.meal},...(plan.meal_config_source?{baseline:{start:plan.meal_baseline_start,end:plan.meal_baseline_end,mode:plan.meal_baseline_mode},defaultGeneral:{start:general.meal_start,end:general.meal_end,mode:general.meal_mode},canRestoreInherited:plan.meal_config_source==="DAY_OVERRIDE",overrideMetadata:{createdBy:plan.meal_override_by??null,createdAt:plan.meal_override_at??null},fingerprint}:{}),availability:"AVAILABLE",source:plan.meal_config_source??"UNKNOWN",validationStatus:"VALID"};
     case "PARTICIPANTS": return {...common,value:{count:new Set(input.tasks.map(t=>t.contestantId).filter(Boolean)).size,availabilityRules:Object.keys(input.contestantAvailabilityById??{}).length},availability:"AVAILABLE",source:"MIXED",validationStatus:"VALID"};
     case "TASKS_DEPENDENCIES": return {...common,value:{tasks:input.tasks.length,dependencies:input.tasks.reduce((n,t)=>n+(t.dependsOnTaskIds?.length??0),0)},availability:"AVAILABLE",source:"MIXED",fingerprint:input.taskTemplateSnapshotFingerprint,validationStatus:"VALID"};
     case "SPATIAL_AVAILABILITY": return {...common,value:{zones:input.planZoneSettings?.length??0,spaces:input.planSpaceSettings?.length??0},availability:"AVAILABLE",source:"DAY_SNAPSHOT",validationStatus:"VALID"};
@@ -33,7 +33,9 @@ export function deriveReadiness(values:readonly EffectiveConfigurationValue[]):E
 }
 export async function buildEffectiveConfigurationView(storage:IStorage,planId:number,inputBuilder:typeof buildEngineInput=buildEngineInput):Promise<EffectiveConfigurationView>{
   const plan=await storage.getPlan(planId); if(!plan)throw Object.assign(new Error("PLAN_NOT_FOUND"),{status:404});
-  const [input,session]=await Promise.all([inputBuilder(planId,storage),storage.getActiveAssistedPlanningSession(planId)]);
-  const values=configurabilityRegistry.map(c=>projected(c,input,session?.currentConfigRevisionId));
+  const hasProvenance=!!(plan as any).work_config_source;
+  const [input,session,revisions,generalResult]=await Promise.all([inputBuilder(planId,storage),storage.getActiveAssistedPlanningSession(planId),typeof (storage as any).listPlanConfigRevisions==="function"?storage.listPlanConfigRevisions(planId):Promise.resolve([]),hasProvenance?import("./supabase").then(({supabaseAdmin})=>supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode").eq("id",1).single()):Promise.resolve({data:{}} as any)]);
+  const revision=revisions.at(-1); const rawPlan=plan as any; const general=generalResult.data??{};
+  const values=configurabilityRegistry.map(c=>projected(c,input,rawPlan,general,Number(rawPlan.current_config_revision_id??revision?.id) || undefined,revision?.fingerprint));
   return Object.freeze({contractVersion:2,planId,generatedFrom:"PRODUCTIVE_AUTHORITIES",values:Object.freeze(values),readiness:deriveReadiness(values),productCoverage:configurabilityCounts});
 }
