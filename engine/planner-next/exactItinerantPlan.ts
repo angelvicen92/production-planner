@@ -1181,7 +1181,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const supplemental=(depth:number)=>supplementalByDepth[String(depth)]??={participantMeal:0,standaloneForward:0};
   const futureAssessments=new Map<string,{rows:Map<string,ExactFutureFeasibilityCausalAssessment>;occurrences:number}>();
   const standaloneForwardWitnessCache=new Map<string,number>();
-  const coreDecisionDepthForTask=(candidate:Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],taskId:string):number|null=>{
+  const coreDecisionDepthForTask=(candidate:Pick<Parameters<NonNullable<ExactMainAndFeederSearchOptions["onPartialCoreCandidate"]>>[0],"tasks">,taskId:string):number|null=>{
     const task=candidate.tasks.find(item=>item.id===taskId);if(!task)return null;
     const mains=candidate.tasks.filter(item=>item.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const contracts=problem.anchoredAccompaniments??[];
@@ -1372,7 +1372,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // The nominal Assisted pipeline can materialize a complete core without
     // visiting partial-core callbacks. Apply the same exact reservation at that
     // boundary so no locally complete proposal can bypass future structures.
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,[],Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE")return "REJECT";}
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,immutableCoreTasks,Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
+      const causing=immutableCoreTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
+      const target=causing?coreDecisionDepthForTask(candidate,causing.id):null;
+      if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,
+        causingCandidateStart:causing.start,depth:candidate.tasks.filter(task=>task.kind==="main").length,...reservation};
+      return target===null?"REJECT":{outcome:"CERTIFIED_BACKJUMP",targetDepth:target};
+    }}
     const remainingStandalone=standaloneTasks.filter(task=>!coreIds.has(task.id));
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",

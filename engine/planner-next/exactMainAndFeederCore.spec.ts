@@ -638,6 +638,25 @@ test("a certified continuation backjump reopens its causal main decision without
   assert.deepEqual(result.scheduledTasks, []);
 });
 
+test("a certified hard-valid leaf backjump forbids the causal main edge and repairs matching", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("b"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("b"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-b");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-b");
+  problem.tasks.find(({id})=>id==="main-b1")!.availability=[{start:0,end:120}];
+  const mainOrders: string[] = [];
+  const result = runExactMainAndFeederSearch(problem, { onHardValidCoreLeaf(candidate) {
+    const order = candidate.tasks.filter(({ kind }) => kind === "main").sort((a,b)=>a.start-b.start)
+      .map(({ id }) => id).join("|");
+    mainOrders.push(order);
+    return mainOrders.length === 1 ? { outcome:"CERTIFIED_BACKJUMP", targetDepth:1 } : "ACCEPT";
+  } });
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(new Set(mainOrders).size, 2, "the repaired witness must choose another main@slot edge");
+  assert.ok(result.evidence.mainRunWitnessRepairs > 0);
+});
+
 test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{
   const problem=twoCohortProblem();
   problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));

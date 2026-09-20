@@ -255,10 +255,10 @@ export interface ExactMainChoiceDescriptor {
   readonly firstObligation: number;
 }
 
-interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number }
+export interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number }
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 
-export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED";
+export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 export interface ExactSearchLedger {
   limit: number;
@@ -827,7 +827,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const ordered=[...placed].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
       const continuation=options.onHardValidCoreLeaf?.({tasks:ordered,meals:fixedMeals,remainingTaskIds:[],
         fingerprint:fingerprint(ordered,[],fixedMeals)})??"ACCEPT";
-      if(continuation!=="ACCEPT")return continuation==="BUDGET_EXHAUSTED"?continuation:"DEAD_END";
+      if(continuation!=="ACCEPT")return continuation==="REJECT"?"DEAD_END":continuation;
       selected={tasks:ordered,meals:fixedMeals,pattern:[]};return "FOUND";
     });
     if(outcome==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",[exhaustionReason],coreIds);
@@ -875,6 +875,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
           remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (typeof continuation === "object") return continuation;
         if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
       }
       return "DEAD_END";

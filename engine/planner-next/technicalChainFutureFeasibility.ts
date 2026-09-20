@@ -33,9 +33,13 @@ export function probeTechnicalChainFutureReservations(problem:PlannerNextProblem
   if(affected.length===0)return {...base,status:"PASS",result:"NOT_AFFECTED"};
   let consumed=0,checked=0;
   for(const structure of affected){
-    const members=structure.tasks.filter(task=>structure.policy.orderedTaskIds.includes(task.id));
+    // Keep the explicit policy sequence as the work item while the probe problem
+    // retains every analytical task, including joint-closure siblings.
+    const byId=new Map(structure.tasks.map(task=>[task.id,task]));
+    const members=structure.policy.orderedTaskIds.map(id=>byId.get(id)).filter((task):task is Task=>task!==undefined);
+    const relevantPlaced=placed.filter(task=>structure.tasks.some(member=>sharesHardAuthority(member,task)));
     const probeProblem:PlannerNextProblem={...problem,tasks:[...problem.tasks,...structure.tasks],technicalChains:[structure.policy]};
-    const generated=generateTechnicalChainCandidates(probeProblem,members,[...placed],Math.max(0,allowance-consumed),"PROBE",1);
+    const generated=generateTechnicalChainCandidates(probeProblem,members,relevantPlaced,Math.max(0,allowance-consumed),"PROBE",1);
     consumed+=generated.consumed;checked++;
     const identity={structureId:structure.policy.id,workItemKey:technicalChainWorkItemKey(structure.tasks[0]!.id)};
     if(generated.exhausted)return {...base,...identity,status:"ABSTAIN",result:"BUDGET_EXHAUSTED",structuresChecked:checked,branchesConsumed:consumed,candidateCount:0};
@@ -44,7 +48,7 @@ export function probeTechnicalChainFutureReservations(problem:PlannerNextProblem
       // witness after removing one newly materialised, relevant placement.
       for(const candidate of [...added].filter(task=>structure.tasks.some(member=>sharesHardAuthority(member,task)))
         .sort((a,b)=>a.id.localeCompare(b.id)||a.start-b.start)){
-        const without=placed.filter(task=>task.id!==candidate.id);
+        const without=relevantPlaced.filter(task=>task.id!==candidate.id);
         const counterfactual=generateTechnicalChainCandidates(probeProblem,members,[...without],
           Math.max(0,allowance-consumed),"PROBE",1);
         consumed+=counterfactual.consumed;
