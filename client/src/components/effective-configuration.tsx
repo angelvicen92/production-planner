@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { EffectiveConfigurationView, EffectiveConfigurationValue } from "../../../shared/effectiveConfigurationContracts";
 
-export const sourceLabels = {DAY_SNAPSHOT:"Heredado para este día",MIXED:"Configuración diaria combinada",PROTECTED:"Protegido",UNKNOWN:"Origen no disponible"} as const;
+export const sourceLabels = {INHERITED:"Heredado",DAY_OVERRIDE:"Modificado para este día",LEGACY_BACKFILL:"Migrado de configuración anterior",DAY_SNAPSHOT:"Valor materializado del día",MIXED:"Configuración diaria combinada",PROTECTED:"Protegido",UNKNOWN:"Origen desconocido"} as const;
 export function SourceBadge({source}:{source:EffectiveConfigurationValue["source"]}){return <Badge variant="outline">{sourceLabels[source]}</Badge>}
 export function SeverityBadge({severity}:{severity?:string}){return severity?<Badge variant={severity==="REQUIRED"?"destructive":"secondary"}>{severity==="REQUIRED"?"Obligatorio":severity==="PREFERRED"?"Preferente":"Desactivado"}</Badge>:null}
 export function CapabilityStatus({value}:{value:EffectiveConfigurationValue}){

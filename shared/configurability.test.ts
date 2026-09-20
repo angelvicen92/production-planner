@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { configurabilityCounts, configurabilityRegistry } from "./configurability";
 
 test("the v2.4 registry enforces semantic and security gates without count targets",()=>{
@@ -20,6 +21,17 @@ test("the v2.4 registry enforces semantic and security gates without count targe
   const workday=configurabilityRegistry.find(c=>c.capabilityId==="WORKDAY_WINDOW");
   assert.deepEqual(workday?.levels,["GENERAL","DAY_SNAPSHOT","DAY_OVERRIDE"]);
   assert.equal(workday?.generalSource,"program_settings.default_work_start/default_work_end");
+  for(const id of ["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK","OPTIMIZATION"]){
+    const capability=configurabilityRegistry.find(c=>c.capabilityId===id);
+    assert.equal(capability?.status,"PARTIAL",id);
+    assert.ok(capability?.blockers.some(blocker=>/Restore inherited/.test(blocker)),id);
+  }
+});
+
+test("every concrete registry test reference exists",()=>{
+  for(const capability of configurabilityRegistry)
+    for(const path of capability.tests)
+      assert.ok(existsSync(resolve(process.cwd(),path)),`${capability.capabilityId} references missing test ${path}`);
 });
 
 test("documentary Evidence is checked against the canonical registry",()=>{
