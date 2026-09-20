@@ -612,6 +612,13 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const scheduledById=new Map(scheduled.map(task=>[task.id,task]));
   const scheduledCountById=new Map<string,number>();
   for(const task of scheduled)scheduledCountById.set(task.id,(scheduledCountById.get(task.id)??0)+1);
+  const chainIdentityMatches=(expected:Task,actual:ScheduledTask)=>expected.kind==="technical"?technicalIdentityMatches(expected,actual):
+    actual.id===expected.id&&actual.kind===expected.kind&&actual.spaceId===expected.spaceId&&actual.duration===expected.duration&&actual.end-actual.start===expected.duration
+    &&actual.participantId===expected.participantId&&actual.coachId===expected.coachId&&actual.blockKey===expected.blockKey&&actual.setupFamilyId===expected.setupFamilyId
+    &&actual.jointGroupId===expected.jointGroupId&&actual.itinerantUnitId===expected.itinerantUnitId
+    &&JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.requiredResourceIds??[])].sort())
+    &&JSON.stringify([...actual.dependencies].sort())===JSON.stringify([...expected.dependencies].sort())
+    &&JSON.stringify(actual.availability??[])===JSON.stringify(expected.availability??[]);
   const invalidTechnicalChainRootIds=new Set<string>();
   for(const chain of getTechnicalChains(problem.tasks,problem.technicalChains)) {
     const rootTaskId=chain[0]?.id;if(!rootTaskId)continue;let invalid=false;
@@ -620,7 +627,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const memberIds=new Set(chain.map(task=>task.id));
     for(let i=0;i<chain.length;i++){
       const expected=chain[i]!,actual=scheduledById.get(expected.id),prior=i>0?chain[i-1]:undefined;
-      if(scheduledCountById.get(expected.id)!==1||!actual||actual.kind!==expected.kind||actual.spaceId!==expected.spaceId||actual.duration!==expected.duration||(strictTechnical&&actual&&!technicalIdentityMatches(expected,actual)))invalid=true;
+      if(scheduledCountById.get(expected.id)!==1||!actual||!chainIdentityMatches(expected,actual))invalid=true;
       if(!prior){if((!policy||strictTechnical)&&expected.dependencies.length!==0)invalid=true;}
       else {
         if((!policy||strictTechnical)&&(expected.dependencies.length!==1||expected.dependencies[0]!==prior.id))invalid=true;
