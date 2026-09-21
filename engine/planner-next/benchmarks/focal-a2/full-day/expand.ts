@@ -151,6 +151,11 @@ function technicalChains(): TechnicalChainContract[] {
       taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"),
       taskId("C16", "ALFOMBRA_ROJA"),
     ],
+    phases: [
+      [taskId("C06", "REALITY_HALL"), taskId("C12", "REALITY_CONTROL_EVA"), taskId("C11", "REALITY_BUGGY")],
+      [taskId("C04", "ALFOMBRA_ROJA_EVA"), taskId("C13", "ALFOMBRA_ROJA_EVA")],
+      [taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"), taskId("C16", "ALFOMBRA_ROJA")],
+    ],
     adjacency: "REQUIRED",
     resourceContinuity: "REQUIRED",
     requiredResourceIds: [],

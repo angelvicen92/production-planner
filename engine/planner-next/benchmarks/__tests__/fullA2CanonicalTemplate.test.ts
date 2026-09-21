@@ -65,6 +65,11 @@ test("preserves the canonical Reality C plus EVA to Alfombra continuity as one g
     taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"),
     taskId("C16", "ALFOMBRA_ROJA"),
   ]);
+  assert.deepEqual(chain?.phases, [
+    [taskId("C06", "REALITY_HALL"), taskId("C12", "REALITY_CONTROL_EVA"), taskId("C11", "REALITY_BUGGY")],
+    [taskId("C04", "ALFOMBRA_ROJA_EVA"), taskId("C13", "ALFOMBRA_ROJA_EVA")],
+    [taskId("C06", "ALFOMBRA_ROJA_CONJUNTA"), taskId("C16", "ALFOMBRA_ROJA")],
+  ]);
   assert.equal(chain?.adjacency, "REQUIRED");
 });
 
@@ -85,8 +90,9 @@ test("projects and constructs the canonical continuity gaplessly with phase-spec
   ].map(canonical);
   const representatives = representativeIds.map((id) => candidate.tasks.find((task) => task.id === id)!);
   assert.ok(representatives.every(Boolean));
-  for (let index = 1; index < representatives.length; index += 1) {
-    assert.equal(representatives[index - 1]!.end, representatives[index]!.start);
+  const scheduledOrder = [...representatives].sort((left, right) => left.start - right.start);
+  for (let index = 1; index < scheduledOrder.length; index += 1) {
+    assert.equal(scheduledOrder[index - 1]!.end, scheduledOrder[index]!.start);
   }
   const evaSourceId = input.planResourceItems.find((resource) => resource.name === "eva")!.id;
   const eva = problem.resources.find((resource) => resource.id === `plan-resource:${evaSourceId}`)!;
