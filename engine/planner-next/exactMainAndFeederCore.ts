@@ -5,7 +5,7 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
-  type MainFeederStructuralRejection } from "./mainFlowPatterns";
+  type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
@@ -292,6 +292,8 @@ export interface ExactMainAndFeederSearchOptions {
    * deferred to the exact accepted-baseline validation gate. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
+  /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
+  preferredArchitecture?: MainFeederArchitecture;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
@@ -743,7 +745,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const duration = mains[0]?.duration??0;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
-  if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
+  const preferredArchitecture=options.preferredArchitecture;
+  const orderedPatterns=[...(preferredArchitecture?[preferredArchitecture.pattern as string[]]:[]),...patterns.patterns]
+    .filter((pattern,index,all)=>all.findIndex(candidate=>candidate.join("\u0000")===pattern.join("\u0000"))===index);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const latestDepartureStart = latestDepartureStartByParticipant(problem);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
@@ -1731,7 +1735,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const timelineCutTiers = hasMainFlowMeal(problem)
     ? [preferredCandidateCuts, fallbackCandidateCuts] : [preferredCandidateCuts];
-  outer: if(mains.length>0) for (const candidateCutsForTier of timelineCutTiers) for (const pattern of patterns.patterns) {
+  outer: if(mains.length>0) for (const candidateCutsForTier of timelineCutTiers) for (const pattern of orderedPatterns) {
     if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
       return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
     evidence.patternCandidatesExplored += 1;
@@ -1764,7 +1768,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           }
           return variants;
         }));
-        return orderTimelines([...base, ...acceptedAdjacent]);
+        const ordered=orderTimelines([...base, ...acceptedAdjacent]);
+        if(!preferredArchitecture||preferredArchitecture.pattern.join("\u0000")!==pattern.join("\u0000"))return ordered;
+        const preferredIndex=ordered.findIndex(timeline=>timeline.slots.length===preferredArchitecture.slots.length
+          &&timeline.slots.every((slot,index)=>slot===preferredArchitecture.slots[index]));
+        return preferredIndex<0?ordered:[ordered[preferredIndex]!,...ordered.filter((_,index)=>index!==preferredIndex)];
       })() : [undefined];
     for (const timeline of timelines) {
       const departureEnds = [...latestDepartureStart.values()];
@@ -1861,6 +1869,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
             .sort((left, right) => right - left),
         ])];
+      if(!timeline&&preferredArchitecture&&preferredArchitecture.pattern.join("\u0000")===pattern.join("\u0000")
+        &&preferredArchitecture.slots.length===pattern.length){
+        const preferredEnd=preferredArchitecture.slots.at(-1)!+duration;
+        candidateEnds=[preferredEnd,...candidateEnds.filter(end=>end!==preferredEnd)];
+      }
       if (!timeline) {
         const historicalSet = new Set(historicalEnds);
         candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
@@ -1922,7 +1935,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
     }
   }
-  if (!selected) return fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_CORE"], coreIds);
+  if (!selected) return patterns.exhausted
+    ?fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds)
+    :fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_CORE"], coreIds);
   const completed = selected as { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline };
   const ordered = [...completed.tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
   const meals = [...completed.meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));

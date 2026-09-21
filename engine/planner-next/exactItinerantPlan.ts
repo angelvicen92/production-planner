@@ -10,7 +10,7 @@ import {
   type ExactCoreCausalDiagnostic,
   type ExactFutureFeasibilityCausalAssessment,
 } from "./exactMainAndFeederCore";
-import type { MainFeederStructuralRejection } from "./mainFlowPatterns";
+import type { MainFeederArchitecture, MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -1051,15 +1051,13 @@ export interface ExactItinerantPlanSearchOptions {
   /** Immutable Assisted placements, materialized before residual search. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
+  /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
+  preferredArchitecture?: MainFeederArchitecture;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
   const completeSelectionMode = options.standaloneCompletionSelection ?? "FIRST_HARD_VALID";
-  // A single nominal witness is safe only when no future hard structure needs
-  // alternative local geometry. Otherwise retain the ordinary exact core DFS.
-  const assistedPipeline=options.fixedPlacementsAsContext&&(problem.analyticalFutureTechnicalChains?.length??0)===0
-    ?materializeFirstNominalPipelineWitness(problem):null;
   const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
@@ -1222,6 +1220,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   };
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
+    preferredArchitecture:options.preferredArchitecture,
     causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
@@ -1349,7 +1348,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const orderedMains=candidate.tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-    const pipeline=(problem.analyticalFutureTechnicalChains?.length??0)>0?null:assistedPipeline??(orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
+    const pipeline=(problem.analyticalFutureTechnicalChains?.length??0)>0?null:(orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
       ?materializeNominalPipelineWitness(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)})
       :null);
     const pipelinePreservesFixed=pipeline?.witness.status==="FEASIBLE"&&[...fixedById].every(([id,fixed])=>{
@@ -1528,22 +1527,15 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
 export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false): ExactItinerantPlanResult {
-  let effectiveFixedPlacements=fixedPlacements;
-  if(fixedPlacementsAsContext){
-    const pipeline=materializeFirstNominalPipelineWitness(problem);
-    const protectedById=new Map((fixedPlacements??[]).map(task=>[task.id,task]));
-    const preservesProtected=pipeline?.scheduledTasks.every(task=>{const fixed=protectedById.get(task.id);
-      return !fixed||(fixed.start===task.start&&fixed.end===task.end);});
-    if(pipeline&&preservesProtected){
-      const structuralIds=new Set(problem.tasks.filter(task=>task.kind==="main"||task.kind==="vocal").map(task=>task.id));
-      for(const id of anchoredTaskIds(problem))structuralIds.add(id);
-      effectiveFixedPlacements=[...pipeline.scheduledTasks.filter(task=>structuralIds.has(task.id)&&!protectedById.has(task.id)),...protectedById.values()];
-    }
-  }
+  const pipeline=fixedPlacementsAsContext?materializeFirstNominalPipelineWitness(problem):null;
+  const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
+    pattern:pipeline.witness.pattern,
+    slots:[...pipeline.witness.mainSpots].sort((a,b)=>a.position-b.position).map(spot=>spot.start),
+  }:undefined;
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements:effectiveFixedPlacements,fixedPlacementsAsContext});
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,preferredArchitecture});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
@@ -1551,6 +1543,6 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    causalDiagnostic, acceptsValidation, fixedPlacements:effectiveFixedPlacements, fixedPlacementsAsContext,
+    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, preferredArchitecture,
   });
 }
