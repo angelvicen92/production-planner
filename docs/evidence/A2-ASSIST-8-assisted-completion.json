@@ -925,8 +925,39 @@
         "passes": 0,
         "prunes": 1,
         "abstentions": 0,
-        "branchesConsumed": 2808,
-        "firstPrune": null
+        "branchesConsumed": 1255,
+        "firstPrune": {
+          "phase": "CORE",
+          "causingTaskId": "task:10161",
+          "causingCandidateStart": 1005,
+          "depth": 19,
+          "affectedStructures": 1,
+          "structuresChecked": 1,
+          "branchesConsumed": 1255,
+          "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+          "workItemKey": "technical-chain:task:10041",
+          "candidateCount": 0,
+          "certifiedCausingTaskId": "task:10161",
+          "certifiedDecisionDepth": 16,
+          "initialRepairableGroupCount": 10,
+          "redundantDecisionDepths": [
+            1,
+            2,
+            6,
+            7,
+            8,
+            9,
+            14,
+            15,
+            17
+          ],
+          "irreducibleDecisionDepths": [
+            16
+          ],
+          "minimizationProbes": 10,
+          "status": "PRUNE",
+          "result": "ZERO_DOMAIN"
+        }
       },
       "transportWitness": null,
       "hardRequiredValidation": {
@@ -949,8 +980,8 @@
         "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
       ],
       "work": {
-        "branchesExplored": 2809,
-        "coreBranches": 2808,
+        "branchesExplored": 1256,
+        "coreBranches": 1255,
         "standaloneBranches": 1,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
@@ -1193,7 +1224,7 @@
       },
       "orderingComparison": {
         "off": {
-          "coreBranches": 2808,
+          "coreBranches": 1255,
           "standaloneBranches": 1,
           "maximumStandaloneDepth": 0,
           "completeOrdinaryLeaves": 0,
@@ -1223,8 +1254,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 2809,
-            "total": 2809
+            "other": 1256,
+            "total": 1256
           }
         },
         "feederByDepth": {},
@@ -1245,7 +1276,7 @@
           "collisions": []
         }
       },
-      "durationMs": 1074
+      "durationMs": 1213
     }
   ],
   "firstBlocker": {
@@ -1348,7 +1379,7 @@
       "task:10262"
     ],
     "branches": {
-      "core": 2808,
+      "core": 1255,
       "standalone": 1
     },
     "blockedObligationId": null,
@@ -1380,25 +1411,72 @@
     },
     "participantMealPrune": null,
     "participantFuturePrune": null,
-    "technicalChainFuturePrune": null,
-    "causingTask": null,
+    "technicalChainFuturePrune": {
+      "phase": "CORE",
+      "causingTaskId": "task:10161",
+      "causingCandidateStart": 1005,
+      "depth": 19,
+      "affectedStructures": 1,
+      "structuresChecked": 1,
+      "branchesConsumed": 1255,
+      "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+      "workItemKey": "technical-chain:task:10041",
+      "candidateCount": 0,
+      "certifiedCausingTaskId": "task:10161",
+      "certifiedDecisionDepth": 16,
+      "initialRepairableGroupCount": 10,
+      "redundantDecisionDepths": [
+        1,
+        2,
+        6,
+        7,
+        8,
+        9,
+        14,
+        15,
+        17
+      ],
+      "irreducibleDecisionDepths": [
+        16
+      ],
+      "minimizationProbes": 10,
+      "status": "PRUNE",
+      "result": "ZERO_DOMAIN"
+    },
+    "causingTask": {
+      "canonicalTaskId": "task:10161",
+      "productTaskId": 10161,
+      "kind": "main",
+      "participantId": "participant:212",
+      "spaceId": "space:3004",
+      "duration": 15,
+      "dependencies": [
+        "task:10162",
+        "task:10168"
+      ],
+      "requiredResourceIds": [],
+      "placementAuthority": "AUTOMATIC",
+      "placement": null
+    },
     "blockingMeal": null,
     "standaloneDeadEnd": null,
-    "causalAuthority": null,
-    "failureCategory": "UNKNOWN",
-    "phase": "constructExactItinerantPlan completion",
-    "firstCausalCheck": "constructExactItinerantPlan completion",
+    "causalAuthority": "technicalChainFutureReservation",
+    "failureCategory": "FUTURE_FEASIBILITY",
+    "phase": "constructExactItinerantPlan/core technical-chain future reservation",
+    "firstCausalCheck": "technicalChainFutureReservation exact probe",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
       "ASSISTED_SCOPE_INCOMPLETE",
       "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
     ],
-    "blockingTaskIds": [],
+    "blockingTaskIds": [
+      "technical-chain:task:10041"
+    ],
     "blockers": [],
-    "rejectionReason": null,
+    "rejectionReason": "ZERO_DOMAIN",
     "originatingCoreDecision": null,
-    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+    "classification": "TECHNICAL_CHAIN_FUTURE_RESERVATION_PRUNE"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "92541a8396180e9d9130e33c7050c9c72d41ba4a5e5009a27943f90b02805556",

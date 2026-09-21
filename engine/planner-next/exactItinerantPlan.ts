@@ -1242,10 +1242,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialCoreTasksRemaining=[...staticCoreIds].filter(id=>!scheduledIds.has(id)).length;
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,candidate.tasks,candidate.addedTasks,Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,candidate.tasks,candidate.addedTasks,Math.max(0,ledger.limit-ledger.branchesExplored),taskId=>coreDecisionDepthForTask(candidate,taskId));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
       const causing=candidate.addedTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
       if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:candidate.depth,...reservation};
-      const target=reservation.certifiedCausingTaskId===null?null:coreDecisionDepthForTask(candidate,reservation.certifiedCausingTaskId);
+      const target=reservation.certifiedDecisionDepth;
       return target!==null&&target<=candidate.depth?{outcome:"CERTIFIED_BACKJUMP",targetDepth:target}:"REJECT";
     }}
     if((problem.analyticalFutureParticipantTasks?.length??0)>0){const reservation=probeParticipantFutureReservations(problem,candidate.tasks,candidate.addedTasks);recordParticipantFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){const causing=[...candidate.addedTasks].sort(byId)[0];if(causing)evidence.firstParticipantFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:candidate.depth,...reservation};return "REJECT";}}
@@ -1372,9 +1372,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // The nominal Assisted pipeline can materialize a complete core without
     // visiting partial-core callbacks. Apply the same exact reservation at that
     // boundary so no locally complete proposal can bypass future structures.
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,immutableCoreTasks,Math.max(0,ledger.limit-ledger.branchesExplored));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,immutableCoreTasks,Math.max(0,ledger.limit-ledger.branchesExplored),taskId=>coreDecisionDepthForTask(candidate,taskId));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
       const causing=immutableCoreTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
-      const target=causing?coreDecisionDepthForTask(candidate,causing.id):null;
+      const target=reservation.certifiedDecisionDepth;
       if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,
         causingCandidateStart:causing.start,depth:candidate.tasks.filter(task=>task.kind==="main").length,...reservation};
       return target===null?"REJECT":{outcome:"CERTIFIED_BACKJUMP",targetDepth:target};

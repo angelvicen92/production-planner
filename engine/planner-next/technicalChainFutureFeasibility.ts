@@ -10,8 +10,13 @@ export interface TechnicalChainFutureReservationProbe {
   structureId: string | null;
   workItemKey: string | null;
   candidateCount: number;
-  /** Placement whose removal was exactly proved to restore a witness. */
+  /** Representative of the single repair decision whose removal was exactly proved to restore a witness. */
   certifiedCausingTaskId: string | null;
+  certifiedDecisionDepth: number | null;
+  initialRepairableGroupCount: number;
+  redundantDecisionDepths: number[];
+  irreducibleDecisionDepths: number[];
+  minimizationProbes: number;
   result: "WITNESS" | "ZERO_DOMAIN" | "BUDGET_EXHAUSTED" | "NOT_AFFECTED";
 }
 
@@ -24,12 +29,13 @@ const sharesHardAuthority=(left:Task,right:Task)=>left.spaceId===right.spaceId
 
 /** Exact, bounded reservation for explicit future REQUIRED technical chains. */
 export function probeTechnicalChainFutureReservations(problem:PlannerNextProblem,placed:readonly ScheduledTask[],
-  added:readonly ScheduledTask[],allowance:number):TechnicalChainFutureReservationProbe {
+  added:readonly ScheduledTask[],allowance:number,decisionDepthForTask?:(taskId:string)=>number|null):TechnicalChainFutureReservationProbe {
   const affected=[...(problem.analyticalFutureTechnicalChains??[])].filter(chain=>
     chain.tasks.some(member=>added.some(task=>sharesHardAuthority(member,task))))
     .sort((a,b)=>a.policy.id.localeCompare(b.policy.id));
   const base={affectedStructures:affected.length,structuresChecked:0,branchesConsumed:0,structureId:null,
-    workItemKey:null,candidateCount:0,certifiedCausingTaskId:null};
+    workItemKey:null,candidateCount:0,certifiedCausingTaskId:null,certifiedDecisionDepth:null,
+    initialRepairableGroupCount:0,redundantDecisionDepths:[] as number[],irreducibleDecisionDepths:[] as number[],minimizationProbes:0};
   if(affected.length===0)return {...base,status:"PASS",result:"NOT_AFFECTED"};
   let consumed=0,checked=0;
   for(const structure of affected){
@@ -44,21 +50,41 @@ export function probeTechnicalChainFutureReservations(problem:PlannerNextProblem
     const identity={structureId:structure.policy.id,workItemKey:technicalChainWorkItemKey(structure.tasks[0]!.id)};
     if(generated.exhausted)return {...base,...identity,status:"ABSTAIN",result:"BUDGET_EXHAUSTED",structuresChecked:checked,branchesConsumed:consumed,candidateCount:0};
     if(generated.candidates.length===0){
-      // A cause is actionable only when this exact structure regains a complete
-      // witness after removing one newly materialised, relevant placement.
-      for(const candidate of [...added].filter(task=>structure.tasks.some(member=>sharesHardAuthority(member,task)))
-        .sort((a,b)=>a.id.localeCompare(b.id)||a.start-b.start)){
-        const without=relevantPlaced.filter(task=>task.id!==candidate.id);
-        const counterfactual=generateTechnicalChainCandidates(probeProblem,members,[...without],
+      const relevantAdded=new Set(added.filter(task=>structure.tasks.some(member=>sharesHardAuthority(member,task))).map(task=>task.id));
+      const grouped=new Map<number,ScheduledTask[]>();
+      for(const task of relevantPlaced){
+        const depth=decisionDepthForTask?.(task.id)??(relevantAdded.has(task.id)?Number.MAX_SAFE_INTEGER:null);
+        if(depth===null)continue;
+        const group=grouped.get(depth)??[];group.push(task);grouped.set(depth,group);
+      }
+      const groups=[...grouped].sort(([left],[right])=>left-right).map(([depth,tasks])=>({depth,tasks:tasks.sort((a,b)=>a.id.localeCompare(b.id)||a.start-b.start)}));
+      let working=[...relevantPlaced],probes=0;
+      const redundant:number[]=[],necessary:number[]=[];
+      // Deletion minimization is deterministic by repair decision, not by placement:
+      // all placements materialised by one main@position move together, while fixed
+      // context (no decision depth) remains in every counterfactual.
+      for(const group of groups){
+        const ids=new Set(group.tasks.map(task=>task.id));
+        const without=working.filter(task=>!ids.has(task.id));
+        const counterfactual=generateTechnicalChainCandidates(probeProblem,members,without,
           Math.max(0,allowance-consumed),"PROBE",1);
-        consumed+=counterfactual.consumed;
+        consumed+=counterfactual.consumed;probes++;
         if(counterfactual.exhausted)return {...base,...identity,status:"ABSTAIN",result:"BUDGET_EXHAUSTED",
-          structuresChecked:checked,branchesConsumed:consumed,candidateCount:0};
-        if(counterfactual.candidates.length>0)return {...base,...identity,status:"PRUNE",result:"ZERO_DOMAIN",
-          structuresChecked:checked,branchesConsumed:consumed,candidateCount:0,certifiedCausingTaskId:candidate.id};
+          structuresChecked:checked,branchesConsumed:consumed,candidateCount:0,initialRepairableGroupCount:groups.length,
+          redundantDecisionDepths:redundant,irreducibleDecisionDepths:necessary,minimizationProbes:probes};
+        if(counterfactual.candidates.length===0){working=without;redundant.push(group.depth);}
+        else necessary.push(group.depth);
+      }
+      if(necessary.length===1){
+        const group=groups.find(item=>item.depth===necessary[0])!;
+        return {...base,...identity,status:"PRUNE",result:"ZERO_DOMAIN",structuresChecked:checked,
+          branchesConsumed:consumed,candidateCount:0,certifiedCausingTaskId:group.tasks[0]!.id,
+          certifiedDecisionDepth:group.depth,initialRepairableGroupCount:groups.length,
+          redundantDecisionDepths:redundant,irreducibleDecisionDepths:necessary,minimizationProbes:probes};
       }
       return {...base,...identity,status:"PRUNE",result:"ZERO_DOMAIN",structuresChecked:checked,
-        branchesConsumed:consumed,candidateCount:0};
+        branchesConsumed:consumed,candidateCount:0,initialRepairableGroupCount:groups.length,
+        redundantDecisionDepths:redundant,irreducibleDecisionDepths:necessary,minimizationProbes:probes};
     }
   }
   const first=affected[0]!;
