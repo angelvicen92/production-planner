@@ -57,6 +57,9 @@ export interface ExactMainAndFeederCoreEvidence {
   mainRunWitnessAttempts: number;
   mainRunWitnessRepairs: number;
   mainRunEquivalentOrdersCollapsed: number;
+  bundleMatchingAttempts: number;
+  bundleMatchingRepairs: number;
+  bundleMatchingMaterializations: number;
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -294,6 +297,8 @@ export interface ExactMainAndFeederSearchOptions {
   fixedPlacementsAsContext?: boolean;
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
+  /** Complete nominally matched bundles for the preferred architecture. Not authoritative. */
+  preferredBundleCandidates?: readonly (readonly ScheduledTask[])[];
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
@@ -627,6 +632,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
+    bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -801,6 +807,32 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const structuralBase=fixedStructuralBase();
   if(!structuralBase)return fail("INFEASIBLE",["FIXED_MAIN_STRUCTURAL_OPERATION_INFEASIBLE"],coreIds);
+
+  for(const bundleCandidate of options.preferredBundleCandidates??[]){
+    evidence.bundleMatchingAttempts++;
+    const byId=new Map([...bundleCandidate,...structuralBase].map(task=>[task.id,task]));
+    const preferred=[...byId.values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+    const preferredCoreIds=new Set(preferred.map(task=>task.id));
+    const requiredCoreIds=[...coreIds].filter(id=>!contextIds.has(id)||byId.has(id));
+    if(requiredCoreIds.every(id=>preferredCoreIds.has(id))){
+      evidence.bundleMatchingMaterializations++;
+      const meals=mainFlowMealPolicy(problem)?[createMainFlowMeal(problem)]:[];
+      const continuation=options.onHardValidCoreLeaf?.({tasks:preferred,meals,
+        remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(preferred,[],meals)})??"ACCEPT";
+      if(continuation==="ACCEPT"){
+        selected={tasks:preferred,meals,pattern:[...(options.preferredArchitecture?.pattern??[])]};
+        evidence.completeLeafCount=1;evidence.selectedPattern=[...(options.preferredArchitecture?.pattern??[])];
+        evidence.selectedMainTaskIds=preferred.filter(task=>task.kind==="main").map(task=>task.id);
+        evidence.selectedFeederTaskIds=preferred.filter(task=>task.kind==="vocal").map(task=>task.id);
+        evidence.coreFingerprint=fingerprint(preferred,[],meals);
+        return {status:"COMPLETE",complete:true,scheduledTasks:preferred,scheduledSpaceMeals:meals,
+          remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),evidence};
+      }
+      // The witness is an ordering hint, never authority. A rejected or causally
+      // backjumped bundle leaf falls through to the unchanged exact DFS and budgets.
+      evidence.bundleMatchingRepairs++;
+    }
+  }
 
   if(mains.length===0){
     const fixedMeals=mainFlowMealPolicy(problem)?[createMainFlowMeal(problem)]:[];

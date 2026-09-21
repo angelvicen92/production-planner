@@ -34,7 +34,7 @@ import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey,
 import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
-import { materializeFirstNominalPipelineWitness, materializeNominalPipelineWitness } from "./anonymousPipelineWitness";
+import { materializeFirstNominalPipelineWitness, materializePipelineBundleMatching } from "./anonymousPipelineWitness";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -260,6 +260,9 @@ export interface ExactItinerantPlanEvidence {
   mainRunWitnessAttempts: number;
   mainRunWitnessRepairs: number;
   mainRunEquivalentOrdersCollapsed: number;
+  bundleMatchingAttempts: number;
+  bundleMatchingRepairs: number;
+  bundleMatchingMaterializations: number;
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -1053,6 +1056,7 @@ export interface ExactItinerantPlanSearchOptions {
   fixedPlacementsAsContext?: boolean;
   /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
   preferredArchitecture?: MainFeederArchitecture;
+  preferredBundleCandidates?: readonly (readonly ScheduledTask[])[];
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -1123,6 +1127,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
+    bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -1221,6 +1226,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
     preferredArchitecture:options.preferredArchitecture,
+    preferredBundleCandidates:options.preferredBundleCandidates,
     causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
@@ -1348,13 +1354,15 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const orderedMains=candidate.tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-    const pipeline=(problem.analyticalFutureTechnicalChains?.length??0)>0?null:(orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
-      ?materializeNominalPipelineWitness(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)})
-      :null);
-    const pipelinePreservesFixed=pipeline?.witness.status==="FEASIBLE"&&[...fixedById].every(([id,fixed])=>{
+    const pipeline=orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
+      ?materializePipelineBundleMatching(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},options.fixedPlacements)
+      :null;
+    const pipelinePreservesFixed=pipeline!==null&&[...fixedById].every(([id,fixed])=>{
       const placed=pipeline.scheduledTasks.find(task=>task.id===id);
       return !placed||(placed.start===fixed.start&&placed.end===fixed.end);
     });
+    if(pipeline){evidence.bundleMatchingAttempts+=pipeline.evidence.attempts;
+      evidence.bundleMatchingRepairs+=pipeline.evidence.repairs;evidence.bundleMatchingMaterializations+=pipeline.evidence.materializations;}
     const structuralTasks=pipelinePreservesFixed ? [...pipeline!.scheduledTasks] : candidate.tasks;
     const coreIds = new Set(structuralTasks.map(({ id }) => id));
     const immutableCoreTasks=[...structuralTasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
@@ -1481,6 +1489,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.mainRunEquivalentOrdersCollapsed=core.evidence.mainRunEquivalentOrdersCollapsed;
   evidence.feederMatchingWitnessMaterializations=core.evidence.feederMatchingWitnessMaterializations;
   evidence.feederMatchingWitnessRepairs=core.evidence.feederMatchingWitnessRepairs;
+  evidence.bundleMatchingAttempts+=core.evidence.bundleMatchingAttempts;
+  evidence.bundleMatchingRepairs+=core.evidence.bundleMatchingRepairs;
+  evidence.bundleMatchingMaterializations+=core.evidence.bundleMatchingMaterializations;
   evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
@@ -1530,12 +1541,18 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   const pipeline=fixedPlacementsAsContext?materializeFirstNominalPipelineWitness(problem):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,
-    slots:[...pipeline.witness.mainSpots].sort((a,b)=>a.position-b.position).map(spot=>spot.start),
+    slots:[...pipeline.witness.mainSpots].sort((a,b)=>Number(a.id.slice(5))-Number(b.id.slice(5))).map(spot=>spot.start),
   }:undefined;
+  const matchedBundles=preferredArchitecture?materializePipelineBundleMatching(problem,preferredArchitecture,fixedPlacements):null;
+  const preferredBundleCandidates:readonly (readonly ScheduledTask[])[]|undefined=preferredArchitecture
+    ?[matchedBundles?.scheduledTasks??pipeline!.scheduledTasks,
+      ...([...matchedBundles?.matching??[]].map(([taskId,position])=>
+        materializePipelineBundleMatching(problem,preferredArchitecture,fixedPlacements,new Set([`${taskId}@${position}`]))?.scheduledTasks)
+        .filter((tasks):tasks is readonly ScheduledTask[]=>Boolean(tasks)))]:undefined;
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,preferredArchitecture});
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,preferredArchitecture,preferredBundleCandidates});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
@@ -1544,5 +1561,6 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
     causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, preferredArchitecture,
+    preferredBundleCandidates,
   });
 }

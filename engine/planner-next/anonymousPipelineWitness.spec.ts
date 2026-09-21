@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness } from "./anonymousPipelineWitness";
+import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 
 const windows=[{start:0,end:300}];
@@ -157,5 +157,33 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(diagnostic.arrivalSolverExecuted,true);assert.equal(diagnostic.mainRuns.length,1);
     assert.ok((diagnostic.feederRuns[0]?.candidateStartBoundaryCount??0)>0);
     assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
+  });
+
+  it("repairs a nominal identity edge by rematerializing the complete participant bundle",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const first=materializePipelineBundleMatching(p,architecture);assert.ok(first);
+    const [participantMain,position]=[...first.matching][0]!;
+    const repaired=materializePipelineBundleMatching(p,architecture,[],new Set([`${participantMain}@${position}`]));
+    assert.ok(repaired);assert.notEqual(repaired.matching.get(participantMain),position);
+    const participant=p.tasks.find(task=>task.id===participantMain)!.participantId;
+    const ids=p.tasks.filter(task=>task.participantId===participant).map(task=>task.id);
+    const before=first.scheduledTasks.filter(task=>ids.includes(task.id)).map(task=>[task.kind,task.start]);
+    const after=repaired.scheduledTasks.filter(task=>ids.includes(task.id)).map(task=>[task.kind,task.start]);
+    assert.notDeepEqual(after,before);
+    assert.equal(validatePlan(p,[...repaired.scheduledTasks]).hardValid,true);
+    assert.equal(repaired.evidence.repairs,1);assert.equal(repaired.evidence.materializations,1);
+  });
+
+  it("keeps protected bundle placement and future-distinct identities separate",()=>{
+    const p=problem(["A","A"]);p.analyticalFutureTechnicalChains=[
+      {policy:{id:"future",orderedTaskIds:["future-0"],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]},
+        tasks:[{...p.tasks[0]!,id:"future-0",participantId:"p0",duration:25}]},
+    ];
+    const architecture={pattern:["A","A"],slots:[180,195]};
+    const witness=buildAnonymousPipelineWitness(p,architecture);assert.equal(witness.profileCount,2);
+    const initial=materializePipelineBundleMatching(p,architecture);assert.ok(initial);
+    const fixed=initial.scheduledTasks.find(task=>task.id==="main0")!;
+    const rematched=materializePipelineBundleMatching(p,architecture,[fixed]);assert.ok(rematched);
+    assert.deepEqual(rematched.scheduledTasks.find(task=>task.id===fixed.id),fixed);
   });
 });
