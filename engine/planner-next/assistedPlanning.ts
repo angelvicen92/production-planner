@@ -73,6 +73,7 @@ export interface AssistedPlanningEvidence {
     readonly firstPrune:ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"];
   };
   readonly work: Readonly<Record<string, number>>;
+  readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause">;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
   readonly prerequisiteSharedCapacityPrunes?: number;
@@ -383,7 +384,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "residualMatchingEdgeCacheHits", "residualMatchingEdgeCacheMisses", "residualMatchingPositionChecks",
     "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
     "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "bundleMatchingAttempts",
-    "bundleMatchingRepairs", "bundleMatchingMaterializations", "standaloneForwardChecks",
+    "bundleMatchingRepairs", "bundleMatchingMaterializations", "bundleHardValidationRejects",
+    "bundleCertifiedRepairs", "standaloneForwardChecks",
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
     "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
@@ -452,6 +454,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       firstPrune:(evidenceRecord.firstTechnicalChainFutureReservationPrune as ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"]|undefined)??null,
     },
     work,
+    bundleMatching:{bundleForbiddenEdges:[...(evidenceRecord.bundleForbiddenEdges as string[]|undefined)??[]],
+      bundleRepairSequence:[...(evidenceRecord.bundleRepairSequence as ExactItinerantPlanEvidence["bundleRepairSequence"]|undefined)??[]],
+      bundleTerminalCause:(evidenceRecord.bundleTerminalCause as string|null|undefined)??null},
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     standaloneDiagnostic,
     reasonCodes: [...new Set(reasonCodes)].sort(),

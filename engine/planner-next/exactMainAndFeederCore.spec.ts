@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
   exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
-  subtractMergedIntervals } from "./exactMainAndFeederCore";
+  subtractMergedIntervals, incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -655,6 +655,47 @@ test("a certified hard-valid leaf backjump forbids the causal main edge and repa
   assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
   assert.equal(new Set(mainOrders).size, 2, "the repaired witness must choose another main@slot edge");
   assert.ok(result.evidence.mainRunWitnessRepairs > 0);
+});
+
+test("preferred bundle backjumps accumulate causal forbidden edges before a third hard-valid witness",()=>{
+  const ids=["a","b","c"];
+  const problem=syntheticProblem(ids.flatMap(id=>[
+    {id:`feeder-${id}`,kind:"vocal" as const,participantId:id,duration:10,spaceId:"feed",dependencies:[]},
+    {id:`main-${id}`,kind:"main" as const,participantId:id,duration:10,spaceId:"main",
+      dependencies:[`feeder-${id}`],blockKey:"coach"},
+  ]),ids,["feed","protected"]);
+  problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=110;
+  problem.tasks.push({id:"protected",kind:"technical",duration:5,spaceId:"protected",dependencies:[]});
+  const fixed={...problem.tasks.at(-1)!,start:10,end:15};
+  const positions=new Map(ids.map(id=>[`main-${id}`,[0,1,2]] as const));
+  const materialize=(matching:ReadonlyMap<string,number>)=>[
+    fixed,...[...matching].flatMap(([mainId,position])=>{const id=mainId.slice(5);return [
+      {...problem.tasks.find(task=>task.id===`feeder-${id}`)!,start:40+position*10,end:50+position*10},
+      {...problem.tasks.find(task=>task.id===mainId)!,start:80+position*10,end:90+position*10},
+    ];}),
+  ];
+  const initial=incrementallyRepairMatchingWitness(ids.map(id=>`main-${id}`),positions,new Set(),new Set(),new Map());
+  assert.equal(initial.outcome,"PERFECT");
+  const seenForbidden:string[][]=[];let callbacks=0;
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:[fixed],fixedPlacementsAsContext:true,
+    preferredArchitecture:{pattern:["coach","coach","coach"],slots:[80,90,100]},
+    preferredBundleCandidate:{scheduledTasks:materialize(initial.matching!),matching:initial.matching!,forbiddenEdges:new Set()},
+    repairPreferredBundleCandidate(previous,forbidden,consume){
+      seenForbidden.push([...forbidden].sort());
+      const repaired=incrementallyRepairMatchingWitness(ids.map(id=>`main-${id}`),positions,forbidden,
+        previous.forbiddenEdges,previous.matching,consume);
+      return repaired.outcome==="PERFECT"?{scheduledTasks:materialize(repaired.matching!),matching:repaired.matching!,forbiddenEdges:forbidden}:null;
+    },onHardValidCoreLeaf(candidate){
+      callbacks++;assert.deepEqual(candidate.tasks.find(task=>task.id==="protected"),fixed);
+      return callbacks<3?{outcome:"CERTIFIED_BACKJUMP",targetDepth:1}:"ACCEPT";
+    }});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(callbacks,3,"every callback must follow the common hard gate");
+  assert.equal(seenForbidden.length,2);assert.equal(seenForbidden[0]!.length,1);assert.equal(seenForbidden[1]!.length,2);
+  assert.ok(seenForbidden[1]!.every(edge=>result.evidence.bundleForbiddenEdges.includes(edge)));
+  assert.equal(result.evidence.bundleCertifiedRepairs,2);assert.equal(result.evidence.bundleRepairSequence.length,2);
+  assert.equal(result.evidence.bundleTerminalCause,"ACCEPT");
+  assert.deepEqual(result.scheduledTasks.find(task=>task.id==="protected"),fixed);
 });
 
 test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{

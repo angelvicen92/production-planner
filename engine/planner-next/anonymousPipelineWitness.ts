@@ -59,7 +59,8 @@ export interface AnonymousPipelineWitnessDiagnostic {
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
 export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[] }
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
-  matching:ReadonlyMap<string,number>; evidence:PipelineBundleMatchingEvidence }
+  matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
+export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
 const orderedWindows = (windows: readonly Window[] | undefined, fallback:Window): Window[] =>
   [...(windows?.length ? windows : [fallback])].sort((a,b)=>a.start-b.start||a.end-b.end);
 const stable = (value:unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -426,7 +427,8 @@ export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextP
  */
 export function materializePipelineBundleMatching(problem:Readonly<PlannerNextProblem>,
   architecture:MainFeederArchitecture,protectedPlacements:readonly ScheduledTask[]=[],
-  forbiddenEdges:ReadonlySet<string>=new Set()):PipelineBundleMaterialization|null {
+  forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,
+  consumeTraversal:()=>boolean=()=>true):PipelineBundleMaterialization|null {
   const nominal=materializeNominalPipelineWitness(problem,architecture);
   if(nominal.witness.status!=="FEASIBLE")return null;
   const witness=nominal.witness;
@@ -478,13 +480,14 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
     });
     positions.set(main.id,valid);candidates.set(main.id,byPosition);
   }
-  const initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),positions,forbiddenEdges,new Set(),new Map());
+  const initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),positions,forbiddenEdges,
+    previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal);
   if(initial.outcome!=="PERFECT")return null;
   const matching=initial.matching!;
   const scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
   const unique=[...new Map([...scheduled,...protectedPlacements].map(task=>[task.id,task])).values()]
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-  return {witness,scheduledTasks:unique,matching,evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
+  return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(forbiddenEdges),evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
     materializations:1,forbiddenEdges:[...forbiddenEdges].sort()}};
 }
 

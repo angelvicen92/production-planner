@@ -263,6 +263,11 @@ export interface ExactItinerantPlanEvidence {
   bundleMatchingAttempts: number;
   bundleMatchingRepairs: number;
   bundleMatchingMaterializations: number;
+  bundleHardValidationRejects: number;
+  bundleCertifiedRepairs: number;
+  bundleForbiddenEdges: string[];
+  bundleRepairSequence: Array<{causingTaskId:string;oldPosition:number;forbiddenEdge:string;newPosition:number|null}>;
+  bundleTerminalCause: string | null;
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -1056,7 +1061,9 @@ export interface ExactItinerantPlanSearchOptions {
   fixedPlacementsAsContext?: boolean;
   /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
   preferredArchitecture?: MainFeederArchitecture;
-  preferredBundleCandidates?: readonly (readonly ScheduledTask[])[];
+  preferredBundleCandidate?: Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;
+    forbiddenEdges:ReadonlySet<string>}>
+  repairPreferredBundleCandidate?: ExactMainAndFeederSearchOptions["repairPreferredBundleCandidate"];
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
@@ -1127,7 +1134,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualMatchingPrunes: 0, residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
-    bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,
+    bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,
+    bundleCertifiedRepairs:0,bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -1226,7 +1234,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
     preferredArchitecture:options.preferredArchitecture,
-    preferredBundleCandidates:options.preferredBundleCandidates,
+    preferredBundleCandidate:options.preferredBundleCandidate,
+    repairPreferredBundleCandidate:options.repairPreferredBundleCandidate,
     causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
     const shouldRecord=candidate.depth>evidence.deepestCoreDepthReached
@@ -1492,6 +1501,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.bundleMatchingAttempts+=core.evidence.bundleMatchingAttempts;
   evidence.bundleMatchingRepairs+=core.evidence.bundleMatchingRepairs;
   evidence.bundleMatchingMaterializations+=core.evidence.bundleMatchingMaterializations;
+  evidence.bundleHardValidationRejects+=core.evidence.bundleHardValidationRejects;
+  evidence.bundleCertifiedRepairs+=core.evidence.bundleCertifiedRepairs;
+  evidence.bundleForbiddenEdges=[...core.evidence.bundleForbiddenEdges];
+  evidence.bundleRepairSequence=[...core.evidence.bundleRepairSequence];
+  evidence.bundleTerminalCause=core.evidence.bundleTerminalCause;
   evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;
@@ -1544,15 +1558,15 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     slots:[...pipeline.witness.mainSpots].sort((a,b)=>Number(a.id.slice(5))-Number(b.id.slice(5))).map(spot=>spot.start),
   }:undefined;
   const matchedBundles=preferredArchitecture?materializePipelineBundleMatching(problem,preferredArchitecture,fixedPlacements):null;
-  const preferredBundleCandidates:readonly (readonly ScheduledTask[])[]|undefined=preferredArchitecture
-    ?[matchedBundles?.scheduledTasks??pipeline!.scheduledTasks,
-      ...([...matchedBundles?.matching??[]].map(([taskId,position])=>
-        materializePipelineBundleMatching(problem,preferredArchitecture,fixedPlacements,new Set([`${taskId}@${position}`]))?.scheduledTasks)
-        .filter((tasks):tasks is readonly ScheduledTask[]=>Boolean(tasks)))]:undefined;
+  const repairPreferredBundleCandidate:ExactMainAndFeederSearchOptions["repairPreferredBundleCandidate"]=
+    preferredArchitecture?(previous,forbidden,consume)=>materializePipelineBundleMatching(problem,preferredArchitecture,
+      fixedPlacements,forbidden,previous,consume):undefined;
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,preferredArchitecture,preferredBundleCandidates});
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,
+    fixedPlacements,fixedPlacementsAsContext,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
+    repairPreferredBundleCandidate});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
@@ -1561,6 +1575,6 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
     causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, preferredArchitecture,
-    preferredBundleCandidates,
+    preferredBundleCandidate:matchedBundles??undefined,repairPreferredBundleCandidate,
   });
 }

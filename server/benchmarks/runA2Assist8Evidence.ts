@@ -221,7 +221,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         capacityFingerprint: evidence.sharedCapacityFingerprint ?? null,
         nominalIdentityBeginsAt: "exactMainAndFeederCore residual matching",
       },
-      residualBreakdown, standaloneDiagnostic:evidence.standaloneDiagnostic??null, orderingComparison,
+      residualBreakdown,bundleMatching:evidence.bundleMatching??null,standaloneDiagnostic:evidence.standaloneDiagnostic??null,orderingComparison,
       causalDiagnostic: evidence.causalDiagnostic ?? null };
     if (result.outcome !== "PROPOSAL") {
       const standalone=evidence.standaloneDiagnostic;

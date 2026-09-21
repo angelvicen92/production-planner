@@ -60,6 +60,11 @@ export interface ExactMainAndFeederCoreEvidence {
   bundleMatchingAttempts: number;
   bundleMatchingRepairs: number;
   bundleMatchingMaterializations: number;
+  bundleHardValidationRejects: number;
+  bundleCertifiedRepairs: number;
+  bundleForbiddenEdges: string[];
+  bundleRepairSequence: Array<{causingTaskId:string;oldPosition:number;forbiddenEdge:string;newPosition:number|null}>;
+  bundleTerminalCause: string | null;
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -297,8 +302,12 @@ export interface ExactMainAndFeederSearchOptions {
   fixedPlacementsAsContext?: boolean;
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
-  /** Complete nominally matched bundles for the preferred architecture. Not authoritative. */
-  preferredBundleCandidates?: readonly (readonly ScheduledTask[])[];
+  /** Live matching state for the preferred architecture. Not authoritative. */
+  preferredBundleCandidate?: Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;
+    forbiddenEdges:ReadonlySet<string>}>
+  repairPreferredBundleCandidate?: (previous:Readonly<{matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>,
+    forbiddenEdges:ReadonlySet<string>,consumeTraversal:()=>boolean)=>Readonly<{scheduledTasks:readonly ScheduledTask[];
+      matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>|null;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
@@ -632,7 +641,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
-    bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,
+    bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,bundleCertifiedRepairs:0,
+    bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -808,30 +818,81 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const structuralBase=fixedStructuralBase();
   if(!structuralBase)return fail("INFEASIBLE",["FIXED_MAIN_STRUCTURAL_OPERATION_INFEASIBLE"],coreIds);
 
-  for(const bundleCandidate of options.preferredBundleCandidates??[]){
+  let lastHardGateReason="HARD_VALIDATION_REJECTED";
+  const hardGateCoreLeaf=(placed:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],expectedIds:ReadonlySet<string>,
+    contracts=applicableContracts,includeTransport=false):ScheduledTask[]|null=>{
+    const expected=[...expectedIds].sort(),actual=placed.map(({id})=>id).sort();
+    if(actual.length!==expected.length||actual.some((id,index)=>id!==expected[index])){lastHardGateReason="INCOMPLETE_CORE_SHAPE";return null;}
+    for(const fixed of protectedPlacements){const candidate=placed.find(task=>task.id===fixed.id);
+      if(!candidate||candidate.start!==fixed.start||candidate.end!==fixed.end||candidate.spaceId!==fixed.spaceId){lastHardGateReason="PROTECTED_PLACEMENT_MISMATCH";return null;}}
+    const reducedTasks=problem.tasks.filter(({id})=>expectedIds.has(id)).map(task=>({...task,
+      dependencies:task.dependencies.filter(id=>expectedIds.has(id))}));
+    const mainMealAuthority=mainFlowMealPolicy(problem);
+    const operationalMainMealPolicies=mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
+      ?(problem.operationalMealPolicies??[]).filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)):[];
+    const deferredSetupSpaceIds=new Set(problem.spaces.filter(space=>space.setupPolicy!==undefined
+      &&!reducedTasks.some(task=>task.spaceId===space.id)).map(({id})=>id));
+    const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,spaces:problem.spaces.map(space=>{
+      const projected=deferredSetupSpaceIds.has(space.id)?{...space,secondaryContinuity:"OFF" as const,setupPolicy:undefined}:space;
+      return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
+        &&mainMealAuthority&&!projected.mealPolicy
+        ?{...projected,mealPolicy:{window:{...mainMealAuthority.window},duration:mainMealAuthority.duration}}:projected;
+    }),anchoredAccompaniments:contracts,roundSynchronizations:undefined,participantMeals:undefined,
+      participantMealCapacity:undefined,operationalMealPolicies:operationalMainMealPolicies.length?operationalMainMealPolicies:undefined,
+      transportPolicy:includeTransport&&problem.transportPolicy?{
+        arrival:{...problem.transportPolicy.arrival,taskIds:problem.transportPolicy.arrival.taskIds.filter(id=>expectedIds.has(id))},
+        departure:{...problem.transportPolicy.departure,taskIds:problem.transportPolicy.departure.taskIds.filter(id=>expectedIds.has(id))},
+      }:undefined};
+    const reducedPlaced=placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>expectedIds.has(id))}));
+    const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
+      resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+    const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>{const meal=createMainFlowMeal(problem);return {
+      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:meal.start,end:meal.end};});
+    const validation=validatePlan(reduced,reducedPlaced,[],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
+      fixedResourceMeals,materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
+    if(!validation.hardValid&&!options.acceptsValidation?.(validation)){lastHardGateReason=`HARD_VALIDATION_REJECTED:${validation.reasonCodes.join(",")}`;return null;}
+    const originalById=new Map(problem.tasks.map(task=>[task.id,task]));
+    return placed.map(task=>({...task,dependencies:[...(originalById.get(task.id)?.dependencies??task.dependencies)]}))
+      .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  };
+
+  let bundleState=options.preferredBundleCandidate;
+  while(bundleState){
     evidence.bundleMatchingAttempts++;
-    const byId=new Map([...bundleCandidate,...structuralBase].map(task=>[task.id,task]));
+    const byId=new Map([...bundleState.scheduledTasks,...structuralBase].map(task=>[task.id,task]));
     const preferred=[...byId.values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const preferredCoreIds=new Set(preferred.map(task=>task.id));
-    const requiredCoreIds=[...coreIds].filter(id=>!contextIds.has(id)||byId.has(id));
-    if(requiredCoreIds.every(id=>preferredCoreIds.has(id))){
-      evidence.bundleMatchingMaterializations++;
-      const meals=mainFlowMealPolicy(problem)?[createMainFlowMeal(problem)]:[];
-      const continuation=options.onHardValidCoreLeaf?.({tasks:preferred,meals,
+    evidence.bundleMatchingMaterializations++;
+    const preferredMealAuthority=mainFlowMealPolicy(problem);
+    const meals=preferredMealAuthority&&preferredMealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
+    const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true);
+    if(!gated){evidence.bundleHardValidationRejects++;evidence.bundleTerminalCause=lastHardGateReason;break;}
+    const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(preferred,[],meals)})??"ACCEPT";
-      if(continuation==="ACCEPT"){
-        selected={tasks:preferred,meals,pattern:[...(options.preferredArchitecture?.pattern??[])]};
+    if(continuation==="ACCEPT"){
+        evidence.bundleTerminalCause="ACCEPT";selected={tasks:gated,meals,pattern:[...(options.preferredArchitecture?.pattern??[])]};
         evidence.completeLeafCount=1;evidence.selectedPattern=[...(options.preferredArchitecture?.pattern??[])];
-        evidence.selectedMainTaskIds=preferred.filter(task=>task.kind==="main").map(task=>task.id);
-        evidence.selectedFeederTaskIds=preferred.filter(task=>task.kind==="vocal").map(task=>task.id);
-        evidence.coreFingerprint=fingerprint(preferred,[],meals);
-        return {status:"COMPLETE",complete:true,scheduledTasks:preferred,scheduledSpaceMeals:meals,
+        evidence.selectedMainTaskIds=gated.filter(task=>task.kind==="main").map(task=>task.id);
+        evidence.selectedFeederTaskIds=gated.filter(task=>task.kind==="vocal").map(task=>task.id);
+        evidence.coreFingerprint=fingerprint(gated,[],meals);
+        return {status:"COMPLETE",complete:true,scheduledTasks:gated,scheduledSpaceMeals:meals,
           remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),evidence};
-      }
-      // The witness is an ordering hint, never authority. A rejected or causally
-      // backjumped bundle leaf falls through to the unchanged exact DFS and budgets.
-      evidence.bundleMatchingRepairs++;
     }
+    if(continuation==="BUDGET_EXHAUSTED"){evidence.bundleTerminalCause="BUDGET_EXHAUSTED";
+      return fail("BRANCH_BUDGET_EXHAUSTED",["BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);}
+    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";break;}
+    const orderedMains=gated.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+    const causing=orderedMains[continuation.targetDepth-1];
+    const oldPosition=causing===undefined?undefined:bundleState.matching.get(causing.id);
+    if(!causing||oldPosition===undefined||!options.repairPreferredBundleCandidate){evidence.bundleTerminalCause="UNMAPPED_CERTIFIED_BACKJUMP";break;}
+    const forbiddenEdge=`${causing.id}@${oldPosition}`;const forbidden=new Set(bundleState.forbiddenEdges).add(forbiddenEdge);
+    const repaired=options.repairPreferredBundleCandidate(bundleState,forbidden,consumeMatchingBranch);
+    evidence.bundleForbiddenEdges=[...forbidden].sort();evidence.bundleCertifiedRepairs++;
+    evidence.bundleMatchingRepairs++;
+    evidence.bundleRepairSequence.push({causingTaskId:causing.id,oldPosition,forbiddenEdge,
+      newPosition:repaired?.matching.get(causing.id)??null});
+    if(!repaired){evidence.bundleTerminalCause="NO_PERFECT_MATCH";break;}
+    bundleState=repaired;
   }
 
   if(mains.length===0){
@@ -879,34 +940,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         search(pattern,slots,composite,meals,scheduled,used,depth,timelineKey,certificate,true));
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
-      const reducedTasks = problem.tasks.filter(({ id }) => coreIds.has(id)).map((task) => ({
-        ...task, dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)),
-      }));
-      const deferredSetupSpaceIds = new Set(problem.spaces.filter((space) => space.setupPolicy !== undefined
-        && !reducedTasks.some((task) => task.spaceId === space.id)).map(({ id }) => id));
-      const reduced: PlannerNextProblem = { ...problem, tasks: reducedTasks,
-        spaces: problem.spaces.map((space) => {
-          const projected = deferredSetupSpaceIds.has(space.id)
-            ? { ...space, secondaryContinuity: "OFF" as const, setupPolicy: undefined } : space;
-          const authority = mainFlowMealPolicy(problem);
-          return space.id === problem.mainFlow.spaceId && authority && !projected.mealPolicy
-            ? { ...projected, mealPolicy: { window: { ...authority.window }, duration: authority.duration } } : projected;
-        }),
-        anchoredAccompaniments: applicableContracts, roundSynchronizations: undefined,
-        participantMeals: undefined, participantMealCapacity: undefined, operationalMealPolicies: undefined,
-        transportPolicy: undefined };
-      const expected = [...coreIds].sort(), actual = placed.map(({ id }) => id).sort();
-      const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
-      const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-      const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(reduced);
-      const reducedPlaced = placed.map((task) => ({ ...task,
-        dependencies: task.dependencies.filter((dependencyId) => coreIds.has(dependencyId)) }));
-      const validation = validatePlan(reduced, reducedPlaced, [], meals,[],fixedResourceMeals,fixedItinerantMeals);
-      if (validShape && (validation.hardValid || options.acceptsValidation?.(validation))) {
-        const originalById = new Map(problem.tasks.map((task) => [task.id, task]));
-        const ordered = placed.map((task) => ({ ...task,
-          dependencies: [...(originalById.get(task.id)?.dependencies ?? task.dependencies)],
-        })).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+      const ordered=hardGateCoreLeaf(placed,meals,coreIds);
+      if (ordered) {
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
           remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
