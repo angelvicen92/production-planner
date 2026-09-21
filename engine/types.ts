@@ -258,6 +258,8 @@ export interface EngineInputTechnicalChainInput {
   /** Ordered operation representatives. Explicit chains may include participant-bound tasks. */
   id: string;
   orderedTaskIds: number[];
+  /** Optional ordered phases. Members inside one phase may be executed in any order. */
+  phases?: Array<{ taskIds: number[] }>;
   adjacency: "REQUIRED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: number[];

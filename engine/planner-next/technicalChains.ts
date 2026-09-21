@@ -63,8 +63,21 @@ export interface TechnicalChainExplorer {
 
 const explicitPolicyFor=(problem:PlannerNextProblem,tasks:Task[]):TechnicalChainPolicy|undefined=>{
   const ids=tasks.map(task=>task.id);
-  return problem.technicalChains?.find(policy=>policy.orderedTaskIds.length===ids.length&&policy.orderedTaskIds.every((id,index)=>id===ids[index]));
+  return problem.technicalChains?.find(policy=>policy.orderedTaskIds.length===ids.length&&policy.orderedTaskIds.every(id=>ids.includes(id)));
 };
+
+const permutations=<T>(values:readonly T[]):T[][]=>values.length<2?[ [...values] ]:values.flatMap((value,index)=>
+  permutations([...values.slice(0,index),...values.slice(index+1)]).map(rest=>[value,...rest]));
+export function technicalChainOrders(policy:TechnicalChainPolicy,tasks:readonly Task[]):Task[][]{
+  const byId=new Map(tasks.map(task=>[task.id,task]));
+  const phases=policy.phases?.length?policy.phases:[{taskIds:policy.orderedTaskIds}];
+  let orders:Task[][]=[[]];
+  for(const phase of phases){
+    const members=phase.taskIds.map(id=>byId.get(id)).filter((task):task is Task=>task!==undefined);
+    orders=orders.flatMap(prefix=>permutations(members).map(order=>[...prefix,...order]));
+  }
+  return orders;
+}
 
 function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,ordered:Task[],policy:TechnicalChainPolicy,
   placed:ScheduledTask[],allowance:number,meals:ScheduledSpaceMeal[]):TechnicalChainExplorer{
@@ -73,12 +86,12 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
     startsEvaluated:0,alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
     deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,preparedAuthorityBuilds:0,preparedAuthorityHits:0,
     fixedPlacedScansAvoided:0,domainBuildMs:0,finalPlacementCheckMs:0};
-  const duration=technicalChainProductiveDuration(ordered);let nextStart=problem.day.start,consumed=0,exhausted=false;
+  const orders=technicalChainOrders(policy,ordered);const duration=technicalChainProductiveDuration(ordered);let nextStart=problem.day.start,orderIndex=0,consumed=0,exhausted=false;
   return {get consumed(){return consumed},get exhausted(){return exhausted},diagnostics,nextCandidate(){
-    while(nextStart+duration<=problem.day.end){const rootStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.fullGridStarts+=1;
+    while(orderIndex<orders.length){const sequence=orders[orderIndex]!;if(nextStart+duration>problem.day.end){orderIndex++;nextStart=problem.day.start;continue;}const rootStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.fullGridStarts+=1;
       if(consumed>=allowance){exhausted=true;return null;}consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
       let cursor=rootStart,cost=0;const scheduled:ScheduledTask[]=[];
-      for(const task of ordered){
+      for(const task of sequence){
         if(policy.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))){scheduled.length=0;break;}
         const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
         if(task.jointGroupId?!canPlaceJointGroup(problem,members,cursor,[...placed,...scheduled]):!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals)){scheduled.length=0;break;}
@@ -87,10 +100,10 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
         for(const item of items){cost+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,scoringPlaced,item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);scoringPlaced.push(item);}
         scheduled.push(...items);cursor+=task.duration;
       }
-      if(!ordered.every(task=>scheduled.some(item=>item.id===task.id)))continue;
+      if(!sequence.every(task=>scheduled.some(item=>item.id===task.id)))continue;
       diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;
       diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;
-      return {tasks:scheduled,cost,rootTaskId:ordered[0]!.id,start:rootStart,end:cursor};
+      return {tasks:scheduled,cost,rootTaskId:policy.orderedTaskIds[0]!,start:rootStart,end:cursor};
     }
     diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;return null;
   }};

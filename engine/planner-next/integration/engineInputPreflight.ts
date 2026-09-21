@@ -695,6 +695,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const policy=raw as Record<string,unknown>;
     addIdentity("technical-chain",policy.id,`technicalChains.${index}.id`,true);
     if(Array.isArray(policy.orderedTaskIds))policy.orderedTaskIds.forEach(id=>addIdentity("task",id,`technicalChains.${index}.orderedTaskIds`));
+    if(Array.isArray(policy.phases))policy.phases.forEach((phase:{taskIds?:unknown[]},phaseIndex:number)=>phase.taskIds?.forEach(id=>addIdentity("task",id,`technicalChains.${index}.phases.${phaseIndex}.taskIds`)));
     if(Array.isArray(policy.requiredResourceIds))policy.requiredResourceIds.forEach(id=>addIdentity("plan-resource",id,`technicalChains.${index}.requiredResourceIds`));
   });
 
@@ -883,8 +884,12 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     technicalChainsRuntime.forEach((raw,index)=>{
       const path=`technicalChains.${index}`,p=raw&&typeof raw==="object"&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
       const id=p.id,ordered=Array.isArray(p.orderedTaskIds)?p.orderedTaskIds:[],resources=Array.isArray(p.requiredResourceIds)?p.requiredResourceIds:[];
+      const phases=Array.isArray(p.phases)?p.phases:undefined;
+      const phaseIds=phases?.flatMap(phase=>phase&&typeof phase==="object"&&Array.isArray((phase as Record<string,unknown>).taskIds)?(phase as {taskIds:unknown[]}).taskIds:[])??ordered;
       let invalid=typeof id!=="string"||id.trim()!==id||id.length===0||chainIds.has(id)
         ||ordered.length<2||ordered.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(ordered).size!==ordered.length
+        ||(phases!==undefined&&(phases.length===0||phases.some(phase=>!phase||typeof phase!=="object"||!Array.isArray((phase as Record<string,unknown>).taskIds)||(phase as {taskIds:unknown[]}).taskIds.length===0)
+          ||phaseIds.length!==ordered.length||new Set(phaseIds).size!==phaseIds.length||phaseIds.some(value=>!ordered.includes(value))))
         ||resources.some(value=>!Number.isSafeInteger(value)||!resourceIds.has(value as number))||new Set(resources).size!==resources.length
         ||p.adjacency!=="REQUIRED"||p.resourceContinuity!=="REQUIRED";
       if(typeof id==="string")chainIds.add(id);

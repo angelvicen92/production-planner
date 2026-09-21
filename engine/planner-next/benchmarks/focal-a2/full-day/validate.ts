@@ -264,6 +264,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
       && chain.adjacency === "REQUIRED" && chain.resourceContinuity === "REQUIRED"
       && chain.requiredResourceIds.length === 0
       && JSON.stringify(chain.orderedTaskIds) === JSON.stringify(expected)
+      && JSON.stringify(chain.phases?.map(phase=>phase.taskIds)) === JSON.stringify([expected.slice(0,3),expected.slice(3,5),expected.slice(5)])
       ? [] : [issue("TECHNICAL_CHAIN", "CANONICAL_CONTINUITY_CHAIN_LOST", "technicalChains", "The canonical Reality C + EVA to Alfombra operation sequence must remain ordered and gapless.")];
   }],
   ["ITINERANT_UNITS", (expansion) => {

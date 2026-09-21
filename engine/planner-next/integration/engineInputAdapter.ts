@@ -88,7 +88,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     ...(problem.itinerantUnitMeals ? { itinerantUnitMeals: sorted(problem.itinerantUnitMeals, entry=>entry.id) } : {}),
     ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
     ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
-    ...(problem.technicalChains ? { technicalChains: sorted(problem.technicalChains,(entry)=>entry.id).map(entry=>({...entry,orderedTaskIds:[...entry.orderedTaskIds],requiredResourceIds:[...entry.requiredResourceIds].sort(compare)})) } : {}),
+    ...(problem.technicalChains ? { technicalChains: sorted(problem.technicalChains,(entry)=>entry.id).map(entry=>({...entry,orderedTaskIds:[...entry.orderedTaskIds],...(entry.phases?{phases:entry.phases.map(phase=>({taskIds:[...phase.taskIds]}))}:{}),requiredResourceIds:[...entry.requiredResourceIds].sort(compare)})) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
     ...(problem.transportPolicy ? { transportPolicy: {
       arrival: { ...problem.transportPolicy.arrival, taskIds: [...problem.transportPolicy.arrival.taskIds].sort(compare) },
@@ -250,6 +250,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     })).sort((left, right) => compare(left.id, right.id));
   const technicalChains:TechnicalChainPolicy[]=sourceTechnicalChains.map(policy=>({
     id:canonical("technical-chain",policy.id),orderedTaskIds:policy.orderedTaskIds.map(id=>canonical("task",id)),
+    ...(policy.phases?{phases:policy.phases.map(phase=>({taskIds:phase.taskIds.map(id=>canonical("task",id))}))}:{}),
     adjacency:policy.adjacency,resourceContinuity:policy.resourceContinuity,
     requiredResourceIds:policy.requiredResourceIds.map(id=>canonical("plan-resource",id)).sort(compare),
   })).sort((a,b)=>compare(a.id,b.id));

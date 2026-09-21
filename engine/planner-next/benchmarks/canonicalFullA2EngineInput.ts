@@ -133,6 +133,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   }];
   input.technicalChains=expansion.technicalChains.map(chain=>({
     id:chain.id,orderedTaskIds:chain.orderedTaskIds.map(id=>taskId.get(id)!),adjacency:chain.adjacency,
+    ...(chain.phases?{phases:chain.phases.map(phase=>({taskIds:phase.taskIds.map(id=>taskId.get(id)!)}))}:{}),
     resourceContinuity:chain.resourceContinuity,requiredResourceIds:chain.requiredResourceIds.map(id=>resourceId.get(id)!),
   }));
   input.coachRouteTransitions = [
