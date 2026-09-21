@@ -17,6 +17,29 @@ test("explicit adjacency uses root starts and shares candidates between probe an
  const gap=candidates[0]!.tasks.map(task=>({...task}));gap[1]!.start+=5;gap[1]!.end+=5;
  const chainProblem={...p,tasks:chain};assert.equal(validatePlan(chainProblem,candidates[0]!.tasks).hardValid,true);assert.equal(validatePlan(chainProblem,gap).hardValid,false);
 });
+test("legacy explicit chains retain their one declared order while phased chains explore internal orders gaplessly",()=>{
+ const create=(phased:boolean)=>{const p=technicalChainScenario(),base=getTechnicalChains(p.tasks)[0]!;p.day={start:0,end:45};
+   for(const resource of p.resources){resource.availability=[{start:0,end:45}];resource.transitionMinutes=0;}for(const space of p.spaces)space.availability=[{start:0,end:45}];
+   const third={...base[1]!,id:"technical-chain-third",duration:10,dependencies:[]};base[0]!.duration=10;base[0]!.dependencies=[];base[1]!.duration=10;base[1]!.dependencies=[];p.tasks.push(third);
+   const ids=[base[0]!.id,base[1]!.id,third.id];p.technicalChains=[{id:"chain",orderedTaskIds:ids,...(phased?{phases:[[ids[0]!,ids[1]!],[ids[2]!]]}:{}),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];
+   return {p,chain:getTechnicalChains(p.tasks,p.technicalChains)[0]!,ids};};
+ const legacy=create(false),legacyCandidates=generateTechnicalChainCandidates(legacy.p,legacy.chain,[],1_000).candidates;
+ assert.ok(legacyCandidates.length>0);assert.ok(legacyCandidates.every(candidate=>candidate.tasks.map(task=>task.id).join()===legacy.ids.join()));
+ const phased=create(true),phasedCandidates=generateTechnicalChainCandidates(phased.p,phased.chain,[],1_000).candidates;
+ const orders=new Set(phasedCandidates.map(candidate=>candidate.tasks.map(task=>task.id).join()));
+ assert.ok(orders.has(phased.ids.join()));assert.ok(orders.has([phased.ids[1],phased.ids[0],phased.ids[2]].join()));
+ assert.ok(phasedCandidates.every(candidate=>candidate.tasks.slice(1).every((task,index)=>candidate.tasks[index]!.end===task.start)));
+ assert.ok(phasedCandidates.every(candidate=>candidate.tasks.at(-1)!.id===phased.ids[2]));
+});
+
+test("a blocked phased permutation does not make the macro domain empty when another internal order is viable",()=>{
+ const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;p.day={start:0,end:20};for(const resource of p.resources){resource.availability=[{start:0,end:20}];resource.transitionMinutes=0;}
+ for(const space of p.spaces)space.availability=[{start:0,end:20}];for(const task of chain){task.duration=10;task.dependencies=[];}
+ p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),phases:[chain.map(task=>task.id)],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];
+ const blocker={...chain[0]!,id:"blocker",start:0,end:10,dependencies:[],requiredResourceIds:[]};
+ const candidates=generateTechnicalChainCandidates(p,chain,[blocker],100).candidates;
+ assert.ok(candidates.some(candidate=>candidate.tasks[0]!.id===chain[1]!.id));
+});
 test("technical dependencies remain precedence-only without an explicit policy",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!,result=generateTechnicalChainCandidates(p,chain,[],1000);assert.ok(result.candidates.some(candidate=>candidate.tasks[1]!.start>candidate.tasks[0]!.end));});
 test("explicit resource continuity rejects a member missing the declared resource",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];chain[1]!.requiredResourceIds=[];assert.equal(probeExactTechnicalChainMacroDomain(p,chain,[]),0);});
 test("detects cycles, fan-in and fan-out",()=>{const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;const cycle=structuredClone(members);cycle[0]!.dependencies=[cycle[1]!.id];assert.equal(technicalChainHasCycle(cycle),true);const fanIn=structuredClone(members);fanIn[1]!.dependencies=[fanIn[0]!.id,"technical-camera-positioning"];assert.equal(technicalChainHasBranching(fanIn),true);const fanOut=[...members,{...members[1]!,id:"other"}];assert.equal(technicalChainHasBranching(fanOut),true);});

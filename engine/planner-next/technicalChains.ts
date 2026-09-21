@@ -74,11 +74,42 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
     deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,preparedAuthorityBuilds:0,preparedAuthorityHits:0,
     fixedPlacedScansAvoided:0,domainBuildMs:0,finalPlacementCheckMs:0};
   const duration=technicalChainProductiveDuration(ordered);let nextStart=problem.day.start,consumed=0,exhausted=false;
+  const byId=new Map(ordered.map(task=>[task.id,task]));
+  function* permutations<T>(values:readonly T[]):Generator<T[]> {
+    if(values.length<2){yield [...values];return;}
+    for(let index=0;index<values.length;index+=1){
+      const head=values[index]!;
+      for(const tail of permutations([...values.slice(0,index),...values.slice(index+1)]))yield [head,...tail];
+    }
+  }
+  function* baseCandidateOrders():Generator<Task[]> {
+    if(!policy.phases){yield ordered;return;}
+    function* combine(phaseIndex:number,prefix:Task[]):Generator<Task[]> {
+      if(phaseIndex===policy.phases!.length){yield prefix;return;}
+      const phase=policy.phases![phaseIndex]!.map(id=>byId.get(id)!).filter(Boolean);
+      for(const permutation of permutations(phase))yield* combine(phaseIndex+1,[...prefix,...permutation]);
+    }
+    yield* combine(0,[]);
+  }
+  const permutationCount=policy.phases?.reduce((total,phase)=>total*phase.reduce((factor,_value,index)=>factor*(index+1),1),1)??1;
+  function* candidateOrders(offset:number):Generator<Task[]> {
+    let index=0;for(const order of baseCandidateOrders())if(index++>=offset)yield order;
+    index=0;for(const order of baseCandidateOrders()){if(index++>=offset)break;yield order;}
+  }
+  let activeStart:number|undefined,activeOrders:Generator<Task[]>|undefined,successfulStarts=0;
   return {get consumed(){return consumed},get exhausted(){return exhausted},diagnostics,nextCandidate(){
-    while(nextStart+duration<=problem.day.end){const rootStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.fullGridStarts+=1;
-      if(consumed>=allowance){exhausted=true;return null;}consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
+    while(activeOrders||nextStart+duration<=problem.day.end){
+      if(!activeOrders){
+        activeStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.fullGridStarts+=1;
+        if(consumed>=allowance){exhausted=true;return null;}consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
+        const offset=successfulStarts<problem.budget.bestK?successfulStarts%permutationCount:0;
+        activeOrders=candidateOrders(offset);
+      }
+      const order=activeOrders.next();
+      if(order.done){activeOrders=undefined;activeStart=undefined;continue;}
+      const candidateOrder=order.value,rootStart=activeStart!;
       let cursor=rootStart,cost=0;const scheduled:ScheduledTask[]=[];
-      for(const task of ordered){
+      for(const task of candidateOrder){
         if(policy.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))){scheduled.length=0;break;}
         const members=task.jointGroupId?jointGroupMembers(problem.tasks,task.jointGroupId):[task];
         if(task.jointGroupId?!canPlaceJointGroup(problem,members,cursor,[...placed,...scheduled]):!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals)){scheduled.length=0;break;}
@@ -90,6 +121,7 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
       if(!ordered.every(task=>scheduled.some(item=>item.id===task.id)))continue;
       diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;
       diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;
+      successfulStarts+=1;activeOrders=undefined;activeStart=undefined;
       return {tasks:scheduled,cost,rootTaskId:ordered[0]!.id,start:rootStart,end:cursor};
     }
     diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;return null;
@@ -294,7 +326,8 @@ export function generateTechnicalChainCandidates(problem:PlannerNextProblem,chai
   mode:TechnicalChainMode="SEARCH",probeLimit=1,
   startDomainMode:TechnicalChainStartDomainMode=problem.searchPolicy==="EXACT_CONSTRUCTIVE"?"ANALYTIC_DOMAIN":"FULL_GRID",
   scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):TechnicalChainCandidateResult {
-  if(problem.searchPolicy!=="EXACT_CONSTRUCTIVE")return generateLegacyTechnicalChainCandidates(problem,chainTasks,placed,allowance,mode,probeLimit,scheduledSpaceMeals);
+  const phased=explicitPolicyFor(problem,chainTasks)?.phases!==undefined;
+  if(problem.searchPolicy!=="EXACT_CONSTRUCTIVE"&&!phased)return generateLegacyTechnicalChainCandidates(problem,chainTasks,placed,allowance,mode,probeLimit,scheduledSpaceMeals);
   const explorer=createTechnicalChainExplorer(problem,chainTasks,placed,allowance,startDomainMode,scheduledSpaceMeals);
   const candidates:TechnicalChainCandidate[]=[];
   const limit=mode==="PROBE"?probeLimit:problem.searchPolicy==="EXACT_CONSTRUCTIVE"?Number.POSITIVE_INFINITY:problem.budget.bestK;

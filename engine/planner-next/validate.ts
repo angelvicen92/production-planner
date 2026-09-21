@@ -318,6 +318,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
       ||policy.adjacency!=="REQUIRED"||policy.resourceContinuity!=="REQUIRED"||new Set(policy.requiredResourceIds).size!==policy.requiredResourceIds.length
       ||policy.orderedTaskIds.some(id=>!problem.tasks.some(task=>task.id===id))
       ||policy.requiredResourceIds.some(id=>!problem.resources.some(resource=>resource.id===id));
+    const flattened=policy.phases?.flat()??[];
+    if(policy.phases&&(policy.phases.length===0||policy.phases.some(phase=>phase.length===0)||new Set(flattened).size!==flattened.length
+      ||JSON.stringify(flattened)!==JSON.stringify(policy.orderedTaskIds)))invalid=true;
     for(const id of policy.orderedTaskIds){const owner=technicalOwners.get(id);if(owner&&owner!==policy.id)invalid=true;else technicalOwners.set(id,policy.id);}
     if(invalid)reasons.add("INVALID_TECHNICAL_CHAIN_POLICY");
   }
@@ -625,8 +628,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const policy=problem.technicalChains?.find(candidate=>candidate.orderedTaskIds.length===chain.length&&candidate.orderedTaskIds.every((id,index)=>id===chain[index]?.id));
     const strictTechnical=chain.every(task=>task.kind==="technical");
     const memberIds=new Set(chain.map(task=>task.id));
-    for(let i=0;i<chain.length;i++){
-      const expected=chain[i]!,actual=scheduledById.get(expected.id),prior=i>0?chain[i-1]:undefined;
+    const validationOrder=policy?.phases?[...chain].sort((left,right)=>(scheduledById.get(left.id)?.start??Infinity)-(scheduledById.get(right.id)?.start??Infinity)||left.id.localeCompare(right.id)):chain;
+    for(let i=0;i<validationOrder.length;i++){
+      const expected=validationOrder[i]!,actual=scheduledById.get(expected.id),prior=i>0?validationOrder[i-1]:undefined;
       if(scheduledCountById.get(expected.id)!==1||!actual||!chainIdentityMatches(expected,actual))invalid=true;
       if(!prior){if((!policy||strictTechnical)&&expected.dependencies.length!==0)invalid=true;}
       else {
@@ -636,6 +640,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
         else if(predecessor.end>actual.start)invalid=true;
         if(policy?.adjacency==="REQUIRED"&&predecessor&&actual&&predecessor.end!==actual.start)invalid=true;
       }
+    }
+    if(policy?.phases){
+      const phaseById=new Map(policy.phases.flatMap((phase,index)=>phase.map(id=>[id,index] as const)));
+      for(let index=1;index<validationOrder.length;index+=1)if(phaseById.get(validationOrder[index-1]!.id)!>phaseById.get(validationOrder[index]!.id)!)invalid=true;
     }
     if(policy?.resourceContinuity==="REQUIRED"&&chain.some(task=>policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))))invalid=true;
     for(const actual of scheduled.filter(task=>task.kind==="technical"&&!memberIds.has(task.id))){

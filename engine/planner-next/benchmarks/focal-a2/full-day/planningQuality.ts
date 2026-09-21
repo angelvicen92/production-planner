@@ -196,7 +196,10 @@ function specialOperationQuality(expanded: ExpandedCanonicalFullA2Template, byId
   }
   let technicalChainViolationCount = 0;
   for (const chain of expanded.technicalChains) {
-    const ordered = chain.orderedTaskIds.map((id) => byId.get(id));
+    const orderedIds = chain.phases
+      ? chain.phases.flatMap((phase) => [...phase].sort((left, right) => (byId.get(left)?.start ?? Infinity) - (byId.get(right)?.start ?? Infinity) || left.localeCompare(right)))
+      : chain.orderedTaskIds;
+    const ordered = orderedIds.map((id) => byId.get(id));
     if (ordered.some((interval) => interval === undefined)) { technicalChainViolationCount += 1; continue; }
     for (let index = 1; index < ordered.length; index += 1) if (ordered[index - 1]!.end !== ordered[index]!.start) technicalChainViolationCount += 1;
   }

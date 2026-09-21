@@ -51,6 +51,8 @@ export interface TechnicalChainPolicy {
   /** Explicit chains may order any task kind; dependency-derived chains remain technical-only. */
   id: string;
   orderedTaskIds: string[];
+  /** Ordered, gapless phases. When absent, orderedTaskIds remains the exact required order. */
+  phases?: string[][];
   adjacency: "REQUIRED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: string[];
