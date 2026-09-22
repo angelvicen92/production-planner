@@ -1,0 +1,54 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { PlannerNextProblem, ScheduledTask } from "./contracts";
+import { PreparedOperationalMealAuthority } from "./preparedOperationalMealAuthority";
+
+const problem=():PlannerNextProblem=>({day:{start:0,end:120},spaces:[{id:"meal",availability:[{start:0,end:120}]},{id:"other",availability:[{start:0,end:120}]}],
+  resources:[],participants:[],coaches:[{id:"coach",availability:[{start:0,end:120}]}],tasks:[],participantTransitionMinutes:0,resourceTransitionMinutes:0,
+  auxiliaryPolicy:{participantPresencePreference:"OFF"},budget:{bestK:1,maxBacktracks:0,maxPatterns:1,maxBranchExpansions:100},searchPolicy:"EXACT_CONSTRUCTIVE",
+  operationalMealPolicies:[{id:"break:coach",window:{start:30,end:75},duration:45,resourceIds:["coach"],spaceIds:[]}]});
+const task=(id:string,start:number,end:number,coachId="coach",spaceId="other"):ScheduledTask=>({id,kind:"auxiliary",coachId,duration:end-start,spaceId,dependencies:[],start,end});
+const budget=()=>({remaining:100});
+
+test("prepared operational meal prunes the task that destroys the sole individual interval",()=>{
+  const p=problem(),authority=new PreparedOperationalMealAuthority(p),blocker=task("blocker",40,50);
+  const probe=authority.assess([blocker],[blocker],budget(),"STANDALONE",3);
+  assert.equal(probe.status,"PRUNE");assert.equal(authority.evidence.individualZeroDomainPrunes,1);
+  assert.equal(authority.evidence.firstPrune?.policyId,"break:coach");assert.deepEqual(probe.remainingIntervals,[{start:30,end:40},{start:50,end:75}]);
+});
+
+test("irrelevant tasks pass without meal search",()=>{
+  const p=problem(),authority=new PreparedOperationalMealAuthority(p),irrelevant={...task("irrelevant",30,75),coachId:undefined};
+  assert.equal(authority.assess([irrelevant],[irrelevant],budget(),"CORE",1).status,"PASS");
+  assert.equal(authority.evidence.irrelevantFastPasses,1);assert.equal(authority.evidence.branchesConsumed,0);
+});
+
+test("a valid last witness is reused without exact search",()=>{
+  const p=problem(),authority=new PreparedOperationalMealAuthority(p),first=task("first",0,5);
+  assert.equal(authority.assess([first],[first],budget(),"CORE",1).status,"PASS");const branches=authority.evidence.branchesConsumed;
+  const second=task("second",80,85);assert.equal(authority.assess([first,second],[second],budget(),"CORE",2).status,"PASS");
+  assert.equal(authority.evidence.witnessReuseHits,1);assert.equal(authority.evidence.branchesConsumed,branches);
+});
+
+test("an invalidated witness is repaired when another interval remains",()=>{
+  const p=problem();p.operationalMealPolicies![0]={...p.operationalMealPolicies![0]!,window:{start:0,end:120},duration:45};
+  const authority=new PreparedOperationalMealAuthority(p),seed=task("seed",110,115);
+  assert.equal(authority.assess([seed],[seed],budget(),"CORE",1).status,"PASS");
+  const breaker=task("breaker",20,30);assert.equal(authority.assess([seed,breaker],[breaker],budget(),"CORE",2).status,"PASS");
+  assert.equal(authority.evidence.witnessInvalidations,1);assert.equal(authority.evidence.witnessRepairs,1);
+});
+
+test("individual domains can pass while exact collective feasibility prunes",()=>{
+  const p=problem();p.operationalMealPolicies=[
+    {id:"a",window:{start:30,end:75},duration:45,resourceIds:["coach"],spaceIds:[]},
+    {id:"b",window:{start:30,end:75},duration:45,resourceIds:["coach"],spaceIds:[]},
+  ];const authority=new PreparedOperationalMealAuthority(p),impact=task("impact",0,5);
+  const probe=authority.assess([impact],[impact],budget(),"STANDALONE",1);
+  assert.equal(probe.status,"PRUNE");assert.equal(authority.evidence.individualZeroDomainPrunes,0);assert.equal(authority.evidence.exactCollectiveChecks,1);
+});
+
+test("terminal materialization reuses the prepared witness",()=>{
+  const p=problem(),authority=new PreparedOperationalMealAuthority(p),impact=task("impact",0,5);
+  assert.equal(authority.assess([impact],[impact],budget(),"CORE",1).status,"PASS");
+  assert.equal(authority.materialize([impact],budget()).complete,true);assert.equal(authority.evidence.terminalSearchesAvoided,1);
+});

@@ -67,6 +67,7 @@ export interface AssistedPlanningEvidence {
     readonly analyticChecks:number; readonly branchesConsumed:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
   };
+  readonly operationalMealFutureReservation: ExactItinerantPlanEvidence["operationalMealFutureReservation"];
   readonly technicalChainFutureReservation: {
     readonly checks:number; readonly passes:number; readonly prunes:number; readonly abstentions:number;
     readonly branchesConsumed:number;
@@ -459,6 +460,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       blockingMealTaskIds:[...((evidenceRecord.participantMealBlockingTaskIds as string[]|undefined)??[])],
       firstPrune:(evidenceRecord.firstParticipantMealFuturePrune as ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"]|undefined)??null,
     },
+    operationalMealFutureReservation:structuredClone((evidenceRecord.operationalMealFutureReservation as ExactItinerantPlanEvidence["operationalMealFutureReservation"]|undefined)??{
+      checks:0,passes:0,prunes:0,abstentions:0,irrelevantFastPasses:0,affectedPoliciesChecked:0,individualDomainChecks:0,
+      individualZeroDomainPrunes:0,witnessValidationChecks:0,witnessReuseHits:0,witnessInvalidations:0,witnessRepairs:0,
+      exactCollectiveChecks:0,branchesConsumed:0,terminalSearchesAvoided:0,firstPrune:null}),
     participantFutureReservation:{
       checks:Number(evidenceRecord.participantFutureReservationChecks??0),passes:Number(evidenceRecord.participantFutureReservationPasses??0),
       prunes:Number(evidenceRecord.participantFutureReservationPrunes??0),abstentions:Number(evidenceRecord.participantFutureReservationAbstentions??0),

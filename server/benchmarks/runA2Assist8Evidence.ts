@@ -196,6 +196,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         firstPrune:evidence.participantMealFutureFeasibility.firstPrune,
         exactMaterializations:evidence.work?.participantMealExactMaterializations},
       participantFutureReservation:evidence.participantFutureReservation,
+      operationalMealFutureReservation:evidence.operationalMealFutureReservation,
       technicalChainFutureReservation:evidence.technicalChainFutureReservation,
       transportWitness:evidence.standaloneDiagnostic?.terminalTransportWitness??null,
       hardRequiredValidation:{hardValid:evidence.hardValid??false,requiredValid:evidence.requiredValid??false,
