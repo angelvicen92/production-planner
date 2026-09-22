@@ -87,7 +87,11 @@ export interface AssistedPlanningEvidence {
       "conditionedLeafFutureRevalidationPasses"|"conditionedLeafFutureRevalidationRejects"|
       "genericFutureAssessSkippedForConditionedLeaf"|"structuralCandidateFingerprintAtHardGate"|
       "structuralCandidateFingerprintAtContinuation"|"structuralCandidateFingerprintBeforeStandalone"|
-      "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint">;
+      "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint"|"mainPatternCountGenerated"|
+      "mainPatternGenerationExhausted"|"mainPatternsVisited"|"timelinesGenerated"|"architectureStructuralProofChecks"|
+      "architectureStructuralProofRejects"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
+      "nominalPipelineWitnessFeasible"|"nominalPipelineWitnessInfeasible"|"nominalPipelineWitnessInconclusive"|
+      "nominalPipelineWitnessRejectsByReason"|"continuityRejects"|"authorizedArchitecturesYielded">;
   };
   readonly work: Readonly<Record<string, number>>;
   readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
@@ -498,6 +502,14 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         branchesBeforeResidualDfs:(evidenceRecord.branchesBeforeResidualDfs as number|null|undefined)??null,
         selectedArchitectureFingerprint:(evidenceRecord.selectedArchitectureFingerprint as string|null|undefined)??null,
         selectedFutureReservationFingerprint:(evidenceRecord.selectedFutureReservationFingerprint as string|null|undefined)??null,
+        mainPatternCountGenerated:Number(evidenceRecord.mainPatternCountGenerated??0),mainPatternGenerationExhausted:Boolean(evidenceRecord.mainPatternGenerationExhausted),
+        mainPatternsVisited:Number(evidenceRecord.mainPatternsVisited??0),timelinesGenerated:Number(evidenceRecord.timelinesGenerated??0),
+        architectureStructuralProofChecks:Number(evidenceRecord.architectureStructuralProofChecks??0),architectureStructuralProofRejects:Number(evidenceRecord.architectureStructuralProofRejects??0),
+        architectureStructuralRejectsByReason:{...((evidenceRecord.architectureStructuralRejectsByReason as Record<string,number>|undefined)??{})},
+        nominalPipelineWitnessChecks:Number(evidenceRecord.nominalPipelineWitnessChecks??0),nominalPipelineWitnessFeasible:Number(evidenceRecord.nominalPipelineWitnessFeasible??0),
+        nominalPipelineWitnessInfeasible:Number(evidenceRecord.nominalPipelineWitnessInfeasible??0),nominalPipelineWitnessInconclusive:Number(evidenceRecord.nominalPipelineWitnessInconclusive??0),
+        nominalPipelineWitnessRejectsByReason:{...((evidenceRecord.nominalPipelineWitnessRejectsByReason as Record<string,number>|undefined)??{})},
+        continuityRejects:Number(evidenceRecord.continuityRejects??0),authorizedArchitecturesYielded:Number(evidenceRecord.authorizedArchitecturesYielded??0),
       },
     },
     work,

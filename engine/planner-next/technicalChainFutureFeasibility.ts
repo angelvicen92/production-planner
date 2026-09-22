@@ -1,6 +1,7 @@
 import type { PlannerNextProblem, ScheduledTask, Task, TechnicalChainPolicy, Window as Interval } from "./contracts";
 import { canPlaceTask } from "./placement";
 import { createTechnicalChainExplorer, technicalChainProductiveDuration, technicalChainSignature, technicalChainWorkItemKey, type TechnicalChainCandidate, type TechnicalChainExplorer } from "./technicalChains";
+import { canPlaceJointGroup } from "./jointTasks";
 
 export type TechnicalChainFutureReservationStatus = "PASS" | "PRUNE" | "ABSTAIN";
 export interface TechnicalChainFutureReservationProbe {
@@ -173,7 +174,14 @@ export class PreparedFutureTechnicalChainAuthority {
   private valid(structure:PreparedStructure,candidate:TechnicalChainCandidate,placed:readonly ScheduledTask[]):boolean{
     this.evidence.candidatePlacementChecks++;
     const own=new Set(candidate.tasks.map(x=>x.id));let prior=[...placed.filter(x=>!own.has(x.id))];
-    for(const task of candidate.tasks){const source=structure.problem.tasks.find(x=>x.id===task.id)!;if(!canPlaceTask(structure.problem,source,task.start,prior))return false;prior=[...prior,task];}return true;
+    const checkedGroups=new Set<string>();
+    for(const task of candidate.tasks){const source=structure.problem.tasks.find(x=>x.id===task.id)!;
+      if(source.jointGroupId){if(checkedGroups.has(source.jointGroupId))continue;checkedGroups.add(source.jointGroupId);
+        const group=candidate.tasks.filter(item=>item.jointGroupId===source.jointGroupId);
+        const sources=group.map(item=>structure.problem.tasks.find(candidateSource=>candidateSource.id===item.id)!);
+        if(!canPlaceJointGroup(structure.problem,sources,task.start,prior))return false;prior=[...prior,...group];continue;}
+      if(!canPlaceTask(structure.problem,source,task.start,prior))return false;prior=[...prior,task];
+    }return true;
   }
   assess(placed:readonly ScheduledTask[],added:readonly ScheduledTask[],decisionDepthForTask?:(id:string)=>number|null):TechnicalChainFutureReservationProbe{
     this.evidence.assessCalls++;

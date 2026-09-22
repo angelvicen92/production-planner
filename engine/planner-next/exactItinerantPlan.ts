@@ -271,6 +271,11 @@ export interface ExactItinerantPlanEvidence {
   structuralCandidateFingerprintAtHardGate:string|null;structuralCandidateFingerprintAtContinuation:string|null;
   structuralCandidateFingerprintBeforeStandalone:string|null;
   selectedArchitectureFingerprint:string|null;selectedFutureReservationFingerprint:string|null;
+  mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
+  architectureStructuralProofChecks:number;architectureStructuralProofRejects:number;architectureStructuralRejectsByReason:Record<string,number>;
+  nominalPipelineWitnessChecks:number;nominalPipelineWitnessFeasible:number;nominalPipelineWitnessInfeasible:number;
+  nominalPipelineWitnessInconclusive:number;nominalPipelineWitnessRejectsByReason:Record<string,number>;
+  continuityRejects:number;authorizedArchitecturesYielded:number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
   mainRunWitnessAttempts: number;
@@ -1170,6 +1175,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     genericFutureAssessSkippedForConditionedLeaf:0,structuralCandidateFingerprintAtHardGate:null,
     structuralCandidateFingerprintAtContinuation:null,structuralCandidateFingerprintBeforeStandalone:null,
     branchesBeforeResidualDfs:null,selectedArchitectureFingerprint:null,selectedFutureReservationFingerprint:null,
+    mainPatternCountGenerated:0,mainPatternGenerationExhausted:false,mainPatternsVisited:0,timelinesGenerated:0,
+    architectureStructuralProofChecks:0,architectureStructuralProofRejects:0,architectureStructuralRejectsByReason:{},
+    nominalPipelineWitnessChecks:0,nominalPipelineWitnessFeasible:0,nominalPipelineWitnessInfeasible:0,
+    nominalPipelineWitnessInconclusive:0,nominalPipelineWitnessRejectsByReason:{},continuityRejects:0,authorizedArchitecturesYielded:0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,
@@ -1278,7 +1287,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   function* structuralBundles():NonNullable<ExactMainAndFeederSearchOptions["structuralBundleCandidates"]> {
     if(!hasFuture)return;
     const structureIds=futureTechnicalChains.reservationStructureIds();
-    for(const architecture of authorizedPipelineArchitectures(problem)){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
+    for(const architecture of authorizedPipelineArchitectures(problem,evidence)){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
       const key=architectureKey(architecture),prepared=preparePipelineBundleGraph(problem,architecture,options.fixedPlacements);
       if(!prepared)continue;evidence.architecturesPrepared++;evidence.preparedBundleEdges+=prepared.preparedBundleEdges;
       evidence.futureWitnessesTriedByArchitecture[key]??=0;evidence.perfectMatchingsByArchitecture[key]??=0;evidence.hardGateRejectsByArchitecture[key]??=0;
