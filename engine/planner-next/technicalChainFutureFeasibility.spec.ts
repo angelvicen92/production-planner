@@ -63,10 +63,13 @@ test("deletion minimization isolates successive repair decisions in a multi-bloc
 });
 
 test("prepared authority reuses a valid witness and preserves disjoint occupancy support",()=>{
-  const p=problem();p.analyticalFutureTechnicalChains![0]!.tasks[0]!.availability=[{start:0,end:20}];
-  p.analyticalFutureTechnicalChains![0]!.tasks[1]!.availability=[{start:40,end:60}];
+  const p=problem();p.day.end=100;p.spaces.forEach(space=>space.availability=[{start:0,end:100}]);
+  p.participants.forEach(person=>person.availability=[{start:0,end:100}]);
+  p.analyticalFutureTechnicalChains![0]!.tasks[0]!.availability=[{start:0,end:20},{start:60,end:80}];
+  p.analyticalFutureTechnicalChains![0]!.tasks[1]!.availability=[{start:20,end:40},{start:80,end:100}];
+  p.analyticalFutureTechnicalChains![0]!.tasks[1]!.participantId="current-person";
   const authority=new PreparedFutureTechnicalChainAuthority(p);
-  assert.deepEqual(authority.occupancySupport("future-person"),[{start:0,end:20},{start:40,end:60}],
+  assert.deepEqual(authority.occupancySupport("future-person"),[{start:0,end:20},{start:60,end:80}],
     "a safe hole must not be widened into one continuous critical window");
   const reusable=new PreparedFutureTechnicalChainAuthority(problem());
   const interacting={...placement(40),spaceId:"other",participantId:"future-person",duration:5,end:45};
@@ -85,4 +88,24 @@ test("future pressure ranks a nearby safe placement ahead of a farther intrusive
   const intrusive={...placement(40),participantId:"future-person",spaceId:"other"};
   assert.equal(authority.intrusion([safe]),0);
   assert.ok(authority.intrusion([intrusive])>0,"classification is overlap-based, never distance-based");
+});
+
+test("an invalidated phased witness resumes at the next order of the same root",()=>{
+  const p=problem(),future=p.analyticalFutureTechnicalChains![0]!;
+  p.day={start:0,end:20};p.spaces.forEach(space=>space.availability=[{start:0,end:20}]);
+  p.participants.forEach(person=>person.availability=[{start:0,end:20}]);
+  p.participants.push({id:"future-person-b",availability:[{start:0,end:20}]});
+  future.policy.phases=[["future-a","future-b"]];
+  future.tasks[0]!.duration=10;future.tasks[0]!.availability=[{start:0,end:20}];future.tasks[0]!.dependencies=[];
+  future.tasks[1]!.duration=10;future.tasks[1]!.availability=[{start:0,end:20}];future.tasks[1]!.dependencies=[];
+  future.tasks[1]!.participantId="future-person-b";
+  const authority=new PreparedFutureTechnicalChainAuthority(p);
+  const harmless={...placement(0),id:"harmless",spaceId:"other",participantId:"future-person-b",start:20,end:20,duration:0};
+  const first=authority.assess([harmless],[harmless]);
+  assert.equal(first.status,"PASS");assert.equal(authority.evidence.exactRootOrderEvaluations,1);
+  const blocker={...placement(0),id:"blocker",spaceId:"other",participantId:"future-person",duration:10,end:10};
+  const repaired=authority.assess([blocker],[blocker]);
+  assert.equal(repaired.status,"PASS");assert.equal(repaired.result,"WITNESS");
+  assert.equal(authority.evidence.exactRootOrderEvaluations,2,
+    "repair must evaluate O2 at root zero rather than skipping to another root");
 });

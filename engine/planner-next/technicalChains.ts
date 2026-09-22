@@ -29,6 +29,9 @@ export const technicalChainResourceIds=(tasks:Task[])=>[...new Set(tasks.flatMap
 export const technicalChainProductiveDuration=(tasks:Task[])=>tasks.reduce((n,t)=>n+t.duration,0);
 export const technicalChainSignature=(tasks:ScheduledTask[])=>tasks.map(t=>`${t.id}@${t.start}-${t.end}:${t.spaceId}:${[...(t.requiredResourceIds??[])].sort().join(",")}:${[...t.dependencies].sort().join(",")}`).join("|");
 export interface TechnicalChainDiagnostics {
+  rootStartsVisited: number;
+  rootOrdersEvaluated: number;
+  rootOrdersYielded: number;
   startsExplored: number;
   expansions: number;
   completeCandidatesGenerated: number;
@@ -68,7 +71,7 @@ const explicitPolicyFor=(problem:PlannerNextProblem,tasks:Task[]):TechnicalChain
 
 function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,ordered:Task[],policy:TechnicalChainPolicy,
   placed:ScheduledTask[],allowance:number,meals:ScheduledSpaceMeal[]):TechnicalChainExplorer{
-  const diagnostics:TechnicalChainDiagnostics={startsExplored:0,expansions:0,completeCandidatesGenerated:0,completeCandidatesYielded:0,
+  const diagnostics:TechnicalChainDiagnostics={rootStartsVisited:0,rootOrdersEvaluated:0,rootOrdersYielded:0,startsExplored:0,expansions:0,completeCandidatesGenerated:0,completeCandidatesYielded:0,
     maximumPartialStatesPerDepth:0,activeFrontierPeak:1,fullGridStarts:0,analyticEligibleStarts:0,analyticallyEliminatedStarts:0,
     startsEvaluated:0,alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
     deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,preparedAuthorityBuilds:0,preparedAuthorityHits:0,
@@ -91,22 +94,17 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
     }
     yield* combine(0,[]);
   }
-  const permutationCount=policy.phases?.reduce((total,phase)=>total*phase.reduce((factor,_value,index)=>factor*(index+1),1),1)??1;
-  function* candidateOrders(offset:number):Generator<Task[]> {
-    let index=0;for(const order of baseCandidateOrders())if(index++>=offset)yield order;
-    index=0;for(const order of baseCandidateOrders()){if(index++>=offset)break;yield order;}
-  }
-  let activeStart:number|undefined,activeOrders:Generator<Task[]>|undefined,successfulStarts=0;
+  let activeStart:number|undefined,activeOrders:Generator<Task[]>|undefined;
   return {get consumed(){return consumed},get exhausted(){return exhausted},diagnostics,nextCandidate(){
     while(activeOrders||nextStart+duration<=problem.day.end){
       if(!activeOrders){
-        activeStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.fullGridStarts+=1;
-        if(consumed>=allowance){exhausted=true;return null;}consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
-        const offset=successfulStarts<problem.budget.bestK?successfulStarts%permutationCount:0;
-        activeOrders=candidateOrders(offset);
+        activeStart=nextStart;nextStart+=5;diagnostics.startsExplored+=1;diagnostics.rootStartsVisited+=1;diagnostics.fullGridStarts+=1;
+        activeOrders=baseCandidateOrders();
       }
       const order=activeOrders.next();
       if(order.done){activeOrders=undefined;activeStart=undefined;continue;}
+      if(consumed>=allowance){exhausted=true;return null;}
+      consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;diagnostics.rootOrdersEvaluated+=1;
       const candidateOrder=order.value,rootStart=activeStart!;
       let cursor=rootStart,cost=0;const scheduled:ScheduledTask[]=[];
       for(const task of candidateOrder){
@@ -119,9 +117,8 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
         scheduled.push(...items);cursor+=task.duration;
       }
       if(!ordered.every(task=>scheduled.some(item=>item.id===task.id)))continue;
-      diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;
+      diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;diagnostics.rootOrdersYielded+=1;
       diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;
-      successfulStarts+=1;activeOrders=undefined;activeStart=undefined;
       return {tasks:scheduled,cost,rootTaskId:ordered[0]!.id,start:rootStart,end:cursor};
     }
     diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;return null;
@@ -183,7 +180,7 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
   if(policy?.adjacency==="REQUIRED")return createContiguousTechnicalChainExplorer(problem,ordered,policy,placed,allowance,scheduledSpaceMeals);
   const preparedAuthorities=placementAuthorityMode==="PREPARED_AUTHORITY"
     ?ordered.map(task=>prepareTaskPlacementAuthority(problem,task,placed,scheduledSpaceMeals)):[];
-  const diagnostics:TechnicalChainDiagnostics={startsExplored:0,expansions:0,completeCandidatesGenerated:0,
+  const diagnostics:TechnicalChainDiagnostics={rootStartsVisited:0,rootOrdersEvaluated:0,rootOrdersYielded:0,startsExplored:0,expansions:0,completeCandidatesGenerated:0,
     completeCandidatesYielded:0,maximumPartialStatesPerDepth:0,activeFrontierPeak:root&&ordered.length>=2?1:0,
     fullGridStarts:0,analyticEligibleStarts:0,analyticallyEliminatedStarts:0,startsEvaluated:0,
     alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
@@ -229,6 +226,7 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
           const last=state.tasks.at(-1)!;
           diagnostics.completeCandidatesGenerated+=1;
           diagnostics.completeCandidatesYielded+=1;
+          diagnostics.rootOrdersYielded+=1;
           return {tasks:state.tasks,cost:state.cost,rootTaskId:root!.id,start:state.tasks[0]!.start,end:last.end};
         }
         const task=ordered[state.tasks.length]!,depth=state.tasks.length;
@@ -248,9 +246,9 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
         const children:Partial[]=[];
         for(const start of starts){
           if(start<earliest)continue;
-          if(depth===0)diagnostics.startsExplored+=1;
+          if(depth===0){diagnostics.startsExplored+=1;diagnostics.rootStartsVisited+=1;}
           if(consumed>=allowance){budgetExhausted=true;return null;}
-          consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;
+          consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;diagnostics.rootOrdersEvaluated+=1;
           const checkStarted=measureTimings?performance.now():0;
           const accepted=authority?authority.accepts(start,domain):canPlaceTask(problem,task,start,prior,scheduledSpaceMeals);
           if(authority)diagnostics.fixedPlacedScansAvoided+=placed.length;
@@ -285,7 +283,7 @@ function generateLegacyTechnicalChainCandidates(problem:PlannerNextProblem,chain
   const policy=explicitPolicyFor(problem,chainTasks);
   const ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];let consumed=0,startsExplored=0,max=0;
   const complete:TechnicalChainCandidate[]=[];
-  const diagnostics=():TechnicalChainDiagnostics=>({startsExplored,expansions:consumed,
+  const diagnostics=():TechnicalChainDiagnostics=>({rootStartsVisited:startsExplored,rootOrdersEvaluated:consumed,rootOrdersYielded:complete.length,startsExplored,expansions:consumed,
     completeCandidatesGenerated:complete.length,completeCandidatesYielded:complete.length,
     maximumPartialStatesPerDepth:max,activeFrontierPeak:max,fullGridStarts:consumed,analyticEligibleStarts:consumed,
     analyticallyEliminatedStarts:0,startsEvaluated:consumed,alternativesDeferred:0,alternativesRevisited:0,

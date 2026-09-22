@@ -1,4 +1,4 @@
-import type { Interval, PlannerNextProblem, ScheduledTask, Task, TechnicalChainPolicy } from "./contracts";
+import type { PlannerNextProblem, ScheduledTask, Task, TechnicalChainPolicy, Window as Interval } from "./contracts";
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
 import { createTechnicalChainExplorer, technicalChainProductiveDuration, technicalChainSignature, technicalChainWorkItemKey, type TechnicalChainCandidate, type TechnicalChainExplorer } from "./technicalChains";
 
@@ -14,6 +14,7 @@ export interface TechnicalChainFutureReservationProbe {
 export interface PreparedFutureStructureEvidence {
   structureId:string; effectiveWindow:Interval[]; productiveDuration:number; slack:number; slackRatio:number; loadRatio:number;
   futureOccupancySupport:Record<string,Interval[]>; initialRootOrderDomain:number;
+  derivationMode:"ROOT_PHASE_GEOMETRY"|"EXACT_CANDIDATES"; supportComplete:boolean; candidateCountUsedToDeriveSupport:number;
 }
 export interface PreparedFutureTechnicalChainEvidence {
   preparedFutureStructures:PreparedFutureStructureEvidence[]; witnessReuseChecks:number; witnessReuseHits:number;
@@ -50,17 +51,31 @@ export class PreparedFutureTechnicalChainAuthority {
       const tasks=source.policy.orderedTaskIds.map(id=>byId.get(id)).filter((x):x is Task=>!!x);
       const local={...problem,tasks:[...problem.tasks,...source.tasks],technicalChains:[source.policy]};
       const duration=technicalChainProductiveDuration(tasks);
-      const rootDomain=tasks[0]?exactTaskStartDomain(local,tasks[0], [...fixed]):{eligibleStartCount:0,intervals:[]};
+      const rootDomain=tasks[0]?exactTaskStartDomain(local,tasks[0], [...fixed]):{eligibleStartCount:0,intervals:[],starts:function*(){}};
       const effectiveWindow=union(tasks.flatMap(task=>task.availability??[{...problem.day}]));
       const windowMinutes=effectiveWindow.reduce((sum,x)=>sum+x.end-x.start,0),slack=Math.max(0,windowMinutes-duration);
       const support=new Map<string,Interval[]>();
       const add=(id:string|undefined,intervals:Interval[])=>{if(id)support.set(id,union([...(support.get(id)??[]),...intervals]));};
-      for(const task of tasks){const intervals=task.availability??effectiveWindow;add(task.participantId,intervals);add(task.coachId,intervals);add(task.itinerantUnitId,intervals);for(const id of task.requiredResourceIds??[])add(id,intervals);}
+      // Before exact enumeration completes, use a sound geometric envelope of
+      // eligible roots and every offset a member can have inside its phase. Raw
+      // task availability is not occupancy support: it ignores chain offsets and
+      // would erase legitimate holes between possible realizations.
+      const phaseByTask=new Map<string,{before:number;within:number}>();let before=0;
+      for(const phaseIds of source.policy.phases??source.policy.orderedTaskIds.map(id=>[id])){
+        const phase=phaseIds.map(id=>byId.get(id)).filter((x):x is Task=>!!x),total=phase.reduce((sum,task)=>sum+task.duration,0);
+        for(const task of phase)phaseByTask.set(task.id,{before,within:total-task.duration});
+        before+=total;
+      }
+      const roots=[...rootDomain.starts()];
+      for(const task of tasks){const offset=phaseByTask.get(task.id)??{before:0,within:0};
+        const intervals=roots.map(root=>({start:root+offset.before,end:root+offset.before+offset.within+task.duration}));
+        add(task.participantId,intervals);add(task.coachId,intervals);add(task.itinerantUnitId,intervals);for(const id of task.requiredResourceIds??[])add(id,intervals);}
       return {policy:source.policy,tasks,problem:local,explorer:createTechnicalChainExplorer(local,tasks,[...fixed],Number.MAX_SAFE_INTEGER),
         candidates:[],signatures:new Set<string>(),lastWitness:null,exhausted:false,support,
         evidence:{structureId:source.policy.id,effectiveWindow,productiveDuration:duration,slack,
           slackRatio:windowMinutes?slack/windowMinutes:0,loadRatio:windowMinutes?duration/windowMinutes:1,
-          futureOccupancySupport:Object.fromEntries([...support].map(([id,x])=>[id,x])),initialRootOrderDomain:rootDomain.eligibleStartCount}};
+          futureOccupancySupport:Object.fromEntries([...support].map(([id,x])=>[id,x])),initialRootOrderDomain:rootDomain.eligibleStartCount,
+          derivationMode:"ROOT_PHASE_GEOMETRY",supportComplete:false,candidateCountUsedToDeriveSupport:0}};
     });
     this.evidence={preparedFutureStructures:this.structures.map(x=>x.evidence),witnessReuseChecks:0,witnessReuseHits:0,
       witnessInvalidations:0,witnessRepairs:0,exactRootOrderEvaluations:0,ledgeredPermutationBranches:0};

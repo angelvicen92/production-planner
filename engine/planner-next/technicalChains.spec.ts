@@ -40,6 +40,35 @@ test("a blocked phased permutation does not make the macro domain empty when ano
  const candidates=generateTechnicalChainCandidates(p,chain,[blocker],100).candidates;
  assert.ok(candidates.some(candidate=>candidate.tasks[0]!.id===chain[1]!.id));
 });
+
+test("phased contiguous exploration resumes at the next order of the same root and ledgers each pair",()=>{
+ const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;
+ p.day={start:0,end:20};for(const task of members){task.duration=10;task.dependencies=[];task.availability=[{start:0,end:20}];}
+ for(const resource of p.resources){resource.availability=[{start:0,end:20}];resource.transitionMinutes=0;}
+ for(const space of p.spaces)space.availability=[{start:0,end:20}];
+ const ids=members.map(task=>task.id);
+ p.technicalChains=[{id:"phased",orderedTaskIds:ids,phases:[ids],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];
+ const explorer=createTechnicalChainExplorer(p,members,[],2);
+ const first=explorer.nextCandidate(),second=explorer.nextCandidate();
+ assert.ok(first);assert.ok(second);
+ assert.equal(first.start,second.start,"the second call must not discard the current root");
+ assert.notDeepEqual(first.tasks.map(task=>task.id),second.tasks.map(task=>task.id));
+ assert.equal(explorer.consumed,2);assert.equal(explorer.diagnostics.rootStartsVisited,1);
+ assert.equal(explorer.diagnostics.rootOrdersEvaluated,2);assert.equal(explorer.diagnostics.rootOrdersYielded,2);
+});
+
+test("a phased contiguous budget can exhaust between two orders of one root",()=>{
+ const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;
+ p.day={start:0,end:20};for(const task of members){task.duration=10;task.dependencies=[];task.availability=[{start:0,end:20}];}
+ for(const resource of p.resources){resource.availability=[{start:0,end:20}];resource.transitionMinutes=0;}
+ for(const space of p.spaces)space.availability=[{start:0,end:20}];
+ const ids=members.map(task=>task.id);
+ p.technicalChains=[{id:"phased",orderedTaskIds:ids,phases:[ids],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];
+ const explorer=createTechnicalChainExplorer(p,members,[],1);
+ assert.ok(explorer.nextCandidate());assert.equal(explorer.nextCandidate(),null);
+ assert.equal(explorer.exhausted,true);assert.equal(explorer.consumed,1);
+ assert.equal(explorer.diagnostics.rootStartsVisited,1);assert.equal(explorer.diagnostics.rootOrdersEvaluated,1);
+});
 test("technical dependencies remain precedence-only without an explicit policy",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!,result=generateTechnicalChainCandidates(p,chain,[],1000);assert.ok(result.candidates.some(candidate=>candidate.tasks[1]!.start>candidate.tasks[0]!.end));});
 test("explicit resource continuity rejects a member missing the declared resource",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];chain[1]!.requiredResourceIds=[];assert.equal(probeExactTechnicalChainMacroDomain(p,chain,[]),0);});
 test("detects cycles, fan-in and fan-out",()=>{const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;const cycle=structuredClone(members);cycle[0]!.dependencies=[cycle[1]!.id];assert.equal(technicalChainHasCycle(cycle),true);const fanIn=structuredClone(members);fanIn[1]!.dependencies=[fanIn[0]!.id,"technical-camera-positioning"];assert.equal(technicalChainHasBranching(fanIn),true);const fanOut=[...members,{...members[1]!,id:"other"}];assert.equal(technicalChainHasBranching(fanOut),true);});
