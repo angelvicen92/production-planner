@@ -57,7 +57,9 @@ export interface AnonymousPipelineWitnessDiagnostic {
 }
 
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
-export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[] }
+export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[];
+  safePerfectMatchingAttempts:number;safePerfectMatchingFound:number;safeGraphEdgeCount:number;intrusiveGraphEdgeCount:number;
+  safeMatchingFailures:number;fullGraphFallbacks:number }
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
 export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
@@ -428,7 +430,7 @@ export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextP
 export function materializePipelineBundleMatching(problem:Readonly<PlannerNextProblem>,
   architecture:MainFeederArchitecture,protectedPlacements:readonly ScheduledTask[]=[],
   forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,
-  consumeTraversal:()=>boolean=()=>true):PipelineBundleMaterialization|null {
+  consumeTraversal:()=>boolean=()=>true,futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number):PipelineBundleMaterialization|null {
   const nominal=materializeNominalPipelineWitness(problem,architecture);
   if(nominal.witness.status!=="FEASIBLE")return null;
   const witness=nominal.witness;
@@ -480,15 +482,28 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
     });
     positions.set(main.id,valid);candidates.set(main.id,byPosition);
   }
-  const initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),positions,forbiddenEdges,
-    previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal);
+  const pressure=new Map<string,Map<number,number>>();let safeGraphEdgeCount=0,intrusiveGraphEdgeCount=0;
+  for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
+    row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
+  let safePerfectMatchingAttempts=0,safePerfectMatchingFound=0,safeMatchingFailures=0,fullGraphFallbacks=0;
+  let initial:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined;
+  if(futureEdgeIntrusion){safePerfectMatchingAttempts=1;const safePositions=new Map<string,number[]>();
+    for(const [id,valid] of positions){const row=pressure.get(id)!;const pressured=[...row.values()].some(value=>value>0);
+      safePositions.set(id,valid.filter(position=>!pressured||(row.get(position)??0)===0));}
+    initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
+      (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
+    if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
+  if(!initial)initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),positions,forbiddenEdges,
+    previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
+    (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
   if(initial.outcome!=="PERFECT")return null;
   const matching=initial.matching!;
   const scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
   const unique=[...new Map([...scheduled,...protectedPlacements].map(task=>[task.id,task])).values()]
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(forbiddenEdges),evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
-    materializations:1,forbiddenEdges:[...forbiddenEdges].sort()}};
+    materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
+    intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks}};
 }
 
 /** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */

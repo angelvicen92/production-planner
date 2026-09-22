@@ -62,6 +62,26 @@ test("deletion minimization isolates successive repair decisions in a multi-bloc
   assert.equal(complete.result,"WITNESS");
 });
 
+test("complete zero domains publish an inclusion-minimal multi-decision conflict core",()=>{
+  const p=problem();
+  const left={...placement(10),id:"left",duration:10,end:20};
+  const right={...placement(40),id:"right",duration:10,end:50};
+  const result=probeTechnicalChainFutureReservations(p,[left,right],[left,right],500,id=>id==="left"?2:id==="right"?5:null);
+  assert.equal(result.status,"PRUNE");assert.equal(result.domainComplete,true);
+  assert.deepEqual(result.conflictDecisionDepths,[2,5]);
+  assert.deepEqual(result.conflictTaskIds,{"2":["left"],"5":["right"]});
+  assert.equal(result.conflictGroupCount,2);assert.equal(result.conflictClassification,"MULTI_DECISION_ZERO_DOMAIN");
+  assert.equal(result.certifiedDecisionDepth,null,"a multi-conflict must not nominate an arbitrary singleton");
+});
+
+test("fixed context zero domain does not invent a backjump",()=>{
+  const fixed=placement(20),result=probeTechnicalChainFutureReservations(problem(),[fixed],[fixed],500,()=>null);
+  assert.equal(result.status,"PRUNE");assert.equal(result.domainComplete,true);
+  assert.deepEqual(result.conflictDecisionDepths,[]);assert.equal(result.conflictGroupCount,0);
+  assert.equal(result.conflictClassification,"FIXED_CONTEXT_ZERO_DOMAIN");assert.equal(result.certifiedDecisionDepth,null);
+  assert.equal(result.fixedContextParticipates,true);
+});
+
 test("prepared authority reuses a valid witness and preserves disjoint occupancy support",()=>{
   const p=problem();p.day.end=100;p.spaces.forEach(space=>space.availability=[{start:0,end:100}]);
   p.participants.forEach(person=>person.availability=[{start:0,end:100}]);
@@ -108,4 +128,40 @@ test("an invalidated phased witness resumes at the next order of the same root",
   assert.equal(repaired.status,"PASS");assert.equal(repaired.result,"WITNESS");
   assert.equal(authority.evidence.exactRootOrderEvaluations,2,
     "repair must evaluate O2 at root zero rather than skipping to another root");
+});
+
+test("phased static envelope retains a root when a member other than orderedTaskIds[0] can lead",()=>{
+  const p=problem(),future=p.analyticalFutureTechnicalChains![0]!;p.day={start:0,end:20};
+  p.spaces.forEach(space=>space.availability=[{start:0,end:20}]);p.participants.forEach(person=>person.availability=[{start:0,end:20}]);
+  future.policy.phases=[["future-a","future-b"]];future.tasks.forEach(task=>{task.duration=10;task.dependencies=[];});
+  future.tasks[0]!.availability=[{start:10,end:20}];future.tasks[1]!.availability=[{start:0,end:10}];
+  const authority=new PreparedFutureTechnicalChainAuthority(p),prepared=authority.evidence.preparedFutureStructures[0]!;
+  assert.equal(prepared.derivationMode,"STATIC_PHASE_ENVELOPE");assert.equal(prepared.rootsInStaticEnvelope,1);
+  assert.deepEqual(authority.occupancySupport("future-person"),[{start:0,end:20}],
+    "root zero and both phase offsets survive although future-a cannot be first");
+});
+
+test("assess hot paths and pressure cache do not scan known candidates for evidence",()=>{
+  const authority=new PreparedFutureTechnicalChainAuthority(problem());
+  const irrelevant={...placement(0),spaceId:"other"};authority.assess([irrelevant],[irrelevant]);
+  assert.equal(authority.evidence.irrelevantFastPasses,1);assert.equal(authority.evidence.knownCandidateChecks,0);
+  const relevant={...placement(40),participantId:"future-person",spaceId:"other",duration:5,end:45};
+  authority.assess([relevant],[relevant]);const scans=authority.evidence.fullCandidateScans;
+  authority.assess([relevant],[relevant]);assert.equal(authority.evidence.fullCandidateScans,scans,"lastWitness Evidence is O(1)");
+  authority.pressure([relevant]);authority.pressure([relevant]);assert.equal(authority.evidence.pressureCacheHits,1);
+});
+
+test("future pressure reports real exact survivors and labels partial counts as lower bounds",()=>{
+  const partial=new PreparedFutureTechnicalChainAuthority(problem());
+  const operation={...placement(0),spaceId:"other",participantId:"future-person",duration:5,end:5};
+  const partialPressure=partial.pressure([operation]);
+  assert.equal(partialPressure.exactSurvivorCount,null);assert.equal(partialPressure.domainComplete,false);
+  assert.equal(partialPressure.knownSurvivorLowerBound,0);
+
+  const blocker=placement(20);partial.assess([blocker],[blocker]);
+  const exactPressure=partial.pressure([operation]);
+  assert.equal(exactPressure.domainComplete,true);assert.notEqual(exactPressure.exactSurvivorCount,null);
+  assert.equal(exactPressure.exactSurvivorCount,exactPressure.knownSurvivorLowerBound);
+  assert.ok(exactPressure.exactSurvivorCount!<partial.evidence.exactCandidateCount!,
+    "the operation-specific survivor count must not echo the total base domain");
 });
