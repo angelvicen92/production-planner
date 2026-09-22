@@ -59,7 +59,8 @@ export interface AnonymousPipelineWitnessDiagnostic {
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
 export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[];
   safePerfectMatchingAttempts:number;safePerfectMatchingFound:number;safeGraphEdgeCount:number;intrusiveGraphEdgeCount:number;
-  safeMatchingFailures:number;fullGraphFallbacks:number }
+  safeMatchingFailures:number;fullGraphFallbacks:number;bundleEdgesBeforeReservation:number;
+  bundleEdgesRejectedByReservation:number;bundleEdgesAfterReservation:number }
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
 export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
@@ -430,7 +431,8 @@ export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextP
 export function materializePipelineBundleMatching(problem:Readonly<PlannerNextProblem>,
   architecture:MainFeederArchitecture,protectedPlacements:readonly ScheduledTask[]=[],
   forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,
-  consumeTraversal:()=>boolean=()=>true,futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number):PipelineBundleMaterialization|null {
+  consumeTraversal:()=>boolean=()=>true,futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number,
+  analyticalReservedPlacements:readonly ScheduledTask[]=[]):PipelineBundleMaterialization|null {
   const nominal=materializeNominalPipelineWitness(problem,architecture);
   if(nominal.witness.status!=="FEASIBLE")return null;
   const witness=nominal.witness;
@@ -440,7 +442,7 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined)
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
-  const candidates=new Map<string,Map<number,ScheduledTask[]>>();
+  const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0,bundleEdgesRejectedByReservation=0;
   const positions=new Map<string,number[]>();
   for(const main of mains){
     const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
@@ -466,6 +468,7 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
       const protectedMismatch=bundle.some(task=>{const fixed=protectedById.get(task.id);return fixed
         &&(fixed.start!==task.start||fixed.end!==task.end||fixed.spaceId!==task.spaceId);});
       if(protectedMismatch)return;
+      bundleEdgesBeforeReservation++;
       const local:ScheduledTask[]=[...protectedPlacements.filter(task=>!bundle.some(item=>item.id===task.id))];
       let edgeValid=true;
       for(const task of [...bundle].sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id))){
@@ -476,7 +479,16 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
       // transport, meal and anchored-operation authorities. Preserve that proven
       // edge even where checking one task at a time cannot represent a grouped IN.
       const nominalMain=nominal.scheduledTasks.find(task=>task.id===main.id);
-      if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
+      if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end&&!analyticalReservedPlacements.length)edgeValid=true;
+      if(edgeValid&&analyticalReservedPlacements.length){
+        const withReservations=[...local,...analyticalReservedPlacements];
+        edgeValid=[...bundle].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)).every(task=>
+          protectedById.has(task.id)||canPlaceTask(problem,task,task.start,withReservations.filter(x=>x.id!==task.id)));
+        if(edgeValid){const withBundle=[...protectedPlacements,...bundle];edgeValid=analyticalReservedPlacements.every(task=>{
+          const source=(problem.analyticalFutureTechnicalChains??[]).flatMap(x=>x.tasks).find(x=>x.id===task.id)??task;
+          return canPlaceTask(problem,source,task.start,withBundle.filter(x=>x.id!==task.id));});}
+        if(!edgeValid)bundleEdgesRejectedByReservation++;
+      }
       if(!edgeValid)return;
       valid.push(position);byPosition.set(position,bundle);
     });
@@ -503,7 +515,8 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(forbiddenEdges),evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
     materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
-    intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks}};
+    intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks,bundleEdgesBeforeReservation,bundleEdgesRejectedByReservation,
+    bundleEdgesAfterReservation:bundleEdgesBeforeReservation-bundleEdgesRejectedByReservation}};
 }
 
 /** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */

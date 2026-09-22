@@ -165,3 +165,20 @@ test("future pressure reports real exact survivors and labels partial counts as 
   assert.ok(exactPressure.exactSurvivorCount!<partial.evidence.exactCandidateCount!,
     "the operation-specific survivor count must not echo the total base domain");
 });
+
+test("exact analytical reservations are lazy, resumable, stable, and remain outside visible tasks",()=>{
+  const p=problem(),authority=new PreparedFutureTechnicalChainAuthority(p);
+  const first=authority.nextExactReservation("future-structure");
+  assert.equal(first.status,"CANDIDATE");assert.ok(first.reservation);
+  assert.equal(first.reservation.structureId,"future-structure");
+  assert.deepEqual(first.reservation.phaseOrder,["future-a","future-b"]);
+  assert.deepEqual(first.reservation.productiveInterval,{start:0,end:40});
+  assert.equal(first.reservation.scheduledTasks.length,2);
+  assert.ok(first.reservation.ledgerDelta>0);
+  assert.ok(first.reservation.scheduledTasks.every(task=>!p.tasks.some(visible=>visible.id===task.id)),
+    "analytical witness tasks are read-only context, not visible proposal tasks");
+  const second=authority.nextExactReservation("future-structure",[],first.nextCursor);
+  assert.equal(second.status,"CANDIDATE");assert.ok(second.reservation);
+  assert.notEqual(second.reservation.fingerprint,first.reservation.fingerprint);
+  assert.equal(authority.reservationRemainsValid(first.reservation,[]),true);
+});
