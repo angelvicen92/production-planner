@@ -308,6 +308,7 @@ export interface ExactPartialCoreCandidate {
   feederStart: number;
   pattern: string[];
   timelineKey: string | null;
+  origin?:"ORDINARY_CORE"|"FIXED_MAIN_CONTEXT"|"FIXED_MAIN_FEEDER";
 }
 export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
@@ -338,6 +339,9 @@ export interface ExactMainAndFeederSearchOptions {
   onStructuralHardGateReject?:(architecture:MainFeederArchitecture)=>void;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
+  /** Ordering only; fixed-main feeder starts remain a complete domain. */
+  fixedMainFeederStartComparator?: (a:Readonly<{tasks:readonly ScheduledTask[];scheduledFeeder:ScheduledTask;main:Task}>,
+    b:Readonly<{tasks:readonly ScheduledTask[];scheduledFeeder:ScheduledTask;main:Task}>)=>number;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
   mainChoiceComparator?: (a: ExactMainChoiceDescriptor, b: ExactMainChoiceDescriptor) => number;
   /** Ordering-only pressure from prepared future authorities. Zero denotes a SAFE edge. */
@@ -849,10 +853,22 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const {main,placement,feeder}=fixedMainFeeders[index]!;
     const deadline=latestFeederEndBeforeMain(problem,feeder,main.spaceId,placement.start,placement.start);
     const domain=exactFeederStartDomain(problem,feeder,deadline-feeder.duration,placed,options.feederStartDomainMode);
-    for(const start of domain.starts()){
+    const starts=[...domain.starts()];
+    starts.sort((left,right)=>options.fixedMainFeederStartComparator?.(
+      {tasks:placed,scheduledFeeder:{...feeder,start:left,end:left+feeder.duration},main},
+      {tasks:placed,scheduledFeeder:{...feeder,start:right,end:right+feeder.duration},main})??0);
+    for(const start of starts){
       if(!consumeBranch("FIXED_MAIN_FEEDER_SEARCH_BUDGET_EXHAUSTED","FEEDER_START",index))return "BUDGET_EXHAUSTED";
       if(!canPlaceCoreTask(feeder,start,placed,meals))continue;
-      const result=searchPendingFixedFeeders([...placed,{...feeder,start,end:start+feeder.duration}],meals,index+1,continuation);
+      const scheduledFeeder={...feeder,start,end:start+feeder.duration},nextPlaced=[...placed,scheduledFeeder];
+      const partial=options.onPartialCoreCandidate?.({tasks:nextPlaced,addedTasks:[scheduledFeeder],meals,depth:index+1,
+        mainTaskId:main.id,feederStart:start,pattern:[],timelineKey:null,origin:"FIXED_MAIN_FEEDER"})??"CONTINUE";
+      if(partial==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+      // Protected mains are not decisions in this recursion, so a certified
+      // main-depth backjump cannot be mapped soundly here. Keep the prune local.
+      if(typeof partial==="object"){evidence.backtracks++;continue;}
+      if(partial==="REJECT"){evidence.backtracks++;continue;}
+      const result=searchPendingFixedFeeders(nextPlaced,meals,index+1,continuation);
       if(result!=="DEAD_END")return result;
       evidence.backtracks++;
     }
@@ -860,6 +876,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const structuralBase=fixedStructuralBase();
   if(!structuralBase)return fail("INFEASIBLE",["FIXED_MAIN_STRUCTURAL_OPERATION_INFEASIBLE"],coreIds);
+  if(fixedMainFeeders.length>0){
+    const initialization=options.onPartialCoreCandidate?.({tasks:structuralBase,addedTasks:[],meals:[],depth:0,
+      mainTaskId:fixedMainFeeders[0]!.main.id,feederStart:fixedMainFeeders[0]!.placement.start,pattern:[],timelineKey:null,
+      origin:"FIXED_MAIN_CONTEXT"})??"CONTINUE";
+    if(initialization==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_CONTEXT_INITIALIZATION_BUDGET_EXHAUSTED"],coreIds);
+    if(initialization==="REJECT"||typeof initialization==="object")return fail("INFEASIBLE",["FIXED_MAIN_CONTEXT_INFEASIBLE"],coreIds);
+  }
 
   let lastHardGateReason="HARD_VALIDATION_REJECTED";
   const hardGateCoreLeaf=(placed:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],expectedIds:ReadonlySet<string>,
@@ -1278,7 +1301,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced,
                 addedTasks: [...blockOperations, ...scheduled], meals: blockMeals, depth: runEnd,
                 mainTaskId: cohort.at(-1)!.task.id, feederStart: Math.min(...scheduled.map(({ start }) => start)),
-                pattern: [...pattern], timelineKey }) ?? "CONTINUE";
+                pattern: [...pattern], timelineKey,origin:"ORDINARY_CORE" }) ?? "CONTINUE";
               if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
               if (typeof partial === "object") return partial;
               if (partial === "REJECT") { feederOrderAuthorityObserved=true;evidence.backtracks += 1; return "DEAD_END"; }

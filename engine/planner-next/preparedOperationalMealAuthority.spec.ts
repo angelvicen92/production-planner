@@ -23,6 +23,35 @@ test("irrelevant tasks pass without meal search",()=>{
   assert.equal(authority.evidence.irrelevantFastPasses,1);assert.equal(authority.evidence.branchesConsumed,0);
 });
 
+test("fixed context witness survives two feeders and the third feeder is the exact causal prune",()=>{
+  const p=problem();p.operationalMealPolicies![0]={...p.operationalMealPolicies![0]!,window:{start:0,end:120},duration:45};
+  const authority=new PreparedOperationalMealAuthority(p),main=task("protected-main",0,10),f1=task("f1",20,30),
+    f2=task("f2",50,70),f3=task("f3",90,100);
+  assert.equal(authority.initializeFixedContext([main],budget()).complete,true);
+  assert.equal(authority.assess([main,f1],[f1],budget(),"CORE",1).status,"PASS");
+  assert.equal(authority.assess([main,f1,f2],[f2],budget(),"CORE",2).status,"PASS");
+  const probe=authority.assess([main,f1,f2,f3],[f3],budget(),"CORE",3);
+  assert.equal(probe.status,"PRUNE");assert.equal(probe.causality,"CAUSED_BY_ADDED_TASK");
+  assert.equal(authority.evidence.firstPrune?.causingTaskId,"f3");
+  assert.equal(authority.evidence.fixedContextWitnessFound,true);
+});
+
+test("preexisting zero domain is not falsely attributed to the current task",()=>{
+  const p=problem();p.coaches.push({id:"other-coach",availability:[{start:0,end:120}]});
+  p.operationalMealPolicies!.push({id:"break:other",window:{start:30,end:75},duration:45,resourceIds:["other-coach"],spaceIds:[]});
+  const baseline=task("baseline",40,50),added=task("added",0,5,"other-coach");
+  const authority=new PreparedOperationalMealAuthority(p),probe=authority.assess([baseline,added],[added],budget(),"STANDALONE",1);
+  assert.equal(probe.status,"PRUNE");assert.equal(probe.causality,"PREEXISTING_ZERO_DOMAIN");
+  assert.equal(authority.evidence.firstPrune?.causingTaskId,null);
+});
+
+test("technical-chain work without the coach resource fast-passes the coach meal",()=>{
+  const p=problem(),authority=new PreparedOperationalMealAuthority(p);
+  const technical:ScheduledTask={id:"technical",kind:"technical",duration:45,spaceId:"other",dependencies:[],start:30,end:75};
+  assert.equal(authority.assess([technical],[technical],budget(),"CORE",1).status,"PASS");
+  assert.equal(authority.evidence.irrelevantFastPasses,1);
+});
+
 test("a valid last witness is reused without exact search",()=>{
   const p=problem(),authority=new PreparedOperationalMealAuthority(p),first=task("first",0,5);
   assert.equal(authority.assess([first],[first],budget(),"CORE",1).status,"PASS");const branches=authority.evidence.branchesConsumed;
