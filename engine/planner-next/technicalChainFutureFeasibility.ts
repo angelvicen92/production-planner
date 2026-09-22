@@ -10,6 +10,8 @@ export interface TechnicalChainFutureReservationProbe {
   irreducibleDecisionDepths:number[]; minimizationProbes:number; result:"WITNESS"|"ZERO_DOMAIN"|"BUDGET_EXHAUSTED"|"NOT_AFFECTED";
   knownCandidateCount:number; survivorLowerBound:number; survivorCountExact:number|null; domainComplete:boolean;
   witnessReuseCheck:boolean; witnessReuseHit:boolean;
+  conflictDecisionDepths:number[]; conflictTaskIds:Record<string,string[]>; conflictGroupCount:number;
+  fixedContextParticipates:boolean; conflictClassification:"SINGLE_DECISION_ZERO_DOMAIN"|"MULTI_DECISION_ZERO_DOMAIN"|"FIXED_CONTEXT_ZERO_DOMAIN"|null;
 }
 
 export interface PreparedFutureStructureEvidence {
@@ -23,6 +25,7 @@ export interface PreparedFutureTechnicalChainEvidence {
   assessCalls:number; irrelevantFastPasses:number; lastWitnessValidationChecks:number; lastWitnessHits:number;
   knownCandidateChecks:number; fullCandidateScans:number; explorerResumptions:number; candidatePlacementChecks:number;
   pressureCacheHits:number; pressureCacheMisses:number;
+  rootStartsVisited:number; rootOrdersEvaluated:number; rootOrdersYielded:number; domainComplete:boolean; exactCandidateCount:number|null;
 }
 
 export interface FutureEdgePressure {safe:boolean;intrusionMinutes:number;supportIntersections:Record<string,Interval[]>;
@@ -100,7 +103,8 @@ export class PreparedFutureTechnicalChainAuthority {
     this.evidence={preparedFutureStructures:this.structures.map(x=>x.evidence),witnessReuseChecks:0,witnessReuseHits:0,
       witnessInvalidations:0,witnessRepairs:0,exactRootOrderEvaluations:0,ledgeredPermutationBranches:0,
       assessCalls:0,irrelevantFastPasses:0,lastWitnessValidationChecks:0,lastWitnessHits:0,knownCandidateChecks:0,
-      fullCandidateScans:0,explorerResumptions:0,candidatePlacementChecks:0,pressureCacheHits:0,pressureCacheMisses:0};
+      fullCandidateScans:0,explorerResumptions:0,candidatePlacementChecks:0,pressureCacheHits:0,pressureCacheMisses:0,
+      rootStartsVisited:0,rootOrdersEvaluated:0,rootOrdersYielded:0,domainComplete:false,exactCandidateCount:null};
   }
   occupancySupport(memberId:string):readonly Interval[]{return union(this.structures.flatMap(x=>x.support.get(memberId)??[]));}
   pressure(tasks:readonly ScheduledTask[]):FutureEdgePressure{
@@ -109,8 +113,11 @@ export class PreparedFutureTechnicalChainAuthority {
     for(const task of tasks)for(const id of [task.participantId,task.coachId,task.itinerantUnitId,...(task.requiredResourceIds??[])])if(id){
       const hits=this.occupancySupport(id).flatMap(x=>overlap(task,x)?[{start:Math.max(task.start,x.start),end:Math.min(task.end,x.end)}]:[]);
       if(hits.length){intersections[id]=union([...(intersections[id]??[]),...hits]);intrusionMinutes+=hits.reduce((n,x)=>n+x.end-x.start,0);}}
-    const complete=this.structures.every(x=>x.exhausted);const value={safe:intrusionMinutes===0,intrusionMinutes,supportIntersections:intersections,
-      knownSurvivorLowerBound:0,exactSurvivorCount:complete?this.structures.reduce((n,x)=>n+x.candidates.length,0):null,domainComplete:complete};
+    const complete=this.structures.every(x=>x.exhausted);
+    let knownSurvivors=0;for(const structure of this.structures)for(const candidate of structure.candidates)
+      if(this.valid(structure,candidate,tasks))knownSurvivors++;
+    const value={safe:intrusionMinutes===0,intrusionMinutes,supportIntersections:intersections,
+      knownSurvivorLowerBound:knownSurvivors,exactSurvivorCount:complete?knownSurvivors:null,domainComplete:complete};
     this.pressureCache.set(key,value);return value;
   }
   intrusion(tasks:readonly ScheduledTask[]):number{return this.pressure(tasks).intrusionMinutes;}
@@ -124,7 +131,9 @@ export class PreparedFutureTechnicalChainAuthority {
     const affected=this.structures.filter(x=>x.tasks.some(member=>added.some(task=>sharesHardAuthority(member,task))));
     const base={affectedStructures:affected.length,structuresChecked:0,branchesConsumed:0,structureId:null,workItemKey:null,candidateCount:0,
       certifiedCausingTaskId:null,certifiedDecisionDepth:null,initialRepairableGroupCount:0,redundantDecisionDepths:[] as number[],irreducibleDecisionDepths:[] as number[],minimizationProbes:0,
-      knownCandidateCount:0,survivorLowerBound:0,survivorCountExact:null,domainComplete:false,witnessReuseCheck:false,witnessReuseHit:false};
+      knownCandidateCount:0,survivorLowerBound:0,survivorCountExact:null,domainComplete:false,witnessReuseCheck:false,witnessReuseHit:false,
+      conflictDecisionDepths:[] as number[],conflictTaskIds:{} as Record<string,string[]>,conflictGroupCount:0,
+      fixedContextParticipates:false,conflictClassification:null as TechnicalChainFutureReservationProbe["conflictClassification"]};
     if(!affected.length){this.evidence.irrelevantFastPasses++;return {...base,status:"PASS",result:"NOT_AFFECTED"};}
     let consumed=0,checked=0;
     for(const structure of affected){checked++;
@@ -142,7 +151,12 @@ export class PreparedFutureTechnicalChainAuthority {
             addExact(task.participantId);addExact(task.coachId);addExact(task.itinerantUnitId);for(const id of task.requiredResourceIds??[])addExact(id);}
           structure.evidence.derivationMode="EXACT_COMPLETE_DOMAIN";structure.evidence.supportComplete=true;
           structure.evidence.candidateCountUsedToDeriveSupport=structure.candidates.length;
-          structure.evidence.futureOccupancySupport=Object.fromEntries([...structure.support].map(([id,x])=>[id,x]));this.pressureCache.clear();break;}
+          structure.evidence.futureOccupancySupport=Object.fromEntries([...structure.support].map(([id,x])=>[id,x]));this.pressureCache.clear();
+          this.evidence.rootStartsVisited=this.structures.reduce((n,x)=>n+x.explorer.diagnostics.rootStartsVisited,0);
+          this.evidence.rootOrdersEvaluated=this.structures.reduce((n,x)=>n+x.explorer.diagnostics.rootOrdersEvaluated,0);
+          this.evidence.rootOrdersYielded=this.structures.reduce((n,x)=>n+x.explorer.diagnostics.rootOrdersYielded,0);
+          this.evidence.domainComplete=this.structures.every(x=>x.exhausted);
+          this.evidence.exactCandidateCount=this.evidence.domainComplete?this.structures.reduce((n,x)=>n+x.candidates.length,0):null;break;}
         const signature=technicalChainSignature(candidate.tasks);if(!structure.signatures.has(signature)){structure.signatures.add(signature);structure.candidates.push(candidate);}
         if(this.valid(structure,candidate,placed))witness=candidate;
       }
@@ -153,15 +167,21 @@ export class PreparedFutureTechnicalChainAuthority {
       if(witness){structure.lastWitness=witness;continue;}
       const relevant=added.filter(task=>structure.tasks.some(member=>sharesHardAuthority(member,task))).sort((a,b)=>a.id.localeCompare(b.id));
       const grouped=new Map<number,ScheduledTask[]>();for(const task of placed){if(!structure.tasks.some(member=>sharesHardAuthority(member,task)))continue;
-        const depth=decisionDepthForTask?.(task.id)??(relevant.some(x=>x.id===task.id)?Number.MAX_SAFE_INTEGER:null);if(depth!==null)grouped.set(depth,[...(grouped.get(depth)??[]),task]);}
+        const depth=decisionDepthForTask?decisionDepthForTask(task.id):(relevant.some(x=>x.id===task.id)?Number.MAX_SAFE_INTEGER:null);if(depth!==null)grouped.set(depth,[...(grouped.get(depth)??[]),task]);}
       let working=[...placed],probes=0;const redundant:number[]=[],necessary:number[]=[];
       for(const [depth,tasks] of [...grouped].sort(([a],[b])=>a-b)){const ids=new Set(tasks.map(x=>x.id)),without=working.filter(x=>!ids.has(x.id));probes++;
         if(structure.candidates.some(x=>this.valid(structure,x,without))){necessary.push(depth);}else{working=without;redundant.push(depth);}}
       const causingDepth=necessary.length===1?necessary[0]:null;
       const causing=causingDepth===null?undefined:(grouped.get(causingDepth)??[]).sort((a,b)=>a.id.localeCompare(b.id))[0];
+      const conflictTaskIds=Object.fromEntries(necessary.map(depth=>[String(depth),(grouped.get(depth)??[]).map(x=>x.id).sort()]));
+      const decisionIds=new Set([...grouped.values()].flat().map(task=>task.id));
+      const fixedContextParticipates=placed.some(task=>!decisionIds.has(task.id)
+        &&structure.tasks.some(member=>sharesHardAuthority(member,task)));
       return {...base,...identity,status:"PRUNE",result:"ZERO_DOMAIN",structuresChecked:checked,branchesConsumed:consumed,candidateCount:0,
         certifiedCausingTaskId:causing?.id??null,certifiedDecisionDepth:causingDepth,
-        initialRepairableGroupCount:grouped.size,redundantDecisionDepths:redundant,irreducibleDecisionDepths:necessary,minimizationProbes:probes};
+        initialRepairableGroupCount:grouped.size,redundantDecisionDepths:redundant,irreducibleDecisionDepths:necessary,minimizationProbes:probes,
+        conflictDecisionDepths:necessary,conflictTaskIds,conflictGroupCount:necessary.length,fixedContextParticipates,
+        conflictClassification:necessary.length===0?"FIXED_CONTEXT_ZERO_DOMAIN":necessary.length===1?"SINGLE_DECISION_ZERO_DOMAIN":"MULTI_DECISION_ZERO_DOMAIN"};
     }
     const first=affected[0]!;return {...base,status:"PASS",result:"WITNESS",structuresChecked:checked,branchesConsumed:consumed,
       structureId:first.policy.id,workItemKey:technicalChainWorkItemKey(first.tasks[0]!.id),candidateCount:1};
