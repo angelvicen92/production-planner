@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { buildCanonicalFullA2EngineInput } from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
-import { adaptEngineInputToPlannerNextProblem } from "../../engine/planner-next/integration/engineInputAdapter";
+import { buildCanonicalA2AssistedStage1Fixture } from "../../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture";
 import { standaloneForwardStaticDomain } from "../../engine/planner-next/exactItinerantPlan";
-import { buildAssistedProblem } from "../../engine/planner-next/assistedPlanning";
 import { resolveAssistedScope } from "../assistedScopeResolver";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
@@ -13,7 +11,7 @@ process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
 process.env.SUPABASE_ANON_KEY ??= "evidence";
 
-export interface A2Assist8Options { readonly branchBudget?: number; readonly writeEvidence?: boolean }
+export interface A2Assist8Options { readonly branchBudget?: number; readonly writeEvidence?: boolean; readonly stopAfterFirstProposal?:boolean }
 
 /**
  * ASST-011 completion probe.  It deliberately uses the product request/run/apply,
@@ -25,13 +23,10 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     import("../assistedProposalService"), import("../assistedPlanningService"),
   ]);
   const planId = 711, sessionId = 711, revisionId = 1;
-  const canonical = buildCanonicalFullA2EngineInput({ planId, branchBudget: options.branchBudget });
-  const input = canonical.input;
+  const stage1Fixture=buildCanonicalA2AssistedStage1Fixture(options.branchBudget,planId);
+  const canonical=stage1Fixture.canonical, input=stage1Fixture.input, adapter=stage1Fixture.adapter;
   const sourceIds = input.tasks.filter(task => task.contestantId != null).map(task => task.id).sort((a, b) => a - b);
   assert.equal(sourceIds.length, 266);
-  const adapter = adaptEngineInputToPlannerNextProblem(input);
-  assert.equal(adapter.status, "SUPPORTED");
-  if (adapter.status !== "SUPPORTED") throw new Error("canonical A2 adapter is unsupported");
 
   const productByCanonical = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [i.canonicalId, Number(i.sourceId)]));
   const sourceSet = new Set(sourceIds);
@@ -108,11 +103,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     let residualBreakdown: any = null;
     if (iterations.length === 0) {
       const resolution=resolveAssistedScope(input,adapter,selector);
-      const futureEligible=new Set(input.tasks.filter(task=>task.status==="pending"||task.status==="interrupted").flatMap(task=>{
-        const identity=adapter.identityMap.find(item=>item.namespace==="task"&&Number(item.sourceId)===task.id);
-        return identity?[identity.canonicalId]:[];
-      }));
-      const assisted=buildAssistedProblem(adapter.problem,resolution.scope,[],futureEligible);
+      assert.deepEqual(resolution.scope.resolvedTaskIds,stage1Fixture.scope.resolvedTaskIds);
+      const assisted=stage1Fixture.assisted;
       const summarize=(run:any)=>({coreBranches:run.evidence.work.coreBranches??0,
         standaloneBranches:run.evidence.work.standaloneBranches??0,
         maximumStandaloneDepth:run.evidence.standaloneDiagnostic?.standaloneMaximumDepth??0,
@@ -301,15 +293,20 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
+    if(options.stopAfterFirstProposal!==false)break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
-  const pass = finalIds.length === 266
+  const completionPass = finalIds.length === 266
     && JSON.stringify(finalIds) === JSON.stringify(sourceIds)
     && finalIds.length === new Set(finalIds).size
     && iterations.every(row => row.protectedPlacementsPreserved === true)
     && iterations.every(row => row.newHardViolationCount === 0 && row.newRequiredViolationCount === 0)
     && JSON.stringify(dailyTasks) === JSON.stringify(stages.at(-1).snapshotJson);
+  const firstStage=iterations[0];
+  const stage1Pass=firstStage?.proposalOutcome==="PROPOSAL"&&firstStage.newObligationCount===19
+    &&firstStage.protectedPlacementsPreserved===true&&firstStage.newHardViolationCount===0&&firstStage.newRequiredViolationCount===0;
+  const pass=options.stopAfterFirstProposal===false?completionPass:stage1Pass;
   const evidence = { benchmark: "A2-ASSIST-8", effectiveInConfiguration: {
     targetGroupSize: input.arrivalGroupingTarget, maximumGroupSize: input.arrivalMaximumGroupSize ?? input.vanCapacity,
     minGapMinutes: input.arrivalMinGapMinutes,

@@ -3,6 +3,14 @@ import { buildAssistedProblem, createPlanningScope } from "../engine/planner-nex
 import type { EngineInputAdapterSupportedResult } from "../engine/planner-next/integration/engineInputAdapter";
 import type { AssistedScopeSelector } from "../shared/assistedProposalContracts";
 
+/** Projects the product status authority once, before status-free Planner Next. */
+export function analyticalFutureEligibleTaskIds(input:EngineInput,identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):ReadonlySet<string>{
+  const canonicalByProduct=new Map(identityMap.filter(item=>item.namespace==="task").map(item=>[Number(item.sourceId),item.canonicalId]));
+  return new Set(input.tasks.filter(task=>task.status==="pending"||task.status==="interrupted").flatMap(task=>{
+    const canonicalId=canonicalByProduct.get(task.id); return canonicalId?[canonicalId]:[];
+  }));
+}
+
 export class ScopeResolutionError extends Error {
   constructor(readonly code: "INVALID_SCOPE" | "EMPTY_SCOPE") { super(code); }
 }

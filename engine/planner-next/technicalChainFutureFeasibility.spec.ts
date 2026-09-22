@@ -182,3 +182,13 @@ test("exact analytical reservations are lazy, resumable, stable, and remain outs
   assert.notEqual(second.reservation.fingerprint,first.reservation.fingerprint);
   assert.equal(authority.reservationRemainsValid(first.reservation,[]),true);
 });
+
+test("exact reservations revalidate simultaneous joint peers as one hard-placement unit",()=>{
+  const p=problem(),future=p.analyticalFutureTechnicalChains![0]!;
+  future.tasks[0]!.jointGroupId="future-joint";future.tasks[0]!.duration=10;future.tasks[0]!.kind="auxiliary";
+  future.tasks.push({id:"future-peer",kind:"auxiliary",participantId:"current-person",spaceId:"shared",duration:10,
+    availability:[{start:0,end:60}],dependencies:[],jointGroupId:"future-joint"});
+  future.tasks[1]!.duration=10;
+  const result=new PreparedFutureTechnicalChainAuthority(p).nextExactReservation("future-structure");
+  assert.equal(result.status,"CANDIDATE");assert.equal(result.reservation?.scheduledTasks.length,3);
+});
