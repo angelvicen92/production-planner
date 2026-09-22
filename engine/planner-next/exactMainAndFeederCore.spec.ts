@@ -686,6 +686,7 @@ test("preferred bundle backjumps accumulate causal forbidden edges before a thir
         previous.forbiddenEdges,previous.matching,consume);
       return repaired.outcome==="PERFECT"?{scheduledTasks:materialize(repaired.matching!),matching:repaired.matching!,forbiddenEdges:forbidden}:null;
     },onHardValidCoreLeaf(candidate){
+      assert.equal(candidate.source,"PREFERRED_BUNDLE");
       callbacks++;assert.deepEqual(candidate.tasks.find(task=>task.id==="protected"),fixed);
       return callbacks<3?{outcome:"CERTIFIED_BACKJUMP",targetDepth:1}:"ACCEPT";
     }});
@@ -696,6 +697,29 @@ test("preferred bundle backjumps accumulate causal forbidden edges before a thir
   assert.equal(result.evidence.bundleCertifiedRepairs,2);assert.equal(result.evidence.bundleRepairSequence.length,2);
   assert.equal(result.evidence.bundleTerminalCause,"ACCEPT");
   assert.deepEqual(result.scheduledTasks.find(task=>task.id==="protected"),fixed);
+});
+
+test("structural budget exhaustion terminates before residual DFS",()=>{
+  const problem=twoCohortProblem();
+  let continuationCalls=0;
+  const result=runExactMainAndFeederSearch(problem,{
+    structuralBundleCandidates:[],structuralSearchBudgetExhausted:()=>true,
+    onHardValidCoreLeaf(){continuationCalls++;return "ACCEPT";},
+  });
+  assert.equal(result.status,"BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(result.evidence.reasonCodes,["STRUCTURAL_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.equal(result.evidence.branchesExplored,0);
+  assert.equal(continuationCalls,0,"ordinary residual DFS must not open after incomplete structural enumeration");
+});
+
+test("fully exhausted structural enumeration may enter ordinary residual DFS",()=>{
+  const problem=twoCohortProblem();let continuationCalls=0;
+  const result=runExactMainAndFeederSearch(problem,{
+    structuralBundleCandidates:[],structuralSearchBudgetExhausted:()=>false,
+    onHardValidCoreLeaf(){continuationCalls++;return "ACCEPT";},
+  });
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(continuationCalls>0);
 });
 
 test("a preferred multi-edge conflict branches the nogood instead of forbidding every edge together",()=>{

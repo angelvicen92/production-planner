@@ -11,6 +11,7 @@ import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./co
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
+import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -293,6 +294,10 @@ export interface ExactCoreLeafCandidate {
   meals: ScheduledSpaceMeal[];
   remainingTaskIds: string[];
   fingerprint: string;
+  source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
+  architectureFingerprint?: string;
+  selectedFutureReservations?: readonly AnalyticalFutureReservation[];
+  selectedFutureReservationFingerprints?: readonly string[];
 }
 export interface ExactPartialCoreCandidate {
   tasks: ScheduledTask[];
@@ -322,10 +327,14 @@ export interface ExactMainAndFeederSearchOptions {
       matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>|null;
   /** Lazy structural candidates are exhausted through the common hard gate before ordinary DFS. */
   structuralBundleCandidates?: Iterable<Readonly<{architecture:MainFeederArchitecture;
+    architectureFingerprint:string;
     bundle:{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>};
     repair:(previous:Readonly<{matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>,forbiddenEdges:ReadonlySet<string>,
       consumeTraversal:()=>boolean)=>Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>|null;
-    acceptComplete?:(tasks:readonly ScheduledTask[])=>boolean}>>;
+    acceptComplete?:(tasks:readonly ScheduledTask[])=>boolean;
+    selectedFutureReservations?:readonly AnalyticalFutureReservation[];
+    selectedFutureReservationFingerprints?:readonly string[]}>>;
+  structuralSearchBudgetExhausted?:()=>boolean;
   onStructuralHardGateReject?:(architecture:MainFeederArchitecture)=>void;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
@@ -909,7 +918,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.bundleTerminalCause=lastHardGateReason??"STRUCTURAL_RESERVATION_REJECTED";
       bundleState=bundleQueue.shift();if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
     const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
-        remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(preferred,[],meals)})??"ACCEPT";
+        remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
+        source:structuralCandidate?"STRUCTURAL_FUTURE_CONDITIONED":"PREFERRED_BUNDLE",
+        architectureFingerprint:structuralCandidate?.architectureFingerprint,
+        selectedFutureReservations:structuralCandidate?.selectedFutureReservations,
+        selectedFutureReservationFingerprints:structuralCandidate?.selectedFutureReservationFingerprints})??"ACCEPT";
     if(continuation==="ACCEPT"){
         const selectedArchitecture=structuralCandidate?.architecture??options.preferredArchitecture;
         evidence.bundleTerminalCause="ACCEPT";selected={tasks:gated,meals,pattern:[...(selectedArchitecture?.pattern??[])]};
@@ -946,6 +959,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     evidence.bundleForbiddenEdges=[...children[0]!.forbiddenEdges].sort();bundleQueue.unshift(...children.slice(1));bundleState=children[0];
   }
 
+  if(options.structuralSearchBudgetExhausted?.())
+    return fail("BRANCH_BUDGET_EXHAUSTED",["STRUCTURAL_SEARCH_BUDGET_EXHAUSTED"],coreIds);
+
   if(mains.length===0){
     const fixedMeals=mainFlowMealPolicy(problem)?[createMainFlowMeal(problem)]:[];
     const outcome=searchPendingFixedFeeders(structuralBase,fixedMeals,0,(placed)=>{
@@ -974,7 +990,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(!validation.hardValid&&!options.acceptsValidation?.(validation))return "DEAD_END";
       const ordered=[...placed].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
       const continuation=options.onHardValidCoreLeaf?.({tasks:ordered,meals:fixedMeals,remainingTaskIds:[],
-        fingerprint:fingerprint(ordered,[],fixedMeals)})??"ACCEPT";
+        fingerprint:fingerprint(ordered,[],fixedMeals),source:"ORDINARY_DFS"})??"ACCEPT";
       if(continuation!=="ACCEPT")return continuation==="REJECT"?"DEAD_END":continuation;
       selected={tasks:ordered,meals:fixedMeals,pattern:[]};return "FOUND";
     });
@@ -995,7 +1011,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if (ordered) {
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
-          remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals) }) ?? "ACCEPT";
+          remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals),
+          source:"ORDINARY_DFS" }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (typeof continuation === "object") return continuation;
         if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
