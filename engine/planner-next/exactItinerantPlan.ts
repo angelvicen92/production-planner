@@ -23,7 +23,7 @@ import { createResidualObligationMainOrderer } from "./residualObligationAlignme
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
 import { probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
-import { probeTechnicalChainFutureReservations, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
+import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
 import { assessOperationalMealFutureFeasibility, operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
 import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupFamilySequence } from "./setupGrouping";
@@ -1043,7 +1043,7 @@ return { outcome, tasks: found, preparations: foundPreparations, roundPreparatio
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
 export interface ExactItinerantPlanSearchOptions {
-  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted" | "feederStartDomainMode">;
+  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "futureEdgeIntrusion" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted" | "feederStartDomainMode">;
   standaloneCompletionSelection?: StandaloneCompletionSelection;
   /** Test oracle only; production always uses the exact analytic static domain. */
   standaloneForwardStartDomainMode?: StandaloneForwardStartDomainMode;
@@ -1070,6 +1070,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
   const completeSelectionMode = options.standaloneCompletionSelection ?? "FIRST_HARD_VALID";
   const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
+  // One authority per execution: core callbacks reuse the current witness, known
+  // alternatives, and the resumable explorer instead of restarting factorial work.
+  const futureTechnicalChains=new PreparedFutureTechnicalChainAuthority(problem,
+    ()=>Math.max(0,ledger.limit-ledger.branchesExplored),count=>ledger.consume("CORE",count),options.fixedPlacements??[]);
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
@@ -1231,7 +1235,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     futureAssessments.set(key,state);
     return certified;
   };
-  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, acceptsValidation:options.acceptsValidation,
+  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer,
+    futureEdgeIntrusion:options.coreOrderer?.futureEdgeIntrusion??(operation=>futureTechnicalChains.intrusion(operation)), acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
     preferredArchitecture:options.preferredArchitecture,
     preferredBundleCandidate:options.preferredBundleCandidate,
@@ -1256,7 +1261,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.deepestPartialCoreTasksRemaining=[...staticCoreIds].filter(id=>!scheduledIds.has(id)).length;
       evidence.deepestPartialFrontierFingerprint=frontierFingerprint;
     }
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,candidate.tasks,candidate.addedTasks,Math.max(0,ledger.limit-ledger.branchesExplored),taskId=>coreDecisionDepthForTask(candidate,taskId));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=futureTechnicalChains.assess(candidate.tasks,candidate.addedTasks,taskId=>coreDecisionDepthForTask(candidate,taskId));recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(reservation.status==="PRUNE"){
       const causing=candidate.addedTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
       if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,causingCandidateStart:causing.start,depth:candidate.depth,...reservation};
       const target=reservation.certifiedDecisionDepth;
@@ -1388,7 +1393,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // The nominal Assisted pipeline can materialize a complete core without
     // visiting partial-core callbacks. Apply the same exact reservation at that
     // boundary so no locally complete proposal can bypass future structures.
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=probeTechnicalChainFutureReservations(problem,immutableCoreTasks,immutableCoreTasks,Math.max(0,ledger.limit-ledger.branchesExplored),taskId=>coreDecisionDepthForTask(candidate,taskId));if(reservation.branchesConsumed>0&&!ledger.consume("CORE",reservation.branchesConsumed))return "BUDGET_EXHAUSTED";recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="PRUNE"){
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=futureTechnicalChains.assess(immutableCoreTasks,immutableCoreTasks,taskId=>coreDecisionDepthForTask(candidate,taskId));recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(reservation.status==="PRUNE"){
       const causing=immutableCoreTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
       const target=reservation.certifiedDecisionDepth;
       if(causing)evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing.id,

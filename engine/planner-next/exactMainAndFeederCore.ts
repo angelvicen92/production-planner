@@ -312,6 +312,8 @@ export interface ExactMainAndFeederSearchOptions {
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
   mainChoiceComparator?: (a: ExactMainChoiceDescriptor, b: ExactMainChoiceDescriptor) => number;
+  /** Ordering-only pressure from prepared future authorities. Zero denotes a SAFE edge. */
+  futureEdgeIntrusion?: (operation:readonly ScheduledTask[]) => number;
   onMainChoicesRanked?: (baseline: readonly ExactMainChoiceDescriptor[], ordered: readonly ExactMainChoiceDescriptor[]) => void;
   onMainChoiceEntered?: (candidate: ExactMainChoiceDescriptor) => void;
   onMainChoiceAccepted?: (candidate: ExactMainChoiceDescriptor) => void;
@@ -1425,7 +1427,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         pattern:Object.freeze([...pattern]), participantSlack:choice.participantSlack, firstObligation:choice.firstObligation });
       const byId=new Map(choices.map(choice=>[choice.task.id,describe(choice)]));
       const baseline=choices.map(choice=>byId.get(choice.task.id)!);
-      if(options.mainChoiceComparator)choices.sort((a,b)=>options.mainChoiceComparator!(byId.get(a.task.id)!,byId.get(b.task.id)!));
+      choices.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)
+        ||(options.mainChoiceComparator?.(byId.get(a.task.id)!,byId.get(b.task.id)!)??0));
       const witnessTaskId = [...(blockCertificate?.matching ?? [])]
         .find(([, witnessPosition]) => witnessPosition === position)?.[0];
       if (witnessTaskId !== undefined) choices.sort((a, b) =>
@@ -1684,6 +1687,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (edge === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
           if (edge) taskEdges.push(edge); else taskInvalid.add(position);
         }
+        taskEdges.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)||a.position-b.position);
         validEdges.set(task.id, taskEdges);
         invalidPositions.set(task.id, taskInvalid);
         if (taskEdges.length === 0) return { outcome: "DEAD_END" };
@@ -1719,6 +1723,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             else invalidatedUnmatchedEdges += 1;
           }
         }
+        taskEdges.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)||a.position-b.position);
         validEdges.set(task.id, taskEdges);
         if (taskEdges.length === 0) return { outcome: "DEAD_END" };
       }
