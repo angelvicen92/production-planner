@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
-import { probeTechnicalChainFutureReservations } from "./technicalChainFutureFeasibility";
+import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations } from "./technicalChainFutureFeasibility";
 
 const problem=():PlannerNextProblem=>({day:{start:0,end:60},spaces:[{id:"shared",availability:[{start:0,end:60}]},{id:"other",availability:[{start:0,end:60}]}],resources:[],participants:[{id:"future-person",availability:[{start:0,end:60}]},{id:"current-person",availability:[{start:0,end:60}]}],coaches:[],tasks:[],mainFlow:{spaceId:"other",preferredEnd:60,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{maxBranchExpansions:100,bestK:2},searchPolicy:"EXACT_CONSTRUCTIVE",analyticalFutureTechnicalChains:[{policy:{id:"future-structure",orderedTaskIds:["future-a","future-b"],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]},tasks:[{id:"future-a",kind:"technical",participantId:"future-person",spaceId:"shared",duration:20,availability:[{start:0,end:60}],dependencies:[]},{id:"future-b",kind:"technical",participantId:"future-person",spaceId:"shared",duration:20,availability:[{start:0,end:60}],dependencies:["future-a"]}]}]});
 const placement=(start:number):ScheduledTask=>({id:"provisional",kind:"auxiliary",participantId:"current-person",spaceId:"shared",duration:20,availability:[{start:0,end:60}],dependencies:[],start,end:start+20});
@@ -60,4 +60,29 @@ test("deletion minimization isolates successive repair decisions in a multi-bloc
   const complete=probeTechnicalChainFutureReservations(p,[repairedFirst,repairedSecond],[first,second],500,depth);
   assert.equal(complete.status,"PASS", "after both main@slot repairs the future REQUIRED chain retains a witness");
   assert.equal(complete.result,"WITNESS");
+});
+
+test("prepared authority reuses a valid witness and preserves disjoint occupancy support",()=>{
+  const p=problem();p.analyticalFutureTechnicalChains![0]!.tasks[0]!.availability=[{start:0,end:20}];
+  p.analyticalFutureTechnicalChains![0]!.tasks[1]!.availability=[{start:40,end:60}];
+  const authority=new PreparedFutureTechnicalChainAuthority(p);
+  assert.deepEqual(authority.occupancySupport("future-person"),[{start:0,end:20},{start:40,end:60}],
+    "a safe hole must not be widened into one continuous critical window");
+  const reusable=new PreparedFutureTechnicalChainAuthority(problem());
+  const interacting={...placement(40),spaceId:"other",participantId:"future-person",duration:5,end:45};
+  const first=reusable.assess([interacting],[interacting]);
+  assert.equal(first.status,"PASS");
+  const evaluations=reusable.evidence.exactRootOrderEvaluations;
+  const second=reusable.assess([interacting],[interacting]);
+  assert.equal(second.status,"PASS");
+  assert.equal(second.witnessReuseHit,true);
+  assert.equal(reusable.evidence.exactRootOrderEvaluations,evaluations,"reuse performs no hidden search");
+});
+
+test("future pressure ranks a nearby safe placement ahead of a farther intrusive placement",()=>{
+  const authority=new PreparedFutureTechnicalChainAuthority(problem());
+  const safe={...placement(0),spaceId:"other",participantId:"current-person"};
+  const intrusive={...placement(40),participantId:"future-person",spaceId:"other"};
+  assert.equal(authority.intrusion([safe]),0);
+  assert.ok(authority.intrusion([intrusive])>0,"classification is overlap-based, never distance-based");
 });
