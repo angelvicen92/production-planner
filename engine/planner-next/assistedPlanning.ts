@@ -82,6 +82,11 @@ export interface AssistedPlanningEvidence {
       "residualDfsEntered"|"residualDfsBranchesBeforeFirstSolution"|"architecturesEnumerated"|"architecturesPrepared"|
       "futureWitnessesTriedByArchitecture"|"preparedBundleEdges"|"reservationFilteredEdges"|"perfectMatchingsByArchitecture"|
       "hardGateRejectsByArchitecture"|"structuralSearchExhausted"|"branchesBeforeResidualDfs"|
+      "structuralSearchBudgetExhausted"|"structuralArchitecturesFullyVisited"|"structuralFutureDomainsFullyVisited"|
+      "structuralCandidatesProducedBeforeBudgetExhaustion"|"conditionedLeafFutureRevalidations"|
+      "conditionedLeafFutureRevalidationPasses"|"conditionedLeafFutureRevalidationRejects"|
+      "genericFutureAssessSkippedForConditionedLeaf"|"structuralCandidateFingerprintAtHardGate"|
+      "structuralCandidateFingerprintAtContinuation"|"structuralCandidateFingerprintBeforeStandalone"|
       "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint">;
   };
   readonly work: Readonly<Record<string, number>>;
@@ -482,7 +487,15 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         preparedBundleEdges:Number(evidenceRecord.preparedBundleEdges??0),reservationFilteredEdges:Number(evidenceRecord.reservationFilteredEdges??0),
         perfectMatchingsByArchitecture:{...((evidenceRecord.perfectMatchingsByArchitecture as Record<string,number>|undefined)??{})},
         hardGateRejectsByArchitecture:{...((evidenceRecord.hardGateRejectsByArchitecture as Record<string,number>|undefined)??{})},
-        structuralSearchExhausted:Boolean(evidenceRecord.structuralSearchExhausted),branchesBeforeResidualDfs:(evidenceRecord.branchesBeforeResidualDfs as number|null|undefined)??null,
+        structuralSearchExhausted:Boolean(evidenceRecord.structuralSearchExhausted),structuralSearchBudgetExhausted:Boolean(evidenceRecord.structuralSearchBudgetExhausted),
+        structuralArchitecturesFullyVisited:Number(evidenceRecord.structuralArchitecturesFullyVisited??0),structuralFutureDomainsFullyVisited:Number(evidenceRecord.structuralFutureDomainsFullyVisited??0),
+        structuralCandidatesProducedBeforeBudgetExhaustion:Number(evidenceRecord.structuralCandidatesProducedBeforeBudgetExhaustion??0),
+        conditionedLeafFutureRevalidations:Number(evidenceRecord.conditionedLeafFutureRevalidations??0),conditionedLeafFutureRevalidationPasses:Number(evidenceRecord.conditionedLeafFutureRevalidationPasses??0),
+        conditionedLeafFutureRevalidationRejects:Number(evidenceRecord.conditionedLeafFutureRevalidationRejects??0),genericFutureAssessSkippedForConditionedLeaf:Number(evidenceRecord.genericFutureAssessSkippedForConditionedLeaf??0),
+        structuralCandidateFingerprintAtHardGate:(evidenceRecord.structuralCandidateFingerprintAtHardGate as string|null|undefined)??null,
+        structuralCandidateFingerprintAtContinuation:(evidenceRecord.structuralCandidateFingerprintAtContinuation as string|null|undefined)??null,
+        structuralCandidateFingerprintBeforeStandalone:(evidenceRecord.structuralCandidateFingerprintBeforeStandalone as string|null|undefined)??null,
+        branchesBeforeResidualDfs:(evidenceRecord.branchesBeforeResidualDfs as number|null|undefined)??null,
         selectedArchitectureFingerprint:(evidenceRecord.selectedArchitectureFingerprint as string|null|undefined)??null,
         selectedFutureReservationFingerprint:(evidenceRecord.selectedFutureReservationFingerprint as string|null|undefined)??null,
       },

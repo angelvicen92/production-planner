@@ -264,6 +264,12 @@ export interface ExactItinerantPlanEvidence {
   architecturesEnumerated:number;architecturesPrepared:number;futureWitnessesTriedByArchitecture:Record<string,number>;
   preparedBundleEdges:number;reservationFilteredEdges:number;perfectMatchingsByArchitecture:Record<string,number>;
   hardGateRejectsByArchitecture:Record<string,number>;structuralSearchExhausted:boolean;branchesBeforeResidualDfs:number|null;
+  structuralSearchBudgetExhausted:boolean;structuralArchitecturesFullyVisited:number;structuralFutureDomainsFullyVisited:number;
+  structuralCandidatesProducedBeforeBudgetExhaustion:number;
+  conditionedLeafFutureRevalidations:number;conditionedLeafFutureRevalidationPasses:number;
+  conditionedLeafFutureRevalidationRejects:number;genericFutureAssessSkippedForConditionedLeaf:number;
+  structuralCandidateFingerprintAtHardGate:string|null;structuralCandidateFingerprintAtContinuation:string|null;
+  structuralCandidateFingerprintBeforeStandalone:string|null;
   selectedArchitectureFingerprint:string|null;selectedFutureReservationFingerprint:string|null;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
@@ -1158,6 +1164,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualDfsEntered:false,residualDfsBranchesBeforeFirstSolution:null,
     architecturesEnumerated:0,architecturesPrepared:0,futureWitnessesTriedByArchitecture:{},preparedBundleEdges:0,
     reservationFilteredEdges:0,perfectMatchingsByArchitecture:{},hardGateRejectsByArchitecture:{},structuralSearchExhausted:false,
+    structuralSearchBudgetExhausted:false,structuralArchitecturesFullyVisited:0,structuralFutureDomainsFullyVisited:0,
+    structuralCandidatesProducedBeforeBudgetExhaustion:0,conditionedLeafFutureRevalidations:0,
+    conditionedLeafFutureRevalidationPasses:0,conditionedLeafFutureRevalidationRejects:0,
+    genericFutureAssessSkippedForConditionedLeaf:0,structuralCandidateFingerprintAtHardGate:null,
+    structuralCandidateFingerprintAtContinuation:null,structuralCandidateFingerprintBeforeStandalone:null,
     branchesBeforeResidualDfs:null,selectedArchitectureFingerprint:null,selectedFutureReservationFingerprint:null,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
@@ -1261,6 +1272,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return certified;
   };
   const hasFuture=(problem.analyticalFutureTechnicalChains?.length??0)>0;
+  let structuralBudgetExhausted=false;
   let constructiveBundle=hasFuture?undefined:options.preferredBundleCandidate;
   const architectureKey=(architecture:MainFeederArchitecture)=>architecture.pattern.join(",")+"@"+architecture.slots.join(",");
   function* structuralBundles():NonNullable<ExactMainAndFeederSearchOptions["structuralBundleCandidates"]> {
@@ -1275,6 +1287,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         while(true){const next=futureTechnicalChains.nextExactReservation(structureIds[depth]!,
           [...(options.fixedPlacements??[]),...selected.flatMap(x=>x.scheduledTasks)],cursor);cursor=next.nextCursor;
           evidence.futureReservationRootOrdersEvaluated=futureTechnicalChains.evidence.exactRootOrderEvaluations;
+          if(next.status==="BUDGET_EXHAUSTED"){structuralBudgetExhausted=true;evidence.structuralSearchBudgetExhausted=true;return;}
           if(next.status!=="CANDIDATE"||!next.reservation)return;evidence.futureReservationWitnessesEvaluated++;
           yield* combinations(depth+1,[...selected,next.reservation]);}
       }
@@ -1286,7 +1299,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         evidence.bundleEdgesRejectedByReservation+=matching.evidence.bundleEdgesRejectedByReservation;
         evidence.reservationFilteredEdges+=matching.evidence.bundleEdgesAfterReservation;evidence.bundleEdgesAfterReservation+=matching.evidence.bundleEdgesAfterReservation;
         evidence.futureReservationPerfectMatchings++;evidence.perfectMatchingsByArchitecture[key]++;
-        yield {architecture,bundle:matching,
+        evidence.structuralCandidatesProducedBeforeBudgetExhaustion++;
+        yield {architecture,architectureFingerprint:prepared.witness.fingerprint,bundle:matching,
+          selectedFutureReservations:selected,selectedFutureReservationFingerprints:selected.map(x=>x.fingerprint),
           repair:(previous,forbidden,consume)=>materializePreparedPipelineBundleMatching(problem,prepared,forbidden,previous,consume,
             operation=>futureTechnicalChains.intrusion(operation),reserved),
           acceptComplete:(tasks)=>{if(!selected.every(reservation=>futureTechnicalChains.reservationRemainsValid(reservation,tasks))){
@@ -1295,7 +1310,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
             evidence.selectedFutureReservationFingerprint=evidence.futureReservationSelectedFingerprint;
             evidence.selectedArchitectureFingerprint=prepared.witness.fingerprint;return true;}};
       }
-    }evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;
+      if(structuralBudgetExhausted)return;
+      evidence.structuralFutureDomainsFullyVisited++;
+      evidence.structuralArchitecturesFullyVisited++;
+    }
+    evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;
   }
   const structuralBundleCandidates=hasFuture?structuralBundles():undefined;
   const constructiveRepair=hasFuture?undefined:options.repairPreferredBundleCandidate;
@@ -1308,6 +1327,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     preferredBundleCandidate:constructiveBundle,
     repairPreferredBundleCandidate:constructiveRepair,
     structuralBundleCandidates,
+    structuralSearchBudgetExhausted:()=>structuralBudgetExhausted,
     onStructuralHardGateReject:(architecture)=>{const key=architectureKey(architecture);evidence.hardGateRejectsByArchitecture[key]=(evidence.hardGateRejectsByArchitecture[key]??0)+1;},
     causalDiagnostic:options.causalDiagnostic, onPartialCoreCandidate(candidate) {
     const frontierFingerprint=fingerprint(candidate.tasks,[],candidate.meals);
@@ -1429,6 +1449,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return "CONTINUE";
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
+    const conditioned=candidate.source==="STRUCTURAL_FUTURE_CONDITIONED";
+    if(conditioned){
+      evidence.structuralCandidateFingerprintAtHardGate=candidate.fingerprint;
+      evidence.structuralCandidateFingerprintAtContinuation=candidate.fingerprint;
+    }
     if (evidence.firstHardValidCoreLeaf === null) {
       const counts=(tasks:readonly {kind:string}[])=>tasks.reduce<Record<string,number>>((result,task)=>{
         result[task.kind]=(result[task.kind]??0)+1;return result;},{});
@@ -1439,7 +1464,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const orderedMains=candidate.tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-    const pipeline=orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
+    const pipeline=!conditioned&&orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
       ?materializePipelineBundleMatching(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},options.fixedPlacements,
         new Set(),undefined,()=>true,operation=>futureTechnicalChains.intrusion(operation))
       :null;
@@ -1449,7 +1474,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     });
     if(pipeline){evidence.bundleMatchingAttempts+=pipeline.evidence.attempts;
       evidence.bundleMatchingRepairs+=pipeline.evidence.repairs;evidence.bundleMatchingMaterializations+=pipeline.evidence.materializations;}
-    const structuralTasks=pipelinePreservesFixed ? [...pipeline!.scheduledTasks] : candidate.tasks;
+    const structuralTasks=conditioned?candidate.tasks:(pipelinePreservesFixed ? [...pipeline!.scheduledTasks] : candidate.tasks);
     const coreIds = new Set(structuralTasks.map(({ id }) => id));
     const immutableCoreTasks=[...structuralTasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
     const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
@@ -1465,7 +1490,15 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // The nominal Assisted pipeline can materialize a complete core without
     // visiting partial-core callbacks. Apply the same exact reservation at that
     // boundary so no locally complete proposal can bypass future structures.
-    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=futureTechnicalChains.assess(immutableCoreTasks,immutableCoreTasks,taskId=>coreDecisionDepthForTask(candidate,taskId));recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(reservation.status==="PRUNE"){
+    if(conditioned){
+      evidence.genericFutureAssessSkippedForConditionedLeaf++;
+      const reservations=candidate.selectedFutureReservations??[];
+      evidence.conditionedLeafFutureRevalidations+=reservations.length;
+      if(!reservations.every(reservation=>futureTechnicalChains.reservationRemainsValid(reservation,immutableCoreTasks))){
+        evidence.conditionedLeafFutureRevalidationRejects++;return "REJECT";
+      }
+      evidence.conditionedLeafFutureRevalidationPasses++;
+    }else if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=futureTechnicalChains.assess(immutableCoreTasks,immutableCoreTasks,taskId=>coreDecisionDepthForTask(candidate,taskId));recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(reservation.status==="PRUNE"){
       const causing=immutableCoreTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
       const depth=candidate.tasks.filter(task=>task.kind==="main").length;
       evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing?.id??null,
@@ -1476,6 +1509,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       return {outcome:"CERTIFIED_BACKJUMP",targetDepth:target,conflictDecisionDepths:reservation.conflictDecisionDepths,
         conflictTaskIds:reservation.conflictTaskIds,authority:"FUTURE_TECHNICAL_CHAIN"};
     }}
+    if(conditioned)evidence.structuralCandidateFingerprintBeforeStandalone=candidate.fingerprint;
     const remainingStandalone=standaloneTasks.filter(task=>!coreIds.has(task.id));
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
