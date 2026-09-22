@@ -74,6 +74,12 @@ export interface AssistedPlanningEvidence {
     readonly preparedAuthority:ExactItinerantPlanEvidence["preparedFutureTechnicalChainEvidence"]|null;
     readonly firstMultiDecisionConflict:ExactItinerantPlanEvidence["firstMultiDecisionConflict"];
     readonly conflictBackjumps:number; readonly suffixDepthsSkipped:number;
+    readonly constructive?:Pick<ExactItinerantPlanEvidence,"futureReservationStructures"|"futureReservationWitnessesEvaluated"|
+      "futureReservationRootOrdersEvaluated"|"futureReservationCandidatesRejectedByOtherReservations"|
+      "futureReservationCandidatesRejectedByNoBundleMatching"|"futureReservationBundleMatchingAttempts"|
+      "futureReservationPerfectMatchings"|"futureReservationSelectedFingerprint"|"architecturesTriedWithFutureReservation"|
+      "bundleEdgesBeforeReservation"|"bundleEdgesRejectedByReservation"|"bundleEdgesAfterReservation"|
+      "residualDfsEntered"|"residualDfsBranchesBeforeFirstSolution">;
   };
   readonly work: Readonly<Record<string, number>>;
   readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
@@ -460,6 +466,15 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       preparedAuthority:(evidenceRecord.preparedFutureTechnicalChainEvidence as ExactItinerantPlanEvidence["preparedFutureTechnicalChainEvidence"]|undefined)??null,
       firstMultiDecisionConflict:(evidenceRecord.firstMultiDecisionConflict as ExactItinerantPlanEvidence["firstMultiDecisionConflict"]|undefined)??null,
       conflictBackjumps:Number(evidenceRecord.conflictBackjumps??0),suffixDepthsSkipped:Number(evidenceRecord.suffixDepthsSkipped??0),
+      constructive:{
+        futureReservationStructures:Number(evidenceRecord.futureReservationStructures??0),futureReservationWitnessesEvaluated:Number(evidenceRecord.futureReservationWitnessesEvaluated??0),
+        futureReservationRootOrdersEvaluated:Number(evidenceRecord.futureReservationRootOrdersEvaluated??0),futureReservationCandidatesRejectedByOtherReservations:Number(evidenceRecord.futureReservationCandidatesRejectedByOtherReservations??0),
+        futureReservationCandidatesRejectedByNoBundleMatching:Number(evidenceRecord.futureReservationCandidatesRejectedByNoBundleMatching??0),futureReservationBundleMatchingAttempts:Number(evidenceRecord.futureReservationBundleMatchingAttempts??0),
+        futureReservationPerfectMatchings:Number(evidenceRecord.futureReservationPerfectMatchings??0),futureReservationSelectedFingerprint:(evidenceRecord.futureReservationSelectedFingerprint as string|null|undefined)??null,
+        architecturesTriedWithFutureReservation:Number(evidenceRecord.architecturesTriedWithFutureReservation??0),bundleEdgesBeforeReservation:Number(evidenceRecord.bundleEdgesBeforeReservation??0),
+        bundleEdgesRejectedByReservation:Number(evidenceRecord.bundleEdgesRejectedByReservation??0),bundleEdgesAfterReservation:Number(evidenceRecord.bundleEdgesAfterReservation??0),
+        residualDfsEntered:Boolean(evidenceRecord.residualDfsEntered),residualDfsBranchesBeforeFirstSolution:(evidenceRecord.residualDfsBranchesBeforeFirstSolution as number|null|undefined)??null,
+      },
     },
     work,
     bundleMatching:{bundleForbiddenEdges:[...(evidenceRecord.bundleForbiddenEdges as string[]|undefined)??[]],

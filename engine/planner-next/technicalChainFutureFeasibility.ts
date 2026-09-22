@@ -31,6 +31,24 @@ export interface PreparedFutureTechnicalChainEvidence {
 export interface FutureEdgePressure {safe:boolean;intrusionMinutes:number;supportIntersections:Record<string,Interval[]>;
   knownSurvivorLowerBound:number;exactSurvivorCount:number|null;domainComplete:boolean}
 
+/** A future-chain witness is conflict context only.  Callers must never append it
+ * to the visible proposal or count it as an automatic placement. */
+export interface AnalyticalFutureReservation {
+  readonly structureId:string;
+  readonly fingerprint:string;
+  readonly rootStart:number;
+  readonly phaseOrder:readonly string[];
+  readonly scheduledTasks:readonly ScheduledTask[];
+  readonly productiveInterval:Readonly<Interval>;
+  readonly branchCost:number;
+  readonly ledgerDelta:number;
+}
+export interface ExactReservationCursorResult {
+  readonly status:"CANDIDATE"|"EXHAUSTED"|"BUDGET_EXHAUSTED";
+  readonly reservation:AnalyticalFutureReservation|null;
+  readonly nextCursor:number;
+}
+
 const overlap=(a:Interval,b:Interval)=>a.start<b.end&&b.start<a.end;
 const union=(values:Interval[]):Interval[]=>{
   const sorted=[...values].filter(x=>x.start<x.end).sort((a,b)=>a.start-b.start||a.end-b.end),out:Interval[]=[];
@@ -107,6 +125,37 @@ export class PreparedFutureTechnicalChainAuthority {
       rootStartsVisited:0,rootOrdersEvaluated:0,rootOrdersYielded:0,domainComplete:false,exactCandidateCount:null};
   }
   occupancySupport(memberId:string):readonly Interval[]{return union(this.structures.flatMap(x=>x.support.get(memberId)??[]));}
+  /** Most-constrained-first order, using only prepared authority information. */
+  reservationStructureIds():readonly string[]{return [...this.structures].sort((a,b)=>
+    (a.exhausted&&b.exhausted?a.candidates.length-b.candidates.length:0)
+    ||a.evidence.initialRootOrderDomain-b.evidence.initialRootOrderDomain
+    ||a.evidence.slack-b.evidence.slack||a.policy.id.localeCompare(b.policy.id)).map(x=>x.policy.id);}
+  /** Lazily returns the next exact candidate from this authority's own resumable explorer. */
+  nextExactReservation(structureId:string,placed:readonly ScheduledTask[]=[],cursor=0):ExactReservationCursorResult{
+    const structure=this.structures.find(x=>x.policy.id===structureId);if(!structure)return {status:"EXHAUSTED",reservation:null,nextCursor:cursor};
+    while(true){
+      while(cursor<structure.candidates.length){const candidate=structure.candidates[cursor++]!;if(!this.valid(structure,candidate,placed))continue;
+        return {status:"CANDIDATE",nextCursor:cursor,reservation:{structureId,fingerprint:technicalChainSignature(candidate.tasks),
+          rootStart:candidate.start,phaseOrder:candidate.tasks.map(x=>x.id),scheduledTasks:candidate.tasks.map(x=>({...x})),
+          productiveInterval:{start:candidate.start,end:candidate.end},branchCost:candidate.cost,ledgerDelta:0}};}
+      if(structure.exhausted)return {status:"EXHAUSTED",reservation:null,nextCursor:cursor};
+      if(this.allowance()<=0)return {status:"BUDGET_EXHAUSTED",reservation:null,nextCursor:cursor};
+      this.evidence.explorerResumptions++;const prior=structure.explorer.consumed,candidate=structure.explorer.nextCandidate();
+      const delta=structure.explorer.consumed-prior;
+      if(delta&&!this.consume(delta))return {status:"BUDGET_EXHAUSTED",reservation:null,nextCursor:cursor};
+      this.evidence.exactRootOrderEvaluations+=delta;this.evidence.ledgeredPermutationBranches+=delta;
+      if(!candidate){if(structure.explorer.exhausted)return {status:"BUDGET_EXHAUSTED",reservation:null,nextCursor:cursor};structure.exhausted=true;continue;}
+      const signature=technicalChainSignature(candidate.tasks);if(!structure.signatures.has(signature)){structure.signatures.add(signature);structure.candidates.push(candidate);}
+      if(cursor<structure.candidates.length&&this.valid(structure,candidate,placed)){cursor++;
+        return {status:"CANDIDATE",nextCursor:cursor,reservation:{structureId,fingerprint:signature,rootStart:candidate.start,
+          phaseOrder:candidate.tasks.map(x=>x.id),scheduledTasks:candidate.tasks.map(x=>({...x})),productiveInterval:{start:candidate.start,end:candidate.end},
+          branchCost:candidate.cost,ledgerDelta:delta}};}
+    }
+  }
+  reservationRemainsValid(reservation:AnalyticalFutureReservation,placed:readonly ScheduledTask[]):boolean{
+    const structure=this.structures.find(x=>x.policy.id===reservation.structureId);if(!structure)return false;
+    const candidate=structure.candidates.find(x=>technicalChainSignature(x.tasks)===reservation.fingerprint);return !!candidate&&this.valid(structure,candidate,placed);
+  }
   pressure(tasks:readonly ScheduledTask[]):FutureEdgePressure{
     const key=technicalChainSignature([...tasks]);const cached=this.pressureCache.get(key);if(cached){this.evidence.pressureCacheHits++;return cached;}
     this.evidence.pressureCacheMisses++;const intersections:Record<string,Interval[]>={};let intrusionMinutes=0;

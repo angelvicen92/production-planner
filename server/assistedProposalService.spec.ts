@@ -72,7 +72,8 @@ const evidence = (proposal: boolean): AssistedPlanningResult["evidence"] => ({
     affectedFutureTasksChecked:0,affectedMealsChecked:0,individualDomainChecks:0,individualZeroDomainPrunes:0,
     jointTaskMealChecks:0,jointTaskMealPrunes:0,collectiveChecks:0,collectivePrunes:0,compatiblePairChecks:0,
     analyticChecks:0,branchesConsumed:0,firstPrune:null},
-  technicalChainFutureReservation:{checks:0,passes:0,prunes:0,abstentions:0,branchesConsumed:0,firstPrune:null},
+  technicalChainFutureReservation:{checks:0,passes:0,prunes:0,abstentions:0,branchesConsumed:0,firstPrune:null,
+    preparedAuthority:null,firstMultiDecisionConflict:null,conflictBackjumps:0,suffixDepthsSkipped:0},
   work: {}, causalDiagnostic: null, reasonCodes: [proposal ? "ASSISTED_SCOPE_COMPLETE" : "ASSISTED_SCOPE_INCOMPLETE"],
 });
 
