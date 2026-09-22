@@ -71,9 +71,13 @@ export interface AssistedPlanningEvidence {
     readonly checks:number; readonly passes:number; readonly prunes:number; readonly abstentions:number;
     readonly branchesConsumed:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"];
+    readonly preparedAuthority:ExactItinerantPlanEvidence["preparedFutureTechnicalChainEvidence"]|null;
+    readonly firstMultiDecisionConflict:ExactItinerantPlanEvidence["firstMultiDecisionConflict"];
+    readonly conflictBackjumps:number; readonly suffixDepthsSkipped:number;
   };
   readonly work: Readonly<Record<string, number>>;
-  readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause">;
+  readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
+    "bundleNogoodsCreated"|"bundleNogoodBranches"|"bundleNogoodDeduplications"|"bundleNogoodRepairsSucceeded"|"conflictEdges">;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
   readonly prerequisiteSharedCapacityPrunes?: number;
@@ -385,7 +389,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
     "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "bundleMatchingAttempts",
     "bundleMatchingRepairs", "bundleMatchingMaterializations", "bundleHardValidationRejects",
-    "bundleCertifiedRepairs", "standaloneForwardChecks",
+    "bundleCertifiedRepairs","bundleNogoodsCreated","bundleNogoodBranches","bundleNogoodDeduplications","bundleNogoodRepairsSucceeded",
+    "conflictBackjumps","suffixDepthsSkipped","deepestCoreDepthReached", "standaloneForwardChecks",
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
     "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
@@ -452,11 +457,17 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       prunes:Number(evidenceRecord.technicalChainFutureReservationPrunes??0),abstentions:Number(evidenceRecord.technicalChainFutureReservationAbstentions??0),
       branchesConsumed:Number(evidenceRecord.technicalChainFutureBranchesConsumed??0),
       firstPrune:(evidenceRecord.firstTechnicalChainFutureReservationPrune as ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"]|undefined)??null,
+      preparedAuthority:(evidenceRecord.preparedFutureTechnicalChainEvidence as ExactItinerantPlanEvidence["preparedFutureTechnicalChainEvidence"]|undefined)??null,
+      firstMultiDecisionConflict:(evidenceRecord.firstMultiDecisionConflict as ExactItinerantPlanEvidence["firstMultiDecisionConflict"]|undefined)??null,
+      conflictBackjumps:Number(evidenceRecord.conflictBackjumps??0),suffixDepthsSkipped:Number(evidenceRecord.suffixDepthsSkipped??0),
     },
     work,
     bundleMatching:{bundleForbiddenEdges:[...(evidenceRecord.bundleForbiddenEdges as string[]|undefined)??[]],
       bundleRepairSequence:[...(evidenceRecord.bundleRepairSequence as ExactItinerantPlanEvidence["bundleRepairSequence"]|undefined)??[]],
-      bundleTerminalCause:(evidenceRecord.bundleTerminalCause as string|null|undefined)??null},
+      bundleTerminalCause:(evidenceRecord.bundleTerminalCause as string|null|undefined)??null,
+      bundleNogoodsCreated:Number(evidenceRecord.bundleNogoodsCreated??0),bundleNogoodBranches:Number(evidenceRecord.bundleNogoodBranches??0),
+      bundleNogoodDeduplications:Number(evidenceRecord.bundleNogoodDeduplications??0),bundleNogoodRepairsSucceeded:Number(evidenceRecord.bundleNogoodRepairsSucceeded??0),
+      conflictEdges:[...(evidenceRecord.conflictEdges as string[]|undefined)??[]]},
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     standaloneDiagnostic,
     reasonCodes: [...new Set(reasonCodes)].sort(),
