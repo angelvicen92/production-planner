@@ -64,6 +64,12 @@ export interface PipelineBundleMatchingEvidence { attempts:number; repairs:numbe
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
 export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
+export interface PreparedPipelineBundleGraph {
+  readonly architecture:MainFeederArchitecture;readonly witness:AnonymousPipelineWitness;
+  readonly protectedPlacements:readonly ScheduledTask[];readonly mainIds:readonly string[];
+  readonly candidates:ReadonlyMap<string,ReadonlyMap<number,readonly ScheduledTask[]>>;
+  readonly preparedBundleEdges:number;
+}
 const orderedWindows = (windows: readonly Window[] | undefined, fallback:Window): Window[] =>
   [...(windows?.length ? windows : [fallback])].sort((a,b)=>a.start-b.start||a.end-b.end);
 const stable = (value:unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -433,6 +439,14 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
   forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,
   consumeTraversal:()=>boolean=()=>true,futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number,
   analyticalReservedPlacements:readonly ScheduledTask[]=[]):PipelineBundleMaterialization|null {
+  const prepared=preparePipelineBundleGraph(problem,architecture,protectedPlacements);
+  return prepared?materializePreparedPipelineBundleMatching(problem,prepared,forbiddenEdges,previous,consumeTraversal,
+    futureEdgeIntrusion,analyticalReservedPlacements):null;
+}
+
+/** Materializes the identity-independent witness and every base-valid bundle edge exactly once. */
+export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
+  protectedPlacements:readonly ScheduledTask[]=[]):PreparedPipelineBundleGraph|null {
   const nominal=materializeNominalPipelineWitness(problem,architecture);
   if(nominal.witness.status!=="FEASIBLE")return null;
   const witness=nominal.witness;
@@ -442,15 +456,14 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined)
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
-  const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0,bundleEdgesRejectedByReservation=0;
-  const positions=new Map<string,number[]>();
+  const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
   for(const main of mains){
     const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
     const arrival=problem.tasks.find((task):task is ParticipantTask=>task.participantId===main.participantId&&arrivalIds.has(task.id));
     const styling=problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"&&task.participantId===main.participantId
       &&task.dependencies.includes(arrival?.id??"")&&main.dependencies.includes(task.id));
     const valid:number[]=[];const byPosition=new Map<number,ScheduledTask[]>();
-    if(!feeder||!arrival||!styling){positions.set(main.id,valid);candidates.set(main.id,byPosition);continue;}
+    if(!feeder||!arrival||!styling){candidates.set(main.id,byPosition);continue;}
     assignments.forEach((assignment,position)=>{
       const mainSpot=witness.mainSpots.find(spot=>spot.id===assignment.mainSpotId)!;
       const feederSpot=witness.feederSpots.find(spot=>spot.id===assignment.feederSpotId)!;
@@ -479,21 +492,32 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
       // transport, meal and anchored-operation authorities. Preserve that proven
       // edge even where checking one task at a time cannot represent a grouped IN.
       const nominalMain=nominal.scheduledTasks.find(task=>task.id===main.id);
-      if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end&&!analyticalReservedPlacements.length)edgeValid=true;
-      if(edgeValid&&analyticalReservedPlacements.length){
-        const withReservations=[...local,...analyticalReservedPlacements];
-        edgeValid=[...bundle].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)).every(task=>
-          protectedById.has(task.id)||canPlaceTask(problem,task,task.start,withReservations.filter(x=>x.id!==task.id)));
-        if(edgeValid){const withBundle=[...protectedPlacements,...bundle];edgeValid=analyticalReservedPlacements.every(task=>{
-          const source=(problem.analyticalFutureTechnicalChains??[]).flatMap(x=>x.tasks).find(x=>x.id===task.id)??task;
-          return canPlaceTask(problem,source,task.start,withBundle.filter(x=>x.id!==task.id));});}
-        if(!edgeValid)bundleEdgesRejectedByReservation++;
-      }
+      if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
       if(!edgeValid)return;
       valid.push(position);byPosition.set(position,bundle);
     });
-    positions.set(main.id,valid);candidates.set(main.id,byPosition);
+    candidates.set(main.id,byPosition);
   }
+  return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
+    preparedBundleEdges:bundleEdgesBeforeReservation};
+}
+
+/** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */
+export function materializePreparedPipelineBundleMatching(problem:Readonly<PlannerNextProblem>,prepared:PreparedPipelineBundleGraph,
+  forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,consumeTraversal:()=>boolean=()=>true,
+  futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number,analyticalReservedPlacements:readonly ScheduledTask[]=[]):PipelineBundleMaterialization|null {
+  const {witness,protectedPlacements,candidates}=prepared;const protectedById=new Map(protectedPlacements.map(x=>[x.id,x]));
+  let bundleEdgesRejectedByReservation=0;const positions=new Map<string,number[]>();
+  for(const [id,row] of candidates){const valid:number[]=[];for(const [position,bundle] of row){let edgeValid=true;
+    if(analyticalReservedPlacements.length){const withReservations=[...protectedPlacements,...analyticalReservedPlacements];
+      edgeValid=[...bundle].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)).every(task=>
+        protectedById.has(task.id)||canPlaceTask(problem,task,task.start,withReservations.filter(x=>x.id!==task.id)));
+      if(edgeValid){const withBundle=[...protectedPlacements,...bundle];edgeValid=analyticalReservedPlacements.every(task=>{
+        const source=(problem.analyticalFutureTechnicalChains??[]).flatMap(x=>x.tasks).find(x=>x.id===task.id)??task;
+        return canPlaceTask(problem,source,task.start,withBundle.filter(x=>x.id!==task.id));});}
+      if(!edgeValid)bundleEdgesRejectedByReservation++;
+    }if(edgeValid)valid.push(position);
+  }positions.set(id,valid);}
   const pressure=new Map<string,Map<number,number>>();let safeGraphEdgeCount=0,intrusiveGraphEdgeCount=0;
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
     row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
@@ -502,10 +526,10 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
   if(futureEdgeIntrusion){safePerfectMatchingAttempts=1;const safePositions=new Map<string,number[]>();
     for(const [id,valid] of positions){const row=pressure.get(id)!;const pressured=[...row.values()].some(value=>value>0);
       safePositions.set(id,valid.filter(position=>!pressured||(row.get(position)??0)===0));}
-    initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
+    initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
     if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
-  if(!initial)initial=incrementallyRepairMatchingWitness(mains.map(task=>task.id),positions,forbiddenEdges,
+  if(!initial)initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
     previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
     (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
   if(initial.outcome!=="PERFECT")return null;
@@ -515,13 +539,19 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(forbiddenEdges),evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
     materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
-    intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks,bundleEdgesBeforeReservation,bundleEdgesRejectedByReservation,
-    bundleEdgesAfterReservation:bundleEdgesBeforeReservation-bundleEdgesRejectedByReservation}};
+    intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks,bundleEdgesBeforeReservation:prepared.preparedBundleEdges,bundleEdgesRejectedByReservation,
+    bundleEdgesAfterReservation:prepared.preparedBundleEdges-bundleEdgesRejectedByReservation}};
 }
 
 /** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */
 export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerNextProblem>):
   { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[] }|null {
+  for(const architecture of authorizedPipelineArchitectures(problem)){const materialized=materializeNominalPipelineWitness(problem,architecture);
+    return materialized;}return null;
+}
+
+/** Deterministic architecture enumeration from the exact core's canonical authorities. */
+export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextProblem>):Generator<MainFeederArchitecture> {
   const mains=problem.tasks.filter(task=>task.kind==="main");
   if(!mains.length)return null;
   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
@@ -542,8 +572,7 @@ export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerN
       const meal=mainFlowMealPolicy(problem)?createMainFlowMeal(problem):null;
       const continuous=orderedMains.slice(1).every((task,index)=>orderedMains[index]!.end===task.start
         ||Boolean(meal&&orderedMains[index]!.end===meal.start&&task.start===meal.end));
-      if(materialized.witness.status==="FEASIBLE"&&continuous)return materialized;
+      if(materialized.witness.status==="FEASIBLE"&&continuous)yield architecture;
     }
   }
-  return null;
 }

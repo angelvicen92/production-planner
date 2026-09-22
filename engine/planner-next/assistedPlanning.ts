@@ -79,7 +79,10 @@ export interface AssistedPlanningEvidence {
       "futureReservationCandidatesRejectedByNoBundleMatching"|"futureReservationBundleMatchingAttempts"|
       "futureReservationPerfectMatchings"|"futureReservationSelectedFingerprint"|"architecturesTriedWithFutureReservation"|
       "bundleEdgesBeforeReservation"|"bundleEdgesRejectedByReservation"|"bundleEdgesAfterReservation"|
-      "residualDfsEntered"|"residualDfsBranchesBeforeFirstSolution">;
+      "residualDfsEntered"|"residualDfsBranchesBeforeFirstSolution"|"architecturesEnumerated"|"architecturesPrepared"|
+      "futureWitnessesTriedByArchitecture"|"preparedBundleEdges"|"reservationFilteredEdges"|"perfectMatchingsByArchitecture"|
+      "hardGateRejectsByArchitecture"|"structuralSearchExhausted"|"branchesBeforeResidualDfs"|
+      "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint">;
   };
   readonly work: Readonly<Record<string, number>>;
   readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
@@ -474,6 +477,14 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         architecturesTriedWithFutureReservation:Number(evidenceRecord.architecturesTriedWithFutureReservation??0),bundleEdgesBeforeReservation:Number(evidenceRecord.bundleEdgesBeforeReservation??0),
         bundleEdgesRejectedByReservation:Number(evidenceRecord.bundleEdgesRejectedByReservation??0),bundleEdgesAfterReservation:Number(evidenceRecord.bundleEdgesAfterReservation??0),
         residualDfsEntered:Boolean(evidenceRecord.residualDfsEntered),residualDfsBranchesBeforeFirstSolution:(evidenceRecord.residualDfsBranchesBeforeFirstSolution as number|null|undefined)??null,
+        architecturesEnumerated:Number(evidenceRecord.architecturesEnumerated??0),architecturesPrepared:Number(evidenceRecord.architecturesPrepared??0),
+        futureWitnessesTriedByArchitecture:{...((evidenceRecord.futureWitnessesTriedByArchitecture as Record<string,number>|undefined)??{})},
+        preparedBundleEdges:Number(evidenceRecord.preparedBundleEdges??0),reservationFilteredEdges:Number(evidenceRecord.reservationFilteredEdges??0),
+        perfectMatchingsByArchitecture:{...((evidenceRecord.perfectMatchingsByArchitecture as Record<string,number>|undefined)??{})},
+        hardGateRejectsByArchitecture:{...((evidenceRecord.hardGateRejectsByArchitecture as Record<string,number>|undefined)??{})},
+        structuralSearchExhausted:Boolean(evidenceRecord.structuralSearchExhausted),branchesBeforeResidualDfs:(evidenceRecord.branchesBeforeResidualDfs as number|null|undefined)??null,
+        selectedArchitectureFingerprint:(evidenceRecord.selectedArchitectureFingerprint as string|null|undefined)??null,
+        selectedFutureReservationFingerprint:(evidenceRecord.selectedFutureReservationFingerprint as string|null|undefined)??null,
       },
     },
     work,

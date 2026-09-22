@@ -5,7 +5,7 @@ import { createCanonicalFullA2Template, expandCanonicalFullA2Template } from "./
 
 const minute = (value: string): number => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
 
-export function buildCanonicalA2PlannerNextProblem() {
+export function buildCanonicalA2PlannerNextProblem(branchBudget=100_000) {
   const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
   const config = expansion.effectiveConfiguration;
   const itinerantUnitId = new Map(expansion.itinerantUnits.map((unit, index) => [unit.id, `itinerant-team:${index + 1}`]));
@@ -32,18 +32,22 @@ export function buildCanonicalA2PlannerNextProblem() {
     participantTransitionMinutes: 5, resourceTransitionMinutes: 0,
     coachRouteTransitions: [["coach-lucia", "caracola-lucia"], ["coach-jose-maria", "caracola-jose-maria"]].map(([coachId, fromSpaceId]) => ({ coachId, fromSpaceId, toSpaceId: expansion.rules.mainFlow.spaceId, minutes: expansion.rules.coachTransition.minutes })),
     anchoredAccompaniments: expansion.anchoredOperations.map((operation) => ({ id: operation.id, anchorTaskId: operation.anchorTaskId, beforeTaskIds: [...operation.beforeTaskIds], afterTaskIds: [...operation.afterTaskIds], adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED", itinerantUnitId: itinerantUnitId.get(operation.itinerantUnitId)! })),
-    searchPolicy: "EXACT_CONSTRUCTIVE", budget: { bestK: 5, maxBacktracks: 500, maxPatterns: 200, maxBranchExpansions: 100_000 },
+    technicalChains: expansion.technicalChains.map((chain) => ({ id: chain.id, orderedTaskIds: [...chain.orderedTaskIds],
+      ...(chain.phases ? { phases: chain.phases.map((phase) => [...phase]) } : {}), adjacency: chain.adjacency,
+      resourceContinuity: chain.resourceContinuity, requiredResourceIds: [...chain.requiredResourceIds] })),
+    searchPolicy: "EXACT_CONSTRUCTIVE", budget: { bestK: 5, maxBacktracks: 500, maxPatterns: 200, maxBranchExpansions: branchBudget },
     auxiliaryPolicy: { participantPresencePreference: "OFF" },
   };
   return { expansion, problem };
 }
 
-export function runA2Assist1Benchmark() {
-  const { expansion, problem } = buildCanonicalA2PlannerNextProblem();
+export function runA2Assist1Benchmark(branchBudget=100_000) {
+  const { expansion, problem } = buildCanonicalA2PlannerNextProblem(branchBudget);
   const scopeIds = expansion.tasks.filter((task) => task.type === "ENSAYO_ESTUDIO_7").map(({ id }) => id);
   assert.equal(expansion.tasks.filter((task) => task.participantId).length, 266);
   const scope = createPlanningScope({ kind: "canonical-space", value: "estudio-7" }, { benchmarkId: "A2-ASSIST-1", sourceObligationCount: 266 }, scopeIds);
-  const assisted = buildAssistedProblem(problem, scope, []);
+  const analyticalFutureEligibleTaskIds = new Set(expansion.technicalChains.flatMap((chain) => chain.orderedTaskIds));
+  const assisted = buildAssistedProblem(problem, scope, [], analyticalFutureEligibleTaskIds);
   const result = executeAssistedPlanning(assisted);
   return { benchmarkId: "A2-ASSIST-1", sourceHumanTimesUsed: false, participantTransitionMinutes: 5, automaticTaskIds: assisted.automaticTaskIds, supportingTaskIds: assisted.supportingTaskIds, ...result.evidence };
 }

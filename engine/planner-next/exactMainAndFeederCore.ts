@@ -320,6 +320,13 @@ export interface ExactMainAndFeederSearchOptions {
   repairPreferredBundleCandidate?: (previous:Readonly<{matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>,
     forbiddenEdges:ReadonlySet<string>,consumeTraversal:()=>boolean)=>Readonly<{scheduledTasks:readonly ScheduledTask[];
       matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>|null;
+  /** Lazy structural candidates are exhausted through the common hard gate before ordinary DFS. */
+  structuralBundleCandidates?: Iterable<Readonly<{architecture:MainFeederArchitecture;
+    bundle:{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>};
+    repair:(previous:Readonly<{matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>,forbiddenEdges:ReadonlySet<string>,
+      consumeTraversal:()=>boolean)=>Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>}>|null;
+    acceptComplete?:(tasks:readonly ScheduledTask[])=>boolean}>>;
+  onStructuralHardGateReject?:(architecture:MainFeederArchitecture)=>void;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
@@ -883,7 +890,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   };
 
-  let bundleState=options.preferredBundleCandidate;
+  const structuralCandidates=options.structuralBundleCandidates?.[Symbol.iterator]();
+  let structuralCandidate=structuralCandidates?.next().value;
+  let bundleState=structuralCandidate?.bundle??options.preferredBundleCandidate;
   const bundleQueue:NonNullable<typeof bundleState>[]=[];
   const seenBundleForbidden=new Set<string>();
   if(bundleState)seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
@@ -896,12 +905,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const preferredMealAuthority=mainFlowMealPolicy(problem);
     const meals=preferredMealAuthority&&preferredMealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
     const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true);
-    if(!gated){evidence.bundleHardValidationRejects++;evidence.bundleTerminalCause=lastHardGateReason;bundleState=bundleQueue.shift();continue;}
+    if(!gated||structuralCandidate?.acceptComplete?.(gated)===false){evidence.bundleHardValidationRejects++;if(structuralCandidate)options.onStructuralHardGateReject?.(structuralCandidate.architecture);
+      evidence.bundleTerminalCause=lastHardGateReason??"STRUCTURAL_RESERVATION_REJECTED";
+      bundleState=bundleQueue.shift();if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
     const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(preferred,[],meals)})??"ACCEPT";
     if(continuation==="ACCEPT"){
-        evidence.bundleTerminalCause="ACCEPT";selected={tasks:gated,meals,pattern:[...(options.preferredArchitecture?.pattern??[])]};
-        evidence.completeLeafCount=1;evidence.selectedPattern=[...(options.preferredArchitecture?.pattern??[])];
+        const selectedArchitecture=structuralCandidate?.architecture??options.preferredArchitecture;
+        evidence.bundleTerminalCause="ACCEPT";selected={tasks:gated,meals,pattern:[...(selectedArchitecture?.pattern??[])]};
+        evidence.completeLeafCount=1;evidence.selectedPattern=[...(selectedArchitecture?.pattern??[])];
         evidence.selectedMainTaskIds=gated.filter(task=>task.kind==="main").map(task=>task.id);
         evidence.selectedFeederTaskIds=gated.filter(task=>task.kind==="vocal").map(task=>task.id);
         evidence.coreFingerprint=fingerprint(gated,[],meals);
@@ -910,23 +922,27 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
     if(continuation==="BUDGET_EXHAUSTED"){evidence.bundleTerminalCause="BUDGET_EXHAUSTED";
       return fail("BRANCH_BUDGET_EXHAUSTED",["BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);}
-    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";bundleState=bundleQueue.shift();continue;}
+    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";bundleState=bundleQueue.shift();
+      if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
     const orderedMains=gated.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const depths=[...(continuation.conflictDecisionDepths?.length?continuation.conflictDecisionDepths:[continuation.targetDepth])].sort((a,b)=>a-b);
     const conflict=depths.map(depth=>orderedMains[depth-1]).map(causing=>{const oldPosition=causing===undefined?undefined:bundleState!.matching.get(causing.id);
       return causing&&oldPosition!==undefined?{causing,oldPosition,edge:`${causing.id}@${oldPosition}`} : null;});
-    if(conflict.some(x=>x===null)||!options.repairPreferredBundleCandidate){evidence.bundleTerminalCause="UNMAPPED_CONFLICT_GROUP";break;}
+    const repair=structuralCandidate?.repair??options.repairPreferredBundleCandidate;
+    if(conflict.some(x=>x===null)||!repair){evidence.bundleTerminalCause="UNMAPPED_CONFLICT_GROUP";bundleState=undefined;
+      if(structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
     evidence.conflictEdges=conflict.map(x=>x!.edge);evidence.bundleNogoodsCreated++;
     const children:NonNullable<typeof bundleState>[]=[];
     for(const item of conflict){const {causing,oldPosition,edge:forbiddenEdge}=item!;
       const forbidden=new Set(bundleState.forbiddenEdges).add(forbiddenEdge),signature=[...forbidden].sort().join("\u0000");
       if(seenBundleForbidden.has(signature)){evidence.bundleNogoodDeduplications++;continue;}seenBundleForbidden.add(signature);
       evidence.bundleNogoodBranches++;evidence.bundleMatchingRepairs++;evidence.bundleCertifiedRepairs++;
-      const repaired=options.repairPreferredBundleCandidate(bundleState,forbidden,consumeMatchingBranch);
+      const repaired=repair(bundleState,forbidden,consumeMatchingBranch);
       evidence.bundleRepairSequence.push({causingTaskId:causing.id,oldPosition,forbiddenEdge,newPosition:repaired?.matching.get(causing.id)??null});
       if(repaired){children.push(repaired);evidence.bundleNogoodRepairsSucceeded++;}
     }
-    if(!children.length){evidence.bundleTerminalCause="NO_PERFECT_MATCH";bundleState=bundleQueue.shift();continue;}
+    if(!children.length){evidence.bundleTerminalCause="NO_PERFECT_MATCH";bundleState=bundleQueue.shift();
+      if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
     evidence.bundleForbiddenEdges=[...children[0]!.forbiddenEdges].sort();bundleQueue.unshift(...children.slice(1));bundleState=children[0];
   }
 
