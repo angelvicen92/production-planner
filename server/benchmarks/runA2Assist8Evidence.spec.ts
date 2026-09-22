@@ -14,7 +14,9 @@ test("A2-ASSIST-8 product request/run/apply accepts the canonical first stage",a
   assert.equal(iteration.protectedPlacementsPreserved,true);
   assert.equal(iteration.newHardViolationCount,0);assert.equal(iteration.newRequiredViolationCount,0);
   assert.deepEqual(iteration.unstructuredReasonCodes,[]);assert.equal(first.firstBlocker,null);
-  assert.equal(iteration.ordinal,1);assert.equal(iteration.branchesExplored,2_142);
+  // The operational-meal witness now crosses the core/standalone boundary,
+  // avoiding the eight-policy terminal rematerialization without changing placements.
+  assert.equal(iteration.ordinal,1);assert.equal(iteration.branchesExplored,2_134);
   assert.equal(iteration.technicalChainFutureReservation.constructive.residualDfsEntered,false);
   assert.ok(iteration.technicalChainFutureReservation.constructive.structuralCandidateFingerprintAtHardGate);
   assert.deepEqual({stage:iteration.acceptedStageFingerprint,fingerprint:first.deterministicFingerprint},
