@@ -68,6 +68,9 @@ export interface AssistedPlanningEvidence {
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
   };
   readonly operationalMealFutureReservation: ExactItinerantPlanEvidence["operationalMealFutureReservation"];
+  readonly fixedMainFeederMealChecks:number;readonly fixedMainFeederMealPasses:number;readonly fixedMainFeederMealPrunes:number;
+  readonly firstFixedMainFeederMealPrune:ExactItinerantPlanEvidence["firstFixedMainFeederMealPrune"];
+  readonly standaloneEntryMealWitness:string|null;
   readonly technicalChainFutureReservation: {
     readonly checks:number; readonly passes:number; readonly prunes:number; readonly abstentions:number;
     readonly branchesConsumed:number;
@@ -463,7 +466,13 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     operationalMealFutureReservation:structuredClone((evidenceRecord.operationalMealFutureReservation as ExactItinerantPlanEvidence["operationalMealFutureReservation"]|undefined)??{
       checks:0,passes:0,prunes:0,abstentions:0,irrelevantFastPasses:0,affectedPoliciesChecked:0,individualDomainChecks:0,
       individualZeroDomainPrunes:0,witnessValidationChecks:0,witnessReuseHits:0,witnessInvalidations:0,witnessRepairs:0,
-      exactCollectiveChecks:0,branchesConsumed:0,terminalSearchesAvoided:0,firstPrune:null}),
+      exactCollectiveChecks:0,branchesConsumed:0,terminalSearchesAvoided:0,firstPrune:null,fixedContextInitializationChecks:0,
+      fixedContextWitnessFound:false,fixedContextWitnessFingerprint:null,preexistingZeroDomainPrunes:0}),
+    fixedMainFeederMealChecks:Number(evidenceRecord.fixedMainFeederMealChecks??0),
+    fixedMainFeederMealPasses:Number(evidenceRecord.fixedMainFeederMealPasses??0),
+    fixedMainFeederMealPrunes:Number(evidenceRecord.fixedMainFeederMealPrunes??0),
+    firstFixedMainFeederMealPrune:(evidenceRecord.firstFixedMainFeederMealPrune as ExactItinerantPlanEvidence["firstFixedMainFeederMealPrune"]|undefined)??null,
+    standaloneEntryMealWitness:typeof evidenceRecord.standaloneEntryMealWitness==="string"?evidenceRecord.standaloneEntryMealWitness:null,
     participantFutureReservation:{
       checks:Number(evidenceRecord.participantFutureReservationChecks??0),passes:Number(evidenceRecord.participantFutureReservationPasses??0),
       prunes:Number(evidenceRecord.participantFutureReservationPrunes??0),abstentions:Number(evidenceRecord.participantFutureReservationAbstentions??0),

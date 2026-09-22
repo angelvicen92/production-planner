@@ -11,7 +11,9 @@ process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
 process.env.SUPABASE_ANON_KEY ??= "evidence";
 
-export interface A2Assist8Options { readonly branchBudget?: number; readonly writeEvidence?: boolean; readonly stopAfterFirstProposal?:boolean }
+export interface A2Assist8Options { readonly branchBudget?: number; readonly writeEvidence?: boolean; readonly stopAfterFirstProposal?:boolean;
+  /** Focused diagnostic only; canonical Evidence always runs to completion/blocker. */
+  readonly stopAfterIterationCount?:number }
 
 /**
  * ASST-011 completion probe.  It deliberately uses the product request/run/apply,
@@ -20,8 +22,8 @@ export interface A2Assist8Options { readonly branchBudget?: number; readonly wri
  */
 export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const stopAfterFirstProposal = options.stopAfterFirstProposal ?? false;
-  assert.ok(!options.writeEvidence || !stopAfterFirstProposal,
-    "canonical A2-ASSIST-8 completion Evidence cannot be written from a Stage-1-only run");
+  assert.ok(!options.writeEvidence || (!stopAfterFirstProposal&&options.stopAfterIterationCount===undefined),
+    "canonical A2-ASSIST-8 completion Evidence cannot be written from a partial run");
   const [{ AssistedProposalService }, { AssistedPlanningService }] = await Promise.all([
     import("../assistedProposalService"), import("../assistedPlanningService"),
   ]);
@@ -197,6 +199,11 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         exactMaterializations:evidence.work?.participantMealExactMaterializations},
       participantFutureReservation:evidence.participantFutureReservation,
       operationalMealFutureReservation:evidence.operationalMealFutureReservation,
+      fixedMainFeederMealChecks:evidence.fixedMainFeederMealChecks,
+      fixedMainFeederMealPasses:evidence.fixedMainFeederMealPasses,
+      fixedMainFeederMealPrunes:evidence.fixedMainFeederMealPrunes,
+      firstFixedMainFeederMealPrune:evidence.firstFixedMainFeederMealPrune,
+      standaloneEntryMealWitness:evidence.standaloneEntryMealWitness,
       technicalChainFutureReservation:evidence.technicalChainFutureReservation,
       transportWitness:evidence.standaloneDiagnostic?.terminalTransportWitness??null,
       hardRequiredValidation:{hardValid:evidence.hardValid??false,requiredValid:evidence.requiredValid??false,
@@ -299,7 +306,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
-    if(stopAfterFirstProposal)break;
+    if(stopAfterFirstProposal||iterations.length===(options.stopAfterIterationCount??Number.POSITIVE_INFINITY))break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);

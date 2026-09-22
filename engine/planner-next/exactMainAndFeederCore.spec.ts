@@ -976,6 +976,19 @@ test("an impossible cohort backtracks before any secondary callback", () => {
   assert.deepEqual(result.scheduledTasks, []);
 });
 
+test("fixed-main feeder reconstruction exposes its baseline and every placed feeder to future feasibility",()=>{
+  const problem=syntheticProblem([
+    {id:"vocal-fixed",kind:"vocal",participantId:"fixed",duration:10,spaceId:"feed",dependencies:[]},
+    {id:"main-fixed",kind:"main",participantId:"fixed",duration:10,spaceId:"main",dependencies:["vocal-fixed"],blockKey:"coach"},
+  ],["fixed"],["feed"]);
+  const seen:string[]=[];
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:[{...problem.tasks.find(task=>task.id==="main-fixed")!,start:80,end:90}],
+    fixedPlacementsAsContext:true,onPartialCoreCandidate(candidate){seen.push(`${candidate.origin}:${candidate.addedTasks.map(task=>task.id).join(",")}`);return "CONTINUE";}});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(seen[0],"FIXED_MAIN_CONTEXT:");
+  assert.ok(seen.includes("FIXED_MAIN_FEEDER:vocal-fixed"));
+});
+
 test("cohort construction is deterministic and invariant to input order", () => {
   const first = twoCohortProblem(), reversed = twoCohortProblem();
   reversed.tasks.reverse(); reversed.participants.reverse(); reversed.spaces.reverse(); reversed.coaches.reverse();
