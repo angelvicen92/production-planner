@@ -71,6 +71,8 @@ export interface ExactMainAndFeederCoreEvidence {
   bundleForbiddenEdges: string[];
   bundleRepairSequence: Array<{causingTaskId:string;oldPosition:number;forbiddenEdge:string;newPosition:number|null}>;
   bundleTerminalCause: string | null;
+  bundleNogoodsCreated:number; bundleNogoodBranches:number; bundleNogoodDeduplications:number;
+  bundleNogoodRepairsSucceeded:number; conflictEdges:string[];
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -271,7 +273,9 @@ export interface ExactMainChoiceDescriptor {
   readonly firstObligation: number;
 }
 
-export interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number }
+export interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; readonly targetDepth:number;
+  readonly conflictDecisionDepths?:readonly number[]; readonly conflictTaskIds?:Readonly<Record<string,readonly string[]>>;
+  readonly authority?:string }
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 
 export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
@@ -322,6 +326,8 @@ export interface ExactMainAndFeederSearchOptions {
   mainChoiceComparator?: (a: ExactMainChoiceDescriptor, b: ExactMainChoiceDescriptor) => number;
   /** Ordering-only pressure from prepared future authorities. Zero denotes a SAFE edge. */
   futureEdgeIntrusion?: (operation:readonly ScheduledTask[]) => number;
+  futureEdgePressure?: (operation:readonly ScheduledTask[]) => Readonly<{safe:boolean;intrusionMinutes:number;
+    exactSurvivorCount:number|null;knownSurvivorLowerBound:number;domainComplete:boolean}>;
   onMainChoicesRanked?: (baseline: readonly ExactMainChoiceDescriptor[], ordered: readonly ExactMainChoiceDescriptor[]) => void;
   onMainChoiceEntered?: (candidate: ExactMainChoiceDescriptor) => void;
   onMainChoiceAccepted?: (candidate: ExactMainChoiceDescriptor) => void;
@@ -654,7 +660,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,bundleCertifiedRepairs:0,
-    bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,
+    bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,bundleNogoodsCreated:0,bundleNogoodBranches:0,
+    bundleNogoodDeduplications:0,bundleNogoodRepairsSucceeded:0,conflictEdges:[],
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -688,6 +695,14 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
 export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   options: ExactMainAndFeederSearchOptions = {}): ExactMainAndFeederCoreResult {
   const evidence = emptyEvidence();
+  const edgePressure=(operation:readonly ScheduledTask[])=>options.futureEdgePressure?.(operation)??{
+    safe:(options.futureEdgeIntrusion?.(operation)??0)===0,intrusionMinutes:options.futureEdgeIntrusion?.(operation)??0,
+    exactSurvivorCount:null,knownSurvivorLowerBound:0,domainComplete:false};
+  const compareFutureFreedom=(left:readonly ScheduledTask[],right:readonly ScheduledTask[])=>{const a=edgePressure(left),b=edgePressure(right);
+    return Number(b.safe)-Number(a.safe)
+      ||(a.exactSurvivorCount!==null&&b.exactSurvivorCount!==null?b.exactSurvivorCount-a.exactSurvivorCount:0)
+      ||(a.exactSurvivorCount===null&&b.exactSurvivorCount===null?b.knownSurvivorLowerBound-a.knownSurvivorLowerBound:0)
+      ||a.intrusionMinutes-b.intrusionMinutes;};
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
   const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]}}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
@@ -869,6 +884,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
 
   let bundleState=options.preferredBundleCandidate;
+  const bundleQueue:NonNullable<typeof bundleState>[]=[];
+  const seenBundleForbidden=new Set<string>();
+  if(bundleState)seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
   while(bundleState){
     evidence.bundleMatchingAttempts++;
     const byId=new Map([...bundleState.scheduledTasks,...structuralBase].map(task=>[task.id,task]));
@@ -878,7 +896,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const preferredMealAuthority=mainFlowMealPolicy(problem);
     const meals=preferredMealAuthority&&preferredMealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
     const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true);
-    if(!gated){evidence.bundleHardValidationRejects++;evidence.bundleTerminalCause=lastHardGateReason;break;}
+    if(!gated){evidence.bundleHardValidationRejects++;evidence.bundleTerminalCause=lastHardGateReason;bundleState=bundleQueue.shift();continue;}
     const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(preferred,[],meals)})??"ACCEPT";
     if(continuation==="ACCEPT"){
@@ -892,19 +910,24 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
     if(continuation==="BUDGET_EXHAUSTED"){evidence.bundleTerminalCause="BUDGET_EXHAUSTED";
       return fail("BRANCH_BUDGET_EXHAUSTED",["BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);}
-    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";break;}
+    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";bundleState=bundleQueue.shift();continue;}
     const orderedMains=gated.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-    const causing=orderedMains[continuation.targetDepth-1];
-    const oldPosition=causing===undefined?undefined:bundleState.matching.get(causing.id);
-    if(!causing||oldPosition===undefined||!options.repairPreferredBundleCandidate){evidence.bundleTerminalCause="UNMAPPED_CERTIFIED_BACKJUMP";break;}
-    const forbiddenEdge=`${causing.id}@${oldPosition}`;const forbidden=new Set(bundleState.forbiddenEdges).add(forbiddenEdge);
-    const repaired=options.repairPreferredBundleCandidate(bundleState,forbidden,consumeMatchingBranch);
-    evidence.bundleForbiddenEdges=[...forbidden].sort();evidence.bundleCertifiedRepairs++;
-    evidence.bundleMatchingRepairs++;
-    evidence.bundleRepairSequence.push({causingTaskId:causing.id,oldPosition,forbiddenEdge,
-      newPosition:repaired?.matching.get(causing.id)??null});
-    if(!repaired){evidence.bundleTerminalCause="NO_PERFECT_MATCH";break;}
-    bundleState=repaired;
+    const depths=[...(continuation.conflictDecisionDepths?.length?continuation.conflictDecisionDepths:[continuation.targetDepth])].sort((a,b)=>a-b);
+    const conflict=depths.map(depth=>orderedMains[depth-1]).map(causing=>{const oldPosition=causing===undefined?undefined:bundleState!.matching.get(causing.id);
+      return causing&&oldPosition!==undefined?{causing,oldPosition,edge:`${causing.id}@${oldPosition}`} : null;});
+    if(conflict.some(x=>x===null)||!options.repairPreferredBundleCandidate){evidence.bundleTerminalCause="UNMAPPED_CONFLICT_GROUP";break;}
+    evidence.conflictEdges=conflict.map(x=>x!.edge);evidence.bundleNogoodsCreated++;
+    const children:NonNullable<typeof bundleState>[]=[];
+    for(const item of conflict){const {causing,oldPosition,edge:forbiddenEdge}=item!;
+      const forbidden=new Set(bundleState.forbiddenEdges).add(forbiddenEdge),signature=[...forbidden].sort().join("\u0000");
+      if(seenBundleForbidden.has(signature)){evidence.bundleNogoodDeduplications++;continue;}seenBundleForbidden.add(signature);
+      evidence.bundleNogoodBranches++;evidence.bundleMatchingRepairs++;evidence.bundleCertifiedRepairs++;
+      const repaired=options.repairPreferredBundleCandidate(bundleState,forbidden,consumeMatchingBranch);
+      evidence.bundleRepairSequence.push({causingTaskId:causing.id,oldPosition,forbiddenEdge,newPosition:repaired?.matching.get(causing.id)??null});
+      if(repaired){children.push(repaired);evidence.bundleNogoodRepairsSucceeded++;}
+    }
+    if(!children.length){evidence.bundleTerminalCause="NO_PERFECT_MATCH";bundleState=bundleQueue.shift();continue;}
+    evidence.bundleForbiddenEdges=[...children[0]!.forbiddenEdges].sort();bundleQueue.unshift(...children.slice(1));bundleState=children[0];
   }
 
   if(mains.length===0){
@@ -1439,7 +1462,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const baseline=choices.map(choice=>byId.get(choice.task.id)!);
       const witnessTaskId = [...(blockCertificate?.matching ?? [])]
         .find(([, witnessPosition]) => witnessPosition === position)?.[0];
-      choices.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)
+      choices.sort((a,b)=>compareFutureFreedom(a.operation,b.operation)
         ||(options.mainChoiceComparator?.(byId.get(a.task.id)!,byId.get(b.task.id)!)??0)
         ||Number(b.task.id===witnessTaskId)-Number(a.task.id===witnessTaskId));
       options.onMainChoicesRanked?.(Object.freeze([...baseline]),Object.freeze(choices.map(choice=>byId.get(choice.task.id)!)));
@@ -1696,7 +1719,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if (edge === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
           if (edge) taskEdges.push(edge); else taskInvalid.add(position);
         }
-        taskEdges.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)||a.position-b.position);
+        taskEdges.sort((a,b)=>compareFutureFreedom(a.operation,b.operation)||a.position-b.position);
         validEdges.set(task.id, taskEdges);
         invalidPositions.set(task.id, taskInvalid);
         if (taskEdges.length === 0) return { outcome: "DEAD_END" };
@@ -1732,7 +1755,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             else invalidatedUnmatchedEdges += 1;
           }
         }
-        taskEdges.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)||a.position-b.position);
+        taskEdges.sort((a,b)=>compareFutureFreedom(a.operation,b.operation)||a.position-b.position);
         validEdges.set(task.id, taskEdges);
         if (taskEdges.length === 0) return { outcome: "DEAD_END" };
       }
@@ -1760,11 +1783,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       }
     }
 
-    if(options.futureEdgeIntrusion){
+    if(options.futureEdgeIntrusion||options.futureEdgePressure){
       evidence.safePerfectMatchingAttempts+=1;
       const safeOwner=new Map<number,string>(),safeMatching=new Map<string,number>();let safeBudget=false;
       const pressure=new Map<string,Map<number,number>>();
-      for(const [taskId,edges] of validEdges){const values=new Map(edges.map(edge=>[edge.position,options.futureEdgeIntrusion!(edge.operation)]));pressure.set(taskId,values);
+      for(const [taskId,edges] of validEdges){const values=new Map(edges.map(edge=>[edge.position,edgePressure(edge.operation).intrusionMinutes]));pressure.set(taskId,values);
         evidence.safeGraphEdgeCount+=edges.filter(edge=>(values.get(edge.position)??0)===0).length;
         evidence.intrusiveGraphEdgeCount+=edges.filter(edge=>(values.get(edge.position)??0)>0).length;}
       const safeAugment=(taskId:string,seen:Set<number>):boolean=>{
