@@ -109,3 +109,24 @@ test("an invalidated phased witness resumes at the next order of the same root",
   assert.equal(authority.evidence.exactRootOrderEvaluations,2,
     "repair must evaluate O2 at root zero rather than skipping to another root");
 });
+
+test("phased static envelope retains a root when a member other than orderedTaskIds[0] can lead",()=>{
+  const p=problem(),future=p.analyticalFutureTechnicalChains![0]!;p.day={start:0,end:20};
+  p.spaces.forEach(space=>space.availability=[{start:0,end:20}]);p.participants.forEach(person=>person.availability=[{start:0,end:20}]);
+  future.policy.phases=[["future-a","future-b"]];future.tasks.forEach(task=>{task.duration=10;task.dependencies=[];});
+  future.tasks[0]!.availability=[{start:10,end:20}];future.tasks[1]!.availability=[{start:0,end:10}];
+  const authority=new PreparedFutureTechnicalChainAuthority(p),prepared=authority.evidence.preparedFutureStructures[0]!;
+  assert.equal(prepared.derivationMode,"STATIC_PHASE_ENVELOPE");assert.equal(prepared.rootsInStaticEnvelope,1);
+  assert.deepEqual(authority.occupancySupport("future-person"),[{start:0,end:20}],
+    "root zero and both phase offsets survive although future-a cannot be first");
+});
+
+test("assess hot paths and pressure cache do not scan known candidates for evidence",()=>{
+  const authority=new PreparedFutureTechnicalChainAuthority(problem());
+  const irrelevant={...placement(0),spaceId:"other"};authority.assess([irrelevant],[irrelevant]);
+  assert.equal(authority.evidence.irrelevantFastPasses,1);assert.equal(authority.evidence.knownCandidateChecks,0);
+  const relevant={...placement(40),participantId:"future-person",spaceId:"other",duration:5,end:45};
+  authority.assess([relevant],[relevant]);const scans=authority.evidence.fullCandidateScans;
+  authority.assess([relevant],[relevant]);assert.equal(authority.evidence.fullCandidateScans,scans,"lastWitness Evidence is O(1)");
+  authority.pressure([relevant]);authority.pressure([relevant]);assert.equal(authority.evidence.pressureCacheHits,1);
+});

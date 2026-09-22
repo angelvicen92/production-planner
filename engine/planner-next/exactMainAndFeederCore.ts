@@ -52,6 +52,12 @@ export interface ExactMainAndFeederCoreEvidence {
   residualMatchingPrunes: number;
   residualMatchingRepairs: number;
   residualMatchingRepairFailures: number;
+  safePerfectMatchingAttempts:number;
+  safePerfectMatchingFound:number;
+  safeGraphEdgeCount:number;
+  intrusiveGraphEdgeCount:number;
+  safeMatchingFailures:number;
+  fullGraphFallbacks:number;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
   mainRunWitnessAttempts: number;
@@ -196,22 +202,24 @@ export function incrementallyRepairMatchingWitness(
   previousForbidden: ReadonlySet<string>,
   previous: ReadonlyMap<string, number>,
   consumeTraversal: () => boolean = () => true,
+  compareEdges: (taskId:string,left:number,right:number)=>number = () => 0,
 ): IncrementalMatchingWitnessResult {
   if ([...previousForbidden].some((key) => !forbidden.has(key)))
     throw new Error("MATCHING_WITNESS_NON_MONOTONIC_AUTHORITY");
   const edgeKey = (taskId: string, position: number) => `${taskId}@${position}`;
   const matching = new Map(previous);
-  const owner = new Map<number, string>();
   for (const [taskId, position] of matching) {
-    if (forbidden.has(edgeKey(taskId, position))) matching.delete(taskId);
-    else owner.set(position, taskId);
+    const hasHigherPriority=(validPositions.get(taskId)??[]).some(candidate=>!forbidden.has(edgeKey(taskId,candidate))
+      &&compareEdges(taskId,candidate,position)<0);
+    if (forbidden.has(edgeKey(taskId, position))||hasHigherPriority) matching.delete(taskId);
   }
+  const owner = new Map<number, string>([...matching].map(([taskId,position])=>[position,taskId]));
   let traversals = 0;
   let exhausted = false;
   const augment = (taskId: string, seen: Set<number>): boolean => {
     const preferred = previous.get(taskId);
     const positions = [...(validPositions.get(taskId) ?? [])].sort((left, right) =>
-      Number(right === preferred) - Number(left === preferred) || left - right);
+      compareEdges(taskId,left,right)||Number(right === preferred) - Number(left === preferred) || left - right);
     for (const position of positions) {
       if (forbidden.has(edgeKey(taskId, position)) || seen.has(position)) continue;
       if (!consumeTraversal()) { exhausted = true; return false; }
@@ -641,6 +649,8 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     residualMatchingPositionChecks: 0, residualMatchingAugmentTraversals: 0,
     residualMatchingBranchesExplored: 0, residualMatchingPrunes: 0,
     residualMatchingRepairs: 0, residualMatchingRepairFailures: 0,
+    safePerfectMatchingAttempts:0,safePerfectMatchingFound:0,safeGraphEdgeCount:0,intrusiveGraphEdgeCount:0,
+    safeMatchingFailures:0,fullGraphFallbacks:0,
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,bundleCertifiedRepairs:0,
@@ -1427,12 +1437,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         pattern:Object.freeze([...pattern]), participantSlack:choice.participantSlack, firstObligation:choice.firstObligation });
       const byId=new Map(choices.map(choice=>[choice.task.id,describe(choice)]));
       const baseline=choices.map(choice=>byId.get(choice.task.id)!);
-      choices.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)
-        ||(options.mainChoiceComparator?.(byId.get(a.task.id)!,byId.get(b.task.id)!)??0));
       const witnessTaskId = [...(blockCertificate?.matching ?? [])]
         .find(([, witnessPosition]) => witnessPosition === position)?.[0];
-      if (witnessTaskId !== undefined) choices.sort((a, b) =>
-        Number(b.task.id === witnessTaskId) - Number(a.task.id === witnessTaskId));
+      choices.sort((a,b)=>(options.futureEdgeIntrusion?.(a.operation)??0)-(options.futureEdgeIntrusion?.(b.operation)??0)
+        ||(options.mainChoiceComparator?.(byId.get(a.task.id)!,byId.get(b.task.id)!)??0)
+        ||Number(b.task.id===witnessTaskId)-Number(a.task.id===witnessTaskId));
       options.onMainChoicesRanked?.(Object.freeze([...baseline]),Object.freeze(choices.map(choice=>byId.get(choice.task.id)!)));
       for(const choice of choices){
         cohortCandidatesExplored += 1;
@@ -1749,6 +1758,27 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           unmatchedBeforeRepair: remainingIds.filter((id) => !retainedTaskIds.has(id)).length,
         };
       }
+    }
+
+    if(options.futureEdgeIntrusion){
+      evidence.safePerfectMatchingAttempts+=1;
+      const safeOwner=new Map<number,string>(),safeMatching=new Map<string,number>();let safeBudget=false;
+      const pressure=new Map<string,Map<number,number>>();
+      for(const [taskId,edges] of validEdges){const values=new Map(edges.map(edge=>[edge.position,options.futureEdgeIntrusion!(edge.operation)]));pressure.set(taskId,values);
+        evidence.safeGraphEdgeCount+=edges.filter(edge=>(values.get(edge.position)??0)===0).length;
+        evidence.intrusiveGraphEdgeCount+=edges.filter(edge=>(values.get(edge.position)??0)>0).length;}
+      const safeAugment=(taskId:string,seen:Set<number>):boolean=>{
+        const values=pressure.get(taskId)!;const pressured=[...values.values()].some(value=>value>0);
+        const edges=(validEdges.get(taskId)??[]).filter(edge=>!pressured||(values.get(edge.position)??0)===0);
+        for(const edge of edges){if(seen.has(edge.position))continue;if(!consumeMatchingBranch()){safeBudget=true;return false;}
+          evidence.residualMatchingAugmentTraversals++;invocationAugmentTraversals++;seen.add(edge.position);const owner=safeOwner.get(edge.position);
+          if(owner===undefined||safeAugment(owner,seen)){safeOwner.set(edge.position,taskId);safeMatching.set(taskId,edge.position);return true;}if(safeBudget)return false;}
+        return false;
+      };
+      let complete=true;for(const taskId of remainingIds)if(!safeAugment(taskId,new Set())){complete=false;break;}
+      if(safeBudget)return {outcome:"BUDGET_EXHAUSTED"};
+      if(complete){evidence.safePerfectMatchingFound+=1;return {outcome:"FOUND",certificate:{taskIds:remainingIds,positions,validEdges,invalidPositions,matching:safeMatching}};}
+      evidence.safeMatchingFailures+=1;evidence.fullGraphFallbacks+=1;
     }
 
     const matching = new Map<string, number>();

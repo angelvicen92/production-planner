@@ -36,6 +36,13 @@ test("matching witness reuses an equivalent result when added authority cannot a
   assert.equal(equivalent.traversals, 0);
 });
 
+test("incremental repair prefers a future-safe edge over a previous intrusive witness",()=>{
+  const domains=new Map([["a",[0,1]]]);const previous=new Map([["a",0]]);
+  const repaired=incrementallyRepairMatchingWitness(["a"],domains,new Set(),new Set(),previous,()=>true,
+    (_task,left,right)=>Number(left===0)-Number(right===0));
+  assert.equal(repaired.outcome,"PERFECT");assert.equal(repaired.matching!.get("a"),1);
+});
+
 test("a current singleton forces its task and assigning another task destroys residual coverage", () => {
   const edges = new Map([
     ["forced", [{ position: 2 }]],
