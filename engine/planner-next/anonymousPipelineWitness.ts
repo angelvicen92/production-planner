@@ -392,9 +392,9 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   const mainMealAuthority=mainFlowMealPolicy(problem as PlannerNextProblem);
   const fixedMainMeals=mainMealAuthority ? (problem.operationalMealPolicies??[])
     .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id))
-    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);return {
+    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);const start=architecture.mealStart??meal.start;return {
       id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,
-      start:meal.start,end:meal.end,
+      start,end:start+policy.duration,
     };}) : [];
   operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
   const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
@@ -606,7 +606,7 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
         .map(end=>({slots:pattern.map((_,index)=>end-pattern.length*duration+index*duration)}));
     if(evidence)evidence.timelinesGenerated+=timelines.length;
     for(const timeline of timelines){
-      const architecture={pattern,slots:timeline.slots};
+      const architecture={pattern,slots:timeline.slots,...(timeline.meal?{mealStart:timeline.meal.start}:{})};
       if(evidence)evidence.architectureStructuralProofChecks++;
       const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture);
       if(structuralRejection){if(evidence){evidence.architectureStructuralProofRejects++;evidence.architectureStructuralRejectsByReason[structuralRejection]=(evidence.architectureStructuralRejectsByReason[structuralRejection]??0)+1;}continue;}
