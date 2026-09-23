@@ -953,7 +953,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       ?(problem.operationalMealPolicies??[]).filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)):[];
     const deferredSetupSpaceIds=new Set(problem.spaces.filter(space=>space.setupPolicy!==undefined
       &&!reducedTasks.some(task=>task.spaceId===space.id)).map(({id})=>id));
-    const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,spaces:problem.spaces.map(space=>{
+    // Terminal chain completeness belongs to the residual search unless every
+    // member is part of this intermediate core.
+    const reducedTechnicalChains=problem.technicalChains?.filter(chain=>
+      chain.orderedTaskIds.every(id=>expectedIds.has(id)));
+    const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,technicalChains:reducedTechnicalChains,spaces:problem.spaces.map(space=>{
       const projected=deferredSetupSpaceIds.has(space.id)?{...space,secondaryContinuity:"OFF" as const,setupPolicy:undefined}:space;
       return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
         &&mainMealAuthority&&!projected.mealPolicy

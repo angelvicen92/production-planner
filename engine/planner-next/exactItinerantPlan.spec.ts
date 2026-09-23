@@ -720,6 +720,17 @@ test("a core-only problem preserves the historical first-complete route", () => 
   assert.equal(accepted.evidence.completePlansObserved, 1);
 });
 
+test("a deferred partial REQUIRED chain is still rejected when residual search cannot complete it",()=>{
+  const input=problem([auxiliary("chain-tail","tail",[{start:0,end:10}])]);
+  input.technicalChains=[{id:"core-to-residual",orderedTaskIds:["main","chain-tail"],adjacency:"REQUIRED",
+    resourceContinuity:"REQUIRED",requiredResourceIds:[]}];
+  const result=constructExactItinerantPlan(input);
+  assert.equal(result.status,"INFEASIBLE");
+  assert.deepEqual(result.scheduledTasks,[]);
+  assert.ok(result.evidence.coreCompleteLeavesEvaluated>0,"the partial chain must cross the intermediate core gate");
+  assert.equal(result.evidence.completePlansObserved,0);
+});
+
 test("budget exhaustion publishes an incumbent atomically but never a partial plan", () => {
   const create = () => problem([auxiliary("standalone", "core", [{ start: 0, end: 110 }])]);
   const first = runExactItinerantPlanSearch(create(), { standaloneCompletionSelection: "FIRST_HARD_VALID" });
