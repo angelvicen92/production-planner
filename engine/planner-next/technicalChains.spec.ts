@@ -116,6 +116,25 @@ test("probe and constructive search expose identical partial explicit-policy sem
  assert.equal(domain,generated.candidates.length);assert.ok(domain>0);
  assert.ok(generated.candidates.every(candidate=>candidate.tasks.every(task=>pending.some(({id})=>id===task.id))));
 });
+test("chain identity ignores protected availability projection but effective availability remains hard",()=>{
+ const {p,pending,fixed}=partialExplicitPolicyScenario();
+ const protectedTask=p.tasks.find(task=>task.id===fixed[0]!.id)!;
+ const originalAvailability=structuredClone(protectedTask.availability);
+ protectedTask.availability=[{start:fixed[0]!.start,end:fixed[0]!.end}];
+ const scheduled=[...pending.map((task,index)=>({...task,start:index*10,end:(index+1)*10})),...fixed.map(task=>({...task,availability:structuredClone(originalAvailability)}))];
+ const memberIds=new Set(p.technicalChains![0]!.orderedTaskIds),chainProblem={...p,tasks:p.tasks.filter(task=>memberIds.has(task.id))};
+
+ const valid=validatePlan(chainProblem,scheduled);
+ assert.equal(valid.hardValid,true,JSON.stringify(valid));
+
+ const changedIdentity=scheduled.map(task=>task.id===fixed[0]!.id?{...task,participantId:"chain-person-1"}:task);
+ const identityValidation=validatePlan(chainProblem,changedIdentity);
+ assert.ok(identityValidation.reasonCodes.includes("TECHNICAL_CHAIN_VIOLATION"));
+
+ const outsideEffectiveAvailability=scheduled.map(task=>task.id===fixed[0]!.id?{...task,start:10,end:20}:task);
+ const availabilityValidation=validatePlan(chainProblem,outsideEffectiveAvailability);
+ assert.ok(availabilityValidation.reasonCodes.includes(`TASK_AVAILABILITY:${fixed[0]!.id}`));
+});
 test("technical dependencies remain precedence-only without an explicit policy",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!,result=generateTechnicalChainCandidates(p,chain,[],1000);assert.ok(result.candidates.some(candidate=>candidate.tasks[1]!.start>candidate.tasks[0]!.end));});
 test("explicit resource continuity rejects a member missing the declared resource",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];chain[1]!.requiredResourceIds=[];assert.equal(probeExactTechnicalChainMacroDomain(p,chain,[]),0);});
 test("detects cycles, fan-in and fan-out",()=>{const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;const cycle=structuredClone(members);cycle[0]!.dependencies=[cycle[1]!.id];assert.equal(technicalChainHasCycle(cycle),true);const fanIn=structuredClone(members);fanIn[1]!.dependencies=[fanIn[0]!.id,"technical-camera-positioning"];assert.equal(technicalChainHasBranching(fanIn),true);const fanOut=[...members,{...members[1]!,id:"other"}];assert.equal(technicalChainHasBranching(fanOut),true);});

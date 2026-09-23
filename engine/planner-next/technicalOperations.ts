@@ -9,6 +9,7 @@ export function technicalIdentityMatches(expected: Task, actual: ScheduledTask):
     && !hasOwnTechnicalField(actual, "participantId") && !hasOwnTechnicalField(actual, "coachId") && !hasOwnTechnicalField(actual, "blockKey")
     && !hasOwnTechnicalField(actual, "setupFamilyId") && !hasOwnTechnicalField(actual, "jointGroupId") && actual.spaceId === expected.spaceId
     && actual.duration === expected.duration && actual.end - actual.start === expected.duration
+    && actual.itinerantUnitId === expected.itinerantUnitId
     && JSON.stringify(canonicalTechnicalResourceIds(actual)) === JSON.stringify(canonicalTechnicalResourceIds(expected))
     && Array.isArray(actual.dependencies) && JSON.stringify(canonicalTechnicalDependencies(actual)) === JSON.stringify(canonicalTechnicalDependencies(expected));
 }
