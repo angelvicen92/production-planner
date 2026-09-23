@@ -12,6 +12,7 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
+import { materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -138,6 +139,26 @@ export interface ExactMainAndFeederCoreEvidence {
   feederRunPreFeederPrunesByDepth: Record<string, number>;
   feederRunOptimisticSkippedByTransition: number;
   feederRunOptimisticSkippedByAuthorizedMeal: number;
+  fixedMainBundlePathEntered:boolean;
+  protectedMainCount:number;
+  protectedMainArchitectureFingerprint:string|null;
+  protectedMainSlots:number[];
+  fixedMainBundleGraphPrepared:boolean;
+  fixedMainBundlePreparedEdges:number;
+  fixedMainBundleMatchingAttempts:number;
+  fixedMainBundlePerfectMatchingFound:boolean;
+  fixedMainBundleHardGatePasses:number;
+  fixedMainBundleHardGateRejects:number;
+  fixedMainBundleTaskCount:number;
+  fixedMainBundleTasksByKind:Record<string,number>;
+  protectedMainSlotChecks:number;
+  protectedMainSlotMismatches:number;
+  pipelineTasksRemovedFromStandalone:number;
+  pendingBeforeFixedMainBundle:number;
+  pendingAfterFixedMainBundle:number;
+  legacyFixedFeederFallbackEntered:boolean;
+  legacyFixedFeederFallbackReason:string|null;
+  firstFixedMainBundleRejection:string|null;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -708,7 +729,41 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederRunPrePartialChecks:0,feederRunPrePartialPrunes:0,feederRunPrePartialPrunesByDepth:{},
     feederRunPreFeederChecks:0,feederRunPreFeederPrunes:0,feederRunPreFeederPrunesByDepth:{},
     feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
+    fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
+    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleMatchingAttempts:0,
+    fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
+    fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
+    pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
+    legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
     causalDiagnostic:null };
+}
+
+/** Derives, but never searches for, the architecture accepted by protected Main placements. */
+export function deriveArchitectureFromProtectedMains(problem:PlannerNextProblem,
+  fixedPlacements:readonly ScheduledTask[]):MainFeederArchitecture|null {
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  if(!mains.length)return null;
+  const fixedById=new Map<string,ScheduledTask[]>();
+  for(const placement of fixedPlacements){const row=fixedById.get(placement.id)??[];row.push(placement);fixedById.set(placement.id,row);}
+  const ordered=mains.map(main=>({main,fixed:fixedById.get(main.id)}));
+  if(ordered.some(({main,fixed})=>fixed?.length!==1||fixed[0]!.spaceId!==main.spaceId
+    ||fixed[0]!.end-fixed[0]!.start!==main.duration))return null;
+  ordered.sort((a,b)=>a.fixed![0]!.start-b.fixed![0]!.start||a.main.id.localeCompare(b.main.id));
+  if(ordered.some(({fixed},index)=>index>0&&ordered[index-1]!.fixed![0]!.end>fixed![0]!.start))return null;
+  const architecture={pattern:ordered.map(({main})=>main.blockKey??""),slots:ordered.map(({fixed})=>fixed![0]!.start)};
+  if(architecture.pattern.some(key=>key.length===0))return null;
+  const patterns=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
+    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources).patterns;
+  if(!patterns.some(pattern=>pattern.length===architecture.pattern.length&&pattern.every((key,index)=>key===architecture.pattern[index])))return null;
+  const feeders=new Map<string,Task>();
+  const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  for(const main of mains){const matching=problem.tasks.filter(task=>task.kind==="vocal"&&task.participantId===main.participantId);
+    const arrival=problem.tasks.filter(task=>task.participantId===main.participantId&&arrivalIds.has(task.id));
+    const styling=problem.tasks.filter(task=>task.kind==="auxiliary"&&task.participantId===main.participantId
+      &&arrival.some(item=>task.dependencies.includes(item.id))&&main.dependencies.includes(task.id));
+    if(matching.length!==1||arrival.length!==1||styling.length!==1||!main.dependencies.includes(matching[0]!.id))return null;
+    feeders.set(main.id,matching[0]!);}
+  return proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture)===null?architecture:null;
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -921,6 +976,75 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return placed.map(task=>({...task,dependencies:[...(originalById.get(task.id)?.dependencies??task.dependencies)]}))
       .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   };
+
+  // A completed Assisted stage fixes Main identity and time, not its hidden support.
+  // Rebuild that support as the same atomic pipeline used by the initial stage before
+  // exposing any residual task to ordinary DFS.
+  const allMains=problem.tasks.filter(task=>task.kind==="main");
+  const everyMainProtected=allMains.length>0&&allMains.every(main=>
+    protectedPlacements.filter(placement=>placement.id===main.id).length===1);
+  if(mains.length===0&&everyMainProtected){
+    evidence.protectedMainCount=allMains.length;
+    evidence.pendingBeforeFixedMainBundle=allTaskIds.filter(id=>!coreIds.has(id)).length;
+    const architecture=deriveArchitectureFromProtectedMains(problem,protectedPlacements);
+    if(architecture){
+      evidence.fixedMainBundlePathEntered=true;
+      evidence.protectedMainSlots=[...architecture.slots];
+      evidence.protectedMainArchitectureFingerprint=JSON.stringify({pattern:architecture.pattern,slots:architecture.slots});
+      const prepared=preparePipelineBundleGraph(problem,architecture,protectedPlacements);
+      evidence.fixedMainBundleGraphPrepared=prepared!==null;
+      evidence.fixedMainBundlePreparedEdges=prepared?.preparedBundleEdges??0;
+      if(!prepared){
+        evidence.firstFixedMainBundleRejection="PIPELINE_BUNDLE_GRAPH_INFEASIBLE";
+        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
+      }
+      evidence.fixedMainBundleMatchingAttempts++;
+      const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,consumeMatchingBranch);
+      evidence.fixedMainBundlePerfectMatchingFound=matching!==null;
+      if(!matching){
+        evidence.firstFixedMainBundleRejection="NO_PERFECT_PIPELINE_BUNDLE_MATCHING";
+        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
+      }
+      const protectedMains=protectedPlacements.filter(placement=>allMains.some(main=>main.id===placement.id));
+      evidence.protectedMainSlotChecks=protectedMains.length;
+      for(const fixed of protectedMains){const actual=matching.scheduledTasks.find(task=>task.id===fixed.id);
+        if(!actual||actual.start!==fixed.start||actual.end!==fixed.end||actual.spaceId!==fixed.spaceId)
+          evidence.protectedMainSlotMismatches++;}
+      if(evidence.protectedMainSlotMismatches){
+        evidence.firstFixedMainBundleRejection="PROTECTED_MAIN_SLOT_MISMATCH";
+        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
+      }
+      const previousCoreIds=new Set(coreIds);
+      for(const task of matching.scheduledTasks)coreIds.add(task.id);
+      evidence.pipelineTasksRemovedFromStandalone=[...coreIds].filter(id=>!previousCoreIds.has(id)).length;
+      evidence.pendingAfterFixedMainBundle=allTaskIds.filter(id=>!coreIds.has(id)).length;
+      evidence.fixedMainBundleTaskCount=matching.scheduledTasks.length;
+      for(const task of matching.scheduledTasks)evidence.fixedMainBundleTasksByKind[task.kind]=
+        (evidence.fixedMainBundleTasksByKind[task.kind]??0)+1;
+      const mealAuthority=mainFlowMealPolicy(problem);
+      const meals=mealAuthority&&mealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
+      const gated=hardGateCoreLeaf(matching.scheduledTasks,meals,coreIds,[...fixedMainContracts,...applicableContracts],true);
+      if(!gated){evidence.fixedMainBundleHardGateRejects++;evidence.firstFixedMainBundleRejection=lastHardGateReason;
+        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",lastHardGateReason],coreIds);}
+      evidence.fixedMainBundleHardGatePasses++;
+      const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
+        remainingTaskIds:allTaskIds.filter(id=>!coreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
+        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined})??"ACCEPT";
+      if(continuation==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);
+      if(continuation!=="ACCEPT"){
+        evidence.firstFixedMainBundleRejection="FUTURE_FEASIBILITY_REJECTED";
+        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE","FUTURE_FEASIBILITY_REJECTED"],coreIds);
+      }
+      selected={tasks:gated,meals,pattern:[...architecture.pattern]};evidence.completeLeafCount=1;
+      evidence.selectedPattern=[...architecture.pattern];evidence.selectedMainTaskIds=gated.filter(task=>task.kind==="main").map(task=>task.id);
+      evidence.selectedFeederTaskIds=gated.filter(task=>task.kind==="vocal").map(task=>task.id);
+      evidence.coreFingerprint=fingerprint(gated,[],meals);
+      return {status:"COMPLETE",complete:true,scheduledTasks:gated,scheduledSpaceMeals:meals,
+        remainingTaskIds:allTaskIds.filter(id=>!coreIds.has(id)),evidence};
+    }
+    evidence.legacyFixedFeederFallbackEntered=true;
+    evidence.legacyFixedFeederFallbackReason="PROTECTED_MAIN_ARCHITECTURE_NOT_REPRESENTABLE";
+  }
 
   const structuralCandidates=options.structuralBundleCandidates?.[Symbol.iterator]();
   let structuralCandidate=structuralCandidates?.next().value;
