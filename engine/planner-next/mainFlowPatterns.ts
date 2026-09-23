@@ -1,4 +1,4 @@
-import type { Person, PlannerNextProblem, Resource, Task } from "./contracts";
+import type { PlannerNextProblem, Resource, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { createHash } from "node:crypto";
 
@@ -504,7 +504,6 @@ export function generateMainFlowPatterns(
   maximumRunsByKey: number,
   maximumPatterns: number,
   resources: readonly Resource[] = [],
-  participants: readonly Person[] = [],
 ): { patterns: string[][]; exhausted: boolean } {
   const counts = new Map<string, number>();
   for (const task of mains) counts.set(task.blockKey ?? "", (counts.get(task.blockKey ?? "") ?? 0) + 1);
@@ -592,11 +591,6 @@ export function generateMainFlowPatterns(
   // a preferred-resource signature could silently interleave larger families.
   output.sort((a, b) => runCount(a) - runCount(b)
     || compareTuple(concentrationSignature(a), concentrationSignature(b))
-    || compareTuple(a.map(key=>Math.min(...mains.filter(task=>task.blockKey===key).map(task=>participants
-      .find(participant=>participant.id===task.participantId)?.availability.reduce((end,window)=>Math.max(end,window.end),Number.NEGATIVE_INFINITY)
-      ??Number.POSITIVE_INFINITY))),b.map(key=>Math.min(...mains.filter(task=>task.blockKey===key).map(task=>participants
-      .find(participant=>participant.id===task.participantId)?.availability.reduce((end,window)=>Math.max(end,window.end),Number.NEGATIVE_INFINITY)
-      ??Number.POSITIVE_INFINITY))))
     || a.join("|").localeCompare(b.join("|")));
   return { patterns: output, exhausted };
 }

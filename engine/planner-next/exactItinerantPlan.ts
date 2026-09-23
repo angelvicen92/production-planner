@@ -281,6 +281,8 @@ export interface ExactItinerantPlanEvidence {
   nominalPipelineWitnessChecks:number;nominalPipelineWitnessFeasible:number;nominalPipelineWitnessInfeasible:number;
   nominalPipelineWitnessInconclusive:number;nominalPipelineWitnessRejectsByReason:Record<string,number>;
   continuityRejects:number;authorizedArchitecturesYielded:number;
+  participantBundleEdgesChecked:number;participantBundleEdgesPruned:number;participantBundleEdgesAbstained:number;
+  firstParticipantBundleEdgePrune:({mainTaskId:string;position:number;mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null;
   mainWitnessChoicesFollowed: number;
   mainWitnessFallbacks: number;
   mainRunWitnessAttempts: number;
@@ -1203,6 +1205,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     residualDfsEntered:false,residualDfsBranchesBeforeFirstSolution:null,
     architecturesEnumerated:0,architecturesPrepared:0,futureWitnessesTriedByArchitecture:{},preparedBundleEdges:0,
     reservationFilteredEdges:0,perfectMatchingsByArchitecture:{},hardGateRejectsByArchitecture:{},structuralSearchExhausted:false,
+    participantBundleEdgesChecked:0,participantBundleEdgesPruned:0,participantBundleEdgesAbstained:0,firstParticipantBundleEdgePrune:null,
     structuralSearchBudgetExhausted:false,structuralArchitecturesFullyVisited:0,structuralFutureDomainsFullyVisited:0,
     structuralCandidatesProducedBeforeBudgetExhaustion:0,conditionedLeafFutureRevalidations:0,
     conditionedLeafFutureRevalidationPasses:0,conditionedLeafFutureRevalidationRejects:0,
@@ -1330,6 +1333,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     for(const architecture of authorizedPipelineArchitectures(problem,evidence)){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
       const key=architectureKey(architecture),prepared=preparePipelineBundleGraph(problem,architecture,options.fixedPlacements);
       if(!prepared)continue;evidence.architecturesPrepared++;evidence.preparedBundleEdges+=prepared.preparedBundleEdges;
+      evidence.participantBundleEdgesChecked+=prepared.participantEdgeEvidence.checked;
+      evidence.participantBundleEdgesPruned+=prepared.participantEdgeEvidence.pruned;
+      evidence.participantBundleEdgesAbstained+=prepared.participantEdgeEvidence.abstained;
+      evidence.firstParticipantBundleEdgePrune??=prepared.participantEdgeEvidence.firstPrune;
+      // Prove the participant-filtered base graph has a matching once before
+      // multiplying it by technical-reservation witnesses.
+      if(!materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,()=>ledger.consume("CORE")))continue;
       evidence.futureWitnessesTriedByArchitecture[key]??=0;evidence.perfectMatchingsByArchitecture[key]??=0;evidence.hardGateRejectsByArchitecture[key]??=0;
       function* combinations(depth:number,selected:import("./technicalChainFutureFeasibility").AnalyticalFutureReservation[]):Generator<import("./technicalChainFutureFeasibility").AnalyticalFutureReservation[]> {
         if(depth===structureIds.length){yield selected;return;}let cursor=0;
@@ -1341,8 +1351,13 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
           yield* combinations(depth+1,[...selected,next.reservation]);}
       }
       for(const selected of combinations(0,[])){evidence.futureWitnessesTriedByArchitecture[key]++;evidence.futureReservationBundleMatchingAttempts++;
-        const reserved=selected.flatMap(x=>x.scheduledTasks);const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,
+        const reserved=selected.flatMap(x=>x.scheduledTasks),participantBefore={...prepared.participantEdgeEvidence};
+        const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,
           ()=>ledger.consume("CORE"),operation=>futureTechnicalChains.intrusion(operation),reserved);
+        evidence.participantBundleEdgesChecked+=prepared.participantEdgeEvidence.checked-participantBefore.checked;
+        evidence.participantBundleEdgesPruned+=prepared.participantEdgeEvidence.pruned-participantBefore.pruned;
+        evidence.participantBundleEdgesAbstained+=prepared.participantEdgeEvidence.abstained-participantBefore.abstained;
+        evidence.firstParticipantBundleEdgePrune??=prepared.participantEdgeEvidence.firstPrune;
         evidence.bundleEdgesBeforeReservation+=prepared.preparedBundleEdges;
         if(!matching){evidence.futureReservationCandidatesRejectedByNoBundleMatching++;continue;}
         evidence.bundleEdgesRejectedByReservation+=matching.evidence.bundleEdgesRejectedByReservation;

@@ -32,6 +32,7 @@ export interface ParticipantFutureReservationProbe {
 }
 
 export interface ParticipantFutureReservationBudget { consume:()=>boolean }
+export type ParticipantFutureReservationMode = "EXACT" | "ANALYTIC_ONLY";
 
 const affectedBy=(task:Task,added:readonly ScheduledTask[])=>task.participantId!==undefined&&added.some(current=>
   current.participantId===task.participantId||current.id===task.id||current.dependencies.includes(task.id)||task.dependencies.includes(current.id));
@@ -46,7 +47,7 @@ type CollectiveResult={status:"PASS"|"PRUNE"|"ABSTAIN";branches:number;domainSiz
 
 /** Exact participant-local witness. Candidate generation delegates to the canonical task and meal authorities. */
 function collectiveWitness(problem:PlannerNextProblem,_participantId:string,tasks:readonly Task[],meals:readonly ParticipantMealObligation[],
-  fixed:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget):CollectiveResult {
+  fixed:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,mode:ParticipantFutureReservationMode="EXACT"):CollectiveResult {
   const taskIds=new Set(tasks.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId));
   const knownFixed=new Set(fixed.map(task=>task.id));
   const dependencies=[...tasks.flatMap(task=>task.dependencies),...meals.flatMap(meal=>meal.dependencies??[])];
@@ -69,6 +70,7 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
     const occupied=fixedOwn.reduce((sum,item)=>sum+Math.max(0,Math.min(end,item.end)-Math.max(start,item.start)),0);
     if(required>available-occupied)return {status:"PRUNE",branches,domainSizes,witness:false,abstainCause:null};
   }
+  if(mode==="ANALYTIC_ONLY")return {status:"ABSTAIN",branches,domainSizes,witness:false,abstainCause:"INCONCLUSIVE_SHAPE"};
   const visit=(pendingTasks:readonly Task[],pendingMeals:readonly ParticipantMealObligation[],scheduledTasks:ScheduledTask[],scheduledMeals:ScheduledParticipantMeal[]):boolean=>{
     if(pendingTasks.length===0&&pendingMeals.length===0)return true;
     const placedIds=new Set(scheduledTasks.map(task=>task.id)),placedMealIds=new Set(scheduledMeals.map(meal=>meal.sourceTaskId));
@@ -104,7 +106,8 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
 }
 
 /** Sound read-only reservation for out-of-scope participant work. */
-export function probeParticipantFutureReservations(problem:PlannerNextProblem,placed:readonly ScheduledTask[],added:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget):ParticipantFutureReservationProbe {
+export function probeParticipantFutureReservations(problem:PlannerNextProblem,placed:readonly ScheduledTask[],added:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,
+  mode:ParticipantFutureReservationMode="EXACT"):ParticipantFutureReservationProbe {
   const affectedParticipants=[...new Set(added.flatMap(task=>task.participantId?[task.participantId]:[]))].sort();
   const future=[...(problem.analyticalFutureParticipantTasks??[])].filter(task=>affectedBy(task,added)).sort((a,b)=>a.id.localeCompare(b.id));
   const meals=[...(problem.participantMeals??[])].filter(meal=>remainingMeal(meal)&&affectedParticipants.includes(meal.participantId)).sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId));
@@ -141,7 +144,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   for(const participantId of affectedParticipants){
     const participantTasks=future.filter(task=>task.participantId===participantId),participantMeals=meals.filter(meal=>meal.participantId===participantId);
     if(participantTasks.length+participantMeals.length<2)continue;
-    const result=collectiveWitness(problem,participantId,participantTasks,participantMeals,placed,budget);collectiveChecks++;branchesConsumed+=result.branches;
+    const result=collectiveWitness(problem,participantId,participantTasks,participantMeals,placed,budget,mode);collectiveChecks++;branchesConsumed+=result.branches;
     const obligationIds=[...participantTasks.map(task=>task.id),...participantMeals.map(meal=>meal.sourceTaskId)].sort();
     collectiveObligationIds.push(...obligationIds);Object.assign(collectiveDomainSizes,result.domainSizes);
     const common={...base,individualDomainChecks:individual,jointTaskMealChecks:joint,compatiblePairChecks:pairChecks,analyticChecks:analytic,

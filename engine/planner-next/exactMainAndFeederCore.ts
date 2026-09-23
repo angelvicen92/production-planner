@@ -763,7 +763,7 @@ export function deriveArchitectureFromProtectedMains(problem:PlannerNextProblem,
   const architecture={pattern:ordered.map(({main})=>main.blockKey??""),slots:ordered.map(({fixed})=>fixed![0]!.start)};
   if(architecture.pattern.some(key=>key.length===0))return null;
   const patterns=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources,problem.participants).patterns;
+    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources).patterns;
   if(!patterns.some(pattern=>pattern.length===architecture.pattern.length&&pattern.every((key,index)=>key===architecture.pattern[index])))return null;
   const feeders=new Map<string,Task>();
   const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
@@ -872,7 +872,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const duration = mains[0]?.duration??0;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources, problem.participants);
+    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
   const preferredArchitecture=options.preferredArchitecture;
   const orderedPatterns=[...(preferredArchitecture?[preferredArchitecture.pattern as string[]]:[]),...patterns.patterns]
     .filter((pattern,index,all)=>all.findIndex(candidate=>candidate.join("\u0000")===pattern.join("\u0000"))===index);

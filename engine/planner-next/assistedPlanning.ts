@@ -92,6 +92,7 @@ export interface AssistedPlanningEvidence {
       "genericFutureAssessSkippedForConditionedLeaf"|"structuralCandidateFingerprintAtHardGate"|
       "structuralCandidateFingerprintAtContinuation"|"structuralCandidateFingerprintBeforeStandalone"|
       "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint"|"mainPatternCountGenerated"|
+      "participantBundleEdgesChecked"|"participantBundleEdgesPruned"|"participantBundleEdgesAbstained"|"firstParticipantBundleEdgePrune"|
       "mainPatternGenerationExhausted"|"mainPatternsVisited"|"timelinesGenerated"|"architectureStructuralProofChecks"|
       "architectureStructuralProofRejects"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
       "nominalPipelineWitnessFeasible"|"nominalPipelineWitnessInfeasible"|"nominalPipelineWitnessInconclusive"|
@@ -516,6 +517,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         bundleEdgesRejectedByReservation:Number(evidenceRecord.bundleEdgesRejectedByReservation??0),bundleEdgesAfterReservation:Number(evidenceRecord.bundleEdgesAfterReservation??0),
         residualDfsEntered:Boolean(evidenceRecord.residualDfsEntered),residualDfsBranchesBeforeFirstSolution:(evidenceRecord.residualDfsBranchesBeforeFirstSolution as number|null|undefined)??null,
         architecturesEnumerated:Number(evidenceRecord.architecturesEnumerated??0),architecturesPrepared:Number(evidenceRecord.architecturesPrepared??0),
+        participantBundleEdgesChecked:Number(evidenceRecord.participantBundleEdgesChecked??0),participantBundleEdgesPruned:Number(evidenceRecord.participantBundleEdgesPruned??0),
+        participantBundleEdgesAbstained:Number(evidenceRecord.participantBundleEdgesAbstained??0),
+        firstParticipantBundleEdgePrune:(evidenceRecord.firstParticipantBundleEdgePrune as ExactItinerantPlanEvidence["firstParticipantBundleEdgePrune"]|undefined)??null,
         futureWitnessesTriedByArchitecture:{...((evidenceRecord.futureWitnessesTriedByArchitecture as Record<string,number>|undefined)??{})},
         preparedBundleEdges:Number(evidenceRecord.preparedBundleEdges??0),reservationFilteredEdges:Number(evidenceRecord.reservationFilteredEdges??0),
         perfectMatchingsByArchitecture:{...((evidenceRecord.perfectMatchingsByArchitecture as Record<string,number>|undefined)??{})},

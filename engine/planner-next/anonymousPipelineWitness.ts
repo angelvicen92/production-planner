@@ -11,6 +11,7 @@ import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching
 import { assessOperationalMealFutureFeasibility } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
 import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
+import { probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
 export interface AnonymousPipelineSpot { id:string; start:number; end:number; profileKey?:string; tokenId?:string; coachKey?:string; feederRunId?:string; mainRunId?:string }
@@ -69,6 +70,8 @@ export interface PreparedPipelineBundleGraph {
   readonly protectedPlacements:readonly ScheduledTask[];readonly mainIds:readonly string[];
   readonly candidates:ReadonlyMap<string,ReadonlyMap<number,readonly ScheduledTask[]>>;
   readonly preparedBundleEdges:number;
+  readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
+    mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
 }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
@@ -464,6 +467,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
+  const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
     const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
     const arrival=problem.tasks.find((task):task is ParticipantTask=>task.participantId===main.participantId&&arrivalIds.has(task.id));
@@ -504,12 +508,22 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       const nominalMain=nominal.scheduledTasks.find(task=>task.id===main.id);
       if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
       if(!edgeValid)return;
+      if((problem.analyticalFutureParticipantTasks?.length??0)>0){
+        const probe=probeParticipantFutureReservations(problem,[...protectedPlacements,...bundle],bundle,undefined,"ANALYTIC_ONLY");
+        participantEdgeEvidence.checked++;
+        if(probe.status==="PRUNE"){
+          participantEdgeEvidence.pruned++;
+          participantEdgeEvidence.firstPrune??={mainTaskId:main.id,position,mainStart:mainSpot.start,mainEnd:mainSpot.end,...probe};
+          return;
+        }
+        if(probe.status==="ABSTAIN")participantEdgeEvidence.abstained++;
+      }
       valid.push(position);byPosition.set(position,bundle);
     });
     candidates.set(main.id,byPosition);
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
-    preparedBundleEdges:bundleEdgesBeforeReservation};
+    preparedBundleEdges:bundleEdgesBeforeReservation,participantEdgeEvidence};
 }
 
 /** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */
@@ -526,30 +540,31 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
         const source=(problem.analyticalFutureTechnicalChains??[]).flatMap(x=>x.tasks).find(x=>x.id===task.id)??task;
         return canPlaceTask(problem,source,task.start,withBundle.filter(x=>x.id!==task.id));});}
       if(!edgeValid)bundleEdgesRejectedByReservation++;
-    }if(edgeValid)valid.push(position);
+    }
+    if(edgeValid&&analyticalReservedPlacements.length>0&&(problem.analyticalFutureParticipantTasks?.length??0)>0){
+      const placed=[...protectedPlacements,...analyticalReservedPlacements,...bundle];
+      const probe=probeParticipantFutureReservations(problem,placed,bundle,undefined,"ANALYTIC_ONLY");
+      prepared.participantEdgeEvidence.checked++;
+      if(probe.status==="PRUNE"){
+        edgeValid=false;prepared.participantEdgeEvidence.pruned++;bundleEdgesRejectedByReservation++;
+        const main=bundle.find(task=>task.id===id)!;
+        prepared.participantEdgeEvidence.firstPrune??={mainTaskId:id,position,mainStart:main.start,mainEnd:main.end,...probe};
+      }else if(probe.status==="ABSTAIN")prepared.participantEdgeEvidence.abstained++;
+    }
+    if(edgeValid)valid.push(position);
   }positions.set(id,valid);}
   const pressure=new Map<string,Map<number,number>>();let safeGraphEdgeCount=0,intrusiveGraphEdgeCount=0;
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
     row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
-  const availabilityEnd=(id:string)=>{const participantId=problem.tasks.find(task=>task.id===id)?.participantId;
-    return problem.participants.find(participant=>participant.id===participantId)?.availability
-      .reduce((latest,window)=>Math.max(latest,window.end),Number.NEGATIVE_INFINITY)??Number.POSITIVE_INFINITY;};
-  // Matching domains and edge-pressure comparators remain authoritative. This
-  // changes only which left identity is visited first when those authorities
-  // admit interchangeable augmenting paths.
-  // The augmenting matcher lets later left vertices displace earlier ones from
-  // their preferred edge, so visit flexible participants first and restrictive
-  // participants last to give the latter the final equivalent choice.
-  const orderedMainIds=[...prepared.mainIds].sort((a,b)=>availabilityEnd(b)-availabilityEnd(a)||b.localeCompare(a));
   let safePerfectMatchingAttempts=0,safePerfectMatchingFound=0,safeMatchingFailures=0,fullGraphFallbacks=0;
   let initial:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined;
   if(futureEdgeIntrusion){safePerfectMatchingAttempts=1;const safePositions=new Map<string,number[]>();
     for(const [id,valid] of positions){const row=pressure.get(id)!;const pressured=[...row.values()].some(value=>value>0);
       safePositions.set(id,valid.filter(position=>!pressured||(row.get(position)??0)===0));}
-    initial=incrementallyRepairMatchingWitness(orderedMainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
+    initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
     if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
-  if(!initial)initial=incrementallyRepairMatchingWitness(orderedMainIds,positions,forbiddenEdges,
+  if(!initial)initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
     previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
     (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
   if(initial.outcome!=="PERFECT")return null;
@@ -577,7 +592,7 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
     &&task.participantId===main.participantId);return feeder?[[main.id,feeder] as const]:[];}));
   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources,problem.participants);
+    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
   for(const pattern of generated.patterns){
     if(evidence)evidence.mainPatternsVisited++;

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching } from "./anonymousPipelineWitness";
+import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
+  materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 
 const windows=[{start:0,end:300}];
@@ -29,6 +30,28 @@ function anchor(p:PlannerNextProblem,index:number,unit="unit"){
 }
 
 describe("anonymous structural pipeline witness",()=>{
+  const filterEdge=(p:PlannerNextProblem)=>{const prepared=preparePipelineBundleGraph(p,{pattern:["A"],slots:[225]});assert.ok(prepared);
+    const result=materializePreparedPipelineBundleMatching(p,prepared!);return {prepared:prepared!,result};};
+
+  it("analytically removes a bundle edge that empties a future participant task domain without spending branches",()=>{
+    const p=problem();p.analyticalFutureParticipantTasks=[{id:"future",kind:"auxiliary",participantId:"p0",duration:15,
+      spaceId:"main",availability:[{start:225,end:240}],dependencies:[]}];
+    const {prepared,result}=filterEdge(p);assert.equal(result,null);assert.equal(prepared.participantEdgeEvidence.pruned,1);
+    assert.equal(prepared.participantEdgeEvidence.firstPrune?.reasonCode,"FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN");
+    assert.equal(prepared.participantEdgeEvidence.firstPrune?.branchesConsumed,0);
+  });
+
+  it("removes task-meal incompatible edges, retains viable and inconclusive edges, and consumes zero branches",()=>{
+    const build=(future:{start:number;end:number},dependency:string[]=[] )=>{const p=problem();p.participantMealCapacity={maxSimultaneous:1};
+      p.participantMeals=[{id:"meal",sourceTaskId:"meal-source",participantId:"p0",duration:15,window:{start:240,end:255},status:"pending"}];
+      p.analyticalFutureParticipantTasks=[{id:"future",kind:"auxiliary",participantId:"p0",duration:15,spaceId:"main",availability:[future],dependencies:dependency}];return p;};
+    const incompatible=filterEdge(build({start:240,end:255}));assert.equal(incompatible.result,null);
+    assert.equal(incompatible.prepared.participantEdgeEvidence.firstPrune?.reasonCode,"FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE");
+    const viable=filterEdge(build({start:255,end:270}));assert.ok(viable.result);assert.equal(viable.prepared.participantEdgeEvidence.pruned,0);
+    const inconclusive=filterEdge(build({start:255,end:270},["unknown"]));assert.ok(inconclusive.result);
+    assert.equal(inconclusive.prepared.participantEdgeEvidence.abstained,1);
+    assert.equal(inconclusive.prepared.participantEdgeEvidence.firstPrune,null);
+  });
   it("rejects a bare valid Main when its 15+15+15 anchor does not fit, then accepts a shifted operation",()=>{
     const p=problem();anchor(p,0);p.itinerantUnits![0]!.availability=[{start:185,end:240}];
     assert.notEqual(buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[185]}).status,"FEASIBLE");
