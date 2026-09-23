@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
+import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
   materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
+import { buildTimeline } from "./mainFlowMeal";
 
 const windows=[{start:0,end:300}];
 function problem(keys:string[]=["A"], coachIds:string[]=["coach-a"]):PlannerNextProblem{
@@ -180,6 +181,20 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(diagnostic.arrivalSolverExecuted,true);assert.equal(diagnostic.mainRuns.length,1);
     assert.ok((diagnostic.feederRuns[0]?.candidateStartBoundaryCount??0)>0);
     assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
+  });
+
+  it("reaches a hard-valid later meal start without splitting a logical Main run",()=>{
+    const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};
+    p.tasks.find(task=>task.id==="main0")!.availability=[{start:55,end:70}];
+    p.tasks.find(task=>task.id==="main1")!.availability=[{start:80,end:95}];
+    const preferred=buildTimeline(p,["A","A"],15,1,60);
+    assert.equal(materializeNominalPipelineWitness(p,{pattern:["A","A"],slots:preferred.slots}).witness.status,"INFEASIBLE");
+    const architectures=[...authorizedPipelineArchitectures(p)];
+    const recovered=architectures.find(row=>row.pattern.join("|")==="A|A"&&row.slots.join("|")==="55|80");
+    assert.ok(recovered,"the enumerator must continue beyond the infeasible preferred meal start");
+    const witness=materializeNominalPipelineWitness(p,recovered!).witness;
+    assert.equal(witness.status,"FEASIBLE");assert.equal(witness.runCount,1);
   });
 
   it("repairs a nominal identity edge by rematerializing the complete participant bundle",()=>{

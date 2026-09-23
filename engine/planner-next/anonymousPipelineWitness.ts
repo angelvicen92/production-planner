@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines } from "./mainFlowMeal";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealStarts, orderTimelines, timelineSignature,
+  type MainFlowTimeline } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
@@ -597,13 +598,15 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
   for(const pattern of generated.patterns){
     if(evidence)evidence.mainPatternsVisited++;
     const duration=mains[0]!.duration;
-    const slots=hasMainFlowMeal(problem)
-      ?orderTimelines(candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut))).map(row=>row.slots)
+    const timelines:(MainFlowTimeline|{slots:number[];meal?:undefined})[]=hasMainFlowMeal(problem)
+      ?[...new Map(mainFlowMealStarts(problem).flatMap(mealStart=>
+        orderTimelines(candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut,mealStart))))
+        .map(timeline=>[timelineSignature(timeline),timeline])).values()]
       :[problem.mainFlow.preferredEnd,problem.day.end].filter((end,index,ends)=>ends.indexOf(end)===index)
-        .map(end=>pattern.map((_,index)=>end-pattern.length*duration+index*duration));
-    if(evidence)evidence.timelinesGenerated+=slots.length;
-    for(const timeline of slots){
-      const architecture={pattern,timeline:undefined,slots:timeline};
+        .map(end=>({slots:pattern.map((_,index)=>end-pattern.length*duration+index*duration)}));
+    if(evidence)evidence.timelinesGenerated+=timelines.length;
+    for(const timeline of timelines){
+      const architecture={pattern,slots:timeline.slots};
       if(evidence)evidence.architectureStructuralProofChecks++;
       const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture);
       if(structuralRejection){if(evidence){evidence.architectureStructuralProofRejects++;evidence.architectureStructuralRejectsByReason[structuralRejection]=(evidence.architectureStructuralRejectsByReason[structuralRejection]??0)+1;}continue;}
@@ -613,7 +616,7 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
         else {if(status==="INFEASIBLE")evidence.nominalPipelineWitnessInfeasible++;else evidence.nominalPipelineWitnessInconclusive++;
           const reason=materialized.witness.reason??"UNKNOWN";evidence.nominalPipelineWitnessRejectsByReason[reason]=(evidence.nominalPipelineWitnessRejectsByReason[reason]??0)+1;}}
       const orderedMains=materialized.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start);
-      const meal=mainFlowMealPolicy(problem)?createMainFlowMeal(problem):null;
+      const meal=timeline.meal??null;
       const continuous=orderedMains.slice(1).every((task,index)=>orderedMains[index]!.end===task.start
         ||Boolean(meal&&orderedMains[index]!.end===meal.start&&task.start===meal.end));
       if(materialized.witness.status==="FEASIBLE"&&!continuous&&evidence)evidence.continuityRejects++;

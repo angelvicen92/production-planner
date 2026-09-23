@@ -510,36 +510,6 @@ export function generateMainFlowPatterns(
   const keys = [...counts.keys()].sort();
   const output: string[][] = [];
   let exhausted = false;
-
-  function visit(remaining: Map<string, number>, runs: Array<{ key: string; count: number }>): void {
-    if (exhausted) return;
-    const left = [...remaining.values()].reduce((sum, count) => sum + count, 0);
-    if (left === 0) {
-      if (output.length >= maximumPatterns) {
-        exhausted = true;
-        return;
-      }
-      output.push(runs.flatMap((run) => Array(run.count).fill(run.key) as string[]));
-      return;
-    }
-    for (const key of keys) {
-      const available = remaining.get(key) ?? 0;
-      const sameAsPrevious = runs.at(-1)?.key === key;
-      const runsForKey = runs.filter((run) => run.key === key).length;
-      if (available === 0 || sameAsPrevious || runsForKey >= maximumRunsByKey) continue;
-      // Enumerate long runs first so a bounded prefix is also the minimum-block
-      // frontier. maximumRunsByKey remains only an admissibility ceiling; A2 can
-      // set it to the number of tasks without manufacturing a two-block HARD rule.
-      for (let take = available; take >= minimumRun; take -= 1) {
-        remaining.set(key, available - take);
-        visit(remaining, [...runs, { key, count: take }]);
-        remaining.set(key, available);
-        if (exhausted) return;
-      }
-    }
-  }
-
-  visit(new Map(counts), []);
   const runCount = (pattern: string[]): number => pattern.reduce(
     (count, key, index) => count + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0,
   );
@@ -585,12 +555,38 @@ export function generateMainFlowPatterns(
     for (let index = 0; index < a.length; index += 1) if (a[index] !== b[index]) return a[index]! - b[index]!;
     return 0;
   };
-  // Block count is a structural objective, while concentration is only an
-  // authorised preference.  Keeping it as the first key also means the exact
-  // caller exhausts every N-block architecture before observing N+1; otherwise
-  // a preferred-resource signature could silently interleave larger families.
-  output.sort((a, b) => runCount(a) - runCount(b)
-    || compareTuple(concentrationSignature(a), concentrationSignature(b))
-    || a.join("|").localeCompare(b.join("|")));
+  const signatures=new Map<string,[number,number,number]>();
+  const signature=(pattern:string[])=>{const key=pattern.join("|");const cached=signatures.get(key);
+    if(cached)return cached;const calculated=concentrationSignature(pattern);signatures.set(key,calculated);return calculated;};
+  const comparePatterns = (a:string[], b:string[]) => compareTuple(signature(a),signature(b))
+    || a.join("|").localeCompare(b.join("|"));
+  const maximumTargetRuns=Math.min(mains.length,keys.length*maximumRunsByKey);
+  // Iterative deepening makes maximumPatterns a global prefix of the structural
+  // run-count ordering, rather than an accidental prefix of the construction DFS.
+  for(let targetRunCount=keys.length;targetRunCount<=maximumTargetRuns;targetRunCount++){
+    const family:string[][]=[];
+    const visit=(remaining:Map<string,number>,runs:Array<{key:string;count:number}>):void=>{
+      const left=[...remaining.values()].reduce((sum,count)=>sum+count,0);
+      if(left===0){if(runs.length===targetRunCount)family.push(runs.flatMap(run=>Array(run.count).fill(run.key) as string[]));return;}
+      if(runs.length>=targetRunCount)return;
+      const remainingKeys=[...remaining].filter(([,count])=>count>0).map(([key])=>key);
+      if(remainingKeys.length===1&&remainingKeys[0]===runs.at(-1)?.key)return;
+      const minimumAdditionalRuns=remainingKeys.length;
+      if(runs.length+minimumAdditionalRuns>targetRunCount)return;
+      for(const key of keys){const available=remaining.get(key)??0;
+        if(available===0||runs.at(-1)?.key===key||runs.filter(run=>run.key===key).length>=maximumRunsByKey)continue;
+        for(let take=available;take>=minimumRun;take--){
+          remaining.set(key,available-take);visit(remaining,[...runs,{key,count:take}]);remaining.set(key,available);
+        }
+      }
+    };
+    visit(new Map(counts),[]);family.sort(comparePatterns);
+    const remainingCapacity=Math.max(0,maximumPatterns-output.length);
+    output.push(...family.slice(0,remainingCapacity));
+    if(family.length>remainingCapacity){exhausted=true;break;}
+  }
+  // Retain the assertion locally: every emitted family is complete before the
+  // next one and concentration never outranks the structural run count.
+  output.sort((a,b)=>runCount(a)-runCount(b)||comparePatterns(a,b));
   return { patterns: output, exhausted };
 }
