@@ -48,7 +48,7 @@ Se repitió el diagnóstico con el fixture canónico de Stage 1, sin usar horari
 
 Con el límite productivo `maxPatterns = 200`, el generador devuelve 200 y `exhausted = true`, pero el prefijo accidental contiene sólo **1/2** patrones de 2 runs, **4/17** de 3 runs y **24/140** de 4 runs; además intercala familias de 5 a 9 runs. Por tanto el límite actual no representa el mejor frontier estructural.
 
-La familia mínima que llega a producir un witness nominal en Stage 1 es la de **4 runs** (2 y 3 runs quedan descartados por las autoridades estructurales/nominales). La enumeración exhaustiva de sus 140 patrones y de sus timelines autorizados encontró un único witness nominal completo: el patrón de runs
+La familia mínima que llega a producir un witness nominal en Stage 1 bajo el generador productivo actual es la de **4 runs** (2 y 3 runs quedan descartados por las autoridades estructurales/nominales). El probe enumeró sus 140 patrones, pero la revisión posterior descrita abajo demuestra que **no enumeró todas las posiciones hard-válidas de la comida de Estudio 7**. Bajo la única colocación de comida que `authorizedPipelineArchitectures` materializaba en ese momento encontró un único witness nominal completo: el patrón de runs
 
 `4004×8 → 4005×3 → 4004×3 → 4005×5`
 
@@ -58,8 +58,28 @@ con slots
 
 Ese patrón ya pertenece al prefijo productivo de 200. Es exactamente la arquitectura diagnosticada arriba: el primer slot del blockKey `plan-resource:4005` es 900; `task:10002` sólo conserva nominalmente la posición 17 y Participant Future Feasibility la elimina por `FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE`. Ninguno de los otros 139 patrones de 4 runs alcanza un witness nominal completo: la primera autoridad que los descarta es `proveMainFeederArchitectureImpossible` cuando existe una prueba estructural concluyente y, para los que superan esa prueba, `materializeNominalPipelineWitness` (capacidad/geometría de feeder, matching de perfiles Main, geometría conjunta de llegada u Operational Meal Future Feasibility). Por ello no llegan a existir aristas participant-future-safe de C01 ni un perfect matching posterior que registrar.
 
-### Decisión
+### Decisión corregida tras contraste con la Fuente humana
 
-El resultado es **CASO C**: la familia mínima relevante está completamente explorada y no contiene otra arquitectura que adelante el bloque de C01 y conserve una arista future-safe. El hecho de que 116 de sus 140 patrones queden fuera del prefijo de 200 demuestra un defecto real del frontier, pero corregirlo no resuelve el bloqueo causal de C01: todos esos patrones omitidos son invalidados antes de producir el grafo nominal completo. Por la regla de no arreglar un segundo problema distinto, **no se modifica `generateMainFlowPatterns` en este delta**.
+La conclusión anterior de **CASO C / cuatro runs imposibles queda invalidada**.
 
-La siguiente familia admitida por la configuración es la de **5 runs**: `maxBlocksByKey = 19` no impone un techo de cuatro runs. Investigar esa familia sería la siguiente opción estructural, pero queda expresamente fuera de esta iteración; no se aumenta `maxPatterns`, no se debilita Future Feasibility y no se introduce criticidad especial para C01.
+La revisión del código mostró que `authorizedPipelineArchitectures` construía los timelines mediante `candidateCuts(pattern).map(cut => buildTimeline(...))` sin pasar un `mealStart` alternativo. Por tanto `buildTimeline` utilizaba siempre `createMainFlowMeal(problem).start`. En A2, `preferredEnd` coincide con el inicio de la ventana de comida, de modo que el diagnóstico anterior evaluó las arquitecturas con la comida de Estudio 7 fijada a **13:00–14:15**.
+
+Existe ya `mainFlowMealStarts(problem)`, que enumera el inicio preferido y el resto de inicios completos permitidos por la ventana, pero esa autoridad no se estaba usando en la enumeración de arquitecturas.
+
+Esto es material porque la Fuente 06 define para Estudio 7 un descanso REQUIRED de 75 minutos dentro de **13:00–16:30**, con hora concreta elegida por el planificador; el inicio en una frontera es PREFERRED, no hard. La referencia humana usa cuatro bloques main y una colocación posterior del corte de Estudio 7. El corpus de referencia del repositorio registra la secuencia humana:
+
+`Lucía×4 → José María×7 → Lucía×4 → José María×4`
+
+con Ensayos de Estudio 7 a `11:15…13:45`, corte de comida `14:00–15:15` y continuación `15:15…17:00`.
+
+Por ello, enumerar los 140 patrones de cuatro runs manteniendo fija la comida a 13:00 **no demuestra** que la familia de cuatro runs sea inviable. Demuestra únicamente que, bajo esa colocación concreta de comida, sólo se encontró el witness descrito arriba.
+
+Consecuencia operativa:
+
+- NO avanzar todavía a cinco runs;
+- NO aumentar `maxPatterns` ni branch budget;
+- NO debilitar Participant Future Feasibility;
+- corregir primero la enumeración de timelines para considerar de forma determinista y acotada las posiciones hard-válidas de la comida de Estudio 7;
+- después revalidar exhaustivamente la familia mínima y, en particular, comprobar que la geometría de cuatro bloques equivalente a la referencia humana puede ser representada y evaluada sin usar sus horas como seed del solver.
+
+El defecto del frontier de `generateMainFlowPatterns` sigue siendo real, pero queda separado de esta corrección: primero debe recuperarse la semántica correcta de comida flexible en el espacio de arquitecturas.
