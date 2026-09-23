@@ -39,14 +39,26 @@ test("skips obligations independent of the provisional placement",()=>{
   assert.equal(result.status,"PASS"); assert.equal(result.affectedFutureTasksChecked,0); assert.equal(result.jointTaskMealChecks,0);
 });
 
-test("abstains when individually viable future tasks share a hard authority without a collective certificate",()=>{
+test("finds a deterministic collective witness for jointly viable participant tasks",()=>{
   const source=problem({start:60,end:100});
   source.participantMeals=[];
   source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2",spaceId:"a",availability:[{start:20,end:60}]});
   const result=probeParticipantFutureReservations(source,[current()],[current()]);
-  assert.equal(result.status,"ABSTAIN");
-  assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE");
-  assert.equal(result.collectiveChecks,0); assert.equal(result.collectivePrunes,0);
+  assert.equal(result.status,"PASS"); assert.equal(result.collectiveChecks,1); assert.equal(result.collectivePasses,1);
+  assert.equal(result.collectiveWitnessFound,true); assert.ok(result.branchesConsumed>0);
+  assert.deepEqual(result.collectiveObligationIds,["future","future-2"]);
+  assert.equal("scheduled" in result,false);
+});
+
+test("prunes when future tasks and a required meal are individually viable but collectively impossible",()=>{
+  const source=problem({start:40,end:80});
+  source.analyticalFutureParticipantTasks![0].duration=20;
+  source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2"});
+  const first=probeParticipantFutureReservations(source,[current()],[current()]);
+  const second=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(first.status,"PRUNE"); assert.equal(first.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
+  assert.equal(first.collectiveChecks,1); assert.equal(first.collectivePrunes,1); assert.equal(first.collectiveWitnessFound,false);
+  assert.deepEqual(first,second);
 });
 
 test("passes multiple independent future tasks after individual checks without claiming collective work",()=>{

@@ -188,6 +188,7 @@ interface MainChoice {
   feeder: Task;
   participantSlack: number;
   firstObligation: number;
+  futureAvailabilityRemaining: number;
 }
 
 interface ResidualMatchingEdge {
@@ -1628,10 +1629,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const participant = problem.participants.find(({ id }) => id === task.participantId)!;
         const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
         const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start-start)+(end-operation.end))) : 0;
+        const operationEnd=Math.max(...operation.tasks.map(item=>item.end));
+        const futureAvailabilityRemaining=containing.length?Math.min(...containing.map(({end})=>end-operationEnd)):Number.POSITIVE_INFINITY;
         choices.push({ task, operation: operation.tasks, feeder: feederByMain.get(task.id)!, participantSlack: slack,
-          firstObligation: operation.start });
+          firstObligation: operation.start, futureAvailabilityRemaining });
       }
-      choices.sort((a,b)=>a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation||a.task.id.localeCompare(b.task.id));
+      // This order is the stable final tie-break after future/structural comparators below.
+      choices.sort((a,b)=>a.futureAvailabilityRemaining-b.futureAvailabilityRemaining
+        ||a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation||a.task.id.localeCompare(b.task.id));
       if (choices.length === 0) {
         evidence.zeroAlternativePrunes += 1;
         if (forcedTaskId !== undefined) evidence.forcedMainSingletonDeadEnds += 1;
@@ -1795,8 +1800,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           &&Math.max(...edge.operation.map(item=>item.end))<=end);
         const slack=containing.length?Math.min(...containing.map(({start,end})=>(edge.operation[0]!.start-start)
           +(end-Math.max(...edge.operation.map(item=>item.end))))):0;
+        const operationEnd=Math.max(...edge.operation.map(item=>item.end));
+        const futureAvailabilityRemaining=containing.length?Math.min(...containing.map(({end})=>end-operationEnd)):Number.POSITIVE_INFINITY;
         witnessCohort.push({task,operation:[...edge.operation],feeder:feederByMain.get(task.id)!,participantSlack:slack,
-          firstObligation:Math.min(...edge.operation.map(item=>item.start))});
+          firstObligation:Math.min(...edge.operation.map(item=>item.start)),futureAvailabilityRemaining});
         const choice=witnessCohort.at(-1)!;
         const descriptor:ExactMainChoiceDescriptor=Object.freeze({mainTask:readonlyTaskCopy(task),
           operationTasks:Object.freeze(choice.operation.map(readonlyTaskCopy)),feeder:readonlyTaskCopy(choice.feeder),
@@ -1868,7 +1875,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     let invocationPositionChecks = 0;
     let invocationCacheHits = 0;
     let invocationAugmentTraversals = 0;
-    const remaining = mains.filter(({ id }) => !used.has(id));
+    const availabilityEnd=(task:Task)=>problem.participants.find(({id})=>id===task.participantId)?.availability
+      .reduce((latest,window)=>Math.max(latest,window.end),Number.NEGATIVE_INFINITY)??Number.POSITIVE_INFINITY;
+    // Matching feasibility and edge pressure remain authoritative. Participant
+    // departure is only the deterministic identity tie-break for otherwise
+    // interchangeable left vertices.
+    const remaining = mains.filter(({ id }) => !used.has(id)).sort((a,b)=>availabilityEnd(a)-availabilityEnd(b)||a.id.localeCompare(b.id));
     const remainingIds = remaining.map(({ id }) => id);
     const remainingIdSet = new Set(remainingIds);
     const positions = Array.from({ length: mains.length - nextDepth }, (_, index) => nextDepth + index);
