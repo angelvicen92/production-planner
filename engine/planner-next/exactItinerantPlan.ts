@@ -1329,7 +1329,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const architectureKey=(architecture:MainFeederArchitecture)=>architecture.pattern.join(",")+"@"+architecture.slots.join(",");
   function* structuralBundles():NonNullable<ExactMainAndFeederSearchOptions["structuralBundleCandidates"]> {
     if(!hasFuture)return;
-    const structureIds=futureTechnicalChains.reservationStructureIds();
     for(const architecture of authorizedPipelineArchitectures(problem,evidence)){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
       const key=architectureKey(architecture),prepared=preparePipelineBundleGraph(problem,architecture,options.fixedPlacements);
       if(!prepared)continue;evidence.architecturesPrepared++;evidence.preparedBundleEdges+=prepared.preparedBundleEdges;
@@ -1337,45 +1336,20 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.participantBundleEdgesPruned+=prepared.participantEdgeEvidence.pruned;
       evidence.participantBundleEdgesAbstained+=prepared.participantEdgeEvidence.abstained;
       evidence.firstParticipantBundleEdgePrune??=prepared.participantEdgeEvidence.firstPrune;
-      // Prove the participant-filtered base graph has a matching once before
-      // multiplying it by technical-reservation witnesses.
-      if(!materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,()=>ledger.consume("CORE")))continue;
       evidence.futureWitnessesTriedByArchitecture[key]??=0;evidence.perfectMatchingsByArchitecture[key]??=0;evidence.hardGateRejectsByArchitecture[key]??=0;
-      function* combinations(depth:number,selected:import("./technicalChainFutureFeasibility").AnalyticalFutureReservation[]):Generator<import("./technicalChainFutureFeasibility").AnalyticalFutureReservation[]> {
-        if(depth===structureIds.length){yield selected;return;}let cursor=0;
-        while(true){const next=futureTechnicalChains.nextExactReservation(structureIds[depth]!,
-          [...(options.fixedPlacements??[]),...selected.flatMap(x=>x.scheduledTasks)],cursor);cursor=next.nextCursor;
-          evidence.futureReservationRootOrdersEvaluated=futureTechnicalChains.evidence.exactRootOrderEvaluations;
-          if(next.status==="BUDGET_EXHAUSTED"){structuralBudgetExhausted=true;evidence.structuralSearchBudgetExhausted=true;return;}
-          if(next.status!=="CANDIDATE"||!next.reservation)return;evidence.futureReservationWitnessesEvaluated++;
-          yield* combinations(depth+1,[...selected,next.reservation]);}
-      }
-      for(const selected of combinations(0,[])){evidence.futureWitnessesTriedByArchitecture[key]++;evidence.futureReservationBundleMatchingAttempts++;
-        const reserved=selected.flatMap(x=>x.scheduledTasks),participantBefore={...prepared.participantEdgeEvidence};
-        const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,
-          ()=>ledger.consume("CORE"),operation=>futureTechnicalChains.intrusion(operation),reserved);
-        evidence.participantBundleEdgesChecked+=prepared.participantEdgeEvidence.checked-participantBefore.checked;
-        evidence.participantBundleEdgesPruned+=prepared.participantEdgeEvidence.pruned-participantBefore.pruned;
-        evidence.participantBundleEdgesAbstained+=prepared.participantEdgeEvidence.abstained-participantBefore.abstained;
-        evidence.firstParticipantBundleEdgePrune??=prepared.participantEdgeEvidence.firstPrune;
-        evidence.bundleEdgesBeforeReservation+=prepared.preparedBundleEdges;
-        if(!matching){evidence.futureReservationCandidatesRejectedByNoBundleMatching++;continue;}
-        evidence.bundleEdgesRejectedByReservation+=matching.evidence.bundleEdgesRejectedByReservation;
-        evidence.reservationFilteredEdges+=matching.evidence.bundleEdgesAfterReservation;evidence.bundleEdgesAfterReservation+=matching.evidence.bundleEdgesAfterReservation;
-        evidence.futureReservationPerfectMatchings++;evidence.perfectMatchingsByArchitecture[key]++;
-        evidence.structuralCandidatesProducedBeforeBudgetExhaustion++;
-        yield {architecture,architectureFingerprint:prepared.witness.fingerprint,bundle:matching,
-          selectedFutureReservations:selected,selectedFutureReservationFingerprints:selected.map(x=>x.fingerprint),
-          repair:(previous,forbidden,consume)=>materializePreparedPipelineBundleMatching(problem,prepared,forbidden,previous,consume,
-            operation=>futureTechnicalChains.intrusion(operation),reserved),
-          acceptComplete:(tasks)=>{if(!selected.every(reservation=>futureTechnicalChains.reservationRemainsValid(reservation,tasks))){
-            evidence.futureReservationCandidatesRejectedByOtherReservations++;return false;}
-            evidence.futureReservationSelectedFingerprint=selected.map(x=>x.fingerprint).join("+");
-            evidence.selectedFutureReservationFingerprint=evidence.futureReservationSelectedFingerprint;
-            evidence.selectedArchitectureFingerprint=prepared.witness.fingerprint;return true;}};
-      }
-      if(structuralBudgetExhausted)return;
-      evidence.structuralFutureDomainsFullyVisited++;
+      // Future pressure is ordering-only. Exact feasibility is assessed after
+      // the hard gate and can causally repair this matching without enumerating
+      // future reservations up front.
+      evidence.futureReservationBundleMatchingAttempts++;
+      const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,
+        ()=>ledger.consume("CORE"),operation=>futureTechnicalChains.intrusion(operation));
+      if(!matching)continue;
+      evidence.futureReservationPerfectMatchings++;evidence.perfectMatchingsByArchitecture[key]++;
+      evidence.structuralCandidatesProducedBeforeBudgetExhaustion++;
+      yield {architecture,architectureFingerprint:prepared.witness.fingerprint,bundle:matching,
+        repair:(previous,forbidden,consume)=>materializePreparedPipelineBundleMatching(problem,prepared,forbidden,previous,consume,
+          operation=>futureTechnicalChains.intrusion(operation)),
+        acceptComplete:()=>{evidence.selectedArchitectureFingerprint=prepared.witness.fingerprint;return true;}};
       evidence.structuralArchitecturesFullyVisited++;
     }
     evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;
@@ -1576,15 +1550,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // The nominal Assisted pipeline can materialize a complete core without
     // visiting partial-core callbacks. Apply the same exact reservation at that
     // boundary so no locally complete proposal can bypass future structures.
-    if(conditioned){
-      evidence.genericFutureAssessSkippedForConditionedLeaf++;
-      const reservations=candidate.selectedFutureReservations??[];
-      evidence.conditionedLeafFutureRevalidations+=reservations.length;
-      if(!reservations.every(reservation=>futureTechnicalChains.reservationRemainsValid(reservation,immutableCoreTasks))){
-        evidence.conditionedLeafFutureRevalidationRejects++;return "REJECT";
-      }
-      evidence.conditionedLeafFutureRevalidationPasses++;
-    }else if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=futureTechnicalChains.assess(immutableCoreTasks,immutableCoreTasks,taskId=>coreDecisionDepthForTask(candidate,taskId));recordTechnicalChainFutureReservation(evidence,reservation);if(reservation.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(reservation.status==="PRUNE"){
+    if((problem.analyticalFutureTechnicalChains?.length??0)>0){const reservation=futureTechnicalChains.assess(immutableCoreTasks,immutableCoreTasks,taskId=>coreDecisionDepthForTask(candidate,taskId));recordTechnicalChainFutureReservation(evidence,reservation);
+      evidence.futureReservationRootOrdersEvaluated=futureTechnicalChains.evidence.exactRootOrderEvaluations;
+      evidence.futureReservationWitnessesEvaluated=futureTechnicalChains.evidence.exactCandidateCount??futureTechnicalChains.evidence.rootOrdersYielded;
+      if(conditioned){evidence.conditionedLeafFutureRevalidations++;if(reservation.status==="PASS")evidence.conditionedLeafFutureRevalidationPasses++;else evidence.conditionedLeafFutureRevalidationRejects++;}
+      if(reservation.status==="ABSTAIN"){structuralBudgetExhausted ||= conditioned;evidence.structuralSearchBudgetExhausted ||= conditioned;return "BUDGET_EXHAUSTED";}if(reservation.status==="PRUNE"){
       const causing=immutableCoreTasks.find(task=>task.id===reservation.certifiedCausingTaskId);
       const depth=candidate.tasks.filter(task=>task.kind==="main").length;
       evidence.firstTechnicalChainFutureReservationPrune??={phase:"CORE",causingTaskId:causing?.id??null,
