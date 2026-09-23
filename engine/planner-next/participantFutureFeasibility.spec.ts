@@ -61,6 +61,28 @@ test("prunes when future tasks and a required meal are individually viable but c
   assert.deepEqual(first,second);
 });
 
+test("meal-first MRV never admits a later task that overlaps the selected meal",()=>{
+  const source=problem({start:40,end:80});
+  source.participantMeals![0]={...source.participantMeals![0],fixedInterval:{start:40,end:60}};
+  source.analyticalFutureParticipantTasks![0]={...source.analyticalFutureParticipantTasks![0],id:"a-after-meal",duration:20,
+    availability:[{start:40,end:80}],dependencies:["meal-source"]};
+  source.analyticalFutureParticipantTasks!.push({id:"b-fills-tail",kind:"auxiliary",participantId:"p",spaceId:"a",duration:20,
+    availability:[{start:60,end:80}],dependencies:[]});
+  const result=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(result.status,"PRUNE"); assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
+  assert.equal(result.collectiveWitnessFound,false);
+});
+
+test("distinguishes inconclusive shapes from genuinely exhausted collective budget",()=>{
+  const inconclusive=probeParticipantFutureReservations(problem({start:40,end:80},["unknown"]),[current()],[current()]);
+  assert.equal(inconclusive.status,"ABSTAIN"); assert.equal(inconclusive.abstainCause,"INCONCLUSIVE_SHAPE");
+  const source=problem({start:60,end:100});source.participantMeals=[];
+  source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2",availability:[{start:20,end:60}]});
+  const exhausted=probeParticipantFutureReservations(source,[current()],[current()],{consume:()=>false});
+  assert.equal(exhausted.status,"ABSTAIN"); assert.equal(exhausted.abstainCause,"BUDGET_EXHAUSTED");
+  assert.equal(exhausted.branchesConsumed,0);
+});
+
 test("passes multiple independent future tasks after individual checks without claiming collective work",()=>{
   const source=problem({start:60,end:100}); source.participantMeals=[];
   source.spaces.push({id:"c",availability:[{start:0,end:100}]});

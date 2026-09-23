@@ -531,15 +531,25 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
   const pressure=new Map<string,Map<number,number>>();let safeGraphEdgeCount=0,intrusiveGraphEdgeCount=0;
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
     row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
+  const availabilityEnd=(id:string)=>{const participantId=problem.tasks.find(task=>task.id===id)?.participantId;
+    return problem.participants.find(participant=>participant.id===participantId)?.availability
+      .reduce((latest,window)=>Math.max(latest,window.end),Number.NEGATIVE_INFINITY)??Number.POSITIVE_INFINITY;};
+  // Matching domains and edge-pressure comparators remain authoritative. This
+  // changes only which left identity is visited first when those authorities
+  // admit interchangeable augmenting paths.
+  // The augmenting matcher lets later left vertices displace earlier ones from
+  // their preferred edge, so visit flexible participants first and restrictive
+  // participants last to give the latter the final equivalent choice.
+  const orderedMainIds=[...prepared.mainIds].sort((a,b)=>availabilityEnd(b)-availabilityEnd(a)||b.localeCompare(a));
   let safePerfectMatchingAttempts=0,safePerfectMatchingFound=0,safeMatchingFailures=0,fullGraphFallbacks=0;
   let initial:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined;
   if(futureEdgeIntrusion){safePerfectMatchingAttempts=1;const safePositions=new Map<string,number[]>();
     for(const [id,valid] of positions){const row=pressure.get(id)!;const pressured=[...row.values()].some(value=>value>0);
       safePositions.set(id,valid.filter(position=>!pressured||(row.get(position)??0)===0));}
-    initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
+    initial=incrementallyRepairMatchingWitness(orderedMainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
     if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
-  if(!initial)initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
+  if(!initial)initial=incrementallyRepairMatchingWitness(orderedMainIds,positions,forbiddenEdges,
     previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
     (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
   if(initial.outcome!=="PERFECT")return null;
@@ -567,7 +577,7 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
     &&task.participantId===main.participantId);return feeder?[[main.id,feeder] as const]:[];}));
   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
+    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources,problem.participants);
   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
   for(const pattern of generated.patterns){
     if(evidence)evidence.mainPatternsVisited++;

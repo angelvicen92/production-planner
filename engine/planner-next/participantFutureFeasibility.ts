@@ -21,6 +21,7 @@ export interface ParticipantFutureReservationProbe {
   readonly compatiblePairChecks: number;
   readonly analyticChecks: number;
   readonly branchesConsumed: number;
+  readonly abstainCause: "BUDGET_EXHAUSTED" | "INCONCLUSIVE_SHAPE" | null;
   readonly reasonCode: "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN" | "FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE" | "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE" | "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" | null;
   readonly futureTaskId: string | null;
   readonly mealTaskId: string | null;
@@ -40,7 +41,8 @@ const firstMeal=(domain:AnalyticParticipantMealStartDomain)=>domain.ranges[0]?.f
 const lastMeal=(domain:AnalyticParticipantMealStartDomain)=>domain.ranges.at(-1)?.last??null;
 const remainingMeal=(meal:ParticipantMealObligation)=>meal.status==="pending"||meal.status==="interrupted";
 
-type CollectiveResult={status:"PASS"|"PRUNE"|"ABSTAIN";branches:number;domainSizes:Record<string,number>;witness:boolean};
+type CollectiveResult={status:"PASS"|"PRUNE"|"ABSTAIN";branches:number;domainSizes:Record<string,number>;witness:boolean;
+  abstainCause:"BUDGET_EXHAUSTED"|"INCONCLUSIVE_SHAPE"|null};
 
 /** Exact participant-local witness. Candidate generation delegates to the canonical task and meal authorities. */
 function collectiveWitness(problem:PlannerNextProblem,_participantId:string,tasks:readonly Task[],meals:readonly ParticipantMealObligation[],
@@ -48,14 +50,14 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
   const taskIds=new Set(tasks.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId));
   const knownFixed=new Set(fixed.map(task=>task.id));
   const dependencies=[...tasks.flatMap(task=>task.dependencies),...meals.flatMap(meal=>meal.dependencies??[])];
-  if(dependencies.some(id=>!taskIds.has(id)&&!mealIds.has(id)&&!knownFixed.has(id)))return {status:"ABSTAIN",branches:0,domainSizes:{},witness:false};
+  if(dependencies.some(id=>!taskIds.has(id)&&!mealIds.has(id)&&!knownFixed.has(id)))return {status:"ABSTAIN",branches:0,domainSizes:{},witness:false,abstainCause:"INCONCLUSIVE_SHAPE"};
   let branches=0,exhausted=false;const domainSizes:Record<string,number>={};
   const envelopes:{start:number;end:number;duration:number}[]=[];
   for(const task of tasks){const domain=exactTaskStartDomain(problem,task,[...fixed]);domainSizes[task.id]=domain.eligibleStartCount;
-    if(domain.eligibleStartCount===0)return {status:"PRUNE",branches,domainSizes,witness:false};
+    if(domain.eligibleStartCount===0)return {status:"PRUNE",branches,domainSizes,witness:false,abstainCause:null};
     envelopes.push({start:firstStart(problem,domain)!,end:lastStart(problem,domain)!+task.duration,duration:task.duration});}
   for(const meal of meals){const domain=analyticParticipantMealDomain(problem,meal,fixed);domainSizes[meal.sourceTaskId]=domain.validStarts;
-    if(domain.validStarts===0)return {status:"PRUNE",branches,domainSizes,witness:false};
+    if(domain.validStarts===0)return {status:"PRUNE",branches,domainSizes,witness:false,abstainCause:null};
     envelopes.push({start:firstMeal(domain)!,end:lastMeal(domain)!+meal.duration,duration:meal.duration});}
   const participant=problem.participants.find(({id})=>id===_participantId);
   const endpoints=[...new Set(envelopes.flatMap(item=>[item.start,item.end]))].sort((a,b)=>a-b);
@@ -65,7 +67,7 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
       .reduce((sum,item)=>sum+item.duration,0);
     const available=(participant?.availability??[]).reduce((sum,window)=>sum+Math.max(0,Math.min(end,window.end)-Math.max(start,window.start)),0);
     const occupied=fixedOwn.reduce((sum,item)=>sum+Math.max(0,Math.min(end,item.end)-Math.max(start,item.start)),0);
-    if(required>available-occupied)return {status:"PRUNE",branches,domainSizes,witness:false};
+    if(required>available-occupied)return {status:"PRUNE",branches,domainSizes,witness:false,abstainCause:null};
   }
   const visit=(pendingTasks:readonly Task[],pendingMeals:readonly ParticipantMealObligation[],scheduledTasks:ScheduledTask[],scheduledMeals:ScheduledParticipantMeal[]):boolean=>{
     if(pendingTasks.length===0&&pendingMeals.length===0)return true;
@@ -75,7 +77,8 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
     const choices:[string,"TASK"|"MEAL",Task|ParticipantMealObligation,readonly (number|ScheduledParticipantMeal)[]][]=[];
     for(const task of readyTasks){
       const afterMeals=Math.max(-Infinity,...task.dependencies.map(id=>scheduledMeals.find(meal=>meal.sourceTaskId===id)?.end??-Infinity));
-      const starts=[...exactTaskStartDomain(problem,task,scheduledTasks).starts()].filter(start=>start>=afterMeals);
+      const starts=[...exactTaskStartDomain(problem,task,scheduledTasks).starts()].filter(start=>start>=afterMeals
+        &&scheduledMeals.every(meal=>meal.participantId!==task.participantId||start+task.duration<=meal.start||meal.end<=start));
       domainSizes[task.id]=Math.max(domainSizes[task.id]??0,starts.length);choices.push([task.id,"TASK",task,starts]);
     }
     for(const meal of readyMeals){const candidates=participantMealCandidates(problem,meal,scheduledTasks,scheduledMeals);
@@ -96,7 +99,8 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
     return false;
   };
   const witness=visit(tasks,meals,[...fixed],[]);
-  return {status:witness?"PASS":exhausted?"ABSTAIN":"PRUNE",branches,domainSizes,witness};
+  return {status:witness?"PASS":exhausted?"ABSTAIN":"PRUNE",branches,domainSizes,witness,
+    abstainCause:exhausted?"BUDGET_EXHAUSTED":null};
 }
 
 /** Sound read-only reservation for out-of-scope participant work. */
@@ -107,7 +111,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   const base={affectedParticipants,affectedFutureTasksChecked:future.length,affectedMealsChecked:meals.length,individualDomainChecks:0,
     individualZeroDomainPrunes:0,jointTaskMealChecks:0,jointTaskMealPrunes:0,collectiveChecks:0,collectivePasses:0,collectivePrunes:0,
     collectiveObligationIds:[] as string[],collectiveDomainSizes:{} as Record<string,number>,collectiveWitnessFound:false,
-    compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
+    compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
     futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0 as const};
   if(future.length===0)return {...base,status:"PASS" as const};
   const futureIds=new Set(future.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId)),placedIds=new Set(placed.map(task=>task.id));
@@ -131,7 +135,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   }
   if(unresolved.length)return {...base,status:"ABSTAIN" as const,individualDomainChecks:individual,jointTaskMealChecks:joint,
     compatiblePairChecks:pairChecks,analyticChecks:analytic,compatiblePairCount:pairChecks>0?1:0,
-    reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const,futureTaskId:unresolved[0]!.id,participantId:unresolved[0]!.participantId??null};
+    abstainCause:"INCONCLUSIVE_SHAPE" as const,reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const,futureTaskId:unresolved[0]!.id,participantId:unresolved[0]!.participantId??null};
   let collectiveChecks=0,collectivePasses=0,branchesConsumed=0;const collectiveObligationIds:string[]=[];
   const collectiveDomainSizes:Record<string,number>={};
   for(const participantId of affectedParticipants){
@@ -143,7 +147,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
     const common={...base,individualDomainChecks:individual,jointTaskMealChecks:joint,compatiblePairChecks:pairChecks,analyticChecks:analytic,
       compatiblePairCount:(pairChecks>0?1:0) as 0|1,collectiveChecks,collectivePasses,
       collectivePrunes:Number(result.status==="PRUNE"),collectiveObligationIds:[...collectiveObligationIds].sort(),collectiveDomainSizes,
-      collectiveWitnessFound:result.witness,branchesConsumed,participantId};
+      collectiveWitnessFound:result.witness,branchesConsumed,participantId,abstainCause:result.abstainCause};
     if(result.status==="PRUNE")return {...common,status:"PRUNE" as const,reasonCode:"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE" as const};
     if(result.status==="ABSTAIN")return {...common,status:"ABSTAIN" as const,reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const};
     collectivePasses++;

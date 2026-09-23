@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
   exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
-  subtractMergedIntervals, incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
+  subtractMergedIntervals, incrementallyRepairMatchingWitness, compareMainChoiceFinalTieBreak } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -29,6 +29,18 @@ function mainBacktrackingProblem(): PlannerNextProblem {
     { id: "b-main-fixed", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["vocal-b-fixed"], blockKey: "block", availability: [{ start: 80, end: 90 }] },
   ], ["a", "b"], ["vocal-a", "vocal-b"]);
 }
+
+test("availability end breaks only an otherwise exact main-choice tie",()=>{
+  const early={participantSlack:10,firstObligation:80,participantAvailabilityEnd:100,taskId:"z"};
+  const late={...early,participantAvailabilityEnd:120,taskId:"a"};
+  assert.ok(compareMainChoiceFinalTieBreak(early,late)<0,"earlier participant departure wins before stable identity");
+});
+
+test("an existing structural order remains above restrictive availability",()=>{
+  const early={participantSlack:10,firstObligation:80,participantAvailabilityEnd:100,taskId:"a"};
+  const structurallyPreferred={...early,participantAvailabilityEnd:120,taskId:"b"};
+  assert.ok(compareMainChoiceFinalTieBreak(early,structurallyPreferred,1)>0,"prior structural winner must remain first");
+});
 
 function feederStartBacktrackingProblem(): PlannerNextProblem {
   const problem = syntheticProblem([
