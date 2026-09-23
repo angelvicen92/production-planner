@@ -422,7 +422,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       || (task.kind !== "technical" && (!participant || !contains(participant.availability, task.start, task.end)))
       || (task.coachId !== undefined && (!coach || !contains(coach.availability, task.start, task.end)))
       || !space || !contains(space.availability, task.start, task.end)) { availability += 1; addViolation("AVAILABILITY_VIOLATION","HARD",[task],[],[task.spaceId],{start:task.start,end:task.end}); }
-    if (!taskFitsAvailability(task,task.start,task.end)) { taskAvailabilityIds.add(task.id); addViolation(`TASK_AVAILABILITY:${task.id}`,"HARD",[task],[],[task.spaceId],{start:task.start,end:task.end}); }
+    if (!taskFitsAvailability(task,task.start,task.end) || !taskFitsAvailability(expectedTaskById.get(task.id) ?? task,task.start,task.end)) { taskAvailabilityIds.add(task.id); addViolation(`TASK_AVAILABILITY:${task.id}`,"HARD",[task],[],[task.spaceId],{start:task.start,end:task.end}); }
     if(task.itinerantUnitId!==undefined){const unit=problem.itinerantUnits?.find(entry=>entry.id===task.itinerantUnitId);if(!unit||!contains(unit.availability,task.start,task.end))availability+=1;}
     for (const resourceId of task.requiredResourceIds ?? []) {
       const resource = resources.get(resourceId);
@@ -620,8 +620,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     &&actual.participantId===expected.participantId&&actual.coachId===expected.coachId&&actual.blockKey===expected.blockKey&&actual.setupFamilyId===expected.setupFamilyId
     &&actual.jointGroupId===expected.jointGroupId&&actual.itinerantUnitId===expected.itinerantUnitId
     &&JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.requiredResourceIds??[])].sort())
-    &&JSON.stringify([...actual.dependencies].sort())===JSON.stringify([...expected.dependencies].sort())
-    &&JSON.stringify(actual.availability??[])===JSON.stringify(expected.availability??[]);
+    &&JSON.stringify([...actual.dependencies].sort())===JSON.stringify([...expected.dependencies].sort());
   const invalidTechnicalChainRootIds=new Set<string>();
   for(const chain of getTechnicalChains(problem.tasks,problem.technicalChains)) {
     const rootTaskId=chain[0]?.id;if(!rootTaskId)continue;let invalid=false;
