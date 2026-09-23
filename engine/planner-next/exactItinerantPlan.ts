@@ -292,6 +292,13 @@ export interface ExactItinerantPlanEvidence {
   bundleTerminalCause: string | null;
   bundleNogoodsCreated:number; bundleNogoodBranches:number; bundleNogoodDeduplications:number; bundleNogoodRepairsSucceeded:number;
   conflictEdges:string[]; conflictBackjumps:number; suffixDepthsSkipped:number;
+  fixedMainBundlePathEntered:boolean;protectedMainCount:number;protectedMainArchitectureFingerprint:string|null;
+  protectedMainSlots:number[];fixedMainBundleGraphPrepared:boolean;fixedMainBundlePreparedEdges:number;
+  fixedMainBundleMatchingAttempts:number;fixedMainBundlePerfectMatchingFound:boolean;fixedMainBundleHardGatePasses:number;
+  fixedMainBundleHardGateRejects:number;fixedMainBundleTaskCount:number;fixedMainBundleTasksByKind:Record<string,number>;
+  protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
+  pendingBeforeFixedMainBundle:number;pendingAfterFixedMainBundle:number;legacyFixedFeederFallbackEntered:boolean;
+  legacyFixedFeederFallbackReason:string|null;firstFixedMainBundleRejection:string|null;
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -1201,6 +1208,12 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     bundleCertifiedRepairs:0,bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,
     bundleNogoodsCreated:0,bundleNogoodBranches:0,bundleNogoodDeduplications:0,bundleNogoodRepairsSucceeded:0,
     conflictEdges:[],conflictBackjumps:0,suffixDepthsSkipped:0,
+    fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
+    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleMatchingAttempts:0,
+    fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
+    fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
+    pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
+    legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -1674,6 +1687,26 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.bundleNogoodDeduplications+=core.evidence.bundleNogoodDeduplications;
   evidence.bundleNogoodRepairsSucceeded+=core.evidence.bundleNogoodRepairsSucceeded;
   evidence.conflictEdges=[...core.evidence.conflictEdges];
+  evidence.fixedMainBundlePathEntered=core.evidence.fixedMainBundlePathEntered;
+  evidence.protectedMainCount=core.evidence.protectedMainCount;
+  evidence.protectedMainArchitectureFingerprint=core.evidence.protectedMainArchitectureFingerprint;
+  evidence.protectedMainSlots=[...core.evidence.protectedMainSlots];
+  evidence.fixedMainBundleGraphPrepared=core.evidence.fixedMainBundleGraphPrepared;
+  evidence.fixedMainBundlePreparedEdges=core.evidence.fixedMainBundlePreparedEdges;
+  evidence.fixedMainBundleMatchingAttempts=core.evidence.fixedMainBundleMatchingAttempts;
+  evidence.fixedMainBundlePerfectMatchingFound=core.evidence.fixedMainBundlePerfectMatchingFound;
+  evidence.fixedMainBundleHardGatePasses=core.evidence.fixedMainBundleHardGatePasses;
+  evidence.fixedMainBundleHardGateRejects=core.evidence.fixedMainBundleHardGateRejects;
+  evidence.fixedMainBundleTaskCount=core.evidence.fixedMainBundleTaskCount;
+  evidence.fixedMainBundleTasksByKind={...core.evidence.fixedMainBundleTasksByKind};
+  evidence.protectedMainSlotChecks=core.evidence.protectedMainSlotChecks;
+  evidence.protectedMainSlotMismatches=core.evidence.protectedMainSlotMismatches;
+  evidence.pipelineTasksRemovedFromStandalone=core.evidence.pipelineTasksRemovedFromStandalone;
+  evidence.pendingBeforeFixedMainBundle=core.evidence.pendingBeforeFixedMainBundle;
+  evidence.pendingAfterFixedMainBundle=core.evidence.pendingAfterFixedMainBundle;
+  evidence.legacyFixedFeederFallbackEntered=core.evidence.legacyFixedFeederFallbackEntered;
+  evidence.legacyFixedFeederFallbackReason=core.evidence.legacyFixedFeederFallbackReason;
+  evidence.firstFixedMainBundleRejection=core.evidence.firstFixedMainBundleRejection;
   evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;

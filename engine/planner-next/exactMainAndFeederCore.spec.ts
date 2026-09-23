@@ -987,6 +987,51 @@ test("fixed-main feeder reconstruction exposes its baseline and every placed fee
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.equal(seen[0],"FIXED_MAIN_CONTEXT:");
   assert.ok(seen.includes("FIXED_MAIN_FEEDER:vocal-fixed"));
+  assert.equal(result.evidence.legacyFixedFeederFallbackEntered,true);
+});
+
+function protectedPipelineProblem():PlannerNextProblem{
+  const window=[{start:0,end:300}];const tasks:Task[]=[];
+  for(let index=0;index<2;index++){const participantId=`pipeline-p${index}`;tasks.push(
+    {id:`pipeline-in${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"in",dependencies:[]},
+    {id:`pipeline-style${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"style",dependencies:[`pipeline-in${index}`]},
+    {id:`pipeline-vocal${index}`,kind:"vocal",participantId,coachId:"pipeline-coach",duration:15,spaceId:"vocal",dependencies:[`pipeline-in${index}`]},
+    {id:`pipeline-main${index}`,kind:"main",participantId,coachId:"pipeline-coach",blockKey:"pipeline-coach",duration:15,
+      spaceId:"main",dependencies:[`pipeline-vocal${index}`,`pipeline-style${index}`]});}
+  return {day:{start:0,end:300},spaces:["in","style","vocal","main"].map(id=>({id,availability:window})),resources:[],
+    participants:[0,1].map(index=>({id:`pipeline-p${index}`,availability:window})),coaches:[{id:"pipeline-coach",availability:window}],tasks,
+    mainFlow:{spaceId:"main",preferredEnd:240,continuity:"REQUIRED",maxBlocksByKey:2,minTasksPerBlock:1},
+    participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:100,maxPatterns:100,maxBranchExpansions:100},
+    auxiliaryPolicy:{participantPresencePreference:"OFF"},
+    transportPolicy:{arrival:{taskIds:["pipeline-in0","pipeline-in1"],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1},
+      departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1}}};
+}
+
+test("protected Main identities reconstruct complete dependent bundles before standalone",()=>{
+  const problem=protectedPipelineProblem();const fixed=[0,1].map((index)=>({
+    ...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,start:200+index*15,end:215+index*15}));
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.evidence.fixedMainBundlePathEntered,true);
+  assert.equal(result.evidence.legacyFixedFeederFallbackEntered,false);
+  assert.equal(result.evidence.protectedMainSlotMismatches,0);
+  assert.equal(result.evidence.fixedMainBundleTaskCount,8);
+  assert.equal(result.evidence.pipelineTasksRemovedFromStandalone,4);
+  assert.equal(result.evidence.pendingAfterFixedMainBundle,0);
+  for(const placement of fixed)assert.deepEqual(
+    result.scheduledTasks.find(task=>task.id===placement.id),placement);
+});
+
+test("a supported protected-Main pipeline cannot silently degrade to feeder-only fallback",()=>{
+  const problem=protectedPipelineProblem();
+  const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,
+    onHardValidCoreLeaf:()=>"REJECT"});
+  assert.equal(result.status,"INFEASIBLE");
+  assert.equal(result.evidence.fixedMainBundlePathEntered,true);
+  assert.equal(result.evidence.legacyFixedFeederFallbackEntered,false);
+  assert.ok(result.evidence.reasonCodes.includes("FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"));
 });
 
 test("cohort construction is deterministic and invariant to input order", () => {

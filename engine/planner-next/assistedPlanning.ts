@@ -100,6 +100,13 @@ export interface AssistedPlanningEvidence {
   readonly work: Readonly<Record<string, number>>;
   readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
     "bundleNogoodsCreated"|"bundleNogoodBranches"|"bundleNogoodDeduplications"|"bundleNogoodRepairsSucceeded"|"conflictEdges">;
+  readonly fixedMainBundle?:Pick<ExactItinerantPlanEvidence,"fixedMainBundlePathEntered"|"protectedMainCount"|
+    "protectedMainArchitectureFingerprint"|"protectedMainSlots"|"fixedMainBundleGraphPrepared"|
+    "fixedMainBundlePreparedEdges"|"fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
+    "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
+    "fixedMainBundleTasksByKind"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
+    "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection">;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
   readonly prerequisiteSharedCapacityPrunes?: number;
@@ -427,6 +434,13 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     operational:{scheduled:structuredClone(result.scheduledOperationalMeals??[]),fingerprint:operationalMealWitnessFingerprint(result.scheduledOperationalMeals??[])},
     resource:structuredClone(result.scheduledResourceMeals),itinerantUnit:structuredClone(result.scheduledItinerantUnitMeals),
   }:null;
+  const fixedMainBundleKeys=["fixedMainBundlePathEntered","protectedMainCount","protectedMainArchitectureFingerprint",
+    "protectedMainSlots","fixedMainBundleGraphPrepared","fixedMainBundlePreparedEdges","fixedMainBundleMatchingAttempts",
+    "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",
+    "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","protectedMainSlotChecks","protectedMainSlotMismatches",
+    "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
+    "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection"] as const;
+  const fixedMainBundle=Object.fromEntries(fixedMainBundleKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["fixedMainBundle"];
   return { proposal, evidence: {
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
@@ -454,6 +468,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     selectedMealWitnesses,
+    fixedMainBundle,
     participantMealFutureFeasibility:{
       futureFeasibilityChecks:Number(evidenceRecord.participantMealFutureFeasibilityChecks??metricsRecord.participantMealFutureFeasibilityChecks??0),
       futureInfeasibleBranches:Number(evidenceRecord.participantMealFutureInfeasibleBranches??0),

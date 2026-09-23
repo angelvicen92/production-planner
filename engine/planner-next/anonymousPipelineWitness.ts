@@ -477,7 +477,10 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       const stylingSpot=witness.stylingSpots.find(spot=>spot.id===assignment.stylingSpotId)!;
       const arrivalSpot=witness.inGroups.find(spot=>spot.id===assignment.inGroupId)!;
       if((main.blockKey??"")!==witness.pattern[Number(mainSpot.id.slice(5))])return;
-      const operation=anchorIndex.has(main.id)?materializeAnchoredOperation(problem,main,mainSpot.start,[...protectedPlacements]):null;
+      const contract=anchorIndex.get(main.id);
+      const operationIds=new Set(contract?[main.id,...contract.beforeTaskIds,...contract.afterTaskIds]:[]);
+      const operation=contract?materializeAnchoredOperation(problem,main,mainSpot.start,
+        protectedPlacements.filter(task=>!operationIds.has(task.id))):null;
       if(anchorIndex.has(main.id)&&!operation)return;
       const bundle:ScheduledTask[]=[
         {...arrival,start:arrivalSpot.start,end:arrivalSpot.end},
