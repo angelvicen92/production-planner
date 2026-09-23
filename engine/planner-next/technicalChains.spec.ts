@@ -69,6 +69,53 @@ test("a phased contiguous budget can exhaust between two orders of one root",()=
  assert.equal(explorer.exhausted,true);assert.equal(explorer.consumed,1);
  assert.equal(explorer.diagnostics.rootStartsVisited,1);assert.equal(explorer.diagnostics.rootOrdersEvaluated,1);
 });
+
+function partialExplicitPolicyScenario(incompatible=false){
+ const p=technicalChainScenario();p.searchPolicy="EXACT_CONSTRUCTIVE";p.day={start:0,end:40};p.budget.bestK=4;
+ const base=getTechnicalChains(p.tasks)[0]!;
+ const first={...base[0]!,kind:"auxiliary" as const,participantId:"chain-person-1",duration:10,dependencies:[],availability:[{start:0,end:40}]};
+ const earlier={...first,id:"earlier-peer",participantId:"chain-person-2"};
+ const third={...base[1]!,kind:"auxiliary" as const,participantId:"chain-person-3",duration:10,dependencies:[],availability:[{start:0,end:40}]};
+ const final={...third,id:"fixed-final",participantId:"chain-person-4"};
+ p.tasks=p.tasks.filter(task=>!base.some(member=>member.id===task.id));p.tasks.push(first,earlier,third,final);
+ p.participants.push(...[1,2,3,4].map(index=>({id:`chain-person-${index}`,availability:[{start:0,end:40}]})));
+ for(const resource of p.resources){resource.availability=[{start:0,end:40}];resource.transitionMinutes=0;}
+ for(const space of p.spaces){space.availability=[{start:0,end:40}];space.secondaryContinuity=undefined;space.setupPolicy=undefined;}
+ const ids=[first.id,earlier.id,third.id,final.id];
+ p.technicalChains=[{id:"partial-policy",orderedTaskIds:ids,phases:[[ids[0]!,ids[1]!],[ids[2]!,ids[3]!]],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];
+ const fixed=[{...third,start:20,end:30},{...final,start:incompatible?35:30,end:incompatible?45:40}];
+ return {p,pending:[first,earlier],fixed};
+}
+
+test("a partial explicit policy schedules only pending phases against immutable later anchors",()=>{
+ const {p,pending,fixed}=partialExplicitPolicyScenario(),result=generateTechnicalChainCandidates(p,pending,fixed,100);
+ assert.ok(result.candidates.length>0);
+ assert.ok(result.candidates.some(candidate=>candidate.tasks.map(task=>task.id).join()===pending.map(task=>task.id).join()));
+ assert.ok(result.candidates.some(candidate=>candidate.tasks.map(task=>task.id).join()===pending.map(task=>task.id).reverse().join()));
+ for(const candidate of result.candidates){
+   assert.equal(candidate.tasks.some(task=>fixed.some(anchor=>anchor.id===task.id)),false);
+   const combined=[...candidate.tasks,...fixed].sort((a,b)=>a.start-b.start);
+   assert.ok(combined.slice(1).every((task,index)=>combined[index]!.end===task.start));
+   const memberIds=new Set(p.technicalChains![0]!.orderedTaskIds);
+   const validation=validatePlan({...p,tasks:p.tasks.filter(task=>memberIds.has(task.id))},combined);
+   assert.equal(validation.hardValid,true,JSON.stringify(validation));
+   assert.deepEqual(fixed.map(({id,start,end})=>({id,start,end})),[{id:fixed[0]!.id,start:20,end:30},{id:fixed[1]!.id,start:30,end:40}]);
+ }
+});
+
+test("incompatible fixed anchors give a partial explicit policy an exact zero domain",()=>{
+ const {p,pending,fixed}=partialExplicitPolicyScenario(true);
+ assert.equal(probeExactTechnicalChainMacroDomain(p,pending,fixed),0);
+ assert.deepEqual(generateTechnicalChainCandidates(p,pending,fixed,100).candidates,[]);
+});
+
+test("probe and constructive search expose identical partial explicit-policy semantics",()=>{
+ const {p,pending,fixed}=partialExplicitPolicyScenario();
+ const domain=probeExactTechnicalChainMacroDomain(p,pending,fixed);
+ const generated=generateTechnicalChainCandidates(p,pending,fixed,100);
+ assert.equal(domain,generated.candidates.length);assert.ok(domain>0);
+ assert.ok(generated.candidates.every(candidate=>candidate.tasks.every(task=>pending.some(({id})=>id===task.id))));
+});
 test("technical dependencies remain precedence-only without an explicit policy",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!,result=generateTechnicalChainCandidates(p,chain,[],1000);assert.ok(result.candidates.some(candidate=>candidate.tasks[1]!.start>candidate.tasks[0]!.end));});
 test("explicit resource continuity rejects a member missing the declared resource",()=>{const p=technicalChainScenario(),chain=getTechnicalChains(p.tasks)[0]!;p.technicalChains=[{id:"chain",orderedTaskIds:chain.map(task=>task.id),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["technical-chain-unit"]}];chain[1]!.requiredResourceIds=[];assert.equal(probeExactTechnicalChainMacroDomain(p,chain,[]),0);});
 test("detects cycles, fan-in and fan-out",()=>{const p=technicalChainScenario(),members=getTechnicalChains(p.tasks)[0]!;const cycle=structuredClone(members);cycle[0]!.dependencies=[cycle[1]!.id];assert.equal(technicalChainHasCycle(cycle),true);const fanIn=structuredClone(members);fanIn[1]!.dependencies=[fanIn[0]!.id,"technical-camera-positioning"];assert.equal(technicalChainHasBranching(fanIn),true);const fanOut=[...members,{...members[1]!,id:"other"}];assert.equal(technicalChainHasBranching(fanOut),true);});

@@ -32,7 +32,7 @@ import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 import { assessCoreArrivalTransportFeasibility, materializeTerminalTransport, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
-import { createTechnicalChainExplorer, getTechnicalChains, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
+import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 import { authorizedPipelineArchitectures, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
@@ -90,6 +90,10 @@ export interface StandaloneDeadEndCause {
   readonly firstPlacementRejection: { readonly start: number; readonly reason: string;
     readonly blockingPlacedTaskId: string | null } | null;
   readonly ancestralDecisions: readonly { readonly taskId: string; readonly start: number }[];
+  readonly technicalChainPolicyId?: string;
+  readonly technicalChainPendingTaskIds?: readonly string[];
+  readonly technicalChainFixedTaskIds?: readonly string[];
+  readonly technicalChainContradiction?: "NO_FEASIBLE_PENDING_MATERIALIZATION";
 }
 
 export interface ExactItinerantPlanEvidence {
@@ -989,11 +993,14 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   const macroDomainAuthority=({JOINT:"standaloneJointGroupStartDomain",RESOURCE_TASK:"standaloneForwardDynamicDomain",
     ROUND_SYNCHRONIZATION:"probeExactRoundSynchronizationMacroDomain",SETUP_GROUP:"probeExactSetupMacroDomain",
     TECHNICAL_CHAIN:"probeExactTechnicalChainMacroDomain"} as const)[unit.kind];
+  const chainContext=unit.kind==="TECHNICAL_CHAIN"?partialTechnicalChainContext(problem,unit.tasks,[...coreTasks,...placed]):null;
   if(selected.domainSize===0)recordDeadEnd({kind:"MACRO_ZERO_DOMAIN",phase:"MACRO",depth,
     workItemId:unit.id,workItemKind:unit.kind,taskIds:unit.tasks.map(({id})=>id).sort(),
     domainBefore:selected.structuralCandidateCount??selected.domainSize,
     domainAfter:0,candidatesEvaluated:0,blockingTaskId:null,blockingAuthority:macroDomainAuthority,
-    firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
+    firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed),
+    ...(chainContext?{technicalChainPolicyId:chainContext.policyId,technicalChainPendingTaskIds:chainContext.pendingTaskIds,
+      technicalChainFixedTaskIds:chainContext.fixedTaskIds,technicalChainContradiction:"NO_FEASIBLE_PENDING_MATERIALIZATION" as const}:{})});
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
     if((problem.operationalMealPolicies?.length??0)>0){const probe=operationalMeals.assess([...coreTasks,...placed,...tasks],tasks,{remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)},"STANDALONE",depth);if(probe.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(probe.status==="PRUNE")return "DEAD_END";}
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
@@ -1071,7 +1078,9 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   recordDeadEnd({kind:selected.domainSize===0?"MACRO_ZERO_DOMAIN":"MACRO_CANDIDATES_EXHAUSTED",phase:"MACRO",depth,
     workItemId:unit.id,workItemKind:unit.kind,taskIds:unit.tasks.map(({id})=>id).sort(),domainBefore:selected.domainSize,
     domainAfter:selected.domainSize,candidatesEvaluated,blockingTaskId:null,blockingAuthority:macroDomainAuthority,
-    firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
+    firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed),
+    ...(selected.domainSize===0&&chainContext?{technicalChainPolicyId:chainContext.policyId,technicalChainPendingTaskIds:chainContext.pendingTaskIds,
+      technicalChainFixedTaskIds:chainContext.fixedTaskIds,technicalChainContradiction:"NO_FEASIBLE_PENDING_MATERIALIZATION" as const}:{})});
   for (const task of unit.tasks) recordBlockingTask(task);
   return "DEAD_END";
 };

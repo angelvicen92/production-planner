@@ -64,10 +64,26 @@ export interface TechnicalChainExplorer {
   nextCandidate(): TechnicalChainCandidate | null;
 }
 
-const explicitPolicyFor=(problem:PlannerNextProblem,tasks:Task[]):TechnicalChainPolicy|undefined=>{
-  const ids=tasks.map(task=>task.id);
-  return problem.technicalChains?.find(policy=>policy.orderedTaskIds.length===ids.length&&policy.orderedTaskIds.every((id,index)=>id===ids[index]));
+export interface PartialTechnicalChainContext {
+  policyId:string;
+  pendingTaskIds:string[];
+  fixedTaskIds:string[];
+}
+
+const explicitPolicyFor=(problem:PlannerNextProblem,tasks:Task[],placed:readonly ScheduledTask[]=[]):TechnicalChainPolicy|undefined=>{
+  const ids=new Set(tasks.map(task=>task.id)),fixedIds=new Set(placed.map(task=>task.id));
+  return [...(problem.technicalChains??[])].sort((a,b)=>a.id.localeCompare(b.id)).find(policy=>{
+    if(ids.size===0||[...ids].some(id=>!policy.orderedTaskIds.includes(id)))return false;
+    const materializedPending=policy.orderedTaskIds.filter(id=>!fixedIds.has(id));
+    return materializedPending.length===ids.size&&materializedPending.every(id=>ids.has(id));
+  });
 };
+
+export function partialTechnicalChainContext(problem:PlannerNextProblem,tasks:Task[],placed:readonly ScheduledTask[]):PartialTechnicalChainContext|null{
+  const policy=explicitPolicyFor(problem,tasks,placed);if(!policy)return null;
+  const pending=new Set(tasks.map(task=>task.id)),fixed=new Set(placed.map(task=>task.id));
+  return {policyId:policy.id,pendingTaskIds:policy.orderedTaskIds.filter(id=>pending.has(id)),fixedTaskIds:policy.orderedTaskIds.filter(id=>fixed.has(id))};
+}
 
 function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,ordered:Task[],policy:TechnicalChainPolicy,
   placed:ScheduledTask[],allowance:number,meals:ScheduledSpaceMeal[]):TechnicalChainExplorer{
@@ -76,8 +92,11 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
     startsEvaluated:0,alternativesDeferred:0,alternativesRevisited:0,deferredQueuePeak:0,deferredPushes:0,deferredPops:0,
     deferredGlobalSorts:0,deferredMaintenanceMs:0,startEvaluationMs:0,preparedAuthorityBuilds:0,preparedAuthorityHits:0,
     fixedPlacedScansAvoided:0,domainBuildMs:0,finalPlacementCheckMs:0};
-  const duration=technicalChainProductiveDuration(ordered);let nextStart=problem.day.start,consumed=0,exhausted=false;
-  const byId=new Map(ordered.map(task=>[task.id,task]));
+  const fixedById=new Map(placed.filter(task=>policy.orderedTaskIds.includes(task.id)).map(task=>[task.id,task]));
+  const partial=fixedById.size>0;
+  const policyTasks=new Map(policy.orderedTaskIds.map(id=>[id,problem.tasks.find(task=>task.id===id)??fixedById.get(id)]));
+  const duration=policy.orderedTaskIds.reduce((sum,id)=>sum+(policyTasks.get(id)?.duration??0),0);
+  let nextStart=problem.day.start,consumed=0,exhausted=false;
   function* permutations<T>(values:readonly T[]):Generator<T[]> {
     if(values.length<2){yield [...values];return;}
     for(let index=0;index<values.length;index+=1){
@@ -86,13 +105,50 @@ function createContiguousTechnicalChainExplorer(problem:PlannerNextProblem,order
     }
   }
   function* baseCandidateOrders():Generator<Task[]> {
-    if(!policy.phases){yield ordered;return;}
+    if([...policyTasks.values()].some(task=>task===undefined))return;
+    if(!policy.phases){yield policy.orderedTaskIds.map(id=>policyTasks.get(id)!);return;}
     function* combine(phaseIndex:number,prefix:Task[]):Generator<Task[]> {
       if(phaseIndex===policy.phases!.length){yield prefix;return;}
-      const phase=policy.phases![phaseIndex]!.map(id=>byId.get(id)!).filter(Boolean);
+      const phase=policy.phases![phaseIndex]!.map(id=>policyTasks.get(id)!).filter(Boolean);
       for(const permutation of permutations(phase))yield* combine(phaseIndex+1,[...prefix,...permutation]);
     }
     yield* combine(0,[]);
+  }
+  if(partial){
+    const orders=baseCandidateOrders();
+    return {get consumed(){return consumed},get exhausted(){return exhausted},diagnostics,nextCandidate(){
+      for(let next=orders.next();!next.done;next=orders.next()){
+        if(consumed>=allowance){exhausted=true;return null;}
+        consumed+=1;diagnostics.expansions=consumed;diagnostics.startsEvaluated=consumed;diagnostics.rootOrdersEvaluated+=1;
+        const candidateOrder=next.value;
+        let offset=0,rootStart:number|undefined,anchorsCompatible=true;
+        for(const task of candidateOrder){const fixed=fixedById.get(task.id);if(fixed){const inferred=fixed.start-offset;if(rootStart===undefined)rootStart=inferred;else if(rootStart!==inferred)anchorsCompatible=false;if(fixed.end-fixed.start!==task.duration)anchorsCompatible=false;}offset+=task.duration;}
+        if(rootStart===undefined||!anchorsCompatible||rootStart<problem.day.start||rootStart+duration>problem.day.end)continue;
+        diagnostics.startsExplored+=1;diagnostics.rootStartsVisited+=1;diagnostics.fullGridStarts+=1;
+        let cursor=rootStart,cost=0;const scheduled:ScheduledTask[]=[];const handledGroups=new Set<string>();
+        for(const task of candidateOrder){
+          const fixed=fixedById.get(task.id);
+          if(fixed){if(fixed.start!==cursor||fixed.end!==cursor+task.duration){scheduled.length=0;break;}cursor=fixed.end;continue;}
+          if(policy.resourceContinuity==="REQUIRED"&&policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))){scheduled.length=0;break;}
+          const group=task.jointGroupId;
+          if(group&&handledGroups.has(group))continue;
+          const allMembers=group?jointGroupMembers(problem.tasks,group):[task];
+          const pendingMembers=allMembers.filter(member=>!fixedById.has(member.id));
+          const fixedMembers=allMembers.map(member=>fixedById.get(member.id)).filter((member):member is ScheduledTask=>member!==undefined);
+          if(fixedMembers.some(member=>member.start!==cursor||member.end!==cursor+task.duration)||
+            (group?!canPlaceJointGroup(problem,pendingMembers,cursor,[...placed,...scheduled]):!canPlaceTask(problem,task,cursor,[...placed,...scheduled],meals))){scheduled.length=0;break;}
+          const items=group?scheduleJointGroup(pendingMembers,cursor):[{...task,start:cursor,end:cursor+task.duration}];
+          const scoringPlaced=[...placed,...scheduled];
+          for(const item of items){cost+=[...new Set(item.requiredResourceIds??[])].reduce((sum,id)=>sum+resourcePresenceIncrement(id,scoringPlaced,item)*presencePreferenceWeight(problem.resources.find(resource=>resource.id===id)?.presencePreference??"OFF"),0);scoringPlaced.push(item);}
+          scheduled.push(...items);if(group)handledGroups.add(group);cursor+=task.duration;
+        }
+        const pendingIds=new Set(ordered.map(task=>task.id));
+        if(![...pendingIds].every(id=>scheduled.some(item=>item.id===id)))continue;
+        diagnostics.analyticEligibleStarts+=1;diagnostics.completeCandidatesGenerated+=1;diagnostics.completeCandidatesYielded+=1;diagnostics.rootOrdersYielded+=1;
+        return {tasks:scheduled,cost,rootTaskId:policy.id,start:rootStart,end:rootStart+duration};
+      }
+      diagnostics.analyticallyEliminatedStarts=diagnostics.fullGridStarts-diagnostics.analyticEligibleStarts;return null;
+    }};
   }
   let activeStart:number|undefined,activeOrders:Generator<Task[]>|undefined;
   return {get consumed(){return consumed},get exhausted(){return exhausted},diagnostics,nextCandidate(){
@@ -176,7 +232,7 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
   allowance:number,startDomainMode:TechnicalChainStartDomainMode="ANALYTIC_DOMAIN",
   scheduledSpaceMeals:ScheduledSpaceMeal[]=[],deferredQueueMode:TechnicalChainDeferredQueueMode="INCREMENTAL_HEAP",
   measureTimings=false,placementAuthorityMode:TechnicalChainPlacementAuthorityMode="PREPARED_AUTHORITY"):TechnicalChainExplorer {
-  const policy=explicitPolicyFor(problem,chainTasks),ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];
+  const policy=explicitPolicyFor(problem,chainTasks,placed),ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];
   if(policy?.adjacency==="REQUIRED")return createContiguousTechnicalChainExplorer(problem,ordered,policy,placed,allowance,scheduledSpaceMeals);
   const preparedAuthorities=placementAuthorityMode==="PREPARED_AUTHORITY"
     ?ordered.map(task=>prepareTaskPlacementAuthority(problem,task,placed,scheduledSpaceMeals)):[];
