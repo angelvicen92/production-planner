@@ -2130,7 +2130,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "878367d1d31d2131c93835ca97da5d82f8fbab1d8bd532737187ac8d932396ba",
-      "durationMs": 2456
+      "durationMs": 2412
     },
     {
       "ordinal": 2,
@@ -4145,7 +4145,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "cbc8cae0aadbf769a48782b0da67a9bf4202a64e1abd7a7e530dca3f6a0bb15e",
-      "durationMs": 1100
+      "durationMs": 1027
     },
     {
       "ordinal": 3,
@@ -4640,7 +4640,20 @@
           "DEPENDENCY_OF:task:10262"
         ]
       },
-      "internalPlacements": null,
+      "internalPlacements": {
+        "coreTaskCount": 87,
+        "coreTasksByKind": {
+          "auxiliary": 49,
+          "vocal": 19,
+          "main": 19
+        },
+        "pendingSupportingTotal": 41,
+        "pendingOrdinaryNoTransport": 22,
+        "pendingDynamicTransport": 19,
+        "pendingTasksByKind": {
+          "auxiliary": 41
+        }
+      },
       "operationalMeals": [
         {
           "id": "break:main-flow",
@@ -5257,7 +5270,7 @@
       "fixedMainFeederMealPasses": 0,
       "fixedMainFeederMealPrunes": 0,
       "firstFixedMainFeederMealPrune": null,
-      "standaloneEntryMealWitness": null,
+      "standaloneEntryMealWitness": "48d91739266ae8d09e097ff65106868a176d2a90b181d76081cc725264ba4e00",
       "technicalChainFutureReservation": {
         "checks": 0,
         "passes": 0,
@@ -5282,7 +5295,7 @@
           "explorerResumptions": 0,
           "candidatePlacementChecks": 0,
           "pressureCacheHits": 0,
-          "pressureCacheMisses": 0,
+          "pressureCacheMisses": 19,
           "rootStartsVisited": 0,
           "rootOrdersEvaluated": 0,
           "rootOrdersYielded": 0,
@@ -5363,14 +5376,12 @@
       "unstructuredReasonCodes": [],
       "reasonCodes": [
         "ASSISTED_SCOPE_INCOMPLETE",
-        "CORE_INFEASIBLE",
-        "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",
-        "HARD_VALIDATION_REJECTED:TECHNICAL_CHAIN_VIOLATION"
+        "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
       ],
       "work": {
-        "branchesExplored": 19,
+        "branchesExplored": 20,
         "coreBranches": 19,
-        "standaloneBranches": 0,
+        "standaloneBranches": 1,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -5393,9 +5404,9 @@
         "mainRunWitnessAttempts": 0,
         "mainRunWitnessRepairs": 0,
         "mainRunEquivalentOrdersCollapsed": 0,
-        "bundleMatchingAttempts": 0,
+        "bundleMatchingAttempts": 1,
         "bundleMatchingRepairs": 0,
-        "bundleMatchingMaterializations": 0,
+        "bundleMatchingMaterializations": 1,
         "bundleHardValidationRejects": 0,
         "bundleCertifiedRepairs": 0,
         "bundleNogoodsCreated": 0,
@@ -5410,7 +5421,7 @@
         "standaloneForwardWitnessCacheHits": 0,
         "standaloneForwardWitnessCacheMisses": 0,
         "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 0,
+        "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 1,
         "participantMealFutureInfeasibleBranches": 0,
@@ -5419,7 +5430,7 @@
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 0
       },
-      "branchesExplored": 19,
+      "branchesExplored": 20,
       "firstBlocker": {
         "scope": {
           "kind": "SPACE",
@@ -5505,7 +5516,7 @@
         ],
         "branches": {
           "core": 19,
-          "standalone": 0
+          "standalone": 1
         },
         "blockedObligationId": null,
         "blockedTask": null,
@@ -5536,24 +5547,40 @@
         "technicalChainFuturePrune": null,
         "causingTask": null,
         "blockingMeal": null,
-        "standaloneDeadEnd": null,
-        "causalAuthority": null,
-        "failureCategory": "UNKNOWN",
-        "phase": "constructExactItinerantPlan completion",
-        "firstCausalCheck": "constructExactItinerantPlan completion",
+        "standaloneDeadEnd": {
+          "kind": "MACRO_ZERO_DOMAIN",
+          "phase": "MACRO",
+          "depth": 0,
+          "workItemId": "technical-chain:task:10081",
+          "workItemKind": "TECHNICAL_CHAIN",
+          "taskIds": [
+            "task:10081",
+            "task:10154",
+            "task:10169"
+          ],
+          "domainBefore": 0,
+          "domainAfter": 0,
+          "candidatesEvaluated": 0,
+          "blockingTaskId": null,
+          "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+          "firstPlacementRejection": null,
+          "ancestralDecisions": []
+        },
+        "causalAuthority": "probeExactTechnicalChainMacroDomain",
+        "failureCategory": "GEOMETRY_OR_MATCHING",
+        "phase": "constructExactItinerantPlan/macro depth 0",
+        "firstCausalCheck": "MACRO_ZERO_DOMAIN",
         "staticEligibleStartCount": null,
         "dynamicEligibleStartCount": null,
         "reasonCodes": [
           "ASSISTED_SCOPE_INCOMPLETE",
-          "CORE_INFEASIBLE",
-          "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",
-          "HARD_VALIDATION_REJECTED:TECHNICAL_CHAIN_VIOLATION"
+          "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
         ],
         "blockingTaskIds": [],
         "blockers": [],
-        "rejectionReason": null,
+        "rejectionReason": "MACRO_ZERO_DOMAIN",
         "originatingCoreDecision": null,
-        "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+        "classification": "STANDALONE_MACRO_ZERO_DOMAIN"
       },
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -5606,8 +5633,8 @@
         "fixedMainBundlePreparedEdges": 19,
         "fixedMainBundleMatchingAttempts": 1,
         "fixedMainBundlePerfectMatchingFound": true,
-        "fixedMainBundleHardGatePasses": 0,
-        "fixedMainBundleHardGateRejects": 1,
+        "fixedMainBundleHardGatePasses": 1,
+        "fixedMainBundleHardGateRejects": 0,
         "fixedMainBundleTaskCount": 87,
         "fixedMainBundleTasksByKind": {
           "auxiliary": 49,
@@ -5621,7 +5648,7 @@
         "pendingAfterFixedMainBundle": 3,
         "legacyFixedFeederFallbackEntered": false,
         "legacyFixedFeederFallbackReason": null,
-        "firstFixedMainBundleRejection": "HARD_VALIDATION_REJECTED:TECHNICAL_CHAIN_VIOLATION"
+        "firstFixedMainBundleRejection": "FUTURE_FEASIBILITY_REJECTED"
       },
       "standaloneDiagnostic": {
         "standaloneBranchesByDepth": {},
@@ -5643,20 +5670,179 @@
         "firstTerminalCompletionRejection": null,
         "standaloneFirstSelectedTaskId": null,
         "standaloneDominantPathFirst20": [],
-        "standaloneFirstDominantBlocker": null,
+        "standaloneFirstDominantBlocker": {
+          "taskId": "task:10081",
+          "count": 1
+        },
         "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": null,
         "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 0,
-        "firstHardValidCoreLeaf": null,
+        "firstHardValidCoreLeaf": {
+          "coreTaskCount": 87,
+          "coreTasksByKind": {
+            "auxiliary": 49,
+            "vocal": 19,
+            "main": 19
+          },
+          "pendingSupportingTotal": 41,
+          "pendingOrdinaryNoTransport": 22,
+          "pendingDynamicTransport": 19,
+          "pendingTasksByKind": {
+            "auxiliary": 41
+          }
+        },
         "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 0,
+        "transportContiguousStates": 12,
         "membershipFallbackEntered": 0,
-        "coreLeafArrivalEvidence": null,
+        "coreLeafArrivalEvidence": {
+          "direction": "arrival",
+          "orderedTaskIds": [
+            "task:10077",
+            "task:10150",
+            "task:10120",
+            "task:10221",
+            "task:10060",
+            "task:10092",
+            "task:10135",
+            "task:10021",
+            "task:10105",
+            "task:10165",
+            "task:10034",
+            "task:10180",
+            "task:10194",
+            "task:10233",
+            "task:10246",
+            "task:10259",
+            "task:10006",
+            "task:10047",
+            "task:10207"
+          ],
+          "orderedParticipantIds": [
+            "participant:206",
+            "participant:211",
+            "participant:209",
+            "participant:216",
+            "participant:205",
+            "participant:207",
+            "participant:210",
+            "participant:202",
+            "participant:208",
+            "participant:212",
+            "participant:203",
+            "participant:213",
+            "participant:214",
+            "participant:217",
+            "participant:218",
+            "participant:219",
+            "participant:201",
+            "participant:204",
+            "participant:215"
+          ],
+          "packetSizes": [
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3
+          ],
+          "orderedDeadlines": [
+            545,
+            545,
+            575,
+            575,
+            605,
+            605,
+            605,
+            635,
+            635,
+            635,
+            665,
+            665,
+            665,
+            715,
+            715,
+            715,
+            765,
+            765,
+            765
+          ],
+          "packetMembers": [
+            [
+              "task:10077",
+              "task:10150"
+            ],
+            [
+              "task:10120",
+              "task:10221"
+            ],
+            [
+              "task:10060",
+              "task:10092",
+              "task:10135"
+            ],
+            [
+              "task:10021",
+              "task:10105",
+              "task:10165"
+            ],
+            [
+              "task:10034",
+              "task:10180",
+              "task:10194"
+            ],
+            [
+              "task:10233",
+              "task:10246",
+              "task:10259"
+            ],
+            [
+              "task:10006",
+              "task:10047",
+              "task:10207"
+            ]
+          ],
+          "starts": [
+            540,
+            570,
+            600,
+            630,
+            660,
+            710,
+            760
+          ],
+          "minGapMinutes": 30,
+          "construction": "contiguous",
+          "alternativesExplored": 1,
+          "classification": "CONTIGUOUS_EXACT",
+          "classificationBreakers": [],
+          "contiguousStatesExplored": 12,
+          "membershipFallbackEntered": false
+        },
         "corePrerequisiteReservationChecks": 1,
         "corePrerequisiteReservationPrunes": 0,
         "ordinaryPrerequisiteReservationChecks": 0,
         "ordinaryPrerequisiteReservationPrunes": 0,
         "firstPrerequisiteReservationPrune": null,
-        "firstStandaloneDeadEndCause": null
+        "firstStandaloneDeadEndCause": {
+          "kind": "MACRO_ZERO_DOMAIN",
+          "phase": "MACRO",
+          "depth": 0,
+          "workItemId": "technical-chain:task:10081",
+          "workItemKind": "TECHNICAL_CHAIN",
+          "taskIds": [
+            "task:10081",
+            "task:10154",
+            "task:10169"
+          ],
+          "domainBefore": 0,
+          "domainAfter": 0,
+          "candidatesEvaluated": 0,
+          "blockingTaskId": null,
+          "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+          "firstPlacementRejection": null,
+          "ancestralDecisions": []
+        }
       },
       "orderingComparison": null,
       "causalDiagnostic": {
@@ -5668,8 +5854,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 0,
-            "total": 19
+            "other": 1,
+            "total": 20
           }
         },
         "feederByDepth": {},
@@ -5690,7 +5876,7 @@
           "collisions": []
         }
       },
-      "durationMs": 382
+      "durationMs": 428
     }
   ],
   "firstBlocker": {
@@ -5778,7 +5964,7 @@
     ],
     "branches": {
       "core": 19,
-      "standalone": 0
+      "standalone": 1
     },
     "blockedObligationId": null,
     "blockedTask": null,
@@ -5809,24 +5995,40 @@
     "technicalChainFuturePrune": null,
     "causingTask": null,
     "blockingMeal": null,
-    "standaloneDeadEnd": null,
-    "causalAuthority": null,
-    "failureCategory": "UNKNOWN",
-    "phase": "constructExactItinerantPlan completion",
-    "firstCausalCheck": "constructExactItinerantPlan completion",
+    "standaloneDeadEnd": {
+      "kind": "MACRO_ZERO_DOMAIN",
+      "phase": "MACRO",
+      "depth": 0,
+      "workItemId": "technical-chain:task:10081",
+      "workItemKind": "TECHNICAL_CHAIN",
+      "taskIds": [
+        "task:10081",
+        "task:10154",
+        "task:10169"
+      ],
+      "domainBefore": 0,
+      "domainAfter": 0,
+      "candidatesEvaluated": 0,
+      "blockingTaskId": null,
+      "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+      "firstPlacementRejection": null,
+      "ancestralDecisions": []
+    },
+    "causalAuthority": "probeExactTechnicalChainMacroDomain",
+    "failureCategory": "GEOMETRY_OR_MATCHING",
+    "phase": "constructExactItinerantPlan/macro depth 0",
+    "firstCausalCheck": "MACRO_ZERO_DOMAIN",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
       "ASSISTED_SCOPE_INCOMPLETE",
-      "CORE_INFEASIBLE",
-      "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",
-      "HARD_VALIDATION_REJECTED:TECHNICAL_CHAIN_VIOLATION"
+      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
     ],
     "blockingTaskIds": [],
     "blockers": [],
-    "rejectionReason": null,
+    "rejectionReason": "MACRO_ZERO_DOMAIN",
     "originatingCoreDecision": null,
-    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+    "classification": "STANDALONE_MACRO_ZERO_DOMAIN"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "cbc8cae0aadbf769a48782b0da67a9bf4202a64e1abd7a7e530dca3f6a0bb15e",

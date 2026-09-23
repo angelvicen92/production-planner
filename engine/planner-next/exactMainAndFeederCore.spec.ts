@@ -1022,6 +1022,39 @@ test("protected Main identities reconstruct complete dependent bundles before st
     result.scheduledTasks.find(task=>task.id===placement.id),placement);
 });
 
+test("an intermediate hard gate defers a REQUIRED technical chain with residual members",()=>{
+  const problem=protectedPipelineProblem();
+  problem.participants.push({id:"residual",availability:[{start:0,end:300}]});
+  problem.spaces.push({id:"residual",availability:[{start:0,end:300}]});
+  problem.tasks.push({id:"residual-chain-tail",kind:"auxiliary",participantId:"residual",duration:10,
+    spaceId:"residual",dependencies:[]});
+  problem.technicalChains=[{id:"cross-stage-chain",orderedTaskIds:["pipeline-style0","residual-chain-tail"],
+    adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]}];
+  const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  let residualIds:string[]=[];
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,
+    onHardValidCoreLeaf(candidate){residualIds=[...candidate.remainingTaskIds];return "ACCEPT";}});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.deepEqual(residualIds,["residual-chain-tail"]);
+  assert.equal(result.evidence.fixedMainBundleHardGatePasses,1);
+  for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+});
+
+test("an intermediate hard gate still rejects an invalid fully materialized REQUIRED technical chain",()=>{
+  const problem=protectedPipelineProblem();
+  problem.technicalChains=[{id:"invalid-core-chain",orderedTaskIds:["pipeline-main1","pipeline-main0"],
+    adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]}];
+  const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  let continuationCalls=0;
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,
+    onHardValidCoreLeaf(){continuationCalls++;return "ACCEPT";}});
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.reasonCodes.includes("HARD_VALIDATION_REJECTED:TECHNICAL_CHAIN_VIOLATION"));
+  assert.equal(continuationCalls,0);
+});
+
 test("a supported protected-Main pipeline cannot silently degrade to feeder-only fallback",()=>{
   const problem=protectedPipelineProblem();
   const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
