@@ -186,6 +186,7 @@ describe("anonymous structural pipeline witness",()=>{
   it("reaches a hard-valid later meal start without splitting a logical Main run",()=>{
     const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
     p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};
+    p.operationalMealPolicies=[{id:"main-meal",resourceIds:[],spaceIds:["main"],window:{start:60,end:100},duration:10}];
     p.tasks.find(task=>task.id==="main0")!.availability=[{start:55,end:70}];
     p.tasks.find(task=>task.id==="main1")!.availability=[{start:80,end:95}];
     const preferred=buildTimeline(p,["A","A"],15,1,60);
@@ -193,6 +194,7 @@ describe("anonymous structural pipeline witness",()=>{
     const architectures=[...authorizedPipelineArchitectures(p)];
     const recovered=architectures.find(row=>row.pattern.join("|")==="A|A"&&row.slots.join("|")==="55|80");
     assert.ok(recovered,"the enumerator must continue beyond the infeasible preferred meal start");
+    assert.equal(recovered.mealStart,70);
     const witness=materializeNominalPipelineWitness(p,recovered!).witness;
     assert.equal(witness.status,"FEASIBLE");assert.equal(witness.runCount,1);
   });

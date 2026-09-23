@@ -9,6 +9,8 @@ export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
   slots: readonly number[];
+  /** Effective Main-space meal selected while enumerating this architecture. */
+  mealStart?: number;
 }
 
 export type SharedPrerequisiteCapacityAuthority = "TRANSPORT" | "ENTRY_STYLING" | "COMBINED";
