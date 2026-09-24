@@ -775,3 +775,44 @@ test("an unreachable unresolved dependency stays explicitly inconclusive and can
   assert.deepEqual(result.evidence.participantFutureUnreachableDependencyIds,["outside"]);
   assert.deepEqual(result.evidence.reasonCodes,["PARTICIPANT_FUTURE_RESERVATION_INCONCLUSIVE"]);
 });
+
+const setupMacroParticipantFutureProblem=(secondDependency?:string):PlannerNextProblem=>{
+  const input=problem([]);input.protectedMeal=undefined;
+  input.spaces.push({id:"setup-future",availability:[{start:20,end:50}],secondaryContinuity:"REQUIRED",
+    setupPolicy:{familyOrder:["family"],reentry:"FORBIDDEN"}},{id:"future-owner",availability:[{start:0,end:120}]});
+  input.participants.push({id:"setup-owner",availability:[{start:0,end:120}]},{id:"setup-peer",availability:[{start:0,end:120}]});
+  input.tasks.push(
+    {...auxiliary("setup-owner-task","setup-owner",[{start:20,end:50}]),duration:5,spaceId:"setup-future",setupFamilyId:"family"},
+    {...auxiliary("setup-peer-task","setup-peer",[{start:20,end:50}]),duration:5,spaceId:"setup-future",setupFamilyId:"family"},
+  );
+  if(secondDependency){
+    input.resources.push({id:"future-resource",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+    input.spaces.push({id:"space-future-dependency",availability:[{start:0,end:120}]});
+    input.participants.push({id:"dependency-owner",availability:[{start:0,end:120}]});
+    input.tasks.push({...auxiliary(secondDependency,"dependency-owner",[{start:0,end:120}],["future-resource"]),duration:5});
+  }
+  input.analyticalFutureParticipantTasks=[{id:"future-owner-task",kind:"auxiliary",participantId:"setup-owner",spaceId:"future-owner",
+    duration:10,availability:[{start:30,end:40}],dependencies:["setup-owner-task",...(secondDependency?[secondDependency]:[])]}];
+  return input;
+};
+
+test("setup macro candidates use the participant future gate and retain an earlier extensible geometry",()=>{
+  const result=runExactItinerantPlanSearch(setupMacroParticipantFutureProblem(),{standaloneCompletionSelection:"BEST_DOMINATING_WITHIN_BUDGET"});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureReservationPrunes>0);
+  assert.equal(result.evidence.firstParticipantFutureReservationPrune?.phase,"MACRO");
+  assert.match(result.evidence.firstParticipantFutureReservationPrune?.macroUnitId??"",/^setup:/);
+  assert.deepEqual(result.evidence.firstParticipantFutureReservationPrune?.addedTaskIds,["setup-owner-task","setup-peer-task"]);
+  assert.ok(result.scheduledTasks.find(({id})=>id==="setup-owner-task")!.end<=30);
+});
+
+test("macro inconclusive shape defers while its dependency remains reachable and is rechecked",()=>{
+  const input=setupMacroParticipantFutureProblem("future-dependency");
+  input.spaces.find(({id})=>id==="setup-future")!.availability=[{start:20,end:30}];
+  for(const task of input.tasks.filter(({setupFamilyId})=>setupFamilyId!==undefined))task.availability=[{start:20,end:30}];
+  const result=runExactItinerantPlanSearch(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureReservationAbstentions>0);
+  assert.ok(result.evidence.participantFutureReservationPasses>0);
+  assert.deepEqual(result.evidence.participantFutureUnreachableDependencyIds,[]);
+});

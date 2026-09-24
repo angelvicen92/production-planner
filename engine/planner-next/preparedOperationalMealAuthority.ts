@@ -5,7 +5,7 @@ import { overlaps } from "./time";
 export type OperationalMealReservationStatus = "PASS" | "PRUNE" | "ABSTAIN";
 export interface OperationalMealRemainingInterval { readonly start:number; readonly end:number }
 export interface OperationalMealFirstPrune {
-  readonly phase:"CORE"|"STANDALONE";readonly causality:"CAUSED_BY_ADDED_TASK"|"PREEXISTING_ZERO_DOMAIN";
+  readonly phase:"CORE"|"STANDALONE"|"MACRO";readonly causality:"CAUSED_BY_ADDED_TASK"|"PREEXISTING_ZERO_DOMAIN";
   readonly causingTaskId:string|null;readonly causingStart:number|null;readonly policyId:string;
   readonly resourceIds:readonly string[];readonly spaceIds:readonly string[];readonly window:Window;readonly duration:number;
   readonly candidateCountBefore:number;readonly candidateCountAfter:number;readonly remainingIntervals:readonly OperationalMealRemainingInterval[];readonly depth:number;
@@ -86,7 +86,7 @@ export class PreparedOperationalMealAuthority {
       preservesInterval&&=slack>=0;bestSlack=Math.min(bestSlack,slack);}
     return {preservesWitness,preservesInterval,bestSlack};
   }
-  assess(tasks:readonly ScheduledTask[],addedTasks:readonly ScheduledTask[],budget:OperationalMealSearchBudget,phase:"CORE"|"STANDALONE",depth:number):OperationalMealReservationProbe{
+  assess(tasks:readonly ScheduledTask[],addedTasks:readonly ScheduledTask[],budget:OperationalMealSearchBudget,phase:"CORE"|"STANDALONE"|"MACRO",depth:number):OperationalMealReservationProbe{
     this.evidence.checks++;const policies=[...(this.problem.operationalMealPolicies??[])].sort((a,b)=>a.id.localeCompare(b.id));
     const affected=policies.filter(policy=>addedTasks.some(task=>affects(task,policy)));this.evidence.affectedPoliciesChecked+=affected.length;
     if(affected.length===0){this.evidence.irrelevantFastPasses++;this.evidence.passes++;return {status:"PASS",witness:this.lastWitness,affectedPolicyIds:[],blockingPolicyId:null,remainingIntervals:[],causality:null,candidateCountBefore:null,candidateCountAfter:null,remainingIntervalsBefore:[],witnessBefore:this.witnessFingerprint};}
