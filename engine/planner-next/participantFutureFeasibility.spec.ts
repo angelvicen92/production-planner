@@ -31,6 +31,7 @@ test("passes when at least one future task and meal pair is compatible",()=>{
 test("abstains for an unresolved future dependency",()=>{
   const result=probeParticipantFutureReservations(problem({start:40,end:80},["unknown"]),[current()],[current()]);
   assert.equal(result.status,"ABSTAIN"); assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE");
+  assert.deepEqual(result.unresolvedDependencyIds,["unknown"]);
   assert.equal(result.individualZeroDomainPrunes,0);
 });
 

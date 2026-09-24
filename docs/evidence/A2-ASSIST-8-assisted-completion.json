@@ -1536,6 +1536,7 @@
             "compatiblePairChecks": 0,
             "analyticChecks": 10,
             "branchesConsumed": 0,
+            "unresolvedDependencyIds": [],
             "abstainCause": null,
             "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
             "futureTaskId": "task:10074",
@@ -2326,7 +2327,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "7bbc795c973614a422c3e13e23ef142b2adaf9b838bea22f0cc78676a840a047",
-      "durationMs": 129349
+      "durationMs": 103835
     },
     {
       "ordinal": 2,
@@ -2837,12 +2838,15 @@
           ],
           "witness": {
             "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "VALIDATION",
+            "cause": "VALIDATION_REJECTED"
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 0,
+            "blocking": false,
+            "reasonCodes": []
           }
         },
         {
@@ -2859,13 +2863,23 @@
             "space:3007"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p14-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3005",
+              "space:3006",
+              "space:3007"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 28,
+            "blocking": false,
+            "reasonCodes": []
           }
         },
         {
@@ -2881,13 +2895,22 @@
             "space:3009"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:p15-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3008",
+              "space:3009"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 28,
+            "blocking": false,
+            "reasonCodes": []
           }
         },
         {
@@ -2903,13 +2926,22 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-a",
+            "resourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 795,
+            "end": 870
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 25,
+            "blocking": false,
+            "reasonCodes": []
           }
         },
         {
@@ -2925,13 +2957,22 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:reality-b",
+            "resourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "spaceIds": [],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 28,
+            "blocking": false,
+            "reasonCodes": []
           }
         },
         {
@@ -2947,13 +2988,22 @@
             "space:3020"
           ],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:totales-operations",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3019",
+              "space:3020"
+            ],
+            "duration": 75,
+            "start": 780,
+            "end": 855
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 28,
+            "blocking": false,
+            "reasonCodes": []
           }
         }
       ],
@@ -2970,13 +3020,21 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-jose-maria",
+            "resourceIds": [
+              "plan-resource:4004"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 780,
+            "end": 825
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 28,
+            "blocking": false,
+            "reasonCodes": []
           }
         },
         {
@@ -2991,13 +3049,21 @@
           ],
           "spaceIds": [],
           "witness": {
-            "status": "ABSENT",
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "id": "break:coach-lucia",
+            "resourceIds": [
+              "plan-resource:4005"
+            ],
+            "spaceIds": [],
+            "duration": 45,
+            "start": 780,
+            "end": 825
           },
           "diagnostic": {
-            "phase": "NOT_REACHED",
-            "cause": "NO_COMPLETE_TERMINAL_LEAF"
+            "phase": "OPERATIONAL_MEALS",
+            "complete": true,
+            "candidateCount": 7,
+            "blocking": false,
+            "reasonCodes": []
           }
         }
       ],
@@ -3013,15 +3079,20 @@
               "start": 780,
               "end": 930
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 20,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10013",
+              "sourceTaskId": "task:10013",
+              "participantId": "participant:201",
+              "duration": 40,
+              "start": 795,
+              "end": 835
             }
           },
           {
@@ -3033,15 +3104,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 22,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10027",
+              "sourceTaskId": "task:10027",
+              "participantId": "participant:202",
+              "duration": 40,
+              "start": 865,
+              "end": 905
             }
           },
           {
@@ -3053,15 +3129,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 20,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10039",
+              "sourceTaskId": "task:10039",
+              "participantId": "participant:203",
+              "duration": 40,
+              "start": 820,
+              "end": 860
             }
           },
           {
@@ -3073,15 +3154,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 18,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10052",
+              "sourceTaskId": "task:10052",
+              "participantId": "participant:204",
+              "duration": 40,
+              "start": 910,
+              "end": 950
             }
           },
           {
@@ -3093,15 +3179,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 35,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10067",
+              "sourceTaskId": "task:10067",
+              "participantId": "participant:205",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -3113,15 +3204,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 19,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10083",
+              "sourceTaskId": "task:10083",
+              "participantId": "participant:206",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -3133,15 +3229,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 25,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10098",
+              "sourceTaskId": "task:10098",
+              "participantId": "participant:207",
+              "duration": 40,
+              "start": 950,
+              "end": 990
             }
           },
           {
@@ -3153,15 +3254,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 35,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10112",
+              "sourceTaskId": "task:10112",
+              "participantId": "participant:208",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -3173,15 +3279,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 25,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10127",
+              "sourceTaskId": "task:10127",
+              "participantId": "participant:209",
+              "duration": 40,
+              "start": 910,
+              "end": 950
             }
           },
           {
@@ -3193,15 +3304,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 25,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10142",
+              "sourceTaskId": "task:10142",
+              "participantId": "participant:210",
+              "duration": 40,
+              "start": 950,
+              "end": 990
             }
           },
           {
@@ -3213,15 +3329,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 35,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10157",
+              "sourceTaskId": "task:10157",
+              "participantId": "participant:211",
+              "duration": 40,
+              "start": 865,
+              "end": 905
             }
           },
           {
@@ -3233,15 +3354,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 16,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10171",
+              "sourceTaskId": "task:10171",
+              "participantId": "participant:212",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -3253,15 +3379,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 17,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10186",
+              "sourceTaskId": "task:10186",
+              "participantId": "participant:213",
+              "duration": 40,
+              "start": 870,
+              "end": 910
             }
           },
           {
@@ -3273,15 +3404,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 26,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10199",
+              "sourceTaskId": "task:10199",
+              "participantId": "participant:214",
+              "duration": 40,
+              "start": 825,
+              "end": 865
             }
           },
           {
@@ -3293,15 +3429,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 24,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10213",
+              "sourceTaskId": "task:10213",
+              "participantId": "participant:215",
+              "duration": 40,
+              "start": 785,
+              "end": 825
             }
           },
           {
@@ -3313,15 +3454,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 35,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10226",
+              "sourceTaskId": "task:10226",
+              "participantId": "participant:216",
+              "duration": 40,
+              "start": 910,
+              "end": 950
             }
           },
           {
@@ -3333,15 +3479,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 25,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10239",
+              "sourceTaskId": "task:10239",
+              "participantId": "participant:217",
+              "duration": 40,
+              "start": 780,
+              "end": 820
             }
           },
           {
@@ -3353,15 +3504,20 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 22,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10252",
+              "sourceTaskId": "task:10252",
+              "participantId": "participant:218",
+              "duration": 40,
+              "start": 915,
+              "end": 955
             }
           },
           {
@@ -3373,26 +3529,31 @@
               "start": 780,
               "end": 990
             },
-            "status": "NOT_REACHED",
+            "status": "MATERIALIZED",
             "diagnostic": {
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "phase": "PARTICIPANT_MEALS",
+              "candidateCount": 20,
+              "blocking": false,
+              "reasonCodes": []
             },
             "witness": {
-              "status": "ABSENT",
-              "phase": "NOT_REACHED",
-              "cause": "NO_COMPLETE_TERMINAL_LEAF"
+              "id": "participant-meal:10265",
+              "sourceTaskId": "task:10265",
+              "participantId": "participant:219",
+              "duration": 40,
+              "start": 865,
+              "end": 905
             }
           }
         ],
-        "futureFeasibilityChecks": 1,
+        "futureFeasibilityChecks": 81,
         "futureInfeasibleBranches": 0,
         "affectedObligationsChecked": 0,
         "zeroDomainPrunes": 0,
         "analyticCollectivePrunes": 0,
         "blockingMealTaskIds": [],
         "firstPrune": null,
-        "exactMaterializations": 0
+        "exactMaterializations": 80
       },
       "participantFutureReservation": {
         "checks": 2,
@@ -3439,7 +3600,7 @@
       "fixedMainFeederMealPasses": 0,
       "fixedMainFeederMealPrunes": 0,
       "firstFixedMainFeederMealPrune": null,
-      "standaloneEntryMealWitness": null,
+      "standaloneEntryMealWitness": "3afef2b442001ff3aed468a7712ad4456967e18b5ebca428fbe9eb796031db93",
       "technicalChainFutureReservation": {
         "checks": 0,
         "passes": 0,
@@ -3552,9 +3713,9 @@
         "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
       ],
       "work": {
-        "branchesExplored": 507,
+        "branchesExplored": 4915,
         "coreBranches": 19,
-        "standaloneBranches": 488,
+        "standaloneBranches": 4896,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -3596,14 +3757,14 @@
         "coreLeafTransportPrunes": 0,
         "transportContiguousStates": 4462,
         "membershipFallbackEntered": 0,
-        "participantMealFutureFeasibilityChecks": 1,
+        "participantMealFutureFeasibilityChecks": 81,
         "participantMealFutureInfeasibleBranches": 0,
         "participantMealAffectedObligationsChecked": 0,
         "participantMealZeroDomainPrunes": 0,
         "participantMealAnalyticCollectivePrunes": 0,
-        "participantMealExactMaterializations": 0
+        "participantMealExactMaterializations": 80
       },
-      "branchesExplored": 507,
+      "branchesExplored": 4915,
       "firstBlocker": {
         "scope": {
           "kind": "SPACE",
@@ -3694,7 +3855,7 @@
         ],
         "branches": {
           "core": 19,
-          "standalone": 488
+          "standalone": 4896
         },
         "blockedObligationId": null,
         "blockedTask": null,
@@ -3719,11 +3880,33 @@
         "technicalChainFuturePrune": null,
         "causingTask": null,
         "blockingMeal": null,
-        "standaloneDeadEnd": null,
-        "causalAuthority": null,
-        "failureCategory": "UNKNOWN",
-        "phase": "constructExactItinerantPlan completion",
-        "firstCausalCheck": "constructExactItinerantPlan completion",
+        "standaloneDeadEnd": {
+          "kind": "MACRO_CANDIDATES_EXHAUSTED",
+          "phase": "MACRO",
+          "depth": 0,
+          "workItemId": "technical-chain:task:10081",
+          "workItemKind": "TECHNICAL_CHAIN",
+          "taskIds": [
+            "task:10041",
+            "task:10069",
+            "task:10081",
+            "task:10154",
+            "task:10169",
+            "task:10173",
+            "task:10215"
+          ],
+          "domainBefore": 80,
+          "domainAfter": 80,
+          "candidatesEvaluated": 80,
+          "blockingTaskId": null,
+          "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+          "firstPlacementRejection": null,
+          "ancestralDecisions": []
+        },
+        "causalAuthority": "probeExactTechnicalChainMacroDomain",
+        "failureCategory": "VALIDATION",
+        "phase": "constructExactItinerantPlan/macro depth 0",
+        "firstCausalCheck": "VALIDATION",
         "staticEligibleStartCount": null,
         "dynamicEligibleStartCount": null,
         "reasonCodes": [
@@ -3732,9 +3915,9 @@
         ],
         "blockingTaskIds": [],
         "blockers": [],
-        "rejectionReason": null,
+        "rejectionReason": "VALIDATION_REJECTED",
         "originatingCoreDecision": null,
-        "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+        "classification": "ORDINARY_COMPLETE_VALIDATION_REJECTED"
       },
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -3868,11 +4051,13 @@
         "firstFixedMainBundleRejection": "FUTURE_FEASIBILITY_REJECTED"
       },
       "standaloneDiagnostic": {
-        "standaloneBranchesByDepth": {},
+        "standaloneBranchesByDepth": {
+          "8": 80
+        },
         "standaloneSelectionsByTaskId": {},
         "standaloneCandidateStartsByTaskId": {},
-        "standaloneMaximumDepth": 0,
-        "standaloneCompleteLeafCount": 0,
+        "standaloneMaximumDepth": 8,
+        "standaloneCompleteLeafCount": 80,
         "terminalTransportMaterializationAttempts": 0,
         "terminalTransportMaterializationFailures": 0,
         "terminalTransportWitness": null,
@@ -3882,14 +4067,3652 @@
           "OPERATIONAL_MEAL_WITNESS_INCOMPLETE": 0,
           "TRANSPORT_MATERIALIZATION_FAILED": 0,
           "CANDIDATE_IDENTITY_MISMATCH": 0,
-          "VALIDATION_REJECTED": 0
+          "VALIDATION_REJECTED": 80
         },
-        "firstTerminalCompletionRejection": null,
+        "firstTerminalCompletionRejection": {
+          "cause": "VALIDATION_REJECTED",
+          "phase": "VALIDATION",
+          "expectedTaskCount": 90,
+          "actualTaskCount": 90,
+          "participantMealWitness": {
+            "complete": true,
+            "scheduled": [
+              {
+                "id": "participant-meal:10067",
+                "sourceTaskId": "task:10067",
+                "participantId": "participant:205",
+                "duration": 40,
+                "start": 780,
+                "end": 820
+              },
+              {
+                "id": "participant-meal:10083",
+                "sourceTaskId": "task:10083",
+                "participantId": "participant:206",
+                "duration": 40,
+                "start": 780,
+                "end": 820
+              },
+              {
+                "id": "participant-meal:10112",
+                "sourceTaskId": "task:10112",
+                "participantId": "participant:208",
+                "duration": 40,
+                "start": 780,
+                "end": 820
+              },
+              {
+                "id": "participant-meal:10239",
+                "sourceTaskId": "task:10239",
+                "participantId": "participant:217",
+                "duration": 40,
+                "start": 780,
+                "end": 820
+              },
+              {
+                "id": "participant-meal:10213",
+                "sourceTaskId": "task:10213",
+                "participantId": "participant:215",
+                "duration": 40,
+                "start": 785,
+                "end": 825
+              },
+              {
+                "id": "participant-meal:10013",
+                "sourceTaskId": "task:10013",
+                "participantId": "participant:201",
+                "duration": 40,
+                "start": 795,
+                "end": 835
+              },
+              {
+                "id": "participant-meal:10039",
+                "sourceTaskId": "task:10039",
+                "participantId": "participant:203",
+                "duration": 40,
+                "start": 820,
+                "end": 860
+              },
+              {
+                "id": "participant-meal:10171",
+                "sourceTaskId": "task:10171",
+                "participantId": "participant:212",
+                "duration": 40,
+                "start": 825,
+                "end": 865
+              },
+              {
+                "id": "participant-meal:10199",
+                "sourceTaskId": "task:10199",
+                "participantId": "participant:214",
+                "duration": 40,
+                "start": 825,
+                "end": 865
+              },
+              {
+                "id": "participant-meal:10027",
+                "sourceTaskId": "task:10027",
+                "participantId": "participant:202",
+                "duration": 40,
+                "start": 865,
+                "end": 905
+              },
+              {
+                "id": "participant-meal:10157",
+                "sourceTaskId": "task:10157",
+                "participantId": "participant:211",
+                "duration": 40,
+                "start": 865,
+                "end": 905
+              },
+              {
+                "id": "participant-meal:10265",
+                "sourceTaskId": "task:10265",
+                "participantId": "participant:219",
+                "duration": 40,
+                "start": 865,
+                "end": 905
+              },
+              {
+                "id": "participant-meal:10186",
+                "sourceTaskId": "task:10186",
+                "participantId": "participant:213",
+                "duration": 40,
+                "start": 870,
+                "end": 910
+              },
+              {
+                "id": "participant-meal:10052",
+                "sourceTaskId": "task:10052",
+                "participantId": "participant:204",
+                "duration": 40,
+                "start": 910,
+                "end": 950
+              },
+              {
+                "id": "participant-meal:10127",
+                "sourceTaskId": "task:10127",
+                "participantId": "participant:209",
+                "duration": 40,
+                "start": 910,
+                "end": 950
+              },
+              {
+                "id": "participant-meal:10226",
+                "sourceTaskId": "task:10226",
+                "participantId": "participant:216",
+                "duration": 40,
+                "start": 910,
+                "end": 950
+              },
+              {
+                "id": "participant-meal:10252",
+                "sourceTaskId": "task:10252",
+                "participantId": "participant:218",
+                "duration": 40,
+                "start": 915,
+                "end": 955
+              },
+              {
+                "id": "participant-meal:10098",
+                "sourceTaskId": "task:10098",
+                "participantId": "participant:207",
+                "duration": 40,
+                "start": 950,
+                "end": 990
+              },
+              {
+                "id": "participant-meal:10142",
+                "sourceTaskId": "task:10142",
+                "participantId": "participant:210",
+                "duration": 40,
+                "start": 950,
+                "end": 990
+              }
+            ],
+            "candidateCountByTaskId": {
+              "task:10171": 16,
+              "task:10186": 17,
+              "task:10052": 18,
+              "task:10083": 19,
+              "task:10013": 20,
+              "task:10039": 20,
+              "task:10265": 20,
+              "task:10027": 22,
+              "task:10252": 22,
+              "task:10213": 24,
+              "task:10098": 25,
+              "task:10127": 25,
+              "task:10142": 25,
+              "task:10239": 25,
+              "task:10199": 26,
+              "task:10067": 35,
+              "task:10112": 35,
+              "task:10157": 35,
+              "task:10226": 35
+            },
+            "finalSelectionOrder": [
+              "task:10171",
+              "task:10186",
+              "task:10052",
+              "task:10083",
+              "task:10013",
+              "task:10039",
+              "task:10265",
+              "task:10027",
+              "task:10252",
+              "task:10213",
+              "task:10098",
+              "task:10127",
+              "task:10142",
+              "task:10239",
+              "task:10199",
+              "task:10067",
+              "task:10112",
+              "task:10157",
+              "task:10226"
+            ],
+            "attemptedSelectionTrace": [
+              "task:10171",
+              "task:10186",
+              "task:10052",
+              "task:10083",
+              "task:10013",
+              "task:10039",
+              "task:10265",
+              "task:10027",
+              "task:10252",
+              "task:10213",
+              "task:10098",
+              "task:10127",
+              "task:10142",
+              "task:10239",
+              "task:10199",
+              "task:10067",
+              "task:10112",
+              "task:10157",
+              "task:10226"
+            ],
+            "blockingMealTaskIds": [],
+            "rejectedCandidateCount": 0,
+            "candidateOrderByTaskId": {
+              "task:10171": [
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                }
+              ],
+              "task:10186": [
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                }
+              ],
+              "task:10052": [
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                }
+              ],
+              "task:10083": [
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                }
+              ],
+              "task:10013": [
+                {
+                  "start": 795,
+                  "spanIncrease": 40,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 45,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 50,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 55,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 60,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 65,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 70,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 75,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 80,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 85,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 90,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 95,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 100,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 105,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 110,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 115,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 120,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 125,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 130,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 135,
+                  "internalGap": false,
+                  "residualSlack": 110,
+                  "capacityFree": 7
+                }
+              ],
+              "task:10039": [
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 40,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 45,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 50,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 55,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 60,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 65,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 70,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 75,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                }
+              ],
+              "task:10265": [
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                }
+              ],
+              "task:10027": [
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 40,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 45,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 50,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 55,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 60,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 9
+                }
+              ],
+              "task:10252": [
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                }
+              ],
+              "task:10213": [
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 40,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 45,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                }
+              ],
+              "task:10098": [
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 8
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                }
+              ],
+              "task:10127": [
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                }
+              ],
+              "task:10142": [
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 7
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                }
+              ],
+              "task:10239": [
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                }
+              ],
+              "task:10199": [
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                }
+              ],
+              "task:10067": [
+                {
+                  "start": 780,
+                  "spanIncrease": 85,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 90,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 95,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 100,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 105,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 110,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 115,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 120,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 125,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 130,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 135,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 140,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 145,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 150,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 155,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 160,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 165,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 170,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 175,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 180,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 185,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 190,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 195,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 200,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 205,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 210,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 215,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 220,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 225,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 230,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 235,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 240,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 245,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 250,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 255,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                }
+              ],
+              "task:10112": [
+                {
+                  "start": 780,
+                  "spanIncrease": 70,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 75,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 80,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 1
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 85,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 1
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 90,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 1
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 95,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 1
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 100,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 1
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 105,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 1
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 110,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 115,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 120,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 125,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 130,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 135,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 140,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 145,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 150,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 155,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 160,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 165,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 170,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 175,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 180,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 185,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 190,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 195,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 200,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 205,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 210,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 215,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 220,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 225,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 230,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 235,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 240,
+                  "internalGap": false,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                }
+              ],
+              "task:10157": [
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                }
+              ],
+              "task:10226": [
+                {
+                  "start": 910,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 950,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 6
+                },
+                {
+                  "start": 825,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 865,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 870,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 905,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 5
+                },
+                {
+                  "start": 820,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 915,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 920,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 925,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 930,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 935,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 940,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 945,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 4
+                },
+                {
+                  "start": 780,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 860,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 875,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 3
+                },
+                {
+                  "start": 785,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 830,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 835,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 840,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 845,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 850,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 855,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 880,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 885,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 890,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 895,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 900,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 2
+                },
+                {
+                  "start": 790,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 795,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 800,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 805,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 810,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                },
+                {
+                  "start": 815,
+                  "spanIncrease": 0,
+                  "internalGap": true,
+                  "residualSlack": 170,
+                  "capacityFree": 0
+                }
+              ]
+            },
+            "branchesExplored": 19,
+            "logicalGridStarts": 6590,
+            "actuallyEvaluatedStarts": 6590,
+            "backtracks": 0,
+            "maximumSimultaneous": 6,
+            "reasonCodes": [],
+            "readOnly": true
+          },
+          "operationalMealWitness": {
+            "complete": true,
+            "scheduled": [
+              {
+                "id": "break:coach-jose-maria",
+                "resourceIds": [
+                  "plan-resource:4004"
+                ],
+                "spaceIds": [],
+                "duration": 45,
+                "start": 780,
+                "end": 825
+              },
+              {
+                "id": "break:coach-lucia",
+                "resourceIds": [
+                  "plan-resource:4005"
+                ],
+                "spaceIds": [],
+                "duration": 45,
+                "start": 780,
+                "end": 825
+              },
+              {
+                "id": "break:p14-operations",
+                "resourceIds": [],
+                "spaceIds": [
+                  "space:3005",
+                  "space:3006",
+                  "space:3007"
+                ],
+                "duration": 75,
+                "start": 780,
+                "end": 855
+              },
+              {
+                "id": "break:p15-operations",
+                "resourceIds": [],
+                "spaceIds": [
+                  "space:3008",
+                  "space:3009"
+                ],
+                "duration": 75,
+                "start": 780,
+                "end": 855
+              },
+              {
+                "id": "break:reality-b",
+                "resourceIds": [
+                  "plan-resource:4003",
+                  "plan-resource:4008"
+                ],
+                "spaceIds": [],
+                "duration": 75,
+                "start": 780,
+                "end": 855
+              },
+              {
+                "id": "break:totales-operations",
+                "resourceIds": [],
+                "spaceIds": [
+                  "space:3019",
+                  "space:3020"
+                ],
+                "duration": 75,
+                "start": 780,
+                "end": 855
+              },
+              {
+                "id": "break:reality-a",
+                "resourceIds": [
+                  "plan-resource:4002",
+                  "plan-resource:4007"
+                ],
+                "spaceIds": [],
+                "duration": 75,
+                "start": 795,
+                "end": 870
+              }
+            ],
+            "candidateCountByPolicyId": {
+              "break:coach-jose-maria": 28,
+              "break:coach-lucia": 7,
+              "break:p14-operations": 28,
+              "break:p15-operations": 28,
+              "break:reality-a": 25,
+              "break:reality-b": 28,
+              "break:totales-operations": 28
+            },
+            "finalSelectionOrder": [
+              "break:coach-jose-maria",
+              "break:coach-lucia",
+              "break:p14-operations",
+              "break:p15-operations",
+              "break:reality-a",
+              "break:reality-b",
+              "break:totales-operations"
+            ],
+            "blockingPolicyIds": [],
+            "branchesExplored": 0,
+            "backtracks": 0,
+            "reasonCodes": [],
+            "readOnly": true
+          },
+          "transportWitness": null,
+          "validation": {
+            "hardValid": false,
+            "reasonCodes": [
+              "BLOCK_VIOLATION",
+              "OPERATIONAL_MEAL_VIOLATION"
+            ],
+            "violations": []
+          }
+        },
         "standaloneFirstSelectedTaskId": null,
         "standaloneDominantPathFirst20": [],
-        "standaloneFirstDominantBlocker": null,
-        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": null,
-        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 0,
+        "standaloneFirstDominantBlocker": {
+          "taskId": "task:10041",
+          "count": 1
+        },
+        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 2017,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 2391,
         "firstHardValidCoreLeaf": {
           "coreTaskCount": 82,
           "coreTasksByKind": {
@@ -4038,7 +7861,29 @@
         "ordinaryPrerequisiteReservationChecks": 0,
         "ordinaryPrerequisiteReservationPrunes": 0,
         "firstPrerequisiteReservationPrune": null,
-        "firstStandaloneDeadEndCause": null
+        "firstStandaloneDeadEndCause": {
+          "kind": "MACRO_CANDIDATES_EXHAUSTED",
+          "phase": "MACRO",
+          "depth": 0,
+          "workItemId": "technical-chain:task:10081",
+          "workItemKind": "TECHNICAL_CHAIN",
+          "taskIds": [
+            "task:10041",
+            "task:10069",
+            "task:10081",
+            "task:10154",
+            "task:10169",
+            "task:10173",
+            "task:10215"
+          ],
+          "domainBefore": 80,
+          "domainAfter": 80,
+          "candidatesEvaluated": 80,
+          "blockingTaskId": null,
+          "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+          "firstPlacementRejection": null,
+          "ancestralDecisions": []
+        }
       },
       "orderingComparison": null,
       "causalDiagnostic": {
@@ -4050,8 +7895,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 488,
-            "total": 507
+            "other": 4896,
+            "total": 4915
           }
         },
         "feederByDepth": {},
@@ -4072,7 +7917,7 @@
           "collisions": []
         }
       },
-      "durationMs": 11549
+      "durationMs": 15326
     }
   ],
   "firstBlocker": {
@@ -4165,7 +8010,7 @@
     ],
     "branches": {
       "core": 19,
-      "standalone": 488
+      "standalone": 4896
     },
     "blockedObligationId": null,
     "blockedTask": null,
@@ -4190,11 +8035,33 @@
     "technicalChainFuturePrune": null,
     "causingTask": null,
     "blockingMeal": null,
-    "standaloneDeadEnd": null,
-    "causalAuthority": null,
-    "failureCategory": "UNKNOWN",
-    "phase": "constructExactItinerantPlan completion",
-    "firstCausalCheck": "constructExactItinerantPlan completion",
+    "standaloneDeadEnd": {
+      "kind": "MACRO_CANDIDATES_EXHAUSTED",
+      "phase": "MACRO",
+      "depth": 0,
+      "workItemId": "technical-chain:task:10081",
+      "workItemKind": "TECHNICAL_CHAIN",
+      "taskIds": [
+        "task:10041",
+        "task:10069",
+        "task:10081",
+        "task:10154",
+        "task:10169",
+        "task:10173",
+        "task:10215"
+      ],
+      "domainBefore": 80,
+      "domainAfter": 80,
+      "candidatesEvaluated": 80,
+      "blockingTaskId": null,
+      "blockingAuthority": "probeExactTechnicalChainMacroDomain",
+      "firstPlacementRejection": null,
+      "ancestralDecisions": []
+    },
+    "causalAuthority": "probeExactTechnicalChainMacroDomain",
+    "failureCategory": "VALIDATION",
+    "phase": "constructExactItinerantPlan/macro depth 0",
+    "firstCausalCheck": "VALIDATION",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
@@ -4203,9 +8070,9 @@
     ],
     "blockingTaskIds": [],
     "blockers": [],
-    "rejectionReason": null,
+    "rejectionReason": "VALIDATION_REJECTED",
     "originatingCoreDecision": null,
-    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
+    "classification": "ORDINARY_COMPLETE_VALIDATION_REJECTED"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "7bbc795c973614a422c3e13e23ef142b2adaf9b838bea22f0cc78676a840a047",

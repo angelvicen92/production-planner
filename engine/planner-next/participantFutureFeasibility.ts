@@ -21,6 +21,7 @@ export interface ParticipantFutureReservationProbe {
   readonly compatiblePairChecks: number;
   readonly analyticChecks: number;
   readonly branchesConsumed: number;
+  readonly unresolvedDependencyIds: readonly string[];
   readonly abstainCause: "BUDGET_EXHAUSTED" | "INCONCLUSIVE_SHAPE" | null;
   readonly reasonCode: "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN" | "FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE" | "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE" | "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" | null;
   readonly futureTaskId: string | null;
@@ -126,11 +127,13 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   const base={affectedParticipants,affectedFutureTasksChecked:future.length,affectedMealsChecked:meals.length,individualDomainChecks:0,
     individualZeroDomainPrunes:0,jointTaskMealChecks:0,jointTaskMealPrunes:0,collectiveChecks:0,collectivePasses:0,collectivePrunes:0,
     collectiveObligationIds:[] as string[],collectiveDomainSizes:{} as Record<string,number>,collectiveWitnessFound:false,
-    compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
+    compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,unresolvedDependencyIds:[] as string[],abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
     futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0 as const};
   if(future.length===0)return {...base,status:"PASS" as const};
   const futureIds=new Set(future.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId)),placedIds=new Set(placed.map(task=>task.id));
-  const unresolved=future.filter(task=>task.dependencies.some(id=>!placedIds.has(id)&&!futureIds.has(id)&&!mealIds.has(id)));
+  const unresolvedDependencyIds=[...new Set(future.flatMap(task=>task.dependencies)
+    .filter(id=>!placedIds.has(id)&&!futureIds.has(id)&&!mealIds.has(id)))].sort();
+  const unresolved=future.filter(task=>task.dependencies.some(id=>unresolvedDependencyIds.includes(id)));
   const unresolvedIds=new Set(unresolved.map(task=>task.id));let individual=0,joint=0,pairChecks=0,analytic=0;
   for(const task of future){
     if(unresolvedIds.has(task.id)){individual++;analytic++;continue;}
@@ -150,7 +153,8 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   }
   if(unresolved.length)return {...base,status:"ABSTAIN" as const,individualDomainChecks:individual,jointTaskMealChecks:joint,
     compatiblePairChecks:pairChecks,analyticChecks:analytic,compatiblePairCount:pairChecks>0?1:0,
-    abstainCause:"INCONCLUSIVE_SHAPE" as const,reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const,futureTaskId:unresolved[0]!.id,participantId:unresolved[0]!.participantId??null};
+    unresolvedDependencyIds,abstainCause:"INCONCLUSIVE_SHAPE" as const,
+    reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const,futureTaskId:unresolved[0]!.id,participantId:unresolved[0]!.participantId??null};
   let collectiveChecks=0,collectivePasses=0,branchesConsumed=0;const collectiveObligationIds:string[]=[];
   const collectiveDomainSizes:Record<string,number>={};
   for(const participantId of affectedParticipants){
