@@ -3,6 +3,7 @@ import {
   ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION,
   type AssistedPlanningSnapshotV1,
   type AssistedPlanningBlockV1,
+  type AssistedOperationalMealSnapshotV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export {
@@ -10,6 +11,7 @@ export {
   type AssistedPlanningSnapshotV1,
   type AssistedPlanningTaskSnapshotV1,
   type AssistedPlanningBlockV1,
+  type AssistedOperationalMealSnapshotV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export type AssistedPlanningTaskSource = Readonly<{
@@ -39,6 +41,7 @@ function canonicalJson(value: unknown): unknown {
 export function buildAssistedPlanningSnapshotV1(
   rows: readonly AssistedPlanningTaskSource[],
   planningBlocks?: readonly AssistedPlanningBlockV1[],
+  operationalMeals?: readonly AssistedOperationalMealSnapshotV1[],
 ): AssistedPlanningSnapshotV1 {
   const tasks = rows.map((row) => {
     if (!Number.isInteger(row.id) || row.id <= 0) throw new Error("task id must be a positive integer");
@@ -56,7 +59,12 @@ export function buildAssistedPlanningSnapshotV1(
   if (tasks.some((task, index) => index > 0 && tasks[index - 1].taskId === task.taskId)) {
     throw new Error("snapshot cannot contain duplicate task ids");
   }
-  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks });
+  const meals = operationalMeals?.map(meal => ({...meal})).sort((a,b)=>a.policyId.localeCompare(b.policyId,"en"));
+  if(meals?.some((meal,index)=>!meal.policyId||!/^\d{2}:\d{2}$/.test(meal.startPlanned)||!/^\d{2}:\d{2}$/.test(meal.endPlanned)
+    ||meal.startPlanned>=meal.endPlanned||(index>0&&meals[index-1]!.policyId===meal.policyId)))
+    throw new Error("invalid or duplicate operational meal");
+  const mealProperty=meals?.length?{operationalMeals:meals}:{};
+  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, ...mealProperty });
   const seen = new Set<number>();
   const blocks = planningBlocks.map((block) => ({
     ...structuredClone(block),
@@ -71,10 +79,10 @@ export function buildAssistedPlanningSnapshotV1(
       seen.add(id);
     }
   }
-  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks });
+  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks, ...mealProperty });
 }
 
 export function fingerprintAssistedPlanningSnapshotV1(snapshot: AssistedPlanningSnapshotV1): string {
-  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks);
+  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks, snapshot.operationalMeals);
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }

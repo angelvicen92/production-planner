@@ -64,6 +64,7 @@ function dependencies(fingerprint = "B"): AssistedProposalServiceDependencies {
 const evidence = (proposal: boolean): AssistedPlanningResult["evidence"] => ({
   scopeTaskCount: 1, scopeTaskIds: ["task:101"], supportingTaskIds: ["task:102"],
   protectedPlacementCount: 1, protectedPlacementsPreserved: true, proposalCount: proposal ? 1 : 0,
+  protectedOperationalMeals: [],
   completeForScope: proposal, hardValid: proposal, requiredValid: proposal, fingerprint: proposal ? "engine" : null,
   selectedMealWitnesses:null,
   participantMealFutureFeasibility:{futureFeasibilityChecks:0,futureInfeasibleBranches:0,affectedObligationsChecked:0,

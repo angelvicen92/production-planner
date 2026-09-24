@@ -3,6 +3,7 @@ import type {
   PlannerNextProblem,
   PlanningScope,
   ScheduledTask,
+  ScheduledOperationalMeal,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -12,6 +13,7 @@ import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { participantMealWitnessFingerprint } from "./participantMeals";
 import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
+import { mainFlowMealPolicy } from "./mainFlowMeal";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -26,6 +28,7 @@ export interface AssistedProblem {
   readonly analyticalParticipantMeals: readonly ParticipantMealObligation[];
   readonly scope: PlanningScope;
   readonly protectedPlacements: readonly ScheduledTask[];
+  readonly protectedOperationalMeals: readonly ScheduledOperationalMeal[];
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
@@ -37,6 +40,7 @@ export interface AssistedPlanningEvidence {
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId?: Readonly<Record<string, readonly string[]>>;
   readonly protectedPlacementCount: number;
+  readonly protectedOperationalMeals: readonly import("./contracts").ScheduledOperationalMeal[];
   readonly protectedPlacementsPreserved: boolean;
   readonly proposalCount: 0 | 1;
   readonly completeForScope: boolean;
@@ -180,8 +184,17 @@ export function buildAssistedProblem(
   scope: PlanningScope,
   protectedPlacements: readonly ScheduledTask[],
   analyticalFutureEligibleTaskIds: ReadonlySet<string> = new Set(),
+  protectedOperationalMeals: readonly ScheduledOperationalMeal[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
+  const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
+  const policyById=new Map(originalOperationalPolicies.map(policy=>[policy.id,policy]));
+  for(const meal of protectedOperationalMeals){
+    const policy=policyById.get(meal.id);
+    if(!policy||meal.start>=meal.end||meal.end-meal.start!==policy.duration
+      ||meal.start<policy.window.start||meal.end>policy.window.end)
+      throw new Error(`UNREPRESENTABLE_PROTECTED_OPERATIONAL_MEAL:${meal.id}`);
+  }
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
   const scopeIds = canonicalIds(scope.resolvedTaskIds);
   if (scopeIds.some((id) => !tasksById.has(id))) throw new Error("UNKNOWN_PLANNING_SCOPE_TASK_ID");
@@ -332,6 +345,12 @@ export function buildAssistedProblem(
     return {...acceptedTask,availability:[{start:fixed.start,end:fixed.end}]};
   });
   const originalValidationProblem = structuredClone(problem);
+  originalValidationProblem.operationalMealPolicies=originalOperationalPolicies;
+  const protectedByPolicy=new Map(protectedOperationalMeals.map(meal=>[meal.id,meal]));
+  problem.operationalMealPolicies=problem.operationalMealPolicies?.map(policy=>{
+    const fixed=protectedByPolicy.get(policy.id);
+    return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
+  });
 
   return {
     problem,
@@ -339,6 +358,7 @@ export function buildAssistedProblem(
     analyticalParticipantMeals: structuredClone(analyticalParticipantMeals),
     scope,
     protectedPlacements: structuredClone(protectedPlacements),
+    protectedOperationalMeals: structuredClone(protectedOperationalMeals),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
@@ -452,6 +472,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     supportingTaskIds: input.supportingTaskIds,
     supportingReasonByTaskId: input.supportingReasonByTaskId,
     protectedPlacementCount: input.protectedPlacements.length,
+    protectedOperationalMeals: structuredClone(input.protectedOperationalMeals),
     protectedPlacementsPreserved: protectedPreserved,
     proposalCount: proposal ? 1 : 0,
     completeForScope,
