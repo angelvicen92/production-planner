@@ -11,7 +11,7 @@ import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching
 import { assessOperationalMealFutureFeasibility } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
 import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
-import { probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
+import { normalizeParticipantFuturePlacements, probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
 export interface AnonymousPipelineSpot { id:string; start:number; end:number; profileKey?:string; tokenId?:string; coachKey?:string; feederRunId?:string; mainRunId?:string }
@@ -509,7 +509,8 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
       if(!edgeValid)return;
       if((problem.analyticalFutureParticipantTasks?.length??0)>0){
-        const probe=probeParticipantFutureReservations(problem,[...protectedPlacements,...bundle],bundle,undefined,"ANALYTIC_ONLY");
+        const placed=normalizeParticipantFuturePlacements([...protectedPlacements,...bundle]);
+        const probe=probeParticipantFutureReservations(problem,placed,bundle,undefined,"ANALYTIC_ONLY");
         participantEdgeEvidence.checked++;
         if(probe.status==="PRUNE"){
           participantEdgeEvidence.pruned++;
@@ -542,7 +543,7 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
       if(!edgeValid)bundleEdgesRejectedByReservation++;
     }
     if(edgeValid&&analyticalReservedPlacements.length>0&&(problem.analyticalFutureParticipantTasks?.length??0)>0){
-      const placed=[...protectedPlacements,...analyticalReservedPlacements,...bundle];
+      const placed=normalizeParticipantFuturePlacements([...protectedPlacements,...analyticalReservedPlacements,...bundle]);
       const probe=probeParticipantFutureReservations(problem,placed,bundle,undefined,"ANALYTIC_ONLY");
       prepared.participantEdgeEvidence.checked++;
       if(probe.status==="PRUNE"){

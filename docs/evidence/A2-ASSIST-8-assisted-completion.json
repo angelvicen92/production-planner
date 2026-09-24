@@ -2326,7 +2326,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "7bbc795c973614a422c3e13e23ef142b2adaf9b838bea22f0cc78676a840a047",
-      "durationMs": 108815
+      "durationMs": 129349
     },
     {
       "ordinal": 2,
@@ -2809,7 +2809,20 @@
           "DEPENDENCY_OF:task:10256"
         ]
       },
-      "internalPlacements": null,
+      "internalPlacements": {
+        "coreTaskCount": 82,
+        "coreTasksByKind": {
+          "auxiliary": 44,
+          "vocal": 19,
+          "main": 19
+        },
+        "pendingSupportingTotal": 46,
+        "pendingOrdinaryNoTransport": 27,
+        "pendingDynamicTransport": 19,
+        "pendingTasksByKind": {
+          "auxiliary": 46
+        }
+      },
       "operationalMeals": [
         {
           "id": "break:main-flow",
@@ -3382,21 +3395,21 @@
         "exactMaterializations": 0
       },
       "participantFutureReservation": {
-        "checks": 1,
+        "checks": 2,
         "passes": 1,
         "prunes": 0,
-        "abstentions": 0,
-        "affectedParticipants": 0,
-        "affectedFutureTasksChecked": 0,
-        "affectedMealsChecked": 0,
-        "individualDomainChecks": 0,
+        "abstentions": 1,
+        "affectedParticipants": 19,
+        "affectedFutureTasksChecked": 157,
+        "affectedMealsChecked": 19,
+        "individualDomainChecks": 305,
         "individualZeroDomainPrunes": 0,
-        "jointTaskMealChecks": 0,
+        "jointTaskMealChecks": 148,
         "jointTaskMealPrunes": 0,
         "collectiveChecks": 0,
         "collectivePrunes": 0,
-        "compatiblePairChecks": 0,
-        "analyticChecks": 0,
+        "compatiblePairChecks": 148,
+        "analyticChecks": 453,
         "branchesConsumed": 0,
         "firstPrune": null
       },
@@ -3451,7 +3464,7 @@
           "explorerResumptions": 0,
           "candidatePlacementChecks": 0,
           "pressureCacheHits": 0,
-          "pressureCacheMisses": 0,
+          "pressureCacheMisses": 19,
           "rootStartsVisited": 0,
           "rootOrdersEvaluated": 0,
           "rootOrdersYielded": 0,
@@ -3474,7 +3487,7 @@
           "bundleEdgesBeforeReservation": 0,
           "bundleEdgesRejectedByReservation": 0,
           "bundleEdgesAfterReservation": 0,
-          "residualDfsEntered": true,
+          "residualDfsEntered": false,
           "residualDfsBranchesBeforeFirstSolution": null,
           "architecturesEnumerated": 0,
           "architecturesPrepared": 0,
@@ -3487,7 +3500,7 @@
           "reservationFilteredEdges": 0,
           "perfectMatchingsByArchitecture": {},
           "hardGateRejectsByArchitecture": {},
-          "structuralSearchExhausted": true,
+          "structuralSearchExhausted": false,
           "structuralSearchBudgetExhausted": false,
           "structuralArchitecturesFullyVisited": 0,
           "structuralFutureDomainsFullyVisited": 0,
@@ -3499,7 +3512,7 @@
           "structuralCandidateFingerprintAtHardGate": null,
           "structuralCandidateFingerprintAtContinuation": null,
           "structuralCandidateFingerprintBeforeStandalone": null,
-          "branchesBeforeResidualDfs": 0,
+          "branchesBeforeResidualDfs": null,
           "selectedArchitectureFingerprint": null,
           "selectedFutureReservationFingerprint": null,
           "mainPatternCountGenerated": 0,
@@ -3536,13 +3549,12 @@
       "unstructuredReasonCodes": [],
       "reasonCodes": [
         "ASSISTED_SCOPE_INCOMPLETE",
-        "CORE_INFEASIBLE",
-        "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"
+        "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
       ],
       "work": {
-        "branchesExplored": 0,
-        "coreBranches": 0,
-        "standaloneBranches": 0,
+        "branchesExplored": 507,
+        "coreBranches": 19,
+        "standaloneBranches": 488,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -3561,13 +3573,13 @@
         "residualMatchingEdgeCacheMisses": 0,
         "residualMatchingPositionChecks": 0,
         "residualMatchingAugmentTraversals": 0,
-        "residualMatchingBranchesExplored": 0,
+        "residualMatchingBranchesExplored": 19,
         "mainRunWitnessAttempts": 0,
         "mainRunWitnessRepairs": 0,
         "mainRunEquivalentOrdersCollapsed": 0,
-        "bundleMatchingAttempts": 0,
+        "bundleMatchingAttempts": 1,
         "bundleMatchingRepairs": 0,
-        "bundleMatchingMaterializations": 0,
+        "bundleMatchingMaterializations": 1,
         "bundleHardValidationRejects": 0,
         "bundleCertifiedRepairs": 0,
         "bundleNogoodsCreated": 0,
@@ -3582,7 +3594,7 @@
         "standaloneForwardWitnessCacheHits": 0,
         "standaloneForwardWitnessCacheMisses": 0,
         "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 0,
+        "transportContiguousStates": 4462,
         "membershipFallbackEntered": 0,
         "participantMealFutureFeasibilityChecks": 1,
         "participantMealFutureInfeasibleBranches": 0,
@@ -3591,7 +3603,7 @@
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 0
       },
-      "branchesExplored": 0,
+      "branchesExplored": 507,
       "firstBlocker": {
         "scope": {
           "kind": "SPACE",
@@ -3681,38 +3693,11 @@
           "task:10262"
         ],
         "branches": {
-          "core": 0,
-          "standalone": 0
+          "core": 19,
+          "standalone": 488
         },
-        "blockedObligationId": 10002,
-        "blockedTask": {
-          "canonicalTaskId": "task:10002",
-          "productTaskId": 10002,
-          "kind": "main",
-          "participantId": "participant:201",
-          "spaceId": "space:3004",
-          "duration": 15,
-          "dependencies": [
-            "task:10003",
-            "task:10009",
-            "task:10010"
-          ],
-          "requiredResourceIds": [
-            "plan-resource:4002",
-            "plan-resource:4007"
-          ],
-          "placementAuthority": "PROTECTED",
-          "placement": {
-            "taskId": 10002,
-            "startPlanned": "12:45",
-            "endPlanned": "13:00",
-            "zoneId": 6004,
-            "spaceId": 3004,
-            "locationLabel": null,
-            "durationOverride": null,
-            "camerasOverride": null
-          }
-        },
+        "blockedObligationId": null,
+        "blockedTask": null,
         "affected": {
           "taskIds": [
             10041,
@@ -3732,222 +3717,24 @@
         "participantMealPrune": null,
         "participantFuturePrune": null,
         "technicalChainFuturePrune": null,
-        "causingTask": {
-          "canonicalTaskId": "task:10002",
-          "productTaskId": 10002,
-          "kind": "main",
-          "participantId": "participant:201",
-          "spaceId": "space:3004",
-          "duration": 15,
-          "dependencies": [
-            "task:10003",
-            "task:10009",
-            "task:10010"
-          ],
-          "requiredResourceIds": [
-            "plan-resource:4002",
-            "plan-resource:4007"
-          ],
-          "placementAuthority": "PROTECTED",
-          "placement": {
-            "taskId": 10002,
-            "startPlanned": "12:45",
-            "endPlanned": "13:00",
-            "zoneId": 6004,
-            "spaceId": 3004,
-            "locationLabel": null,
-            "durationOverride": null,
-            "camerasOverride": null
-          }
-        },
+        "causingTask": null,
         "blockingMeal": null,
         "standaloneDeadEnd": null,
-        "causalAuthority": "participantFutureReservation / fixed Main bundle reconstruction",
-        "failureCategory": "FUTURE_FEASIBILITY",
-        "phase": "constructExactMainAndFeederCore/fixed Main bundle preparation",
-        "firstCausalCheck": "probeParticipantFutureReservations collective exact witness",
+        "causalAuthority": null,
+        "failureCategory": "UNKNOWN",
+        "phase": "constructExactItinerantPlan completion",
+        "firstCausalCheck": "constructExactItinerantPlan completion",
         "staticEligibleStartCount": null,
         "dynamicEligibleStartCount": null,
         "reasonCodes": [
           "ASSISTED_SCOPE_INCOMPLETE",
-          "CORE_INFEASIBLE",
-          "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",
-          "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE"
+          "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
         ],
-        "blockingTaskIds": [
-          "task:10001",
-          "task:10004",
-          "task:10005",
-          "task:10007",
-          "task:10008",
-          "task:10012",
-          "task:10013",
-          "task:10014"
-        ],
+        "blockingTaskIds": [],
         "blockers": [],
-        "rejectionReason": "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE",
-        "originatingCoreDecision": {
-          "depth": 0,
-          "decision": "PROTECTED_MAIN_IDENTITY_AND_SLOT",
-          "taskId": "task:10002",
-          "position": 13,
-          "start": 765,
-          "end": 780,
-          "protectedPlacement": {
-            "taskId": 10002,
-            "startPlanned": "12:45",
-            "endPlanned": "13:00",
-            "zoneId": 6004,
-            "spaceId": 3004,
-            "locationLabel": null,
-            "durationOverride": null,
-            "camerasOverride": null
-          },
-          "certifiedBackjumpTargetDepth": null
-        },
-        "classification": "FIXED_MAIN_PARTICIPANT_FUTURE_COLLECTIVE_PRUNE",
-        "domain": {
-          "before": {
-            "candidateCount": 1,
-            "positions": [
-              13
-            ]
-          },
-          "after": {
-            "candidateCount": 0,
-            "positions": []
-          },
-          "collectiveDomainSizes": {
-            "task:10001": 25,
-            "task:10004": 26,
-            "task:10005": 27,
-            "task:10007": 27,
-            "task:10008": 27,
-            "task:10012": 27,
-            "task:10014": 21,
-            "task:10013": 20
-          }
-        },
-        "candidateCounts": {
-          "bundleEdgesBefore": 19,
-          "bundleEdgesAfter": 15,
-          "participantEdgesChecked": 19,
-          "participantEdgesPruned": 4
-        },
-        "matching": {
-          "perfect": false,
-          "zeroDomainTaskIds": [
-            "task:10002",
-            "task:10190",
-            "task:10229",
-            "task:10243"
-          ],
-          "candidatePositions": {
-            "task:10002": [],
-            "task:10017": [
-              18
-            ],
-            "task:10031": [
-              17
-            ],
-            "task:10043": [
-              16
-            ],
-            "task:10056": [
-              0
-            ],
-            "task:10072": [
-              10
-            ],
-            "task:10088": [
-              9
-            ],
-            "task:10102": [
-              1
-            ],
-            "task:10116": [
-              8
-            ],
-            "task:10131": [
-              7
-            ],
-            "task:10147": [
-              12
-            ],
-            "task:10161": [
-              15
-            ],
-            "task:10175": [
-              14
-            ],
-            "task:10190": [],
-            "task:10203": [
-              2
-            ],
-            "task:10218": [
-              11
-            ],
-            "task:10229": [],
-            "task:10243": [],
-            "task:10256": [
-              4
-            ]
-          }
-        },
-        "futureWitness": {
-          "mainTaskId": "task:10002",
-          "position": 13,
-          "mainStart": 765,
-          "mainEnd": 780,
-          "affectedParticipants": [
-            "participant:201"
-          ],
-          "affectedFutureTasksChecked": 7,
-          "affectedMealsChecked": 1,
-          "individualDomainChecks": 14,
-          "individualZeroDomainPrunes": 0,
-          "jointTaskMealChecks": 7,
-          "jointTaskMealPrunes": 0,
-          "collectiveChecks": 1,
-          "collectivePasses": 0,
-          "collectivePrunes": 1,
-          "collectiveObligationIds": [
-            "task:10001",
-            "task:10004",
-            "task:10005",
-            "task:10007",
-            "task:10008",
-            "task:10012",
-            "task:10013",
-            "task:10014"
-          ],
-          "collectiveDomainSizes": {
-            "task:10001": 25,
-            "task:10004": 26,
-            "task:10005": 27,
-            "task:10007": 27,
-            "task:10008": 27,
-            "task:10012": 27,
-            "task:10014": 21,
-            "task:10013": 20
-          },
-          "collectiveWitnessFound": false,
-          "compatiblePairChecks": 7,
-          "analyticChecks": 21,
-          "branchesConsumed": 0,
-          "abstainCause": null,
-          "reasonCode": "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE",
-          "futureTaskId": null,
-          "mealTaskId": null,
-          "participantId": "participant:201",
-          "futureTaskCandidateCount": 0,
-          "mealCandidateCount": 0,
-          "compatiblePairCount": 1,
-          "status": "PRUNE"
-        },
-        "depth": 0,
-        "certifiedBackjump": false,
-        "residualDfsEntered": false
+        "rejectionReason": null,
+        "originatingCoreDecision": null,
+        "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
       },
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -3999,7 +3786,9 @@
         "fixedMainBundleGraphPrepared": true,
         "fixedMainBundlePreparedEdges": 19,
         "fixedMainBundleCandidatePositions": {
-          "task:10002": [],
+          "task:10002": [
+            13
+          ],
           "task:10017": [
             18
           ],
@@ -4036,92 +3825,47 @@
           "task:10175": [
             14
           ],
-          "task:10190": [],
+          "task:10190": [
+            3
+          ],
           "task:10203": [
             2
           ],
           "task:10218": [
             11
           ],
-          "task:10229": [],
-          "task:10243": [],
+          "task:10229": [
+            6
+          ],
+          "task:10243": [
+            5
+          ],
           "task:10256": [
             4
           ]
         },
-        "fixedMainBundleZeroDomainTaskIds": [
-          "task:10002",
-          "task:10190",
-          "task:10229",
-          "task:10243"
-        ],
+        "fixedMainBundleZeroDomainTaskIds": [],
         "fixedMainBundleParticipantEdgeChecks": 19,
-        "fixedMainBundleParticipantEdgePrunes": 4,
-        "fixedMainBundleFirstParticipantEdgePrune": {
-          "mainTaskId": "task:10002",
-          "position": 13,
-          "mainStart": 765,
-          "mainEnd": 780,
-          "affectedParticipants": [
-            "participant:201"
-          ],
-          "affectedFutureTasksChecked": 7,
-          "affectedMealsChecked": 1,
-          "individualDomainChecks": 14,
-          "individualZeroDomainPrunes": 0,
-          "jointTaskMealChecks": 7,
-          "jointTaskMealPrunes": 0,
-          "collectiveChecks": 1,
-          "collectivePasses": 0,
-          "collectivePrunes": 1,
-          "collectiveObligationIds": [
-            "task:10001",
-            "task:10004",
-            "task:10005",
-            "task:10007",
-            "task:10008",
-            "task:10012",
-            "task:10013",
-            "task:10014"
-          ],
-          "collectiveDomainSizes": {
-            "task:10001": 25,
-            "task:10004": 26,
-            "task:10005": 27,
-            "task:10007": 27,
-            "task:10008": 27,
-            "task:10012": 27,
-            "task:10014": 21,
-            "task:10013": 20
-          },
-          "collectiveWitnessFound": false,
-          "compatiblePairChecks": 7,
-          "analyticChecks": 21,
-          "branchesConsumed": 0,
-          "abstainCause": null,
-          "reasonCode": "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE",
-          "futureTaskId": null,
-          "mealTaskId": null,
-          "participantId": "participant:201",
-          "futureTaskCandidateCount": 0,
-          "mealCandidateCount": 0,
-          "compatiblePairCount": 1,
-          "status": "PRUNE"
-        },
+        "fixedMainBundleParticipantEdgePrunes": 0,
+        "fixedMainBundleFirstParticipantEdgePrune": null,
         "fixedMainBundleMatchingAttempts": 1,
-        "fixedMainBundlePerfectMatchingFound": false,
-        "fixedMainBundleHardGatePasses": 0,
+        "fixedMainBundlePerfectMatchingFound": true,
+        "fixedMainBundleHardGatePasses": 1,
         "fixedMainBundleHardGateRejects": 0,
-        "fixedMainBundleTaskCount": 0,
-        "fixedMainBundleTasksByKind": {},
-        "protectedMainSlotChecks": 0,
+        "fixedMainBundleTaskCount": 82,
+        "fixedMainBundleTasksByKind": {
+          "auxiliary": 44,
+          "vocal": 19,
+          "main": 19
+        },
+        "protectedMainSlotChecks": 19,
         "protectedMainSlotMismatches": 0,
-        "pipelineTasksRemovedFromStandalone": 0,
+        "pipelineTasksRemovedFromStandalone": 38,
         "pendingBeforeFixedMainBundle": 46,
-        "pendingAfterFixedMainBundle": 0,
+        "pendingAfterFixedMainBundle": 8,
         "legacyFixedFeederFallbackEntered": false,
         "legacyFixedFeederFallbackReason": null,
-        "firstFixedMainBundleRejection": "NO_PERFECT_PIPELINE_BUNDLE_MATCHING"
+        "firstFixedMainBundleRejection": "FUTURE_FEASIBILITY_REJECTED"
       },
       "standaloneDiagnostic": {
         "standaloneBranchesByDepth": {},
@@ -4146,11 +3890,149 @@
         "standaloneFirstDominantBlocker": null,
         "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": null,
         "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 0,
-        "firstHardValidCoreLeaf": null,
+        "firstHardValidCoreLeaf": {
+          "coreTaskCount": 82,
+          "coreTasksByKind": {
+            "auxiliary": 44,
+            "vocal": 19,
+            "main": 19
+          },
+          "pendingSupportingTotal": 46,
+          "pendingOrdinaryNoTransport": 27,
+          "pendingDynamicTransport": 19,
+          "pendingTasksByKind": {
+            "auxiliary": 46
+          }
+        },
         "coreLeafTransportPrunes": 0,
-        "transportContiguousStates": 0,
+        "transportContiguousStates": 4462,
         "membershipFallbackEntered": 0,
-        "coreLeafArrivalEvidence": null,
+        "coreLeafArrivalEvidence": {
+          "direction": "arrival",
+          "orderedTaskIds": [
+            "task:10150",
+            "task:10194",
+            "task:10021",
+            "task:10207",
+            "task:10221",
+            "task:10060",
+            "task:10077",
+            "task:10105",
+            "task:10034",
+            "task:10092",
+            "task:10120",
+            "task:10047",
+            "task:10135",
+            "task:10165",
+            "task:10006",
+            "task:10180",
+            "task:10233",
+            "task:10246",
+            "task:10259"
+          ],
+          "orderedParticipantIds": [
+            "participant:211",
+            "participant:214",
+            "participant:202",
+            "participant:215",
+            "participant:216",
+            "participant:205",
+            "participant:206",
+            "participant:208",
+            "participant:203",
+            "participant:207",
+            "participant:209",
+            "participant:204",
+            "participant:210",
+            "participant:212",
+            "participant:201",
+            "participant:213",
+            "participant:217",
+            "participant:218",
+            "participant:219"
+          ],
+          "packetSizes": [
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            2
+          ],
+          "orderedDeadlines": [
+            545,
+            545,
+            575,
+            575,
+            575,
+            605,
+            605,
+            605,
+            635,
+            635,
+            635,
+            665,
+            665,
+            665,
+            695,
+            695,
+            695,
+            735,
+            735
+          ],
+          "packetMembers": [
+            [
+              "task:10150",
+              "task:10194"
+            ],
+            [
+              "task:10021",
+              "task:10207",
+              "task:10221"
+            ],
+            [
+              "task:10060",
+              "task:10077",
+              "task:10105"
+            ],
+            [
+              "task:10034",
+              "task:10092",
+              "task:10120"
+            ],
+            [
+              "task:10047",
+              "task:10135",
+              "task:10165"
+            ],
+            [
+              "task:10006",
+              "task:10180",
+              "task:10233"
+            ],
+            [
+              "task:10246",
+              "task:10259"
+            ]
+          ],
+          "starts": [
+            540,
+            570,
+            600,
+            630,
+            660,
+            690,
+            730
+          ],
+          "minGapMinutes": 30,
+          "construction": "contiguous",
+          "alternativesExplored": 488,
+          "classification": "CONTIGUOUS_EXACT",
+          "classificationBreakers": [],
+          "contiguousStatesExplored": 4462,
+          "membershipFallbackEntered": false
+        },
         "corePrerequisiteReservationChecks": 1,
         "corePrerequisiteReservationPrunes": 0,
         "ordinaryPrerequisiteReservationChecks": 0,
@@ -4160,7 +4042,18 @@
       },
       "orderingComparison": null,
       "causalDiagnostic": {
-        "waterfallByDepth": {},
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 19,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 488,
+            "total": 507
+          }
+        },
         "feederByDepth": {},
         "feederRejections": [],
         "feederCoachDomainEliminations": [],
@@ -4179,7 +4072,7 @@
           "collisions": []
         }
       },
-      "durationMs": 6646
+      "durationMs": 11549
     }
   ],
   "firstBlocker": {
@@ -4271,38 +4164,11 @@
       "task:10262"
     ],
     "branches": {
-      "core": 0,
-      "standalone": 0
+      "core": 19,
+      "standalone": 488
     },
-    "blockedObligationId": 10002,
-    "blockedTask": {
-      "canonicalTaskId": "task:10002",
-      "productTaskId": 10002,
-      "kind": "main",
-      "participantId": "participant:201",
-      "spaceId": "space:3004",
-      "duration": 15,
-      "dependencies": [
-        "task:10003",
-        "task:10009",
-        "task:10010"
-      ],
-      "requiredResourceIds": [
-        "plan-resource:4002",
-        "plan-resource:4007"
-      ],
-      "placementAuthority": "PROTECTED",
-      "placement": {
-        "taskId": 10002,
-        "startPlanned": "12:45",
-        "endPlanned": "13:00",
-        "zoneId": 6004,
-        "spaceId": 3004,
-        "locationLabel": null,
-        "durationOverride": null,
-        "camerasOverride": null
-      }
-    },
+    "blockedObligationId": null,
+    "blockedTask": null,
     "affected": {
       "taskIds": [
         10041,
@@ -4322,222 +4188,24 @@
     "participantMealPrune": null,
     "participantFuturePrune": null,
     "technicalChainFuturePrune": null,
-    "causingTask": {
-      "canonicalTaskId": "task:10002",
-      "productTaskId": 10002,
-      "kind": "main",
-      "participantId": "participant:201",
-      "spaceId": "space:3004",
-      "duration": 15,
-      "dependencies": [
-        "task:10003",
-        "task:10009",
-        "task:10010"
-      ],
-      "requiredResourceIds": [
-        "plan-resource:4002",
-        "plan-resource:4007"
-      ],
-      "placementAuthority": "PROTECTED",
-      "placement": {
-        "taskId": 10002,
-        "startPlanned": "12:45",
-        "endPlanned": "13:00",
-        "zoneId": 6004,
-        "spaceId": 3004,
-        "locationLabel": null,
-        "durationOverride": null,
-        "camerasOverride": null
-      }
-    },
+    "causingTask": null,
     "blockingMeal": null,
     "standaloneDeadEnd": null,
-    "causalAuthority": "participantFutureReservation / fixed Main bundle reconstruction",
-    "failureCategory": "FUTURE_FEASIBILITY",
-    "phase": "constructExactMainAndFeederCore/fixed Main bundle preparation",
-    "firstCausalCheck": "probeParticipantFutureReservations collective exact witness",
+    "causalAuthority": null,
+    "failureCategory": "UNKNOWN",
+    "phase": "constructExactItinerantPlan completion",
+    "firstCausalCheck": "constructExactItinerantPlan completion",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
       "ASSISTED_SCOPE_INCOMPLETE",
-      "CORE_INFEASIBLE",
-      "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",
-      "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE"
+      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
     ],
-    "blockingTaskIds": [
-      "task:10001",
-      "task:10004",
-      "task:10005",
-      "task:10007",
-      "task:10008",
-      "task:10012",
-      "task:10013",
-      "task:10014"
-    ],
+    "blockingTaskIds": [],
     "blockers": [],
-    "rejectionReason": "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE",
-    "originatingCoreDecision": {
-      "depth": 0,
-      "decision": "PROTECTED_MAIN_IDENTITY_AND_SLOT",
-      "taskId": "task:10002",
-      "position": 13,
-      "start": 765,
-      "end": 780,
-      "protectedPlacement": {
-        "taskId": 10002,
-        "startPlanned": "12:45",
-        "endPlanned": "13:00",
-        "zoneId": 6004,
-        "spaceId": 3004,
-        "locationLabel": null,
-        "durationOverride": null,
-        "camerasOverride": null
-      },
-      "certifiedBackjumpTargetDepth": null
-    },
-    "classification": "FIXED_MAIN_PARTICIPANT_FUTURE_COLLECTIVE_PRUNE",
-    "domain": {
-      "before": {
-        "candidateCount": 1,
-        "positions": [
-          13
-        ]
-      },
-      "after": {
-        "candidateCount": 0,
-        "positions": []
-      },
-      "collectiveDomainSizes": {
-        "task:10001": 25,
-        "task:10004": 26,
-        "task:10005": 27,
-        "task:10007": 27,
-        "task:10008": 27,
-        "task:10012": 27,
-        "task:10014": 21,
-        "task:10013": 20
-      }
-    },
-    "candidateCounts": {
-      "bundleEdgesBefore": 19,
-      "bundleEdgesAfter": 15,
-      "participantEdgesChecked": 19,
-      "participantEdgesPruned": 4
-    },
-    "matching": {
-      "perfect": false,
-      "zeroDomainTaskIds": [
-        "task:10002",
-        "task:10190",
-        "task:10229",
-        "task:10243"
-      ],
-      "candidatePositions": {
-        "task:10002": [],
-        "task:10017": [
-          18
-        ],
-        "task:10031": [
-          17
-        ],
-        "task:10043": [
-          16
-        ],
-        "task:10056": [
-          0
-        ],
-        "task:10072": [
-          10
-        ],
-        "task:10088": [
-          9
-        ],
-        "task:10102": [
-          1
-        ],
-        "task:10116": [
-          8
-        ],
-        "task:10131": [
-          7
-        ],
-        "task:10147": [
-          12
-        ],
-        "task:10161": [
-          15
-        ],
-        "task:10175": [
-          14
-        ],
-        "task:10190": [],
-        "task:10203": [
-          2
-        ],
-        "task:10218": [
-          11
-        ],
-        "task:10229": [],
-        "task:10243": [],
-        "task:10256": [
-          4
-        ]
-      }
-    },
-    "futureWitness": {
-      "mainTaskId": "task:10002",
-      "position": 13,
-      "mainStart": 765,
-      "mainEnd": 780,
-      "affectedParticipants": [
-        "participant:201"
-      ],
-      "affectedFutureTasksChecked": 7,
-      "affectedMealsChecked": 1,
-      "individualDomainChecks": 14,
-      "individualZeroDomainPrunes": 0,
-      "jointTaskMealChecks": 7,
-      "jointTaskMealPrunes": 0,
-      "collectiveChecks": 1,
-      "collectivePasses": 0,
-      "collectivePrunes": 1,
-      "collectiveObligationIds": [
-        "task:10001",
-        "task:10004",
-        "task:10005",
-        "task:10007",
-        "task:10008",
-        "task:10012",
-        "task:10013",
-        "task:10014"
-      ],
-      "collectiveDomainSizes": {
-        "task:10001": 25,
-        "task:10004": 26,
-        "task:10005": 27,
-        "task:10007": 27,
-        "task:10008": 27,
-        "task:10012": 27,
-        "task:10014": 21,
-        "task:10013": 20
-      },
-      "collectiveWitnessFound": false,
-      "compatiblePairChecks": 7,
-      "analyticChecks": 21,
-      "branchesConsumed": 0,
-      "abstainCause": null,
-      "reasonCode": "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE",
-      "futureTaskId": null,
-      "mealTaskId": null,
-      "participantId": "participant:201",
-      "futureTaskCandidateCount": 0,
-      "mealCandidateCount": 0,
-      "compatiblePairCount": 1,
-      "status": "PRUNE"
-    },
-    "depth": 0,
-    "certifiedBackjump": false,
-    "residualDfsEntered": false
+    "rejectionReason": null,
+    "originatingCoreDecision": null,
+    "classification": "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "7bbc795c973614a422c3e13e23ef142b2adaf9b838bea22f0cc78676a840a047",
