@@ -308,6 +308,7 @@ export interface ExactItinerantPlanEvidence {
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
   pendingBeforeFixedMainBundle:number;pendingAfterFixedMainBundle:number;legacyFixedFeederFallbackEntered:boolean;
   legacyFixedFeederFallbackReason:string|null;firstFixedMainBundleRejection:string|null;
+  firstFixedMainBundleHardGateDiagnostic:import("./exactMainAndFeederCore").ExactMainAndFeederCoreEvidence["firstFixedMainBundleHardGateDiagnostic"];
   feederMatchingWitnessMaterializations: number;
   feederMatchingWitnessRepairs: number;
   feederMatchingEquivalentOrdersCollapsed: number;
@@ -1293,7 +1294,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
-    legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
+    legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,firstFixedMainBundleHardGateDiagnostic:null,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
     forcedMainSingletonChecks: 0, forcedMainSingletonChoices: 0,
@@ -1794,6 +1795,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.legacyFixedFeederFallbackEntered=core.evidence.legacyFixedFeederFallbackEntered;
   evidence.legacyFixedFeederFallbackReason=core.evidence.legacyFixedFeederFallbackReason;
   evidence.firstFixedMainBundleRejection=core.evidence.firstFixedMainBundleRejection;
+  evidence.firstFixedMainBundleHardGateDiagnostic=structuredClone(core.evidence.firstFixedMainBundleHardGateDiagnostic);
   evidence.feederMatchingEquivalentOrdersCollapsed=core.evidence.feederMatchingEquivalentOrdersCollapsed;
   evidence.feederOrderFallbacks=core.evidence.feederOrderFallbacks;
   evidence.forcedMainSingletonChecks = core.evidence.forcedMainSingletonChecks;

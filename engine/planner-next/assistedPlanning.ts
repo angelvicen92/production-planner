@@ -56,6 +56,8 @@ export interface AssistedPlanningEvidence {
     readonly resource: readonly import("./contracts").ScheduledResourceMeal[];
     readonly itinerantUnit: readonly import("./contracts").ScheduledItinerantUnitMeal[];
   } | null;
+  /** Read-only structural artifacts selected with the proposal; snapshots currently persist tasks and meals only. */
+  readonly selectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
   readonly participantMealFutureFeasibility: {
     readonly futureFeasibilityChecks:number; readonly futureInfeasibleBranches:number;
     readonly affectedObligationsChecked:number; readonly zeroDomainPrunes:number;
@@ -113,7 +115,8 @@ export interface AssistedPlanningEvidence {
     "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
     "fixedMainBundleTasksByKind"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
-    "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection">;
+    "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection"|
+    "firstFixedMainBundleHardGateDiagnostic">;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
   readonly prerequisiteSharedCapacityPrunes?: number;
@@ -134,7 +137,9 @@ export interface AssistedPlanningEvidence {
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
     | "corePrerequisiteReservationChecks" | "corePrerequisiteReservationPrunes"
     | "ordinaryPrerequisiteReservationChecks" | "ordinaryPrerequisiteReservationPrunes"
-    | "firstPrerequisiteReservationPrune" | "firstStandaloneDeadEndCause">;
+    | "firstPrerequisiteReservationPrune" | "firstStandaloneDeadEndCause"
+    | "macroUnitsSelected" | "macroSelectionOrder" | "macroSelectionSteps" | "macroDomainSizes"
+    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -430,7 +435,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
     "corePrerequisiteReservationChecks","corePrerequisiteReservationPrunes",
     "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune",
-    "firstStandaloneDeadEndCause"] as const;
+    "firstStandaloneDeadEndCause","macroUnitsSelected","macroSelectionOrder","macroSelectionSteps","macroDomainSizes",
+    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
@@ -464,7 +470,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",
     "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","protectedMainSlotChecks","protectedMainSlotMismatches",
     "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
-    "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection"] as const;
+    "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection",
+    "firstFixedMainBundleHardGateDiagnostic"] as const;
   const fixedMainBundle=Object.fromEntries(fixedMainBundleKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["fixedMainBundle"];
   return { proposal, evidence: {
     scopeTaskCount: input.scope.resolvedTaskIds.length,
@@ -495,6 +502,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     selectedMealWitnesses,
     fixedMainBundle,
+    selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),
     participantMealFutureFeasibility:{
       futureFeasibilityChecks:Number(evidenceRecord.participantMealFutureFeasibilityChecks??metricsRecord.participantMealFutureFeasibilityChecks??0),
       futureInfeasibleBranches:Number(evidenceRecord.participantMealFutureInfeasibleBranches??0),

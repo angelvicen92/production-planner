@@ -165,6 +165,8 @@ export interface ExactMainAndFeederCoreEvidence {
   legacyFixedFeederFallbackEntered:boolean;
   legacyFixedFeederFallbackReason:string|null;
   firstFixedMainBundleRejection:string|null;
+  firstFixedMainBundleHardGateDiagnostic:{validation:ReturnType<typeof validatePlan>;structuredSpaces:Array<{
+    spaceId:string;secondaryContinuity:string|null;setupPolicy:unknown;tasks:ScheduledTask[]}>;preparationCount:number}|null;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -753,6 +755,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
+    firstFixedMainBundleHardGateDiagnostic:null,
     causalDiagnostic:null };
 }
 
@@ -1056,6 +1059,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const meals=mealAuthority&&mealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
       const gated=hardGateCoreLeaf(matching.scheduledTasks,meals,coreIds,[...fixedMainContracts,...applicableContracts],true);
       if(!gated){evidence.fixedMainBundleHardGateRejects++;evidence.firstFixedMainBundleRejection=lastHardGateReason;
+        evidence.firstFixedMainBundleHardGateDiagnostic={validation:validatePlan(problem,[...matching.scheduledTasks],[],meals),preparationCount:0,
+          structuredSpaces:problem.spaces.filter(space=>space.secondaryContinuity==="REQUIRED"||space.setupPolicy!==undefined)
+            .map(space=>({spaceId:space.id,secondaryContinuity:space.secondaryContinuity??null,setupPolicy:space.setupPolicy??null,
+              tasks:matching.scheduledTasks.filter(task=>task.spaceId===space.id).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))}))};
         return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",lastHardGateReason],coreIds);}
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
