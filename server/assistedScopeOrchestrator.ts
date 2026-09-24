@@ -35,7 +35,9 @@ export interface AssistedScopeRecommendation {
   readonly candidates: readonly OperationalUnitEvidence[];
 }
 
-const kindRank: Record<OperationalUnitKind, number> = {
+// This order only gives a connected unit a stable descriptive kind.  It is
+// deliberately not used to rank independent operational units.
+const authorityKindOrder: Record<OperationalUnitKind, number> = {
   MAIN_PIPELINE: 0, TECHNICAL_CHAIN: 1, ROUND_SYNCHRONIZATION: 2, OPERATIONAL_MEAL: 3,
   ITINERANT_AGENDA: 4, SETUP_FAMILY: 5, SPACE_FALLBACK: 6,
 };
@@ -96,6 +98,13 @@ export function recommendNextAssistedScope(
   }
   for (const [key, ids] of itinerantKeys) attach(ids, "ITINERANT_AGENDA", `itinerant:${key}`);
 
+  // A SPACE selector resolves every pending obligation in that space.  Close
+  // fallback components over that exact scope before producing evidence.
+  // Otherwise several one-task candidates can advertise the same selector.
+  const fallbackSpaceIds=new Set(tasks.filter(task=>!authorities.has(task.id)&&task.spaceId!=null).map(task=>task.spaceId!));
+  for(const spaceId of fallbackSpaceIds)union(tasks.filter(task=>task.spaceId===spaceId).map(task=>task.id));
+  union(tasks.filter(task=>!authorities.has(task.id)&&task.spaceId==null).map(task=>task.id));
+
   const groups = new Map<number, TaskInput[]>();
   for (const task of tasks) { const root = find(task.id); groups.set(root, [...(groups.get(root) ?? []), task]); }
   const dependants = new Map<number, number>();
@@ -103,14 +112,16 @@ export function recommendNextAssistedScope(
   const candidates: OperationalUnitEvidence[] = [...groups.values()].map(members => {
     const memberTaskIds = canonical(members.map(task => task.id));
     const authority = memberTaskIds.flatMap(id => authorities.get(id) ?? []);
-    const kind = authority.map(item => item.kind).sort((a, b) => kindRank[a] - kindRank[b])[0] ?? "SPACE_FALLBACK";
+    const kind = authority.map(item => item.kind).sort((a, b) => authorityKindOrder[a] - authorityKindOrder[b])[0] ?? "SPACE_FALLBACK";
     const authorityIds = [...new Set(authority.filter(item => item.kind === kind).map(item => item.id))].sort();
     const memberSpaceIds = canonical(members.flatMap(task => task.spaceId == null ? [] : [task.spaceId]));
     const duration = members.reduce((sum, task) => sum + (task.durationOverrideMin ?? 0), 0);
     const deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
     const resources = members.flatMap(task => task.assignedResourceIds ?? []);
     const sharedResourcePressure = resources.length - new Set(resources).size;
-    const priority: OperationalUnitPriority = { structuralClass: kindRank[kind], requiredCoupling: authority.length,
+    // Main-flow authority is the sole class-level precedence declared by the
+    // effective contract.  Every other unit competes on measurable pressure.
+    const priority: OperationalUnitPriority = { structuralClass: kind === "MAIN_PIPELINE" ? 2 : authority.length ? 1 : 0, requiredCoupling: authority.length,
       downstreamImpact: members.reduce((sum, task) => sum + (dependants.get(task.id) ?? 0), 0), effectiveDeadline: deadline,
       pendingDurationMinutes: duration, pendingTaskCount: members.length, sharedResourcePressure };
     const unitId = authorityIds.length ? `${kind}:${authorityIds.join("+")}` : `SPACE_FALLBACK:${memberSpaceIds.join("+") || "unlocated"}`;
@@ -118,16 +129,27 @@ export function recommendNextAssistedScope(
       ? { kind: "SPACE", spaceId: memberSpaceIds[0]! } : { kind: "TASK_IDS", taskIds: memberTaskIds };
     return Object.freeze({ unitId, unitKind: kind, selector, memberTaskIds, memberSpaceIds, authorityIds, priority });
   });
-  const compare = (a: OperationalUnitEvidence, b: OperationalUnitEvidence) =>
-    a.priority.structuralClass - b.priority.structuralClass
-    || b.priority.requiredCoupling - a.priority.requiredCoupling
-    || b.priority.downstreamImpact - a.priority.downstreamImpact
+  const compareDensity=(aNumerator:number,aDenominator:number,bNumerator:number,bDenominator:number)=>(
+    bNumerator*aDenominator-aNumerator*bDenominator
+  );
+  const compare = (a: OperationalUnitEvidence, b: OperationalUnitEvidence) => {
+    const mainAuthority=b.priority.structuralClass===2?1:a.priority.structuralClass===2?-1:0;
+    return mainAuthority
     || (a.priority.effectiveDeadline ?? "99:99").localeCompare(b.priority.effectiveDeadline ?? "99:99")
+    || b.priority.structuralClass - a.priority.structuralClass
+    // Compare pressure per pending obligation so a broad, flexible scope does
+    // not win merely because it contains more rows.
+    || compareDensity(a.priority.downstreamImpact,a.priority.pendingTaskCount,b.priority.downstreamImpact,b.priority.pendingTaskCount)
+    || compareDensity(a.priority.requiredCoupling,a.priority.pendingTaskCount,b.priority.requiredCoupling,b.priority.pendingTaskCount)
     || b.priority.pendingDurationMinutes - a.priority.pendingDurationMinutes
     || b.priority.pendingTaskCount - a.priority.pendingTaskCount
     || b.priority.sharedResourcePressure - a.priority.sharedResourcePressure
     || a.unitId.localeCompare(b.unitId, "en");
-  candidates.sort(compare); const winner = candidates[0]!;
+  };
+  candidates.sort(compare);
+  if(new Set(candidates.map(candidate=>candidate.unitId)).size!==candidates.length)
+    throw new Error("DUPLICATE_OPERATIONAL_UNIT_ID");
+  const winner = candidates[0]!;
   return Object.freeze({ selectedUnitId: winner.unitId, selectedUnitKind: winner.unitKind, selector: winner.selector,
     memberTaskIds: winner.memberTaskIds, memberSpaceIds: winner.memberSpaceIds, authorityIds: winner.authorityIds,
     priority: winner.priority, reason: "LEXICOGRAPHIC_OPERATIONAL_CRITICALITY", candidates: Object.freeze(candidates) });

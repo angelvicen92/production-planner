@@ -42,3 +42,30 @@ test("P14-like meal scope retains all independently constrained and parallel tas
   const selected=recommendNextAssistedScope(source,blank(source.tasks))!;
   assert.deepEqual(selected.memberTaskIds,[1,2,3]);assert.equal(selected.selector.kind,"TASK_IDS");
 });
+
+test("space fallback is one unit whose evidence exactly matches its selector",()=>{
+  const source=input([task(1,10),task(2,10),task(3,20)]);
+  const recommendation=recommendNextAssistedScope(source,blank(source.tasks))!;
+  const spaceTen=recommendation.candidates.filter(candidate=>candidate.selector.kind==="SPACE"&&candidate.selector.spaceId===10);
+  assert.equal(spaceTen.length,1);assert.deepEqual(spaceTen[0]!.memberTaskIds,[1,2]);
+  assert.equal(new Set(recommendation.candidates.map(candidate=>candidate.unitId)).size,recommendation.candidates.length);
+});
+
+test("effective pressure can outrank a nominally higher authority kind",()=>{
+  const source=input([task(1,10,10),task(2,20,90,{fixedWindowEnd:"10:00"}),task(3,20,90,{fixedWindowEnd:"10:00"}),task(4,30,10,{dependsOnTaskIds:[2]}),task(5,40,10,{dependsOnTaskIds:[3]})]);
+  source.technicalChains=[{id:"short-chain",orderedTaskIds:[1],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]}];
+  const selected=recommendNextAssistedScope(source,blank(source.tasks),[1,2,3])!;
+  assert.equal(selected.selectedUnitKind,"SPACE_FALLBACK");assert.deepEqual(selected.memberTaskIds,[2,3]);
+});
+
+test("configured main flow retains its explicit precedence",()=>{
+  const source=input([task(1,10,5),task(2,20,200)]);
+  source.plannerNext={searchPolicy:"EXACT_CONSTRUCTIVE",searchBudget:{bestK:1,maxBacktracks:1,maxPatterns:1,maxBranchExpansions:1},timeGridMinutes:5,participantTransitionMinutes:0,resourceTransitionMinutes:0,mainFlow:{spaceId:10,preferredEnd:"13:00",continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1}};
+  assert.equal(recommendNextAssistedScope(source,blank(source.tasks))!.selectedUnitKind,"MAIN_PIPELINE");
+});
+
+test("equivalent itinerant domains form one coordinated agenda while hard assignments stay separate",()=>{
+  const source=input([task(1,10,20,{itinerantTeamId:7,allowedItinerantTeamIds:[7,8]}),task(2,20,20,{itinerantTeamId:8,allowedItinerantTeamIds:[8,7]}),task(3,30,20,{itinerantTeamId:9,allowedItinerantTeamIds:[9]})]);
+  const units=recommendNextAssistedScope(source,blank(source.tasks))!.candidates.filter(candidate=>candidate.unitKind==="ITINERANT_AGENDA");
+  assert.ok(units.some(unit=>unit.memberTaskIds.join() === "1,2"));assert.ok(units.some(unit=>unit.memberTaskIds.join() === "3"));
+});

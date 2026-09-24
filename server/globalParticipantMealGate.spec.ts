@@ -14,3 +14,8 @@ test("global gate includes protected and flexible obligations deterministically"
   const result=certifyGlobalParticipantMealGate([obligation("a","p1"),obligation("b","p2")],[meal("a","p1",60)],[meal("b","p2",75)],[]);
   assert.equal(result.globalMealGate,"PASS");assert.equal(result.participantMealObligationCount,2);assert.ok(result.globalParticipantMealWitnessFingerprint);
 });
+
+test("global gate reports general search exhaustion without inventing meal infeasibility",()=>{
+  const result=certifyGlobalParticipantMealGate([obligation("pending","p1")],[],[],["STANDALONE_BRANCH_BUDGET_EXHAUSTED"]);
+  assert.equal(result.globalMealGate,"BUDGET_EXHAUSTED");assert.deepEqual(result.zeroDomainMealSourceIds,["pending"]);
+});
