@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildCanonicalA2AssistedStage1Fixture } from "../../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture";
 import { standaloneForwardStaticDomain } from "../../engine/planner-next/exactItinerantPlan";
 import { resolveAssistedScope } from "../assistedScopeResolver";
+import { recommendNextAssistedScope } from "../assistedScopeOrchestrator";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
@@ -32,16 +35,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const canonical=stage1Fixture.canonical, input=stage1Fixture.input, adapter=stage1Fixture.adapter;
   const sourceIds = input.tasks.filter(task => task.contestantId != null).map(task => task.id).sort((a, b) => a - b);
   assert.equal(sourceIds.length, 266);
+  const sourceSet = new Set(sourceIds);
 
   const productByCanonical = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [i.canonicalId, Number(i.sourceId)]));
   const contestantOrdinalById=new Map([...new Set(input.tasks.flatMap(task=>task.contestantId==null?[]:[task.contestantId]))]
     .sort((left,right)=>left-right).map((id,index)=>[id,`C${String(index+1).padStart(2,"0")}`]));
-  const sourceSet = new Set(sourceIds);
-  const productSpaceIds = [...new Set(input.tasks.filter(task => sourceSet.has(task.id) && task.spaceId != null).map(task => task.spaceId!))].sort((a, b) => a - b);
   const mainFlowSpaceId = input.plannerNext?.mainFlow?.spaceId;
   assert.ok(mainFlowSpaceId != null, "canonical A2 requires a configured main-flow space");
-  assert.ok(productSpaceIds.includes(mainFlowSpaceId), "main-flow space must contain canonical obligations");
-  const orderedSpaceIds = [mainFlowSpaceId, ...productSpaceIds.filter(id => id !== mainFlowSpaceId)];
 
   const blank = buildAssistedPlanningSnapshotV1(input.tasks.map(task => ({ id: task.id, startPlanned: null, endPlanned: null, zoneId: task.zoneId ?? null, spaceId: task.spaceId ?? null })));
   let nextStageId = 1, nextRunId = 1, nextValidationId = 1;
@@ -91,16 +91,9 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     const acceptedIds = new Set(before.map(row => row.taskId));
     const remainingIds = sourceIds.filter(id => !acceptedIds.has(id));
     if (remainingIds.length === 0) break;
-    let selector: { kind: "SPACE"; spaceId: number } | { kind: "TASK_IDS"; taskIds: number[] } | null = null;
-    for (const spaceId of orderedSpaceIds) {
-      const pendingInSpace = remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId === spaceId);
-      if (pendingInSpace.length === 0) continue;
-      // The human-visible scope is the pending production obligations in the
-      // selected space. Supporting closure remains internal to Planner Next.
-      selector = { kind: "SPACE", spaceId };
-      break;
-    }
-    selector ??= { kind: "TASK_IDS", taskIds: remainingIds.filter(id => input.tasks.find(task => task.id === id)?.spaceId == null) };
+    const recommendation=recommendNextAssistedScope(input,session.draftSnapshotJson,sourceIds);
+    assert.ok(recommendation,"remaining obligations must produce an operational unit");
+    const selector=recommendation.selector;
     assert.ok(selector.kind !== "TASK_IDS" || selector.taskIds.length > 0, "remaining obligations must resolve through a supported product selector");
     const protectedBefore = new Map(before.map(row => [row.taskId, JSON.stringify(row)]));
     const requested = await proposals.request(planId, { selector, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
@@ -201,6 +194,10 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         ??{status:"ABSENT",phase:terminalRejection?.phase??"NOT_REACHED",cause:terminalRejection?.cause??"NO_COMPLETE_TERMINAL_LEAF"},
     }));
     const record: any = { ordinal: iterations.length + 1, scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
+      orchestration:{candidateUnits:recommendation.candidates,selectedUnitId:recommendation.selectedUnitId,
+        selectedUnitKind:recommendation.selectedUnitKind,selector:recommendation.selector,memberTaskIds:recommendation.memberTaskIds,
+        memberSpaceIds:recommendation.memberSpaceIds,authorityIds:recommendation.authorityIds,priority:recommendation.priority,
+        reason:recommendation.reason,stageResult:result.outcome,globalMealGate:evidence.globalMealGate},
       selectorAuthority:"resolveAssistedScope/product selector", newVisibleTasks:proposedRows,
       acceptedSnapshotBefore:before, acceptedSnapshotFingerprintBefore:session.draftFingerprint,
       baseSnapshotOperationalMeals:[...((session.draftSnapshotJson as AssistedPlanningSnapshotV1).operationalMeals??[])],
@@ -214,6 +211,12 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       operationalMeals:mealPolicies.filter(policy=>!policy.id.includes("coach")),
       coachMeals:mealPolicies.filter(policy=>policy.id.includes("coach")),
       sodexoMeals:{count:participantMeals.length,obligations:participantMeals,
+        participantMealObligationCount:evidence.participantMealObligationCount,
+        protectedParticipantMealCount:evidence.protectedParticipantMealCount,
+        flexiblePendingParticipantMealCount:evidence.flexiblePendingParticipantMealCount,
+        globallyCertifiedParticipantMealCount:evidence.globallyCertifiedParticipantMealCount,
+        globalParticipantMealWitnessFingerprint:evidence.globalParticipantMealWitnessFingerprint,
+        zeroDomainMealSourceIds:evidence.zeroDomainMealSourceIds,globalMealGate:evidence.globalMealGate,
         futureFeasibilityChecks:evidence.participantMealFutureFeasibility.futureFeasibilityChecks,
         futureInfeasibleBranches:evidence.participantMealFutureFeasibility.futureInfeasibleBranches,
         affectedObligationsChecked:evidence.participantMealFutureFeasibility.affectedObligationsChecked,
@@ -445,7 +448,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
 }
 
 if (process.env.npm_lifecycle_event === "benchmark:planner-next:a2-assist-8"
-  || process.argv[1]?.endsWith("runA2Assist8Evidence.ts")) {
+  || (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]))) {
   const first = await runA2Assist8Evidence();
   const second = await runA2Assist8Evidence();
   const material = (value: typeof first) => ({ iterations: value.iterations.map(row => [row.resolvedTaskIds, row.proposalOutcome, row.acceptedStageFingerprint]), fingerprint: value.deterministicFingerprint, blocker: value.firstBlocker });
