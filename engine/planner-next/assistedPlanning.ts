@@ -5,6 +5,7 @@ import type {
   ScheduledTask,
   ScheduledOperationalMeal,
   ScheduledSetupPreparation,
+  ScheduledParticipantMeal,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -32,6 +33,8 @@ export interface AssistedProblem {
   readonly protectedPlacements: readonly ScheduledTask[];
   readonly protectedOperationalMeals: readonly ScheduledOperationalMeal[];
   readonly protectedSetupPreparations: readonly ScheduledSetupPreparation[];
+  readonly protectedParticipantMeals: readonly ScheduledParticipantMeal[];
+  readonly retainedParticipantMealSourceIds: readonly string[];
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
@@ -45,6 +48,8 @@ export interface AssistedPlanningEvidence {
   readonly protectedPlacementCount: number;
   readonly protectedOperationalMeals: readonly import("./contracts").ScheduledOperationalMeal[];
   readonly protectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
+  readonly protectedParticipantMeals?: readonly import("./contracts").ScheduledParticipantMeal[];
+  readonly retainedParticipantMealSourceIds?: readonly string[];
   readonly protectedPlacementsPreserved: boolean;
   readonly proposalCount: 0 | 1;
   readonly completeForScope: boolean;
@@ -195,6 +200,7 @@ export function buildAssistedProblem(
   analyticalFutureEligibleTaskIds: ReadonlySet<string> = new Set(),
   protectedOperationalMeals: readonly ScheduledOperationalMeal[] = [],
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
+  protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -221,8 +227,9 @@ export function buildAssistedProblem(
     preparationIds.add(preparation.id);
   }
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const mealsBySourceId = new Map((problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
   const scopeIds = canonicalIds(scope.resolvedTaskIds);
-  if (scopeIds.some((id) => !tasksById.has(id))) throw new Error("UNKNOWN_PLANNING_SCOPE_TASK_ID");
+  if (scopeIds.some((id) => !tasksById.has(id)&&!mealsBySourceId.has(id))) throw new Error("UNKNOWN_PLANNING_SCOPE_TASK_ID");
   if (new Set(scopeIds).size !== scopeIds.length) throw new Error("DUPLICATE_PLANNING_SCOPE_TASK_ID");
 
   const protectedIds = protectedPlacements.map(({ id }) => id);
@@ -234,12 +241,23 @@ export function buildAssistedProblem(
     const { start: _start, end: _end, ...placedTask } = placement;
     if (JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
   }
+  const protectedMealBySourceId=new Map<string,ScheduledParticipantMeal>();
+  for(const fixed of protectedParticipantMeals){
+    const obligation=mealsBySourceId.get(fixed.sourceTaskId);
+    if(protectedMealBySourceId.has(fixed.sourceTaskId)||!obligation||fixed.id!==obligation.id
+      ||fixed.participantId!==obligation.participantId||fixed.duration!==obligation.duration
+      ||fixed.start>=fixed.end||fixed.end-fixed.start!==fixed.duration
+      ||fixed.start<obligation.window.start||fixed.end>obligation.window.end)
+      throw new Error(`UNREPRESENTABLE_PROTECTED_PARTICIPANT_MEAL:${fixed.sourceTaskId}`);
+    protectedMealBySourceId.set(fixed.sourceTaskId,fixed);
+  }
 
-  const included = new Set([...scopeIds, ...protectedIds]);
+  const included = new Set([...scopeIds.filter(id=>tasksById.has(id)), ...protectedIds]);
+  const includedMeals = new Set([...scopeIds.filter(id=>mealsBySourceId.has(id)),...protectedMealBySourceId.keys()]);
   // Fixed members are not search variables, but they remain graph vertices.
   // Traversing them is essential: a protected member can be the only bridge to
   // another dependency, anchor, joint group, technical chain, or round.
-  const closure = new Set([...scopeIds, ...protectedIds]);
+  const closure = new Set([...scopeIds, ...protectedIds,...protectedMealBySourceId.keys()]);
   const supporting = new Set<string>();
   const supportingReasons = new Map<string, Set<string>>();
   const includeSupporting = (id: string, reason: string): void => {
@@ -254,13 +272,22 @@ export function buildAssistedProblem(
     supporting.add(id);
     closure.add(id);
   };
+  const includeDependency=(id:string,reason:string):void=>{
+    if(tasksById.has(id)){includeSupporting(id,reason);return;}
+    if(mealsBySourceId.has(id)){if(!includedMeals.has(id)){includedMeals.add(id);closure.add(id);}return;}
+    throw new Error(`UNKNOWN_SUPPORTING_DEPENDENCY_ID:${id}`);
+  };
   let changed = true;
   while (changed) {
     changed = false;
     for (const id of [...closure]) {
+      const meal=mealsBySourceId.get(id);
+      if(meal){for(const dependencyId of meal.dependencies??[])if(!included.has(dependencyId)&&!includedMeals.has(dependencyId)){
+        includeDependency(dependencyId,`DEPENDENCY_OF_MEAL:${id}`);changed=true;
+      }continue;}
       const task = tasksById.get(id)!;
-      for (const dependencyId of task.dependencies) if (!included.has(dependencyId)) {
-        includeSupporting(dependencyId, `DEPENDENCY_OF:${id}`);
+      for (const dependencyId of task.dependencies) if (!included.has(dependencyId)&&!includedMeals.has(dependencyId)) {
+        includeDependency(dependencyId, `DEPENDENCY_OF:${id}`);
         changed = true;
       }
       for (const anchor of problem.anchoredAccompaniments ?? []) {
@@ -328,21 +355,21 @@ export function buildAssistedProblem(
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
   const analyticalMealSourceIds = new Set((problem.participantMeals ?? [])
-    .filter((meal) => !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"))
+    .filter((meal) => !includedMeals.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"))
     .map((meal) => meal.sourceTaskId));
   const analyticalParticipantMeals = (problem.participantMeals ?? []).filter((meal) =>
     analyticalMealSourceIds.has(meal.sourceTaskId)).map((meal) => ({ ...meal,
       // An analytical obligation is context rather than a hidden search variable.
       // Keep only prerequisite vertices represented in this projection.
-      dependencies: meal.dependencies?.filter((id) => included.has(id) || analyticalMealSourceIds.has(id)),
+      dependencies: meal.dependencies?.filter((id) => included.has(id) || includedMeals.has(id) || analyticalMealSourceIds.has(id)),
     }));
   // The executable problem must remain referentially closed. Obligations whose
   // source is outside scope are analytical context, never hidden search variables.
-  const retainedMealSourceIds = new Set((problem.participantMeals ?? [])
-    .filter((meal) => included.has(meal.sourceTaskId)).map((meal) => meal.sourceTaskId));
+  const retainedMealSourceIds = includedMeals;
   problem.participantMeals = problem.participantMeals?.filter((meal) => retainedMealSourceIds.has(meal.sourceTaskId))
     .map((meal) => ({ ...meal,
       dependencies: meal.dependencies?.filter((id) => included.has(id) || retainedMealSourceIds.has(id)),
+      ...(protectedMealBySourceId.has(meal.sourceTaskId)?{fixedInterval:{start:protectedMealBySourceId.get(meal.sourceTaskId)!.start,end:protectedMealBySourceId.get(meal.sourceTaskId)!.end}}:{}),
     }));
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail
@@ -385,6 +412,8 @@ export function buildAssistedProblem(
     protectedPlacements: structuredClone(protectedPlacements),
     protectedOperationalMeals: structuredClone(protectedOperationalMeals),
     protectedSetupPreparations: structuredClone(protectedSetupPreparations),
+    protectedParticipantMeals: structuredClone(protectedParticipantMeals),
+    retainedParticipantMealSourceIds: canonicalIds([...retainedMealSourceIds]),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
@@ -503,6 +532,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     protectedPlacementCount: input.protectedPlacements.length,
     protectedOperationalMeals: structuredClone(input.protectedOperationalMeals),
     protectedSetupPreparations: structuredClone(input.protectedSetupPreparations),
+    protectedParticipantMeals: structuredClone(input.protectedParticipantMeals),
+    retainedParticipantMealSourceIds:[...input.retainedParticipantMealSourceIds],
     protectedPlacementsPreserved: protectedPreserved,
     proposalCount: proposal ? 1 : 0,
     completeForScope,

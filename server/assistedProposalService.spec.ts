@@ -178,6 +178,45 @@ test("run derives protected placements only from the base stage and preserves th
   assert.deepEqual(result.proposedDraftSnapshot?.planningBlocks,baseSnapshot.planningBlocks);
 });
 
+test("material participant meals update their source row and restore as fixed meal context",async()=>{
+  const mealInput=structuredClone(input);
+  mealInput.mealMode="flexible_meal_window";mealInput.mealWindow={start:"14:00",end:"16:00"};
+  mealInput.mealTaskTemplateId=999;mealInput.contestantMealDurationMinutes=45;mealInput.contestantMealMaxSimultaneous=1;
+  mealInput.tasks.find(task=>task.id===101)!.dependsOnTaskIds=[102,106];
+  mealInput.tasks.push({id:106,planId,templateId:999,status:"pending",contestantId:201,operationalRole:"meal_break_placeholder"});
+  const mealBase=buildAssistedPlanningSnapshotV1(mealInput.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,
+    zoneId:task.zoneId??null,spaceId:task.spaceId??null})));
+  const mealSession={...session,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(mealBase)};
+  const mealStage={...stage,snapshotFingerprint:mealSession.draftFingerprint,snapshotJson:mealBase};
+  let proposed:any,captured:AssistedProblem|undefined;
+  const mealEvidence={...evidence(true),retainedParticipantMealSourceIds:["task:106"],selectedMealWitnesses:{
+    participant:{scheduled:[{id:"participant-meal:106",sourceTaskId:"task:106",participantId:"participant:201",duration:45,start:840,end:885}],fingerprint:"meal",finalSelectionOrder:["task:106"]},
+    operational:null,resource:[],itinerantUnit:[]}};
+  const runner=(problem:AssistedProblem):AssistedPlanningResult=>{captured=problem;const task=problem.problem.tasks.find(item=>item.id==="task:101")!;
+    return {proposal:[{...task,start:900,end:930}],evidence:mealEvidence};};
+  const mealStorage=storage({getActiveAssistedPlanningSession:async()=>mealSession,getPlanOptimizerSnapshot:async()=>({}),
+    getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>mealStage,
+    listAssistedPlanningStages:async()=>[mealStage]},[]);
+  const service=new AssistedProposalService(mealStorage,queueMicrotask,access({find:async()=>({data:runRecord(),error:null}),
+    finish:async(_plan,_run,result)=>{proposed=result;return {error:null};}}),runner,{...dependencies(),buildInput:async()=>structuredClone(mealInput)});
+  await service.run(planId,9);
+  assert.deepEqual(captured?.retainedParticipantMealSourceIds,["task:106"]);
+  const mealRow=proposed.proposedDraftSnapshot.tasks.find((row:any)=>row.taskId===106);
+  assert.deepEqual({start:mealRow.startPlanned,end:mealRow.endPlanned,spaceId:mealRow.spaceId},{start:"14:00",end:"14:45",spaceId:null});
+
+  const acceptedStage={...mealStage,snapshotJson:proposed.proposedDraftSnapshot,snapshotFingerprint:proposed.proposedDraftFingerprint};
+  const acceptedSession={...mealSession,draftFingerprint:proposed.proposedDraftFingerprint};let restored:AssistedProblem|undefined;
+  const replay=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>acceptedSession,
+    getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+    getAssistedPlanningStage:async()=>acceptedStage,listAssistedPlanningStages:async()=>[acceptedStage]},[]),queueMicrotask,
+    access({find:async()=>({data:runRecord(),error:null})}),problem=>{restored=problem;return {proposal:null,evidence:evidence(false)};},
+    {...dependencies(),buildInput:async()=>structuredClone(mealInput)});
+  await replay.run(planId,9);
+  assert.deepEqual(restored?.protectedParticipantMeals.map(meal=>({sourceTaskId:meal.sourceTaskId,start:meal.start,end:meal.end})),
+    [{sourceTaskId:"task:106",start:840,end:885}]);
+  assert.deepEqual(restored?.problem.participantMeals?.find(meal=>meal.sourceTaskId==="task:106")?.fixedInterval,{start:840,end:885});
+});
+
 test("run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline", async () => {
   const writes: string[] = []; let baseline: unknown;
   const acceptedException = {

@@ -115,6 +115,14 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       break;
     }
     const evidence: any = result.evidence;
+    const retainedParticipantMealSourceIds:string[]=evidence.retainedParticipantMealSourceIds??[];
+    const retainedParticipantMealSourceSet=new Set(retainedParticipantMealSourceIds);
+    const materializedParticipantMeals=(evidence.selectedMealWitnesses?.participant?.scheduled??[])
+      .filter((meal:any)=>retainedParticipantMealSourceSet.has(meal.sourceTaskId));
+    const materializedParticipantMealProductIds=new Set(materializedParticipantMeals
+      .map((meal:any)=>productByCanonical.get(meal.sourceTaskId)).filter((id:any):id is number=>id!==undefined));
+    const participantMealProductIds=new Set((adapter.problem.participantMeals??[])
+      .map(meal=>productByCanonical.get(meal.sourceTaskId)).filter((id):id is number=>id!==undefined));
     let orderingComparison: any = null;
     let residualBreakdown: any = null;
     if (iterations.length === 0) {
@@ -216,6 +224,15 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         exactMaterializations:evidence.work?.participantMealExactMaterializations},
       participantFutureReservation:evidence.participantFutureReservation,
       selectedSetupPreparations:evidence.selectedSetupPreparations??[],
+      retainedParticipantMealSourceIds,materializedParticipantMeals,
+      proposedParticipantMealRows:(result.proposedDraftSnapshot?.tasks??[])
+        .filter(row=>materializedParticipantMealProductIds.has(row.taskId)),
+      analyticalParticipantMealRowsUpdated:(result.proposedDraftSnapshot?.tasks??[]).filter(row=>{
+        if(materializedParticipantMealProductIds.has(row.taskId))return false;
+        const beforeRow=(session.draftSnapshotJson as AssistedPlanningSnapshotV1).tasks.find(item=>item.taskId===row.taskId);
+        return beforeRow&&(row.startPlanned!==beforeRow.startPlanned||row.endPlanned!==beforeRow.endPlanned)
+          &&participantMealProductIds.has(row.taskId);
+      }),
       operationalMealFutureReservation:evidence.operationalMealFutureReservation,
       fixedMainFeederMealChecks:evidence.fixedMainFeederMealChecks,
       fixedMainFeederMealPasses:evidence.fixedMainFeederMealPasses,

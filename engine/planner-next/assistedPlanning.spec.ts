@@ -85,6 +85,41 @@ test("an out-of-scope pending participant meal remains analytic without becoming
   assert.equal(result.evidence.standaloneDiagnostic?.firstTerminalCompletionRejection,null);
 });
 
+test("task dependencies retain participant-meal source vertices without turning them into tasks",()=>{
+  const source=fixture();source.participantMealCapacity={maxSimultaneous:1};
+  source.tasks.find(task=>task.id==="main")!.dependencies.push("meal-source");
+  source.participantMeals=[{id:"meal",sourceTaskId:"meal-source",participantId:"p2",duration:15,
+    window:{start:60,end:120},status:"pending"}];
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[]);
+  assert.deepEqual(assisted.problem.participantMeals?.map(meal=>meal.sourceTaskId),["meal-source"]);
+  assert.equal(assisted.problem.tasks.some(task=>task.id==="meal-source"),false);
+  assert.equal(assisted.automaticTaskIds.includes("meal-source"),false);
+  assert.equal(assisted.supportingTaskIds.includes("meal-source"),false);
+  const result=executeAssistedPlanning(assisted);
+  const meal=result.evidence.selectedMealWitnesses?.participant?.scheduled.find(item=>item.sourceTaskId==="meal-source");
+  const exit=result.proposal?.find(task=>task.id==="main");
+  assert.ok(meal&&exit&&meal.end<=exit.start,result.evidence.reasonCodes.join(","));
+});
+
+test("participant-meal closure traverses task and meal dependencies heterogeneously",()=>{
+  const source=fixture();source.participantMealCapacity={maxSimultaneous:2};
+  source.tasks.find(task=>task.id==="outside")!.dependencies=["meal-second"];
+  source.participantMeals=[
+    {id:"meal:first",sourceTaskId:"meal-first",participantId:"p1",duration:10,window:{start:20,end:80},status:"pending",dependencies:["feed"]},
+    {id:"meal:second",sourceTaskId:"meal-second",participantId:"p2",duration:10,window:{start:40,end:120},status:"pending",dependencies:["meal-first"]},
+  ];
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"outside"},{},["outside"]),[]);
+  assert.deepEqual(assisted.problem.participantMeals?.map(meal=>meal.sourceTaskId),["meal-first","meal-second"]);
+  assert.deepEqual(assisted.supportingTaskIds,["feed"]);
+  assert.ok(!assisted.automaticTaskIds.includes("meal-first")&&!assisted.automaticTaskIds.includes("meal-second"));
+});
+
+test("heterogeneous dependency closure still rejects identities with no authority",()=>{
+  const source=fixture();source.tasks.find(task=>task.id==="outside")!.dependencies=["missing"];
+  assert.throws(()=>buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"outside"},{},["outside"]),[]),
+    /UNKNOWN_SUPPORTING_DEPENDENCY_ID:missing/);
+});
+
 test("supporting closure does not infer feeders from task kind and participant", () => {
   const source = fixture();
   source.tasks.find(({ id }) => id === "main")!.dependencies = [];
