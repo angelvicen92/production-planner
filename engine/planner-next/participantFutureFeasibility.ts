@@ -42,6 +42,17 @@ const firstMeal=(domain:AnalyticParticipantMealStartDomain)=>domain.ranges[0]?.f
 const lastMeal=(domain:AnalyticParticipantMealStartDomain)=>domain.ranges.at(-1)?.last??null;
 const remainingMeal=(meal:ParticipantMealObligation)=>meal.status==="pending"||meal.status==="interrupted";
 
+/** A placement context is a set of task placements, not a multiset. */
+export function normalizeParticipantFuturePlacements(placed:readonly ScheduledTask[]):ScheduledTask[]{
+  const seen=new Set<string>();const normalized:ScheduledTask[]=[];
+  for(const task of placed){
+    const key=JSON.stringify([task.id,task.start,task.end,task.spaceId]);
+    if(seen.has(key))continue;
+    seen.add(key);normalized.push(task);
+  }
+  return normalized;
+}
+
 type CollectiveResult={status:"PASS"|"PRUNE"|"ABSTAIN";branches:number;domainSizes:Record<string,number>;witness:boolean;
   abstainCause:"BUDGET_EXHAUSTED"|"INCONCLUSIVE_SHAPE"|null};
 
@@ -108,6 +119,7 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
 /** Sound read-only reservation for out-of-scope participant work. */
 export function probeParticipantFutureReservations(problem:PlannerNextProblem,placed:readonly ScheduledTask[],added:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,
   mode:ParticipantFutureReservationMode="EXACT"):ParticipantFutureReservationProbe {
+  placed=normalizeParticipantFuturePlacements(placed);
   const affectedParticipants=[...new Set(added.flatMap(task=>task.participantId?[task.participantId]:[]))].sort();
   const future=[...(problem.analyticalFutureParticipantTasks??[])].filter(task=>affectedBy(task,added)).sort((a,b)=>a.id.localeCompare(b.id));
   const meals=[...(problem.participantMeals??[])].filter(meal=>remainingMeal(meal)&&affectedParticipants.includes(meal.participantId)).sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId));

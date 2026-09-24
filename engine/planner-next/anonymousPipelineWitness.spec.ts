@@ -259,4 +259,33 @@ describe("anonymous structural pipeline witness",()=>{
     const rematched=materializePipelineBundleMatching(p,architecture,[fixed]);assert.ok(rematched);
     assert.deepEqual(rematched.scheduledTasks.find(task=>task.id===fixed.id),fixed);
   });
+
+  const addTightCollectiveFuture=(p:PlannerNextProblem)=>{
+    p.participants[0]!.availability=[{start:160,end:300}];
+    p.participantMealCapacity={maxSimultaneous:1};
+    p.participantMeals=[{id:"meal",sourceTaskId:"future-meal",participantId:"p0",duration:30,
+      window:{start:160,end:300},status:"pending"}];
+    p.analyticalFutureParticipantTasks=[0,1,2].map(index=>({id:`future-${index}`,kind:"auxiliary" as const,
+      participantId:"p0",spaceId:index%2===0?"in":"style",duration:20,
+      availability:[{start:160,end:300}],dependencies:[]}));
+  };
+
+  it("keeps a protected Main bundle edge when the bundle repeats the identical placement",()=>{
+    const p=problem();addTightCollectiveFuture(p);const architecture={pattern:["A"],slots:[225]};
+    const baseline=materializePipelineBundleMatching(p,architecture);assert.ok(baseline);
+    const fixed=baseline.scheduledTasks.find(task=>task.id==="main0")!;
+    const prepared=preparePipelineBundleGraph(p,architecture,[fixed]);assert.ok(prepared);
+    assert.deepEqual([...prepared.candidates.get("main0")!.keys()],[0]);
+    assert.equal(prepared.participantEdgeEvidence.pruned,0);
+  });
+
+  it("keeps the same edge in the reservation filter when analytical context repeats the bundle Main",()=>{
+    const p=problem();addTightCollectiveFuture(p);const architecture={pattern:["A"],slots:[225]};
+    const baseline=materializePipelineBundleMatching(p,architecture);assert.ok(baseline);
+    const fixed=baseline.scheduledTasks.find(task=>task.id==="main0")!;
+    const prepared=preparePipelineBundleGraph(p,architecture);assert.ok(prepared);
+    const rematched=materializePreparedPipelineBundleMatching(p,prepared,new Set(),undefined,()=>true,undefined,[fixed]);
+    assert.ok(rematched);assert.equal(prepared.participantEdgeEvidence.pruned,0);
+    assert.equal(rematched.matching.get("main0"),0);
+  });
 });

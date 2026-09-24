@@ -111,3 +111,33 @@ test("grid-aligned extrema do not falsely prune disjoint raw interval endpoints"
   const result=probeParticipantFutureReservations(source,[current()],[current()]);
   assert.equal(result.status,"PASS"); assert.equal(result.compatiblePairCount,1);
 });
+
+function idempotentCollectiveProblem():PlannerNextProblem{
+  const source=problem({start:0,end:100});
+  source.analyticalFutureParticipantTasks=[0,1,2].map(index=>({id:`future-${index}`,kind:"auxiliary" as const,
+    participantId:"p",spaceId:index%2===0?"a":"b",duration:20,availability:[{start:0,end:100}],dependencies:[]}));
+  source.participantMeals![0]={...source.participantMeals![0],duration:20,window:{start:0,end:100}};
+  return source;
+}
+
+test("identical fixed placements are idempotent for domains and the collective witness",()=>{
+  const source=idempotentCollectiveProblem();
+  const fixed={...current(),start:40,end:60};
+  const once=probeParticipantFutureReservations(source,[fixed],[fixed]);
+  const duplicated=probeParticipantFutureReservations(source,[fixed,structuredClone(fixed)],[fixed]);
+  assert.equal(once.status,"PASS");
+  assert.deepEqual(duplicated,once);
+  assert.deepEqual(duplicated.collectiveDomainSizes,once.collectiveDomainSizes);
+  assert.equal(duplicated.collectiveWitnessFound,true);
+});
+
+test("conflicting placements with the same task id are not collapsed as equivalent",()=>{
+  const source=idempotentCollectiveProblem();
+  const fixed={...current(),start:40,end:60};
+  const conflicting={...fixed,start:60,end:80};
+  const once=probeParticipantFutureReservations(source,[fixed],[fixed]);
+  const conflict=probeParticipantFutureReservations(source,[fixed,conflicting],[fixed]);
+  assert.equal(once.status,"PASS");
+  assert.equal(conflict.status,"PRUNE");
+  assert.equal(conflict.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
+});
