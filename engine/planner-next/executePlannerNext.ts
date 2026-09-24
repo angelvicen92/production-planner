@@ -8,7 +8,7 @@ import {
   resolvePlannerSearchPolicy,
   type PlannerSearchPolicyResolution,
 } from "./searchPolicy";
-import type { ScheduledItinerantUnitMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledTask } from "./contracts";
+import type { ScheduledItinerantUnitMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledSetupPreparation, ScheduledTask } from "./contracts";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 
 function withParticipantMeals<T extends { complete: boolean; scheduledTasks: ScheduledTask[]; scheduledSpaceMeals: unknown[]; scheduledParticipantMeals?: ScheduledParticipantMeal[]; scheduledResourceMeals?:ScheduledResourceMeal[];scheduledItinerantUnitMeals?:ScheduledItinerantUnitMeal[] }>(problem: PlannerNextProblem, result: T): T & { scheduledParticipantMeals: ScheduledParticipantMeal[];scheduledResourceMeals:ScheduledResourceMeal[];scheduledItinerantUnitMeals:ScheduledItinerantUnitMeal[] } {
@@ -36,7 +36,7 @@ export type PlannerNextExecution =
       result: ExactItinerantPlanResult;
     };
 
-export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean}={}): PlannerNextExecution {
+export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[]}={}): PlannerNextExecution {
   const policyResolution = resolvePlannerSearchPolicy(problem);
 
   if (!policyResolution.compatible) {
@@ -54,6 +54,6 @@ export function executePlannerNext(problem: PlannerNextProblem, options:{causalD
   return {
     kind: "EXACT_CONSTRUCTIVE",
     policyResolution,
-      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements,options.fixedPlacementsAsContext)),
+      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements,options.fixedPlacementsAsContext,options.fixedSetupPreparations)),
   };
 }

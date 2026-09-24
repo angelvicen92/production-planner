@@ -3,7 +3,7 @@ import { supabaseAdmin } from "./supabase";
 import { buildEngineInput } from "../engine/buildInput";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, minuteToEngineTime } from "../engine/planner-next/integration/engineInputAdapter";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
-import type { PlannerNextProblem, ScheduledTask } from "../engine/planner-next/contracts";
+import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledTask } from "../engine/planner-next/contracts";
 import { analyticalFutureEligibleTaskIds, expandVisiblePrerequisites, resolveAssistedScope, ScopeResolutionError } from "./assistedScopeResolver";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
@@ -156,6 +156,13 @@ export class AssistedProposalService {
       const start=engineTimeToMinute(meal.startPlanned),end=engineTimeToMinute(meal.endPlanned);
       return {id:meal.policyId,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:end-start,start,end};
     });
+    const canonicalSpaceBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[Number(i.sourceId),i.canonicalId]));
+    const canonicalFamilyBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.sourceId,i.canonicalId]));
+    const protectedSetupPreparations:ScheduledSetupPreparation[]=(baseSnapshot.setupPreparations??[]).map(item=>{
+      const spaceId=canonicalSpaceBySource.get(item.spaceId),setupFamilyId=canonicalFamilyBySource.get(item.setupFamilyId);
+      if(!spaceId||!setupFamilyId)throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${item.id}`);
+      return {...item,kind:"setup-preparation",spaceId,setupFamilyId};
+    });
     const productByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
     const spaceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[i.canonicalId,Number(i.sourceId)]));
@@ -165,7 +172,7 @@ export class AssistedProposalService {
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
-    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,protectedOperationalMeals),{violations:baselineViolations});
+    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,protectedOperationalMeals,protectedSetupPreparations),{violations:baselineViolations});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!; return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const acceptedMeals=[...(baseSnapshot.operationalMeals??[])];
@@ -177,7 +184,13 @@ export class AssistedProposalService {
         .find(meal=>operationalIds.has(meal.id));
       if(selected&&!acceptedMeals.some(meal=>meal.policyId===selected.id))acceptedMeals.push({policyId:selected.id,startPlanned:minuteToEngineTime(selected.start),endPlanned:minuteToEngineTime(selected.end)});
     }
-    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks, acceptedMeals) : null;
+    const sourceFamilyByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.canonicalId,i.sourceId]));
+    const acceptedPreparations=(execution.evidence.selectedSetupPreparations??[]).map(item=>{
+      const spaceId=spaceByCanonical.get(item.spaceId),setupFamilyId=sourceFamilyByCanonical.get(item.setupFamilyId);
+      if(!spaceId||!setupFamilyId)throw new Error(`UNPROJECTABLE_SETUP_PREPARATION:${item.id}`);
+      return {id:item.id,spaceId,setupFamilyId,entryIndex:item.entryIndex,duration:item.duration,start:item.start,end:item.end};
+    });
+    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks, acceptedMeals, acceptedPreparations) : null;
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
     const candidateDetails=(execution.evidence as any).violations as ValidationViolationDetail[]|undefined;
     const candidateViolations=projectPlannerViolations(candidateDetails??[],adapter.identityMap);

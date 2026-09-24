@@ -104,7 +104,16 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     assert.ok(selector.kind !== "TASK_IDS" || selector.taskIds.length > 0, "remaining obligations must resolve through a supported product selector");
     const protectedBefore = new Map(before.map(row => [row.taskId, JSON.stringify(row)]));
     const requested = await proposals.request(planId, { selector, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
-    const result = await proposals.run(planId, requested.runId);
+    let result;
+    try { result = await proposals.run(planId, requested.runId); }
+    catch(error){
+      firstBlocker={scope:selector,baseStageId:session.draftBaseStageId,completedObligationCount:before.length,
+        remainingObligationCount:sourceIds.length-before.length,protectedPlacementCount:before.length,
+        protectedSetupPreparations:(session.draftSnapshotJson as AssistedPlanningSnapshotV1).setupPreparations??[],
+        proposalOutcome:"UNSUPPORTED",failureCategory:"UNSUPPORTED",phase:"buildAssistedProblem/supporting closure",
+        rejectionReason:error instanceof Error?error.message:String(error),classification:"NEXT_BLOCKER_UNSUPPORTED_SUPPORTING_IDENTITY"};
+      break;
+    }
     const evidence: any = result.evidence;
     let orderingComparison: any = null;
     let residualBreakdown: any = null;
@@ -188,6 +197,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       acceptedSnapshotBefore:before, acceptedSnapshotFingerprintBefore:session.draftFingerprint,
       baseSnapshotOperationalMeals:[...((session.draftSnapshotJson as AssistedPlanningSnapshotV1).operationalMeals??[])],
       searchProtectedOperationalMeals:evidence.protectedOperationalMeals??[],
+      baseSnapshotSetupPreparations:(session.draftSnapshotJson as AssistedPlanningSnapshotV1).setupPreparations??[],
+      searchProtectedSetupPreparations:evidence.protectedSetupPreparations??[],
       proposedSnapshotOperationalMeals:[...(result.proposedDraftSnapshot?.operationalMeals??[])],
       includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal ? [...result.scopeTaskIds] : [],
       supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
@@ -344,12 +355,12 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
             structuredSpaces,priorAcceptedDecisions,earliestPriorAcceptedDecision:priorAcceptedDecisions[0]??null,
             latestPriorAcceptedDecision:priorAcceptedDecisions.at(-1)??null,
             previouslyAcceptedSetupPreparations,
-            snapshotPersistsSetupPreparations:false},
+            snapshotPersistsSetupPreparations:true},
           firstPriorDecisionMakingContinuationImpossible:previouslyAcceptedSetupPreparations[0]?{
-            kind:"ACCEPT_SETUP_GROUP_WITH_NON_PERSISTED_PREPARATION",acceptedStage:previouslyAcceptedSetupPreparations[0].acceptedStage,
+            kind:"ACCEPT_SETUP_GROUP_WITH_PREPARATION",acceptedStage:previouslyAcceptedSetupPreparations[0].acceptedStage,
             acceptedIteration:previouslyAcceptedSetupPreparations[0].acceptedIteration,preparation:previouslyAcceptedSetupPreparations[0],
-            category:"D_SNAPSHOT_PROTECTION_LOST",detectableAtAcceptance:true,
-            explanation:"The accepted setup geometry is valid with its preparation, but the Assisted snapshot persists tasks and operational meals only; fixed-Main reconstruction receives zero setup preparations."}:null,
+            category:"SETUP_PREPARATION_PROTECTED",detectableAtAcceptance:true,
+            explanation:"The accepted setup geometry and its preparation are persisted and restored as fixed Planner Next context."}:null,
           certifiedBackjump:false,classification:"FIXED_MAIN_BUNDLE_HARD_GATE_REJECTED"});
       }
       record.firstBlocker = firstBlocker;
@@ -383,7 +394,9 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const waterfall=iterations.map(row=>({stage:row.proposalOutcome==="PROPOSAL"?row.acceptedStageId:null,iteration:row.ordinal,
     scope:row.scopeSelector,newObligations:row.newObligationCount,completedObligations:row.completedObligationCount,
     remainingObligations:row.remainingObligationCount,branches:row.branchesExplored,result:row.proposalOutcome,
-    protectedOperationalMeals:row.searchProtectedOperationalMeals.length}));
+    protectedOperationalMeals:row.searchProtectedOperationalMeals.length,
+    baseSnapshotSetupPreparations:row.baseSnapshotSetupPreparations.length,
+    protectedSetupPreparations:row.searchProtectedSetupPreparations.length}));
   const stage9=iterations.find(row=>row.ordinal===9);
   const stage9MacroFutureFeasibility=stage9?{
     scope:stage9.scopeSelector,

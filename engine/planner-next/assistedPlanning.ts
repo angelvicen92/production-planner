@@ -4,6 +4,7 @@ import type {
   PlanningScope,
   ScheduledTask,
   ScheduledOperationalMeal,
+  ScheduledSetupPreparation,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -14,6 +15,7 @@ import { participantMealWitnessFingerprint } from "./participantMeals";
 import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 import { mainFlowMealPolicy } from "./mainFlowMeal";
+import { setupPreparationId } from "./setupPreparation";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -29,6 +31,7 @@ export interface AssistedProblem {
   readonly scope: PlanningScope;
   readonly protectedPlacements: readonly ScheduledTask[];
   readonly protectedOperationalMeals: readonly ScheduledOperationalMeal[];
+  readonly protectedSetupPreparations: readonly ScheduledSetupPreparation[];
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
@@ -41,6 +44,7 @@ export interface AssistedPlanningEvidence {
   readonly supportingReasonByTaskId?: Readonly<Record<string, readonly string[]>>;
   readonly protectedPlacementCount: number;
   readonly protectedOperationalMeals: readonly import("./contracts").ScheduledOperationalMeal[];
+  readonly protectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
   readonly protectedPlacementsPreserved: boolean;
   readonly proposalCount: 0 | 1;
   readonly completeForScope: boolean;
@@ -190,6 +194,7 @@ export function buildAssistedProblem(
   protectedPlacements: readonly ScheduledTask[],
   analyticalFutureEligibleTaskIds: ReadonlySet<string> = new Set(),
   protectedOperationalMeals: readonly ScheduledOperationalMeal[] = [],
+  protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -199,6 +204,21 @@ export function buildAssistedProblem(
     if(!policy||meal.start>=meal.end||meal.end-meal.start!==policy.duration
       ||meal.start<policy.window.start||meal.end>policy.window.end)
       throw new Error(`UNREPRESENTABLE_PROTECTED_OPERATIONAL_MEAL:${meal.id}`);
+  }
+  const preparationIds=new Set<string>();
+  for(const preparation of protectedSetupPreparations){
+    const space=problem.spaces.find(item=>item.id===preparation.spaceId);
+    const expected=space?.setupPolicy?.preparationMinutesByFamily?.[preparation.setupFamilyId]
+      ??space?.setupPolicy?.preparationMinutesBetweenFamilies;
+    if(preparationIds.has(preparation.id)||!space?.setupPolicy
+      ||!space.setupPolicy.familyOrder.includes(preparation.setupFamilyId)
+      ||preparation.id!==setupPreparationId(preparation.spaceId,preparation.setupFamilyId,preparation.entryIndex)
+      ||expected!==preparation.duration
+      ||preparation.entryIndex!==1||preparation.start>=preparation.end
+      ||preparation.end-preparation.start!==preparation.duration
+      ||!space.availability.some(window=>window.start<=preparation.start&&preparation.end<=window.end))
+      throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${preparation.id}`);
+    preparationIds.add(preparation.id);
   }
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
   const scopeIds = canonicalIds(scope.resolvedTaskIds);
@@ -229,7 +249,7 @@ export function buildAssistedProblem(
       supportingReasons.set(id, reasons);
     }
     if (included.has(id)) return;
-    if (!tasksById.has(id)) throw new Error("UNKNOWN_SUPPORTING_TASK_ID");
+    if (!tasksById.has(id)) throw new Error(`UNKNOWN_SUPPORTING_TASK_ID:${id}`);
     included.add(id);
     supporting.add(id);
     closure.add(id);
@@ -364,6 +384,7 @@ export function buildAssistedProblem(
     scope,
     protectedPlacements: structuredClone(protectedPlacements),
     protectedOperationalMeals: structuredClone(protectedOperationalMeals),
+    protectedSetupPreparations: structuredClone(protectedSetupPreparations),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
@@ -386,7 +407,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
+    fixedSetupPreparations:input.protectedSetupPreparations });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -480,6 +502,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     supportingReasonByTaskId: input.supportingReasonByTaskId,
     protectedPlacementCount: input.protectedPlacements.length,
     protectedOperationalMeals: structuredClone(input.protectedOperationalMeals),
+    protectedSetupPreparations: structuredClone(input.protectedSetupPreparations),
     protectedPlacementsPreserved: protectedPreserved,
     proposalCount: proposal ? 1 : 0,
     completeForScope,
