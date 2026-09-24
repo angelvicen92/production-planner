@@ -12,7 +12,8 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+import { materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -145,6 +146,11 @@ export interface ExactMainAndFeederCoreEvidence {
   protectedMainSlots:number[];
   fixedMainBundleGraphPrepared:boolean;
   fixedMainBundlePreparedEdges:number;
+  fixedMainBundleCandidatePositions:Record<string,number[]>;
+  fixedMainBundleZeroDomainTaskIds:string[];
+  fixedMainBundleParticipantEdgeChecks:number;
+  fixedMainBundleParticipantEdgePrunes:number;
+  fixedMainBundleFirstParticipantEdgePrune:PreparedPipelineBundleGraph["participantEdgeEvidence"]["firstPrune"];
   fixedMainBundleMatchingAttempts:number;
   fixedMainBundlePerfectMatchingFound:boolean;
   fixedMainBundleHardGatePasses:number;
@@ -740,7 +746,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederRunPreFeederChecks:0,feederRunPreFeederPrunes:0,feederRunPreFeederPrunesByDepth:{},
     feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
-    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleMatchingAttempts:0,
+    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
+    fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
+    fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
@@ -1008,6 +1016,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const prepared=preparePipelineBundleGraph(problem,architecture,protectedPlacements);
       evidence.fixedMainBundleGraphPrepared=prepared!==null;
       evidence.fixedMainBundlePreparedEdges=prepared?.preparedBundleEdges??0;
+      if(prepared){
+        evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...prepared.candidates]
+          .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
+        evidence.fixedMainBundleZeroDomainTaskIds=[...prepared.candidates]
+          .filter(([,row])=>row.size===0).map(([id])=>id).sort();
+        evidence.fixedMainBundleParticipantEdgeChecks=prepared.participantEdgeEvidence.checked;
+        evidence.fixedMainBundleParticipantEdgePrunes=prepared.participantEdgeEvidence.pruned;
+        evidence.fixedMainBundleFirstParticipantEdgePrune=prepared.participantEdgeEvidence.firstPrune;
+      }
       if(!prepared){
         evidence.firstFixedMainBundleRejection="PIPELINE_BUNDLE_GRAPH_INFEASIBLE";
         return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);

@@ -300,6 +300,9 @@ export interface ExactItinerantPlanEvidence {
   conflictEdges:string[]; conflictBackjumps:number; suffixDepthsSkipped:number;
   fixedMainBundlePathEntered:boolean;protectedMainCount:number;protectedMainArchitectureFingerprint:string|null;
   protectedMainSlots:number[];fixedMainBundleGraphPrepared:boolean;fixedMainBundlePreparedEdges:number;
+  fixedMainBundleCandidatePositions:Record<string,number[]>;fixedMainBundleZeroDomainTaskIds:string[];
+  fixedMainBundleParticipantEdgeChecks:number;fixedMainBundleParticipantEdgePrunes:number;
+  fixedMainBundleFirstParticipantEdgePrune:unknown;
   fixedMainBundleMatchingAttempts:number;fixedMainBundlePerfectMatchingFound:boolean;fixedMainBundleHardGatePasses:number;
   fixedMainBundleHardGateRejects:number;fixedMainBundleTaskCount:number;fixedMainBundleTasksByKind:Record<string,number>;
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
@@ -1223,7 +1226,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     bundleNogoodsCreated:0,bundleNogoodBranches:0,bundleNogoodDeduplications:0,bundleNogoodRepairsSucceeded:0,
     conflictEdges:[],conflictBackjumps:0,suffixDepthsSkipped:0,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
-    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleMatchingAttempts:0,
+    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
+    fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
+    fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
@@ -1705,6 +1710,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.protectedMainSlots=[...core.evidence.protectedMainSlots];
   evidence.fixedMainBundleGraphPrepared=core.evidence.fixedMainBundleGraphPrepared;
   evidence.fixedMainBundlePreparedEdges=core.evidence.fixedMainBundlePreparedEdges;
+  evidence.fixedMainBundleCandidatePositions=structuredClone(core.evidence.fixedMainBundleCandidatePositions);
+  evidence.fixedMainBundleZeroDomainTaskIds=[...core.evidence.fixedMainBundleZeroDomainTaskIds];
+  evidence.fixedMainBundleParticipantEdgeChecks=core.evidence.fixedMainBundleParticipantEdgeChecks;
+  evidence.fixedMainBundleParticipantEdgePrunes=core.evidence.fixedMainBundleParticipantEdgePrunes;
+  evidence.fixedMainBundleFirstParticipantEdgePrune=structuredClone(core.evidence.fixedMainBundleFirstParticipantEdgePrune);
   evidence.fixedMainBundleMatchingAttempts=core.evidence.fixedMainBundleMatchingAttempts;
   evidence.fixedMainBundlePerfectMatchingFound=core.evidence.fixedMainBundlePerfectMatchingFound;
   evidence.fixedMainBundleHardGatePasses=core.evidence.fixedMainBundleHardGatePasses;

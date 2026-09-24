@@ -103,7 +103,9 @@ export interface AssistedPlanningEvidence {
     "bundleNogoodsCreated"|"bundleNogoodBranches"|"bundleNogoodDeduplications"|"bundleNogoodRepairsSucceeded"|"conflictEdges">;
   readonly fixedMainBundle?:Pick<ExactItinerantPlanEvidence,"fixedMainBundlePathEntered"|"protectedMainCount"|
     "protectedMainArchitectureFingerprint"|"protectedMainSlots"|"fixedMainBundleGraphPrepared"|
-    "fixedMainBundlePreparedEdges"|"fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
+    "fixedMainBundlePreparedEdges"|"fixedMainBundleCandidatePositions"|"fixedMainBundleZeroDomainTaskIds"|
+    "fixedMainBundleParticipantEdgeChecks"|"fixedMainBundleParticipantEdgePrunes"|"fixedMainBundleFirstParticipantEdgePrune"|
+    "fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
     "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
     "fixedMainBundleTasksByKind"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
@@ -436,7 +438,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     resource:structuredClone(result.scheduledResourceMeals),itinerantUnit:structuredClone(result.scheduledItinerantUnitMeals),
   }:null;
   const fixedMainBundleKeys=["fixedMainBundlePathEntered","protectedMainCount","protectedMainArchitectureFingerprint",
-    "protectedMainSlots","fixedMainBundleGraphPrepared","fixedMainBundlePreparedEdges","fixedMainBundleMatchingAttempts",
+    "protectedMainSlots","fixedMainBundleGraphPrepared","fixedMainBundlePreparedEdges","fixedMainBundleCandidatePositions",
+    "fixedMainBundleZeroDomainTaskIds","fixedMainBundleParticipantEdgeChecks","fixedMainBundleParticipantEdgePrunes",
+    "fixedMainBundleFirstParticipantEdgePrune","fixedMainBundleMatchingAttempts",
     "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",
     "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","protectedMainSlotChecks","protectedMainSlotMismatches",
     "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
