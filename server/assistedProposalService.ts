@@ -3,7 +3,7 @@ import { supabaseAdmin } from "./supabase";
 import { buildEngineInput } from "../engine/buildInput";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, minuteToEngineTime } from "../engine/planner-next/integration/engineInputAdapter";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
-import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledTask } from "../engine/planner-next/contracts";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSetupPreparation, ScheduledTask } from "../engine/planner-next/contracts";
 import { analyticalFutureEligibleTaskIds, expandVisiblePrerequisites, resolveAssistedScope, ScopeResolutionError } from "./assistedScopeResolver";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
@@ -163,6 +163,14 @@ export class AssistedProposalService {
       if(!spaceId||!setupFamilyId)throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${item.id}`);
       return {...item,kind:"setup-preparation",spaceId,setupFamilyId};
     });
+    const mealBySourceId=new Map((adapter.problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
+    const protectedParticipantMeals:ScheduledParticipantMeal[]=baseSnapshot.tasks.flatMap(row=>{
+      if(!row.startPlanned||!row.endPlanned)return[];
+      const sourceTaskId=sourceByCanonical.get(row.taskId),obligation=sourceTaskId?mealBySourceId.get(sourceTaskId):undefined;
+      if(!obligation)return[];
+      const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
+      return [{id:obligation.id,sourceTaskId:sourceTaskId!,participantId:obligation.participantId,duration:end-start,start,end}];
+    });
     const productByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
     const spaceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[i.canonicalId,Number(i.sourceId)]));
@@ -172,9 +180,20 @@ export class AssistedProposalService {
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
-    const execution=this.runner(buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,protectedOperationalMeals,protectedSetupPreparations),{violations:baselineViolations});
+    const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,
+      protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals);
+    const execution=this.runner(assistedProblem,{violations:baselineViolations});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!; return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
+    const mealProposalById=new Map<number,{startPlanned:string;endPlanned:string;spaceId:null}>();
+    const retainedMealSources=new Set(assistedProblem.retainedParticipantMealSourceIds);
+    const materializedMeals=(execution.evidence.selectedMealWitnesses?.participant?.scheduled??[])
+      .filter(meal=>retainedMealSources.has(meal.sourceTaskId));
+    for(const meal of materializedMeals){
+      const taskId=productByCanonical.get(meal.sourceTaskId);
+      if(!taskId)throw new Error(`UNPROJECTABLE_PARTICIPANT_MEAL_SOURCE:${meal.sourceTaskId}`);
+      mealProposalById.set(taskId,{startPlanned:minuteToEngineTime(meal.start),endPlanned:minuteToEngineTime(meal.end),spaceId:null});
+    }
     const acceptedMeals=[...(baseSnapshot.operationalMeals??[])];
     const acceptsMain=execution.proposal?.some(task=>task.kind==="main")??false;
     if(acceptsMain){
@@ -190,7 +209,7 @@ export class AssistedProposalService {
       if(!spaceId||!setupFamilyId)throw new Error(`UNPROJECTABLE_SETUP_PREPARATION:${item.id}`);
       return {id:item.id,spaceId,setupFamilyId,entryIndex:item.entryIndex,duration:item.duration,start:item.start,end:item.end};
     });
-    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks, acceptedMeals, acceptedPreparations) : null;
+    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{}),...(mealProposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks, acceptedMeals, acceptedPreparations) : null;
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
     const candidateDetails=(execution.evidence as any).violations as ValidationViolationDetail[]|undefined;
     const candidateViolations=projectPlannerViolations(candidateDetails??[],adapter.identityMap);
