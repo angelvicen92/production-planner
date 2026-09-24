@@ -64,7 +64,7 @@ test("configured main flow retains its explicit precedence",()=>{
   assert.equal(recommendNextAssistedScope(source,blank(source.tasks))!.selectedUnitKind,"MAIN_PIPELINE");
 });
 
-test("equivalent itinerant domains form one coordinated agenda while hard assignments stay separate",()=>{
+test("provided equivalent itinerant domains form one agenda while provided specific domains stay separate",()=>{
   const source=input([task(1,10,20,{itinerantTeamId:7,allowedItinerantTeamIds:[7,8]}),task(2,20,20,{itinerantTeamId:8,allowedItinerantTeamIds:[8,7]}),task(3,30,20,{itinerantTeamId:9,allowedItinerantTeamIds:[9]})]);
   const units=recommendNextAssistedScope(source,blank(source.tasks))!.candidates.filter(candidate=>candidate.unitKind==="ITINERANT_AGENDA");
   assert.ok(units.some(unit=>unit.memberTaskIds.join() === "1,2"));assert.ok(units.some(unit=>unit.memberTaskIds.join() === "3"));

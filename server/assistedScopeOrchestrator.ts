@@ -93,6 +93,9 @@ export function recommendNextAssistedScope(
   const itinerantKeys = new Map<string, number[]>();
   for (const task of tasks) {
     if(authorities.has(task.id))continue;
+    // This consumes only eligibility already declared by EngineInput.  It does
+    // not infer interchangeable teams from names/resources, and it does not
+    // add alternative-team support to the Planner Next adapter or solver.
     const ids = canonical([...(task.allowedItinerantTeamIds ?? []), ...(task.itinerantTeamId == null ? [] : [task.itinerantTeamId])]);
     if (!ids.length) continue; const key = ids.join(","); itinerantKeys.set(key, [...(itinerantKeys.get(key) ?? []), task.id]);
   }

@@ -220,8 +220,15 @@ export class AssistedProposalService {
     // and cannot inherit an AcceptedException without an exact identity.
     const delta=evaluateAcceptedViolationDelta(candidateViolations,acceptedBaseline,unstructured);
     const {newHardViolationCount,newRequiredViolationCount,proposalEligible}=delta;
+    const mealFeasibility=execution.evidence.participantMealFutureFeasibility;
+    const firstMealPrune=mealFeasibility.firstPrune;
+    const blockingMealIds=mealFeasibility.blockingMealTaskIds??[];
     const globalMealEvidence=certifyGlobalParticipantMealGate(adapter.problem.participantMeals??[],protectedParticipantMeals,
-      execution.evidence.selectedMealWitnesses?.participant?.scheduled??[],execution.evidence.reasonCodes??[]);
+      execution.evidence.selectedMealWitnesses?.participant?.scheduled??[],execution.evidence.reasonCodes??[],{
+        zeroDomainMealSourceIds:firstMealPrune?.domainResult==="ZERO_DOMAIN"?[firstMealPrune.blockingMealTaskId]:[],
+        infeasibleMealSourceIds:firstMealPrune?.domainResult==="ANALYTIC_COLLECTIVE_INFEASIBLE"
+          || execution.evidence.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE")?blockingMealIds:[],
+      });
     const globalMealGate=globalMealEvidence.globalMealGate;
     const evidence={...execution.evidence,hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
       inheritedAcceptedHardViolationCount:delta.inheritedHardViolationCount,inheritedAcceptedRequiredViolationCount:delta.inheritedRequiredViolationCount,
