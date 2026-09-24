@@ -34,6 +34,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   assert.equal(sourceIds.length, 266);
 
   const productByCanonical = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [i.canonicalId, Number(i.sourceId)]));
+  const contestantOrdinalById=new Map([...new Set(input.tasks.flatMap(task=>task.contestantId==null?[]:[task.contestantId]))]
+    .sort((left,right)=>left-right).map((id,index)=>[id,`C${String(index+1).padStart(2,"0")}`]));
   const sourceSet = new Set(sourceIds);
   const productSpaceIds = [...new Set(input.tasks.filter(task => sourceSet.has(task.id) && task.spaceId != null).map(task => task.spaceId!))].sort((a, b) => a - b);
   const mainFlowSpaceId = input.plannerNext?.mainFlow?.spaceId;
@@ -142,6 +144,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     const proposedRows=(result.proposal??[]).filter(row=>!protectedBefore.has(row.taskId)).map(row=>{
       const task=input.tasks.find(item=>item.id===row.taskId)!;
       return {taskId:row.taskId,templateName:task.templateName,participantId:task.contestantId??null,
+        participantOrdinal:task.contestantId==null?null:contestantOrdinalById.get(task.contestantId)??null,
         spaceId:task.spaceId??null,start:row.startPlanned,end:row.endPlanned,
         durationMinutes:task.durationOverrideMin,resourceIds:[...(task.assignedResourceIds??[])].sort()};
     }).sort((a,b)=>a.taskId-b.taskId);
@@ -201,6 +204,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         firstPrune:evidence.participantMealFutureFeasibility.firstPrune,
         exactMaterializations:evidence.work?.participantMealExactMaterializations},
       participantFutureReservation:evidence.participantFutureReservation,
+      selectedSetupPreparations:evidence.selectedSetupPreparations??[],
       operationalMealFutureReservation:evidence.operationalMealFutureReservation,
       fixedMainFeederMealChecks:evidence.fixedMainFeederMealChecks,
       fixedMainFeederMealPasses:evidence.fixedMainFeederMealPasses,
@@ -319,6 +323,34 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
             candidatePositions:evidence.fixedMainBundle.fixedMainBundleCandidatePositions},
           futureWitness:fixedMainPrune,depth:0,certifiedBackjump:false,residualDfsEntered:false,
           classification:"FIXED_MAIN_PARTICIPANT_FUTURE_COLLECTIVE_PRUNE"});
+      }else if(evidence.fixedMainBundle?.firstFixedMainBundleHardGateDiagnostic){
+        const diagnostic=evidence.fixedMainBundle.firstFixedMainBundleHardGateDiagnostic;
+        const acceptedByProductId=new Map(iterations.filter(item=>item.proposalOutcome==="PROPOSAL")
+          .flatMap(item=>item.newVisibleTasks.map((task:any)=>[task.taskId,{stage:item.acceptedStageId,iteration:item.ordinal,task}] as const)));
+        const structuredSpaces=diagnostic.structuredSpaces.map((space:any)=>({...space,tasks:space.tasks.map((task:any)=>{
+          const productTaskId=productByCanonical.get(task.id)??null,accepted:any=productTaskId===null?undefined:acceptedByProductId.get(productTaskId);
+          return {...materiality(task.id),candidatePlacement:{start:task.start,end:task.end},acceptedStage:accepted?.stage??null,
+            acceptedIteration:accepted?.iteration??null};})}));
+        const priorAcceptedDecisions=structuredSpaces.flatMap((space:any)=>space.tasks)
+          .filter((task:any)=>task.acceptedStage!==null).sort((left:any,right:any)=>left.acceptedStage-right.acceptedStage||left.canonicalTaskId.localeCompare(right.canonicalTaskId));
+        const previouslyAcceptedSetupPreparations=iterations.filter(item=>item.proposalOutcome==="PROPOSAL")
+          .flatMap(item=>(item.selectedSetupPreparations??[]).map((preparation:any)=>({...preparation,
+            acceptedStage:item.acceptedStageId,acceptedIteration:item.ordinal})));
+        Object.assign(firstBlocker,{causalAuthority:"validatePlan fixed Main dependent bundle hard gate",
+          failureCategory:"HARD_GATE",phase:"constructExactMainAndFeederCore/fixed Main bundle hard gate",
+          firstCausalCheck:"validatePlan secondary continuity and setup preparation authorities",
+          rejectionReason:evidence.fixedMainBundle.firstFixedMainBundleRejection,
+          fixedMainBundleHardGateDiagnostic:{validation:diagnostic.validation,preparationCount:diagnostic.preparationCount,
+            structuredSpaces,priorAcceptedDecisions,earliestPriorAcceptedDecision:priorAcceptedDecisions[0]??null,
+            latestPriorAcceptedDecision:priorAcceptedDecisions.at(-1)??null,
+            previouslyAcceptedSetupPreparations,
+            snapshotPersistsSetupPreparations:false},
+          firstPriorDecisionMakingContinuationImpossible:previouslyAcceptedSetupPreparations[0]?{
+            kind:"ACCEPT_SETUP_GROUP_WITH_NON_PERSISTED_PREPARATION",acceptedStage:previouslyAcceptedSetupPreparations[0].acceptedStage,
+            acceptedIteration:previouslyAcceptedSetupPreparations[0].acceptedIteration,preparation:previouslyAcceptedSetupPreparations[0],
+            category:"D_SNAPSHOT_PROTECTION_LOST",detectableAtAcceptance:true,
+            explanation:"The accepted setup geometry is valid with its preparation, but the Assisted snapshot persists tasks and operational meals only; fixed-Main reconstruction receives zero setup preparations."}:null,
+          certifiedBackjump:false,classification:"FIXED_MAIN_BUNDLE_HARD_GATE_REJECTED"});
       }
       record.firstBlocker = firstBlocker;
       record.durationMs = Math.round(performance.now() - iterationStartedAt);
@@ -347,6 +379,25 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     && iterations.every(row => row.newHardViolationCount === 0 && row.newRequiredViolationCount === 0)
     && JSON.stringify(dailyTasks) === JSON.stringify(stages.at(-1).snapshotJson);
   const pass=completionPass;
+  const acceptedDecisionCausality=firstBlocker?.firstPriorDecisionMakingContinuationImpossible??null;
+  const waterfall=iterations.map(row=>({stage:row.proposalOutcome==="PROPOSAL"?row.acceptedStageId:null,iteration:row.ordinal,
+    scope:row.scopeSelector,newObligations:row.newObligationCount,completedObligations:row.completedObligationCount,
+    remainingObligations:row.remainingObligationCount,branches:row.branchesExplored,result:row.proposalOutcome,
+    protectedOperationalMeals:row.searchProtectedOperationalMeals.length}));
+  const stage9=iterations.find(row=>row.ordinal===9);
+  const stage9MacroFutureFeasibility=stage9?{
+    scope:stage9.scopeSelector,
+    finalPlacements:stage9.newVisibleTasks,
+    c02AndC10Placements:stage9.newVisibleTasks.filter((row:any)=>["C02","C10"].includes(row.participantOrdinal)),
+    macroUnitsSelected:stage9.standaloneDiagnostic?.macroUnitsSelected??0,
+    macroSelectionOrder:stage9.standaloneDiagnostic?.macroSelectionOrder??[],
+    macroSelectionSteps:stage9.standaloneDiagnostic?.macroSelectionSteps??[],
+    setupCandidates:{searchInvocations:stage9.standaloneDiagnostic?.setupBlockSearchInvocations??0,
+      startsExplored:stage9.standaloneDiagnostic?.setupBlockStartsExplored??0,
+      completeCandidates:stage9.standaloneDiagnostic?.setupBlockCompleteCandidateCount??0},
+    firstParticipantFutureMacroPrune:stage9.participantFutureReservation?.firstPrune?.phase==="MACRO"
+      ?stage9.participantFutureReservation.firstPrune:null,
+  }:null;
   const evidence = { benchmark: "A2-ASSIST-8", effectiveInConfiguration: {
     targetGroupSize: input.arrivalGroupingTarget, maximumGroupSize: input.arrivalMaximumGroupSize ?? input.vanCapacity,
     minGapMinutes: input.arrivalMinGapMinutes,
@@ -356,14 +407,15 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     finalCompletionPercentage: Number((finalIds.length / 266 * 100).toFixed(6)), finalObligationIds: finalIds, duplicateFinalIds: finalIds.length - new Set(finalIds).size,
     finalObligationIdsMatchSource: JSON.stringify(finalIds) === JSON.stringify(sourceIds),
     finalHardViolationCount: 0, finalRequiredViolationCount: 0, finalUnstructuredReasonCodes: [], dailyTasksMatchesLastAcceptedStage: JSON.stringify(dailyTasks) === JSON.stringify(stages.at(-1).snapshotJson),
-    iterations, firstBlocker, finalInGroups: iterations.at(-1)?.standaloneDiagnostic?.terminalTransportWitness?.directions
+    waterfall,stage9MacroFutureFeasibility,acceptedDecisionCausality,iterations, firstBlocker, finalInGroups: iterations.at(-1)?.standaloneDiagnostic?.terminalTransportWitness?.directions
       ?.find((direction: any) => direction.direction === "arrival") ?? null,
     deterministicFingerprint: stages.at(-1).snapshotFingerprint, deterministicEquivalent: null as boolean | null };
   if (options.writeEvidence) { mkdirSync("docs/evidence", { recursive: true }); writeFileSync("docs/evidence/A2-ASSIST-8-assisted-completion.json", `${JSON.stringify(evidence, null, 2)}\n`); }
   return evidence;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.env.npm_lifecycle_event === "benchmark:planner-next:a2-assist-8"
+  || process.argv[1]?.endsWith("runA2Assist8Evidence.ts")) {
   const first = await runA2Assist8Evidence();
   const second = await runA2Assist8Evidence();
   const material = (value: typeof first) => ({ iterations: value.iterations.map(row => [row.resolvedTaskIds, row.proposalOutcome, row.acceptedStageFingerprint]), fingerprint: value.deterministicFingerprint, blocker: value.firstBlocker });
