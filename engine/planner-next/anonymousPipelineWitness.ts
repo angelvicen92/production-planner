@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, mainFlowMealStarts, orderTimelines, timelineSignature,
-  type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlowMealStarts, timelineSignature } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
@@ -587,6 +586,37 @@ export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerN
 }
 
 /** Deterministic architecture enumeration from the exact core's canonical authorities. */
+export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNextProblem>,patterns:readonly (readonly string[])[],duration:number):
+  Generator<{architecture:MainFeederArchitecture;patternOrdinal:number}> {
+  const runCount=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>count+(index===0||key!==pattern[index-1]?1:0),0);
+  for(let familyStart=0;familyStart<patterns.length;){
+    const familyRunCount=runCount(patterns[familyStart]!);let familyEnd=familyStart+1;
+    while(familyEnd<patterns.length&&runCount(patterns[familyEnd]!)===familyRunCount)familyEnd++;
+    const family=patterns.slice(familyStart,familyEnd).map((pattern,offset)=>({pattern,ordinal:familyStart+offset+1,
+      iterator:(function*():Generator<MainFeederArchitecture>{
+        if(!hasMainFlowMeal(problem)){
+          for(const end of [problem.mainFlow.preferredEnd,problem.day.end].filter((value,index,values)=>values.indexOf(value)===index))
+            yield {pattern,slots:pattern.map((_,index)=>end-pattern.length*duration+index*duration)};
+          return;
+        }
+        const seen=new Set<string>();
+        // Preserve the established timeline ranking without materializing its Cartesian product.
+        const rank=(cut:number)=>cut===pattern.length?0:isBlockBoundary([...pattern],cut)?1:2;
+        const cuts=candidateCuts([...pattern]).sort((left,right)=>rank(left)-rank(right)||right-left);
+        for(const mealStart of mainFlowMealStarts(problem))for(const cut of cuts){
+          const timeline=buildTimeline(problem,[...pattern],duration,cut,mealStart),signature=timelineSignature(timeline);
+          if(seen.has(signature))continue;seen.add(signature);
+          yield {pattern,slots:timeline.slots,mealStart:timeline.meal.start};
+        }
+      })(),done:false}));
+    while(family.some(entry=>!entry.done))for(const entry of family){
+      if(entry.done)continue;const next=entry.iterator.next();entry.done=next.done===true;
+      if(!next.done)yield {architecture:next.value,patternOrdinal:entry.ordinal};
+    }
+    familyStart=familyEnd;
+  }
+}
+
 export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence):Generator<MainFeederArchitecture> {
   const mains=problem.tasks.filter(task=>task.kind==="main");
   if(!mains.length)return null;
@@ -595,18 +625,10 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
-  for(const pattern of generated.patterns){
-    if(evidence)evidence.mainPatternsVisited++;
-    const duration=mains[0]!.duration;
-    const timelines:(MainFlowTimeline|{slots:number[];meal?:undefined})[]=hasMainFlowMeal(problem)
-      ?[...new Map(mainFlowMealStarts(problem).flatMap(mealStart=>
-        orderTimelines(candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut,mealStart))))
-        .map(timeline=>[timelineSignature(timeline),timeline])).values()]
-      :[problem.mainFlow.preferredEnd,problem.day.end].filter((end,index,ends)=>ends.indexOf(end)===index)
-        .map(end=>({slots:pattern.map((_,index)=>end-pattern.length*duration+index*duration)}));
-    if(evidence)evidence.timelinesGenerated+=timelines.length;
-    for(const timeline of timelines){
-      const architecture={pattern,slots:timeline.slots,...(timeline.meal?{mealStart:timeline.meal.start}:{})};
+  let visitedPatterns=0;
+  for(const {architecture,patternOrdinal} of mainFlowTimelineArchitectureFrontier(problem,generated.patterns,mains[0]!.duration)){
+      if(evidence){evidence.timelinesGenerated++;if(patternOrdinal>visitedPatterns)evidence.mainPatternsVisited++;}
+      visitedPatterns=Math.max(visitedPatterns,patternOrdinal);
       if(evidence)evidence.architectureStructuralProofChecks++;
       const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture);
       if(structuralRejection){if(evidence){evidence.architectureStructuralProofRejects++;evidence.architectureStructuralRejectsByReason[structuralRejection]=(evidence.architectureStructuralRejectsByReason[structuralRejection]??0)+1;}continue;}
@@ -616,11 +638,11 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
         else {if(status==="INFEASIBLE")evidence.nominalPipelineWitnessInfeasible++;else evidence.nominalPipelineWitnessInconclusive++;
           const reason=materialized.witness.reason??"UNKNOWN";evidence.nominalPipelineWitnessRejectsByReason[reason]=(evidence.nominalPipelineWitnessRejectsByReason[reason]??0)+1;}}
       const orderedMains=materialized.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start);
-      const meal=timeline.meal??null;
+      const meal=architecture.mealStart===undefined?null:{start:architecture.mealStart,
+        end:architecture.mealStart+mainFlowMealPolicy(problem)!.duration};
       const continuous=orderedMains.slice(1).every((task,index)=>orderedMains[index]!.end===task.start
         ||Boolean(meal&&orderedMains[index]!.end===meal.start&&task.start===meal.end));
       if(materialized.witness.status==="FEASIBLE"&&!continuous&&evidence)evidence.continuityRejects++;
       if(materialized.witness.status==="FEASIBLE"&&continuous){if(evidence)evidence.authorizedArchitecturesYielded++;yield architecture;}
-    }
   }
 }

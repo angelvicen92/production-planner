@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
-  materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -197,6 +197,39 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(recovered.mealStart,70);
     const witness=materializeNominalPipelineWitness(p,recovered!).witness;
     assert.equal(witness.status,"FEASIBLE");assert.equal(witness.runCount,1);
+  });
+
+  it("round-robins lazy temporal repairs without losing meal starts or fallback cuts",()=>{
+    const p=problem(["A","A","B"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};
+    const patterns=[["A","A","B"],["A","B","B"]];
+    const rows=[...mainFlowTimelineArchitectureFrontier(p,patterns,15)];
+    assert.deepEqual(rows.slice(0,2).map(row=>row.patternOrdinal),[1,2],
+      "each equal-run pattern must receive its canonical timeline before a deeper repair");
+    assert.ok(rows.some(row=>row.architecture.mealStart===90),"a later hard-valid meal start remains reachable");
+    assert.ok(rows.some(row=>row.architecture.mealStart===60&&row.architecture.slots.join("|")==="45|70|85"),
+      "the internal fallback cut remains reachable");
+
+    const oldSet=new Set(patterns.flatMap(pattern=>[60,65,70,75,80,85,90].flatMap(mealStart=>[3,2,1]
+      .map(cut=>{const timeline=buildTimeline(p,pattern,15,cut,mealStart);return `${pattern.join(",")}@${timeline.slots.join(",")}#${mealStart}`;}))));
+    const lazySet=new Set(rows.map(({architecture})=>`${architecture.pattern.join(",")}@${architecture.slots.join(",")}#${architecture.mealStart}`));
+    assert.deepEqual(lazySet,oldSet,"lazy ordering must preserve the complete hard-valid architecture set");
+  });
+
+  it("closes every lower-run timeline frontier before visiting the next run family",()=>{
+    const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:75},duration:10};
+    const rows=[...mainFlowTimelineArchitectureFrontier(p,[["A","A"],["A","B"]],15)];
+    const firstHigher=rows.findIndex(row=>row.architecture.pattern.join("|")==="A|B");
+    assert.equal(firstHigher,4,"all two cuts at both meal starts in the one-run family must be visited first");
+  });
+
+  it("keeps authorized architecture ordering deterministic when task input is inverted",()=>{
+    const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:75},duration:10};
+    const signature=(value:PlannerNextProblem)=>[...authorizedPipelineArchitectures(value)]
+      .map(row=>`${row.pattern.join(",")}@${row.slots.join(",")}#${row.mealStart}`).join(";");
+    assert.equal(signature(p),signature({...p,tasks:[...p.tasks].reverse()}));
   });
 
   it("repairs a nominal identity edge by rematerializing the complete participant bundle",()=>{
