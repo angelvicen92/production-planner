@@ -4,6 +4,7 @@ import {
   type AssistedPlanningSnapshotV1,
   type AssistedPlanningBlockV1,
   type AssistedOperationalMealSnapshotV1,
+  type AssistedSetupPreparationSnapshotV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export {
@@ -12,6 +13,7 @@ export {
   type AssistedPlanningTaskSnapshotV1,
   type AssistedPlanningBlockV1,
   type AssistedOperationalMealSnapshotV1,
+  type AssistedSetupPreparationSnapshotV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export type AssistedPlanningTaskSource = Readonly<{
@@ -42,6 +44,7 @@ export function buildAssistedPlanningSnapshotV1(
   rows: readonly AssistedPlanningTaskSource[],
   planningBlocks?: readonly AssistedPlanningBlockV1[],
   operationalMeals?: readonly AssistedOperationalMealSnapshotV1[],
+  setupPreparations?: readonly AssistedSetupPreparationSnapshotV1[],
 ): AssistedPlanningSnapshotV1 {
   const tasks = rows.map((row) => {
     if (!Number.isInteger(row.id) || row.id <= 0) throw new Error("task id must be a positive integer");
@@ -64,7 +67,18 @@ export function buildAssistedPlanningSnapshotV1(
     ||meal.startPlanned>=meal.endPlanned||(index>0&&meals[index-1]!.policyId===meal.policyId)))
     throw new Error("invalid or duplicate operational meal");
   const mealProperty=meals?.length?{operationalMeals:meals}:{};
-  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, ...mealProperty });
+  const preparations=setupPreparations?.map(item=>({...item})).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id,"en"));
+  const preparationIdentities=new Set<string>();
+  for(const [index,item] of (preparations??[]).entries()){
+    const identity=`${item.spaceId}|${item.setupFamilyId}|${item.entryIndex}`;
+    if(!item.id||!Number.isInteger(item.spaceId)||item.spaceId<=0||!item.setupFamilyId
+      ||!Number.isInteger(item.entryIndex)||item.entryIndex<=0||!Number.isInteger(item.duration)||item.duration<=0
+      ||!Number.isInteger(item.start)||!Number.isInteger(item.end)||item.start>=item.end||item.end-item.start!==item.duration
+      ||preparationIdentities.has(identity)||(index>0&&preparations![index-1]!.id===item.id))throw new Error("invalid or duplicate setup preparation");
+    preparationIdentities.add(identity);
+  }
+  const preparationProperty=preparations?.length?{setupPreparations:preparations}:{};
+  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, ...mealProperty, ...preparationProperty });
   const seen = new Set<number>();
   const blocks = planningBlocks.map((block) => ({
     ...structuredClone(block),
@@ -79,10 +93,10 @@ export function buildAssistedPlanningSnapshotV1(
       seen.add(id);
     }
   }
-  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks, ...mealProperty });
+  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks, ...mealProperty, ...preparationProperty });
 }
 
 export function fingerprintAssistedPlanningSnapshotV1(snapshot: AssistedPlanningSnapshotV1): string {
-  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks, snapshot.operationalMeals);
+  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks, snapshot.operationalMeals, snapshot.setupPreparations);
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }

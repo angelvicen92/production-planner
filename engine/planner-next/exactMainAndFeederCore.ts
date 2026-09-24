@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
+import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -357,6 +357,7 @@ export interface ExactMainAndFeederSearchOptions {
    * deferred to the exact accepted-baseline validation gate. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
+  fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
   /** Live matching state for the preferred architecture. Not authoritative. */
@@ -994,7 +995,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>{const meal=createMainFlowMeal(problem);return {
       id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:meal.start,end:meal.end};});
-    const validation=validatePlan(reduced,reducedPlaced,[],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
+    const validation=validatePlan(reduced,reducedPlaced,[...(options.fixedSetupPreparations??[])],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
       fixedResourceMeals,materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
     if(!validation.hardValid&&!options.acceptsValidation?.(validation)){lastHardGateReason=`HARD_VALIDATION_REJECTED:${validation.reasonCodes.join(",")}`;return null;}
     const originalById=new Map(problem.tasks.map(task=>[task.id,task]));
@@ -1059,7 +1060,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const meals=mealAuthority&&mealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
       const gated=hardGateCoreLeaf(matching.scheduledTasks,meals,coreIds,[...fixedMainContracts,...applicableContracts],true);
       if(!gated){evidence.fixedMainBundleHardGateRejects++;evidence.firstFixedMainBundleRejection=lastHardGateReason;
-        evidence.firstFixedMainBundleHardGateDiagnostic={validation:validatePlan(problem,[...matching.scheduledTasks],[],meals),preparationCount:0,
+        evidence.firstFixedMainBundleHardGateDiagnostic={validation:validatePlan(problem,[...matching.scheduledTasks],[...(options.fixedSetupPreparations??[])],meals),preparationCount:options.fixedSetupPreparations?.length??0,
           structuredSpaces:problem.spaces.filter(space=>space.secondaryContinuity==="REQUIRED"||space.setupPolicy!==undefined)
             .map(space=>({spaceId:space.id,secondaryContinuity:space.secondaryContinuity??null,setupPolicy:space.setupPolicy??null,
               tasks:matching.scheduledTasks.filter(task=>task.spaceId===space.id).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))}))};
@@ -1169,7 +1170,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>({id:policy.id,resourceIds:[...policy.resourceIds],
         spaceIds:[...policy.spaceIds],duration:policy.duration,start:fixedMeals[0]!.start,end:fixedMeals[0]!.end}));
       const validation=validatePlan(reduced,
-        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[],
+        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[...(options.fixedSetupPreparations??[])],
         mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:fixedMeals,[],fixedResourceMeals,
         materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
       if(!validation.hardValid&&!options.acceptsValidation?.(validation))return "DEAD_END";

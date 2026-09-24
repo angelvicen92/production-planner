@@ -577,7 +577,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
   technicalChainStartDomainMode:TechnicalChainStartDomainMode,
-  acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],initialOperationalMealWitness:OperationalMealWitness|null=null): StandaloneSearchResult {
+  acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],initialOperationalMealWitness:OperationalMealWitness|null=null,
+  fixedSetupPreparations:readonly ScheduledSetupPreparation[]=[]): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   const mainMealAuthority=mainFlowMealPolicy(problem);
   // A fully protected Main stage has no newly constructed core meal. The
@@ -1153,7 +1154,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   for (const task of unit.tasks) recordBlockingTask(task);
   return "DEAD_END";
 };
-const searchOutcome = searchMacroUnits(macroUnits, [], [], [], 0, []);
+const searchOutcome = searchMacroUnits(macroUnits, [], [...fixedSetupPreparations], [], 0, []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
 evidence.standaloneBranchesAfterFirstOrdinaryCompleteLeaf = evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf === null
   ? 0 : ledger.standaloneBranches - invocationStartBranches - evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf;
@@ -1181,6 +1182,7 @@ export interface ExactItinerantPlanSearchOptions {
   /** Immutable Assisted placements, materialized before residual search. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
+  fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
   /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
   preferredArchitecture?: MainFeederArchitecture;
   preferredBundleCandidate?: Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;
@@ -1428,6 +1430,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     futureEdgeIntrusion:options.coreOrderer?.futureEdgeIntrusion??(operation=>futureTechnicalChains.intrusion(operation)),
     futureEdgePressure:operation=>futureTechnicalChains.pressure(operation), acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
+    fixedSetupPreparations:options.fixedSetupPreparations,
     preferredArchitecture:options.preferredArchitecture,
     preferredBundleCandidate:constructiveBundle,
     repairPreferredBundleCandidate:constructiveRepair,
@@ -1656,7 +1659,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     if(conditioned)evidence.structuralCandidateFingerprintBeforeStandalone=candidate.fingerprint;
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness());
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = mainFlowMealPolicy(problem)?.source==="OPERATIONAL_MEAL_POLICY"?[]:candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -1843,7 +1846,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[]): ExactItinerantPlanResult {
   const pipeline=fixedPlacementsAsContext?materializeFirstNominalPipelineWitness(problem):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,
@@ -1859,7 +1862,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
   if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,
-    fixedPlacements,fixedPlacementsAsContext,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
+    fixedPlacements,fixedPlacementsAsContext,fixedSetupPreparations,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
     repairPreferredBundleCandidate});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
@@ -1868,7 +1871,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, preferredArchitecture,
+    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, preferredArchitecture,
     preferredBundleCandidate:matchedBundles??undefined,repairPreferredBundleCandidate,
   });
 }

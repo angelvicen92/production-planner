@@ -59,3 +59,20 @@ test("operational meals are canonical, deterministic, and legacy identity remain
   assert.notEqual(fingerprintAssistedPlanningSnapshotV1(first),fingerprintAssistedPlanningSnapshotV1(legacy));
   assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,[meals[0],meals[0]]),/duplicate operational meal/);
 });
+
+test("setup preparations are canonical while absent and empty values preserve the legacy fingerprint",()=>{
+  const legacy=buildAssistedPlanningSnapshotV1(base);
+  const empty=buildAssistedPlanningSnapshotV1(base,undefined,undefined,[]);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(empty),fingerprintAssistedPlanningSnapshotV1(legacy));
+  assert.equal(Object.prototype.hasOwnProperty.call(empty,"setupPreparations"),false);
+  const preparations=[
+    {id:"setup-preparation:space:4:family:b:1",spaceId:4,setupFamilyId:"4:b",entryIndex:1,duration:10,start:80,end:90},
+    {id:"setup-preparation:space:4:family:a:1",spaceId:4,setupFamilyId:"4:a",entryIndex:1,duration:10,start:60,end:70},
+  ];
+  const first=buildAssistedPlanningSnapshotV1(base,undefined,undefined,preparations);
+  const reordered=buildAssistedPlanningSnapshotV1(base,undefined,undefined,[...preparations].reverse());
+  assert.deepEqual(first.setupPreparations?.map(item=>item.start),[60,80]);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(first),fingerprintAssistedPlanningSnapshotV1(reordered));
+  assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,[preparations[0],preparations[0]]),/duplicate setup preparation/);
+  assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,[{...preparations[0],end:95}]),/invalid.*setup preparation/);
+});
