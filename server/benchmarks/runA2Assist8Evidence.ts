@@ -245,6 +245,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       const causalEmptyDomain = participantMealPrune || participantFuturePrune || technicalChainFuturePrune ? undefined : emptyDomain;
       const blockerTasks = [...new Set(causalEmptyDomain?.blockers ?? [])] as string[];
       const blockedTask = adapter.problem.tasks.find(task => task.id === causalEmptyDomain?.taskId);
+      const fixedMainPrune=evidence.fixedMainBundle?.fixedMainBundleFirstParticipantEdgePrune;
       const materiality = (id: string) => {
         const task: any = adapter.problem.tasks.find(row => row.id === id);
         if (!task) return { canonicalTaskId: id, productTaskId: productByCanonical.get(id) ?? null, missing: true };
@@ -291,6 +292,31 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
           ancestralDecisionDepths: causalEmptyDomain.ancestralDecisionDepths ?? [], certifiedBackjumpTargetDepth: causalEmptyDomain.certifiedBackjumpTargetDepth ?? null } : null,
         classification: preflightFailure ? "PREFLIGHT_VALIDATION_REJECTED" : budgetExhausted ? "SEARCH_CAPACITY_EXHAUSTED" : technicalChainFuturePrune?"TECHNICAL_CHAIN_FUTURE_RESERVATION_PRUNE":participantFuturePrune?"PARTICIPANT_FUTURE_RESERVATION_PRUNE":participantMealPrune?"PARTICIPANT_MEAL_FUTURE_FEASIBILITY_PRUNE":terminalTransportDominates ? "ORDINARY_COMPLETE_TERMINAL_TRANSPORT_REJECTED" : terminalCause ? `ORDINARY_COMPLETE_${terminalCause}`
           : standaloneDeadEnd ? `STANDALONE_${standaloneDeadEnd.kind}` : "INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA" };
+      if(fixedMainPrune){
+        const productTaskId=productByCanonical.get(fixedMainPrune.mainTaskId)??null;
+        const protectedPlacement=productTaskId===null?null:before.find(row=>row.taskId===productTaskId)??null;
+        Object.assign(firstBlocker,{
+          blockedObligationId:productTaskId,blockedTask:materiality(fixedMainPrune.mainTaskId),
+          causingTask:materiality(fixedMainPrune.mainTaskId),causalAuthority:"participantFutureReservation / fixed Main bundle reconstruction",
+          failureCategory:"FUTURE_FEASIBILITY",phase:"constructExactMainAndFeederCore/fixed Main bundle preparation",
+          firstCausalCheck:"probeParticipantFutureReservations collective exact witness",
+          reasonCodes:[...new Set([...result.reasonCodes,fixedMainPrune.reasonCode])],
+          blockingTaskIds:[...fixedMainPrune.collectiveObligationIds],
+          rejectionReason:fixedMainPrune.reasonCode,
+          originatingCoreDecision:{depth:0,decision:"PROTECTED_MAIN_IDENTITY_AND_SLOT",taskId:fixedMainPrune.mainTaskId,
+            position:fixedMainPrune.position,start:fixedMainPrune.mainStart,end:fixedMainPrune.mainEnd,
+            protectedPlacement,certifiedBackjumpTargetDepth:null},
+          domain:{before:{candidateCount:1,positions:[fixedMainPrune.position]},after:{candidateCount:0,positions:[]},
+            collectiveDomainSizes:fixedMainPrune.collectiveDomainSizes},
+          candidateCounts:{bundleEdgesBefore:evidence.fixedMainBundle.fixedMainBundlePreparedEdges,
+            bundleEdgesAfter:evidence.fixedMainBundle.fixedMainBundlePreparedEdges-evidence.fixedMainBundle.fixedMainBundleParticipantEdgePrunes,
+            participantEdgesChecked:evidence.fixedMainBundle.fixedMainBundleParticipantEdgeChecks,
+            participantEdgesPruned:evidence.fixedMainBundle.fixedMainBundleParticipantEdgePrunes},
+          matching:{perfect:false,zeroDomainTaskIds:evidence.fixedMainBundle.fixedMainBundleZeroDomainTaskIds,
+            candidatePositions:evidence.fixedMainBundle.fixedMainBundleCandidatePositions},
+          futureWitness:fixedMainPrune,depth:0,certifiedBackjump:false,residualDfsEntered:false,
+          classification:"FIXED_MAIN_PARTICIPANT_FUTURE_COLLECTIVE_PRUNE"});
+      }
       record.firstBlocker = firstBlocker;
       record.durationMs = Math.round(performance.now() - iterationStartedAt);
       iterations.push(record); break;
