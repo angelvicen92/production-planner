@@ -20,10 +20,19 @@ export interface AssistedPlanningBlockV1 {
   readonly order: number;
 }
 
+/** An operational meal interval accepted as part of the planning, not policy configuration. */
+export interface AssistedOperationalMealSnapshotV1 {
+  readonly policyId: string;
+  readonly startPlanned: string;
+  readonly endPlanned: string;
+}
+
 export interface AssistedPlanningSnapshotV1 {
   readonly contractVersion: typeof ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION;
   /** Complete task catalog for the day, including unplaced tasks. */
   readonly tasks: readonly AssistedPlanningTaskSnapshotV1[];
   /** WorkingPlan-only grouping metadata. Omitted for legacy/blockless snapshots. */
   readonly planningBlocks?: readonly AssistedPlanningBlockV1[];
+  /** Omitted for legacy snapshots and when no operational meal decision has been accepted. */
+  readonly operationalMeals?: readonly AssistedOperationalMealSnapshotV1[];
 }

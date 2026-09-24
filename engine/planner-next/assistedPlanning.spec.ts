@@ -291,3 +291,17 @@ test("scope projection preserves flexible setup preparation without materializin
   assert.equal(policy.preparationMinutesBetweenFamilies, 10);
   assert.deepEqual(preflight(result.problem), []);
 });
+
+test("accepted operational meals are fixed search context and retain original validation authority",()=>{
+  const source=fixture();
+  source.operationalMealPolicies=[{id:"main-meal",window:{start:100,end:150},duration:15,resourceIds:[],spaceIds:["main-space"]}];
+  const protectedMeal={id:"main-meal",start:120,end:135,duration:15,resourceIds:[],spaceIds:["main-space"]};
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],new Set(),[protectedMeal]);
+  assert.deepEqual(assisted.problem.operationalMealPolicies?.[0]?.window,{start:120,end:135});
+  assert.deepEqual(assisted.originalValidationProblem.operationalMealPolicies?.[0]?.window,{start:100,end:150});
+  assert.deepEqual(assisted.protectedOperationalMeals,[protectedMeal]);
+  const result=executeAssistedPlanning(assisted);
+  assert.deepEqual(result.evidence.selectedMealWitnesses?.operational?.scheduled.filter(meal=>meal.id==="main-meal").map(({start,end})=>({start,end})),[{start:120,end:135}]);
+  const changed=fixture();changed.operationalMealPolicies=[{id:"main-meal",window:{start:100,end:119},duration:15,resourceIds:[],spaceIds:["main-space"]}];
+  assert.throws(()=>buildAssistedProblem(changed,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],new Set(),[protectedMeal]),/UNREPRESENTABLE_PROTECTED_OPERATIONAL_MEAL/);
+});

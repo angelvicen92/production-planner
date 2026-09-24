@@ -41,7 +41,13 @@ export class PreparedOperationalMealAuthority {
   private lastWitness:OperationalMealWitness|null=null;
   private witnessFingerprint:string|null=null;
   constructor(private readonly problem:PlannerNextProblem,private readonly fixedMeals:readonly ScheduledOperationalMeal[]=[],initialWitness:OperationalMealWitness|null=null){
-    if(initialWitness?.complete){this.lastWitness=initialWitness;this.witnessFingerprint=operationalMealWitnessFingerprint(initialWitness.scheduled);}
+    if(initialWitness?.complete){
+      const fixedIds=new Set(fixedMeals.map(meal=>meal.id));
+      const scheduled=[...fixedMeals,...initialWitness.scheduled.filter(meal=>!fixedIds.has(meal.id))]
+        .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      this.lastWitness={...initialWitness,scheduled};
+      this.witnessFingerprint=operationalMealWitnessFingerprint(scheduled);
+    }
   }
 
   private intervals(policy:OperationalMealPolicy,tasks:readonly ScheduledTask[]):Window[]{

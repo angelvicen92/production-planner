@@ -44,3 +44,18 @@ test("execution changes are excluded and source input remains mutable/unmodified
 });
 
 test("empty and omitted PlanningBlocks preserve the legacy blockless identity",()=>{const omitted=buildAssistedPlanningSnapshotV1(base);const empty=buildAssistedPlanningSnapshotV1(base,[]);assert.deepEqual(empty,omitted);assert.equal(Object.prototype.hasOwnProperty.call(empty,"planningBlocks"),false);assert.equal(fingerprintAssistedPlanningSnapshotV1(empty),fingerprintAssistedPlanningSnapshotV1(omitted));});
+
+test("operational meals are canonical, deterministic, and legacy identity remains unchanged",()=>{
+  const legacy=buildAssistedPlanningSnapshotV1(base);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(legacy),"69008e0fca5764a24ecd176eea4a8770d69a0391b64ed834a8f36564e85065cb");
+  const meals=[
+    {policyId:"meal:b",startPlanned:"13:30",endPlanned:"14:00"},
+    {policyId:"meal:a",startPlanned:"13:00",endPlanned:"13:30"},
+  ];
+  const first=buildAssistedPlanningSnapshotV1(base,undefined,meals);
+  const reordered=buildAssistedPlanningSnapshotV1(base,undefined,[...meals].reverse());
+  assert.deepEqual(first.operationalMeals?.map(meal=>meal.policyId),["meal:a","meal:b"]);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(first),fingerprintAssistedPlanningSnapshotV1(reordered));
+  assert.notEqual(fingerprintAssistedPlanningSnapshotV1(first),fingerprintAssistedPlanningSnapshotV1(legacy));
+  assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,[meals[0],meals[0]]),/duplicate operational meal/);
+});
