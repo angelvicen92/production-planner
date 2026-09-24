@@ -742,3 +742,36 @@ test("budget exhaustion publishes an incumbent atomically but never a partial pl
   const empty = runExactItinerantPlanSearch(withoutIncumbent, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
   assert.equal(empty.status, "BRANCH_BUDGET_EXHAUSTED"); assert.deepEqual(empty.scheduledTasks, []);assert.deepEqual(empty.scheduledItinerantUnitMeals,[]);
 });
+
+const participantFutureDependencyProblem=(futureWindow:{start:number;end:number},dependency="standalone"):PlannerNextProblem=>{
+  const input=problem([{...auxiliary("standalone","core",[{start:0,end:10}]),duration:10}]);
+  input.protectedMeal=undefined;
+  input.analyticalFutureParticipantTasks=[{id:"future",kind:"auxiliary",participantId:"core",spaceId:"space-standalone",
+    duration:10,availability:[futureWindow],dependencies:[dependency]}];
+  return input;
+};
+
+test("defers an inconclusive core reservation until its reachable standalone dependency is placed",()=>{
+  const result=runExactItinerantPlanSearch(participantFutureDependencyProblem({start:10,end:20}));
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureReservationAbstentions>0);
+  assert.ok(result.evidence.participantFutureReservationPasses>0);
+  assert.equal(result.evidence.standaloneFirstSelectedTaskId,"standalone");
+  assert.ok(result.evidence.standaloneMaximumDepth>0);
+});
+
+test("prunes after a reachable standalone dependency makes the future reservation impossible",()=>{
+  const result=runExactItinerantPlanSearch(participantFutureDependencyProblem({start:0,end:10}));
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.participantFutureReservationAbstentions>0);
+  assert.ok(result.evidence.participantFutureReservationPrunes>0);
+  assert.equal(result.evidence.firstParticipantFutureReservationPrune?.phase,"STANDALONE");
+});
+
+test("an unreachable unresolved dependency stays explicitly inconclusive and cannot publish a solution",()=>{
+  const result=runExactItinerantPlanSearch(participantFutureDependencyProblem({start:10,end:20},"outside"));
+  assert.equal(result.status,"UNSUPPORTED_STANDALONE_SHAPE");
+  assert.deepEqual(result.scheduledTasks,[]);
+  assert.deepEqual(result.evidence.participantFutureUnreachableDependencyIds,["outside"]);
+  assert.deepEqual(result.evidence.reasonCodes,["PARTICIPANT_FUTURE_RESERVATION_INCONCLUSIVE"]);
+});
