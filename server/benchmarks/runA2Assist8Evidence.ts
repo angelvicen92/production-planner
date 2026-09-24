@@ -404,6 +404,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     if(stopAfterFirstProposal||iterations.length===(options.stopAfterIterationCount??Number.POSITIVE_INFINITY))break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
+  const selectedUnitIds=iterations.map(row=>row.orchestration.selectedUnitId as string);
+  const realityContinuityIndex=selectedUnitIds.indexOf("TECHNICAL_CHAIN:continuity.reality-c-eva-alfombra");
+  const standaloneRealityIndexes=["ITINERANT_AGENDA:itinerant:5001","ITINERANT_AGENDA:itinerant:5002"]
+    .map(id=>selectedUnitIds.indexOf(id));
+  assert.ok(realityContinuityIndex>=0,"A2 must attempt the scarce Reality C + EVA continuity unit");
+  assert.ok(standaloneRealityIndexes.every(index=>index<0||realityContinuityIndex<index),
+    "A2 must attempt Reality C + EVA before either standalone Reality agenda");
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
   const completionPass = finalIds.length === 266
     && JSON.stringify(finalIds) === JSON.stringify(sourceIds)

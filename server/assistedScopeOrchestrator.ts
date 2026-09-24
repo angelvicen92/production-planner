@@ -13,6 +13,11 @@ export interface OperationalUnitPriority {
   readonly pendingDurationMinutes: number;
   readonly pendingTaskCount: number;
   readonly sharedResourcePressure: number;
+  /** Load on the most constrained concrete resource/unit (or task window). */
+  readonly effectiveWindowLoadMinutes: number;
+  readonly effectiveWindowCapacityMinutes: number;
+  readonly effectiveWindowSlackMinutes: number;
+  readonly sharedResourceDemandCount: number;
 }
 export interface OperationalUnitEvidence {
   readonly unitId: string;
@@ -45,6 +50,15 @@ const compareNumbers = (a: number, b: number) => a - b;
 const canonical = (values: Iterable<number>) => [...new Set(values)].sort(compareNumbers);
 const pending = (task: TaskInput, accepted: ReadonlySet<number>) =>
   (task.status === "pending" || task.status === "interrupted") && !accepted.has(task.id);
+const minute = (value: string) => { const [hour, part] = value.split(":").map(Number); return hour! * 60 + part!; };
+const windowMinutes = (start: string, end: string) => Math.max(0, minute(end) - minute(start));
+const unionWindowMinutes=(windows:readonly {start:string;end:string}[],lower:number,upper:number)=>{
+  const sorted=windows.map(window=>({start:Math.max(lower,minute(window.start)),end:Math.min(upper,minute(window.end))}))
+    .filter(window=>window.end>window.start).sort((left,right)=>left.start-right.start||left.end-right.end);
+  let total=0,start=-1,end=-1;
+  for(const window of sorted){if(window.start>end){total+=Math.max(0,end-start);start=window.start;end=window.end;}else end=Math.max(end,window.end);}
+  return total+Math.max(0,end-start);
+};
 
 /**
  * Pure Assisted authority: explicit operational contracts form units; resource
@@ -75,7 +89,8 @@ export function recommendNextAssistedScope(
   // Anchored accompaniment closure is consumed by buildAssistedProblem; it is
   // deliberately not made visible in the first human scope.
   const feederSpaceIds=new Set((input.coachRouteTransitions??[]).map(route=>route.fromSpaceId));
-  if(feederSpaceIds.size)attach(input.tasks.filter(task=>task.spaceId!=null&&feederSpaceIds.has(task.spaceId)).map(task=>task.id),
+  const mainSupportingTaskIds=new Set(input.tasks.filter(task=>task.spaceId!=null&&feederSpaceIds.has(task.spaceId)).map(task=>task.id));
+  if(feederSpaceIds.size)attach([...mainSupportingTaskIds],
     "TECHNICAL_CHAIN","plannerNext.mainFlow.feeders");
   for (const chain of input.technicalChains ?? []) {
     const members = [...chain.orderedTaskIds];
@@ -112,6 +127,18 @@ export function recommendNextAssistedScope(
   for (const task of tasks) { const root = find(task.id); groups.set(root, [...(groups.get(root) ?? []), task]); }
   const dependants = new Map<number, number>();
   for (const task of input.tasks) for (const dependency of task.dependsOnTaskIds ?? []) dependants.set(dependency, (dependants.get(dependency) ?? 0) + 1);
+  const dayStart=minute(input.workDay.start),dayEnd=minute(input.workDay.end);
+  const resourceWindows=new Map(input.planResourceItems.filter(resource=>resource.isAvailable).map(resource=>{
+    const start=Math.max(dayStart,resource.availabilityStart?minute(resource.availabilityStart):dayStart);
+    const end=Math.min(dayEnd,resource.availabilityEnd?minute(resource.availabilityEnd):dayEnd);
+    return [resource.id,Math.max(0,end-start)] as const;
+  }));
+  const teamWindows=new Map((input.itinerantTeamAvailability??[]).map(team=>[team.itinerantTeamId,
+    unionWindowMinutes(team.windows,dayStart,dayEnd)] as const));
+  const pendingResourceUsers=new Map<number,Set<number>>();
+  for(const task of tasks)for(const resourceId of task.assignedResourceIds??[]){
+    const users=pendingResourceUsers.get(resourceId)??new Set<number>();users.add(task.id);pendingResourceUsers.set(resourceId,users);
+  }
   const candidates: OperationalUnitEvidence[] = [...groups.values()].map(members => {
     const memberTaskIds = canonical(members.map(task => task.id));
     const authority = memberTaskIds.flatMap(id => authorities.get(id) ?? []);
@@ -122,11 +149,31 @@ export function recommendNextAssistedScope(
     const deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
     const resources = members.flatMap(task => task.assignedResourceIds ?? []);
     const sharedResourcePressure = resources.length - new Set(resources).size;
-    // Main-flow authority is the sole class-level precedence declared by the
-    // effective contract.  Every other unit competes on measurable pressure.
-    const priority: OperationalUnitPriority = { structuralClass: kind === "MAIN_PIPELINE" ? 2 : authority.length ? 1 : 0, requiredCoupling: authority.length,
+    const loads:{load:number;capacity:number}[]=[];
+    const loadByResource=new Map<number,number>();
+    const loadByTeam=new Map<number,number>();
+    for(const task of members){
+      const taskDuration=task.durationOverrideMin??0;
+      for(const resourceId of task.assignedResourceIds??[])loadByResource.set(resourceId,(loadByResource.get(resourceId)??0)+taskDuration);
+      if(task.itinerantTeamId!=null)loadByTeam.set(task.itinerantTeamId,(loadByTeam.get(task.itinerantTeamId)??0)+taskDuration);
+      if(task.fixedWindowStart&&task.fixedWindowEnd)loads.push({load:taskDuration,capacity:windowMinutes(task.fixedWindowStart,task.fixedWindowEnd)});
+    }
+    for(const [id,load] of loadByResource)loads.push({load,capacity:resourceWindows.get(id)??Math.max(0,dayEnd-dayStart)});
+    for(const [id,load] of loadByTeam)loads.push({load,capacity:teamWindows.get(id)??Math.max(0,dayEnd-dayStart)});
+    const bottleneck=loads.sort((left,right)=>right.load*left.capacity-left.load*right.capacity||left.capacity-right.capacity)[0]
+      // Duration alone is not window pressure: absent a structured resource,
+      // unit or task window, this dimension must remain neutral.
+      ??{load:0,capacity:Math.max(0,dayEnd-dayStart)};
+    const memberSet=new Set(memberTaskIds);
+    const sharedResourceDemandCount=[...new Set(resources)].filter(id=>[...(pendingResourceUsers.get(id)??[])].some(taskId=>!memberSet.has(taskId))).length;
+    // Main and its explicit route-connected support retain their declared
+    // proximity. Every independent unit competes on measurable pressure.
+    const supportsMain=memberTaskIds.some(id=>mainSupportingTaskIds.has(id));
+    const priority: OperationalUnitPriority = { structuralClass: kind === "MAIN_PIPELINE" ? 3 : supportsMain ? 2 : authority.length ? 1 : 0, requiredCoupling: authority.length,
       downstreamImpact: members.reduce((sum, task) => sum + (dependants.get(task.id) ?? 0), 0), effectiveDeadline: deadline,
-      pendingDurationMinutes: duration, pendingTaskCount: members.length, sharedResourcePressure };
+      pendingDurationMinutes: duration, pendingTaskCount: members.length, sharedResourcePressure,
+      effectiveWindowLoadMinutes:bottleneck.load,effectiveWindowCapacityMinutes:bottleneck.capacity,
+      effectiveWindowSlackMinutes:bottleneck.capacity-bottleneck.load,sharedResourceDemandCount };
     const unitId = authorityIds.length ? `${kind}:${authorityIds.join("+")}` : `SPACE_FALLBACK:${memberSpaceIds.join("+") || "unlocated"}`;
     const selector: AssistedScopeSelector = memberSpaceIds.length === 1 && (kind === "SPACE_FALLBACK" || kind === "MAIN_PIPELINE")
       ? { kind: "SPACE", spaceId: memberSpaceIds[0]! } : { kind: "TASK_IDS", taskIds: memberTaskIds };
@@ -136,8 +183,13 @@ export function recommendNextAssistedScope(
     bNumerator*aDenominator-aNumerator*bDenominator
   );
   const compare = (a: OperationalUnitEvidence, b: OperationalUnitEvidence) => {
-    const mainAuthority=b.priority.structuralClass===2?1:a.priority.structuralClass===2?-1:0;
+    const mainAuthority=b.priority.structuralClass===3?1:a.priority.structuralClass===3?-1:0;
+    const mainSupport=(a.priority.structuralClass>=2||b.priority.structuralClass>=2)
+      ? b.priority.structuralClass-a.priority.structuralClass:0;
     return mainAuthority
+    || mainSupport
+    || compareDensity(a.priority.effectiveWindowLoadMinutes,a.priority.effectiveWindowCapacityMinutes,
+      b.priority.effectiveWindowLoadMinutes,b.priority.effectiveWindowCapacityMinutes)
     || (a.priority.effectiveDeadline ?? "99:99").localeCompare(b.priority.effectiveDeadline ?? "99:99")
     || b.priority.structuralClass - a.priority.structuralClass
     // Compare pressure per pending obligation so a broad, flexible scope does
@@ -147,6 +199,7 @@ export function recommendNextAssistedScope(
     || b.priority.pendingDurationMinutes - a.priority.pendingDurationMinutes
     || b.priority.pendingTaskCount - a.priority.pendingTaskCount
     || b.priority.sharedResourcePressure - a.priority.sharedResourcePressure
+    || b.priority.sharedResourceDemandCount-a.priority.sharedResourceDemandCount
     || a.unitId.localeCompare(b.unitId, "en");
   };
   candidates.sort(compare);

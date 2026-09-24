@@ -58,6 +58,24 @@ test("effective pressure can outrank a nominally higher authority kind",()=>{
   assert.equal(selected.selectedUnitKind,"SPACE_FALLBACK");assert.deepEqual(selected.memberTaskIds,[2,3]);
 });
 
+test("a structurally coupled unit with a scarce shared-resource window precedes a flexible agenda",()=>{
+  const source=input([
+    task(11,10,60,{assignedResourceIds:[101]}),
+    task(12,10,60,{assignedResourceIds:[101]}),
+    task(21,20,60,{assignedResourceIds:[101],itinerantTeamId:201,allowedItinerantTeamIds:[201]}),
+  ]);
+  source.planResourceItems=[{id:101,resourceItemId:1001,typeId:1,name:"shared",isAvailable:true,availabilityStart:"16:00",availabilityEnd:"18:00"}];
+  source.technicalChains=[{id:"scarce-window",orderedTaskIds:[11,12],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[101]}];
+  source.itinerantTeamAvailability=[{itinerantTeamId:201,windows:[source.workDay]}];
+  const recommendation=recommendNextAssistedScope(source,blank(source.tasks))!;
+  assert.equal(recommendation.selectedUnitId,"TECHNICAL_CHAIN:scarce-window");
+  assert.deepEqual(recommendation.priority,{
+    structuralClass:1,requiredCoupling:2,downstreamImpact:0,effectiveDeadline:null,pendingDurationMinutes:120,pendingTaskCount:2,
+    sharedResourcePressure:1,effectiveWindowLoadMinutes:120,effectiveWindowCapacityMinutes:120,effectiveWindowSlackMinutes:0,
+    sharedResourceDemandCount:1,
+  });
+});
+
 test("configured main flow retains its explicit precedence",()=>{
   const source=input([task(1,10,5),task(2,20,200)]);
   source.plannerNext={searchPolicy:"EXACT_CONSTRUCTIVE",searchBudget:{bestK:1,maxBacktracks:1,maxPatterns:1,maxBranchExpansions:1},timeGridMinutes:5,participantTransitionMinutes:0,resourceTransitionMinutes:0,mainFlow:{spaceId:10,preferredEnd:"13:00",continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1}};
