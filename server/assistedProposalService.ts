@@ -5,6 +5,7 @@ import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, minuteToEngin
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSetupPreparation, ScheduledTask } from "../engine/planner-next/contracts";
 import { analyticalFutureEligibleTaskIds, expandVisiblePrerequisites, resolveAssistedScope, ScopeResolutionError } from "./assistedScopeResolver";
+import { certifyGlobalParticipantMealGate } from "./globalParticipantMealGate";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
 import type { BuildEffectivePlanConfigRevisionInputV1, EffectivePlanConfigRevisionV1 } from "./effectivePlanConfigRevision";
@@ -219,10 +220,21 @@ export class AssistedProposalService {
     // and cannot inherit an AcceptedException without an exact identity.
     const delta=evaluateAcceptedViolationDelta(candidateViolations,acceptedBaseline,unstructured);
     const {newHardViolationCount,newRequiredViolationCount,proposalEligible}=delta;
+    const mealFeasibility=execution.evidence.participantMealFutureFeasibility;
+    const firstMealPrune=mealFeasibility.firstPrune;
+    const blockingMealIds=mealFeasibility.blockingMealTaskIds??[];
+    const globalMealEvidence=certifyGlobalParticipantMealGate(adapter.problem.participantMeals??[],protectedParticipantMeals,
+      execution.evidence.selectedMealWitnesses?.participant?.scheduled??[],execution.evidence.reasonCodes??[],{
+        zeroDomainMealSourceIds:firstMealPrune?.domainResult==="ZERO_DOMAIN"?[firstMealPrune.blockingMealTaskId]:[],
+        infeasibleMealSourceIds:firstMealPrune?.domainResult==="ANALYTIC_COLLECTIVE_INFEASIBLE"
+          || execution.evidence.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE")?blockingMealIds:[],
+      });
+    const globalMealGate=globalMealEvidence.globalMealGate;
     const evidence={...execution.evidence,hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
       inheritedAcceptedHardViolationCount:delta.inheritedHardViolationCount,inheritedAcceptedRequiredViolationCount:delta.inheritedRequiredViolationCount,
-      newHardViolationCount,newRequiredViolationCount,proposalEligible,violations:candidateDetails??[]};
-    const safeProposal=proposal&&proposalEligible?proposal:null;
+      newHardViolationCount,newRequiredViolationCount,proposalEligible:proposalEligible&&globalMealGate==="PASS",violations:candidateDetails??[],
+      ...globalMealEvidence};
+    const safeProposal=proposal&&proposalEligible&&globalMealGate==="PASS"?proposal:null;
     const safeSnapshot=safeProposal?proposedDraftSnapshot:null,safeFingerprint=safeProposal?proposedDraftFingerprint:null;
     const result:AssistedProposalRunResultV1={contractVersion:1,outcome:safeProposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal:safeProposal,proposedDraftSnapshot:safeSnapshot,proposedDraftFingerprint:safeFingerprint,evidence:evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
     return this.finish(planId,run,result);
