@@ -35,7 +35,7 @@ import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey,
 import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
-import { authorizedPipelineArchitectures, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
+import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
   materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
@@ -1398,8 +1398,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const architectureKey=(architecture:MainFeederArchitecture)=>architecture.pattern.join(",")+"@"+architecture.slots.join(",");
   function* structuralBundles():NonNullable<ExactMainAndFeederSearchOptions["structuralBundleCandidates"]> {
     if(!hasFuture)return;
-    for(const architecture of authorizedPipelineArchitectures(problem,evidence)){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
-      const key=architectureKey(architecture),prepared=preparePipelineBundleGraph(problem,architecture,options.fixedPlacements);
+    for(const {architecture,materialized} of authorizedPipelineArchitectureMaterializations(problem,evidence,{
+      operationalMealBudget:()=>({remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("CORE",count)}),
+      onBudgetExhausted:()=>{structuralBudgetExhausted=true;evidence.structuralSearchBudgetExhausted=true;},
+    })){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
+      const key=architectureKey(architecture),prepared=preparePipelineBundleGraph(problem,architecture,options.fixedPlacements,materialized);
       if(!prepared)continue;evidence.architecturesPrepared++;evidence.preparedBundleEdges+=prepared.preparedBundleEdges;
       evidence.participantBundleEdgesChecked+=prepared.participantEdgeEvidence.checked;
       evidence.participantBundleEdgesPruned+=prepared.participantEdgeEvidence.pruned;
@@ -1412,7 +1415,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.futureReservationBundleMatchingAttempts++;
       const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,
         ()=>ledger.consume("CORE"),operation=>futureTechnicalChains.intrusion(operation));
-      if(!matching)continue;
+      if(!matching){if(ledger.branchesExplored>=ledger.limit){structuralBudgetExhausted=true;
+        evidence.structuralSearchBudgetExhausted=true;return;}continue;}
       evidence.futureReservationPerfectMatchings++;evidence.perfectMatchingsByArchitecture[key]++;
       evidence.structuralCandidatesProducedBeforeBudgetExhaustion++;
       yield {architecture,architectureFingerprint:prepared.witness.fingerprint,bundle:matching,
@@ -1421,6 +1425,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         acceptComplete:()=>{evidence.selectedArchitectureFingerprint=prepared.witness.fingerprint;return true;}};
       evidence.structuralArchitecturesFullyVisited++;
     }
+    if(structuralBudgetExhausted)return;
     evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;
   }
   const structuralBundleCandidates=hasFuture?structuralBundles():undefined;

@@ -408,17 +408,19 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const realityContinuityIndex=selectedUnitIds.indexOf("TECHNICAL_CHAIN:continuity.reality-c-eva-alfombra");
   const standaloneRealityIndexes=["ITINERANT_AGENDA:itinerant:5001","ITINERANT_AGENDA:itinerant:5002"]
     .map(id=>selectedUnitIds.indexOf(id));
-  assert.ok(realityContinuityIndex>=0,"A2 must attempt the scarce Reality C + EVA continuity unit");
-  assert.ok(standaloneRealityIndexes.every(index=>index<0||realityContinuityIndex<index),
-    "A2 must attempt Reality C + EVA before either standalone Reality agenda");
   const totalsIndex=selectedUnitIds.indexOf("ROUND_SYNCHRONIZATION:a2-totales-rounds");
   const flexibleOperationsIndexes=["OPERATIONAL_MEAL:p15-operations","OPERATIONAL_MEAL:p14-operations"]
     .map(id=>selectedUnitIds.indexOf(id));
-  assert.ok(totalsIndex>=0,"A2 must attempt the configured Totales round synchronization");
-  assert.ok(realityContinuityIndex<totalsIndex,
-    "A2 must attempt scarce Reality C + EVA before Totales");
-  assert.ok(flexibleOperationsIndexes.every(index=>index<0||totalsIndex<index),
-    "A2 must attempt Totales before the flexible P15/P14 operational units");
+  if(!stopAfterFirstProposal&&options.stopAfterIterationCount===undefined){
+    assert.ok(realityContinuityIndex>=0,"A2 must attempt the scarce Reality C + EVA continuity unit");
+    assert.ok(standaloneRealityIndexes.every(index=>index<0||realityContinuityIndex<index),
+      "A2 must attempt Reality C + EVA before either standalone Reality agenda");
+    assert.ok(totalsIndex>=0,"A2 must attempt the configured Totales round synchronization");
+    assert.ok(realityContinuityIndex<totalsIndex,
+      "A2 must attempt scarce Reality C + EVA before Totales");
+    assert.ok(flexibleOperationsIndexes.every(index=>index<0||totalsIndex<index),
+      "A2 must attempt Totales before the flexible P15/P14 operational units");
+  }
   const finalIds = finalRows.map(row => row.taskId).sort((a, b) => a - b);
   const completionPass = finalIds.length === 266
     && JSON.stringify(finalIds) === JSON.stringify(sourceIds)

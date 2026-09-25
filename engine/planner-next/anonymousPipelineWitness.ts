@@ -8,7 +8,7 @@ import { anchoredAccompanimentIndex, materializeAnchoredOperation, type Anchored
 import { canPlaceTask, exactTaskStartDomain } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching,
   incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
-import { assessOperationalMealFutureFeasibility } from "./operationalMeals";
+import { assessOperationalMealFutureFeasibility, type OperationalMealSearchBudget } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
 import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
 import { normalizeParticipantFuturePlacements, probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
@@ -93,7 +93,8 @@ const signatureWindows = (windows: readonly Window[] | undefined) => orderedWind
 function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture,
   onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void,
   analyticalParticipantMeals:readonly ParticipantMealObligation[]=[],
-  onNominalSchedule?: (scheduled:readonly ScheduledTask[])=>void): AnonymousPipelineWitness {
+  onNominalSchedule?: (scheduled:readonly ScheduledTask[])=>void,
+  operationalMealBudget?:OperationalMealSearchBudget): AnonymousPipelineWitness {
   let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
   let arrivalSolverExecuted=false,arrivalClassification:string|null=null,arrivalContiguousStatesExplored=0;
   let arrivalMembershipFallbackEntered=false,stylingCandidateStartBoundaryCount=0;
@@ -397,12 +398,13 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     };}) : [];
   operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
   const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
-    {remaining:problem.budget.maxBranchExpansions},"PROBE",fixedMainMeals);
+    operationalMealBudget??{remaining:problem.budget.maxBranchExpansions},"PROBE",fixedMainMeals);
   operationalMealFutureFeasible=operational.complete;
   operationalMealBlockingPolicyIds=[...operational.blockingPolicyIds];
   operationalMealBranchesExplored=operational.branchesExplored;
-  if(!operational.complete)return rejected(operational.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED")
-    ? "INCONCLUSIVE":"INFEASIBLE","OPERATIONAL_MEAL_FUTURE_INFEASIBLE");
+  if(!operational.complete){const exhausted=operational.reasonCodes.includes("OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED");
+    return rejected(exhausted?"INCONCLUSIVE":"INFEASIBLE",exhausted
+      ?"OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED":"OPERATIONAL_MEAL_FUTURE_INFEASIBLE");}
   const participantMealProblem={...problem,participantMeals:[...(problem.participantMeals??[]),...analyticalParticipantMeals]};
   if((participantMealProblem.participantMeals?.length??0)>0){
     const participant=probeParticipantMealFutureFeasibility(participantMealProblem as PlannerNextProblem,internalSchedule);
@@ -438,6 +440,15 @@ export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextP
   return {witness,scheduledTasks};
 }
 
+export type NominalPipelineMaterialization=ReturnType<typeof materializeNominalPipelineWitness>;
+
+function materializeNominalPipelineWitnessWithBudget(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
+  operationalMealBudget?:OperationalMealSearchBudget):NominalPipelineMaterialization {
+  let scheduledTasks:readonly ScheduledTask[]=[];
+  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;},operationalMealBudget);
+  return {witness,scheduledTasks};
+}
+
 /**
  * Matches real participant bundles to the identity-free spots of a witness.  An edge
  * represents the whole IN -> styling/feeder -> Main route (and its anchored operation),
@@ -456,8 +467,8 @@ export function materializePipelineBundleMatching(problem:Readonly<PlannerNextPr
 
 /** Materializes the identity-independent witness and every base-valid bundle edge exactly once. */
 export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
-  protectedPlacements:readonly ScheduledTask[]=[]):PreparedPipelineBundleGraph|null {
-  const nominal=materializeNominalPipelineWitness(problem,architecture);
+  protectedPlacements:readonly ScheduledTask[]=[],materialized?:NominalPipelineMaterialization):PreparedPipelineBundleGraph|null {
+  const nominal=materialized??materializeNominalPipelineWitness(problem,architecture);
   if(nominal.witness.status!=="FEASIBLE")return null;
   const witness=nominal.witness;
   const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
@@ -619,6 +630,17 @@ export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNe
 }
 
 export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence):Generator<MainFeederArchitecture> {
+  for(const {architecture} of authorizedPipelineArchitectureMaterializations(problem,evidence))yield architecture;
+}
+
+export interface PipelineArchitectureMaterializationOptions {
+  operationalMealBudget?:()=>OperationalMealSearchBudget;
+  onBudgetExhausted?:()=>void;
+}
+
+/** Enumerates authorized architectures together with the nominal certificate already paid for. */
+export function* authorizedPipelineArchitectureMaterializations(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence,
+  options:PipelineArchitectureMaterializationOptions={}):Generator<{architecture:MainFeederArchitecture;materialized:NominalPipelineMaterialization}> {
   const mains=problem.tasks.filter(task=>task.kind==="main");
   if(!mains.length)return null;
   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
@@ -634,16 +656,19 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
       const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture);
       if(structuralRejection){if(evidence){evidence.architectureStructuralProofRejects++;evidence.architectureStructuralRejectsByReason[structuralRejection]=(evidence.architectureStructuralRejectsByReason[structuralRejection]??0)+1;}continue;}
       if(evidence)evidence.nominalPipelineWitnessChecks++;
-      const materialized=materializeNominalPipelineWitness(problem,architecture);
+      const materialized=materializeNominalPipelineWitnessWithBudget(problem,architecture,options.operationalMealBudget?.());
       if(evidence){const status=materialized.witness.status;if(status==="FEASIBLE")evidence.nominalPipelineWitnessFeasible++;
         else {if(status==="INFEASIBLE")evidence.nominalPipelineWitnessInfeasible++;else evidence.nominalPipelineWitnessInconclusive++;
           const reason=materialized.witness.reason??"UNKNOWN";evidence.nominalPipelineWitnessRejectsByReason[reason]=(evidence.nominalPipelineWitnessRejectsByReason[reason]??0)+1;}}
+      if(materialized.witness.status==="INCONCLUSIVE"&&materialized.witness.reason==="OPERATIONAL_MEAL_BRANCH_BUDGET_EXHAUSTED"){
+        options.onBudgetExhausted?.();return;
+      }
       const orderedMains=materialized.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start);
       const meal=architecture.mealStart===undefined?null:{start:architecture.mealStart,
         end:architecture.mealStart+mainFlowMealPolicy(problem)!.duration};
       const continuous=orderedMains.slice(1).every((task,index)=>orderedMains[index]!.end===task.start
         ||Boolean(meal&&orderedMains[index]!.end===meal.start&&task.start===meal.end));
       if(materialized.witness.status==="FEASIBLE"&&!continuous&&evidence)evidence.continuityRejects++;
-      if(materialized.witness.status==="FEASIBLE"&&continuous){if(evidence)evidence.authorizedArchitecturesYielded++;yield architecture;}
+      if(materialized.witness.status==="FEASIBLE"&&continuous){if(evidence)evidence.authorizedArchitecturesYielded++;yield {architecture,materialized};}
   }
 }
