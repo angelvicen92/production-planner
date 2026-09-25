@@ -1,6 +1,7 @@
 import type { ParticipantMealObligation, PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task } from "./contracts";
 import { exactTaskStartDomain, type ExactTaskStartDomain } from "./placement";
 import { analyticParticipantMealDomain, participantMealCandidates, type AnalyticParticipantMealStartDomain } from "./participantMeals";
+import { createHash } from "node:crypto";
 
 export type ParticipantFutureReservationStatus = "PASS" | "PRUNE" | "ABSTAIN";
 export interface ParticipantFutureReservationProbe {
@@ -21,6 +22,12 @@ export interface ParticipantFutureReservationProbe {
   readonly compatiblePairChecks: number;
   readonly analyticChecks: number;
   readonly branchesConsumed: number;
+  readonly collectiveCacheHits: number;
+  readonly collectiveCacheMisses: number;
+  readonly collectiveUniqueStates: number;
+  readonly collectiveRepeatedStates: number;
+  readonly collectiveBranchesAvoided: number;
+  readonly collectiveStateFingerprints: readonly string[];
   readonly unresolvedDependencyIds: readonly string[];
   readonly abstainCause: "BUDGET_EXHAUSTED" | "INCONCLUSIVE_SHAPE" | null;
   readonly reasonCode: "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN" | "FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE" | "FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE" | "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" | null;
@@ -57,6 +64,46 @@ export function normalizeParticipantFuturePlacements(placed:readonly ScheduledTa
 type CollectiveResult={status:"PASS"|"PRUNE"|"ABSTAIN";branches:number;domainSizes:Record<string,number>;witness:boolean;
   abstainCause:"BUDGET_EXHAUSTED"|"INCONCLUSIVE_SHAPE"|null};
 
+const canonical=(value:unknown):string=>JSON.stringify(value,(_key,item)=>item!==null&&typeof item==="object"&&!Array.isArray(item)
+  ?Object.fromEntries(Object.entries(item as Record<string,unknown>).sort(([left],[right])=>left.localeCompare(right))):item);
+
+/** Prepared, participant-local exact authority. Only definitive exact results are reusable. */
+export class PreparedParticipantFutureReservationAuthority {
+  private readonly cache=new Map<string,CollectiveResult>();
+  constructor(private readonly problem:PlannerNextProblem){}
+
+  probe(placed:readonly ScheduledTask[],added:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,
+    mode:ParticipantFutureReservationMode="EXACT"):ParticipantFutureReservationProbe{
+    return probeParticipantFutureReservations(this.problem,placed,added,budget,mode,this);
+  }
+
+  fingerprint(participantId:string,tasks:readonly Task[],meals:readonly ParticipantMealObligation[],fixed:readonly ScheduledTask[]):string{
+    const obligationIds=new Set([...tasks.map(({id})=>id),...meals.map(({sourceTaskId})=>sourceTaskId),
+      ...tasks.flatMap(({dependencies})=>dependencies),...meals.flatMap(meal=>meal.dependencies??[])]);
+    const spaces=new Set(tasks.map(({spaceId})=>spaceId));
+    const resources=new Set(tasks.flatMap(task=>task.requiredResourceIds??[]));
+    const units=new Set(tasks.flatMap(task=>task.itinerantUnitId?[task.itinerantUnitId]:[]));
+    const coaches=new Set(tasks.flatMap(task=>task.kind!=="technical"&&task.coachId?[task.coachId]:[]));
+    const relevant=normalizeParticipantFuturePlacements(fixed).filter(placement=>placement.participantId===participantId
+      ||spaces.has(placement.spaceId)||(placement.requiredResourceIds??[]).some(id=>resources.has(id))
+      ||(placement.itinerantUnitId!==undefined&&units.has(placement.itinerantUnitId))
+      ||(placement.kind!=="technical"&&placement.coachId!==undefined&&coaches.has(placement.coachId))
+      ||obligationIds.has(placement.id)).sort((a,b)=>a.id.localeCompare(b.id)||a.start-b.start||a.end-b.end);
+    return createHash("sha256").update(canonical({participantId,taskIds:[...tasks.map(({id})=>id)].sort(),
+      mealIds:[...meals.map(({sourceTaskId})=>sourceTaskId)].sort(),relevant})).digest("hex");
+  }
+
+  assess(participantId:string,tasks:readonly Task[],meals:readonly ParticipantMealObligation[],fixed:readonly ScheduledTask[],
+    budget?:ParticipantFutureReservationBudget,mode:ParticipantFutureReservationMode="EXACT"):{result:CollectiveResult;fingerprint:string;cacheHit:boolean;branchesAvoided:number}{
+    const stateFingerprint=this.fingerprint(participantId,tasks,meals,fixed);
+    const cached=mode==="EXACT"?this.cache.get(stateFingerprint):undefined;
+    if(cached)return {result:{...cached,branches:0,domainSizes:{...cached.domainSizes}},fingerprint:stateFingerprint,cacheHit:true,branchesAvoided:cached.branches};
+    const result=collectiveWitness(this.problem,participantId,tasks,meals,fixed,budget,mode);
+    if(mode==="EXACT"&&(result.status==="PASS"||result.status==="PRUNE"))this.cache.set(stateFingerprint,{...result,domainSizes:{...result.domainSizes}});
+    return {result,fingerprint:stateFingerprint,cacheHit:false,branchesAvoided:0};
+  }
+}
+
 /** Exact participant-local witness. Candidate generation delegates to the canonical task and meal authorities. */
 function collectiveWitness(problem:PlannerNextProblem,_participantId:string,tasks:readonly Task[],meals:readonly ParticipantMealObligation[],
   fixed:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,mode:ParticipantFutureReservationMode="EXACT"):CollectiveResult {
@@ -83,8 +130,14 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
     if(required>available-occupied)return {status:"PRUNE",branches,domainSizes,witness:false,abstainCause:null};
   }
   if(mode==="ANALYTIC_ONLY")return {status:"ABSTAIN",branches,domainSizes,witness:false,abstainCause:"INCONCLUSIVE_SHAPE"};
+  const stateMemo=new Map<string,boolean>();
   const visit=(pendingTasks:readonly Task[],pendingMeals:readonly ParticipantMealObligation[],scheduledTasks:ScheduledTask[],scheduledMeals:ScheduledParticipantMeal[]):boolean=>{
     if(pendingTasks.length===0&&pendingMeals.length===0)return true;
+    const stateKey=canonical({pendingTasks:pendingTasks.map(({id})=>id).sort(),pendingMeals:pendingMeals.map(({sourceTaskId})=>sourceTaskId).sort(),
+      tasks:scheduledTasks.filter(task=>!knownFixed.has(task.id)).map(({id,start,end,spaceId,requiredResourceIds,itinerantUnitId})=>
+        ({id,start,end,spaceId,requiredResourceIds:[...(requiredResourceIds??[])].sort(),itinerantUnitId})).sort((a,b)=>a.id.localeCompare(b.id)),
+      meals:scheduledMeals.map(({sourceTaskId,start,end})=>({sourceTaskId,start,end})).sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId))});
+    const memoized=stateMemo.get(stateKey);if(memoized!==undefined)return memoized;
     const placedIds=new Set(scheduledTasks.map(task=>task.id)),placedMealIds=new Set(scheduledMeals.map(meal=>meal.sourceTaskId));
     const readyTasks=pendingTasks.filter(task=>task.dependencies.every(id=>placedIds.has(id)||placedMealIds.has(id)));
     const readyMeals=pendingMeals.filter(meal=>(meal.dependencies??[]).every(id=>placedIds.has(id)||placedMealIds.has(id)));
@@ -104,13 +157,13 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
       if(selected[1]==="TASK"){
         const task=selected[2] as Task,start=candidate as number;
         const scheduled:ScheduledTask={...task,start,end:start+task.duration};
-        if(visit(pendingTasks.filter(item=>item.id!==task.id),pendingMeals,[...scheduledTasks,scheduled],scheduledMeals))return true;
+        if(visit(pendingTasks.filter(item=>item.id!==task.id),pendingMeals,[...scheduledTasks,scheduled],scheduledMeals)){stateMemo.set(stateKey,true);return true;}
       }else{
         const meal=selected[2] as ParticipantMealObligation;
-        if(visit(pendingTasks,pendingMeals.filter(item=>item.sourceTaskId!==meal.sourceTaskId),scheduledTasks,[...scheduledMeals,candidate as ScheduledParticipantMeal]))return true;
+        if(visit(pendingTasks,pendingMeals.filter(item=>item.sourceTaskId!==meal.sourceTaskId),scheduledTasks,[...scheduledMeals,candidate as ScheduledParticipantMeal])){stateMemo.set(stateKey,true);return true;}
       }
     }
-    return false;
+    if(!exhausted)stateMemo.set(stateKey,false);return false;
   };
   const witness=visit(tasks,meals,[...fixed],[]);
   return {status:witness?"PASS":exhausted?"ABSTAIN":"PRUNE",branches,domainSizes,witness,
@@ -119,7 +172,7 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
 
 /** Sound read-only reservation for out-of-scope participant work. */
 export function probeParticipantFutureReservations(problem:PlannerNextProblem,placed:readonly ScheduledTask[],added:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,
-  mode:ParticipantFutureReservationMode="EXACT"):ParticipantFutureReservationProbe {
+  mode:ParticipantFutureReservationMode="EXACT",prepared?:PreparedParticipantFutureReservationAuthority):ParticipantFutureReservationProbe {
   placed=normalizeParticipantFuturePlacements(placed);
   const affectedParticipants=[...new Set(added.flatMap(task=>task.participantId?[task.participantId]:[]))].sort();
   const analytical=[...(problem.analyticalFutureParticipantTasks??[])];
@@ -140,7 +193,8 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   const base={affectedParticipants,affectedFutureTasksChecked:future.length,affectedMealsChecked:meals.length,individualDomainChecks:0,
     individualZeroDomainPrunes:0,jointTaskMealChecks:0,jointTaskMealPrunes:0,collectiveChecks:0,collectivePasses:0,collectivePrunes:0,
     collectiveObligationIds:[] as string[],collectiveDomainSizes:{} as Record<string,number>,collectiveWitnessFound:false,
-    compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,unresolvedDependencyIds:[] as string[],abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
+    compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,collectiveCacheHits:0,collectiveCacheMisses:0,collectiveUniqueStates:0,
+    collectiveRepeatedStates:0,collectiveBranchesAvoided:0,collectiveStateFingerprints:[] as string[],unresolvedDependencyIds:[] as string[],abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
     futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0 as const};
   if(future.length===0)return {...base,status:"PASS" as const};
   const remainingFutureIds=new Set(future.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId)),placedIds=new Set(placed.map(task=>task.id));
@@ -170,21 +224,29 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
     reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const,futureTaskId:unresolved[0]!.id,participantId:unresolved[0]!.participantId??null};
   let collectiveChecks=0,collectivePasses=0,branchesConsumed=0;const collectiveObligationIds:string[]=[];
   const collectiveDomainSizes:Record<string,number>={};
+  let cacheHits=0,cacheMisses=0,branchesAvoided=0;const stateFingerprints:string[]=[];
+  const authority=prepared??new PreparedParticipantFutureReservationAuthority(problem);
   for(const participantId of affectedParticipants){
     const participantTasks=future.filter(task=>task.participantId===participantId),participantMeals=meals.filter(meal=>meal.participantId===participantId);
     if(participantTasks.length+participantMeals.length<2)continue;
-    const result=collectiveWitness(problem,participantId,participantTasks,participantMeals,placed,budget,mode);collectiveChecks++;branchesConsumed+=result.branches;
+    const assessment=authority.assess(participantId,participantTasks,participantMeals,placed,budget,mode),result=assessment.result;
+    collectiveChecks++;branchesConsumed+=result.branches;stateFingerprints.push(assessment.fingerprint);
+    cacheHits+=Number(assessment.cacheHit);cacheMisses+=Number(!assessment.cacheHit);branchesAvoided+=assessment.branchesAvoided;
     const obligationIds=[...participantTasks.map(task=>task.id),...participantMeals.map(meal=>meal.sourceTaskId)].sort();
     collectiveObligationIds.push(...obligationIds);Object.assign(collectiveDomainSizes,result.domainSizes);
     const common={...base,individualDomainChecks:individual,jointTaskMealChecks:joint,compatiblePairChecks:pairChecks,analyticChecks:analytic,
       compatiblePairCount:(pairChecks>0?1:0) as 0|1,collectiveChecks,collectivePasses,
       collectivePrunes:Number(result.status==="PRUNE"),collectiveObligationIds:[...collectiveObligationIds].sort(),collectiveDomainSizes,
       collectiveWitnessFound:result.witness,branchesConsumed,participantId,abstainCause:result.abstainCause};
+    Object.assign(common,{collectiveCacheHits:cacheHits,collectiveCacheMisses:cacheMisses,collectiveUniqueStates:cacheMisses,
+      collectiveRepeatedStates:cacheHits,collectiveBranchesAvoided:branchesAvoided,collectiveStateFingerprints:[...stateFingerprints]});
     if(result.status==="PRUNE")return {...common,status:"PRUNE" as const,reasonCode:"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE" as const};
     if(result.status==="ABSTAIN")return {...common,status:"ABSTAIN" as const,reasonCode:"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE" as const};
     collectivePasses++;
   }
   return {...base,status:"PASS" as const,individualDomainChecks:individual,jointTaskMealChecks:joint,compatiblePairChecks:pairChecks,
     analyticChecks:analytic,compatiblePairCount:pairChecks>0?1:0,collectiveChecks,collectivePasses,collectivePrunes:0,
-    collectiveObligationIds:[...collectiveObligationIds].sort(),collectiveDomainSizes,collectiveWitnessFound:collectiveChecks>0,branchesConsumed};
+    collectiveObligationIds:[...collectiveObligationIds].sort(),collectiveDomainSizes,collectiveWitnessFound:collectiveChecks>0,branchesConsumed,
+    collectiveCacheHits:cacheHits,collectiveCacheMisses:cacheMisses,collectiveUniqueStates:cacheMisses,
+    collectiveRepeatedStates:cacheHits,collectiveBranchesAvoided:branchesAvoided,collectiveStateFingerprints:stateFingerprints};
 }

@@ -2441,6 +2441,11 @@
         "compatiblePairChecks": 165,
         "analyticChecks": 495,
         "branchesConsumed": 184,
+        "cacheHits": 0,
+        "cacheMisses": 19,
+        "uniqueStates": 19,
+        "repeatedStates": 0,
+        "branchesAvoided": 0,
         "firstPrune": null
       },
       "selectedSetupPreparations": [],
@@ -2639,6 +2644,12 @@
             "compatiblePairChecks": 0,
             "analyticChecks": 10,
             "branchesConsumed": 0,
+            "collectiveCacheHits": 0,
+            "collectiveCacheMisses": 0,
+            "collectiveUniqueStates": 0,
+            "collectiveRepeatedStates": 0,
+            "collectiveBranchesAvoided": 0,
+            "collectiveStateFingerprints": [],
             "unresolvedDependencyIds": [],
             "abstainCause": null,
             "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
@@ -3438,7 +3449,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "3ea6905e2ada0069e917e5040087864342dffa923df9087164fadd3baab7e3c7",
-      "durationMs": 114964
+      "durationMs": 94817
     },
     {
       "ordinal": 2,
@@ -5808,6 +5819,11 @@
         "compatiblePairChecks": 165,
         "analyticChecks": 495,
         "branchesConsumed": 184,
+        "cacheHits": 0,
+        "cacheMisses": 19,
+        "uniqueStates": 19,
+        "repeatedStates": 0,
+        "branchesAvoided": 0,
         "firstPrune": null
       },
       "selectedSetupPreparations": [],
@@ -6829,7 +6845,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "8e8fafae16dda2df13616e279f8e6b20f44359492bba4228e112372b6773752c",
-      "durationMs": 11274
+      "durationMs": 9333
     },
     {
       "ordinal": 3,
@@ -9130,6 +9146,11 @@
         "compatiblePairChecks": 207,
         "analyticChecks": 630,
         "branchesConsumed": 66,
+        "cacheHits": 0,
+        "cacheMisses": 7,
+        "uniqueStates": 7,
+        "repeatedStates": 0,
+        "branchesAvoided": 0,
         "firstPrune": null
       },
       "selectedSetupPreparations": [],
@@ -10165,7 +10186,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "b2deadd0738df5bf5ab5f3776faf6131b425c13bd9f8685331e50c70846f864f",
-      "durationMs": 12233
+      "durationMs": 14554
     },
     {
       "ordinal": 4,
@@ -12278,6 +12299,11 @@
         "compatiblePairChecks": 1775,
         "analyticChecks": 5364,
         "branchesConsumed": 99447,
+        "cacheHits": 43,
+        "cacheMisses": 157,
+        "uniqueStates": 157,
+        "repeatedStates": 43,
+        "branchesAvoided": 345,
         "firstPrune": {
           "phase": "MACRO",
           "causingTaskId": "task:10014",
@@ -12342,6 +12368,12 @@
           "compatiblePairChecks": 0,
           "analyticChecks": 4,
           "branchesConsumed": 0,
+          "collectiveCacheHits": 0,
+          "collectiveCacheMisses": 0,
+          "collectiveUniqueStates": 0,
+          "collectiveRepeatedStates": 0,
+          "collectiveBranchesAvoided": 0,
+          "collectiveStateFingerprints": [],
           "unresolvedDependencyIds": [],
           "abstainCause": null,
           "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
@@ -12747,6 +12779,12 @@
             "compatiblePairChecks": 0,
             "analyticChecks": 4,
             "branchesConsumed": 0,
+            "collectiveCacheHits": 0,
+            "collectiveCacheMisses": 0,
+            "collectiveUniqueStates": 0,
+            "collectiveRepeatedStates": 0,
+            "collectiveBranchesAvoided": 0,
+            "collectiveStateFingerprints": [],
             "unresolvedDependencyIds": [],
             "abstainCause": null,
             "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
@@ -13149,7 +13187,7 @@
           "collisions": []
         }
       },
-      "durationMs": 19293
+      "durationMs": 20260
     }
   ],
   "firstBlocker": {
@@ -13349,6 +13387,12 @@
         "compatiblePairChecks": 0,
         "analyticChecks": 4,
         "branchesConsumed": 0,
+        "collectiveCacheHits": 0,
+        "collectiveCacheMisses": 0,
+        "collectiveUniqueStates": 0,
+        "collectiveRepeatedStates": 0,
+        "collectiveBranchesAvoided": 0,
+        "collectiveStateFingerprints": [],
         "unresolvedDependencyIds": [],
         "abstainCause": null,
         "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",

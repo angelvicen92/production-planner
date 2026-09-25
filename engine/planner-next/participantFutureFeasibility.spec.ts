@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
-import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
+import { PreparedParticipantFutureReservationAuthority, probeParticipantFutureReservations } from "./participantFutureFeasibility";
 
 const problem=(futureAvailability:{start:number;end:number},dependency:string[]=[]):PlannerNextProblem=>({
   day:{start:0,end:100},spaces:[{id:"a",availability:[{start:0,end:100}]},{id:"b",availability:[{start:0,end:100}]}],
@@ -141,4 +141,37 @@ test("conflicting placements with the same task id are not collapsed as equivale
   assert.equal(once.status,"PASS");
   assert.equal(conflict.status,"PRUNE");
   assert.equal(conflict.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
+});
+
+test("prepared participant-local authority reuses causally equivalent PASS witnesses deterministically",()=>{
+  const source=idempotentCollectiveProblem(),authority=new PreparedParticipantFutureReservationAuthority(source);
+  const fixed={...current(),start:40,end:60};
+  const first=authority.probe([fixed],[fixed]);
+  const second=authority.probe([fixed,{...current("other"),id:"irrelevant",spaceId:"unused",start:0,end:20}],[fixed]);
+  assert.equal(first.status,"PASS");assert.equal(first.collectiveCacheMisses,1);
+  assert.equal(second.status,"PASS");assert.equal(second.collectiveCacheHits,1);assert.equal(second.branchesConsumed,0);
+  assert.ok(second.collectiveBranchesAvoided>0);
+  assert.deepEqual(second.collectiveStateFingerprints,first.collectiveStateFingerprints);
+});
+
+test("prepared authority invalidates reuse when a participant-local placement changes",()=>{
+  const source=idempotentCollectiveProblem(),authority=new PreparedParticipantFutureReservationAuthority(source);
+  const first=authority.probe([{...current(),start:40,end:60}],[current()]);
+  const changed=authority.probe([{...current(),start:60,end:80}],[current()]);
+  assert.equal(first.collectiveCacheMisses,1);assert.equal(changed.collectiveCacheMisses,1);
+  assert.notDeepEqual(changed.collectiveStateFingerprints,first.collectiveStateFingerprints);
+});
+
+test("prepared authority reuses exact PRUNE but never caches budget exhaustion",()=>{
+  const pruneSource=problem({start:40,end:80});pruneSource.analyticalFutureParticipantTasks![0].duration=20;
+  pruneSource.analyticalFutureParticipantTasks!.push({...pruneSource.analyticalFutureParticipantTasks![0],id:"future-2"});
+  const pruneAuthority=new PreparedParticipantFutureReservationAuthority(pruneSource);
+  const first=pruneAuthority.probe([current()],[current()]);const second=pruneAuthority.probe([current()],[current()]);
+  assert.equal(first.status,"PRUNE");assert.equal(second.status,"PRUNE");assert.equal(second.collectiveCacheHits,1);
+
+  const passSource=idempotentCollectiveProblem(),budgetAuthority=new PreparedParticipantFutureReservationAuthority(passSource);
+  const exhausted=budgetAuthority.probe([current()],[current()],{consume:()=>false});
+  const retried=budgetAuthority.probe([current()],[current()],{consume:()=>true});
+  assert.equal(exhausted.abstainCause,"BUDGET_EXHAUSTED");assert.equal(exhausted.collectiveCacheHits,0);
+  assert.equal(retried.status,"PASS");assert.equal(retried.collectiveCacheMisses,1);assert.ok(retried.branchesConsumed>0);
 });

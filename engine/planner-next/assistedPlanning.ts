@@ -80,6 +80,8 @@ export interface AssistedPlanningEvidence {
     readonly jointTaskMealChecks:number; readonly jointTaskMealPrunes:number;
     readonly collectiveChecks:number; readonly collectivePrunes:number; readonly compatiblePairChecks:number;
     readonly analyticChecks:number; readonly branchesConsumed:number;
+    readonly cacheHits:number;readonly cacheMisses:number;readonly uniqueStates:number;readonly repeatedStates:number;
+    readonly branchesAvoided:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
   };
   readonly operationalMealFutureReservation: ExactItinerantPlanEvidence["operationalMealFutureReservation"];
@@ -598,6 +600,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       jointTaskMealPrunes:Number(evidenceRecord.participantFutureJointTaskMealPrunes??0),collectiveChecks:Number(evidenceRecord.participantFutureCollectiveChecks??0),
       collectivePrunes:Number(evidenceRecord.participantFutureCollectivePrunes??0),compatiblePairChecks:Number(evidenceRecord.participantFutureCompatiblePairChecks??0),
       analyticChecks:Number(evidenceRecord.participantFutureAnalyticChecks??0),branchesConsumed:Number(evidenceRecord.participantFutureBranchesConsumed??0),
+      cacheHits:Number(evidenceRecord.participantFutureCollectiveCacheHits??0),cacheMisses:Number(evidenceRecord.participantFutureCollectiveCacheMisses??0),
+      uniqueStates:Number(evidenceRecord.participantFutureCollectiveUniqueStates??0),repeatedStates:Number(evidenceRecord.participantFutureCollectiveRepeatedStates??0),
+      branchesAvoided:Number(evidenceRecord.participantFutureCollectiveBranchesAvoided??0),
       firstPrune:(evidenceRecord.firstParticipantFutureReservationPrune as ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"]|undefined)??null,
     },
     technicalChainFutureReservation:{
