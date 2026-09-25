@@ -404,6 +404,10 @@ export interface ExactItinerantPlanEvidence {
   participantFutureJointTaskMealPrunes:number; participantFutureCollectiveChecks:number; participantFutureCollectivePrunes:number;
   participantFutureCollectivePasses:number;
   participantFutureCompatiblePairChecks:number; participantFutureAnalyticChecks:number; participantFutureBranchesConsumed:number;
+  participantFutureMacroAnalyticChecks:number;participantFutureMacroAnalyticPrunes:number;participantFutureMacroAnalyticAbstentions:number;
+  participantFutureTerminalExactChecks:number;participantFutureTerminalExactPasses:number;participantFutureTerminalExactPrunes:number;
+  participantFutureTerminalExactAbstentions:number;participantFutureTerminalExactBranches:number;
+  firstParticipantFutureTerminalExact:ParticipantFutureReservationProbe|null;
   firstParticipantFutureReservationPrune:({phase:"CORE"|"STANDALONE"|"MACRO";causingTaskId:string;causingCandidateStart:number;depth:number;
     macroUnitId?:string;addedTaskIds?:string[];branchesAtPrune?:number} & ParticipantFutureReservationProbe)|null;
   participantFutureUnreachableDependencyIds:string[];
@@ -641,6 +645,17 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       &&actualSubstantive.every((id,index)=>id===expected[index]);
     const exactSubstantive = transportAlreadyMaterialized||(actualSubstantive.length === expectedSubstantive.length
       && actualSubstantive.every((id, index) => id === expectedSubstantive[index]));
+    if(exactSubstantive&&(problem.analyticalFutureParticipantTasks?.length??0)>0){
+      const terminalReservation=probeParticipantFutureReservations(problem,substantive,substantive,{consume:()=>ledger.consume("STANDALONE")},"EXACT");
+      recordParticipantFutureReservation(evidence,terminalReservation);evidence.participantFutureTerminalExactChecks+=1;
+      evidence.participantFutureTerminalExactPasses+=Number(terminalReservation.status==="PASS");
+      evidence.participantFutureTerminalExactPrunes+=Number(terminalReservation.status==="PRUNE");
+      evidence.participantFutureTerminalExactAbstentions+=Number(terminalReservation.status==="ABSTAIN");
+      evidence.participantFutureTerminalExactBranches+=terminalReservation.branchesConsumed;
+      evidence.firstParticipantFutureTerminalExact??=terminalReservation;
+      if(terminalReservation.abstainCause==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+      if(terminalReservation.status!=="PASS")return "DEAD_END";
+    }
     const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
     const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE"):null;
     if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealExactMaterializations+=1;evidence.participantMealLogicalGridStarts+=mealWitness.logicalGridStarts;evidence.participantMealActuallyEvaluatedStarts+=mealWitness.actuallyEvaluatedStarts;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
@@ -723,14 +738,20 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       }
     }
     if((problem.analyticalFutureParticipantTasks?.length??0)>0){
-      const reservation=probeParticipantFutureReservations(problem,state,addedTasks,{consume:()=>ledger.consume("STANDALONE")});
+      const macro=context.phase==="MACRO";
+      const reservation=probeParticipantFutureReservations(problem,state,addedTasks,macro?undefined:{consume:()=>ledger.consume("STANDALONE")},macro?"ANALYTIC_ONLY":"EXACT");
       recordParticipantFutureReservation(evidence,reservation);
+      if(macro){evidence.participantFutureMacroAnalyticChecks+=1;
+        evidence.participantFutureMacroAnalyticPrunes+=Number(reservation.status==="PRUNE");
+        evidence.participantFutureMacroAnalyticAbstentions+=Number(reservation.status==="ABSTAIN");}
       if(reservation.abstainCause==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
       if(reservation.status==="ABSTAIN"){
-        const outside=reservation.unresolvedDependencyIds.filter(id=>!context.reachableTaskIds.has(id));
-        if(outside.length){
-          evidence.participantFutureUnreachableDependencyIds=[...new Set([...evidence.participantFutureUnreachableDependencyIds,...outside])].sort();
-          return "DEAD_END";
+        if(!macro){
+          const outside=reservation.unresolvedDependencyIds.filter(id=>!context.reachableTaskIds.has(id));
+          if(outside.length){
+            evidence.participantFutureUnreachableDependencyIds=[...new Set([...evidence.participantFutureUnreachableDependencyIds,...outside])].sort();
+            return "DEAD_END";
+          }
         }
       }
       if(reservation.status==="PRUNE"){
@@ -1336,7 +1357,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryPrerequisiteReservationChecks:0,ordinaryPrerequisiteReservationPrunes:0,firstPrerequisiteReservationPrune:null,
     firstStandaloneDeadEndCause:null,
     standaloneBlockingTaskDetails:{},
-    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],firstParticipantMealFuturePrune:null,participantFutureReservationChecks:0,participantFutureReservationPasses:0,participantFutureReservationPrunes:0,participantFutureReservationAbstentions:0,participantFutureAffectedParticipants:0,participantFutureTasksChecked:0,participantFutureMealsChecked:0,participantFutureIndividualDomainChecks:0,participantFutureIndividualZeroDomainPrunes:0,participantFutureJointTaskMealChecks:0,participantFutureJointTaskMealPrunes:0,participantFutureCollectiveChecks:0,participantFutureCollectivePasses:0,participantFutureCollectivePrunes:0,participantFutureCompatiblePairChecks:0,participantFutureAnalyticChecks:0,participantFutureBranchesConsumed:0,firstParticipantFutureReservationPrune:null,participantFutureUnreachableDependencyIds:[],technicalChainFutureReservationChecks:0,technicalChainFutureReservationPasses:0,technicalChainFutureReservationPrunes:0,technicalChainFutureReservationAbstentions:0,technicalChainFutureBranchesConsumed:0,firstTechnicalChainFutureReservationPrune:null,firstMultiDecisionConflict:null,preparedFutureTechnicalChainEvidence:futureTechnicalChains.evidence,operationalMealFutureReservation:operationalMeals.evidence,fixedMainFeederMealChecks:0,fixedMainFeederMealPasses:0,fixedMainFeederMealPrunes:0,firstFixedMainFeederMealPrune:null,standaloneEntryMealWitness:null,causalDiagnostic:null,
+    participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],firstParticipantMealFuturePrune:null,participantFutureReservationChecks:0,participantFutureReservationPasses:0,participantFutureReservationPrunes:0,participantFutureReservationAbstentions:0,participantFutureAffectedParticipants:0,participantFutureTasksChecked:0,participantFutureMealsChecked:0,participantFutureIndividualDomainChecks:0,participantFutureIndividualZeroDomainPrunes:0,participantFutureJointTaskMealChecks:0,participantFutureJointTaskMealPrunes:0,participantFutureCollectiveChecks:0,participantFutureCollectivePasses:0,participantFutureCollectivePrunes:0,participantFutureCompatiblePairChecks:0,participantFutureAnalyticChecks:0,participantFutureBranchesConsumed:0,participantFutureMacroAnalyticChecks:0,participantFutureMacroAnalyticPrunes:0,participantFutureMacroAnalyticAbstentions:0,participantFutureTerminalExactChecks:0,participantFutureTerminalExactPasses:0,participantFutureTerminalExactPrunes:0,participantFutureTerminalExactAbstentions:0,participantFutureTerminalExactBranches:0,firstParticipantFutureTerminalExact:null,firstParticipantFutureReservationPrune:null,participantFutureUnreachableDependencyIds:[],technicalChainFutureReservationChecks:0,technicalChainFutureReservationPasses:0,technicalChainFutureReservationPrunes:0,technicalChainFutureReservationAbstentions:0,technicalChainFutureBranchesConsumed:0,firstTechnicalChainFutureReservationPrune:null,firstMultiDecisionConflict:null,preparedFutureTechnicalChainEvidence:futureTechnicalChains.evidence,operationalMealFutureReservation:operationalMeals.evidence,fixedMainFeederMealChecks:0,fixedMainFeederMealPasses:0,fixedMainFeederMealPrunes:0,firstFixedMainFeederMealPrune:null,standaloneEntryMealWitness:null,causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));

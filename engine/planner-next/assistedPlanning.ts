@@ -80,6 +80,9 @@ export interface AssistedPlanningEvidence {
     readonly jointTaskMealChecks:number; readonly jointTaskMealPrunes:number;
     readonly collectiveChecks:number; readonly collectivePrunes:number; readonly compatiblePairChecks:number;
     readonly analyticChecks:number; readonly branchesConsumed:number;
+    readonly macroAnalyticChecks:number;readonly macroAnalyticPrunes:number;readonly macroAnalyticAbstentions:number;
+    readonly terminalExactChecks:number;readonly terminalExactPasses:number;readonly terminalExactPrunes:number;
+    readonly terminalExactAbstentions:number;readonly terminalExactBranches:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
   };
   readonly operationalMealFutureReservation: ExactItinerantPlanEvidence["operationalMealFutureReservation"];
@@ -598,6 +601,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       jointTaskMealPrunes:Number(evidenceRecord.participantFutureJointTaskMealPrunes??0),collectiveChecks:Number(evidenceRecord.participantFutureCollectiveChecks??0),
       collectivePrunes:Number(evidenceRecord.participantFutureCollectivePrunes??0),compatiblePairChecks:Number(evidenceRecord.participantFutureCompatiblePairChecks??0),
       analyticChecks:Number(evidenceRecord.participantFutureAnalyticChecks??0),branchesConsumed:Number(evidenceRecord.participantFutureBranchesConsumed??0),
+      macroAnalyticChecks:Number(evidenceRecord.participantFutureMacroAnalyticChecks??0),macroAnalyticPrunes:Number(evidenceRecord.participantFutureMacroAnalyticPrunes??0),
+      macroAnalyticAbstentions:Number(evidenceRecord.participantFutureMacroAnalyticAbstentions??0),terminalExactChecks:Number(evidenceRecord.participantFutureTerminalExactChecks??0),
+      terminalExactPasses:Number(evidenceRecord.participantFutureTerminalExactPasses??0),terminalExactPrunes:Number(evidenceRecord.participantFutureTerminalExactPrunes??0),
+      terminalExactAbstentions:Number(evidenceRecord.participantFutureTerminalExactAbstentions??0),terminalExactBranches:Number(evidenceRecord.participantFutureTerminalExactBranches??0),
       firstPrune:(evidenceRecord.firstParticipantFutureReservationPrune as ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"]|undefined)??null,
     },
     technicalChainFutureReservation:{

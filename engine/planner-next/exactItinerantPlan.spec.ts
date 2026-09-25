@@ -804,6 +804,8 @@ test("setup macro candidates use the participant future gate and retain an earli
   assert.match(result.evidence.firstParticipantFutureReservationPrune?.macroUnitId??"",/^setup:/);
   assert.deepEqual(result.evidence.firstParticipantFutureReservationPrune?.addedTaskIds,["setup-owner-task","setup-peer-task"]);
   assert.ok(result.scheduledTasks.find(({id})=>id==="setup-owner-task")!.end<=30);
+  assert.ok(result.evidence.participantFutureMacroAnalyticPrunes>0);
+  assert.equal(result.evidence.participantFutureTerminalExactPasses,1);
 });
 
 test("macro inconclusive shape defers while its dependency remains reachable and is rechecked",()=>{
@@ -815,4 +817,46 @@ test("macro inconclusive shape defers while its dependency remains reachable and
   assert.ok(result.evidence.participantFutureReservationAbstentions>0);
   assert.ok(result.evidence.participantFutureReservationPasses>0);
   assert.deepEqual(result.evidence.participantFutureUnreachableDependencyIds,[]);
+  assert.ok(result.evidence.participantFutureMacroAnalyticChecks>0);
+  assert.equal(result.evidence.participantFutureTerminalExactPasses,1);
+});
+
+const setupMacroCollectiveProblem=(infeasible:boolean):PlannerNextProblem=>{
+  const input=setupMacroParticipantFutureProblem();
+  input.spaces.find(({id})=>id==="setup-future")!.availability=[{start:0,end:10}];
+  for(const task of input.tasks.filter(({setupFamilyId})=>setupFamilyId!==undefined))task.availability=[{start:0,end:10}];
+  input.analyticalFutureParticipantTasks=[
+    {id:"future-a",kind:"auxiliary",participantId:"setup-owner",spaceId:"future-owner",duration:10,availability:[{start:40,end:80}],dependencies:infeasible?["future-b"]:[]},
+    {id:"future-b",kind:"auxiliary",participantId:"setup-owner",spaceId:"future-owner",duration:10,availability:[{start:40,end:80}],dependencies:infeasible?["future-a"]:[]},
+  ];
+  input.participantMeals=[];
+  return input;
+};
+
+test("macro partial collective feasibility stays analytic and terminal candidate requires an exact PASS",()=>{
+  const result=runExactItinerantPlanSearch(setupMacroCollectiveProblem(false));
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureMacroAnalyticChecks>0);
+  assert.ok(result.evidence.participantFutureMacroAnalyticAbstentions>0);
+  assert.equal(result.evidence.participantFutureTerminalExactChecks,1);
+  assert.equal(result.evidence.participantFutureTerminalExactPasses,1);
+  assert.ok(result.evidence.participantFutureTerminalExactBranches>0);
+});
+
+test("terminal exact participant-future PRUNE never publishes a macro candidate",()=>{
+  const result=runExactItinerantPlanSearch(setupMacroCollectiveProblem(true));
+  assert.equal(result.status,"INFEASIBLE");assert.deepEqual(result.scheduledTasks,[]);
+  assert.ok(result.evidence.participantFutureMacroAnalyticChecks>0);
+  assert.ok(result.evidence.participantFutureTerminalExactPrunes>0);
+  assert.equal(result.evidence.completePlansObserved,0);
+});
+
+test("terminal exact participant-future budget exhaustion is explicit and never publishes",()=>{
+  const baseline=runExactItinerantPlanSearch(setupMacroCollectiveProblem(false));
+  const input=setupMacroCollectiveProblem(false);
+  input.budget.maxBranchExpansions=baseline.evidence.branchesExplored-baseline.evidence.participantFutureTerminalExactBranches;
+  const exhausted=runExactItinerantPlanSearch(input);
+  assert.equal(exhausted.status,"BRANCH_BUDGET_EXHAUSTED");assert.deepEqual(exhausted.scheduledTasks,[]);
+  assert.ok(exhausted.evidence.participantFutureTerminalExactAbstentions>0);
+  assert.equal(exhausted.evidence.participantFutureTerminalExactPasses,0);
 });
