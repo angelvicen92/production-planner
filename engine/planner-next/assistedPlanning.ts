@@ -327,6 +327,9 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  const analyticalDependencyIds=new Set(problem.analyticalFutureParticipantTasks.flatMap(task=>task.dependencies));
+  problem.analyticalFutureParticipantSupportingTaskIds=[...supporting]
+    .filter(id=>analyticalDependencyIds.has(id)).sort();
   problem.analyticalFutureTechnicalChains = (problem.technicalChains ?? [])
     .filter((policy) => policy.adjacency === "REQUIRED" && policy.resourceContinuity === "REQUIRED"
       && policy.orderedTaskIds.every((id) => analyticalFutureEligibleTaskIds.has(id) && !included.has(id)))

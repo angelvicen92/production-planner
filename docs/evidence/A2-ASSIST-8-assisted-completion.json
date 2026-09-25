@@ -82,7 +82,7 @@
       "newObligations": 19,
       "completedObligations": 19,
       "remainingObligations": 247,
-      "branches": 7963,
+      "branches": 8341,
       "result": "PROPOSAL",
       "protectedOperationalMeals": 0,
       "baseSnapshotSetupPreparations": 0,
@@ -2881,8 +2881,8 @@
         "ASSISTED_SCOPE_COMPLETE"
       ],
       "work": {
-        "branchesExplored": 7963,
-        "coreBranches": 6907,
+        "branchesExplored": 8341,
+        "coreBranches": 7285,
         "standaloneBranches": 1056,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
@@ -2932,7 +2932,7 @@
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
-      "branchesExplored": 7963,
+      "branchesExplored": 8341,
       "firstBlocker": null,
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -3186,7 +3186,7 @@
       },
       "orderingComparison": {
         "off": {
-          "coreBranches": 6907,
+          "coreBranches": 7285,
           "standaloneBranches": 1056,
           "maximumStandaloneDepth": 0,
           "completeOrdinaryLeaves": 1,
@@ -3216,8 +3216,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 7963,
-            "total": 7963
+            "other": 8341,
+            "total": 8341
           }
         },
         "feederByDepth": {},
@@ -3438,7 +3438,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "3ea6905e2ada0069e917e5040087864342dffa923df9087164fadd3baab7e3c7",
-      "durationMs": 103977
+      "durationMs": 114964
     },
     {
       "ordinal": 2,
@@ -6829,7 +6829,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "8e8fafae16dda2df13616e279f8e6b20f44359492bba4228e112372b6773752c",
-      "durationMs": 9670
+      "durationMs": 11274
     },
     {
       "ordinal": 3,
@@ -10165,7 +10165,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "b2deadd0738df5bf5ab5f3776faf6131b425c13bd9f8685331e50c70846f864f",
-      "durationMs": 9734
+      "durationMs": 12233
     },
     {
       "ordinal": 4,
@@ -13149,7 +13149,7 @@
           "collisions": []
         }
       },
-      "durationMs": 16237
+      "durationMs": 19293
     }
   ],
   "firstBlocker": {

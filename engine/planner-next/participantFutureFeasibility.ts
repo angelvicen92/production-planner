@@ -122,7 +122,20 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   mode:ParticipantFutureReservationMode="EXACT"):ParticipantFutureReservationProbe {
   placed=normalizeParticipantFuturePlacements(placed);
   const affectedParticipants=[...new Set(added.flatMap(task=>task.participantId?[task.participantId]:[]))].sort();
-  const future=[...(problem.analyticalFutureParticipantTasks??[])].filter(task=>affectedBy(task,added)).sort((a,b)=>a.id.localeCompare(b.id));
+  const analytical=[...(problem.analyticalFutureParticipantTasks??[])];
+  const analyticalIds=new Set(analytical.map(task=>task.id));
+  for(const dependencyId of problem.analyticalFutureParticipantSupportingTaskIds??[]){
+    const dependency=problem.tasks.find(task=>task.id===dependencyId);
+    if(dependency&&!analyticalIds.has(dependencyId)){analytical.push(dependency);analyticalIds.add(dependencyId);}
+  }
+  const futureIds=new Set(analytical.filter(task=>affectedBy(task,added)).map(task=>task.id));
+  let closureChanged=true;
+  while(closureChanged){closureChanged=false;for(const task of analytical)if(!futureIds.has(task.id)
+    &&analytical.some(dependent=>futureIds.has(dependent.id)&&dependent.dependencies.includes(task.id))){
+    futureIds.add(task.id);closureChanged=true;
+  }}
+  const placedIdsAtEntry=new Set(placed.map(task=>task.id));
+  const future=analytical.filter(task=>futureIds.has(task.id)&&!placedIdsAtEntry.has(task.id)).sort((a,b)=>a.id.localeCompare(b.id));
   const meals=[...(problem.participantMeals??[])].filter(meal=>remainingMeal(meal)&&affectedParticipants.includes(meal.participantId)).sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId));
   const base={affectedParticipants,affectedFutureTasksChecked:future.length,affectedMealsChecked:meals.length,individualDomainChecks:0,
     individualZeroDomainPrunes:0,jointTaskMealChecks:0,jointTaskMealPrunes:0,collectiveChecks:0,collectivePasses:0,collectivePrunes:0,
@@ -130,9 +143,9 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
     compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,unresolvedDependencyIds:[] as string[],abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
     futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0 as const};
   if(future.length===0)return {...base,status:"PASS" as const};
-  const futureIds=new Set(future.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId)),placedIds=new Set(placed.map(task=>task.id));
+  const remainingFutureIds=new Set(future.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId)),placedIds=new Set(placed.map(task=>task.id));
   const unresolvedDependencyIds=[...new Set(future.flatMap(task=>task.dependencies)
-    .filter(id=>!placedIds.has(id)&&!futureIds.has(id)&&!mealIds.has(id)))].sort();
+    .filter(id=>!placedIds.has(id)&&!remainingFutureIds.has(id)&&!mealIds.has(id)))].sort();
   const unresolved=future.filter(task=>task.dependencies.some(id=>unresolvedDependencyIds.includes(id)));
   const unresolvedIds=new Set(unresolved.map(task=>task.id));let individual=0,joint=0,pairChecks=0,analytic=0;
   for(const task of future){

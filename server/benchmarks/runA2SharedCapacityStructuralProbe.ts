@@ -23,6 +23,7 @@ export function runA2SharedCapacityStructuralProbe(branchBudget = 300_000) {
   return {
     coreStatus: result.status,
     coreReasonCodes: evidence.reasonCodes,
+    branchesExplored: evidence.branchesExplored,
     effectiveInConfiguration: {
       targetGroupSize: canonical.input.arrivalGroupingTarget,
       maximumGroupSize: canonical.input.arrivalMaximumGroupSize ?? canonical.input.vanCapacity,

@@ -286,6 +286,38 @@ test("future analytical authority excludes included and protected tasks and defa
   assert.deepEqual(buildAssistedProblem(source,scope,[]).problem.analyticalFutureParticipantTasks,[]);
 });
 
+const futureDependencyProjection=(prerequisiteAvailability:readonly {start:number;end:number}[]|null)=>{
+  const source=fixture();
+  source.tasks.push({id:"future",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,
+    availability:[{start:80,end:120}],dependencies:[prerequisiteAvailability===null?"unknown":"future-prerequisite"]});
+  if(prerequisiteAvailability!==null)source.tasks.push({id:"future-prerequisite",kind:"auxiliary",participantId:"p1",
+    spaceId:"other-space",duration:10,availability:[...prerequisiteAvailability],dependencies:[]});
+  const eligible=new Set(["future",...(prerequisiteAvailability===null?[]:["future-prerequisite"])]);
+  return buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],eligible);
+};
+
+test("known future prerequisite stays analytical, certifies the chain, and is not proposed",()=>{
+  const assisted=futureDependencyProjection([{start:60,end:80}]);
+  assert.deepEqual(assisted.problem.analyticalFutureParticipantTasks?.map(task=>task.id).sort(),
+    ["future","future-prerequisite"]);
+  assert.equal(assisted.automaticTaskIds.includes("future-prerequisite"),false);
+  const result=executeAssistedPlanning(assisted);
+  assert.equal(result.evidence.participantFutureReservation.passes>0,true,result.evidence.reasonCodes.join(","));
+  assert.equal(result.proposal?.some(task=>task.id==="future-prerequisite"),false);
+});
+
+test("hard-impossible known future prerequisite soundly prevents a proposal",()=>{
+  const result=executeAssistedPlanning(futureDependencyProjection([]));
+  assert.equal(result.proposal,null);
+  assert.equal(result.evidence.participantFutureReservation.prunes>0,true);
+});
+
+test("unknown future prerequisite remains inconclusive and cannot publish",()=>{
+  const result=executeAssistedPlanning(futureDependencyProjection(null));
+  assert.equal(result.proposal,null);
+  assert.ok(result.evidence.reasonCodes.includes("PARTICIPANT_FUTURE_RESERVATION_INCONCLUSIVE"));
+});
+
 test("scope projection preserves surviving setup families and removes only absent families immutably", () => {
   const source = fixture();
   source.tasks.find(task => task.id === "main")!.setupFamilyId = "present";

@@ -2,6 +2,8 @@
   "benchmark": "A2-ASSIST-4-7",
   "status": "PASS",
   "sourceObligationCount": 266,
+  "proposalRunCount": 3,
+  "followupProposalRunCount": 1,
   "stages": {
     "s0": 1,
     "s1": 2,
@@ -20,7 +22,7 @@
     "oldDuration": 10,
     "materializedDuration": 20,
     "consumedDuration": 20,
-    "buildInputCalls": 44,
+    "buildInputCalls": 10,
     "consumedNewValue": true
   },
   "configRevision": {
@@ -31,58 +33,24 @@
   "proposalConsumedRevisionIds": [
     40,
     41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
-    41,
     41
   ],
   "protectedPlacementCounts": [
     0,
     1,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
     2
   ],
   "hardConflict": {
     "hardValid": false,
-    "editedTaskId": 10001,
+    "editedTaskId": 10015,
     "conflictingTaskIds": [
-      10001,
-      10002
+      10015,
+      10017
     ],
-    "acceptedViolationIdentity": "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10001,10002],\"resourceIds\":[],\"spaceIds\":[3004,3008],\"dimensions\":{\"coachId\":null,\"overlapEnd\":775,\"overlapStart\":765,\"participantId\":\"participant:201\"}}",
+    "acceptedViolationIdentity": "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10015,10017],\"resourceIds\":[],\"spaceIds\":[3004,3007],\"dimensions\":{\"coachId\":null,\"overlapEnd\":775,\"overlapStart\":765,\"participantId\":\"participant:202\"}}",
     "reproducedViolationIdentities": [
-      "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10001,10002],\"resourceIds\":[],\"spaceIds\":[3004,3008],\"dimensions\":{\"coachId\":null,\"overlapEnd\":775,\"overlapStart\":765,\"participantId\":\"participant:201\"}}",
-      "HARD:{\"ruleCode\":\"TRANSITION_VIOLATION\",\"taskIds\":[10001,10002],\"resourceIds\":[],\"spaceIds\":[3004,3008],\"dimensions\":{\"actualMinutes\":-10,\"identity\":\"participant:201\",\"identityKind\":\"participantId\",\"requiredMinutes\":5}}"
+      "HARD:{\"ruleCode\":\"OVERLAP_VIOLATION\",\"taskIds\":[10015,10017],\"resourceIds\":[],\"spaceIds\":[3004,3007],\"dimensions\":{\"coachId\":null,\"overlapEnd\":775,\"overlapStart\":765,\"participantId\":\"participant:202\"}}",
+      "HARD:{\"ruleCode\":\"TRANSITION_VIOLATION\",\"taskIds\":[10015,10017],\"resourceIds\":[],\"spaceIds\":[3004,3007],\"dimensions\":{\"actualMinutes\":-10,\"identity\":\"participant:202\",\"identityKind\":\"participantId\",\"requiredMinutes\":5}}"
     ],
     "materiallyPresentInAcceptedStage": true,
     "acceptedFingerprintMatchesDraft": true,
