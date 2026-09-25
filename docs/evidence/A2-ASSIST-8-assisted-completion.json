@@ -82,7 +82,7 @@
       "newObligations": 19,
       "completedObligations": 19,
       "remainingObligations": 247,
-      "branches": 8341,
+      "branches": 8525,
       "result": "PROPOSAL",
       "protectedOperationalMeals": 0,
       "baseSnapshotSetupPreparations": 0,
@@ -118,7 +118,7 @@
       "newObligations": 19,
       "completedObligations": 38,
       "remainingObligations": 228,
-      "branches": 2728,
+      "branches": 2912,
       "result": "PROPOSAL",
       "protectedOperationalMeals": 1,
       "baseSnapshotSetupPreparations": 0,
@@ -2440,7 +2440,7 @@
         "collectivePrunes": 0,
         "compatiblePairChecks": 330,
         "analyticChecks": 990,
-        "branchesConsumed": 184,
+        "branchesConsumed": 368,
         "macroAnalyticChecks": 0,
         "macroAnalyticPrunes": 0,
         "macroAnalyticAbstentions": 0,
@@ -2448,7 +2448,7 @@
         "terminalExactPasses": 1,
         "terminalExactPrunes": 0,
         "terminalExactAbstentions": 0,
-        "terminalExactBranches": 0,
+        "terminalExactBranches": 184,
         "firstPrune": null
       },
       "selectedSetupPreparations": [],
@@ -2889,9 +2889,9 @@
         "ASSISTED_SCOPE_COMPLETE"
       ],
       "work": {
-        "branchesExplored": 8341,
+        "branchesExplored": 8525,
         "coreBranches": 7285,
-        "standaloneBranches": 1056,
+        "standaloneBranches": 1240,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -2940,7 +2940,7 @@
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
-      "branchesExplored": 8341,
+      "branchesExplored": 8525,
       "firstBlocker": null,
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -3034,7 +3034,7 @@
         "standaloneDominantPathFirst20": [],
         "standaloneFirstDominantBlocker": null,
         "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 0,
-        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 20,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 204,
         "firstHardValidCoreLeaf": {
           "coreTaskCount": 82,
           "coreTasksByKind": {
@@ -3195,7 +3195,7 @@
       "orderingComparison": {
         "off": {
           "coreBranches": 7285,
-          "standaloneBranches": 1056,
+          "standaloneBranches": 1240,
           "maximumStandaloneDepth": 0,
           "completeOrdinaryLeaves": 1,
           "terminalInAttempts": 0,
@@ -3224,8 +3224,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 8341,
-            "total": 8341
+            "other": 8525,
+            "total": 8525
           }
         },
         "feederByDepth": {},
@@ -3446,7 +3446,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "3ea6905e2ada0069e917e5040087864342dffa923df9087164fadd3baab7e3c7",
-      "durationMs": 104949
+      "durationMs": 97735
     },
     {
       "ordinal": 2,
@@ -5815,7 +5815,7 @@
         "collectivePrunes": 0,
         "compatiblePairChecks": 330,
         "analyticChecks": 990,
-        "branchesConsumed": 184,
+        "branchesConsumed": 368,
         "macroAnalyticChecks": 0,
         "macroAnalyticPrunes": 0,
         "macroAnalyticAbstentions": 0,
@@ -5823,7 +5823,7 @@
         "terminalExactPasses": 1,
         "terminalExactPrunes": 0,
         "terminalExactAbstentions": 0,
-        "terminalExactBranches": 0,
+        "terminalExactBranches": 184,
         "firstPrune": null
       },
       "selectedSetupPreparations": [],
@@ -6056,9 +6056,9 @@
         "ASSISTED_SCOPE_COMPLETE"
       ],
       "work": {
-        "branchesExplored": 2728,
+        "branchesExplored": 2912,
         "coreBranches": 2220,
-        "standaloneBranches": 508,
+        "standaloneBranches": 692,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -6107,7 +6107,7 @@
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 1
       },
-      "branchesExplored": 2728,
+      "branchesExplored": 2912,
       "firstBlocker": null,
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -6265,7 +6265,7 @@
         "standaloneDominantPathFirst20": [],
         "standaloneFirstDominantBlocker": null,
         "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 0,
-        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 20,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 204,
         "firstHardValidCoreLeaf": {
           "coreTaskCount": 82,
           "coreTasksByKind": {
@@ -6433,8 +6433,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 2709,
-            "total": 2728
+            "other": 2893,
+            "total": 2912
           }
         },
         "feederByDepth": {},
@@ -6845,7 +6845,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "8e8fafae16dda2df13616e279f8e6b20f44359492bba4228e112372b6773752c",
-      "durationMs": 11267
+      "durationMs": 9689
     },
     {
       "ordinal": 3,
@@ -10189,7 +10189,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "b2deadd0738df5bf5ab5f3776faf6131b425c13bd9f8685331e50c70846f864f",
-      "durationMs": 9052
+      "durationMs": 9945
     },
     {
       "ordinal": 4,
@@ -13342,7 +13342,7 @@
           "collisions": []
         }
       },
-      "durationMs": 9778
+      "durationMs": 10592
     }
   ],
   "firstBlocker": {
