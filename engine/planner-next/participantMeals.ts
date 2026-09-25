@@ -1,7 +1,8 @@
 import type { ParticipantMealObligation, PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Window } from "./contracts";
 import { contains, overlaps } from "./time";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
-import { createHash } from "node:crypto";
+export { participantMealWitnessFingerprint } from "../../shared/participantMealWitnessFingerprint";
+import { participantMealWitnessFingerprint } from "../../shared/participantMealWitnessFingerprint";
 
 export interface ParticipantMealWitness {
   readonly complete: boolean;
@@ -88,8 +89,6 @@ function maximumConcurrent(meals: readonly ScheduledParticipantMeal[]): number {
   for (const point of points) { current += point.delta; maximum = Math.max(maximum, current); }
   return maximum;
 }
-export function participantMealWitnessFingerprint(meals: readonly ScheduledParticipantMeal[]): string { return createHash("sha256").update(JSON.stringify([...meals].sort((a,b)=>a.sourceTaskId.localeCompare(b.sourceTaskId)).map(({id,sourceTaskId,participantId,duration,start,end})=>({id,sourceTaskId,participantId,duration,start,end})))).digest("hex"); }
-
 export function participantMealCandidates(problem: PlannerNextProblem, obligation: ParticipantMealObligation, tasks: readonly ScheduledTask[], placed: readonly ScheduledParticipantMeal[]): ScheduledParticipantMeal[] {
   const participant = problem.participants.find(({ id }) => id === obligation.participantId);
   if (!participant) return [];

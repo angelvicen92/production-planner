@@ -1,7 +1,7 @@
 import type { EngineInput, TaskInput } from "../engine/types";
 import type { AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import type { AssistedScopeSelector } from "../shared/assistedProposalContracts";
-import { resolveEffectivePlanSpatialAvailability } from "../engine/planner-next/integration/effectivePlanSpatialAvailability";
+import { resolveEffectivePlanSpatialAvailability } from "../shared/effectivePlanSpatialAvailability";
 
 export type OperationalUnitKind = "MAIN_PIPELINE" | "TECHNICAL_CHAIN" | "ROUND_SYNCHRONIZATION" |
   "OPERATIONAL_MEAL" | "ITINERANT_AGENDA" | "SETUP_FAMILY" | "SPACE_FALLBACK";

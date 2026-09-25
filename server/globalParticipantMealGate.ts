@@ -1,17 +1,23 @@
-import type { ParticipantMealObligation, ScheduledParticipantMeal } from "../engine/planner-next/contracts";
-import { participantMealWitnessFingerprint } from "../engine/planner-next/participantMeals";
+import {
+  participantMealWitnessFingerprint,
+  type ParticipantMealFingerprintInput,
+} from "../shared/participantMealWitnessFingerprint";
+
+interface ParticipantMealObligationInput {
+  readonly sourceTaskId: string;
+}
 
 export interface ParticipantMealInfeasibilityEvidence {
-  /** Individually empty domains certified by Planner Next's analytic probe. */
+  /** Individually empty domains certified by the planner's analytic probe. */
   readonly zeroDomainMealSourceIds?: readonly string[];
   /** Meal obligations covered by a sound collective or exact infeasibility proof. */
   readonly infeasibleMealSourceIds?: readonly string[];
 }
 
 export function certifyGlobalParticipantMealGate(
-  obligations: readonly ParticipantMealObligation[],
-  protectedMeals: readonly ScheduledParticipantMeal[],
-  witnessMeals: readonly ScheduledParticipantMeal[],
+  obligations: readonly ParticipantMealObligationInput[],
+  protectedMeals: readonly ParticipantMealFingerprintInput[],
+  witnessMeals: readonly ParticipantMealFingerprintInput[],
   reasonCodes: readonly string[],
   infeasibilityEvidence: ParticipantMealInfeasibilityEvidence = {},
 ) {
