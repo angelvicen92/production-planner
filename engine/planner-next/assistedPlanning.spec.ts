@@ -306,6 +306,26 @@ test("known future prerequisite stays analytical, certifies the chain, and is no
   assert.equal(result.proposal?.some(task=>task.id==="future-prerequisite"),false);
 });
 
+test("known transitive future prerequisite closure remains analytical and certifiable",()=>{
+  const source=fixture();
+  source.tasks.find(task=>task.id==="main")!.dependencies=["future-mid"];
+  source.tasks.push(
+    {id:"future-root",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,
+      availability:[{start:20,end:40}],dependencies:[]},
+    {id:"future-mid",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,
+      availability:[{start:40,end:70}],dependencies:["future-root"]},
+    {id:"future-tail",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,
+      availability:[{start:100,end:140}],dependencies:["future-mid"]},
+  );
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],
+    new Set(["future-root","future-mid","future-tail"]));
+  assert.deepEqual(assisted.problem.analyticalFutureParticipantTasks?.map(task=>task.id),["future-tail"]);
+  assert.deepEqual(assisted.problem.analyticalFutureParticipantSupportingTaskIds,["future-mid","future-root"]);
+  const result=executeAssistedPlanning(assisted);
+  assert.equal(result.evidence.participantFutureReservation.abstentions,0,result.evidence.reasonCodes.join(","));
+  assert.equal(result.proposal?.some(task=>task.id==="future-mid"||task.id==="future-root"||task.id==="future-tail"),false);
+});
+
 test("hard-impossible known future prerequisite soundly prevents a proposal",()=>{
   const result=executeAssistedPlanning(futureDependencyProjection([]));
   assert.equal(result.proposal,null);
