@@ -128,6 +128,8 @@ export interface ExactItinerantPlanEvidence {
   standaloneBacktracks: number;
   standaloneMaximumDepth: number;
   standaloneCompleteLeafCount: number;
+  macroCandidateCausalTraces: MacroCandidateCausalTrace[];
+  macroCandidateCausalReconciliation: MacroCandidateCausalReconciliation;
   standaloneBranchesByDepth: Record<string, number>;
   standaloneSelectionsByTaskId: Record<string, number>;
   standaloneCandidateStartsByTaskId: Record<string, number>;
@@ -427,6 +429,21 @@ export interface ExactItinerantPlanEvidence {
   causalDiagnostic:ExactCoreCausalDiagnostic|null;
 }
 
+export interface MacroCandidateCausalTrace {
+  readonly fingerprint:string;readonly macroUnitId:string;readonly macroUnitKind:string;readonly depth:number;
+  readonly candidate:{readonly starts:readonly {taskId:string;start:number;end:number}[];readonly domainSize:number;
+    readonly structuralCandidateCount:number|null;readonly matchingFeasibleCandidateCount:number|null;readonly roundMatchingResult:"MATCHING_FEASIBLE"|"NOT_APPLICABLE"};
+  pendingPrerequisiteReservation:{status:"PASS"|"PRUNE";cause:string|null;blockingTaskId:string|null;authorityId:string|null};
+  participantFuture:{status:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";cause:string|null};
+  participantMealFuture:{status:"PASS"|"PRUNE"|"NOT_CHECKED";cause:string|null};
+  operationalMealFuture:{status:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";cause:string|null};
+  enteredRecurseAfterMacro:boolean;selectedAnotherMacroUnit:boolean;enteredOrdinarySearch:boolean;
+  firstDescendantDeadEnd:StandaloneDeadEndCause|null;firstOrdinaryRejection:StandaloneDeadEndCause|null;reachedCompleteLeaf:boolean;
+  terminalParticipantFuture:{status:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";cause:string|null};
+  outcome:"PRUNED"|"DEAD_ENDED_BY_AUTHORITY"|"ENTERED_RESIDUAL_OR_TERMINAL";
+}
+export interface MacroCandidateCausalReconciliation {total:number;pruned:number;deadEndedByAuthority:number;enteredResidualOrTerminal:number}
+
 export interface ExactItinerantPlanResult {
   status: ExactItinerantPlanStatus;
   complete: boolean;
@@ -612,8 +629,13 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
+  let activeMacroCandidateTrace:MacroCandidateCausalTrace|null=null;
   const recordDeadEnd = (cause: StandaloneDeadEndCause): void => {
     evidence.firstStandaloneDeadEndCause ??= cause;
+    if(activeMacroCandidateTrace&&cause.depth>activeMacroCandidateTrace.depth&&!activeMacroCandidateTrace.firstDescendantDeadEnd)
+      activeMacroCandidateTrace.firstDescendantDeadEnd=cause;
+    if(activeMacroCandidateTrace?.enteredOrdinarySearch&&!activeMacroCandidateTrace.firstOrdinaryRejection
+      &&cause.phase==="ORDINARY")activeMacroCandidateTrace.firstOrdinaryRejection=cause;
   };
   const ancestors = (selectionOrder: readonly string[], placed: readonly ScheduledTask[]) => selectionOrder
     .map((taskId) => placed.find((task) => task.id === taskId))
@@ -634,6 +656,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     return true;
   };
   const completeLeaf = (placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], selectionOrder: string[]): StandaloneOutcome => {
+    if(activeMacroCandidateTrace)activeMacroCandidateTrace.reachedCompleteLeaf=true;
     evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf ??= ledger.standaloneBranches - invocationStartBranches;
     if (!consumeLeafBranch(selectionOrder.length)) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
@@ -653,6 +676,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.participantFutureTerminalExactAbstentions+=Number(terminalReservation.status==="ABSTAIN");
       evidence.participantFutureTerminalExactBranches+=terminalReservation.branchesConsumed;
       evidence.firstParticipantFutureTerminalExact??=terminalReservation;
+      if(activeMacroCandidateTrace)activeMacroCandidateTrace.terminalParticipantFuture={status:terminalReservation.status,
+        cause:terminalReservation.reasonCode??terminalReservation.abstainCause??null};
       if(terminalReservation.abstainCause==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
       if(terminalReservation.status!=="PASS")return "DEAD_END";
     }
@@ -741,6 +766,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       const macro=context.phase==="MACRO";
       const reservation=probeParticipantFutureReservations(problem,state,addedTasks,macro?undefined:{consume:()=>ledger.consume("STANDALONE")},macro?"ANALYTIC_ONLY":"EXACT");
       recordParticipantFutureReservation(evidence,reservation);
+      if(macro&&activeMacroCandidateTrace&&context.depth===activeMacroCandidateTrace.depth)activeMacroCandidateTrace.participantFuture={status:reservation.status,
+        cause:reservation.reasonCode??reservation.abstainCause};
       if(macro){evidence.participantFutureMacroAnalyticChecks+=1;
         evidence.participantFutureMacroAnalyticPrunes+=Number(reservation.status==="PRUNE");
         evidence.participantFutureMacroAnalyticAbstentions+=Number(reservation.status==="ABSTAIN");}
@@ -764,6 +791,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     }
     if((problem.participantMeals?.length??0)>0){
       const probe=probeParticipantMealFutureFeasibility(problem,state,addedTasks);
+      if(context.phase==="MACRO"&&activeMacroCandidateTrace&&context.depth===activeMacroCandidateTrace.depth)activeMacroCandidateTrace.participantMealFuture={status:probe.feasible?"PASS":"PRUNE",
+        cause:probe.feasible?null:probe.reasonCodes[0]??"PARTICIPANT_MEAL_INFEASIBLE"};
       evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealCheapProbes+=1;
       evidence.participantMealAffectedObligationsChecked+=probe.affectedObligationsChecked;evidence.participantMealAnalyticDomainBuilds+=probe.analyticDomainBuilds;
       evidence.participantMealLogicalGridStarts+=probe.logicalGridStarts;evidence.participantMealAnalyticallyEliminatedStarts+=probe.analyticallyEliminatedStarts;
@@ -778,10 +807,14 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     }
     if((problem.operationalMealPolicies?.length??0)>0){const probe=operationalMeals.assess(state,addedTasks,
       {remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)},context.phase,context.depth);
+      if(context.phase==="MACRO"&&activeMacroCandidateTrace&&context.depth===activeMacroCandidateTrace.depth)activeMacroCandidateTrace.operationalMealFuture={status:probe.status,
+        cause:probe.status==="PRUNE"?`${probe.causality??"UNKNOWN_CAUSALITY"}:${probe.blockingPolicyId??"UNKNOWN_POLICY"}:CANDIDATES_${probe.candidateCountBefore??"UNKNOWN"}_TO_${probe.candidateCountAfter??"UNKNOWN"}`
+          :probe.status==="ABSTAIN"?"BUDGET_EXHAUSTED":null};
       if(probe.status==="ABSTAIN")return "BUDGET_EXHAUSTED";if(probe.status==="PRUNE")return "DEAD_END";}
     return "PASS";
   };
   const search = (remaining: Task[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[], roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
+    if(activeMacroCandidateTrace)activeMacroCandidateTrace.enteredOrdinarySearch=true;
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
       return completeAfterOrdinary(placed, preparations, roundPreparations, selectionOrder);
@@ -1073,6 +1106,7 @@ const mergeTechnicalDiagnostics = (explorer: ReturnType<typeof createTechnicalCh
 const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], preparations: ScheduledSetupPreparation[],
   roundPreparations: ScheduledRoundPreparation[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
   if (remainingUnits.length === 0) return search(ordinaryPending, placed, preparations, roundPreparations, placed.length, selectionOrder);
+  if(activeMacroCandidateTrace&&depth>activeMacroCandidateTrace.depth)activeMacroCandidateTrace.selectedAnotherMacroUnit=true;
   const constrained = remainingUnits.map((unit) => macroConstrainedness(unit, placed, preparations, roundPreparations));
   const selected = selectMostConstrainedUnit(constrained)!;
   recordMacroDecision(depth, selected, constrained);
@@ -1091,6 +1125,26 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     ...(chainContext?{technicalChainPolicyId:chainContext.policyId,technicalChainPendingTaskIds:chainContext.pendingTaskIds,
       technicalChainFixedTaskIds:chainContext.fixedTaskIds,technicalChainContradiction:"NO_FEASIBLE_PENDING_MATERIALIZATION" as const}:{})});
   const recurse = (tasks: ScheduledTask[], nextPreparations = preparations, nextRoundPreparations = roundPreparations): StandaloneOutcome => {
+    const rootTrace:MacroCandidateCausalTrace|null=depth===0&&!activeMacroCandidateTrace?{
+      fingerprint:causalHash({macroUnitId:unit.id,tasks:[...tasks].sort(byId).map(({id,start,end})=>({id,start,end}))}),
+      macroUnitId:unit.id,macroUnitKind:unit.kind,depth,
+      candidate:{starts:[...tasks].sort(byId).map(({id:taskId,start,end})=>({taskId,start,end})),domainSize:selected.domainSize,
+        structuralCandidateCount:selected.structuralCandidateCount??null,matchingFeasibleCandidateCount:selected.matchingFeasibleCandidateCount??null,
+        roundMatchingResult:unit.kind==="ROUND_SYNCHRONIZATION"?"MATCHING_FEASIBLE" as const:"NOT_APPLICABLE" as const},
+      pendingPrerequisiteReservation:{status:"PASS" as const,cause:null,blockingTaskId:null,authorityId:null},
+      participantFuture:{status:"NOT_CHECKED" as const,cause:null},participantMealFuture:{status:"PASS" as const,cause:"NO_APPLICABLE_OBLIGATION"},
+      operationalMealFuture:{status:"PASS" as const,cause:"NO_APPLICABLE_POLICY"},enteredRecurseAfterMacro:false,selectedAnotherMacroUnit:false,
+      enteredOrdinarySearch:false,firstDescendantDeadEnd:null,firstOrdinaryRejection:null,reachedCompleteLeaf:false,
+      terminalParticipantFuture:{status:"NOT_CHECKED" as const,cause:null},outcome:"DEAD_ENDED_BY_AUTHORITY" as const,
+    }:null;
+    if(rootTrace)activeMacroCandidateTrace=rootTrace;
+    const finish=(result:StandaloneOutcome,pruned=false):StandaloneOutcome=>{if(!rootTrace)return result;
+      rootTrace.outcome=pruned?"PRUNED":rootTrace.enteredOrdinarySearch||rootTrace.reachedCompleteLeaf
+        ?"ENTERED_RESIDUAL_OR_TERMINAL":"DEAD_ENDED_BY_AUTHORITY";
+      evidence.macroCandidateCausalTraces.push(rootTrace);const reconciliation=evidence.macroCandidateCausalReconciliation;
+      reconciliation.total+=1;if(rootTrace.outcome==="PRUNED")reconciliation.pruned+=1;
+      else if(rootTrace.outcome==="DEAD_ENDED_BY_AUTHORITY")reconciliation.deadEndedByAuthority+=1;
+      else reconciliation.enteredResidualOrTerminal+=1;activeMacroCandidateTrace=null;return result;};
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
     const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache);
     evidence.macroPendingPrerequisiteForwardChecks+=1;evidence.macroPendingPrerequisiteTasksChecked+=checked.tasksChecked;
@@ -1098,6 +1152,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.macroPendingPrerequisiteCollectiveCapacityChecks+=checked.collectiveCapacityChecks;evidence.macroPendingPrerequisiteObligationsChecked+=checked.obligationsChecked;evidence.macroPendingPrerequisiteCollectiveCapacityPrunes+=checked.collectiveCapacityPrunes;
     evidence.macroPendingPrerequisiteWitnesses+=checked.witnesses;evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]=(evidence.macroPendingPrerequisiteChecksByDepth[String(depth)]??0)+1;
     if(checked.cacheHit)evidence.macroPendingPrerequisiteCacheHits+=1;else evidence.macroPendingPrerequisiteCacheMisses+=1;
+    if(rootTrace)rootTrace.pendingPrerequisiteReservation={status:checked.feasible?"PASS":"PRUNE",cause:checked.failure,
+      blockingTaskId:checked.blockingTaskId,authorityId:checked.authorityId};
     if(!checked.feasible){evidence.macroPendingPrerequisitePrunes+=1;if(checked.failure==="INDIVIDUAL_ZERO_DOMAIN")evidence.macroPendingPrerequisiteIndividualZeroDomainPrunes+=1;else if(checked.failure==="JOINT_INFEASIBLE")evidence.macroPendingPrerequisiteJointInfeasiblePrunes+=1;
       recordDeadEnd({kind:"PREREQUISITE_RESERVATION_PRUNE",phase:"MACRO",depth,workItemId:unit.id,
         workItemKind:unit.kind,taskIds:unit.tasks.map(({id})=>id).sort(),domainBefore:selected.domainSize,
@@ -1106,11 +1162,12 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
       if(checked.blockingTaskId)evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]=(evidence.macroPendingPrerequisiteBlockingTaskCounts[checked.blockingTaskId]??0)+1;
       evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]=(evidence.macroPendingPrerequisiteCausingMacroUnitCounts[unit.id]??0)+1;
-      evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};return "DEAD_END";}
+      evidence.macroPendingPrerequisiteFirstPrune??={causingMacroUnitId:unit.id,blockingTaskId:checked.blockingTaskId??"unknown",macroDepth:depth,deadline:checked.deadline,failure:checked.failure??"unknown",authorityId:checked.authorityId,demandMinutes:checked.demandMinutes,freeCapacityMinutes:checked.freeCapacityMinutes};return finish("DEAD_END",true);}
     const future=assessFutureAuthorities(placed,tasks,{phase:"MACRO",depth,macroUnitId:unit.id,
       reachableTaskIds:new Set(pendingForCheck.map(({id})=>id))});
-    if(future!=="PASS")return future;
-    return searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]);
+    if(future!=="PASS")return finish(future,true);
+    if(rootTrace)rootTrace.enteredRecurseAfterMacro=true;
+    return finish(searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]));
   };
   if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
     const duration = unit.tasks[0]!.duration;
@@ -1237,7 +1294,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     technicalChainMacroDomainQueries:0,technicalChainMacroDomainCandidates:0,technicalChainMacroDomainCacheHits:0,technicalChainMacroDomainCacheMisses:0,
     technicalChainRootStartsConsidered:0,technicalChainRootStartsFeasible:0,technicalChainBranchesExplored:0,
     standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
-    standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
+    standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, macroCandidateCausalTraces:[],
+    macroCandidateCausalReconciliation:{total:0,pruned:0,deadEndedByAuthority:0,enteredResidualOrTerminal:0}, coreCompleteLeavesEvaluated: 0,
     standaloneBranchesByDepth:{},standaloneSelectionsByTaskId:{},standaloneCandidateStartsByTaskId:{},
     standaloneFirstSelectedTaskId:null,standaloneDominantPathFirst20:[],standaloneFirstDominantBlocker:null,
     standaloneBranchesBeforeFirstOrdinaryCompleteLeaf:null,standaloneBranchesAfterFirstOrdinaryCompleteLeaf:0,
