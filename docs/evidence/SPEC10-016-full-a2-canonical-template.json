@@ -23,7 +23,7 @@
     }
   ],
   "manifestFingerprint": "78073779bed60eaa08527de76ee37d387d4d7b099969e0031ca121548d549f3c",
-  "expansionFingerprint": "7a8755905ee5f74e196a69d6671a95c92315ce8e551c80c7f42900e4bf2d41cb",
+  "expansionFingerprint": "01d9b3a738e8c75d9953082cbe4c364c5149c6a274d62787d6a57d9dc38da3d4",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 0,
@@ -753,6 +753,21 @@
           "C13.alfombra_roja_eva",
           "C06.alfombra_roja_conjunta",
           "C16.alfombra_roja"
+        ],
+        "phases": [
+          [
+            "C06.reality_hall",
+            "C12.reality_control_eva",
+            "C11.reality_buggy"
+          ],
+          [
+            "C04.alfombra_roja_eva",
+            "C13.alfombra_roja_eva"
+          ],
+          [
+            "C06.alfombra_roja_conjunta",
+            "C16.alfombra_roja"
+          ]
         ],
         "adjacency": "REQUIRED",
         "resourceContinuity": "REQUIRED",
@@ -1596,7 +1611,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "7a8755905ee5f74e196a69d6671a95c92315ce8e551c80c7f42900e4bf2d41cb",
+    "shuffledExpansionFingerprint": "01d9b3a738e8c75d9953082cbe4c364c5149c6a274d62787d6a57d9dc38da3d4",
     "matches": true
   },
   "inputImmutable": {
