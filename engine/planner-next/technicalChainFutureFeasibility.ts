@@ -200,6 +200,9 @@ export class PreparedFutureTechnicalChainAuthority {
       while(!witness&&!structure.exhausted){if(this.allowance()<=0)return {...base,status:"ABSTAIN",result:"BUDGET_EXHAUSTED",structuresChecked:checked,branchesConsumed:consumed};
         this.evidence.explorerResumptions++;
         const prior=structure.explorer.consumed,candidate=structure.explorer.nextCandidate(),delta=structure.explorer.consumed-prior;
+        this.evidence.rootStartsVisited=this.structures.reduce((n,x)=>n+x.explorer.diagnostics.rootStartsVisited,0);
+        this.evidence.rootOrdersEvaluated=this.structures.reduce((n,x)=>n+x.explorer.diagnostics.rootOrdersEvaluated,0);
+        this.evidence.rootOrdersYielded=this.structures.reduce((n,x)=>n+x.explorer.diagnostics.rootOrdersYielded,0);
         if(delta&&!this.consume(delta))return {...base,status:"ABSTAIN",result:"BUDGET_EXHAUSTED",structuresChecked:checked,branchesConsumed:consumed};
         consumed+=delta;this.evidence.exactRootOrderEvaluations+=delta;this.evidence.ledgeredPermutationBranches+=delta;
         if(!candidate){structure.exhausted=!structure.explorer.exhausted;if(structure.explorer.exhausted)return {...base,status:"ABSTAIN",result:"BUDGET_EXHAUSTED",structuresChecked:checked,branchesConsumed:consumed};

@@ -742,3 +742,77 @@ test("budget exhaustion publishes an incumbent atomically but never a partial pl
   const empty = runExactItinerantPlanSearch(withoutIncumbent, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
   assert.equal(empty.status, "BRANCH_BUDGET_EXHAUSTED"); assert.deepEqual(empty.scheduledTasks, []);assert.deepEqual(empty.scheduledItinerantUnitMeals,[]);
 });
+
+const participantFutureDependencyProblem=(futureWindow:{start:number;end:number},dependency="standalone"):PlannerNextProblem=>{
+  const input=problem([{...auxiliary("standalone","core",[{start:0,end:10}]),duration:10}]);
+  input.protectedMeal=undefined;
+  input.analyticalFutureParticipantTasks=[{id:"future",kind:"auxiliary",participantId:"core",spaceId:"space-standalone",
+    duration:10,availability:[futureWindow],dependencies:[dependency]}];
+  return input;
+};
+
+test("defers an inconclusive core reservation until its reachable standalone dependency is placed",()=>{
+  const result=runExactItinerantPlanSearch(participantFutureDependencyProblem({start:10,end:20}));
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureReservationAbstentions>0);
+  assert.ok(result.evidence.participantFutureReservationPasses>0);
+  assert.equal(result.evidence.standaloneFirstSelectedTaskId,"standalone");
+  assert.ok(result.evidence.standaloneMaximumDepth>0);
+});
+
+test("prunes after a reachable standalone dependency makes the future reservation impossible",()=>{
+  const result=runExactItinerantPlanSearch(participantFutureDependencyProblem({start:0,end:10}));
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.participantFutureReservationAbstentions>0);
+  assert.ok(result.evidence.participantFutureReservationPrunes>0);
+  assert.equal(result.evidence.firstParticipantFutureReservationPrune?.phase,"STANDALONE");
+});
+
+test("an unreachable unresolved dependency stays explicitly inconclusive and cannot publish a solution",()=>{
+  const result=runExactItinerantPlanSearch(participantFutureDependencyProblem({start:10,end:20},"outside"));
+  assert.equal(result.status,"UNSUPPORTED_STANDALONE_SHAPE");
+  assert.deepEqual(result.scheduledTasks,[]);
+  assert.deepEqual(result.evidence.participantFutureUnreachableDependencyIds,["outside"]);
+  assert.deepEqual(result.evidence.reasonCodes,["PARTICIPANT_FUTURE_RESERVATION_INCONCLUSIVE"]);
+});
+
+const setupMacroParticipantFutureProblem=(secondDependency?:string):PlannerNextProblem=>{
+  const input=problem([]);input.protectedMeal=undefined;
+  input.spaces.push({id:"setup-future",availability:[{start:20,end:50}],secondaryContinuity:"REQUIRED",
+    setupPolicy:{familyOrder:["family"],reentry:"FORBIDDEN"}},{id:"future-owner",availability:[{start:0,end:120}]});
+  input.participants.push({id:"setup-owner",availability:[{start:0,end:120}]},{id:"setup-peer",availability:[{start:0,end:120}]});
+  input.tasks.push(
+    {...auxiliary("setup-owner-task","setup-owner",[{start:20,end:50}]),duration:5,spaceId:"setup-future",setupFamilyId:"family"},
+    {...auxiliary("setup-peer-task","setup-peer",[{start:20,end:50}]),duration:5,spaceId:"setup-future",setupFamilyId:"family"},
+  );
+  if(secondDependency){
+    input.resources.push({id:"future-resource",availability:[{start:0,end:120}],presencePreference:"OFF",transitionMinutes:0});
+    input.spaces.push({id:"space-future-dependency",availability:[{start:0,end:120}]});
+    input.participants.push({id:"dependency-owner",availability:[{start:0,end:120}]});
+    input.tasks.push({...auxiliary(secondDependency,"dependency-owner",[{start:0,end:120}],["future-resource"]),duration:5});
+  }
+  input.analyticalFutureParticipantTasks=[{id:"future-owner-task",kind:"auxiliary",participantId:"setup-owner",spaceId:"future-owner",
+    duration:10,availability:[{start:30,end:40}],dependencies:["setup-owner-task",...(secondDependency?[secondDependency]:[])]}];
+  return input;
+};
+
+test("setup macro candidates use the participant future gate and retain an earlier extensible geometry",()=>{
+  const result=runExactItinerantPlanSearch(setupMacroParticipantFutureProblem(),{standaloneCompletionSelection:"BEST_DOMINATING_WITHIN_BUDGET"});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureReservationPrunes>0);
+  assert.equal(result.evidence.firstParticipantFutureReservationPrune?.phase,"MACRO");
+  assert.match(result.evidence.firstParticipantFutureReservationPrune?.macroUnitId??"",/^setup:/);
+  assert.deepEqual(result.evidence.firstParticipantFutureReservationPrune?.addedTaskIds,["setup-owner-task","setup-peer-task"]);
+  assert.ok(result.scheduledTasks.find(({id})=>id==="setup-owner-task")!.end<=30);
+});
+
+test("macro inconclusive shape defers while its dependency remains reachable and is rechecked",()=>{
+  const input=setupMacroParticipantFutureProblem("future-dependency");
+  input.spaces.find(({id})=>id==="setup-future")!.availability=[{start:20,end:30}];
+  for(const task of input.tasks.filter(({setupFamilyId})=>setupFamilyId!==undefined))task.availability=[{start:20,end:30}];
+  const result=runExactItinerantPlanSearch(input);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(result.evidence.participantFutureReservationAbstentions>0);
+  assert.ok(result.evidence.participantFutureReservationPasses>0);
+  assert.deepEqual(result.evidence.participantFutureUnreachableDependencyIds,[]);
+});

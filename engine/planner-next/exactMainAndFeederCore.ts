@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
+import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -12,7 +12,8 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+import { materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -145,6 +146,11 @@ export interface ExactMainAndFeederCoreEvidence {
   protectedMainSlots:number[];
   fixedMainBundleGraphPrepared:boolean;
   fixedMainBundlePreparedEdges:number;
+  fixedMainBundleCandidatePositions:Record<string,number[]>;
+  fixedMainBundleZeroDomainTaskIds:string[];
+  fixedMainBundleParticipantEdgeChecks:number;
+  fixedMainBundleParticipantEdgePrunes:number;
+  fixedMainBundleFirstParticipantEdgePrune:PreparedPipelineBundleGraph["participantEdgeEvidence"]["firstPrune"];
   fixedMainBundleMatchingAttempts:number;
   fixedMainBundlePerfectMatchingFound:boolean;
   fixedMainBundleHardGatePasses:number;
@@ -159,6 +165,8 @@ export interface ExactMainAndFeederCoreEvidence {
   legacyFixedFeederFallbackEntered:boolean;
   legacyFixedFeederFallbackReason:string|null;
   firstFixedMainBundleRejection:string|null;
+  firstFixedMainBundleHardGateDiagnostic:{validation:ReturnType<typeof validatePlan>;structuredSpaces:Array<{
+    spaceId:string;secondaryContinuity:string|null;setupPolicy:unknown;tasks:ScheduledTask[]}>;preparationCount:number}|null;
   causalDiagnostic: ExactCoreCausalDiagnostic | null;
 }
 
@@ -188,6 +196,16 @@ interface MainChoice {
   feeder: Task;
   participantSlack: number;
   firstObligation: number;
+  participantAvailabilityEnd: number;
+}
+
+export interface MainChoiceFinalTieBreak {
+  readonly participantSlack:number;readonly firstObligation:number;readonly participantAvailabilityEnd:number;readonly taskId:string;
+}
+/** Existing ordering remains ahead of availability; identity is always last. */
+export function compareMainChoiceFinalTieBreak(a:MainChoiceFinalTieBreak,b:MainChoiceFinalTieBreak,priorStructuralOrder=0):number {
+  return priorStructuralOrder||a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation
+    ||a.participantAvailabilityEnd-b.participantAvailabilityEnd||a.taskId.localeCompare(b.taskId);
 }
 
 interface ResidualMatchingEdge {
@@ -339,6 +357,7 @@ export interface ExactMainAndFeederSearchOptions {
    * deferred to the exact accepted-baseline validation gate. */
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
+  fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
   /** Live matching state for the preferred architecture. Not authoritative. */
@@ -730,11 +749,14 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederRunPreFeederChecks:0,feederRunPreFeederPrunes:0,feederRunPreFeederPrunesByDepth:{},
     feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
-    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleMatchingAttempts:0,
+    fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
+    fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
+    fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
+    firstFixedMainBundleHardGateDiagnostic:null,
     causalDiagnostic:null };
 }
 
@@ -973,7 +995,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
     const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>{const meal=createMainFlowMeal(problem);return {
       id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:meal.start,end:meal.end};});
-    const validation=validatePlan(reduced,reducedPlaced,[],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
+    const validation=validatePlan(reduced,reducedPlaced,[...(options.fixedSetupPreparations??[])],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
       fixedResourceMeals,materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
     if(!validation.hardValid&&!options.acceptsValidation?.(validation)){lastHardGateReason=`HARD_VALIDATION_REJECTED:${validation.reasonCodes.join(",")}`;return null;}
     const originalById=new Map(problem.tasks.map(task=>[task.id,task]));
@@ -998,6 +1020,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const prepared=preparePipelineBundleGraph(problem,architecture,protectedPlacements);
       evidence.fixedMainBundleGraphPrepared=prepared!==null;
       evidence.fixedMainBundlePreparedEdges=prepared?.preparedBundleEdges??0;
+      if(prepared){
+        evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...prepared.candidates]
+          .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
+        evidence.fixedMainBundleZeroDomainTaskIds=[...prepared.candidates]
+          .filter(([,row])=>row.size===0).map(([id])=>id).sort();
+        evidence.fixedMainBundleParticipantEdgeChecks=prepared.participantEdgeEvidence.checked;
+        evidence.fixedMainBundleParticipantEdgePrunes=prepared.participantEdgeEvidence.pruned;
+        evidence.fixedMainBundleFirstParticipantEdgePrune=prepared.participantEdgeEvidence.firstPrune;
+      }
       if(!prepared){
         evidence.firstFixedMainBundleRejection="PIPELINE_BUNDLE_GRAPH_INFEASIBLE";
         return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
@@ -1029,6 +1060,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const meals=mealAuthority&&mealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
       const gated=hardGateCoreLeaf(matching.scheduledTasks,meals,coreIds,[...fixedMainContracts,...applicableContracts],true);
       if(!gated){evidence.fixedMainBundleHardGateRejects++;evidence.firstFixedMainBundleRejection=lastHardGateReason;
+        evidence.firstFixedMainBundleHardGateDiagnostic={validation:validatePlan(problem,[...matching.scheduledTasks],[...(options.fixedSetupPreparations??[])],meals),preparationCount:options.fixedSetupPreparations?.length??0,
+          structuredSpaces:problem.spaces.filter(space=>space.secondaryContinuity==="REQUIRED"||space.setupPolicy!==undefined)
+            .map(space=>({spaceId:space.id,secondaryContinuity:space.secondaryContinuity??null,setupPolicy:space.setupPolicy??null,
+              tasks:matching.scheduledTasks.filter(task=>task.spaceId===space.id).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))}))};
         return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",lastHardGateReason],coreIds);}
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
@@ -1135,7 +1170,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>({id:policy.id,resourceIds:[...policy.resourceIds],
         spaceIds:[...policy.spaceIds],duration:policy.duration,start:fixedMeals[0]!.start,end:fixedMeals[0]!.end}));
       const validation=validatePlan(reduced,
-        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[],
+        placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>coreIds.has(id))})),[...(options.fixedSetupPreparations??[])],
         mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:fixedMeals,[],fixedResourceMeals,
         materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
       if(!validation.hardValid&&!options.acceptsValidation?.(validation))return "DEAD_END";
@@ -1628,10 +1663,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const participant = problem.participants.find(({ id }) => id === task.participantId)!;
         const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
         const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start-start)+(end-operation.end))) : 0;
+        const participantAvailabilityEnd=containing.length?Math.min(...containing.map(({end})=>end)):Number.POSITIVE_INFINITY;
         choices.push({ task, operation: operation.tasks, feeder: feederByMain.get(task.id)!, participantSlack: slack,
-          firstObligation: operation.start });
+          firstObligation: operation.start, participantAvailabilityEnd });
       }
-      choices.sort((a,b)=>a.participantSlack-b.participantSlack||a.firstObligation-b.firstObligation||a.task.id.localeCompare(b.task.id));
+      // Preserve the existing semantic order. Availability end replaces only
+      // stable identity when every earlier criterion is equal.
+      choices.sort((a,b)=>compareMainChoiceFinalTieBreak({...a,taskId:a.task.id},{...b,taskId:b.task.id}));
       if (choices.length === 0) {
         evidence.zeroAlternativePrunes += 1;
         if (forcedTaskId !== undefined) evidence.forcedMainSingletonDeadEnds += 1;
@@ -1795,8 +1833,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           &&Math.max(...edge.operation.map(item=>item.end))<=end);
         const slack=containing.length?Math.min(...containing.map(({start,end})=>(edge.operation[0]!.start-start)
           +(end-Math.max(...edge.operation.map(item=>item.end))))):0;
+        const participantAvailabilityEnd=containing.length?Math.min(...containing.map(({end})=>end)):Number.POSITIVE_INFINITY;
         witnessCohort.push({task,operation:[...edge.operation],feeder:feederByMain.get(task.id)!,participantSlack:slack,
-          firstObligation:Math.min(...edge.operation.map(item=>item.start))});
+          firstObligation:Math.min(...edge.operation.map(item=>item.start)),participantAvailabilityEnd});
         const choice=witnessCohort.at(-1)!;
         const descriptor:ExactMainChoiceDescriptor=Object.freeze({mainTask:readonlyTaskCopy(task),
           operationTasks:Object.freeze(choice.operation.map(readonlyTaskCopy)),feeder:readonlyTaskCopy(choice.feeder),

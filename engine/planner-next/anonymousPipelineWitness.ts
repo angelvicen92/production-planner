@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines } from "./mainFlowMeal";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlowMealStarts, timelineSignature } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
@@ -11,6 +11,7 @@ import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching
 import { assessOperationalMealFutureFeasibility } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
 import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
+import { normalizeParticipantFuturePlacements, probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
 export interface AnonymousPipelineSpot { id:string; start:number; end:number; profileKey?:string; tokenId?:string; coachKey?:string; feederRunId?:string; mainRunId?:string }
@@ -69,6 +70,8 @@ export interface PreparedPipelineBundleGraph {
   readonly protectedPlacements:readonly ScheduledTask[];readonly mainIds:readonly string[];
   readonly candidates:ReadonlyMap<string,ReadonlyMap<number,readonly ScheduledTask[]>>;
   readonly preparedBundleEdges:number;
+  readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
+    mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
 }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
@@ -388,9 +391,9 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   const mainMealAuthority=mainFlowMealPolicy(problem as PlannerNextProblem);
   const fixedMainMeals=mainMealAuthority ? (problem.operationalMealPolicies??[])
     .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id))
-    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);return {
+    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);const start=architecture.mealStart??meal.start;return {
       id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,
-      start:meal.start,end:meal.end,
+      start,end:start+policy.duration,
     };}) : [];
   operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
   const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
@@ -464,6 +467,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
+  const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
     const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
     const arrival=problem.tasks.find((task):task is ParticipantTask=>task.participantId===main.participantId&&arrivalIds.has(task.id));
@@ -504,12 +508,23 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       const nominalMain=nominal.scheduledTasks.find(task=>task.id===main.id);
       if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
       if(!edgeValid)return;
+      if((problem.analyticalFutureParticipantTasks?.length??0)>0){
+        const placed=normalizeParticipantFuturePlacements([...protectedPlacements,...bundle]);
+        const probe=probeParticipantFutureReservations(problem,placed,bundle,undefined,"ANALYTIC_ONLY");
+        participantEdgeEvidence.checked++;
+        if(probe.status==="PRUNE"){
+          participantEdgeEvidence.pruned++;
+          participantEdgeEvidence.firstPrune??={mainTaskId:main.id,position,mainStart:mainSpot.start,mainEnd:mainSpot.end,...probe};
+          return;
+        }
+        if(probe.status==="ABSTAIN")participantEdgeEvidence.abstained++;
+      }
       valid.push(position);byPosition.set(position,bundle);
     });
     candidates.set(main.id,byPosition);
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
-    preparedBundleEdges:bundleEdgesBeforeReservation};
+    preparedBundleEdges:bundleEdgesBeforeReservation,participantEdgeEvidence};
 }
 
 /** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */
@@ -526,7 +541,18 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
         const source=(problem.analyticalFutureTechnicalChains??[]).flatMap(x=>x.tasks).find(x=>x.id===task.id)??task;
         return canPlaceTask(problem,source,task.start,withBundle.filter(x=>x.id!==task.id));});}
       if(!edgeValid)bundleEdgesRejectedByReservation++;
-    }if(edgeValid)valid.push(position);
+    }
+    if(edgeValid&&analyticalReservedPlacements.length>0&&(problem.analyticalFutureParticipantTasks?.length??0)>0){
+      const placed=normalizeParticipantFuturePlacements([...protectedPlacements,...analyticalReservedPlacements,...bundle]);
+      const probe=probeParticipantFutureReservations(problem,placed,bundle,undefined,"ANALYTIC_ONLY");
+      prepared.participantEdgeEvidence.checked++;
+      if(probe.status==="PRUNE"){
+        edgeValid=false;prepared.participantEdgeEvidence.pruned++;bundleEdgesRejectedByReservation++;
+        const main=bundle.find(task=>task.id===id)!;
+        prepared.participantEdgeEvidence.firstPrune??={mainTaskId:id,position,mainStart:main.start,mainEnd:main.end,...probe};
+      }else if(probe.status==="ABSTAIN")prepared.participantEdgeEvidence.abstained++;
+    }
+    if(edgeValid)valid.push(position);
   }positions.set(id,valid);}
   const pressure=new Map<string,Map<number,number>>();let safeGraphEdgeCount=0,intrusiveGraphEdgeCount=0;
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
@@ -561,6 +587,37 @@ export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerN
 }
 
 /** Deterministic architecture enumeration from the exact core's canonical authorities. */
+export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNextProblem>,patterns:readonly (readonly string[])[],duration:number):
+  Generator<{architecture:MainFeederArchitecture;patternOrdinal:number}> {
+  const runCount=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>count+(index===0||key!==pattern[index-1]?1:0),0);
+  for(let familyStart=0;familyStart<patterns.length;){
+    const familyRunCount=runCount(patterns[familyStart]!);let familyEnd=familyStart+1;
+    while(familyEnd<patterns.length&&runCount(patterns[familyEnd]!)===familyRunCount)familyEnd++;
+    const family=patterns.slice(familyStart,familyEnd).map((pattern,offset)=>({pattern,ordinal:familyStart+offset+1,
+      iterator:(function*():Generator<MainFeederArchitecture>{
+        if(!hasMainFlowMeal(problem)){
+          for(const end of [problem.mainFlow.preferredEnd,problem.day.end].filter((value,index,values)=>values.indexOf(value)===index))
+            yield {pattern,slots:pattern.map((_,index)=>end-pattern.length*duration+index*duration)};
+          return;
+        }
+        const seen=new Set<string>();
+        // Preserve the established timeline ranking without materializing its Cartesian product.
+        const rank=(cut:number)=>cut===pattern.length?0:isBlockBoundary([...pattern],cut)?1:2;
+        const cuts=candidateCuts([...pattern]).sort((left,right)=>rank(left)-rank(right)||right-left);
+        for(const mealStart of mainFlowMealStarts(problem))for(const cut of cuts){
+          const timeline=buildTimeline(problem,[...pattern],duration,cut,mealStart),signature=timelineSignature(timeline);
+          if(seen.has(signature))continue;seen.add(signature);
+          yield {pattern,slots:timeline.slots,mealStart:timeline.meal.start};
+        }
+      })(),done:false}));
+    while(family.some(entry=>!entry.done))for(const entry of family){
+      if(entry.done)continue;const next=entry.iterator.next();entry.done=next.done===true;
+      if(!next.done)yield {architecture:next.value,patternOrdinal:entry.ordinal};
+    }
+    familyStart=familyEnd;
+  }
+}
+
 export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence):Generator<MainFeederArchitecture> {
   const mains=problem.tasks.filter(task=>task.kind==="main");
   if(!mains.length)return null;
@@ -569,16 +626,10 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
-  for(const pattern of generated.patterns){
-    if(evidence)evidence.mainPatternsVisited++;
-    const duration=mains[0]!.duration;
-    const slots=hasMainFlowMeal(problem)
-      ?orderTimelines(candidateCuts(pattern).map(cut=>buildTimeline(problem,pattern,duration,cut))).map(row=>row.slots)
-      :[problem.mainFlow.preferredEnd,problem.day.end].filter((end,index,ends)=>ends.indexOf(end)===index)
-        .map(end=>pattern.map((_,index)=>end-pattern.length*duration+index*duration));
-    if(evidence)evidence.timelinesGenerated+=slots.length;
-    for(const timeline of slots){
-      const architecture={pattern,timeline:undefined,slots:timeline};
+  let visitedPatterns=0;
+  for(const {architecture,patternOrdinal} of mainFlowTimelineArchitectureFrontier(problem,generated.patterns,mains[0]!.duration)){
+      if(evidence){evidence.timelinesGenerated++;if(patternOrdinal>visitedPatterns)evidence.mainPatternsVisited++;}
+      visitedPatterns=Math.max(visitedPatterns,patternOrdinal);
       if(evidence)evidence.architectureStructuralProofChecks++;
       const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture);
       if(structuralRejection){if(evidence){evidence.architectureStructuralProofRejects++;evidence.architectureStructuralRejectsByReason[structuralRejection]=(evidence.architectureStructuralRejectsByReason[structuralRejection]??0)+1;}continue;}
@@ -588,11 +639,11 @@ export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextPro
         else {if(status==="INFEASIBLE")evidence.nominalPipelineWitnessInfeasible++;else evidence.nominalPipelineWitnessInconclusive++;
           const reason=materialized.witness.reason??"UNKNOWN";evidence.nominalPipelineWitnessRejectsByReason[reason]=(evidence.nominalPipelineWitnessRejectsByReason[reason]??0)+1;}}
       const orderedMains=materialized.scheduledTasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start);
-      const meal=mainFlowMealPolicy(problem)?createMainFlowMeal(problem):null;
+      const meal=architecture.mealStart===undefined?null:{start:architecture.mealStart,
+        end:architecture.mealStart+mainFlowMealPolicy(problem)!.duration};
       const continuous=orderedMains.slice(1).every((task,index)=>orderedMains[index]!.end===task.start
         ||Boolean(meal&&orderedMains[index]!.end===meal.start&&task.start===meal.end));
       if(materialized.witness.status==="FEASIBLE"&&!continuous&&evidence)evidence.continuityRejects++;
       if(materialized.witness.status==="FEASIBLE"&&continuous){if(evidence)evidence.authorizedArchitecturesYielded++;yield architecture;}
-    }
   }
 }

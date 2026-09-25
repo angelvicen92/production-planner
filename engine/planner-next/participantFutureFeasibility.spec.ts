@@ -31,6 +31,7 @@ test("passes when at least one future task and meal pair is compatible",()=>{
 test("abstains for an unresolved future dependency",()=>{
   const result=probeParticipantFutureReservations(problem({start:40,end:80},["unknown"]),[current()],[current()]);
   assert.equal(result.status,"ABSTAIN"); assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE");
+  assert.deepEqual(result.unresolvedDependencyIds,["unknown"]);
   assert.equal(result.individualZeroDomainPrunes,0);
 });
 
@@ -39,14 +40,48 @@ test("skips obligations independent of the provisional placement",()=>{
   assert.equal(result.status,"PASS"); assert.equal(result.affectedFutureTasksChecked,0); assert.equal(result.jointTaskMealChecks,0);
 });
 
-test("abstains when individually viable future tasks share a hard authority without a collective certificate",()=>{
+test("finds a deterministic collective witness for jointly viable participant tasks",()=>{
   const source=problem({start:60,end:100});
   source.participantMeals=[];
   source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2",spaceId:"a",availability:[{start:20,end:60}]});
   const result=probeParticipantFutureReservations(source,[current()],[current()]);
-  assert.equal(result.status,"ABSTAIN");
-  assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE");
-  assert.equal(result.collectiveChecks,0); assert.equal(result.collectivePrunes,0);
+  assert.equal(result.status,"PASS"); assert.equal(result.collectiveChecks,1); assert.equal(result.collectivePasses,1);
+  assert.equal(result.collectiveWitnessFound,true); assert.ok(result.branchesConsumed>0);
+  assert.deepEqual(result.collectiveObligationIds,["future","future-2"]);
+  assert.equal("scheduled" in result,false);
+});
+
+test("prunes when future tasks and a required meal are individually viable but collectively impossible",()=>{
+  const source=problem({start:40,end:80});
+  source.analyticalFutureParticipantTasks![0].duration=20;
+  source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2"});
+  const first=probeParticipantFutureReservations(source,[current()],[current()]);
+  const second=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(first.status,"PRUNE"); assert.equal(first.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
+  assert.equal(first.collectiveChecks,1); assert.equal(first.collectivePrunes,1); assert.equal(first.collectiveWitnessFound,false);
+  assert.deepEqual(first,second);
+});
+
+test("meal-first MRV never admits a later task that overlaps the selected meal",()=>{
+  const source=problem({start:40,end:80});
+  source.participantMeals![0]={...source.participantMeals![0],fixedInterval:{start:40,end:60}};
+  source.analyticalFutureParticipantTasks![0]={...source.analyticalFutureParticipantTasks![0],id:"a-after-meal",duration:20,
+    availability:[{start:40,end:80}],dependencies:["meal-source"]};
+  source.analyticalFutureParticipantTasks!.push({id:"b-fills-tail",kind:"auxiliary",participantId:"p",spaceId:"a",duration:20,
+    availability:[{start:60,end:80}],dependencies:[]});
+  const result=probeParticipantFutureReservations(source,[current()],[current()]);
+  assert.equal(result.status,"PRUNE"); assert.equal(result.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
+  assert.equal(result.collectiveWitnessFound,false);
+});
+
+test("distinguishes inconclusive shapes from genuinely exhausted collective budget",()=>{
+  const inconclusive=probeParticipantFutureReservations(problem({start:40,end:80},["unknown"]),[current()],[current()]);
+  assert.equal(inconclusive.status,"ABSTAIN"); assert.equal(inconclusive.abstainCause,"INCONCLUSIVE_SHAPE");
+  const source=problem({start:60,end:100});source.participantMeals=[];
+  source.analyticalFutureParticipantTasks!.push({...source.analyticalFutureParticipantTasks![0],id:"future-2",availability:[{start:20,end:60}]});
+  const exhausted=probeParticipantFutureReservations(source,[current()],[current()],{consume:()=>false});
+  assert.equal(exhausted.status,"ABSTAIN"); assert.equal(exhausted.abstainCause,"BUDGET_EXHAUSTED");
+  assert.equal(exhausted.branchesConsumed,0);
 });
 
 test("passes multiple independent future tasks after individual checks without claiming collective work",()=>{
@@ -76,4 +111,34 @@ test("grid-aligned extrema do not falsely prune disjoint raw interval endpoints"
   source.participantMeals![0]={...source.participantMeals![0],duration:5,window:{start:82,end:90}};
   const result=probeParticipantFutureReservations(source,[current()],[current()]);
   assert.equal(result.status,"PASS"); assert.equal(result.compatiblePairCount,1);
+});
+
+function idempotentCollectiveProblem():PlannerNextProblem{
+  const source=problem({start:0,end:100});
+  source.analyticalFutureParticipantTasks=[0,1,2].map(index=>({id:`future-${index}`,kind:"auxiliary" as const,
+    participantId:"p",spaceId:index%2===0?"a":"b",duration:20,availability:[{start:0,end:100}],dependencies:[]}));
+  source.participantMeals![0]={...source.participantMeals![0],duration:20,window:{start:0,end:100}};
+  return source;
+}
+
+test("identical fixed placements are idempotent for domains and the collective witness",()=>{
+  const source=idempotentCollectiveProblem();
+  const fixed={...current(),start:40,end:60};
+  const once=probeParticipantFutureReservations(source,[fixed],[fixed]);
+  const duplicated=probeParticipantFutureReservations(source,[fixed,structuredClone(fixed)],[fixed]);
+  assert.equal(once.status,"PASS");
+  assert.deepEqual(duplicated,once);
+  assert.deepEqual(duplicated.collectiveDomainSizes,once.collectiveDomainSizes);
+  assert.equal(duplicated.collectiveWitnessFound,true);
+});
+
+test("conflicting placements with the same task id are not collapsed as equivalent",()=>{
+  const source=idempotentCollectiveProblem();
+  const fixed={...current(),start:40,end:60};
+  const conflicting={...fixed,start:60,end:80};
+  const once=probeParticipantFutureReservations(source,[fixed],[fixed]);
+  const conflict=probeParticipantFutureReservations(source,[fixed,conflicting],[fixed]);
+  assert.equal(once.status,"PASS");
+  assert.equal(conflict.status,"PRUNE");
+  assert.equal(conflict.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
 });
