@@ -323,7 +323,7 @@ test("known transitive future prerequisite closure remains analytical and certif
   assert.deepEqual(assisted.problem.analyticalFutureParticipantSupportingTaskIds,["future-mid","future-root"]);
   const result=executeAssistedPlanning(assisted);
   assert.equal(result.evidence.participantFutureReservation.abstentions,0,result.evidence.reasonCodes.join(","));
-  assert.equal(result.proposal?.some(task=>task.id==="future-mid"||task.id==="future-root"||task.id==="future-tail"),false);
+  assert.equal(result.proposal?.some(task=>task.id==="future-mid"||task.id==="future-root"||task.id==="future-tail")??false,false);
 });
 
 test("hard-impossible known future prerequisite soundly prevents a proposal",()=>{
