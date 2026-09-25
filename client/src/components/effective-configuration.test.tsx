@@ -19,3 +19,9 @@ test("workday and meal provenance use human formatters rather than raw JSON",()=
   assert.doesNotMatch(source,/JSON\.stringify\(value\.(?:baseline|defaultGeneral)\)/);
   for(const text of ["Heredado del día", "Configuración habitual actual", "Ventana flexible", "Parada global"]) assert.match(source,new RegExp(text));
 });
+
+test("day configuration loads through authenticated apiRequest rather than raw fetch",()=>{
+  const source=readFileSync(new URL("./effective-configuration.tsx",import.meta.url),"utf8");
+  assert.match(source,/apiRequest<EffectiveConfigurationView>\("GET",`\/api\/plans\/\$\{planId\}\/effective-configuration`\)/);
+  assert.doesNotMatch(source,/fetch\(`\/api\/plans\/\$\{planId\}\/effective-configuration`/);
+});
