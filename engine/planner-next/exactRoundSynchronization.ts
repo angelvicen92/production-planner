@@ -1,5 +1,6 @@
 import type {
   PlannerNextProblem,
+  OperationalMealPolicy,
   RoundSynchronizationPolicy,
   ScheduledRoundPreparation,
   ScheduledSetupPreparation,
@@ -16,6 +17,7 @@ import {
 import { overlaps } from "./time";
 import { roundPreparationId } from "./roundSynchronization";
 import { findCanonicalPerfectMatching } from "./macroScheduling";
+import { operationalMealCandidates } from "./operationalMeals";
 
 export type ExactRoundSynchronizationOutcome =
   | "FOUND"
@@ -32,12 +34,18 @@ export interface ExactRoundSynchronizationEvidence {
   matchingAttempts: number;
   matchingSuccesses: number;
   assignmentBranchesAvoided: number;
+  sharedOperationalMealPolicyIds: string[];
+  breakVariantsConsidered: number;
+  selectedBreakIntervals: Array<{ policyId:string;start:number;end:number }>;
+  mealAwareShapesFeasible: number;
+  noBreakHolePrunes: number;
 }
 
 export interface ExactRoundSynchronizationCandidate {
   tasks: ScheduledTask[];
   preparations: ScheduledRoundPreparation[];
   selectionOrder: string[];
+  operationalMealReservations: Array<{ policyId:string;start:number;end:number }>;
 }
 
 export interface ExactRoundSynchronizationSearchResult {
@@ -58,9 +66,21 @@ interface Slot {
   start: number;
   end: number;
 }
+interface BreakReservation { policyId:string;start:number;end:number;afterRound:number }
 
 const byId = <T extends { id: string }>(left: T, right: T): number =>
   left.id.localeCompare(right.id, "en");
+
+const effectiveTaskResourceIds=(task:Task):string[]=>task.coachId===undefined
+  ?[...(task.requiredResourceIds??[])]:[...(task.requiredResourceIds??[]),task.coachId];
+const policyAffectsLane=(policy:OperationalMealPolicy,lane:RoundSynchronizationPolicy["lanes"][number],tasks:Map<string,Task>):boolean=>
+  policy.spaceIds.includes(lane.spaceId)||lane.taskIds.some(id=>effectiveTaskResourceIds(tasks.get(id)!).some(resourceId=>policy.resourceIds.includes(resourceId)));
+const sharedOperationalMealPolicies=(problem:PlannerNextProblem,policy:RoundSynchronizationPolicy):OperationalMealPolicy[]=>{
+  const tasks=new Map(problem.tasks.map(task=>[task.id,task]));
+  return [...(problem.operationalMealPolicies??[])].filter(meal=>policy.lanes.length>1
+    &&policy.lanes.every(lane=>lane.taskIds.every(id=>tasks.has(id))&&policyAffectsLane(meal,lane,tasks)))
+    .sort(byId);
+};
 
 function bridgeEnd(
   problem: PlannerNextProblem,
@@ -116,6 +136,7 @@ function buildSlots(
   setupPreparations: ScheduledSetupPreparation[],
   existingRoundPreparations: ScheduledRoundPreparation[],
   meals: ScheduledSpaceMeal[],
+  breakReservations:readonly BreakReservation[]=[],
 ): { slots: Slot[]; preparations: ScheduledRoundPreparation[] } | null {
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneSlots: Slot[][] = [];
@@ -131,7 +152,11 @@ function buildSlots(
     for (let index = 0; index < laneTasks.length; index += 1) {
       if (index > 0) {
         const previous = slots[index - 1]!;
-        const preparationStart = bridgeEnd(problem, lane.spaceId, previous.end, meals);
+        let preparationStart = bridgeEnd(problem, lane.spaceId, previous.end, meals);
+        for(const reservation of breakReservations.filter(item=>item.afterRound===index).sort((a,b)=>a.start-b.start||a.policyId.localeCompare(b.policyId))){
+          if(reservation.start<preparationStart)return null;
+          preparationStart=reservation.end;
+        }
         if (lane.preparationMinutesBetweenRounds > 0) {
           const preparation: ScheduledRoundPreparation = {
             id: roundPreparationId(policy.id, lane.spaceId, index + 1),
@@ -181,10 +206,44 @@ function buildSlots(
   };
 }
 
+function breakReservationVariants(problem:PlannerNextProblem,policy:RoundSynchronizationPolicy,firstStart:number,
+  baseTasks:ScheduledTask[],setupPreparations:ScheduledSetupPreparation[],existingRoundPreparations:ScheduledRoundPreparation[],
+  meals:ScheduledSpaceMeal[]):{shared:OperationalMealPolicy[];variants:BreakReservation[][];considered:number;noHolePrunes:number}{
+  const shared=sharedOperationalMealPolicies(problem,policy);
+  if(!shared.length)return{shared,variants:[[]],considered:0,noHolePrunes:0};
+  const baseShape=buildSlots(problem,policy,firstStart,baseTasks,setupPreparations,existingRoundPreparations,meals,[]);
+  if(!baseShape)return{shared,variants:[],considered:0,noHolePrunes:shared.length};
+  const synchronizedRounds=Math.min(...policy.lanes.map(lane=>lane.taskIds.length));
+  let variants:BreakReservation[][]=[[]],considered=0,noHolePrunes=0;
+  for(const mealPolicy of shared){
+    const candidates=operationalMealCandidates(problem,mealPolicy,baseTasks,[]).filter(candidate=>
+      !setupPreparations.some(preparation=>mealPolicy.spaceIds.includes(preparation.spaceId)&&overlaps(preparation,candidate))
+      &&!existingRoundPreparations.some(preparation=>mealPolicy.spaceIds.includes(preparation.spaceId)&&overlaps(preparation,candidate)));
+    const options:BreakReservation[]=[];
+    for(let afterRound=1;afterRound<synchronizedRounds;afterRound+=1){
+      const boundary=baseShape.slots.find(slot=>slot.laneIndex===0&&slot.roundIndex===afterRound)?.end;
+      if(boundary===undefined)continue;
+      const eligible=candidates.filter(candidate=>candidate.start>=boundary);
+      const candidate=eligible.find(item=>item.start===boundary)??eligible[0];
+      if(candidate){considered+=1;options.push({policyId:mealPolicy.id,start:candidate.start,end:candidate.end,afterRound});}
+    }
+    const canonical=[...new Map(options.map(option=>[JSON.stringify(option),option])).values()].sort((a,b)=>
+      Number(a.start!==(baseShape.slots.find(slot=>slot.laneIndex===0&&slot.roundIndex===a.afterRound)?.end??-1))
+      -Number(b.start!==(baseShape.slots.find(slot=>slot.laneIndex===0&&slot.roundIndex===b.afterRound)?.end??-1))
+      ||a.afterRound-b.afterRound||a.start-b.start||a.policyId.localeCompare(b.policyId));
+    if(!canonical.length){noHolePrunes+=1;return{shared,variants:[],considered,noHolePrunes};}
+    variants=variants.flatMap(existing=>canonical.filter(option=>existing.every(other=>option.end<=other.start||other.end<=option.start
+      ||!shared.some(item=>item.id===other.policyId&&(item.resourceIds.some(id=>mealPolicy.resourceIds.includes(id))||item.spaceIds.some(id=>mealPolicy.spaceIds.includes(id))))))
+      .map(option=>[...existing,option]));
+  }
+  const feasible=variants.filter(reservations=>buildSlots(problem,policy,firstStart,baseTasks,setupPreparations,existingRoundPreparations,meals,reservations)!==null);
+  return{shared,variants:feasible,considered,noHolePrunes:noHolePrunes+(feasible.length?0:1)};
+}
+
 function materializeMatchingCandidate(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
   firstStart: number, baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[],
-  existingRoundPreparations: ScheduledRoundPreparation[], meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationCandidate | null {
-  const shape = buildSlots(problem, policy, firstStart, baseTasks, setupPreparations, existingRoundPreparations, meals);
+  existingRoundPreparations: ScheduledRoundPreparation[], meals: ScheduledSpaceMeal[],breakReservations:readonly BreakReservation[]=[]): ExactRoundSynchronizationCandidate | null {
+  const shape = buildSlots(problem, policy, firstStart, baseTasks, setupPreparations, existingRoundPreparations, meals,breakReservations);
   if (!shape) return null;
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) => lane.taskIds.map((id) => taskById.get(id))
@@ -205,7 +264,8 @@ function materializeMatchingCandidate(problem: PlannerNextProblem, policy: Round
   if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
     [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) return null;
   scheduled.sort((left, right) => left.start - right.start || byId(left, right));
-  return { tasks: scheduled, preparations: [...shape.preparations], selectionOrder: scheduled.map(({ id }) => id) };
+  return { tasks: scheduled, preparations: [...shape.preparations], selectionOrder: scheduled.map(({ id }) => id),
+    operationalMealReservations:breakReservations.map(({policyId,start,end})=>({policyId,start,end})) };
 }
 
 /** Counts hard-valid synchronized temporal shapes without consuming the shared search ledger. */
@@ -214,8 +274,11 @@ export function probeExactRoundSynchronizationMacroDomain(problem: PlannerNextPr
   meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationMacroDomain {
   let structuralCandidateCount = 0, matchingFeasibleCandidateCount = 0;
   for (let start = problem.day.start; start < problem.day.end; start += 5) {
-    if (buildSlots(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals)) structuralCandidateCount += 1;
-    if (materializeMatchingCandidate(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals)) matchingFeasibleCandidateCount += 1;
+    const reservationVariants=breakReservationVariants(problem,policy,start,baseTasks,setupPreparations,existingRoundPreparations,meals).variants;
+    for(const reservations of reservationVariants){
+      if (buildSlots(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals,reservations)) structuralCandidateCount += 1;
+      if (materializeMatchingCandidate(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals,reservations)) matchingFeasibleCandidateCount += 1;
+    }
   }
   return { domainSize: matchingFeasibleCandidateCount, structuralCandidateCount, matchingFeasibleCandidateCount };
 }
@@ -244,6 +307,8 @@ export function exploreExactRoundSynchronizationPolicy(
     matchingAttempts: 0,
     matchingSuccesses: 0,
     assignmentBranchesAvoided: 0,
+    sharedOperationalMealPolicyIds:sharedOperationalMealPolicies(problem,policy).map(({id})=>id),breakVariantsConsidered:0,
+    selectedBreakIntervals:[],mealAwareShapesFeasible:0,noBreakHolePrunes:0,
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
@@ -254,16 +319,11 @@ export function exploreExactRoundSynchronizationPolicy(
 
   for (let firstStart = problem.day.start; firstStart < problem.day.end; firstStart += 5) {
     evidence.startCandidates += 1;
-    const shape = buildSlots(
-      problem,
-      policy,
-      firstStart,
-      baseTasks,
-      setupPreparations,
-      existingRoundPreparations,
-      meals,
-    );
-    if (!shape) continue;
+    const reservationProbe=breakReservationVariants(problem,policy,firstStart,baseTasks,setupPreparations,existingRoundPreparations,meals);
+    evidence.breakVariantsConsidered+=reservationProbe.considered;evidence.noBreakHolePrunes+=reservationProbe.noHolePrunes;
+    for(const reservations of reservationProbe.variants){
+    const shape = buildSlots(problem,policy,firstStart,baseTasks,setupPreparations,existingRoundPreparations,meals,reservations);
+    if (!shape) continue;evidence.mealAwareShapesFeasible+=Number(reservations.length>0);
 
     const slotKey = (slot: Slot): string => `${slot.laneIndex}:${slot.roundIndex}`;
     if (!ledger.consume("STANDALONE")) return { outcome: "BUDGET_EXHAUSTED", evidence };
@@ -303,9 +363,12 @@ export function exploreExactRoundSynchronizationPolicy(
       tasks: scheduled.sort((left, right) => left.start - right.start || byId(left, right)),
       preparations: [...shape.preparations],
       selectionOrder: scheduled.map(({ id }) => id),
+      operationalMealReservations:reservations.map(({policyId,start,end})=>({policyId,start,end})),
     });
+    if(outcome!=="DEAD_END")evidence.selectedBreakIntervals=reservations.map(({policyId,start,end})=>({policyId,start,end}));
     if (outcome !== "DEAD_END") return { outcome, evidence };
     evidence.backtracks += 1;
+    }
   }
 
   return { outcome: "DEAD_END", evidence };

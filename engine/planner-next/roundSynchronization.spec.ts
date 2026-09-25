@@ -18,7 +18,11 @@ import {
 import {
   roundPreparationId,
 } from "./roundSynchronization";
+import { exploreExactRoundSynchronizationPolicy } from "./exactRoundSynchronization";
 import { preflight, validatePlan } from "./validate";
+import { overlaps } from "./time";
+import { PreparedOperationalMealAuthority } from "./preparedOperationalMealAuthority";
+import type { ExactRoundSynchronizationCandidate } from "./exactRoundSynchronization";
 
 function supportedProblem(): PlannerNextProblem {
   const result = adaptEngineInputToPlannerNextProblem(
@@ -314,4 +318,51 @@ test("round synchronization exhausts the shared budget atomically", () => {
   assert.deepEqual(result.scheduledRoundPreparations, []);
   assert.deepEqual(result.scheduledSpaceMeals, []);
   assert.ok(result.evidence.reasonCodes.includes("STANDALONE_BRANCH_BUDGET_EXHAUSTED"));
+});
+
+test("shared operational meal creates one common pause without desynchronizing rounds or preparations", () => {
+  const problem=structuredClone(supportedProblem()),policy=problem.roundSynchronizations![0]!;
+  problem.operationalMealPolicies=[{id:"shared-round-meal",window:{start:780,end:1020},duration:75,
+    resourceIds:[],spaceIds:policy.lanes.map(lane=>lane.spaceId)}];
+  const ledger={limit:10000,branchesExplored:0,coreBranches:0,standaloneBranches:0,lastExhaustionPhase:null,
+    consume(_phase:"CORE"|"STANDALONE",count=1){this.branchesExplored+=count;this.standaloneBranches+=count;return true;}};
+  let accepted:ExactRoundSynchronizationCandidate|null=null;
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],ledger,candidate=>{accepted=candidate;return"FOUND";});
+  assert.equal(result.outcome,"FOUND");assert.ok(accepted);
+  assert.deepEqual(result.evidence.sharedOperationalMealPolicyIds,["shared-round-meal"]);
+  assert.ok(result.evidence.breakVariantsConsidered>0);assert.ok(result.evidence.mealAwareShapesFeasible>0);
+  const finalAuthority=new PreparedOperationalMealAuthority(problem);
+  const mealProbe=finalAuthority.assess(accepted.tasks,accepted.tasks,{remaining:1000},"MACRO",0);
+  assert.equal(mealProbe.status,"PASS");const meal=mealProbe.witness?.scheduled.find(({id})=>id==="shared-round-meal");assert.ok(meal);
+  const laneSchedules=policy.lanes.map(lane=>accepted!.tasks.filter(task=>lane.taskIds.includes(task.id)).sort((a,b)=>a.start-b.start));
+  for(let round=0;round<Math.min(...laneSchedules.map(tasks=>tasks.length));round+=1){
+    assert.equal(laneSchedules[0]![round]!.start,laneSchedules[1]![round]!.start);
+    assert.equal(laneSchedules[0]![round]!.end,laneSchedules[1]![round]!.end);
+  }
+  assert.ok(accepted.preparations.every(preparation=>!overlaps(preparation,meal)));
+  assert.ok(laneSchedules.flat().every(task=>!overlaps(task,meal)));
+  assert.equal(accepted.preparations.length,2);
+});
+
+test("a policy that does not affect every lane does not force a global round pause", () => {
+  const problem=structuredClone(supportedProblem()),policy=problem.roundSynchronizations![0]!;
+  problem.operationalMealPolicies=[{id:"one-lane-meal",window:{start:780,end:1020},duration:75,
+    resourceIds:[],spaceIds:[policy.lanes[0]!.spaceId]}];
+  const result=constructExactItinerantPlan(problem);
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.deepEqual(result.evidence.roundSynchronizationSharedOperationalMealPolicyIds,[]);
+  assert.equal(result.evidence.roundSynchronizationBreakVariantsConsidered,0);
+});
+
+test("a shared policy with no free authoritative interval prunes before round assignment", () => {
+  const problem=structuredClone(supportedProblem()),policy=problem.roundSynchronizations![0]!;
+  problem.operationalMealPolicies=[{id:"blocked-shared-meal",window:{start:780,end:900},duration:75,
+    resourceIds:[],spaceIds:policy.lanes.map(lane=>lane.spaceId)}];
+  const blocker:ScheduledTask={...problem.tasks[0]!,id:"fixed-window-blocker",spaceId:policy.lanes[0]!.spaceId,start:780,end:900,duration:120};
+  const ledger={limit:10000,branchesExplored:0,coreBranches:0,standaloneBranches:0,lastExhaustionPhase:null,
+    consume(_phase:"CORE"|"STANDALONE",count=1){this.branchesExplored+=count;this.standaloneBranches+=count;return true;}};
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[blocker],[],[],[],ledger,()=>"FOUND");
+  assert.equal(result.outcome,"DEAD_END");
+  assert.ok(result.evidence.noBreakHolePrunes>0);
+  assert.equal(result.evidence.completeAssignments,0);
 });
