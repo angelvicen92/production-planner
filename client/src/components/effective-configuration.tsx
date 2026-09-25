@@ -37,7 +37,7 @@ export const categorySlugs:Record<string,string>={"Jornada y comidas":"jornada-c
 const categoryOrder=["Jornada y comidas","Participantes","Tareas","Platós y espacios","Recursos","Transporte","Operaciones y coordinación","Reglas de planificación","Avanzado"] as const;
 export function DayConfiguration({planId}:{planId:number}){
   const queryClient=useQueryClient();
-  const query=useQuery<EffectiveConfigurationView>({queryKey:["effective-configuration",planId],queryFn:async()=>{const response=await fetch(`/api/plans/${planId}/effective-configuration`,{credentials:"include"});if(!response.ok)throw new Error("No se pudo consultar la configuración efectiva");return response.json();}});
+  const query=useQuery<EffectiveConfigurationView>({queryKey:["effective-configuration",planId],queryFn:()=>apiRequest<EffectiveConfigurationView>("GET",`/api/plans/${planId}/effective-configuration`)});
   const restore=useMutation({mutationFn:(capability:string)=>apiRequest("POST",`/api/plans/${planId}/day-configuration/restore`,{capability}),onSuccess:()=>queryClient.invalidateQueries({queryKey:["effective-configuration",planId]})});
   if(query.isLoading)return <p role="status">Cargando configuración efectiva…</p>;
   if(query.error||!query.data)return <Card><CardContent className="pt-5 flex gap-2"><CircleHelp aria-hidden/><span>No se pudo consultar la configuración del día.</span></CardContent></Card>;
