@@ -327,9 +327,19 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  // Preserve the complete task-prerequisite closure needed by analytical
+  // participant futures. These vertices remain executable/supporting context;
+  // the list only makes them visible to the read-only future reservation probe.
   const analyticalDependencyIds=new Set(problem.analyticalFutureParticipantTasks.flatMap(task=>task.dependencies));
-  problem.analyticalFutureParticipantSupportingTaskIds=[...supporting]
-    .filter(id=>analyticalDependencyIds.has(id)).sort();
+  const analyticalSupportingIds=new Set<string>();
+  const pendingAnalyticalDependencies=[...analyticalDependencyIds];
+  while(pendingAnalyticalDependencies.length){
+    const id=pendingAnalyticalDependencies.pop()!;
+    if(!supporting.has(id)||analyticalSupportingIds.has(id))continue;
+    analyticalSupportingIds.add(id);
+    for(const dependencyId of tasksById.get(id)?.dependencies??[])pendingAnalyticalDependencies.push(dependencyId);
+  }
+  problem.analyticalFutureParticipantSupportingTaskIds=[...analyticalSupportingIds].sort();
   problem.analyticalFutureTechnicalChains = (problem.technicalChains ?? [])
     .filter((policy) => policy.adjacency === "REQUIRED" && policy.resourceContinuity === "REQUIRED"
       && policy.orderedTaskIds.every((id) => analyticalFutureEligibleTaskIds.has(id) && !included.has(id)))
