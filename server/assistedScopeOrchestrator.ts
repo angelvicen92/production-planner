@@ -1,6 +1,7 @@
 import type { EngineInput, TaskInput } from "../engine/types";
 import type { AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import type { AssistedScopeSelector } from "../shared/assistedProposalContracts";
+import { resolveEffectivePlanSpatialAvailability } from "../engine/planner-next/integration/effectivePlanSpatialAvailability";
 
 export type OperationalUnitKind = "MAIN_PIPELINE" | "TECHNICAL_CHAIN" | "ROUND_SYNCHRONIZATION" |
   "OPERATIONAL_MEAL" | "ITINERANT_AGENDA" | "SETUP_FAMILY" | "SPACE_FALLBACK";
@@ -13,6 +14,12 @@ export interface OperationalUnitPriority {
   readonly pendingDurationMinutes: number;
   readonly pendingTaskCount: number;
   readonly sharedResourcePressure: number;
+  /** Minimum elapsed time imposed by a configured structural authority. */
+  readonly structuralMinimumOccupiedMinutes: number;
+  /** Effective spatial span available to that structure (workday fallback). */
+  readonly structuralAvailableSpanMinutes: number;
+  /** 2 = scarce hard window, 1 = structural minimum, 0 = flexible/full-day. */
+  readonly effectivePressureClass: number;
   /** Load on the most constrained concrete resource/unit (or task window). */
   readonly effectiveWindowLoadMinutes: number;
   readonly effectiveWindowCapacityMinutes: number;
@@ -128,6 +135,14 @@ export function recommendNextAssistedScope(
   const dependants = new Map<number, number>();
   for (const task of input.tasks) for (const dependency of task.dependsOnTaskIds ?? []) dependants.set(dependency, (dependants.get(dependency) ?? 0) + 1);
   const dayStart=minute(input.workDay.start),dayEnd=minute(input.workDay.end);
+  const dayCapacity=Math.max(0,dayEnd-dayStart);
+  const spatialAvailability=resolveEffectivePlanSpatialAvailability(
+    input.workDay,input.planZoneSettings,input.planSpaceSettings,
+  );
+  const spaceCapacity=(spaceId:number)=>{
+    const window=spatialAvailability.spacesById.get(spaceId)?.effectiveWindow;
+    return window?windowMinutes(window.start,window.end):dayCapacity;
+  };
   const resourceWindows=new Map(input.planResourceItems.filter(resource=>resource.isAvailable).map(resource=>{
     const start=Math.max(dayStart,resource.availabilityStart?minute(resource.availabilityStart):dayStart);
     const end=Math.min(dayEnd,resource.availabilityEnd?minute(resource.availabilityEnd):dayEnd);
@@ -149,22 +164,51 @@ export function recommendNextAssistedScope(
     const deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
     const resources = members.flatMap(task => task.assignedResourceIds ?? []);
     const sharedResourcePressure = resources.length - new Set(resources).size;
-    const loads:{load:number;capacity:number}[]=[];
+    const loads:{load:number;capacity:number;pressureClass:number}[]=[];
     const loadByResource=new Map<number,number>();
     const loadByTeam=new Map<number,number>();
     for(const task of members){
       const taskDuration=task.durationOverrideMin??0;
       for(const resourceId of task.assignedResourceIds??[])loadByResource.set(resourceId,(loadByResource.get(resourceId)??0)+taskDuration);
       if(task.itinerantTeamId!=null)loadByTeam.set(task.itinerantTeamId,(loadByTeam.get(task.itinerantTeamId)??0)+taskDuration);
-      if(task.fixedWindowStart&&task.fixedWindowEnd)loads.push({load:taskDuration,capacity:windowMinutes(task.fixedWindowStart,task.fixedWindowEnd)});
+      if(task.fixedWindowStart&&task.fixedWindowEnd){const capacity=windowMinutes(task.fixedWindowStart,task.fixedWindowEnd);
+        loads.push({load:taskDuration,capacity,pressureClass:capacity<dayCapacity?2:0});}
     }
-    for(const [id,load] of loadByResource)loads.push({load,capacity:resourceWindows.get(id)??Math.max(0,dayEnd-dayStart)});
-    for(const [id,load] of loadByTeam)loads.push({load,capacity:teamWindows.get(id)??Math.max(0,dayEnd-dayStart)});
-    const bottleneck=loads.sort((left,right)=>right.load*left.capacity-left.load*right.capacity||left.capacity-right.capacity)[0]
+    for(const [id,load] of loadByResource){const capacity=resourceWindows.get(id)??dayCapacity;
+      loads.push({load,capacity,pressureClass:capacity<dayCapacity?2:0});}
+    for(const [id,load] of loadByTeam){const capacity=teamWindows.get(id)??dayCapacity;
+      loads.push({load,capacity,pressureClass:capacity<dayCapacity?2:0});}
+    // Round lanes occupy their spaces in parallel.  Their sound minimum
+    // wall-clock footprint is therefore the longest lane, including the
+    // configured preparation between its remaining rounds, never the sum of
+    // all lanes.  The narrowest effective lane availability bounds where the
+    // synchronized structure can fit; absent a spatial snapshot the workday
+    // is the explicit fallback.
+    const memberSet=new Set(memberTaskIds);
+    const roundStructures=(input.roundSynchronizations??[]).filter(round=>
+      round.lanes.some(lane=>lane.taskIds.some(taskId=>memberSet.has(taskId))),
+    ).map(round=>{
+      const laneLoads=round.lanes.map(lane=>{
+        const laneTasks=lane.taskIds.map(taskId=>byId.get(taskId))
+          .filter((task):task is TaskInput=>Boolean(task&&memberSet.has(task.id)));
+        const taskMinutes=laneTasks.reduce((sum,task)=>sum+(task.durationOverrideMin??0),0);
+        return taskMinutes+Math.max(0,laneTasks.length-1)*lane.preparationMinutesBetweenRounds;
+      });
+      return {
+        load:Math.max(0,...laneLoads),
+        capacity:Math.min(dayCapacity,...round.lanes.map(lane=>spaceCapacity(lane.spaceId))),
+        pressureClass:Math.min(dayCapacity,...round.lanes.map(lane=>spaceCapacity(lane.spaceId)))<dayCapacity?2:1,
+      };
+    });
+    const structuralBottleneck=roundStructures.sort((left,right)=>
+      right.pressureClass-left.pressureClass||right.load*left.capacity-left.load*right.capacity||left.capacity-right.capacity,
+    )[0]??{load:0,capacity:dayCapacity,pressureClass:0};
+    if(structuralBottleneck.load>0)loads.push(structuralBottleneck);
+    const bottleneck=loads.sort((left,right)=>right.pressureClass-left.pressureClass
+      ||right.load*left.capacity-left.load*right.capacity||left.capacity-right.capacity)[0]
       // Duration alone is not window pressure: absent a structured resource,
       // unit or task window, this dimension must remain neutral.
-      ??{load:0,capacity:Math.max(0,dayEnd-dayStart)};
-    const memberSet=new Set(memberTaskIds);
+      ??{load:0,capacity:dayCapacity,pressureClass:0};
     const sharedResourceDemandCount=[...new Set(resources)].filter(id=>[...(pendingResourceUsers.get(id)??[])].some(taskId=>!memberSet.has(taskId))).length;
     // Main and its explicit route-connected support retain their declared
     // proximity. Every independent unit competes on measurable pressure.
@@ -172,6 +216,9 @@ export function recommendNextAssistedScope(
     const priority: OperationalUnitPriority = { structuralClass: kind === "MAIN_PIPELINE" ? 3 : supportsMain ? 2 : authority.length ? 1 : 0, requiredCoupling: authority.length,
       downstreamImpact: members.reduce((sum, task) => sum + (dependants.get(task.id) ?? 0), 0), effectiveDeadline: deadline,
       pendingDurationMinutes: duration, pendingTaskCount: members.length, sharedResourcePressure,
+      structuralMinimumOccupiedMinutes:structuralBottleneck.load,
+      structuralAvailableSpanMinutes:structuralBottleneck.capacity,
+      effectivePressureClass:bottleneck.pressureClass,
       effectiveWindowLoadMinutes:bottleneck.load,effectiveWindowCapacityMinutes:bottleneck.capacity,
       effectiveWindowSlackMinutes:bottleneck.capacity-bottleneck.load,sharedResourceDemandCount };
     const unitId = authorityIds.length ? `${kind}:${authorityIds.join("+")}` : `SPACE_FALLBACK:${memberSpaceIds.join("+") || "unlocated"}`;
@@ -188,6 +235,7 @@ export function recommendNextAssistedScope(
       ? b.priority.structuralClass-a.priority.structuralClass:0;
     return mainAuthority
     || mainSupport
+    || b.priority.effectivePressureClass-a.priority.effectivePressureClass
     || compareDensity(a.priority.effectiveWindowLoadMinutes,a.priority.effectiveWindowCapacityMinutes,
       b.priority.effectiveWindowLoadMinutes,b.priority.effectiveWindowCapacityMinutes)
     || (a.priority.effectiveDeadline ?? "99:99").localeCompare(b.priority.effectiveDeadline ?? "99:99")

@@ -71,9 +71,31 @@ test("a structurally coupled unit with a scarce shared-resource window precedes 
   assert.equal(recommendation.selectedUnitId,"TECHNICAL_CHAIN:scarce-window");
   assert.deepEqual(recommendation.priority,{
     structuralClass:1,requiredCoupling:2,downstreamImpact:0,effectiveDeadline:null,pendingDurationMinutes:120,pendingTaskCount:2,
-    sharedResourcePressure:1,effectiveWindowLoadMinutes:120,effectiveWindowCapacityMinutes:120,effectiveWindowSlackMinutes:0,
+    sharedResourcePressure:1,structuralMinimumOccupiedMinutes:0,structuralAvailableSpanMinutes:720,effectivePressureClass:2,
+    effectiveWindowLoadMinutes:120,effectiveWindowCapacityMinutes:120,effectiveWindowSlackMinutes:0,
     sharedResourceDemandCount:1,
   });
+});
+
+test("parallel synchronized lanes use structural wall-clock pressure and precede a flexible resource unit",()=>{
+  const source=input([
+    task(11,10,120),task(12,10,120),task(13,10,120),
+    task(21,20,120),task(22,20,120),task(23,20,120),
+    task(31,30,200,{assignedResourceIds:[301]}),
+  ]);
+  source.roundSynchronizations=[{id:"parallel-rounds",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",lanes:[
+    {spaceId:10,taskIds:[11,12,13],preparationMinutesBetweenRounds:15},
+    {spaceId:20,taskIds:[21,22,23],preparationMinutesBetweenRounds:15},
+  ]}];
+  source.planResourceItems=[{id:301,resourceItemId:3001,typeId:1,name:"all-day",isAvailable:true}];
+  const recommendation=recommendNextAssistedScope(source,blank(source.tasks))!;
+  assert.equal(recommendation.selectedUnitId,"ROUND_SYNCHRONIZATION:parallel-rounds");
+  assert.equal(recommendation.priority.structuralMinimumOccupiedMinutes,390);
+  assert.equal(recommendation.priority.structuralAvailableSpanMinutes,720);
+  assert.equal(recommendation.priority.effectivePressureClass,1);
+  assert.equal(recommendation.priority.effectiveWindowLoadMinutes,390);
+  assert.equal(recommendation.priority.effectiveWindowCapacityMinutes,720);
+  assert.notEqual(recommendation.priority.structuralMinimumOccupiedMinutes,780);
 });
 
 test("configured main flow retains its explicit precedence",()=>{
