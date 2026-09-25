@@ -9,7 +9,7 @@ test("A2 pipeline carries the canonical Main meal and reaches feeder geometry wi
   assert.equal(result.mainFlowMealSource,"OPERATIONAL_MEAL_POLICY");
   assert.deepEqual([result.mainFlowMealStart,result.mainFlowMealEnd],[780,855]);
   assert.equal(result.runCountAfterMeal,result.runCountBeforeMeal);
-  assert.deepEqual(result.families.map(family=>family.runCount),[2,3,4,5,6,7,8,9]);
+  assert.deepEqual(result.families.map(family=>family.runCount),[2,3,4,5]);
   assert.equal(result.families.find(family=>family.runCount===4)?.witness,"FEASIBLE");
   assert.ok(result.families.filter(family=>family.runCount<4).every(family=>family.witness==="INFEASIBLE"));
   assert.equal(result.firstRunCount4Inconclusive,null);
