@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, exactFeederStartDomain,
   exactFeederSlotAnalyticCertificate, exactFeederStartDomainUnion, mergedClippedIntervals, runExactMainAndFeederSearch,
-  subtractMergedIntervals } from "./exactMainAndFeederCore";
+  subtractMergedIntervals, incrementallyRepairMatchingWitness, compareMainChoiceFinalTieBreak } from "./exactMainAndFeederCore";
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
@@ -29,6 +29,18 @@ function mainBacktrackingProblem(): PlannerNextProblem {
     { id: "b-main-fixed", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["vocal-b-fixed"], blockKey: "block", availability: [{ start: 80, end: 90 }] },
   ], ["a", "b"], ["vocal-a", "vocal-b"]);
 }
+
+test("availability end breaks only an otherwise exact main-choice tie",()=>{
+  const early={participantSlack:10,firstObligation:80,participantAvailabilityEnd:100,taskId:"z"};
+  const late={...early,participantAvailabilityEnd:120,taskId:"a"};
+  assert.ok(compareMainChoiceFinalTieBreak(early,late)<0,"earlier participant departure wins before stable identity");
+});
+
+test("an existing structural order remains above restrictive availability",()=>{
+  const early={participantSlack:10,firstObligation:80,participantAvailabilityEnd:100,taskId:"a"};
+  const structurallyPreferred={...early,participantAvailabilityEnd:120,taskId:"b"};
+  assert.ok(compareMainChoiceFinalTieBreak(early,structurallyPreferred,1)>0,"prior structural winner must remain first");
+});
 
 function feederStartBacktrackingProblem(): PlannerNextProblem {
   const problem = syntheticProblem([
@@ -638,6 +650,115 @@ test("a certified continuation backjump reopens its causal main decision without
   assert.deepEqual(result.scheduledTasks, []);
 });
 
+test("a certified hard-valid leaf backjump forbids the causal main edge and repairs matching", () => {
+  const problem = twoCohortProblem();
+  problem.tasks = problem.tasks.filter(({ participantId }) => participantId?.startsWith("b"));
+  problem.participants = problem.participants.filter(({ id }) => id.startsWith("b"));
+  problem.coaches = problem.coaches.filter(({ id }) => id === "coach-b");
+  problem.coachRouteTransitions = problem.coachRouteTransitions?.filter(({ coachId }) => coachId === "coach-b");
+  problem.tasks.find(({id})=>id==="main-b1")!.availability=[{start:0,end:120}];
+  const mainOrders: string[] = [];
+  const result = runExactMainAndFeederSearch(problem, { onHardValidCoreLeaf(candidate) {
+    const order = candidate.tasks.filter(({ kind }) => kind === "main").sort((a,b)=>a.start-b.start)
+      .map(({ id }) => id).join("|");
+    mainOrders.push(order);
+    return mainOrders.length === 1 ? { outcome:"CERTIFIED_BACKJUMP", targetDepth:1 } : "ACCEPT";
+  } });
+  assert.equal(result.status, "COMPLETE", result.evidence.reasonCodes.join(","));
+  assert.equal(new Set(mainOrders).size, 2, "the repaired witness must choose another main@slot edge");
+  assert.ok(result.evidence.mainRunWitnessRepairs > 0);
+});
+
+test("preferred bundle backjumps accumulate causal forbidden edges before a third hard-valid witness",()=>{
+  const ids=["a","b","c"];
+  const problem=syntheticProblem(ids.flatMap(id=>[
+    {id:`feeder-${id}`,kind:"vocal" as const,participantId:id,duration:10,spaceId:"feed",dependencies:[]},
+    {id:`main-${id}`,kind:"main" as const,participantId:id,duration:10,spaceId:"main",
+      dependencies:[`feeder-${id}`],blockKey:"coach"},
+  ]),ids,["feed","protected"]);
+  problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=110;
+  problem.tasks.push({id:"protected",kind:"technical",duration:5,spaceId:"protected",dependencies:[]});
+  const fixed={...problem.tasks.at(-1)!,start:10,end:15};
+  const positions=new Map(ids.map(id=>[`main-${id}`,[0,1,2]] as const));
+  const materialize=(matching:ReadonlyMap<string,number>)=>[
+    fixed,...[...matching].flatMap(([mainId,position])=>{const id=mainId.slice(5);return [
+      {...problem.tasks.find(task=>task.id===`feeder-${id}`)!,start:40+position*10,end:50+position*10},
+      {...problem.tasks.find(task=>task.id===mainId)!,start:80+position*10,end:90+position*10},
+    ];}),
+  ];
+  const initial=incrementallyRepairMatchingWitness(ids.map(id=>`main-${id}`),positions,new Set(),new Set(),new Map());
+  assert.equal(initial.outcome,"PERFECT");
+  const seenForbidden:string[][]=[];let callbacks=0;
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:[fixed],fixedPlacementsAsContext:true,
+    preferredArchitecture:{pattern:["coach","coach","coach"],slots:[80,90,100]},
+    preferredBundleCandidate:{scheduledTasks:materialize(initial.matching!),matching:initial.matching!,forbiddenEdges:new Set()},
+    repairPreferredBundleCandidate(previous,forbidden,consume){
+      seenForbidden.push([...forbidden].sort());
+      const repaired=incrementallyRepairMatchingWitness(ids.map(id=>`main-${id}`),positions,forbidden,
+        previous.forbiddenEdges,previous.matching,consume);
+      return repaired.outcome==="PERFECT"?{scheduledTasks:materialize(repaired.matching!),matching:repaired.matching!,forbiddenEdges:forbidden}:null;
+    },onHardValidCoreLeaf(candidate){
+      assert.equal(candidate.source,"PREFERRED_BUNDLE");
+      callbacks++;assert.deepEqual(candidate.tasks.find(task=>task.id==="protected"),fixed);
+      return callbacks<3?{outcome:"CERTIFIED_BACKJUMP",targetDepth:1}:"ACCEPT";
+    }});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(callbacks,3,"every callback must follow the common hard gate");
+  assert.equal(seenForbidden.length,2);assert.equal(seenForbidden[0]!.length,1);assert.equal(seenForbidden[1]!.length,2);
+  assert.ok(seenForbidden[1]!.every(edge=>result.evidence.bundleForbiddenEdges.includes(edge)));
+  assert.equal(result.evidence.bundleCertifiedRepairs,2);assert.equal(result.evidence.bundleRepairSequence.length,2);
+  assert.equal(result.evidence.bundleTerminalCause,"ACCEPT");
+  assert.deepEqual(result.scheduledTasks.find(task=>task.id==="protected"),fixed);
+});
+
+test("structural budget exhaustion terminates before residual DFS",()=>{
+  const problem=twoCohortProblem();
+  let continuationCalls=0;
+  const result=runExactMainAndFeederSearch(problem,{
+    structuralBundleCandidates:[],structuralSearchBudgetExhausted:()=>true,
+    onHardValidCoreLeaf(){continuationCalls++;return "ACCEPT";},
+  });
+  assert.equal(result.status,"BRANCH_BUDGET_EXHAUSTED");
+  assert.deepEqual(result.evidence.reasonCodes,["STRUCTURAL_SEARCH_BUDGET_EXHAUSTED"]);
+  assert.equal(result.evidence.branchesExplored,0);
+  assert.equal(continuationCalls,0,"ordinary residual DFS must not open after incomplete structural enumeration");
+});
+
+test("fully exhausted structural enumeration may enter ordinary residual DFS",()=>{
+  const problem=twoCohortProblem();let continuationCalls=0;
+  const result=runExactMainAndFeederSearch(problem,{
+    structuralBundleCandidates:[],structuralSearchBudgetExhausted:()=>false,
+    onHardValidCoreLeaf(){continuationCalls++;return "ACCEPT";},
+  });
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.ok(continuationCalls>0);
+});
+
+test("a preferred multi-edge conflict branches the nogood instead of forbidding every edge together",()=>{
+  const ids=["a","b","c"],problem=syntheticProblem(ids.flatMap(id=>[
+    {id:`feeder-${id}`,kind:"vocal" as const,participantId:id,duration:10,spaceId:"feed",dependencies:[]},
+    {id:`main-${id}`,kind:"main" as const,participantId:id,duration:10,spaceId:"main",dependencies:[`feeder-${id}`],blockKey:"coach"},
+  ]),ids,["feed"]);problem.protectedMeal=undefined;problem.mainFlow.preferredEnd=110;
+  const positions=new Map(ids.map(id=>[`main-${id}`,[0,1,2]] as const));
+  const materialize=(matching:ReadonlyMap<string,number>)=>[...matching].flatMap(([mainId,position])=>{const id=mainId.slice(5);return [
+    {...problem.tasks.find(task=>task.id===`feeder-${id}`)!,start:40+position*10,end:50+position*10},
+    {...problem.tasks.find(task=>task.id===mainId)!,start:80+position*10,end:90+position*10},
+  ];});
+  const initial=incrementallyRepairMatchingWitness(ids.map(id=>`main-${id}`),positions,new Set(),new Set(),new Map());
+  assert.equal(initial.outcome,"PERFECT");const repairedForbidden:string[][]=[];let callbacks=0;
+  const result=runExactMainAndFeederSearch(problem,{preferredArchitecture:{pattern:["coach","coach","coach"],slots:[80,90,100]},
+    preferredBundleCandidate:{scheduledTasks:materialize(initial.matching!),matching:initial.matching!,forbiddenEdges:new Set()},
+    repairPreferredBundleCandidate(previous,forbidden,consume){repairedForbidden.push([...forbidden].sort());
+      const repaired=incrementallyRepairMatchingWitness(ids.map(id=>`main-${id}`),positions,forbidden,previous.forbiddenEdges,previous.matching,consume);
+      return repaired.outcome==="PERFECT"?{scheduledTasks:materialize(repaired.matching!),matching:repaired.matching!,forbiddenEdges:forbidden}:null;},
+    onHardValidCoreLeaf(){return callbacks++===0?{outcome:"CERTIFIED_BACKJUMP",targetDepth:2,conflictDecisionDepths:[1,2]}:"ACCEPT";}});
+  assert.equal(result.status,"COMPLETE");assert.equal(repairedForbidden.length,2);
+  assert.ok(repairedForbidden.every(edges=>edges.length===1),"each child breaks exactly one conflict edge");
+  assert.notDeepEqual(repairedForbidden[0],repairedForbidden[1]);
+  assert.equal(result.evidence.bundleNogoodsCreated,1);assert.equal(result.evidence.bundleNogoodBranches,2);
+  assert.equal(result.evidence.bundleNogoodRepairsSucceeded,2);
+});
+
 test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{
   const problem=twoCohortProblem();
   problem.tasks=problem.tasks.filter(({participantId})=>participantId?.startsWith("b"));
@@ -865,6 +986,97 @@ test("an impossible cohort backtracks before any secondary callback", () => {
   assert.equal(result.status, "INFEASIBLE");
   assert.equal(callbacks, 0);
   assert.deepEqual(result.scheduledTasks, []);
+});
+
+test("fixed-main feeder reconstruction exposes its baseline and every placed feeder to future feasibility",()=>{
+  const problem=syntheticProblem([
+    {id:"vocal-fixed",kind:"vocal",participantId:"fixed",duration:10,spaceId:"feed",dependencies:[]},
+    {id:"main-fixed",kind:"main",participantId:"fixed",duration:10,spaceId:"main",dependencies:["vocal-fixed"],blockKey:"coach"},
+  ],["fixed"],["feed"]);
+  const seen:string[]=[];
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:[{...problem.tasks.find(task=>task.id==="main-fixed")!,start:80,end:90}],
+    fixedPlacementsAsContext:true,onPartialCoreCandidate(candidate){seen.push(`${candidate.origin}:${candidate.addedTasks.map(task=>task.id).join(",")}`);return "CONTINUE";}});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(seen[0],"FIXED_MAIN_CONTEXT:");
+  assert.ok(seen.includes("FIXED_MAIN_FEEDER:vocal-fixed"));
+  assert.equal(result.evidence.legacyFixedFeederFallbackEntered,true);
+});
+
+function protectedPipelineProblem():PlannerNextProblem{
+  const window=[{start:0,end:300}];const tasks:Task[]=[];
+  for(let index=0;index<2;index++){const participantId=`pipeline-p${index}`;tasks.push(
+    {id:`pipeline-in${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"in",dependencies:[]},
+    {id:`pipeline-style${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"style",dependencies:[`pipeline-in${index}`]},
+    {id:`pipeline-vocal${index}`,kind:"vocal",participantId,coachId:"pipeline-coach",duration:15,spaceId:"vocal",dependencies:[`pipeline-in${index}`]},
+    {id:`pipeline-main${index}`,kind:"main",participantId,coachId:"pipeline-coach",blockKey:"pipeline-coach",duration:15,
+      spaceId:"main",dependencies:[`pipeline-vocal${index}`,`pipeline-style${index}`]});}
+  return {day:{start:0,end:300},spaces:["in","style","vocal","main"].map(id=>({id,availability:window})),resources:[],
+    participants:[0,1].map(index=>({id:`pipeline-p${index}`,availability:window})),coaches:[{id:"pipeline-coach",availability:window}],tasks,
+    mainFlow:{spaceId:"main",preferredEnd:240,continuity:"REQUIRED",maxBlocksByKey:2,minTasksPerBlock:1},
+    participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:100,maxPatterns:100,maxBranchExpansions:100},
+    auxiliaryPolicy:{participantPresencePreference:"OFF"},
+    transportPolicy:{arrival:{taskIds:["pipeline-in0","pipeline-in1"],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1},
+      departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1}}};
+}
+
+test("protected Main identities reconstruct complete dependent bundles before standalone",()=>{
+  const problem=protectedPipelineProblem();const fixed=[0,1].map((index)=>({
+    ...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,start:200+index*15,end:215+index*15}));
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.evidence.fixedMainBundlePathEntered,true);
+  assert.equal(result.evidence.legacyFixedFeederFallbackEntered,false);
+  assert.equal(result.evidence.protectedMainSlotMismatches,0);
+  assert.equal(result.evidence.fixedMainBundleTaskCount,8);
+  assert.equal(result.evidence.pipelineTasksRemovedFromStandalone,4);
+  assert.equal(result.evidence.pendingAfterFixedMainBundle,0);
+  for(const placement of fixed)assert.deepEqual(
+    result.scheduledTasks.find(task=>task.id===placement.id),placement);
+});
+
+test("an intermediate hard gate defers a REQUIRED technical chain with residual members",()=>{
+  const problem=protectedPipelineProblem();
+  problem.participants.push({id:"residual",availability:[{start:0,end:300}]});
+  problem.spaces.push({id:"residual",availability:[{start:0,end:300}]});
+  problem.tasks.push({id:"residual-chain-tail",kind:"auxiliary",participantId:"residual",duration:10,
+    spaceId:"residual",dependencies:[]});
+  problem.technicalChains=[{id:"cross-stage-chain",orderedTaskIds:["pipeline-style0","residual-chain-tail"],
+    adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]}];
+  const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  let residualIds:string[]=[];
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,
+    onHardValidCoreLeaf(candidate){residualIds=[...candidate.remainingTaskIds];return "ACCEPT";}});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.deepEqual(residualIds,["residual-chain-tail"]);
+  assert.equal(result.evidence.fixedMainBundleHardGatePasses,1);
+  for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+});
+
+test("an intermediate hard gate still rejects an invalid fully materialized REQUIRED technical chain",()=>{
+  const problem=protectedPipelineProblem();
+  problem.technicalChains=[{id:"invalid-core-chain",orderedTaskIds:["pipeline-main1","pipeline-main0"],
+    adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]}];
+  const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  let continuationCalls=0;
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,
+    onHardValidCoreLeaf(){continuationCalls++;return "ACCEPT";}});
+  assert.equal(result.status,"INFEASIBLE");
+  assert.ok(result.evidence.reasonCodes.includes("HARD_VALIDATION_REJECTED:TECHNICAL_CHAIN_VIOLATION"));
+  assert.equal(continuationCalls,0);
+});
+
+test("a supported protected-Main pipeline cannot silently degrade to feeder-only fallback",()=>{
+  const problem=protectedPipelineProblem();
+  const fixed=[0,1].map((index)=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,
+    onHardValidCoreLeaf:()=>"REJECT"});
+  assert.equal(result.status,"INFEASIBLE");
+  assert.equal(result.evidence.fixedMainBundlePathEntered,true);
+  assert.equal(result.evidence.legacyFixedFeederFallbackEntered,false);
+  assert.ok(result.evidence.reasonCodes.includes("FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"));
 });
 
 test("cohort construction is deterministic and invariant to input order", () => {

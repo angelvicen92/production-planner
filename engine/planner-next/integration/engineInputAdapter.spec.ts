@@ -71,12 +71,13 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
 
 test("technical-chain contract is preflighted and projected losslessly",()=>{
  const input=createSupportedEngineInputAdapterFixture(),before=clone(input);input.tasks.push({...input.tasks.find(task=>task.id===105)!,id:106,dependsOnTaskIds:[105]});
- input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];
+ input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],phases:[[105],[106]],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];
  const snapshot=clone(input),first=supported(input),second=supported(clone(input));
- assert.deepEqual(first.problem.technicalChains,[{id:"technical-chain:camera-chain",orderedTaskIds:["task:105","task:106"],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["plan-resource:503"]}]);
+ assert.deepEqual(first.problem.technicalChains,[{id:"technical-chain:camera-chain",orderedTaskIds:["task:105","task:106"],phases:[["task:105"],["task:106"]],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:["plan-resource:503"]}]);
  assert.equal(first.problemFingerprint,second.problemFingerprint);assert.deepEqual(input,snapshot);assert.notDeepEqual(input,before);
  const reversed=clone(input);reversed.tasks.reverse();reversed.planResourceItems.reverse();assert.equal(supported(reversed).problemFingerprint,first.problemFingerprint);
  const duplicate=clone(input);duplicate.technicalChains![0]!.orderedTaskIds=[105,105];assert.ok(preflightEngineInputForPlannerNext(duplicate).reasonCodes.includes("UNSUPPORTED_TECHNICAL_CHAIN"));
+ const mismatched=clone(input);mismatched.technicalChains![0]!.phases=[[106],[105]];assert.ok(preflightEngineInputForPlannerNext(mismatched).reasonCodes.includes("UNSUPPORTED_TECHNICAL_CHAIN"));
 });
 
 test("transport adapter projects target separately from the compatibility floor", () => {

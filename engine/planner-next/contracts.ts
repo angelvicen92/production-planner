@@ -51,6 +51,8 @@ export interface TechnicalChainPolicy {
   /** Explicit chains may order any task kind; dependency-derived chains remain technical-only. */
   id: string;
   orderedTaskIds: string[];
+  /** Ordered, gapless phases. When absent, orderedTaskIds remains the exact required order. */
+  phases?: string[][];
   adjacency: "REQUIRED";
   resourceContinuity: "REQUIRED";
   requiredResourceIds: string[];
@@ -149,6 +151,10 @@ export interface PlannerNextProblem {
   tasks: Task[];
   /** Read-only Assisted context. These tasks are never ordinary search variables. */
   analyticalFutureParticipantTasks?: Task[];
+  /** Executable supporting vertices that also close a future analytical chain. */
+  analyticalFutureParticipantSupportingTaskIds?: string[];
+  /** Read-only Assisted structures. Their members are probes, never search variables. */
+  analyticalFutureTechnicalChains?: Array<{ policy: TechnicalChainPolicy; tasks: Task[] }>;
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;

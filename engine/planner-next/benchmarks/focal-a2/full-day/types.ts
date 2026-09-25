@@ -152,6 +152,7 @@ export interface JointOperationContract {
 export interface TechnicalChainContract {
   readonly id: string;
   readonly orderedTaskIds: readonly string[];
+  readonly phases?: readonly (readonly string[])[];
   readonly adjacency: "REQUIRED";
   readonly resourceContinuity: "REQUIRED";
   readonly requiredResourceIds: readonly string[];

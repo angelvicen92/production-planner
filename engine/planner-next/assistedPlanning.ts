@@ -3,6 +3,9 @@ import type {
   PlannerNextProblem,
   PlanningScope,
   ScheduledTask,
+  ScheduledOperationalMeal,
+  ScheduledSetupPreparation,
+  ScheduledParticipantMeal,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -12,6 +15,8 @@ import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { participantMealWitnessFingerprint } from "./participantMeals";
 import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
+import { mainFlowMealPolicy } from "./mainFlowMeal";
+import { setupPreparationId } from "./setupPreparation";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -26,6 +31,10 @@ export interface AssistedProblem {
   readonly analyticalParticipantMeals: readonly ParticipantMealObligation[];
   readonly scope: PlanningScope;
   readonly protectedPlacements: readonly ScheduledTask[];
+  readonly protectedOperationalMeals: readonly ScheduledOperationalMeal[];
+  readonly protectedSetupPreparations: readonly ScheduledSetupPreparation[];
+  readonly protectedParticipantMeals: readonly ScheduledParticipantMeal[];
+  readonly retainedParticipantMealSourceIds: readonly string[];
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
@@ -37,6 +46,10 @@ export interface AssistedPlanningEvidence {
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId?: Readonly<Record<string, readonly string[]>>;
   readonly protectedPlacementCount: number;
+  readonly protectedOperationalMeals: readonly import("./contracts").ScheduledOperationalMeal[];
+  readonly protectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
+  readonly protectedParticipantMeals?: readonly import("./contracts").ScheduledParticipantMeal[];
+  readonly retainedParticipantMealSourceIds?: readonly string[];
   readonly protectedPlacementsPreserved: boolean;
   readonly proposalCount: 0 | 1;
   readonly completeForScope: boolean;
@@ -52,6 +65,8 @@ export interface AssistedPlanningEvidence {
     readonly resource: readonly import("./contracts").ScheduledResourceMeal[];
     readonly itinerantUnit: readonly import("./contracts").ScheduledItinerantUnitMeal[];
   } | null;
+  /** Read-only structural artifacts selected with the proposal; snapshots currently persist tasks and meals only. */
+  readonly selectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
   readonly participantMealFutureFeasibility: {
     readonly futureFeasibilityChecks:number; readonly futureInfeasibleBranches:number;
     readonly affectedObligationsChecked:number; readonly zeroDomainPrunes:number;
@@ -67,7 +82,50 @@ export interface AssistedPlanningEvidence {
     readonly analyticChecks:number; readonly branchesConsumed:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
   };
+  readonly operationalMealFutureReservation: ExactItinerantPlanEvidence["operationalMealFutureReservation"];
+  readonly fixedMainFeederMealChecks:number;readonly fixedMainFeederMealPasses:number;readonly fixedMainFeederMealPrunes:number;
+  readonly firstFixedMainFeederMealPrune:ExactItinerantPlanEvidence["firstFixedMainFeederMealPrune"];
+  readonly standaloneEntryMealWitness:string|null;
+  readonly technicalChainFutureReservation: {
+    readonly checks:number; readonly passes:number; readonly prunes:number; readonly abstentions:number;
+    readonly branchesConsumed:number;
+    readonly firstPrune:ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"];
+    readonly preparedAuthority:ExactItinerantPlanEvidence["preparedFutureTechnicalChainEvidence"]|null;
+    readonly firstMultiDecisionConflict:ExactItinerantPlanEvidence["firstMultiDecisionConflict"];
+    readonly conflictBackjumps:number; readonly suffixDepthsSkipped:number;
+    readonly constructive?:Pick<ExactItinerantPlanEvidence,"futureReservationStructures"|"futureReservationWitnessesEvaluated"|
+      "futureReservationRootOrdersEvaluated"|"futureReservationCandidatesRejectedByOtherReservations"|
+      "futureReservationCandidatesRejectedByNoBundleMatching"|"futureReservationBundleMatchingAttempts"|
+      "futureReservationPerfectMatchings"|"futureReservationSelectedFingerprint"|"architecturesTriedWithFutureReservation"|
+      "bundleEdgesBeforeReservation"|"bundleEdgesRejectedByReservation"|"bundleEdgesAfterReservation"|
+      "residualDfsEntered"|"residualDfsBranchesBeforeFirstSolution"|"architecturesEnumerated"|"architecturesPrepared"|
+      "futureWitnessesTriedByArchitecture"|"preparedBundleEdges"|"reservationFilteredEdges"|"perfectMatchingsByArchitecture"|
+      "hardGateRejectsByArchitecture"|"structuralSearchExhausted"|"branchesBeforeResidualDfs"|
+      "structuralSearchBudgetExhausted"|"structuralArchitecturesFullyVisited"|"structuralFutureDomainsFullyVisited"|
+      "structuralCandidatesProducedBeforeBudgetExhaustion"|"conditionedLeafFutureRevalidations"|
+      "conditionedLeafFutureRevalidationPasses"|"conditionedLeafFutureRevalidationRejects"|
+      "genericFutureAssessSkippedForConditionedLeaf"|"structuralCandidateFingerprintAtHardGate"|
+      "structuralCandidateFingerprintAtContinuation"|"structuralCandidateFingerprintBeforeStandalone"|
+      "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint"|"mainPatternCountGenerated"|
+      "participantBundleEdgesChecked"|"participantBundleEdgesPruned"|"participantBundleEdgesAbstained"|"firstParticipantBundleEdgePrune"|
+      "mainPatternGenerationExhausted"|"mainPatternsVisited"|"timelinesGenerated"|"architectureStructuralProofChecks"|
+      "architectureStructuralProofRejects"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
+      "nominalPipelineWitnessFeasible"|"nominalPipelineWitnessInfeasible"|"nominalPipelineWitnessInconclusive"|
+      "nominalPipelineWitnessRejectsByReason"|"continuityRejects"|"authorizedArchitecturesYielded">;
+  };
   readonly work: Readonly<Record<string, number>>;
+  readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
+    "bundleNogoodsCreated"|"bundleNogoodBranches"|"bundleNogoodDeduplications"|"bundleNogoodRepairsSucceeded"|"conflictEdges">;
+  readonly fixedMainBundle?:Pick<ExactItinerantPlanEvidence,"fixedMainBundlePathEntered"|"protectedMainCount"|
+    "protectedMainArchitectureFingerprint"|"protectedMainSlots"|"fixedMainBundleGraphPrepared"|
+    "fixedMainBundlePreparedEdges"|"fixedMainBundleCandidatePositions"|"fixedMainBundleZeroDomainTaskIds"|
+    "fixedMainBundleParticipantEdgeChecks"|"fixedMainBundleParticipantEdgePrunes"|"fixedMainBundleFirstParticipantEdgePrune"|
+    "fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
+    "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
+    "fixedMainBundleTasksByKind"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
+    "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection"|
+    "firstFixedMainBundleHardGateDiagnostic">;
   readonly causalDiagnostic: ExactCoreCausalDiagnostic | null;
   readonly prerequisiteSharedCapacityChecks?: number;
   readonly prerequisiteSharedCapacityPrunes?: number;
@@ -88,7 +146,9 @@ export interface AssistedPlanningEvidence {
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
     | "corePrerequisiteReservationChecks" | "corePrerequisiteReservationPrunes"
     | "ordinaryPrerequisiteReservationChecks" | "ordinaryPrerequisiteReservationPrunes"
-    | "firstPrerequisiteReservationPrune" | "firstStandaloneDeadEndCause">;
+    | "firstPrerequisiteReservationPrune" | "firstStandaloneDeadEndCause"
+    | "macroUnitsSelected" | "macroSelectionOrder" | "macroSelectionSteps" | "macroDomainSizes"
+    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -138,11 +198,38 @@ export function buildAssistedProblem(
   scope: PlanningScope,
   protectedPlacements: readonly ScheduledTask[],
   analyticalFutureEligibleTaskIds: ReadonlySet<string> = new Set(),
+  protectedOperationalMeals: readonly ScheduledOperationalMeal[] = [],
+  protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
+  protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
+  const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
+  const policyById=new Map(originalOperationalPolicies.map(policy=>[policy.id,policy]));
+  for(const meal of protectedOperationalMeals){
+    const policy=policyById.get(meal.id);
+    if(!policy||meal.start>=meal.end||meal.end-meal.start!==policy.duration
+      ||meal.start<policy.window.start||meal.end>policy.window.end)
+      throw new Error(`UNREPRESENTABLE_PROTECTED_OPERATIONAL_MEAL:${meal.id}`);
+  }
+  const preparationIds=new Set<string>();
+  for(const preparation of protectedSetupPreparations){
+    const space=problem.spaces.find(item=>item.id===preparation.spaceId);
+    const expected=space?.setupPolicy?.preparationMinutesByFamily?.[preparation.setupFamilyId]
+      ??space?.setupPolicy?.preparationMinutesBetweenFamilies;
+    if(preparationIds.has(preparation.id)||!space?.setupPolicy
+      ||!space.setupPolicy.familyOrder.includes(preparation.setupFamilyId)
+      ||preparation.id!==setupPreparationId(preparation.spaceId,preparation.setupFamilyId,preparation.entryIndex)
+      ||expected!==preparation.duration
+      ||preparation.entryIndex!==1||preparation.start>=preparation.end
+      ||preparation.end-preparation.start!==preparation.duration
+      ||!space.availability.some(window=>window.start<=preparation.start&&preparation.end<=window.end))
+      throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${preparation.id}`);
+    preparationIds.add(preparation.id);
+  }
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
+  const mealsBySourceId = new Map((problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
   const scopeIds = canonicalIds(scope.resolvedTaskIds);
-  if (scopeIds.some((id) => !tasksById.has(id))) throw new Error("UNKNOWN_PLANNING_SCOPE_TASK_ID");
+  if (scopeIds.some((id) => !tasksById.has(id)&&!mealsBySourceId.has(id))) throw new Error("UNKNOWN_PLANNING_SCOPE_TASK_ID");
   if (new Set(scopeIds).size !== scopeIds.length) throw new Error("DUPLICATE_PLANNING_SCOPE_TASK_ID");
 
   const protectedIds = protectedPlacements.map(({ id }) => id);
@@ -154,12 +241,23 @@ export function buildAssistedProblem(
     const { start: _start, end: _end, ...placedTask } = placement;
     if (JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
   }
+  const protectedMealBySourceId=new Map<string,ScheduledParticipantMeal>();
+  for(const fixed of protectedParticipantMeals){
+    const obligation=mealsBySourceId.get(fixed.sourceTaskId);
+    if(protectedMealBySourceId.has(fixed.sourceTaskId)||!obligation||fixed.id!==obligation.id
+      ||fixed.participantId!==obligation.participantId||fixed.duration!==obligation.duration
+      ||fixed.start>=fixed.end||fixed.end-fixed.start!==fixed.duration
+      ||fixed.start<obligation.window.start||fixed.end>obligation.window.end)
+      throw new Error(`UNREPRESENTABLE_PROTECTED_PARTICIPANT_MEAL:${fixed.sourceTaskId}`);
+    protectedMealBySourceId.set(fixed.sourceTaskId,fixed);
+  }
 
-  const included = new Set([...scopeIds, ...protectedIds]);
+  const included = new Set([...scopeIds.filter(id=>tasksById.has(id)), ...protectedIds]);
+  const includedMeals = new Set([...scopeIds.filter(id=>mealsBySourceId.has(id)),...protectedMealBySourceId.keys()]);
   // Fixed members are not search variables, but they remain graph vertices.
   // Traversing them is essential: a protected member can be the only bridge to
   // another dependency, anchor, joint group, technical chain, or round.
-  const closure = new Set([...scopeIds, ...protectedIds]);
+  const closure = new Set([...scopeIds, ...protectedIds,...protectedMealBySourceId.keys()]);
   const supporting = new Set<string>();
   const supportingReasons = new Map<string, Set<string>>();
   const includeSupporting = (id: string, reason: string): void => {
@@ -169,18 +267,27 @@ export function buildAssistedProblem(
       supportingReasons.set(id, reasons);
     }
     if (included.has(id)) return;
-    if (!tasksById.has(id)) throw new Error("UNKNOWN_SUPPORTING_TASK_ID");
+    if (!tasksById.has(id)) throw new Error(`UNKNOWN_SUPPORTING_TASK_ID:${id}`);
     included.add(id);
     supporting.add(id);
     closure.add(id);
+  };
+  const includeDependency=(id:string,reason:string):void=>{
+    if(tasksById.has(id)){includeSupporting(id,reason);return;}
+    if(mealsBySourceId.has(id)){if(!includedMeals.has(id)){includedMeals.add(id);closure.add(id);}return;}
+    throw new Error(`UNKNOWN_SUPPORTING_DEPENDENCY_ID:${id}`);
   };
   let changed = true;
   while (changed) {
     changed = false;
     for (const id of [...closure]) {
+      const meal=mealsBySourceId.get(id);
+      if(meal){for(const dependencyId of meal.dependencies??[])if(!included.has(dependencyId)&&!includedMeals.has(dependencyId)){
+        includeDependency(dependencyId,`DEPENDENCY_OF_MEAL:${id}`);changed=true;
+      }continue;}
       const task = tasksById.get(id)!;
-      for (const dependencyId of task.dependencies) if (!included.has(dependencyId)) {
-        includeSupporting(dependencyId, `DEPENDENCY_OF:${id}`);
+      for (const dependencyId of task.dependencies) if (!included.has(dependencyId)&&!includedMeals.has(dependencyId)) {
+        includeDependency(dependencyId, `DEPENDENCY_OF:${id}`);
         changed = true;
       }
       for (const anchor of problem.anchoredAccompaniments ?? []) {
@@ -220,6 +327,33 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  // Preserve the complete task-prerequisite closure needed by analytical
+  // participant futures. These vertices remain executable/supporting context;
+  // the list only makes them visible to the read-only future reservation probe.
+  const analyticalDependencyIds=new Set(problem.analyticalFutureParticipantTasks.flatMap(task=>task.dependencies));
+  const analyticalSupportingIds=new Set<string>();
+  const pendingAnalyticalDependencies=[...analyticalDependencyIds];
+  while(pendingAnalyticalDependencies.length){
+    const id=pendingAnalyticalDependencies.pop()!;
+    if(!supporting.has(id)||analyticalSupportingIds.has(id))continue;
+    analyticalSupportingIds.add(id);
+    for(const dependencyId of tasksById.get(id)?.dependencies??[])pendingAnalyticalDependencies.push(dependencyId);
+  }
+  problem.analyticalFutureParticipantSupportingTaskIds=[...analyticalSupportingIds].sort();
+  problem.analyticalFutureTechnicalChains = (problem.technicalChains ?? [])
+    .filter((policy) => policy.adjacency === "REQUIRED" && policy.resourceContinuity === "REQUIRED"
+      && policy.orderedTaskIds.every((id) => analyticalFutureEligibleTaskIds.has(id) && !included.has(id)))
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((policy) => {
+      const memberIds=new Set(policy.orderedTaskIds);
+      // Preserve joint peers needed by placement authority while keeping them
+      // inside read-only analytical context rather than executable search.
+      for(const id of policy.orderedTaskIds){
+        const group=tasksById.get(id)?.jointGroupId;
+        if(group)for(const task of problem.tasks)if(task.jointGroupId===group)memberIds.add(task.id);
+      }
+      return {policy:structuredClone(policy),tasks:[...memberIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
+    });
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
@@ -234,21 +368,21 @@ export function buildAssistedProblem(
     problem.transportPolicy.departure.taskIds = problem.transportPolicy.departure.taskIds.filter((id) => included.has(id));
   }
   const analyticalMealSourceIds = new Set((problem.participantMeals ?? [])
-    .filter((meal) => !included.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"))
+    .filter((meal) => !includedMeals.has(meal.sourceTaskId) && (meal.status === "pending" || meal.status === "interrupted"))
     .map((meal) => meal.sourceTaskId));
   const analyticalParticipantMeals = (problem.participantMeals ?? []).filter((meal) =>
     analyticalMealSourceIds.has(meal.sourceTaskId)).map((meal) => ({ ...meal,
       // An analytical obligation is context rather than a hidden search variable.
       // Keep only prerequisite vertices represented in this projection.
-      dependencies: meal.dependencies?.filter((id) => included.has(id) || analyticalMealSourceIds.has(id)),
+      dependencies: meal.dependencies?.filter((id) => included.has(id) || includedMeals.has(id) || analyticalMealSourceIds.has(id)),
     }));
   // The executable problem must remain referentially closed. Obligations whose
   // source is outside scope are analytical context, never hidden search variables.
-  const retainedMealSourceIds = new Set((problem.participantMeals ?? [])
-    .filter((meal) => included.has(meal.sourceTaskId)).map((meal) => meal.sourceTaskId));
+  const retainedMealSourceIds = includedMeals;
   problem.participantMeals = problem.participantMeals?.filter((meal) => retainedMealSourceIds.has(meal.sourceTaskId))
     .map((meal) => ({ ...meal,
       dependencies: meal.dependencies?.filter((id) => included.has(id) || retainedMealSourceIds.has(id)),
+      ...(protectedMealBySourceId.has(meal.sourceTaskId)?{fixedInterval:{start:protectedMealBySourceId.get(meal.sourceTaskId)!.start,end:protectedMealBySourceId.get(meal.sourceTaskId)!.end}}:{}),
     }));
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail
@@ -276,6 +410,12 @@ export function buildAssistedProblem(
     return {...acceptedTask,availability:[{start:fixed.start,end:fixed.end}]};
   });
   const originalValidationProblem = structuredClone(problem);
+  originalValidationProblem.operationalMealPolicies=originalOperationalPolicies;
+  const protectedByPolicy=new Map(protectedOperationalMeals.map(meal=>[meal.id,meal]));
+  problem.operationalMealPolicies=problem.operationalMealPolicies?.map(policy=>{
+    const fixed=protectedByPolicy.get(policy.id);
+    return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
+  });
 
   return {
     problem,
@@ -283,6 +423,10 @@ export function buildAssistedProblem(
     analyticalParticipantMeals: structuredClone(analyticalParticipantMeals),
     scope,
     protectedPlacements: structuredClone(protectedPlacements),
+    protectedOperationalMeals: structuredClone(protectedOperationalMeals),
+    protectedSetupPreparations: structuredClone(protectedSetupPreparations),
+    protectedParticipantMeals: structuredClone(protectedParticipantMeals),
+    retainedParticipantMealSourceIds: canonicalIds([...retainedMealSourceIds]),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
@@ -305,7 +449,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
-    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true });
+    fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
+    fixedSetupPreparations:input.protectedSetupPreparations });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -354,7 +499,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
     "corePrerequisiteReservationChecks","corePrerequisiteReservationPrunes",
     "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune",
-    "firstStandaloneDeadEndCause"] as const;
+    "firstStandaloneDeadEndCause","macroUnitsSelected","macroSelectionOrder","macroSelectionSteps","macroDomainSizes",
+    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
@@ -363,7 +509,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "residualMatchingInvocations", "residualMatchingFullBuilds", "residualMatchingIncrementalUpdates",
     "residualMatchingEdgeCacheHits", "residualMatchingEdgeCacheMisses", "residualMatchingPositionChecks",
     "residualMatchingAugmentTraversals", "residualMatchingBranchesExplored", "mainRunWitnessAttempts",
-    "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "standaloneForwardChecks",
+    "mainRunWitnessRepairs", "mainRunEquivalentOrdersCollapsed", "bundleMatchingAttempts",
+    "bundleMatchingRepairs", "bundleMatchingMaterializations", "bundleHardValidationRejects",
+    "bundleCertifiedRepairs","bundleNogoodsCreated","bundleNogoodBranches","bundleNogoodDeduplications","bundleNogoodRepairsSucceeded",
+    "conflictBackjumps","suffixDepthsSkipped","deepestCoreDepthReached", "standaloneForwardChecks",
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
     "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
@@ -378,12 +527,26 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     operational:{scheduled:structuredClone(result.scheduledOperationalMeals??[]),fingerprint:operationalMealWitnessFingerprint(result.scheduledOperationalMeals??[])},
     resource:structuredClone(result.scheduledResourceMeals),itinerantUnit:structuredClone(result.scheduledItinerantUnitMeals),
   }:null;
+  const fixedMainBundleKeys=["fixedMainBundlePathEntered","protectedMainCount","protectedMainArchitectureFingerprint",
+    "protectedMainSlots","fixedMainBundleGraphPrepared","fixedMainBundlePreparedEdges","fixedMainBundleCandidatePositions",
+    "fixedMainBundleZeroDomainTaskIds","fixedMainBundleParticipantEdgeChecks","fixedMainBundleParticipantEdgePrunes",
+    "fixedMainBundleFirstParticipantEdgePrune","fixedMainBundleMatchingAttempts",
+    "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",
+    "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","protectedMainSlotChecks","protectedMainSlotMismatches",
+    "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
+    "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection",
+    "firstFixedMainBundleHardGateDiagnostic"] as const;
+  const fixedMainBundle=Object.fromEntries(fixedMainBundleKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["fixedMainBundle"];
   return { proposal, evidence: {
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
     supportingTaskIds: input.supportingTaskIds,
     supportingReasonByTaskId: input.supportingReasonByTaskId,
     protectedPlacementCount: input.protectedPlacements.length,
+    protectedOperationalMeals: structuredClone(input.protectedOperationalMeals),
+    protectedSetupPreparations: structuredClone(input.protectedSetupPreparations),
+    protectedParticipantMeals: structuredClone(input.protectedParticipantMeals),
+    retainedParticipantMealSourceIds:[...input.retainedParticipantMealSourceIds],
     protectedPlacementsPreserved: protectedPreserved,
     proposalCount: proposal ? 1 : 0,
     completeForScope,
@@ -405,6 +568,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
     selectedMealWitnesses,
+    fixedMainBundle,
+    selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),
     participantMealFutureFeasibility:{
       futureFeasibilityChecks:Number(evidenceRecord.participantMealFutureFeasibilityChecks??metricsRecord.participantMealFutureFeasibilityChecks??0),
       futureInfeasibleBranches:Number(evidenceRecord.participantMealFutureInfeasibleBranches??0),
@@ -414,6 +579,16 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       blockingMealTaskIds:[...((evidenceRecord.participantMealBlockingTaskIds as string[]|undefined)??[])],
       firstPrune:(evidenceRecord.firstParticipantMealFuturePrune as ExactItinerantPlanEvidence["firstParticipantMealFuturePrune"]|undefined)??null,
     },
+    operationalMealFutureReservation:structuredClone((evidenceRecord.operationalMealFutureReservation as ExactItinerantPlanEvidence["operationalMealFutureReservation"]|undefined)??{
+      checks:0,passes:0,prunes:0,abstentions:0,irrelevantFastPasses:0,affectedPoliciesChecked:0,individualDomainChecks:0,
+      individualZeroDomainPrunes:0,witnessValidationChecks:0,witnessReuseHits:0,witnessInvalidations:0,witnessRepairs:0,
+      exactCollectiveChecks:0,branchesConsumed:0,terminalSearchesAvoided:0,firstPrune:null,fixedContextInitializationChecks:0,
+      fixedContextWitnessFound:false,fixedContextWitnessFingerprint:null,preexistingZeroDomainPrunes:0}),
+    fixedMainFeederMealChecks:Number(evidenceRecord.fixedMainFeederMealChecks??0),
+    fixedMainFeederMealPasses:Number(evidenceRecord.fixedMainFeederMealPasses??0),
+    fixedMainFeederMealPrunes:Number(evidenceRecord.fixedMainFeederMealPrunes??0),
+    firstFixedMainFeederMealPrune:(evidenceRecord.firstFixedMainFeederMealPrune as ExactItinerantPlanEvidence["firstFixedMainFeederMealPrune"]|undefined)??null,
+    standaloneEntryMealWitness:typeof evidenceRecord.standaloneEntryMealWitness==="string"?evidenceRecord.standaloneEntryMealWitness:null,
     participantFutureReservation:{
       checks:Number(evidenceRecord.participantFutureReservationChecks??0),passes:Number(evidenceRecord.participantFutureReservationPasses??0),
       prunes:Number(evidenceRecord.participantFutureReservationPrunes??0),abstentions:Number(evidenceRecord.participantFutureReservationAbstentions??0),
@@ -425,7 +600,58 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       analyticChecks:Number(evidenceRecord.participantFutureAnalyticChecks??0),branchesConsumed:Number(evidenceRecord.participantFutureBranchesConsumed??0),
       firstPrune:(evidenceRecord.firstParticipantFutureReservationPrune as ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"]|undefined)??null,
     },
+    technicalChainFutureReservation:{
+      checks:Number(evidenceRecord.technicalChainFutureReservationChecks??0),passes:Number(evidenceRecord.technicalChainFutureReservationPasses??0),
+      prunes:Number(evidenceRecord.technicalChainFutureReservationPrunes??0),abstentions:Number(evidenceRecord.technicalChainFutureReservationAbstentions??0),
+      branchesConsumed:Number(evidenceRecord.technicalChainFutureBranchesConsumed??0),
+      firstPrune:(evidenceRecord.firstTechnicalChainFutureReservationPrune as ExactItinerantPlanEvidence["firstTechnicalChainFutureReservationPrune"]|undefined)??null,
+      preparedAuthority:(evidenceRecord.preparedFutureTechnicalChainEvidence as ExactItinerantPlanEvidence["preparedFutureTechnicalChainEvidence"]|undefined)??null,
+      firstMultiDecisionConflict:(evidenceRecord.firstMultiDecisionConflict as ExactItinerantPlanEvidence["firstMultiDecisionConflict"]|undefined)??null,
+      conflictBackjumps:Number(evidenceRecord.conflictBackjumps??0),suffixDepthsSkipped:Number(evidenceRecord.suffixDepthsSkipped??0),
+      constructive:{
+        futureReservationStructures:Number(evidenceRecord.futureReservationStructures??0),futureReservationWitnessesEvaluated:Number(evidenceRecord.futureReservationWitnessesEvaluated??0),
+        futureReservationRootOrdersEvaluated:Number(evidenceRecord.futureReservationRootOrdersEvaluated??0),futureReservationCandidatesRejectedByOtherReservations:Number(evidenceRecord.futureReservationCandidatesRejectedByOtherReservations??0),
+        futureReservationCandidatesRejectedByNoBundleMatching:Number(evidenceRecord.futureReservationCandidatesRejectedByNoBundleMatching??0),futureReservationBundleMatchingAttempts:Number(evidenceRecord.futureReservationBundleMatchingAttempts??0),
+        futureReservationPerfectMatchings:Number(evidenceRecord.futureReservationPerfectMatchings??0),futureReservationSelectedFingerprint:(evidenceRecord.futureReservationSelectedFingerprint as string|null|undefined)??null,
+        architecturesTriedWithFutureReservation:Number(evidenceRecord.architecturesTriedWithFutureReservation??0),bundleEdgesBeforeReservation:Number(evidenceRecord.bundleEdgesBeforeReservation??0),
+        bundleEdgesRejectedByReservation:Number(evidenceRecord.bundleEdgesRejectedByReservation??0),bundleEdgesAfterReservation:Number(evidenceRecord.bundleEdgesAfterReservation??0),
+        residualDfsEntered:Boolean(evidenceRecord.residualDfsEntered),residualDfsBranchesBeforeFirstSolution:(evidenceRecord.residualDfsBranchesBeforeFirstSolution as number|null|undefined)??null,
+        architecturesEnumerated:Number(evidenceRecord.architecturesEnumerated??0),architecturesPrepared:Number(evidenceRecord.architecturesPrepared??0),
+        participantBundleEdgesChecked:Number(evidenceRecord.participantBundleEdgesChecked??0),participantBundleEdgesPruned:Number(evidenceRecord.participantBundleEdgesPruned??0),
+        participantBundleEdgesAbstained:Number(evidenceRecord.participantBundleEdgesAbstained??0),
+        firstParticipantBundleEdgePrune:(evidenceRecord.firstParticipantBundleEdgePrune as ExactItinerantPlanEvidence["firstParticipantBundleEdgePrune"]|undefined)??null,
+        futureWitnessesTriedByArchitecture:{...((evidenceRecord.futureWitnessesTriedByArchitecture as Record<string,number>|undefined)??{})},
+        preparedBundleEdges:Number(evidenceRecord.preparedBundleEdges??0),reservationFilteredEdges:Number(evidenceRecord.reservationFilteredEdges??0),
+        perfectMatchingsByArchitecture:{...((evidenceRecord.perfectMatchingsByArchitecture as Record<string,number>|undefined)??{})},
+        hardGateRejectsByArchitecture:{...((evidenceRecord.hardGateRejectsByArchitecture as Record<string,number>|undefined)??{})},
+        structuralSearchExhausted:Boolean(evidenceRecord.structuralSearchExhausted),structuralSearchBudgetExhausted:Boolean(evidenceRecord.structuralSearchBudgetExhausted),
+        structuralArchitecturesFullyVisited:Number(evidenceRecord.structuralArchitecturesFullyVisited??0),structuralFutureDomainsFullyVisited:Number(evidenceRecord.structuralFutureDomainsFullyVisited??0),
+        structuralCandidatesProducedBeforeBudgetExhaustion:Number(evidenceRecord.structuralCandidatesProducedBeforeBudgetExhaustion??0),
+        conditionedLeafFutureRevalidations:Number(evidenceRecord.conditionedLeafFutureRevalidations??0),conditionedLeafFutureRevalidationPasses:Number(evidenceRecord.conditionedLeafFutureRevalidationPasses??0),
+        conditionedLeafFutureRevalidationRejects:Number(evidenceRecord.conditionedLeafFutureRevalidationRejects??0),genericFutureAssessSkippedForConditionedLeaf:Number(evidenceRecord.genericFutureAssessSkippedForConditionedLeaf??0),
+        structuralCandidateFingerprintAtHardGate:(evidenceRecord.structuralCandidateFingerprintAtHardGate as string|null|undefined)??null,
+        structuralCandidateFingerprintAtContinuation:(evidenceRecord.structuralCandidateFingerprintAtContinuation as string|null|undefined)??null,
+        structuralCandidateFingerprintBeforeStandalone:(evidenceRecord.structuralCandidateFingerprintBeforeStandalone as string|null|undefined)??null,
+        branchesBeforeResidualDfs:(evidenceRecord.branchesBeforeResidualDfs as number|null|undefined)??null,
+        selectedArchitectureFingerprint:(evidenceRecord.selectedArchitectureFingerprint as string|null|undefined)??null,
+        selectedFutureReservationFingerprint:(evidenceRecord.selectedFutureReservationFingerprint as string|null|undefined)??null,
+        mainPatternCountGenerated:Number(evidenceRecord.mainPatternCountGenerated??0),mainPatternGenerationExhausted:Boolean(evidenceRecord.mainPatternGenerationExhausted),
+        mainPatternsVisited:Number(evidenceRecord.mainPatternsVisited??0),timelinesGenerated:Number(evidenceRecord.timelinesGenerated??0),
+        architectureStructuralProofChecks:Number(evidenceRecord.architectureStructuralProofChecks??0),architectureStructuralProofRejects:Number(evidenceRecord.architectureStructuralProofRejects??0),
+        architectureStructuralRejectsByReason:{...((evidenceRecord.architectureStructuralRejectsByReason as Record<string,number>|undefined)??{})},
+        nominalPipelineWitnessChecks:Number(evidenceRecord.nominalPipelineWitnessChecks??0),nominalPipelineWitnessFeasible:Number(evidenceRecord.nominalPipelineWitnessFeasible??0),
+        nominalPipelineWitnessInfeasible:Number(evidenceRecord.nominalPipelineWitnessInfeasible??0),nominalPipelineWitnessInconclusive:Number(evidenceRecord.nominalPipelineWitnessInconclusive??0),
+        nominalPipelineWitnessRejectsByReason:{...((evidenceRecord.nominalPipelineWitnessRejectsByReason as Record<string,number>|undefined)??{})},
+        continuityRejects:Number(evidenceRecord.continuityRejects??0),authorizedArchitecturesYielded:Number(evidenceRecord.authorizedArchitecturesYielded??0),
+      },
+    },
     work,
+    bundleMatching:{bundleForbiddenEdges:[...(evidenceRecord.bundleForbiddenEdges as string[]|undefined)??[]],
+      bundleRepairSequence:[...(evidenceRecord.bundleRepairSequence as ExactItinerantPlanEvidence["bundleRepairSequence"]|undefined)??[]],
+      bundleTerminalCause:(evidenceRecord.bundleTerminalCause as string|null|undefined)??null,
+      bundleNogoodsCreated:Number(evidenceRecord.bundleNogoodsCreated??0),bundleNogoodBranches:Number(evidenceRecord.bundleNogoodBranches??0),
+      bundleNogoodDeduplications:Number(evidenceRecord.bundleNogoodDeduplications??0),bundleNogoodRepairsSucceeded:Number(evidenceRecord.bundleNogoodRepairsSucceeded??0),
+      conflictEdges:[...(evidenceRecord.conflictEdges as string[]|undefined)??[]]},
     causalDiagnostic: (evidenceRecord.causalDiagnostic as ExactCoreCausalDiagnostic | null | undefined) ?? null,
     standaloneDiagnostic,
     reasonCodes: [...new Set(reasonCodes)].sort(),

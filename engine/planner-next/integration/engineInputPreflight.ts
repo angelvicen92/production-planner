@@ -213,7 +213,7 @@ const SET_ARRAY_KEYS = new Set([
   "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
   "roundSynchronizations", "technicalChains", "operationalMealPolicies", "planResourceItemIds", "requiredResourceIds", "itinerantTeamAvailability", "windows",
 ]);
-const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder", "orderedTaskIds"]);
+const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder", "orderedTaskIds", "phases"]);
 
 const compare = (left: string, right: string): number => left.localeCompare(right, "en");
 
@@ -390,6 +390,7 @@ function sourceProjection(input: EngineInput): unknown {
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
     roundSynchronizations: projectEngineInputRoundSynchronizations(input),
+    technicalChains: runtime.technicalChains,
     coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
   });
 }
@@ -695,6 +696,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const policy=raw as Record<string,unknown>;
     addIdentity("technical-chain",policy.id,`technicalChains.${index}.id`,true);
     if(Array.isArray(policy.orderedTaskIds))policy.orderedTaskIds.forEach(id=>addIdentity("task",id,`technicalChains.${index}.orderedTaskIds`));
+    if(Array.isArray(policy.phases))policy.phases.forEach((phase,phaseIndex)=>{if(Array.isArray(phase))phase.forEach(id=>addIdentity("task",id,`technicalChains.${index}.phases.${phaseIndex}`));});
     if(Array.isArray(policy.requiredResourceIds))policy.requiredResourceIds.forEach(id=>addIdentity("plan-resource",id,`technicalChains.${index}.requiredResourceIds`));
   });
 
@@ -883,10 +885,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     technicalChainsRuntime.forEach((raw,index)=>{
       const path=`technicalChains.${index}`,p=raw&&typeof raw==="object"&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
       const id=p.id,ordered=Array.isArray(p.orderedTaskIds)?p.orderedTaskIds:[],resources=Array.isArray(p.requiredResourceIds)?p.requiredResourceIds:[];
+      const phases=p.phases,flatPhases=Array.isArray(phases)?phases.flatMap(phase=>Array.isArray(phase)?phase:[]):[];
       let invalid=typeof id!=="string"||id.trim()!==id||id.length===0||chainIds.has(id)
         ||ordered.length<2||ordered.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(ordered).size!==ordered.length
         ||resources.some(value=>!Number.isSafeInteger(value)||!resourceIds.has(value as number))||new Set(resources).size!==resources.length
         ||p.adjacency!=="REQUIRED"||p.resourceContinuity!=="REQUIRED";
+      if(phases!==undefined&&(!Array.isArray(phases)||phases.length===0||phases.some(phase=>!Array.isArray(phase)||phase.length===0)
+        ||flatPhases.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(flatPhases).size!==flatPhases.length
+        ||JSON.stringify(flatPhases)!==JSON.stringify(ordered)))invalid=true;
       if(typeof id==="string")chainIds.add(id);
       for(const value of ordered)if(Number.isSafeInteger(value)){const prior=owners.get(value as number);if(prior&&prior!==id)invalid=true;else if(typeof id==="string")owners.set(value as number,id);}
       if(invalid)addIssue("UNSUPPORTED_TECHNICAL_CHAIN","technicalChain",typeof id==="string"?id:index,path,"Technical chain cannot be projected losslessly.");

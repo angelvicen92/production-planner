@@ -2,6 +2,44 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
+import { buildCanonicalA2AssistedStage1Fixture } from "./benchmarks/canonicalA2AssistedStage1Fixture";
+
+const patternRuns=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>
+  count+(index===0||pattern[index-1]!==key?1:0),0);
+
+test("bounded pattern generation completes smaller run families before cutting the next",()=>{
+  const mains=[...Array(3)].map((_,i)=>({id:`a${i}`,kind:"main" as const,duration:10,spaceId:"main",blockKey:"a",dependencies:[]}))
+    .concat([...Array(2)].map((_,i)=>({id:`b${i}`,kind:"main" as const,duration:10,spaceId:"main",blockKey:"b",dependencies:[]})));
+  const complete=generateMainFlowPatterns(mains,1,3,100);
+  assert.equal(complete.exhausted,false);assert.equal(complete.patterns.length,10);
+  const byRuns=(limit:number)=>generateMainFlowPatterns(mains,1,3,limit).patterns.map(patternRuns);
+  assert.deepEqual(byRuns(3),[2,2,3]);
+  assert.deepEqual(byRuns(4),[2,2,3,3]);
+  assert.ok(byRuns(9).every(runs=>runs<=4),"a cut inside four runs must not visit five runs");
+  const reversed=generateMainFlowPatterns([...mains].reverse(),1,3,4);
+  assert.deepEqual(reversed.patterns,generateMainFlowPatterns(mains,1,3,4).patterns);
+});
+
+test("minimumRun and maximumRunsByKey retain their admissibility semantics",()=>{
+  const mains=[...Array(4)].map((_,i)=>({id:`a${i}`,kind:"main" as const,duration:10,spaceId:"main",blockKey:"a",dependencies:[]}))
+    .concat([...Array(2)].map((_,i)=>({id:`b${i}`,kind:"main" as const,duration:10,spaceId:"main",blockKey:"b",dependencies:[]})));
+  assert.deepEqual(generateMainFlowPatterns(mains,2,3,100).patterns.map(pattern=>pattern.join("")),["aaaabb","bbaaaa","aabbaa"]);
+  assert.deepEqual(generateMainFlowPatterns(mains,2,1,100).patterns.map(pattern=>pattern.join("")),["aaaabb","bbaaaa"]);
+});
+
+test("A2 bounded frontier contains every two-to-four-run pattern and the human coverage geometry",()=>{
+  const problem=buildCanonicalA2AssistedStage1Fixture().assisted.problem;
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  const result=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
+    problem.mainFlow.maxBlocksByKey,200,problem.resources);
+  const distribution=new Map<number,number>();for(const pattern of result.patterns)
+    distribution.set(patternRuns(pattern),(distribution.get(patternRuns(pattern))??0)+1);
+  assert.deepEqual(Object.fromEntries(distribution),{"2":2,"3":17,"4":140,"5":41});
+  assert.equal(result.patterns.some(pattern=>pattern.join("|")===[
+    ...Array(4).fill("plan-resource:4005"),...Array(7).fill("plan-resource:4004"),
+    ...Array(4).fill("plan-resource:4005"),...Array(4).fill("plan-resource:4004")].join("|")),true);
+  assert.equal(result.exhausted,true);
+});
 
 test("minimum block families are exhausted before PREFERRED resource concentration", () => {
   const mains = [

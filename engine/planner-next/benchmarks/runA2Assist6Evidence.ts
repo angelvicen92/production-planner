@@ -5,19 +5,29 @@ import { validatePlan } from "../validate";
 import { buildAssistedPlanningSnapshotV1,fingerprintAssistedPlanningSnapshotV1,type AssistedPlanningSnapshotV1 } from "../../../server/assistedPlanningSnapshot";
 import type { IStorage } from "../../../server/storage";
 import { createCanonicalFullA2Template,expandCanonicalFullA2Template } from "./focal-a2/full-day/canonicalFullA2Template";
-import { buildCanonicalA2PlannerNextProblem } from "./runPlannerNextA2Assist1Benchmark";
+import { buildCanonicalA2AssistedStage1Fixture } from "./canonicalA2AssistedStage1Fixture";
 import { affectedTasksUnchanged } from "../../../server/assistedAcceptedBaseline";
 
-const canonical=buildCanonicalA2PlannerNextProblem();
-const problem=():PlannerNextProblem=>structuredClone(canonical.problem);
-const productTaskId=new Map(canonical.problem.tasks.map((task,index)=>[task.id,index+1]));
-const productSpaceId=new Map(canonical.problem.spaces.map((space,index)=>[space.id,index+1]));
-const identity=[...canonical.problem.tasks.map((task,index)=>({namespace:"task",sourceId:String(index+1),canonicalId:task.id})),
-  ...canonical.problem.spaces.map((space,index)=>({namespace:"space",sourceId:String(index+1),canonicalId:space.id})),
-  ...canonical.problem.resources.map((resource,index)=>({namespace:"resource",sourceId:String(index+1),canonicalId:resource.id}))];
-const conflictA=canonical.problem.tasks.find(task=>task.id==="C01.in")!;
-const conflictB=canonical.problem.tasks.find(task=>task.id==="C02.in")!;
-const scopeTask=canonical.problem.tasks.find(task=>task.id==="C02.ensayo_estudio_7")!;
+const canonicalFixture=buildCanonicalA2AssistedStage1Fixture();
+const canonical={problem:canonicalFixture.adapter.problem,expansion:canonicalFixture.canonical.expansion};
+const canonicalTask=(templateTaskId:string)=>{
+  const sourceId=canonicalFixture.canonical.taskId.get(templateTaskId);assert.ok(sourceId);
+  const canonicalId=canonicalFixture.adapter.identityMap.find(item=>item.namespace==="task"&&item.sourceId===String(sourceId))?.canonicalId;
+  const task=canonical.problem.tasks.find(candidate=>candidate.id===canonicalId);assert.ok(task);return task;
+};
+// Assist6 exercises manual exception acceptance independently of global meal and
+// transport materialization; those authorities remain covered by canonical A2.
+const problem=():PlannerNextProblem=>{const {operationalMealPolicies:_meals,transportPolicy:_transport,...isolated}=structuredClone(canonical.problem);return isolated;};
+const productTaskId=new Map(canonicalFixture.adapter.identityMap.filter(item=>item.namespace==="task")
+  .map(item=>[item.canonicalId,Number(item.sourceId)]));
+const productSpaceId=new Map(canonicalFixture.adapter.identityMap.filter(item=>item.namespace==="space")
+  .map(item=>[item.canonicalId,Number(item.sourceId)]));
+const identity=canonicalFixture.adapter.identityMap;
+const conflictA=canonicalTask("C01.in");
+const conflictB=canonicalTask("C02.in");
+const scopeTask=canonicalTask("C02.ensayo_estudio_7");
+const requiredResourceSourceId=canonicalFixture.input.planResourceItems.find(resource=>resource.name==="cam-2")?.id;assert.ok(requiredResourceSourceId);
+const requiredResourceId=identity.find(item=>item.namespace==="plan-resource"&&item.sourceId===String(requiredResourceSourceId))?.canonicalId;assert.ok(requiredResourceId);
 // A2 has no reproducibly violable REQUIRED authority in this bounded workflow.
 // Keep that independent contract exercise explicit instead of weakening A2.
 const requiredIntegrationProblem=():PlannerNextProblem=>({day:canonical.problem.day,spaces:canonical.problem.spaces,resources:canonical.problem.resources,
@@ -38,9 +48,9 @@ export async function runA2Assist6Evidence(){
   const planId=6,userId="00000000-0000-0000-0000-000000000006",configId=31;let validation:any=null,dailyWrites=0,nextStage=3;
   const s1=snapshot(610);let stages:any[]=[{id:1,sessionId:7,planId,parentStageId:null,ordinal:1,snapshotJson:s1,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(s1),validationSummaryJson:{}}];
   let session:any={id:7,planId,status:"ACTIVE",activeStageId:1,draftBaseStageId:1,currentConfigRevisionId:configId,draftScopeJson:{},draftSnapshotJson:s1,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(s1),draftValidationId:null};let exceptions:any[]=[];
-  const reads:Record<string,any>={getActiveAssistedPlanningSession:async()=>session,getAssistedPlanningStage:async(id:number)=>stages.find(s=>s.id===id),listAssistedPlanningStages:async()=>stages,getPlanningStageValidation:async()=>validation,listPlanningAcceptedExceptions:async(id:number)=>exceptions.filter(e=>e.stageId===id),getTasksForPlan:async()=>canonical.problem.tasks.map((_,index)=>({id:index+1,status:"pending"})),getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"c".repeat(64)})};
+  const reads:Record<string,any>={getActiveAssistedPlanningSession:async()=>session,getAssistedPlanningStage:async(id:number)=>stages.find(s=>s.id===id),listAssistedPlanningStages:async()=>stages,getPlanningStageValidation:async()=>validation,listPlanningAcceptedExceptions:async(id:number)=>exceptions.filter(e=>e.stageId===id),getTasksForPlan:async()=>canonical.problem.tasks.map(task=>({id:productTaskId.get(task.id)!,status:"pending"})),getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"c".repeat(64)})};
   const storage=new Proxy({}, {get:(_t,p:string)=>reads[p]??(async()=>{throw new Error(`unexpected storage ${p}`)})}) as IStorage;
-  const rpc=async(name:string,p:any)=>{if(name==="assisted_patch_draft"){session={...session,draftSnapshotJson:p.p_snapshot,draftFingerprint:p.p_fingerprint,draftScopeJson:{editKind:"MANUAL",manualTouchedTaskIds:[3]},draftValidationId:null};return {error:null};}
+  const rpc=async(name:string,p:any)=>{if(name==="assisted_patch_draft"){session={...session,draftSnapshotJson:p.p_snapshot,draftFingerprint:p.p_fingerprint,draftScopeJson:{editKind:"MANUAL",manualTouchedTaskIds:[productTaskId.get(conflictB.id)!]},draftValidationId:null};return {error:null};}
     if(name==="assisted_record_stage_validation"){validation={id:9,planId,sessionId:7,baseStageId:p.p_expected_base,draftFingerprint:p.p_expected_fingerprint,configRevisionId:configId,hardCount:p.p_report.hardCount,requiredCount:p.p_report.requiredCount,reportJson:p.p_report};session={...session,draftValidationId:9};return {error:null};}
     if(name==="assisted_accept_stage"){if(validation.reportJson.newHardCount>0&&p.p_confirmation!=="HARD_EXCEPTIONS")return {error:{message:"HARD_CONFIRMATION_REQUIRED"}};dailyWrites++;const stage={id:nextStage++,sessionId:7,planId,parentStageId:session.draftBaseStageId,ordinal:stages.length+1,snapshotJson:session.draftSnapshotJson,snapshotFingerprint:session.draftFingerprint,validationSummaryJson:{report:validation.reportJson}};stages.push(stage);for(const item of validation.reportJson.violations.filter((v:any)=>["HARD","REQUIRED"].includes(v.severity)&&v.inheritedAcceptedExceptionId==null))exceptions.push({id:20+exceptions.length,planId,stageId:stage.id,status:"ACTIVE",severity:item.severity,ruleCode:item.ruleCode,violationKey:item.violationKey,configRevisionId:configId,snapshotFingerprint:session.draftFingerprint,affectedTaskIdsJson:item.affectedTaskIds,affectedResourceIdsJson:item.affectedResourceIds,affectedSpaceIdsJson:item.affectedSpaceIds,detailsJson:item.details});session={...session,activeStageId:stage.id,draftBaseStageId:stage.id,draftScopeJson:{},draftValidationId:null};return {error:null};}throw new Error(name);};
   const service=new AssistedPlanningService(storage,rpc as any,{buildInput:async()=>({} as any),buildConfigRevision:()=>({configurationFingerprint:"c".repeat(64)} as any),validateManual:createManualDeltaValidationHarness(problem(),identity)});
@@ -53,8 +63,8 @@ export async function runA2Assist6Evidence(){
   const proposalById=new Map(proposal.proposal.map(row=>[Number(identity.find(i=>i.canonicalId===row.id)?.sourceId),row]));const s3Snapshot=buildAssistedPlanningSnapshotV1((s2.snapshotJson as AssistedPlanningSnapshotV1).tasks.map(row=>{const next=proposalById.get(row.taskId);return next?{id:row.taskId,...row,startPlanned:`${String(Math.floor(next.start/60)).padStart(2,"0")}:${String(next.start%60).padStart(2,"0")}`,endPlanned:`${String(Math.floor(next.end/60)).padStart(2,"0")}:${String(next.end%60).padStart(2,"0")}`}:{id:row.taskId,...row};}));session={...session,draftSnapshotJson:s3Snapshot,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(s3Snapshot)};validation={id:10,planId,sessionId:7,baseStageId:s2.id,draftFingerprint:session.draftFingerprint,configRevisionId:configId,hardCount:inherited.length,requiredCount:0,reportJson:{contractVersion:1,hardCount:inherited.length,requiredCount:0,preferredCount:0,newHardCount:0,newRequiredCount:0,violations:inherited.map(v=>({...v,inheritedAcceptedExceptionId:exceptions.find(e=>e.violationKey===v.violationKey)?.id}))}};const followupValidation=validation;session={...session,draftValidationId:10};await service.accept(planId,userId,session.draftFingerprint,s2.id);const s3=stages.at(-1)!;assert.equal(exceptions.length,activeBeforeDraft);assert.ok((await service.state(planId)).acceptedExceptions.length>=1);
   const temporary=snapshot(605);session={...session,draftSnapshotJson:temporary,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(temporary),draftScopeJson:{editKind:"MANUAL",manualTouchedTaskIds:[productTaskId.get(conflictB.id)!]}};await service.validateDraft(planId,session.draftFingerprint,s3.id);const reconfirmationValidation=validation;assert.ok(reconfirmationValidation.reportJson.newHardCount>=1);await assert.rejects(()=>service.accept(planId,userId,session.draftFingerprint,s3.id),(e:any)=>e instanceof AssistedPlanningError&&e.code==="HARD_CONFIRMATION_REQUIRED");assert.equal(exceptions.filter(e=>e.status==="ACTIVE").length,activeBeforeDraft);
   session={...session,draftSnapshotJson:s3.snapshotJson,draftFingerprint:s3.snapshotFingerprint,draftValidationId:null};assert.equal(exceptions.filter(e=>e.status==="ACTIVE").length,activeBeforeDraft);
-  const requiredProblem=requiredIntegrationProblem();requiredProblem.tasks=requiredProblem.tasks.map(task=>({...task,requiredResourceIds:[...new Set([...(task.requiredResourceIds??[]),"cam-2"])]}));
-  requiredProblem.resources=requiredProblem.resources.map(resource=>resource.id==="cam-2"?{...resource,presenceConcentrationPolicy:"REQUIRED"}:resource);
+  const requiredProblem=requiredIntegrationProblem();requiredProblem.tasks=requiredProblem.tasks.map(task=>({...task,requiredResourceIds:[...new Set([...(task.requiredResourceIds??[]),requiredResourceId])]}));
+  requiredProblem.resources=requiredProblem.resources.map(resource=>resource.id===requiredResourceId?{...resource,presenceConcentrationPolicy:"REQUIRED"}:resource);
   const requiredPlacements=requiredProblem.tasks.map((task,index)=>({...task,start:600+index*100,end:600+index*100+task.duration} as ScheduledTask));
   const requiredSummary=validatePlan(requiredProblem,requiredPlacements);const requiredViolations=projectPlannerViolations(requiredSummary.violations??[],identity).filter(item=>item.severity==="REQUIRED");
   assert.equal((requiredSummary.violations??[]).some(item=>item.severity==="HARD"),false);assert.ok(requiredViolations.length>=1);

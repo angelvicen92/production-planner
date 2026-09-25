@@ -114,7 +114,7 @@ export class AssistedPlanningService {
         throw new AssistedPlanningError("INVALID_MANUAL_DURATION",422);
     }
     const byId = new Map(changes.map((change) => [change.taskId, change]));
-    const snapshot = buildAssistedPlanningSnapshotV1(current.tasks.map((task) => ({ id: task.taskId, ...task, ...(byId.get(task.taskId) ?? {}) })), current.planningBlocks);
+    const snapshot = buildAssistedPlanningSnapshotV1(current.tasks.map((task) => ({ id: task.taskId, ...task, ...(byId.get(task.taskId) ?? {}) })), current.planningBlocks, current.operationalMeals);
     try { assertPlanningBlockTemporalOrder(snapshot); } catch { throw new AssistedPlanningError("PLANNING_BLOCK_ORDER_CONFLICT", 422); }
     const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
     const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: fingerprint });
@@ -134,7 +134,7 @@ export class AssistedPlanningService {
     } catch {
       throw new AssistedPlanningError("INVALID_BLOCK_OPERATION", 422);
     }
-    const snapshot = buildAssistedPlanningSnapshotV1(result.snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), result.snapshot.planningBlocks);
+    const snapshot = buildAssistedPlanningSnapshotV1(result.snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), result.snapshot.planningBlocks, result.snapshot.operationalMeals);
     const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
     const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint,
       p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: fingerprint });
@@ -148,7 +148,8 @@ export class AssistedPlanningService {
     if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
     const base = await this.storage.getAssistedPlanningStage(expectedBaseStageId);
     if (!base || base.sessionId !== session.id || base.planId !== planId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
-    const snapshot = buildAssistedPlanningSnapshotV1((base.snapshotJson as unknown as AssistedPlanningSnapshotV1).tasks.map(task => ({ id: task.taskId, ...task })), (base.snapshotJson as unknown as AssistedPlanningSnapshotV1).planningBlocks);
+    const baseSnapshot=base.snapshotJson as unknown as AssistedPlanningSnapshotV1;
+    const snapshot = buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task => ({ id: task.taskId, ...task })), baseSnapshot.planningBlocks, baseSnapshot.operationalMeals);
     const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
     if (fingerprint !== base.snapshotFingerprint) throw new AssistedPlanningError("CORRUPT_EDIT_LEDGER", 409);
     const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint,

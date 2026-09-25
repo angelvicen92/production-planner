@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { buildAnonymousPipelineWitness, materializeNominalPipelineWitness } from "./anonymousPipelineWitness";
+import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
+  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
+import { buildTimeline } from "./mainFlowMeal";
 
 const windows=[{start:0,end:300}];
 function problem(keys:string[]=["A"], coachIds:string[]=["coach-a"]):PlannerNextProblem{
@@ -29,6 +31,28 @@ function anchor(p:PlannerNextProblem,index:number,unit="unit"){
 }
 
 describe("anonymous structural pipeline witness",()=>{
+  const filterEdge=(p:PlannerNextProblem)=>{const prepared=preparePipelineBundleGraph(p,{pattern:["A"],slots:[225]});assert.ok(prepared);
+    const result=materializePreparedPipelineBundleMatching(p,prepared!);return {prepared:prepared!,result};};
+
+  it("analytically removes a bundle edge that empties a future participant task domain without spending branches",()=>{
+    const p=problem();p.analyticalFutureParticipantTasks=[{id:"future",kind:"auxiliary",participantId:"p0",duration:15,
+      spaceId:"main",availability:[{start:225,end:240}],dependencies:[]}];
+    const {prepared,result}=filterEdge(p);assert.equal(result,null);assert.equal(prepared.participantEdgeEvidence.pruned,1);
+    assert.equal(prepared.participantEdgeEvidence.firstPrune?.reasonCode,"FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN");
+    assert.equal(prepared.participantEdgeEvidence.firstPrune?.branchesConsumed,0);
+  });
+
+  it("removes task-meal incompatible edges, retains viable and inconclusive edges, and consumes zero branches",()=>{
+    const build=(future:{start:number;end:number},dependency:string[]=[] )=>{const p=problem();p.participantMealCapacity={maxSimultaneous:1};
+      p.participantMeals=[{id:"meal",sourceTaskId:"meal-source",participantId:"p0",duration:15,window:{start:240,end:255},status:"pending"}];
+      p.analyticalFutureParticipantTasks=[{id:"future",kind:"auxiliary",participantId:"p0",duration:15,spaceId:"main",availability:[future],dependencies:dependency}];return p;};
+    const incompatible=filterEdge(build({start:240,end:255}));assert.equal(incompatible.result,null);
+    assert.equal(incompatible.prepared.participantEdgeEvidence.firstPrune?.reasonCode,"FUTURE_PARTICIPANT_TASK_MEAL_INCOMPATIBLE");
+    const viable=filterEdge(build({start:255,end:270}));assert.ok(viable.result);assert.equal(viable.prepared.participantEdgeEvidence.pruned,0);
+    const inconclusive=filterEdge(build({start:255,end:270},["unknown"]));assert.ok(inconclusive.result);
+    assert.equal(inconclusive.prepared.participantEdgeEvidence.abstained,1);
+    assert.equal(inconclusive.prepared.participantEdgeEvidence.firstPrune,null);
+  });
   it("rejects a bare valid Main when its 15+15+15 anchor does not fit, then accepts a shifted operation",()=>{
     const p=problem();anchor(p,0);p.itinerantUnits![0]!.availability=[{start:185,end:240}];
     assert.notEqual(buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[185]}).status,"FEASIBLE");
@@ -157,5 +181,111 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(diagnostic.arrivalSolverExecuted,true);assert.equal(diagnostic.mainRuns.length,1);
     assert.ok((diagnostic.feederRuns[0]?.candidateStartBoundaryCount??0)>0);
     assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
+  });
+
+  it("reaches a hard-valid later meal start without splitting a logical Main run",()=>{
+    const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};
+    p.operationalMealPolicies=[{id:"main-meal",resourceIds:[],spaceIds:["main"],window:{start:60,end:100},duration:10}];
+    p.tasks.find(task=>task.id==="main0")!.availability=[{start:55,end:70}];
+    p.tasks.find(task=>task.id==="main1")!.availability=[{start:80,end:95}];
+    const preferred=buildTimeline(p,["A","A"],15,1,60);
+    assert.equal(materializeNominalPipelineWitness(p,{pattern:["A","A"],slots:preferred.slots}).witness.status,"INFEASIBLE");
+    const architectures=[...authorizedPipelineArchitectures(p)];
+    const recovered=architectures.find(row=>row.pattern.join("|")==="A|A"&&row.slots.join("|")==="55|80");
+    assert.ok(recovered,"the enumerator must continue beyond the infeasible preferred meal start");
+    assert.equal(recovered.mealStart,70);
+    const witness=materializeNominalPipelineWitness(p,recovered!).witness;
+    assert.equal(witness.status,"FEASIBLE");assert.equal(witness.runCount,1);
+  });
+
+  it("round-robins lazy temporal repairs without losing meal starts or fallback cuts",()=>{
+    const p=problem(["A","A","B"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};
+    const patterns=[["A","A","B"],["A","B","B"]];
+    const rows=[...mainFlowTimelineArchitectureFrontier(p,patterns,15)];
+    assert.deepEqual(rows.slice(0,2).map(row=>row.patternOrdinal),[1,2],
+      "each equal-run pattern must receive its canonical timeline before a deeper repair");
+    assert.ok(rows.some(row=>row.architecture.mealStart===90),"a later hard-valid meal start remains reachable");
+    assert.ok(rows.some(row=>row.architecture.mealStart===60&&row.architecture.slots.join("|")==="45|70|85"),
+      "the internal fallback cut remains reachable");
+
+    const oldSet=new Set(patterns.flatMap(pattern=>[60,65,70,75,80,85,90].flatMap(mealStart=>[3,2,1]
+      .map(cut=>{const timeline=buildTimeline(p,pattern,15,cut,mealStart);return `${pattern.join(",")}@${timeline.slots.join(",")}#${mealStart}`;}))));
+    const lazySet=new Set(rows.map(({architecture})=>`${architecture.pattern.join(",")}@${architecture.slots.join(",")}#${architecture.mealStart}`));
+    assert.deepEqual(lazySet,oldSet,"lazy ordering must preserve the complete hard-valid architecture set");
+  });
+
+  it("closes every lower-run timeline frontier before visiting the next run family",()=>{
+    const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:75},duration:10};
+    const rows=[...mainFlowTimelineArchitectureFrontier(p,[["A","A"],["A","B"]],15)];
+    const firstHigher=rows.findIndex(row=>row.architecture.pattern.join("|")==="A|B");
+    assert.equal(firstHigher,4,"all two cuts at both meal starts in the one-run family must be visited first");
+  });
+
+  it("keeps authorized architecture ordering deterministic when task input is inverted",()=>{
+    const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
+    p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:75},duration:10};
+    const signature=(value:PlannerNextProblem)=>[...authorizedPipelineArchitectures(value)]
+      .map(row=>`${row.pattern.join(",")}@${row.slots.join(",")}#${row.mealStart}`).join(";");
+    assert.equal(signature(p),signature({...p,tasks:[...p.tasks].reverse()}));
+  });
+
+  it("repairs a nominal identity edge by rematerializing the complete participant bundle",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const first=materializePipelineBundleMatching(p,architecture);assert.ok(first);
+    const [participantMain,position]=[...first.matching][0]!;
+    const repaired=materializePipelineBundleMatching(p,architecture,[],new Set([`${participantMain}@${position}`]));
+    assert.ok(repaired);assert.notEqual(repaired.matching.get(participantMain),position);
+    const participant=p.tasks.find(task=>task.id===participantMain)!.participantId;
+    const ids=p.tasks.filter(task=>task.participantId===participant).map(task=>task.id);
+    const before=first.scheduledTasks.filter(task=>ids.includes(task.id)).map(task=>[task.kind,task.start]);
+    const after=repaired.scheduledTasks.filter(task=>ids.includes(task.id)).map(task=>[task.kind,task.start]);
+    assert.notDeepEqual(after,before);
+    assert.equal(validatePlan(p,[...repaired.scheduledTasks]).hardValid,true);
+    assert.equal(repaired.evidence.repairs,1);assert.equal(repaired.evidence.materializations,1);
+  });
+
+  it("keeps protected bundle placement and future-distinct identities separate",()=>{
+    const p=problem(["A","A"]);p.analyticalFutureTechnicalChains=[
+      {policy:{id:"future",orderedTaskIds:["future-0"],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]},
+        tasks:[{...p.tasks[0]!,id:"future-0",participantId:"p0",duration:25}]},
+    ];
+    const architecture={pattern:["A","A"],slots:[180,195]};
+    const witness=buildAnonymousPipelineWitness(p,architecture);assert.equal(witness.profileCount,2);
+    const initial=materializePipelineBundleMatching(p,architecture);assert.ok(initial);
+    const fixed=initial.scheduledTasks.find(task=>task.id==="main0")!;
+    const rematched=materializePipelineBundleMatching(p,architecture,[fixed]);assert.ok(rematched);
+    assert.deepEqual(rematched.scheduledTasks.find(task=>task.id===fixed.id),fixed);
+  });
+
+  const addTightCollectiveFuture=(p:PlannerNextProblem)=>{
+    p.participants[0]!.availability=[{start:160,end:300}];
+    p.participantMealCapacity={maxSimultaneous:1};
+    p.participantMeals=[{id:"meal",sourceTaskId:"future-meal",participantId:"p0",duration:30,
+      window:{start:160,end:300},status:"pending"}];
+    p.analyticalFutureParticipantTasks=[0,1,2].map(index=>({id:`future-${index}`,kind:"auxiliary" as const,
+      participantId:"p0",spaceId:index%2===0?"in":"style",duration:20,
+      availability:[{start:160,end:300}],dependencies:[]}));
+  };
+
+  it("keeps a protected Main bundle edge when the bundle repeats the identical placement",()=>{
+    const p=problem();addTightCollectiveFuture(p);const architecture={pattern:["A"],slots:[225]};
+    const baseline=materializePipelineBundleMatching(p,architecture);assert.ok(baseline);
+    const fixed=baseline.scheduledTasks.find(task=>task.id==="main0")!;
+    const prepared=preparePipelineBundleGraph(p,architecture,[fixed]);assert.ok(prepared);
+    assert.deepEqual([...prepared.candidates.get("main0")!.keys()],[0]);
+    assert.equal(prepared.participantEdgeEvidence.pruned,0);
+  });
+
+  it("keeps the same edge in the reservation filter when analytical context repeats the bundle Main",()=>{
+    const p=problem();addTightCollectiveFuture(p);const architecture={pattern:["A"],slots:[225]};
+    const baseline=materializePipelineBundleMatching(p,architecture);assert.ok(baseline);
+    const fixed=baseline.scheduledTasks.find(task=>task.id==="main0")!;
+    const prepared=preparePipelineBundleGraph(p,architecture);assert.ok(prepared);
+    const rematched=materializePreparedPipelineBundleMatching(p,prepared,new Set(),undefined,()=>true,undefined,[fixed]);
+    assert.ok(rematched);assert.equal(prepared.participantEdgeEvidence.pruned,0);
+    assert.equal(rematched.matching.get("main0"),0);
   });
 });
