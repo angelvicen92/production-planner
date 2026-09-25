@@ -142,6 +142,8 @@ export interface AssistedPlanningEvidence {
     "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
     | "macroCandidateCausalTraces" | "macroCandidateCausalReconciliation"
+    | "roundSynchronizationSharedOperationalMealPolicyIds" | "roundSynchronizationBreakVariantsConsidered"
+    | "roundSynchronizationSelectedBreakIntervals" | "roundSynchronizationMealAwareShapesFeasible" | "roundSynchronizationNoBreakHolePrunes"
     | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
     | "terminalTransportWitness"
     | "terminalCompletionRejectionsByCause" | "firstTerminalCompletionRejection"
@@ -498,6 +500,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",
+    "roundSynchronizationSharedOperationalMealPolicyIds","roundSynchronizationBreakVariantsConsidered",
+    "roundSynchronizationSelectedBreakIntervals","roundSynchronizationMealAwareShapesFeasible","roundSynchronizationNoBreakHolePrunes",
     "terminalTransportMaterializationFailures","terminalTransportWitness","terminalCompletionRejectionsByCause","firstTerminalCompletionRejection","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",

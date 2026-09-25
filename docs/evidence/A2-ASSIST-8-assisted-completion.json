@@ -179,7 +179,7 @@
       "newObligations": 0,
       "completedObligations": 46,
       "remainingObligations": 220,
-      "branches": 583,
+      "branches": 100000,
       "result": "NO_PROPOSAL",
       "protectedOperationalMeals": 1,
       "baseSnapshotSetupPreparations": 0,
@@ -3026,6 +3026,11 @@
           "deadEndedByAuthority": 0,
           "enteredResidualOrTerminal": 0
         },
+        "roundSynchronizationSharedOperationalMealPolicyIds": [],
+        "roundSynchronizationBreakVariantsConsidered": 0,
+        "roundSynchronizationSelectedBreakIntervals": [],
+        "roundSynchronizationMealAwareShapesFeasible": 0,
+        "roundSynchronizationNoBreakHolePrunes": 0,
         "terminalTransportMaterializationFailures": 0,
         "terminalTransportWitness": null,
         "terminalCompletionRejectionsByCause": {
@@ -3453,7 +3458,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "3ea6905e2ada0069e917e5040087864342dffa923df9087164fadd3baab7e3c7",
-      "durationMs": 109891
+      "durationMs": 165641
     },
     {
       "ordinal": 2,
@@ -6264,6 +6269,11 @@
           "deadEndedByAuthority": 0,
           "enteredResidualOrTerminal": 0
         },
+        "roundSynchronizationSharedOperationalMealPolicyIds": [],
+        "roundSynchronizationBreakVariantsConsidered": 0,
+        "roundSynchronizationSelectedBreakIntervals": [],
+        "roundSynchronizationMealAwareShapesFeasible": 0,
+        "roundSynchronizationNoBreakHolePrunes": 0,
         "terminalTransportMaterializationFailures": 0,
         "terminalTransportWitness": null,
         "terminalCompletionRejectionsByCause": {
@@ -6859,7 +6869,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "8e8fafae16dda2df13616e279f8e6b20f44359492bba4228e112372b6773752c",
-      "durationMs": 11713
+      "durationMs": 16367
     },
     {
       "ordinal": 3,
@@ -9598,6 +9608,11 @@
           "deadEndedByAuthority": 0,
           "enteredResidualOrTerminal": 1
         },
+        "roundSynchronizationSharedOperationalMealPolicyIds": [],
+        "roundSynchronizationBreakVariantsConsidered": 0,
+        "roundSynchronizationSelectedBreakIntervals": [],
+        "roundSynchronizationMealAwareShapesFeasible": 0,
+        "roundSynchronizationNoBreakHolePrunes": 0,
         "terminalTransportMaterializationFailures": 0,
         "terminalTransportWitness": null,
         "terminalCompletionRejectionsByCause": {
@@ -10294,7 +10309,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "b2deadd0738df5bf5ab5f3776faf6131b425c13bd9f8685331e50c70846f864f",
-      "durationMs": 10845
+      "durationMs": 17137
     },
     {
       "ordinal": 4,
@@ -11104,7 +11119,7 @@
         },
         "reason": "LEXICOGRAPHIC_OPERATIONAL_CRITICALITY",
         "stageResult": "NO_PROPOSAL",
-        "globalMealGate": "INCONCLUSIVE"
+        "globalMealGate": "BUDGET_EXHAUSTED"
       },
       "selectorAuthority": "resolveAssistedScope/product selector",
       "newVisibleTasks": [],
@@ -12380,10 +12395,10 @@
           "task:10252",
           "task:10265"
         ],
-        "globalMealGate": "INCONCLUSIVE",
-        "futureFeasibilityChecks": 12,
+        "globalMealGate": "BUDGET_EXHAUSTED",
+        "futureFeasibilityChecks": 1,
         "futureInfeasibleBranches": 0,
-        "affectedObligationsChecked": 228,
+        "affectedObligationsChecked": 19,
         "zeroDomainPrunes": 0,
         "analyticCollectivePrunes": 0,
         "blockingMealTaskIds": [],
@@ -12391,34 +12406,34 @@
         "exactMaterializations": 0
       },
       "participantFutureReservation": {
-        "checks": 20,
+        "checks": 5,
         "passes": 0,
-        "prunes": 7,
-        "abstentions": 13,
-        "affectedParticipants": 380,
-        "affectedFutureTasksChecked": 2760,
-        "affectedMealsChecked": 380,
-        "individualDomainChecks": 3818,
-        "individualZeroDomainPrunes": 7,
-        "jointTaskMealChecks": 1775,
+        "prunes": 2,
+        "abstentions": 3,
+        "affectedParticipants": 95,
+        "affectedFutureTasksChecked": 690,
+        "affectedMealsChecked": 95,
+        "individualDomainChecks": 815,
+        "individualZeroDomainPrunes": 2,
+        "jointTaskMealChecks": 395,
         "jointTaskMealPrunes": 0,
-        "collectiveChecks": 12,
+        "collectiveChecks": 18,
         "collectivePrunes": 0,
-        "compatiblePairChecks": 1775,
-        "analyticChecks": 5714,
-        "branchesConsumed": 0,
-        "macroAnalyticChecks": 19,
-        "macroAnalyticPrunes": 7,
-        "macroAnalyticAbstentions": 12,
-        "terminalExactChecks": 0,
+        "compatiblePairChecks": 395,
+        "analyticChecks": 1212,
+        "branchesConsumed": 99266,
+        "macroAnalyticChecks": 3,
+        "macroAnalyticPrunes": 2,
+        "macroAnalyticAbstentions": 1,
+        "terminalExactChecks": 1,
         "terminalExactPasses": 0,
         "terminalExactPrunes": 0,
-        "terminalExactAbstentions": 0,
-        "terminalExactBranches": 0,
+        "terminalExactAbstentions": 1,
+        "terminalExactBranches": 99266,
         "firstPrune": {
           "phase": "MACRO",
           "causingTaskId": "task:10014",
-          "causingCandidateStart": 895,
+          "causingCandidateStart": 900,
           "depth": 0,
           "macroUnitId": "round:round-synchronization:a2-totales-rounds",
           "addedTaskIds": [
@@ -12442,7 +12457,7 @@
             "task:10253",
             "task:10266"
           ],
-          "branchesAtPrune": 537,
+          "branchesAtPrune": 731,
           "affectedParticipants": [
             "participant:201",
             "participant:202",
@@ -12632,12 +12647,12 @@
       "unstructuredReasonCodes": [],
       "reasonCodes": [
         "ASSISTED_SCOPE_INCOMPLETE",
-        "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
+        "STANDALONE_BRANCH_BUDGET_EXHAUSTED"
       ],
       "work": {
-        "branchesExplored": 583,
+        "branchesExplored": 100000,
         "coreBranches": 19,
-        "standaloneBranches": 564,
+        "standaloneBranches": 99981,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
         "timelineCandidatesExplored": 0,
@@ -12679,14 +12694,14 @@
         "coreLeafTransportPrunes": 0,
         "transportContiguousStates": 4462,
         "membershipFallbackEntered": 0,
-        "participantMealFutureFeasibilityChecks": 12,
+        "participantMealFutureFeasibilityChecks": 1,
         "participantMealFutureInfeasibleBranches": 0,
-        "participantMealAffectedObligationsChecked": 228,
+        "participantMealAffectedObligationsChecked": 19,
         "participantMealZeroDomainPrunes": 0,
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 0
       },
-      "branchesExplored": 583,
+      "branchesExplored": 100000,
       "firstBlocker": {
         "scope": {
           "kind": "TASK_IDS",
@@ -12789,7 +12804,7 @@
         ],
         "branches": {
           "core": 19,
-          "standalone": 564
+          "standalone": 99981
         },
         "blockedObligationId": null,
         "blockedTask": null,
@@ -12823,7 +12838,7 @@
           "participantFuturePrune": {
             "phase": "MACRO",
             "causingTaskId": "task:10014",
-            "causingCandidateStart": 895,
+            "causingCandidateStart": 900,
             "depth": 0,
             "macroUnitId": "round:round-synchronization:a2-totales-rounds",
             "addedTaskIds": [
@@ -12847,7 +12862,7 @@
               "task:10253",
               "task:10266"
             ],
-            "branchesAtPrune": 537,
+            "branchesAtPrune": 731,
             "affectedParticipants": [
               "participant:201",
               "participant:202",
@@ -12898,150 +12913,26 @@
           "technicalChainFuturePrune": null
         },
         "participantMealPrune": null,
-        "participantFuturePrune": {
-          "phase": "MACRO",
-          "causingTaskId": "task:10014",
-          "causingCandidateStart": 895,
-          "depth": 0,
-          "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-          "addedTaskIds": [
-            "task:10014",
-            "task:10028",
-            "task:10040",
-            "task:10053",
-            "task:10068",
-            "task:10084",
-            "task:10099",
-            "task:10113",
-            "task:10128",
-            "task:10143",
-            "task:10158",
-            "task:10172",
-            "task:10187",
-            "task:10200",
-            "task:10214",
-            "task:10227",
-            "task:10240",
-            "task:10253",
-            "task:10266"
-          ],
-          "branchesAtPrune": 537,
-          "affectedParticipants": [
-            "participant:201",
-            "participant:202",
-            "participant:203",
-            "participant:204",
-            "participant:205",
-            "participant:206",
-            "participant:207",
-            "participant:208",
-            "participant:209",
-            "participant:210",
-            "participant:211",
-            "participant:212",
-            "participant:213",
-            "participant:214",
-            "participant:215",
-            "participant:216",
-            "participant:217",
-            "participant:218",
-            "participant:219"
-          ],
-          "affectedFutureTasksChecked": 138,
-          "affectedMealsChecked": 19,
-          "individualDomainChecks": 3,
-          "individualZeroDomainPrunes": 1,
-          "jointTaskMealChecks": 0,
-          "jointTaskMealPrunes": 0,
-          "collectiveChecks": 0,
-          "collectivePasses": 0,
-          "collectivePrunes": 0,
-          "collectiveObligationIds": [],
-          "collectiveDomainSizes": {},
-          "collectiveWitnessFound": false,
-          "compatiblePairChecks": 0,
-          "analyticChecks": 4,
-          "branchesConsumed": 0,
-          "unresolvedDependencyIds": [],
-          "abstainCause": null,
-          "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
-          "futureTaskId": "task:10004",
-          "mealTaskId": null,
-          "participantId": "participant:201",
-          "futureTaskCandidateCount": 0,
-          "mealCandidateCount": 0,
-          "compatiblePairCount": 0,
-          "status": "PRUNE"
-        },
+        "participantFuturePrune": null,
         "technicalChainFuturePrune": null,
-        "causingTask": {
-          "canonicalTaskId": "task:10014",
-          "productTaskId": 10014,
-          "kind": "auxiliary",
-          "participantId": "participant:201",
-          "spaceId": "space:3019",
-          "duration": 30,
-          "dependencies": [
-            "task:10003"
-          ],
-          "requiredResourceIds": [],
-          "placementAuthority": "AUTOMATIC",
-          "placement": null
-        },
+        "causingTask": null,
         "blockingMeal": null,
-        "standaloneDeadEnd": {
-          "kind": "MACRO_CANDIDATES_EXHAUSTED",
-          "phase": "MACRO",
-          "depth": 0,
-          "workItemId": "round:round-synchronization:a2-totales-rounds",
-          "workItemKind": "ROUND_SYNCHRONIZATION",
-          "taskIds": [
-            "task:10014",
-            "task:10028",
-            "task:10040",
-            "task:10053",
-            "task:10068",
-            "task:10084",
-            "task:10099",
-            "task:10113",
-            "task:10128",
-            "task:10143",
-            "task:10158",
-            "task:10172",
-            "task:10187",
-            "task:10200",
-            "task:10214",
-            "task:10227",
-            "task:10240",
-            "task:10253",
-            "task:10266"
-          ],
-          "domainBefore": 19,
-          "domainAfter": 19,
-          "candidatesEvaluated": 19,
-          "blockingTaskId": null,
-          "blockingAuthority": "probeExactRoundSynchronizationMacroDomain",
-          "firstPlacementRejection": null,
-          "ancestralDecisions": []
-        },
-        "causalAuthority": "participantFutureReservation",
-        "failureCategory": "FUTURE_FEASIBILITY",
-        "phase": "constructExactItinerantPlan/macro participant-future reservation",
-        "firstCausalCheck": "participantFutureReservation probe",
+        "standaloneDeadEnd": null,
+        "causalAuthority": "Planner Next branch budget",
+        "failureCategory": "BUDGET",
+        "phase": "constructExactItinerantPlan/standalone search",
+        "firstCausalCheck": "Planner Next branch budget",
         "staticEligibleStartCount": null,
         "dynamicEligibleStartCount": null,
         "reasonCodes": [
           "ASSISTED_SCOPE_INCOMPLETE",
-          "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN",
-          "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
+          "STANDALONE_BRANCH_BUDGET_EXHAUSTED"
         ],
-        "blockingTaskIds": [
-          "task:10004"
-        ],
+        "blockingTaskIds": [],
         "blockers": [],
-        "rejectionReason": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+        "rejectionReason": "BRANCH_BUDGET_EXHAUSTED",
         "originatingCoreDecision": null,
-        "classification": "PARTICIPANT_FUTURE_RESERVATION_PRUNE"
+        "classification": "SEARCH_CAPACITY_EXHAUSTED"
       },
       "sharedCapacityDiagnostic": {
         "prerequisiteSharedCapacityChecks": 0,
@@ -13172,2089 +13063,21 @@
         "pendingAfterFixedMainBundle": 19,
         "legacyFixedFeederFallbackEntered": false,
         "legacyFixedFeederFallbackReason": null,
-        "firstFixedMainBundleRejection": "FUTURE_FEASIBILITY_REJECTED",
+        "firstFixedMainBundleRejection": null,
         "firstFixedMainBundleHardGateDiagnostic": null
       },
       "standaloneDiagnostic": {
-        "standaloneBranchesByDepth": {},
+        "standaloneBranchesByDepth": {
+          "19": 1
+        },
         "standaloneSelectionsByTaskId": {},
         "standaloneCandidateStartsByTaskId": {},
-        "standaloneMaximumDepth": 0,
-        "standaloneCompleteLeafCount": 0,
+        "standaloneMaximumDepth": 19,
+        "standaloneCompleteLeafCount": 1,
         "terminalTransportMaterializationAttempts": 0,
         "macroCandidateCausalTraces": [
           {
-            "fingerprint": "07d3e14e033567d0e1064dbe9ea9395295611384ba3efbba60aef815ad183af6",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 895,
-                  "end": 925
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 965,
-                  "end": 995
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 860,
-                  "end": 890
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 930,
-                  "end": 960
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 1000,
-                  "end": 1030
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 685,
-                  "end": 715
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 685,
-                  "end": 715
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 860,
-                  "end": 890
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 720,
-                  "end": 750
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 720,
-                  "end": 750
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 825,
-                  "end": 855
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 930,
-                  "end": 960
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 965,
-                  "end": 995
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 895,
-                  "end": 925
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 790,
-                  "end": 820
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 755,
-                  "end": 785
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 755,
-                  "end": 785
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 825,
-                  "end": 855
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 790,
-                  "end": 820
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "PRUNE",
-              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_OBLIGATION"
-            },
-            "operationalMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_POLICY"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "d919dca95a9ca373761402b48bcfd19e021ec5a0a145ceb65fe3d9ff046ad9c2",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 865,
-                  "end": 895
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 935,
-                  "end": 965
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 970,
-                  "end": 1000
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 970,
-                  "end": 1000
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 1005,
-                  "end": 1035
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 690,
-                  "end": 720
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 725,
-                  "end": 755
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 865,
-                  "end": 895
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 690,
-                  "end": 720
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 725,
-                  "end": 755
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 830,
-                  "end": 860
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 900,
-                  "end": 930
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 935,
-                  "end": 965
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 900,
-                  "end": 930
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 795,
-                  "end": 825
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 760,
-                  "end": 790
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 760,
-                  "end": 790
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 830,
-                  "end": 860
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 795,
-                  "end": 825
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "73f079554a393a3d7799d6392c5a3713529a72332d4f2f3a2f4d7e45828c5f1a",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 835,
-                  "end": 865
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 975,
-                  "end": 1005
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 975,
-                  "end": 1005
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 940,
-                  "end": 970
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 765,
-                  "end": 795
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 695,
-                  "end": 725
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 730,
-                  "end": 760
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 870,
-                  "end": 900
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 695,
-                  "end": 725
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 730,
-                  "end": 760
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 870,
-                  "end": 900
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 905,
-                  "end": 935
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 940,
-                  "end": 970
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 905,
-                  "end": 935
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 800,
-                  "end": 830
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 765,
-                  "end": 795
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1010,
-                  "end": 1040
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 835,
-                  "end": 865
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 800,
-                  "end": 830
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "89e587258bacb119efbdd3be5a19fdf99ab067e2b4a35a8aada43c3c46f0da54",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 875,
-                  "end": 905
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 980,
-                  "end": 1010
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 980,
-                  "end": 1010
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 945,
-                  "end": 975
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 840,
-                  "end": 870
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 700,
-                  "end": 730
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 735,
-                  "end": 765
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 875,
-                  "end": 905
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 700,
-                  "end": 730
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 735,
-                  "end": 765
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 770,
-                  "end": 800
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 945,
-                  "end": 975
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 910,
-                  "end": 940
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 910,
-                  "end": 940
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 805,
-                  "end": 835
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 840,
-                  "end": 870
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1015,
-                  "end": 1045
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 805,
-                  "end": 835
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 770,
-                  "end": 800
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "3a6bc1b3d21827f46619e51db38adb59ac16e93ddc63839ad64a08635ea54622",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 845,
-                  "end": 875
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 950,
-                  "end": 980
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 985,
-                  "end": 1015
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 915,
-                  "end": 945
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 740,
-                  "end": 770
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 705,
-                  "end": 735
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 705,
-                  "end": 735
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 880,
-                  "end": 910
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 775,
-                  "end": 805
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 740,
-                  "end": 770
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 880,
-                  "end": 910
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 950,
-                  "end": 980
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 915,
-                  "end": 945
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 985,
-                  "end": 1015
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 810,
-                  "end": 840
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 845,
-                  "end": 875
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1020,
-                  "end": 1050
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 810,
-                  "end": 840
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 775,
-                  "end": 805
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "9bb65cf34a0ef1db48e770199d882abab96ff36e41ec390a4859df707d2524aa",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 850,
-                  "end": 880
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 990,
-                  "end": 1020
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 990,
-                  "end": 1020
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 955,
-                  "end": 985
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 745,
-                  "end": 775
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 745,
-                  "end": 775
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 710,
-                  "end": 740
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 920,
-                  "end": 950
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 780,
-                  "end": 810
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 710,
-                  "end": 740
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 885,
-                  "end": 915
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 955,
-                  "end": 985
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 920,
-                  "end": 950
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 885,
-                  "end": 915
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 815,
-                  "end": 845
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 850,
-                  "end": 880
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1025,
-                  "end": 1055
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 815,
-                  "end": 845
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 780,
-                  "end": 810
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "2dbea2e216ad1bffa511171f9e178bf5537ce9179400a31eb1c46f71ba4916e3",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 890,
-                  "end": 920
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 995,
-                  "end": 1025
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 855,
-                  "end": 885
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 960,
-                  "end": 990
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 995,
-                  "end": 1025
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 750,
-                  "end": 780
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 750,
-                  "end": 780
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 925,
-                  "end": 955
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 715,
-                  "end": 745
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 715,
-                  "end": 745
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 785,
-                  "end": 815
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 925,
-                  "end": 955
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 960,
-                  "end": 990
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 890,
-                  "end": 920
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 820,
-                  "end": 850
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 855,
-                  "end": 885
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1030,
-                  "end": 1060
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 820,
-                  "end": 850
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 785,
-                  "end": 815
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "0ca615a264733d5ce898b0347b50d7815cb284b79b582c25f3a97f2125adcf40",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 895,
-                  "end": 925
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 965,
-                  "end": 995
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 965,
-                  "end": 995
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 930,
-                  "end": 960
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 825,
-                  "end": 855
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 1000,
-                  "end": 1030
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 755,
-                  "end": 785
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 860,
-                  "end": 890
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 720,
-                  "end": 750
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 720,
-                  "end": 750
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 860,
-                  "end": 890
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 930,
-                  "end": 960
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 1000,
-                  "end": 1030
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 895,
-                  "end": 925
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 790,
-                  "end": 820
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 755,
-                  "end": 785
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1035,
-                  "end": 1065
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 825,
-                  "end": 855
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 790,
-                  "end": 820
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "PRUNE",
-              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_OBLIGATION"
-            },
-            "operationalMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_POLICY"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "1e8d9b7b19c64f5b1c2e6c04a6b8685e49048c6e7a128d9c812f0f5a1a63b5da",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 900,
-                  "end": 930
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 935,
-                  "end": 965
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 970,
-                  "end": 1000
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 970,
-                  "end": 1000
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 830,
-                  "end": 860
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 1005,
-                  "end": 1035
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 760,
-                  "end": 790
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 865,
-                  "end": 895
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 725,
-                  "end": 755
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 725,
-                  "end": 755
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 865,
-                  "end": 895
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 935,
-                  "end": 965
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 1005,
-                  "end": 1035
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 900,
-                  "end": 930
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 795,
-                  "end": 825
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 760,
-                  "end": 790
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1040,
-                  "end": 1070
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 830,
-                  "end": 860
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 795,
-                  "end": 825
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "PRUNE",
-              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_OBLIGATION"
-            },
-            "operationalMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_POLICY"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "3a93e424f5a313ccc8a4b4ad0e109e90457e9fd2159766a9850e5f85a4deeb11",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 870,
-                  "end": 900
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 975,
-                  "end": 1005
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 1010,
-                  "end": 1040
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 940,
-                  "end": 970
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 835,
-                  "end": 865
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 1010,
-                  "end": 1040
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 765,
-                  "end": 795
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 870,
-                  "end": 900
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 730,
-                  "end": 760
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 730,
-                  "end": 760
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 905,
-                  "end": 935
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 940,
-                  "end": 970
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 975,
-                  "end": 1005
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 905,
-                  "end": 935
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 800,
-                  "end": 830
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 765,
-                  "end": 795
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1045,
-                  "end": 1075
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 835,
-                  "end": 865
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 800,
-                  "end": 830
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "9171a4e987824ea25ee74f1fd673c6fbaa4bf038463129309bbd25a50f82ba8c",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 840,
-                  "end": 870
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 980,
-                  "end": 1010
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 1015,
-                  "end": 1045
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 945,
-                  "end": 975
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 910,
-                  "end": 940
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 1015,
-                  "end": 1045
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 735,
-                  "end": 765
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 875,
-                  "end": 905
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 875,
-                  "end": 905
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 735,
-                  "end": 765
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 770,
-                  "end": 800
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 945,
-                  "end": 975
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 980,
-                  "end": 1010
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 910,
-                  "end": 940
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 805,
-                  "end": 835
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 840,
-                  "end": 870
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 1050,
-                  "end": 1080
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 805,
-                  "end": 835
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 770,
-                  "end": 800
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "0a01ae14c6554bb129bb8620739761c50936015e5a860a27f995b3b238117774",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 845,
-                  "end": 875
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 1020,
-                  "end": 1050
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 1020,
-                  "end": 1050
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 950,
-                  "end": 980
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 915,
-                  "end": 945
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 740,
-                  "end": 770
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 880,
-                  "end": 910
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 880,
-                  "end": 910
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 1055,
-                  "end": 1085
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 915,
-                  "end": 945
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 775,
-                  "end": 805
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 950,
-                  "end": 980
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 985,
-                  "end": 1015
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 985,
-                  "end": 1015
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 810,
-                  "end": 840
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 845,
-                  "end": 875
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 740,
-                  "end": 770
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 810,
-                  "end": 840
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 775,
-                  "end": 805
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "5fd9b1bc7a82071a6654c1879f16b3ae94627f7237377b0c5b2fb36cf5fae227",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 850,
-                  "end": 880
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 1025,
-                  "end": 1055
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 920,
-                  "end": 950
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 990,
-                  "end": 1020
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 780,
-                  "end": 810
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 745,
-                  "end": 775
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 885,
-                  "end": 915
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 920,
-                  "end": 950
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 1060,
-                  "end": 1090
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 955,
-                  "end": 985
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 955,
-                  "end": 985
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 1025,
-                  "end": 1055
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 990,
-                  "end": 1020
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 885,
-                  "end": 915
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 815,
-                  "end": 845
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 850,
-                  "end": 880
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 745,
-                  "end": 775
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 815,
-                  "end": 845
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 780,
-                  "end": 810
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "e8cabb296696191f9c749ec03b5253d618b4dea38db33f63dd07712bdfe7bef1",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 855,
-                  "end": 885
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 1030,
-                  "end": 1060
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 925,
-                  "end": 955
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 995,
-                  "end": 1025
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 785,
-                  "end": 815
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 925,
-                  "end": 955
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 890,
-                  "end": 920
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 960,
-                  "end": 990
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 1065,
-                  "end": 1095
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 750,
-                  "end": 780
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 960,
-                  "end": 990
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 1030,
-                  "end": 1060
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 995,
-                  "end": 1025
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 890,
-                  "end": 920
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 820,
-                  "end": 850
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 855,
-                  "end": 885
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 750,
-                  "end": 780
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 820,
-                  "end": 850
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 785,
-                  "end": 815
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "ABSTAIN",
-              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": null
-            },
-            "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "09dc45f0807e99520d4896cc8cd5263d17d5df0542137746ae08dcfa24b2b767",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 895,
-                  "end": 925
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 965,
-                  "end": 995
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 860,
-                  "end": 890
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 930,
-                  "end": 960
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 930,
-                  "end": 960
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 1000,
-                  "end": 1030
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 1000,
-                  "end": 1030
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 860,
-                  "end": 890
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 1070,
-                  "end": 1100
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 1035,
-                  "end": 1065
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 825,
-                  "end": 855
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 1035,
-                  "end": 1065
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 965,
-                  "end": 995
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 895,
-                  "end": 925
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 790,
-                  "end": 820
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 755,
-                  "end": 785
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 755,
-                  "end": 785
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 825,
-                  "end": 855
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 790,
-                  "end": 820
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "PRUNE",
-              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_OBLIGATION"
-            },
-            "operationalMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_POLICY"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "3c78d9f27cca8d988909e9c6c830686ee909fe8b2e3c3d6e1c0903229ebef2c0",
+            "fingerprint": "1a483e0bbccf7f93cf0ed1452f868ac8b00a36125cda2b0530e249d0288ff8b9",
             "macroUnitId": "round:round-synchronization:a2-totales-rounds",
             "macroUnitKind": "ROUND_SYNCHRONIZATION",
             "depth": 0,
@@ -15272,48 +13095,186 @@
                 },
                 {
                   "taskId": "task:10040",
-                  "start": 865,
-                  "end": 895
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 935,
-                  "end": 965
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 935,
-                  "end": 965
-                },
-                {
-                  "taskId": "task:10084",
                   "start": 1005,
                   "end": 1035
                 },
                 {
-                  "taskId": "task:10099",
+                  "taskId": "task:10053",
                   "start": 970,
                   "end": 1000
                 },
                 {
+                  "taskId": "task:10068",
+                  "start": 755,
+                  "end": 785
+                },
+                {
+                  "taskId": "task:10084",
+                  "start": 685,
+                  "end": 715
+                },
+                {
+                  "taskId": "task:10099",
+                  "start": 685,
+                  "end": 715
+                },
+                {
                   "taskId": "task:10113",
+                  "start": 1005,
+                  "end": 1035
+                },
+                {
+                  "taskId": "task:10128",
+                  "start": 720,
+                  "end": 750
+                },
+                {
+                  "taskId": "task:10143",
+                  "start": 720,
+                  "end": 750
+                },
+                {
+                  "taskId": "task:10158",
+                  "start": 935,
+                  "end": 965
+                },
+                {
+                  "taskId": "task:10172",
+                  "start": 1040,
+                  "end": 1070
+                },
+                {
+                  "taskId": "task:10187",
+                  "start": 970,
+                  "end": 1000
+                },
+                {
+                  "taskId": "task:10200",
+                  "start": 900,
+                  "end": 930
+                },
+                {
+                  "taskId": "task:10214",
                   "start": 865,
                   "end": 895
                 },
                 {
-                  "taskId": "task:10128",
+                  "taskId": "task:10227",
+                  "start": 755,
+                  "end": 785
+                },
+                {
+                  "taskId": "task:10240",
                   "start": 1075,
                   "end": 1105
                 },
                 {
-                  "taskId": "task:10143",
+                  "taskId": "task:10253",
+                  "start": 935,
+                  "end": 965
+                },
+                {
+                  "taskId": "task:10266",
+                  "start": 865,
+                  "end": 895
+                }
+              ],
+              "domainSize": 15,
+              "structuralCandidateCount": 353,
+              "matchingFeasibleCandidateCount": 15,
+              "roundMatchingResult": "MATCHING_FEASIBLE"
+            },
+            "pendingPrerequisiteReservation": {
+              "status": "PASS",
+              "cause": null,
+              "blockingTaskId": null,
+              "authorityId": null
+            },
+            "participantFuture": {
+              "status": "PRUNE",
+              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
+            },
+            "participantMealFuture": {
+              "status": "PASS",
+              "cause": "NO_APPLICABLE_OBLIGATION"
+            },
+            "operationalMealFuture": {
+              "status": "PASS",
+              "cause": "NO_APPLICABLE_POLICY"
+            },
+            "enteredRecurseAfterMacro": false,
+            "selectedAnotherMacroUnit": false,
+            "enteredOrdinarySearch": false,
+            "firstDescendantDeadEnd": null,
+            "firstOrdinaryRejection": null,
+            "reachedCompleteLeaf": false,
+            "terminalParticipantFuture": {
+              "status": "NOT_CHECKED",
+              "cause": null
+            },
+            "outcome": "PRUNED"
+          },
+          {
+            "fingerprint": "e2bc2a982ea67546e6576d9f906029c7ddcd52883ab5d0904eb70c930b998531",
+            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
+            "macroUnitKind": "ROUND_SYNCHRONIZATION",
+            "depth": 0,
+            "candidate": {
+              "starts": [
+                {
+                  "taskId": "task:10014",
+                  "start": 900,
+                  "end": 930
+                },
+                {
+                  "taskId": "task:10028",
                   "start": 970,
                   "end": 1000
                 },
                 {
+                  "taskId": "task:10040",
+                  "start": 970,
+                  "end": 1000
+                },
+                {
+                  "taskId": "task:10053",
+                  "start": 1005,
+                  "end": 1035
+                },
+                {
+                  "taskId": "task:10068",
+                  "start": 755,
+                  "end": 785
+                },
+                {
+                  "taskId": "task:10084",
+                  "start": 685,
+                  "end": 715
+                },
+                {
+                  "taskId": "task:10099",
+                  "start": 685,
+                  "end": 715
+                },
+                {
+                  "taskId": "task:10113",
+                  "start": 1040,
+                  "end": 1070
+                },
+                {
+                  "taskId": "task:10128",
+                  "start": 720,
+                  "end": 750
+                },
+                {
+                  "taskId": "task:10143",
+                  "start": 720,
+                  "end": 750
+                },
+                {
                   "taskId": "task:10158",
-                  "start": 830,
-                  "end": 860
+                  "start": 935,
+                  "end": 965
                 },
                 {
                   "taskId": "task:10172",
@@ -15332,33 +13293,33 @@
                 },
                 {
                   "taskId": "task:10214",
-                  "start": 795,
-                  "end": 825
+                  "start": 790,
+                  "end": 820
                 },
                 {
                   "taskId": "task:10227",
-                  "start": 760,
-                  "end": 790
+                  "start": 755,
+                  "end": 785
                 },
                 {
                   "taskId": "task:10240",
-                  "start": 760,
-                  "end": 790
+                  "start": 1075,
+                  "end": 1105
                 },
                 {
                   "taskId": "task:10253",
-                  "start": 830,
-                  "end": 860
+                  "start": 935,
+                  "end": 965
                 },
                 {
                   "taskId": "task:10266",
-                  "start": 795,
-                  "end": 825
+                  "start": 790,
+                  "end": 820
                 }
               ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
+              "domainSize": 15,
+              "structuralCandidateCount": 353,
+              "matchingFeasibleCandidateCount": 15,
               "roundMatchingResult": "MATCHING_FEASIBLE"
             },
             "pendingPrerequisiteReservation": {
@@ -15392,7 +13353,7 @@
             "outcome": "PRUNED"
           },
           {
-            "fingerprint": "6d02eaad114cb19e53960c607c389b1a22668f6aa1f6bd1b10b0c7a7e8481d62",
+            "fingerprint": "95c00076b26817dcb3ac3dacee78f1b91b79ac46db86a96746991d09505eefe1",
             "macroUnitId": "round:round-synchronization:a2-totales-rounds",
             "macroUnitKind": "ROUND_SYNCHRONIZATION",
             "depth": 0,
@@ -15400,103 +13361,103 @@
               "starts": [
                 {
                   "taskId": "task:10014",
-                  "start": 870,
-                  "end": 900
+                  "start": 825,
+                  "end": 855
                 },
                 {
                   "taskId": "task:10028",
-                  "start": 975,
-                  "end": 1005
+                  "start": 970,
+                  "end": 1000
                 },
                 {
                   "taskId": "task:10040",
-                  "start": 1045,
-                  "end": 1075
+                  "start": 970,
+                  "end": 1000
                 },
                 {
                   "taskId": "task:10053",
-                  "start": 940,
-                  "end": 970
+                  "start": 1005,
+                  "end": 1035
                 },
                 {
                   "taskId": "task:10068",
-                  "start": 835,
-                  "end": 865
+                  "start": 755,
+                  "end": 785
                 },
                 {
                   "taskId": "task:10084",
-                  "start": 1010,
-                  "end": 1040
+                  "start": 685,
+                  "end": 715
                 },
                 {
                   "taskId": "task:10099",
-                  "start": 905,
-                  "end": 935
+                  "start": 685,
+                  "end": 715
                 },
                 {
                   "taskId": "task:10113",
-                  "start": 870,
-                  "end": 900
+                  "start": 935,
+                  "end": 965
                 },
                 {
                   "taskId": "task:10128",
-                  "start": 1080,
-                  "end": 1110
+                  "start": 720,
+                  "end": 750
                 },
                 {
                   "taskId": "task:10143",
-                  "start": 1045,
-                  "end": 1075
+                  "start": 720,
+                  "end": 750
                 },
                 {
                   "taskId": "task:10158",
-                  "start": 975,
-                  "end": 1005
+                  "start": 935,
+                  "end": 965
                 },
                 {
                   "taskId": "task:10172",
-                  "start": 940,
-                  "end": 970
+                  "start": 1040,
+                  "end": 1070
                 },
                 {
                   "taskId": "task:10187",
-                  "start": 1010,
-                  "end": 1040
+                  "start": 1005,
+                  "end": 1035
                 },
                 {
                   "taskId": "task:10200",
-                  "start": 905,
-                  "end": 935
+                  "start": 1040,
+                  "end": 1070
                 },
                 {
                   "taskId": "task:10214",
-                  "start": 800,
-                  "end": 830
+                  "start": 790,
+                  "end": 820
                 },
                 {
                   "taskId": "task:10227",
-                  "start": 765,
-                  "end": 795
+                  "start": 755,
+                  "end": 785
                 },
                 {
                   "taskId": "task:10240",
-                  "start": 765,
-                  "end": 795
+                  "start": 1075,
+                  "end": 1105
                 },
                 {
                   "taskId": "task:10253",
-                  "start": 835,
-                  "end": 865
+                  "start": 825,
+                  "end": 855
                 },
                 {
                   "taskId": "task:10266",
-                  "start": 800,
-                  "end": 830
+                  "start": 790,
+                  "end": 820
                 }
               ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
+              "domainSize": 15,
+              "structuralCandidateCount": 353,
+              "matchingFeasibleCandidateCount": 15,
               "roundMatchingResult": "MATCHING_FEASIBLE"
             },
             "pendingPrerequisiteReservation": {
@@ -15514,304 +13475,41 @@
               "cause": null
             },
             "operationalMealFuture": {
-              "status": "PRUNE",
-              "cause": "CAUSED_BY_ADDED_TASK:break:totales-operations:CANDIDATES_28_TO_0"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
+              "status": "PASS",
               "cause": null
             },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "2ad24edc3a3cc693e52dd40cd0718ab68f6661e924e262c4616edb9ce326cdec",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 840,
-                  "end": 870
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 1050,
-                  "end": 1080
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 1015,
-                  "end": 1045
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 980,
-                  "end": 1010
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 875,
-                  "end": 905
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 1015,
-                  "end": 1045
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 980,
-                  "end": 1010
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 875,
-                  "end": 905
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 1085,
-                  "end": 1115
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 945,
-                  "end": 975
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 945,
-                  "end": 975
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 1050,
-                  "end": 1080
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 910,
-                  "end": 940
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 910,
-                  "end": 940
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 805,
-                  "end": 835
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 840,
-                  "end": 870
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 770,
-                  "end": 800
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 805,
-                  "end": 835
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 770,
-                  "end": 800
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "PRUNE",
-              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_OBLIGATION"
-            },
-            "operationalMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_POLICY"
-            },
-            "enteredRecurseAfterMacro": false,
+            "enteredRecurseAfterMacro": true,
             "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
+            "enteredOrdinarySearch": true,
             "firstDescendantDeadEnd": null,
             "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
+            "reachedCompleteLeaf": true,
             "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
+              "status": "ABSTAIN",
+              "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
             },
-            "outcome": "PRUNED"
-          },
-          {
-            "fingerprint": "67c9c40ba0a0a74a378c69cb48aec12109646255df07e0655b2835c35d5bb591",
-            "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-            "macroUnitKind": "ROUND_SYNCHRONIZATION",
-            "depth": 0,
-            "candidate": {
-              "starts": [
-                {
-                  "taskId": "task:10014",
-                  "start": 845,
-                  "end": 875
-                },
-                {
-                  "taskId": "task:10028",
-                  "start": 1055,
-                  "end": 1085
-                },
-                {
-                  "taskId": "task:10040",
-                  "start": 1020,
-                  "end": 1050
-                },
-                {
-                  "taskId": "task:10053",
-                  "start": 985,
-                  "end": 1015
-                },
-                {
-                  "taskId": "task:10068",
-                  "start": 880,
-                  "end": 910
-                },
-                {
-                  "taskId": "task:10084",
-                  "start": 915,
-                  "end": 945
-                },
-                {
-                  "taskId": "task:10099",
-                  "start": 950,
-                  "end": 980
-                },
-                {
-                  "taskId": "task:10113",
-                  "start": 880,
-                  "end": 910
-                },
-                {
-                  "taskId": "task:10128",
-                  "start": 1090,
-                  "end": 1120
-                },
-                {
-                  "taskId": "task:10143",
-                  "start": 950,
-                  "end": 980
-                },
-                {
-                  "taskId": "task:10158",
-                  "start": 985,
-                  "end": 1015
-                },
-                {
-                  "taskId": "task:10172",
-                  "start": 1055,
-                  "end": 1085
-                },
-                {
-                  "taskId": "task:10187",
-                  "start": 915,
-                  "end": 945
-                },
-                {
-                  "taskId": "task:10200",
-                  "start": 1020,
-                  "end": 1050
-                },
-                {
-                  "taskId": "task:10214",
-                  "start": 810,
-                  "end": 840
-                },
-                {
-                  "taskId": "task:10227",
-                  "start": 845,
-                  "end": 875
-                },
-                {
-                  "taskId": "task:10240",
-                  "start": 775,
-                  "end": 805
-                },
-                {
-                  "taskId": "task:10253",
-                  "start": 810,
-                  "end": 840
-                },
-                {
-                  "taskId": "task:10266",
-                  "start": 775,
-                  "end": 805
-                }
-              ],
-              "domainSize": 19,
-              "structuralCandidateCount": 76,
-              "matchingFeasibleCandidateCount": 19,
-              "roundMatchingResult": "MATCHING_FEASIBLE"
-            },
-            "pendingPrerequisiteReservation": {
-              "status": "PASS",
-              "cause": null,
-              "blockingTaskId": null,
-              "authorityId": null
-            },
-            "participantFuture": {
-              "status": "PRUNE",
-              "cause": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
-            },
-            "participantMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_OBLIGATION"
-            },
-            "operationalMealFuture": {
-              "status": "PASS",
-              "cause": "NO_APPLICABLE_POLICY"
-            },
-            "enteredRecurseAfterMacro": false,
-            "selectedAnotherMacroUnit": false,
-            "enteredOrdinarySearch": false,
-            "firstDescendantDeadEnd": null,
-            "firstOrdinaryRejection": null,
-            "reachedCompleteLeaf": false,
-            "terminalParticipantFuture": {
-              "status": "NOT_CHECKED",
-              "cause": null
-            },
-            "outcome": "PRUNED"
+            "outcome": "ENTERED_RESIDUAL_OR_TERMINAL"
           }
         ],
         "macroCandidateCausalReconciliation": {
-          "total": 19,
-          "pruned": 19,
+          "total": 3,
+          "pruned": 2,
           "deadEndedByAuthority": 0,
-          "enteredResidualOrTerminal": 0
+          "enteredResidualOrTerminal": 1
         },
+        "roundSynchronizationSharedOperationalMealPolicyIds": [
+          "break:totales-operations"
+        ],
+        "roundSynchronizationBreakVariantsConsidered": 229,
+        "roundSynchronizationSelectedBreakIntervals": [
+          {
+            "policyId": "break:totales-operations",
+            "start": 855,
+            "end": 930
+          }
+        ],
+        "roundSynchronizationMealAwareShapesFeasible": 226,
+        "roundSynchronizationNoBreakHolePrunes": 0,
         "terminalTransportMaterializationFailures": 0,
         "terminalTransportWitness": null,
         "terminalCompletionRejectionsByCause": {
@@ -15825,12 +13523,9 @@
         "firstTerminalCompletionRejection": null,
         "standaloneFirstSelectedTaskId": null,
         "standaloneDominantPathFirst20": [],
-        "standaloneFirstDominantBlocker": {
-          "taskId": "task:10014",
-          "count": 1
-        },
-        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": null,
-        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 0,
+        "standaloneFirstDominantBlocker": null,
+        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 226,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 99267,
         "firstHardValidCoreLeaf": {
           "coreTaskCount": 90,
           "coreTasksByKind": {
@@ -15979,41 +13674,7 @@
         "ordinaryPrerequisiteReservationChecks": 0,
         "ordinaryPrerequisiteReservationPrunes": 0,
         "firstPrerequisiteReservationPrune": null,
-        "firstStandaloneDeadEndCause": {
-          "kind": "MACRO_CANDIDATES_EXHAUSTED",
-          "phase": "MACRO",
-          "depth": 0,
-          "workItemId": "round:round-synchronization:a2-totales-rounds",
-          "workItemKind": "ROUND_SYNCHRONIZATION",
-          "taskIds": [
-            "task:10014",
-            "task:10028",
-            "task:10040",
-            "task:10053",
-            "task:10068",
-            "task:10084",
-            "task:10099",
-            "task:10113",
-            "task:10128",
-            "task:10143",
-            "task:10158",
-            "task:10172",
-            "task:10187",
-            "task:10200",
-            "task:10214",
-            "task:10227",
-            "task:10240",
-            "task:10253",
-            "task:10266"
-          ],
-          "domainBefore": 19,
-          "domainAfter": 19,
-          "candidatesEvaluated": 19,
-          "blockingTaskId": null,
-          "blockingAuthority": "probeExactRoundSynchronizationMacroDomain",
-          "firstPlacementRejection": null,
-          "ancestralDecisions": []
-        },
+        "firstStandaloneDeadEndCause": null,
         "macroUnitsSelected": 1,
         "macroSelectionOrder": [
           "ROUND_SYNCHRONIZATION:round:round-synchronization:a2-totales-rounds"
@@ -16026,20 +13687,20 @@
               {
                 "id": "round:round-synchronization:a2-totales-rounds",
                 "kind": "ROUND_SYNCHRONIZATION",
-                "domainSize": 19,
+                "domainSize": 15,
                 "domainMeasure": "hard-valid-top-level-macro-placements",
                 "domainExact": true,
                 "hardResourceAvailabilityMinutes": 720,
                 "totalDuration": 570,
                 "affectedTaskCount": 19,
-                "structuralCandidateCount": 76,
-                "matchingFeasibleCandidateCount": 19
+                "structuralCandidateCount": 353,
+                "matchingFeasibleCandidateCount": 15
               }
             ]
           }
         ],
         "macroDomainSizes": {
-          "round:round-synchronization:a2-totales-rounds": 19
+          "round:round-synchronization:a2-totales-rounds": 15
         },
         "setupBlockSearchInvocations": 0,
         "setupBlockStartsExplored": 0,
@@ -16055,8 +13716,8 @@
             "continuation": 0,
             "participantMeal": 0,
             "standaloneForward": 0,
-            "other": 564,
-            "total": 583
+            "other": 99981,
+            "total": 100000
           }
         },
         "feederByDepth": {},
@@ -16077,7 +13738,7 @@
           "collisions": []
         }
       },
-      "durationMs": 11612
+      "durationMs": 31660
     }
   ],
   "firstBlocker": {
@@ -16182,7 +13843,7 @@
     ],
     "branches": {
       "core": 19,
-      "standalone": 564
+      "standalone": 99981
     },
     "blockedObligationId": null,
     "blockedTask": null,
@@ -16216,7 +13877,7 @@
       "participantFuturePrune": {
         "phase": "MACRO",
         "causingTaskId": "task:10014",
-        "causingCandidateStart": 895,
+        "causingCandidateStart": 900,
         "depth": 0,
         "macroUnitId": "round:round-synchronization:a2-totales-rounds",
         "addedTaskIds": [
@@ -16240,7 +13901,7 @@
           "task:10253",
           "task:10266"
         ],
-        "branchesAtPrune": 537,
+        "branchesAtPrune": 731,
         "affectedParticipants": [
           "participant:201",
           "participant:202",
@@ -16291,150 +13952,26 @@
       "technicalChainFuturePrune": null
     },
     "participantMealPrune": null,
-    "participantFuturePrune": {
-      "phase": "MACRO",
-      "causingTaskId": "task:10014",
-      "causingCandidateStart": 895,
-      "depth": 0,
-      "macroUnitId": "round:round-synchronization:a2-totales-rounds",
-      "addedTaskIds": [
-        "task:10014",
-        "task:10028",
-        "task:10040",
-        "task:10053",
-        "task:10068",
-        "task:10084",
-        "task:10099",
-        "task:10113",
-        "task:10128",
-        "task:10143",
-        "task:10158",
-        "task:10172",
-        "task:10187",
-        "task:10200",
-        "task:10214",
-        "task:10227",
-        "task:10240",
-        "task:10253",
-        "task:10266"
-      ],
-      "branchesAtPrune": 537,
-      "affectedParticipants": [
-        "participant:201",
-        "participant:202",
-        "participant:203",
-        "participant:204",
-        "participant:205",
-        "participant:206",
-        "participant:207",
-        "participant:208",
-        "participant:209",
-        "participant:210",
-        "participant:211",
-        "participant:212",
-        "participant:213",
-        "participant:214",
-        "participant:215",
-        "participant:216",
-        "participant:217",
-        "participant:218",
-        "participant:219"
-      ],
-      "affectedFutureTasksChecked": 138,
-      "affectedMealsChecked": 19,
-      "individualDomainChecks": 3,
-      "individualZeroDomainPrunes": 1,
-      "jointTaskMealChecks": 0,
-      "jointTaskMealPrunes": 0,
-      "collectiveChecks": 0,
-      "collectivePasses": 0,
-      "collectivePrunes": 0,
-      "collectiveObligationIds": [],
-      "collectiveDomainSizes": {},
-      "collectiveWitnessFound": false,
-      "compatiblePairChecks": 0,
-      "analyticChecks": 4,
-      "branchesConsumed": 0,
-      "unresolvedDependencyIds": [],
-      "abstainCause": null,
-      "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
-      "futureTaskId": "task:10004",
-      "mealTaskId": null,
-      "participantId": "participant:201",
-      "futureTaskCandidateCount": 0,
-      "mealCandidateCount": 0,
-      "compatiblePairCount": 0,
-      "status": "PRUNE"
-    },
+    "participantFuturePrune": null,
     "technicalChainFuturePrune": null,
-    "causingTask": {
-      "canonicalTaskId": "task:10014",
-      "productTaskId": 10014,
-      "kind": "auxiliary",
-      "participantId": "participant:201",
-      "spaceId": "space:3019",
-      "duration": 30,
-      "dependencies": [
-        "task:10003"
-      ],
-      "requiredResourceIds": [],
-      "placementAuthority": "AUTOMATIC",
-      "placement": null
-    },
+    "causingTask": null,
     "blockingMeal": null,
-    "standaloneDeadEnd": {
-      "kind": "MACRO_CANDIDATES_EXHAUSTED",
-      "phase": "MACRO",
-      "depth": 0,
-      "workItemId": "round:round-synchronization:a2-totales-rounds",
-      "workItemKind": "ROUND_SYNCHRONIZATION",
-      "taskIds": [
-        "task:10014",
-        "task:10028",
-        "task:10040",
-        "task:10053",
-        "task:10068",
-        "task:10084",
-        "task:10099",
-        "task:10113",
-        "task:10128",
-        "task:10143",
-        "task:10158",
-        "task:10172",
-        "task:10187",
-        "task:10200",
-        "task:10214",
-        "task:10227",
-        "task:10240",
-        "task:10253",
-        "task:10266"
-      ],
-      "domainBefore": 19,
-      "domainAfter": 19,
-      "candidatesEvaluated": 19,
-      "blockingTaskId": null,
-      "blockingAuthority": "probeExactRoundSynchronizationMacroDomain",
-      "firstPlacementRejection": null,
-      "ancestralDecisions": []
-    },
-    "causalAuthority": "participantFutureReservation",
-    "failureCategory": "FUTURE_FEASIBILITY",
-    "phase": "constructExactItinerantPlan/macro participant-future reservation",
-    "firstCausalCheck": "participantFutureReservation probe",
+    "standaloneDeadEnd": null,
+    "causalAuthority": "Planner Next branch budget",
+    "failureCategory": "BUDGET",
+    "phase": "constructExactItinerantPlan/standalone search",
+    "firstCausalCheck": "Planner Next branch budget",
     "staticEligibleStartCount": null,
     "dynamicEligibleStartCount": null,
     "reasonCodes": [
       "ASSISTED_SCOPE_INCOMPLETE",
-      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN",
-      "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN"
+      "STANDALONE_BRANCH_BUDGET_EXHAUSTED"
     ],
-    "blockingTaskIds": [
-      "task:10004"
-    ],
+    "blockingTaskIds": [],
     "blockers": [],
-    "rejectionReason": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+    "rejectionReason": "BRANCH_BUDGET_EXHAUSTED",
     "originatingCoreDecision": null,
-    "classification": "PARTICIPANT_FUTURE_RESERVATION_PRUNE"
+    "classification": "SEARCH_CAPACITY_EXHAUSTED"
   },
   "finalInGroups": null,
   "deterministicFingerprint": "b2deadd0738df5bf5ab5f3776faf6131b425c13bd9f8685331e50c70846f864f",
