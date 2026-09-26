@@ -2,7 +2,6 @@ import type {
   PlannerNextProblem,
   RoundSynchronizationPolicy,
   ScheduledRoundPreparation,
-  ScheduledSpaceMeal,
   ScheduledTask,
 } from "./contracts";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
@@ -132,16 +131,16 @@ function gapIsAuthorized(
   spaceId: string,
   previousEnd: number,
   nextOccupationStart: number,
-  meals: ScheduledSpaceMeal[],
+  authorizedSpatialIntervals: readonly RoundSynchronizationSpatialInterval[],
 ): boolean {
   if (previousEnd === nextOccupationStart) return true;
   if (problem.protectedMeal && protectedMealBlocksSpace(problem, spaceId)
     && previousEnd === problem.protectedMeal.start
     && nextOccupationStart === problem.protectedMeal.end) return true;
-  return meals.some((meal) =>
-    meal.spaceId === spaceId
-    && meal.start === previousEnd
-    && meal.end === nextOccupationStart);
+  return authorizedSpatialIntervals.some((interval) =>
+    interval.spaceId === spaceId
+    && interval.start === previousEnd
+    && interval.end === nextOccupationStart);
 }
 
 function preparationWithinSpaceAvailability(
@@ -158,11 +157,18 @@ export interface RoundSynchronizationValidation {
   preparationViolationCount: number;
 }
 
+/** A read-only spatial occupation that may account for an inter-round gap. */
+export interface RoundSynchronizationSpatialInterval {
+  readonly spaceId: string;
+  readonly start: number;
+  readonly end: number;
+}
+
 export function validateRoundSynchronizations(
   problem: PlannerNextProblem,
   scheduled: ScheduledTask[],
   preparations: ScheduledRoundPreparation[],
-  meals: ScheduledSpaceMeal[] = [],
+  authorizedSpatialIntervals: readonly RoundSynchronizationSpatialInterval[] = [],
 ): RoundSynchronizationValidation {
   let synchronizationViolationCount = 0;
   let preparationViolationCount = 0;
@@ -212,7 +218,7 @@ export function validateRoundSynchronizations(
         const expectedId = roundPreparationId(policy.id, lane.spaceId, roundIndex);
         const prepMinutes = lane.preparationMinutesBetweenRounds;
         if (prepMinutes === 0) {
-          if (!gapIsAuthorized(problem, lane.spaceId, previous.end, current.start, meals)) {
+          if (!gapIsAuthorized(problem, lane.spaceId, previous.end, current.start, authorizedSpatialIntervals)) {
             preparationViolationCount += 1;
           }
           continue;
@@ -229,9 +235,9 @@ export function validateRoundSynchronizations(
             && overlaps(preparation.start, preparation.end, task.start, task.end))
           : true;
         const overlapsMeal = preparation
-          ? meals.some((meal) =>
-            meal.spaceId === lane.spaceId
-            && overlaps(preparation.start, preparation.end, meal.start, meal.end))
+          ? authorizedSpatialIntervals.some((interval) =>
+            interval.spaceId === lane.spaceId
+            && overlaps(preparation.start, preparation.end, interval.start, interval.end))
           : true;
         const overlapsProtectedMeal = preparation
           ? problem.protectedMeal !== undefined && protectedMealBlocksSpace(problem, lane.spaceId) && overlaps(
@@ -250,7 +256,7 @@ export function validateRoundSynchronizations(
           || preparation.duration !== prepMinutes
           || preparation.end - preparation.start !== prepMinutes
           || preparation.end !== current.start
-          || !gapIsAuthorized(problem, lane.spaceId, previous.end, preparation.start, meals)
+          || !gapIsAuthorized(problem, lane.spaceId, previous.end, preparation.start, authorizedSpatialIntervals)
           || preparation.start < problem.day.start
           || preparation.end > problem.day.end
           || !preparationWithinSpaceAvailability(problem, preparation)
