@@ -520,16 +520,19 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       if(protectedMismatch)return;
       bundleEdgesBeforeReservation++;
       const local:ScheduledTask[]=[...protectedPlacements.filter(task=>!bundle.some(item=>item.id===task.id))];
-      let edgeValid=true;
+      const protectedCompatible=bundle.every(task=>canPlaceTask(problem,task,task.start,
+        protectedPlacements.filter(fixed=>fixed.id!==task.id)));
+      let edgeValid=protectedCompatible;
       for(const task of [...bundle].sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id))){
         if(!canPlaceTask(problem,task,task.start,local)&&!protectedById.has(task.id)){edgeValid=false;break;}
         local.push(task);
       }
       // The certificate's own nominal projection has already passed the joint
       // transport, meal and anchored-operation authorities. Preserve that proven
-      // edge even where checking one task at a time cannot represent a grouped IN.
+      // edge where checking one task at a time cannot represent a grouped IN, but
+      // never use it to override an incompatibility with an external placement.
       const nominalMain=nominal.scheduledTasks.find(task=>task.id===main.id);
-      if(nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
+      if(protectedCompatible&&nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
       if(!edgeValid)return;
       if((problem.analyticalFutureParticipantTasks?.length??0)>0){
         const placed=normalizeParticipantFuturePlacements([...protectedPlacements,...bundle]);
