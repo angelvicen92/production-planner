@@ -145,6 +145,10 @@ export interface AssistedPlanningEvidence {
     | "macroCandidateCausalTraces" | "macroCandidateCausalReconciliation"
     | "roundSynchronizationSharedOperationalMealPolicyIds" | "roundSynchronizationBreakVariantsConsidered"
     | "roundSynchronizationSelectedBreakIntervals" | "roundSynchronizationMealAwareShapesFeasible" | "roundSynchronizationNoBreakHolePrunes"
+    | "roundSynchronizationRawCompatibleEdges" | "roundSynchronizationFutureEdgeChecks" | "roundSynchronizationAnalyticPrunedEdges"
+    | "roundSynchronizationCausalForbiddenEdges" | "roundSynchronizationIncrementalRepairs"
+    | "roundSynchronizationShapesRescuedByRematching" | "roundSynchronizationMatchingTraversals"
+    | "roundSynchronizationTerminalFutureResult" | "roundSynchronizationMatchingWitnesses" | "totalesMatchingAttempts"
     | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
     | "terminalTransportWitness"
     | "terminalCompletionRejectionsByCause" | "firstTerminalCompletionRejection"
@@ -503,6 +507,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",
     "roundSynchronizationSharedOperationalMealPolicyIds","roundSynchronizationBreakVariantsConsidered",
     "roundSynchronizationSelectedBreakIntervals","roundSynchronizationMealAwareShapesFeasible","roundSynchronizationNoBreakHolePrunes",
+    "roundSynchronizationRawCompatibleEdges","roundSynchronizationFutureEdgeChecks","roundSynchronizationAnalyticPrunedEdges",
+    "roundSynchronizationCausalForbiddenEdges","roundSynchronizationIncrementalRepairs","roundSynchronizationShapesRescuedByRematching",
+    "roundSynchronizationMatchingTraversals","roundSynchronizationTerminalFutureResult","roundSynchronizationMatchingWitnesses","totalesMatchingAttempts",
     "terminalTransportMaterializationFailures","terminalTransportWitness","terminalCompletionRejectionsByCause","firstTerminalCompletionRejection","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",

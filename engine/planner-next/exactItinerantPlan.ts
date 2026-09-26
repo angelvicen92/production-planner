@@ -352,6 +352,15 @@ export interface ExactItinerantPlanEvidence {
   roundSynchronizationSelectedBreakIntervals:Array<{policyId:string;start:number;end:number}>;
   roundSynchronizationMealAwareShapesFeasible:number;
   roundSynchronizationNoBreakHolePrunes:number;
+  roundSynchronizationRawCompatibleEdges:number;
+  roundSynchronizationFutureEdgeChecks:number;
+  roundSynchronizationAnalyticPrunedEdges:number;
+  roundSynchronizationCausalForbiddenEdges:number;
+  roundSynchronizationIncrementalRepairs:number;
+  roundSynchronizationShapesRescuedByRematching:number;
+  roundSynchronizationMatchingTraversals:number;
+  roundSynchronizationTerminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";
+  roundSynchronizationMatchingWitnesses:ExactRoundSynchronizationEvidence["matchingWitnesses"];
   totalesMacroCandidates: number;
   totalesMatchingAttempts: number;
   totalesMatchingSuccesses: number;
@@ -1006,6 +1015,15 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   if(delta.selectedBreakIntervals.length)evidence.roundSynchronizationSelectedBreakIntervals=delta.selectedBreakIntervals;
   evidence.roundSynchronizationMealAwareShapesFeasible+=delta.mealAwareShapesFeasible;
   evidence.roundSynchronizationNoBreakHolePrunes+=delta.noBreakHolePrunes;
+  evidence.roundSynchronizationRawCompatibleEdges+=delta.rawCompatibleEdges;
+  evidence.roundSynchronizationFutureEdgeChecks+=delta.futureEdgeChecks;
+  evidence.roundSynchronizationAnalyticPrunedEdges+=delta.analyticPrunedEdges;
+  evidence.roundSynchronizationCausalForbiddenEdges+=delta.causalForbiddenEdges;
+  evidence.roundSynchronizationIncrementalRepairs+=delta.incrementalRepairs;
+  evidence.roundSynchronizationShapesRescuedByRematching+=delta.shapesRescuedByRematching;
+  evidence.roundSynchronizationMatchingTraversals+=delta.matchingTraversals;
+  if(delta.terminalFutureResult!=="NOT_CHECKED")evidence.roundSynchronizationTerminalFutureResult=delta.terminalFutureResult;
+  evidence.roundSynchronizationMatchingWitnesses.push(...delta.matchingWitnesses);
   evidence.totalesMacroCandidates += delta.startCandidates;
   evidence.totalesMatchingAttempts += delta.matchingAttempts;
   evidence.totalesMatchingSuccesses += delta.matchingSuccesses;
@@ -1236,8 +1254,16 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   } else if (unit.kind === "ROUND_SYNCHRONIZATION") {
     evidence.roundSynchronizationSearchInvocations += 1;
     const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
-      roundPreparations, coreMeals, ledger, (candidate) => recurse(candidate.tasks, preparations,
-        [...roundPreparations, ...candidate.preparations],candidate.operationalMealReservations));
+      roundPreparations, coreMeals, ledger, (candidate) => {
+        const exactPrunesBefore=evidence.participantFutureTerminalExactPrunes;
+        const exactPassesBefore=evidence.participantFutureTerminalExactPasses;
+        const exactAbstentionsBefore=evidence.participantFutureTerminalExactAbstentions;
+        const outcome=recurse(candidate.tasks, preparations,[...roundPreparations, ...candidate.preparations],candidate.operationalMealReservations);
+        const terminalFutureResult=evidence.participantFutureTerminalExactPrunes>exactPrunesBefore?"PRUNE"
+          :evidence.participantFutureTerminalExactPasses>exactPassesBefore?"PASS"
+          :evidence.participantFutureTerminalExactAbstentions>exactAbstentionsBefore?"ABSTAIN":"NOT_CHECKED";
+        return {outcome,participantFutureExactPrune:terminalFutureResult==="PRUNE",terminalFutureResult};
+      });
     candidatesEvaluated=explored.evidence.completeAssignments;
     mergeRoundEvidence(explored.evidence);
     if(explored.outcome!=="DEAD_END")return explored.outcome;
@@ -1421,7 +1447,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     roundSynchronizationCompleteAssignments: 0, roundSynchronizationBacktracks: 0,
     roundSynchronizationZeroAlternativePrunes: 0,roundSynchronizationSharedOperationalMealPolicyIds:[],
     roundSynchronizationBreakVariantsConsidered:0,roundSynchronizationSelectedBreakIntervals:[],
-    roundSynchronizationMealAwareShapesFeasible:0,roundSynchronizationNoBreakHolePrunes:0, selectedRoundPreparationIds: [],
+    roundSynchronizationMealAwareShapesFeasible:0,roundSynchronizationNoBreakHolePrunes:0,
+    roundSynchronizationRawCompatibleEdges:0,roundSynchronizationFutureEdgeChecks:0,roundSynchronizationAnalyticPrunedEdges:0,
+    roundSynchronizationCausalForbiddenEdges:0,roundSynchronizationIncrementalRepairs:0,
+    roundSynchronizationShapesRescuedByRematching:0,roundSynchronizationMatchingTraversals:0,
+    roundSynchronizationTerminalFutureResult:"NOT_CHECKED",roundSynchronizationMatchingWitnesses:[], selectedRoundPreparationIds: [],
     totalesMacroCandidates:0,totalesMatchingAttempts:0,totalesMatchingSuccesses:0,totalesAssignmentBranchesAvoided:0,
     criticalResourceBranches:0,criticalResourceMacroCandidates:0,criticalResourceAssignments:0,
     macroUnitsSelected:0,macroSelectionOrder:[],macroSelectionReason:[],macroDomainSizes:{},macroSelectionSteps:[],
