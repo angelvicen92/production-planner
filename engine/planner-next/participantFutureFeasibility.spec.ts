@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem, ScheduledTask } from "./contracts";
-import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
+import type { ParticipantMealObligation, PlannerNextProblem, ScheduledTask, Task } from "./contracts";
+import { compareParticipantFutureCollectiveStartPoliciesForTest, probeParticipantFutureReservations } from "./participantFutureFeasibility";
 
 const problem=(futureAvailability:{start:number;end:number},dependency:string[]=[]):PlannerNextProblem=>({
   day:{start:0,end:100},spaces:[{id:"a",availability:[{start:0,end:100}]},{id:"b",availability:[{start:0,end:100}]}],
@@ -160,4 +160,50 @@ test("is deterministic when equivalent future inputs are reordered",()=>{
   reordered.analyticalFutureParticipantTasks!.reverse();reordered.participantMeals!.reverse();reordered.tasks.reverse();
   assert.deepEqual(probeParticipantFutureReservations(reordered,[current()],[current()]),
     probeParticipantFutureReservations(source,[current()],[current()]));
+});
+
+const oracleTask=(id:string,spaceId:string,availability:{start:number;end:number}[],dependencies:string[]=[],extra:Partial<Task>={}):Task=>({
+  id,kind:"auxiliary",participantId:"p",spaceId,duration:20,availability,dependencies,...extra,
+});
+
+test("later task starts and later meal starts are dominated by temporal earliest candidates",()=>{
+  const source=problem({start:0,end:100});
+  const tasks=[oracleTask("task","a",[{start:0,end:100}])];
+  const meals:ParticipantMealObligation[]=[{id:"meal",sourceTaskId:"meal-source",participantId:"p",duration:20,
+    window:{start:0,end:100},status:"pending"}];
+  const compared=compareParticipantFutureCollectiveStartPoliciesForTest(source,"p",tasks,meals);
+  assert.equal(compared.allStarts.status,"PASS");assert.equal(compared.earliest.status,"PASS");
+  assert.ok(compared.earliest.dominatedLaterStartsSkipped>0);
+  assert.ok(compared.earliest.branches<=compared.allStarts.branches);
+  assert.equal(compared.earliest.earliestDominanceBranches,compared.earliest.branches);
+});
+
+test("earliest contraction preserves a different READY order needed by asymmetric coach transition",()=>{
+  const source=problem({start:0,end:40});source.participantMeals=[];source.participants[0]!.availability=[{start:0,end:40}];
+  source.coaches=[{id:"coach",availability:[{start:0,end:40}]}];
+  source.coachRouteTransitions=[{coachId:"coach",fromSpaceId:"a",toSpaceId:"b",minutes:10},
+    {coachId:"coach",fromSpaceId:"b",toSpaceId:"a",minutes:0}];
+  const tasks=[oracleTask("a-first-fails","a",[{start:0,end:40}],[],{coachId:"coach"}),
+    oracleTask("b-first-passes","b",[{start:0,end:40}],[],{coachId:"coach"})];
+  const compared=compareParticipantFutureCollectiveStartPoliciesForTest(source,"p",tasks,[]);
+  assert.equal(compared.allStarts.status,"PASS");assert.equal(compared.earliest.status,"PASS");
+  assert.ok(compared.earliest.backtracks>0,"the lexically first READY order must fail before the second succeeds");
+});
+
+test("ALL_STARTS and EARLIEST agree exhaustively on a deterministic participant-local matrix",()=>{
+  const cases:{name:string;configure:(source:PlannerNextProblem)=>{tasks:Task[];meals:ParticipantMealObligation[];fixed?:ScheduledTask[]}}[]=[
+    {name:"independent-disjoint-windows",configure:source=>({tasks:[oracleTask("a","a",[{start:0,end:40}]),oracleTask("b","b",[{start:40,end:80}])],meals:[]})},
+    {name:"dependency-and-spaces",configure:source=>({tasks:[oracleTask("a","a",[{start:0,end:60}]),oracleTask("b","b",[{start:20,end:100}],["a"])],meals:[]})},
+    {name:"participant-transition",configure:source=>{source.participantTransitionMinutes=5;return {tasks:[oracleTask("a","a",[{start:0,end:100}]),oracleTask("b","b",[{start:0,end:100}])],meals:[]};}},
+    {name:"shared-coach-resource",configure:source=>{source.coaches=[{id:"coach",availability:[{start:0,end:100}]}];source.resources=[{id:"resource",availability:[{start:0,end:100}]}];source.resourceTransitionMinutes=5;return {tasks:[oracleTask("a","a",[{start:0,end:100}],[],{coachId:"coach",requiredResourceIds:["resource"]}),oracleTask("b","b",[{start:0,end:100}],[],{coachId:"coach",requiredResourceIds:["resource"]})],meals:[]};}},
+    {name:"fixed-occupation",configure:source=>({tasks:[oracleTask("a","a",[{start:0,end:100}]),oracleTask("b","b",[{start:0,end:100}])],meals:[],fixed:[{...current(),start:20,end:40}]})},
+    {name:"meal-before",configure:source=>({tasks:[oracleTask("task","a",[{start:20,end:100}],["meal-source"])],meals:[{id:"meal",sourceTaskId:"meal-source",participantId:"p",duration:20,window:{start:0,end:80},status:"pending"}]})},
+    {name:"meal-after",configure:source=>({tasks:[oracleTask("task","a",[{start:0,end:80}])],meals:[{id:"meal",sourceTaskId:"meal-source",participantId:"p",duration:20,window:{start:20,end:100},status:"pending",dependencies:["task"]}]})},
+    {name:"meal-independent",configure:source=>({tasks:[oracleTask("task","a",[{start:0,end:100}])],meals:[{id:"meal",sourceTaskId:"meal-source",participantId:"p",duration:20,window:{start:0,end:100},status:"pending"}]})},
+  ];
+  for(const entry of cases){const source=problem({start:0,end:100});source.participantMeals=[];const configured=entry.configure(source);
+    const first=compareParticipantFutureCollectiveStartPoliciesForTest(source,"p",configured.tasks,configured.meals,configured.fixed);
+    const second=compareParticipantFutureCollectiveStartPoliciesForTest(source,"p",configured.tasks,configured.meals,configured.fixed);
+    assert.equal(first.earliest.status,first.allStarts.status,entry.name);assert.deepEqual(second,first,`${entry.name} determinism`);
+  }
 });
