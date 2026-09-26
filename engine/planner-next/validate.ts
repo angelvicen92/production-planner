@@ -386,7 +386,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     problem,
     scheduled,
     roundPreparations,
-    meals,
+    [
+      ...meals.map(({ spaceId, start, end }) => ({ spaceId, start, end })),
+      ...operationalMeals.flatMap(({ spaceIds, start, end }) =>
+        spaceIds.map((spaceId) => ({ spaceId, start, end }))),
+    ],
   );
   const roundSynchronization = roundValidation.synchronizationViolationCount;
   const roundPreparation = roundValidation.preparationViolationCount;

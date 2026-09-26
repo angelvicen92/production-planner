@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type {
   PlannerNextProblem,
+  ScheduledOperationalMeal,
   ScheduledRoundPreparation,
   ScheduledTask,
 } from "./contracts";
@@ -122,6 +123,97 @@ test("canonical validation accepts synchronized ordinal rounds and explicit prep
   assert.equal(result.hardValid, true, result.reasonCodes.join(","));
   assert.equal(result.roundSynchronizationViolationCount, 0);
   assert.equal(result.roundPreparationViolationCount, 0);
+});
+
+function operationalMealGapScenario(spaceIds?: string[]): {
+  problem: PlannerNextProblem;
+  tasks: ScheduledTask[];
+  preparations: ScheduledRoundPreparation[];
+  meal: ScheduledOperationalMeal;
+} {
+  const problem = structuredClone(supportedProblem());
+  const policy = problem.roundSynchronizations![0]!;
+  const coveredSpaceIds = spaceIds ?? policy.lanes.map((lane) => lane.spaceId);
+  problem.operationalMealPolicies = [{
+    id: "round-operational-meal",
+    window: { start: 870, end: 895 },
+    duration: 25,
+    resourceIds: [],
+    spaceIds: coveredSpaceIds,
+  }];
+  return {
+    problem,
+    tasks: scheduled(problem, { "task:402": 900, "task:404": 900 }),
+    preparations: roundPreparations(problem).map((preparation) => ({
+      ...preparation,
+      start: 895,
+      end: 900,
+    })),
+    meal: {
+      id: "round-operational-meal",
+      resourceIds: [],
+      spaceIds: coveredSpaceIds,
+      duration: 25,
+      start: 870,
+      end: 895,
+    },
+  };
+}
+
+test("a multi-space operational meal authorizes each declared inter-round spatial gap", () => {
+  const { problem, tasks, preparations, meal } = operationalMealGapScenario();
+  const result = validatePlan(problem, tasks, [], [], [], [], [], preparations, [meal]);
+  assert.equal(result.hardValid, true, result.reasonCodes.join(","));
+  assert.equal(result.roundPreparationViolationCount, 0);
+});
+
+test("an operational meal authorizes only its declared lane spaces", () => {
+  const base = supportedProblem();
+  const coveredSpaceId = base.roundSynchronizations![0]!.lanes[0]!.spaceId;
+  const { problem, tasks, preparations, meal } = operationalMealGapScenario([coveredSpaceId]);
+  const result = validatePlan(problem, tasks, [], [], [], [], [], preparations, [meal]);
+  assert.equal(result.hardValid, false);
+  assert.equal(result.roundPreparationViolationCount, 1);
+  assert.ok(result.reasonCodes.includes("ROUND_PREPARATION_VIOLATION"));
+});
+
+test("round gaps not exactly covered by an authorized interval remain invalid", () => {
+  const { problem, tasks, preparations, meal } = operationalMealGapScenario();
+  problem.operationalMealPolicies![0]!.window.end = 890;
+  problem.operationalMealPolicies![0]!.duration = 20;
+  const shortenedMeal = { ...meal, duration: 20, end: 890 };
+  const result = validatePlan(problem, tasks, [], [], [], [], [], preparations, [shortenedMeal]);
+  assert.equal(result.hardValid, false);
+  assert.equal(result.roundPreparationViolationCount, 2);
+});
+
+test("round preparation cannot overlap a task or an authorized meal interval", () => {
+  const { problem, tasks, preparations, meal } = operationalMealGapScenario();
+  const overlapping = preparations.map((preparation) => ({ ...preparation, start: 890 }));
+  const mealOverlap = validatePlan(problem, tasks, [], [], [], [], [], overlapping, [meal]);
+  assert.equal(mealOverlap.hardValid, false);
+  assert.equal(mealOverlap.roundPreparationViolationCount, 2);
+
+  const taskOverlapping = preparations.map((preparation) => ({ ...preparation, start: 865, end: 870 }));
+  const taskOverlap = validatePlan(problem, tasks, [], [], [], [], [], taskOverlapping, [meal]);
+  assert.equal(taskOverlap.hardValid, false);
+  assert.equal(taskOverlap.roundPreparationViolationCount, 2);
+});
+
+test("round preparation identity, duration, start, and end remain mandatory", () => {
+  const { problem, tasks, preparations, meal } = operationalMealGapScenario();
+  const mutations: Array<(preparation: ScheduledRoundPreparation) => ScheduledRoundPreparation> = [
+    (preparation) => ({ ...preparation, synchronizationId: "wrong-synchronization" }),
+    (preparation) => ({ ...preparation, duration: preparation.duration + 5 }),
+    (preparation) => ({ ...preparation, start: preparation.start + 5 }),
+    (preparation) => ({ ...preparation, end: preparation.end + 5 }),
+  ];
+  for (const mutate of mutations) {
+    const changed = preparations.map((preparation, index) => index === 0 ? mutate(preparation) : preparation);
+    const result = validatePlan(problem, tasks, [], [], [], [], [], changed, [meal]);
+    assert.equal(result.hardValid, false);
+    assert.ok((result.roundPreparationViolationCount ?? 0) > 0);
+  }
 });
 
 test("canonical validation permits residual rounds after the shorter lane is exhausted", () => {
