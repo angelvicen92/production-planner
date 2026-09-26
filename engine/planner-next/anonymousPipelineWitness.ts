@@ -331,10 +331,17 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
 
   const availabilityEnd=(x:Layer&{position:number})=>Math.max(...orderedWindows(
     problem.participants.find(p=>p.id===x.main.participantId)?.availability,problem.day).map(window=>window.end));
-  const futureLoad=(x:Layer&{position:number})=>[
-    ...(problem.analyticalFutureParticipantTasks??[]).filter(task=>task.participantId===x.main.participantId),
-    ...(problem.analyticalFutureTechnicalChains??[]).flatMap(chain=>chain.tasks.filter(task=>task.participantId===x.main.participantId)),
-  ].reduce((sum,task)=>sum+task.duration,0);
+  const futureLoad=(x:Layer&{position:number})=>{
+    const ownPipelineIds=new Set([x.arrival.id,x.styling.id,x.feeder.id,x.main.id]);
+    const participantTasks=[
+      ...(problem.analyticalRemainingParticipantTasks??problem.analyticalFutureParticipantTasks??[]),
+      ...(problem.analyticalFutureTechnicalChains??[]).flatMap(chain=>chain.tasks),
+    ].filter(task=>task.participantId===x.main.participantId&&!ownPipelineIds.has(task.id));
+    // A future technical member may also occur in the participant-work view.
+    // Identity, rather than CURRENT/FUTURE classification, owns its contribution.
+    return [...new Map(participantTasks.map(task=>[task.id,task])).values()]
+      .reduce((sum,task)=>sum+task.duration,0);
+  };
   const requiredLoad=(x:Layer&{position:number})=>(problem.analyticalFutureTechnicalChains??[])
     .filter(chain=>chain.policy.adjacency==="REQUIRED"&&chain.tasks.some(task=>task.participantId===x.main.participantId))
     .reduce((sum,chain)=>sum+chain.tasks.filter(task=>task.participantId===x.main.participantId).reduce((n,task)=>n+task.duration,0),0);

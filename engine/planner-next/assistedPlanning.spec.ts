@@ -283,6 +283,10 @@ test("future analytical authority excludes included and protected tasks and defa
   assert.equal(assisted.problem.analyticalFutureParticipantTasks?.some(task=>task.id==="main"),false);
   assert.equal(assisted.problem.analyticalFutureParticipantTasks?.some(task=>task.id==="protected"),false);
   assert.ok((assisted.problem.analyticalFutureParticipantTasks?.length??0)>0);
+  assert.equal(assisted.problem.analyticalRemainingParticipantTasks?.some(task=>task.id==="main"),true);
+  assert.equal(assisted.problem.analyticalRemainingParticipantTasks?.some(task=>task.id==="protected"),false);
+  assert.equal(new Set(assisted.problem.analyticalRemainingParticipantTasks?.map(task=>task.id)).size,
+    assisted.problem.analyticalRemainingParticipantTasks?.length);
   assert.deepEqual(buildAssistedProblem(source,scope,[]).problem.analyticalFutureParticipantTasks,[]);
 });
 
