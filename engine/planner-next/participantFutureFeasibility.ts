@@ -39,6 +39,8 @@ export interface ParticipantFutureReservationProbe {
   readonly mealCandidateCount: number;
   readonly compatiblePairCount: 0 | 1;
   readonly participantDiagnostics:readonly ParticipantFutureCollectiveDiagnostic[];
+  readonly dominatedLaterStartsSkipped:number;
+  readonly earliestDominanceBranches:number;
 }
 
 export interface ParticipantFutureReservationBudget { consume:()=>boolean }
@@ -65,14 +67,18 @@ export function normalizeParticipantFuturePlacements(placed:readonly ScheduledTa
 
 type CollectiveResult={status:"PASS"|"PRUNE"|"ABSTAIN";branches:number;domainSizes:Record<string,number>;witness:boolean;
   abstainCause:"BUDGET_EXHAUSTED"|"INCONCLUSIVE_SHAPE"|null;statesVisited:number;uniqueStates:number;repeatedStates:number;
-  maximumDepth:number;backtracks:number;firstRepeatedState:string|null};
+  maximumDepth:number;backtracks:number;firstRepeatedState:string|null;dominatedLaterStartsSkipped:number;earliestDominanceBranches:number};
 
 const emptyCollective=(status:"PRUNE"|"ABSTAIN",domainSizes:Record<string,number>,abstainCause:"INCONCLUSIVE_SHAPE"|null):CollectiveResult=>
-  ({status,branches:0,domainSizes,witness:false,abstainCause,statesVisited:0,uniqueStates:0,repeatedStates:0,maximumDepth:0,backtracks:0,firstRepeatedState:null});
+  ({status,branches:0,domainSizes,witness:false,abstainCause,statesVisited:0,uniqueStates:0,repeatedStates:0,maximumDepth:0,backtracks:0,firstRepeatedState:null,
+    dominatedLaterStartsSkipped:0,earliestDominanceBranches:0});
+
+type CollectiveStartPolicy="ALL_STARTS"|"EARLIEST";
 
 /** Exact participant-local witness. Candidate generation delegates to the canonical task and meal authorities. */
 function collectiveWitness(problem:PlannerNextProblem,_participantId:string,tasks:readonly Task[],meals:readonly ParticipantMealObligation[],
-  fixed:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,mode:ParticipantFutureReservationMode="EXACT"):CollectiveResult {
+  fixed:readonly ScheduledTask[],budget?:ParticipantFutureReservationBudget,mode:ParticipantFutureReservationMode="EXACT",
+  startPolicy:CollectiveStartPolicy="EARLIEST"):CollectiveResult {
   const taskIds=new Set(tasks.map(task=>task.id)),mealIds=new Set(meals.map(meal=>meal.sourceTaskId));
   const knownFixed=new Set(fixed.map(task=>task.id));
   const participant=problem.participants.find(({id})=>id===_participantId);
@@ -80,6 +86,7 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
   const dependencies=[...tasks.flatMap(task=>task.dependencies),...meals.flatMap(meal=>meal.dependencies??[])];
   if(dependencies.some(id=>!taskIds.has(id)&&!mealIds.has(id)&&!knownFixed.has(id)))return emptyCollective("ABSTAIN",{},"INCONCLUSIVE_SHAPE");
   let branches=0,exhausted=false,statesVisited=0,repeatedStates=0,maximumDepth=0,backtracks=0,firstRepeatedState:string|null=null;
+  let dominatedLaterStartsSkipped=0;
   const domainSizes:Record<string,number>={},deadStates=new Set<string>(),seenStates=new Set<string>();
   const earliest=new Map<string,number>(),latest=new Map<string,number>(),duration=new Map<string,number>();
   const envelopes:{start:number;end:number;duration:number}[]=[];
@@ -175,14 +182,30 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
       const afterMeals=Math.max(-Infinity,...task.dependencies.map(id=>scheduledMeals.find(meal=>meal.sourceTaskId===id)?.end??-Infinity));
       const starts=taskStarts.get(task.id)!.filter(start=>start>=afterMeals
         &&start>=cursor&&start>=dynamicEarliest.get(task.id)!&&start<=dynamicLatest.get(task.id)!);
-      domainSizes[task.id]=Math.max(domainSizes[task.id]??0,starts.length);for(const start of starts)choices.push([task.id,"TASK",task,start]);
+      domainSizes[task.id]=Math.max(domainSizes[task.id]??0,starts.length);
+      const selectedStarts=startPolicy==="EARLIEST"?starts.slice(0,1):starts;
+      dominatedLaterStartsSkipped+=startPolicy==="EARLIEST"?Math.max(0,starts.length-1):0;
+      for(const start of selectedStarts)choices.push([task.id,"TASK",task,start]);
     }
     for(const meal of readyMeals){const candidates=mealStarts.get(meal.sourceTaskId)!
       .filter(candidate=>candidate.start>=cursor&&candidate.start>=dynamicEarliest.get(meal.sourceTaskId)!&&candidate.start<=dynamicLatest.get(meal.sourceTaskId)!);
-      domainSizes[meal.sourceTaskId]=Math.max(domainSizes[meal.sourceTaskId]??0,candidates.length);for(const candidate of candidates)choices.push([meal.sourceTaskId,"MEAL",meal,candidate]);}
+      domainSizes[meal.sourceTaskId]=Math.max(domainSizes[meal.sourceTaskId]??0,candidates.length);
+      // participantMealCandidates is deliberately heuristic-ordered; dominance needs temporal earliest.
+      const ordered=[...candidates].sort((a,b)=>a.start-b.start||a.sourceTaskId.localeCompare(b.sourceTaskId));
+      const selectedCandidates=startPolicy==="EARLIEST"?ordered.slice(0,1):ordered;
+      dominatedLaterStartsSkipped+=startPolicy==="EARLIEST"?Math.max(0,ordered.length-1):0;
+      for(const candidate of selectedCandidates)choices.push([meal.sourceTaskId,"MEAL",meal,candidate]);}
     choices.sort((a,b)=>{const aStart=typeof a[3]==="number"?a[3]:a[3].start,bStart=typeof b[3]==="number"?b[3]:b[3].start;
       return dynamicLatest.get(a[0])!-dynamicLatest.get(b[0])!||aStart-bStart||a[0].localeCompare(b[0]);});
     if(choices.length===0){deadStates.add(key);return false;}
+    // Exchange argument for EARLIEST: the chosen candidate is hard-valid against the complete
+    // history. Every later obligation is for this same participant and the cursor forces it after
+    // the chosen one. Moving the chosen interval earlier therefore only increases its gap to every
+    // later task/meal (including coach/resource/space transitions), relaxes outgoing precedence,
+    // and cannot violate incoming precedence because only READY obligations are choices. The same
+    // argument applies to a meal (overlap/capacity replace transitions). Static windows and fixed
+    // occupations are already represented by the canonical domains. Thus later starts are dominated
+    // while every materially different READY-obligation order remains in choices.
     for(const selected of choices){const candidate=selected[3];
       if(selected[1]==="TASK"){
         const task=selected[2] as Task,start=candidate as number;
@@ -199,7 +222,15 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
   };
   const witness=visit(tasks,meals,[...fixed],[]);
   return {status:witness?"PASS":exhausted?"ABSTAIN":"PRUNE",branches,domainSizes,witness,
-    abstainCause:exhausted?"BUDGET_EXHAUSTED":null,statesVisited,uniqueStates:seenStates.size,repeatedStates,maximumDepth,backtracks,firstRepeatedState};
+    abstainCause:exhausted?"BUDGET_EXHAUSTED":null,statesVisited,uniqueStates:seenStates.size,repeatedStates,maximumDepth,backtracks,firstRepeatedState,
+    dominatedLaterStartsSkipped,earliestDominanceBranches:startPolicy==="EARLIEST"?branches:0};
+}
+
+/** Test-only differential oracle. Production callers must use probeParticipantFutureReservations. */
+export function compareParticipantFutureCollectiveStartPoliciesForTest(problem:PlannerNextProblem,participantId:string,tasks:readonly Task[],
+  meals:readonly ParticipantMealObligation[],fixed:readonly ScheduledTask[]=[]):{allStarts:CollectiveResult;earliest:CollectiveResult}{
+  return {allStarts:collectiveWitness(problem,participantId,tasks,meals,fixed,undefined,"EXACT","ALL_STARTS"),
+    earliest:collectiveWitness(problem,participantId,tasks,meals,fixed,undefined,"EXACT","EARLIEST")};
 }
 
 /** Sound read-only reservation for out-of-scope participant work. */
@@ -225,6 +256,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
   const base={affectedParticipants,affectedFutureTasksChecked:future.length,affectedMealsChecked:meals.length,individualDomainChecks:0,
     individualZeroDomainPrunes:0,jointTaskMealChecks:0,jointTaskMealPrunes:0,collectiveChecks:0,collectivePasses:0,collectivePrunes:0,
     collectiveObligationIds:[] as string[],collectiveDomainSizes:{} as Record<string,number>,collectiveWitnessFound:false,
+    dominatedLaterStartsSkipped:0,earliestDominanceBranches:0,
     compatiblePairChecks:0,analyticChecks:0,branchesConsumed:0,unresolvedDependencyIds:[] as string[],abstainCause:null,reasonCode:null,futureTaskId:null,mealTaskId:null,participantId:null,
     futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0 as const,participantDiagnostics:[] as ParticipantFutureCollectiveDiagnostic[]};
   if(future.length===0)return {...base,status:"PASS" as const};
@@ -260,6 +292,7 @@ export function probeParticipantFutureReservations(problem:PlannerNextProblem,pl
     const participantTasks=future.filter(task=>task.participantId===participantId),participantMeals=meals.filter(meal=>meal.participantId===participantId);
     if(participantTasks.length+participantMeals.length<2)continue;
     const result=collectiveWitness(problem,participantId,participantTasks,participantMeals,placed,budget,mode);collectiveChecks++;branchesConsumed+=result.branches;
+    base.dominatedLaterStartsSkipped+=result.dominatedLaterStartsSkipped;base.earliestDominanceBranches+=result.earliestDominanceBranches;
     const obligationIds=[...participantTasks.map(task=>task.id),...participantMeals.map(meal=>meal.sourceTaskId)].sort();
     collectiveObligationIds.push(...obligationIds);Object.assign(collectiveDomainSizes,result.domainSizes);
     participantDiagnostics.push({participantId,futureTaskCount:participantTasks.length,mealCount:participantMeals.length,obligationIds,
