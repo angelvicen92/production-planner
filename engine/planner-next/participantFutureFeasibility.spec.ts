@@ -142,3 +142,22 @@ test("conflicting placements with the same task id are not collapsed as equivale
   assert.equal(conflict.status,"PRUNE");
   assert.equal(conflict.reasonCode,"FUTURE_PARTICIPANT_COLLECTIVE_INFEASIBLE");
 });
+
+test("contracts equivalent participant-local dead states without turning exhaustion into pass",()=>{
+  const source=problem({start:0,end:60});source.participantMeals=[];source.participantTransitionMinutes=5;
+  source.participants[0]!.availability=[{start:0,end:60}];source.spaces.push({id:"c",availability:[{start:0,end:60}]});
+  source.analyticalFutureParticipantTasks=["a","b","c"].map((spaceId,index)=>({id:`future-${index}`,kind:"auxiliary" as const,
+    participantId:"p",spaceId,duration:20,availability:[{start:0,end:60}],dependencies:[]}));
+  const result=probeParticipantFutureReservations(source,[],[current("p")]);
+  assert.equal(result.status,"PRUNE");assert.ok(result.participantDiagnostics[0]!.repeatedStates>0);
+  assert.ok(result.branchesConsumed<result.participantDiagnostics[0]!.statesVisited);
+  const changed=structuredClone(source);changed.participantTransitionMinutes=0;
+  assert.equal(probeParticipantFutureReservations(changed,[],[current("p")]).status,"PASS");
+});
+
+test("is deterministic when equivalent future inputs are reordered",()=>{
+  const source=idempotentCollectiveProblem(),reordered=structuredClone(source);
+  reordered.analyticalFutureParticipantTasks!.reverse();reordered.participantMeals!.reverse();reordered.tasks.reverse();
+  assert.deepEqual(probeParticipantFutureReservations(reordered,[current()],[current()]),
+    probeParticipantFutureReservations(source,[current()],[current()]));
+});
