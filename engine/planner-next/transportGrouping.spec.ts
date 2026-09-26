@@ -254,16 +254,16 @@ function terminalDirectionProblem(direction: "arrival" | "departure"): { problem
     } }, substantive };
 }
 
-test("canonical IN places consecutive boundary packets last-to-first at their latest valid starts", () => {
+test("canonical IN places packets from the first hard-valid start and treats minGap as a minimum", () => {
   const { problem, substantive } = terminalDirectionProblem("arrival");
   let evidence: any;
   const result = materializeTerminalTransport(problem, substantive, [], { onEvidence: (value) => { evidence = value; } });
   assert.ok(result);
   assert.deepEqual(result.map(({ id, start }) => [id, start]), [
-    ["arrival-c", 40], ["arrival-d", 40], ["arrival-a", 20], ["arrival-b", 20],
+    ["arrival-a", 0], ["arrival-b", 0], ["arrival-c", 40], ["arrival-d", 40],
   ]);
   assert.deepEqual(evidence.directions[0].packetSizes, [2, 2]);
-  assert.deepEqual(evidence.directions[0].starts, [20, 40]);
+  assert.deepEqual(evidence.directions[0].starts, [0, 40]);
   assert.equal(evidence.directions[0].construction, "fallback");
   assert.equal(evidence.directions[0].classification, "MEMBERSHIP_REQUIRED");
 });

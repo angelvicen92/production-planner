@@ -45,6 +45,9 @@ export interface AssistedPlanningEvidence {
   readonly scopeTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId?: Readonly<Record<string, readonly string[]>>;
+  readonly virtualSupportingReservations?:readonly string[];
+  readonly ephemeralSupportingPlacements?:readonly import("./contracts").ScheduledTask[];
+  readonly acceptedSupportingPlacements?:readonly import("./contracts").ScheduledTask[];
   readonly protectedPlacementCount: number;
   readonly protectedOperationalMeals: readonly import("./contracts").ScheduledOperationalMeal[];
   readonly protectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
@@ -118,7 +121,9 @@ export interface AssistedPlanningEvidence {
       "nominalPipelineWitnessRejectsByReason"|"continuityRejects"|"authorizedArchitecturesYielded">;
   };
   readonly futureStructuralWitnesses?:{readonly round:{readonly checks:number;readonly passes:number;readonly prunes:number;
-    readonly abstentions:number;readonly firstWitnessLoss:ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]}};
+    readonly abstentions:number;readonly preparedBuilds:number;readonly cacheHits:number;readonly invalidations:number;
+    readonly repairs:number;readonly exactFallbacks:number;readonly exactBranches:number;
+    readonly firstWitnessLoss:ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]}};
   readonly work: Readonly<Record<string, number>>;
   readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
     "bundleNogoodsCreated"|"bundleNogoodBranches"|"bundleNogoodDeduplications"|"bundleNogoodRepairsSucceeded"|"conflictEdges">;
@@ -571,6 +576,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     scopeTaskIds: input.scope.resolvedTaskIds,
     supportingTaskIds: input.supportingTaskIds,
     supportingReasonByTaskId: input.supportingReasonByTaskId,
+    virtualSupportingReservations:[...input.supportingTaskIds],
+    ephemeralSupportingPlacements:structuredClone(searchScheduled.filter(task=>input.supportingTaskIds.includes(task.id)
+      &&!protectedIds.has(task.id))),
+    acceptedSupportingPlacements:structuredClone(input.protectedPlacements.filter(task=>input.supportingTaskIds.includes(task.id))),
     protectedPlacementCount: input.protectedPlacements.length,
     protectedOperationalMeals: structuredClone(input.protectedOperationalMeals),
     protectedSetupPreparations: structuredClone(input.protectedSetupPreparations),
@@ -682,6 +691,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     futureStructuralWitnesses:{round:{checks:Number(evidenceRecord.futureRoundWitnessChecks??0),
       passes:Number(evidenceRecord.futureRoundWitnessPasses??0),prunes:Number(evidenceRecord.futureRoundWitnessPrunes??0),
       abstentions:Number(evidenceRecord.futureRoundWitnessAbstentions??0),
+      preparedBuilds:Number(evidenceRecord.futureRoundPreparedBuilds??0),cacheHits:Number(evidenceRecord.futureRoundCacheHits??0),
+      invalidations:Number(evidenceRecord.futureRoundWitnessInvalidations??0),repairs:Number(evidenceRecord.futureRoundWitnessRepairs??0),
+      exactFallbacks:Number(evidenceRecord.futureRoundExactFallbacks??0),exactBranches:Number(evidenceRecord.futureRoundExactBranches??0),
       firstWitnessLoss:(evidenceRecord.firstFutureRoundWitnessLoss as ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]|undefined)??null}},
     work,
     bundleMatching:{bundleForbiddenEdges:[...(evidenceRecord.bundleForbiddenEdges as string[]|undefined)??[]],

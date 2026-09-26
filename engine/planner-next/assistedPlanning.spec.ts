@@ -51,6 +51,9 @@ test("assisted projection is immutable, fixes accepted placements and never move
   assert.equal(first.evidence.requiredValid, true);
   assert.equal(first.evidence.proposalCount, 1);
   assert.deepEqual(first.evidence.supportingTaskIds, ["feed"]);
+  assert.deepEqual(first.evidence.virtualSupportingReservations,["feed"]);
+  assert.deepEqual(first.evidence.ephemeralSupportingPlacements?.map(({id})=>id),["feed"]);
+  assert.deepEqual(first.evidence.acceptedSupportingPlacements,[]);
   assert.equal(first.evidence.fingerprint, second.evidence.fingerprint);
   assert.deepEqual(first.proposal?.map(({ id }) => id), ["main"]);
   assert.equal(first.proposal?.some(({ id }) => id === "feed" || id === "outside" || id === "protected"), false);

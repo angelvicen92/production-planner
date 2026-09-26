@@ -19,6 +19,8 @@ export interface TransportMaterializationDirectionEvidence {
   classificationBreakers: string[];
   contiguousStatesExplored: number;
   membershipFallbackEntered: boolean;
+  participantPressureOrder?: Array<{ taskId:string;participantId:string;availabilityEnd:number;minimumFutureLoad:number;
+    slack:number;domainCardinality:number;requiredDependencyCount:number }>;
 }
 
 export interface TransportMaterializationEvidence {
@@ -40,6 +42,23 @@ export interface TransportArrivalFeasibility {
 }
 
 const byId = (left: Task, right: Task): number => left.id.localeCompare(right.id);
+
+function arrivalPressure(problem:PlannerNextProblem,task:Task,obligations:readonly ScheduledTask[],policy:TransportGroupingPolicy){
+  const availabilityEnd=individualTransportBoundary(problem,task,"arrival",
+    obligations.length?Math.min(...obligations.map(item=>item.start)):problem.day.end);
+  const minimumFutureLoad=obligations.reduce((sum,item)=>sum+item.duration,0);
+  const domainCardinality=transportGroupStarts(problem,[task],obligations,[],policy).filter(start=>start+task.duration<=availabilityEnd).length;
+  const requiredDependencyCount=obligations.filter(item=>item.dependencies.includes(task.id)).length;
+  return {taskId:task.id,participantId:task.participantId!,availabilityEnd,minimumFutureLoad,
+    slack:availabilityEnd-problem.day.start-task.duration-minimumFutureLoad,domainCardinality,requiredDependencyCount};
+}
+const comparePressure=(left:ReturnType<typeof arrivalPressure>,right:ReturnType<typeof arrivalPressure>)=>
+  left.availabilityEnd-right.availabilityEnd||left.slack-right.slack||left.domainCardinality-right.domainCardinality
+  ||right.requiredDependencyCount-left.requiredDependencyCount||left.taskId.localeCompare(right.taskId);
+const earliestHardStart=(problem:PlannerNextProblem,task:Task)=>Math.max(problem.day.start,
+  task.availability?.length?Math.min(...task.availability.map(window=>window.start)):problem.day.start,
+  problem.participants.find(item=>item.id===task.participantId)?.availability.length
+    ?Math.min(...problem.participants.find(item=>item.id===task.participantId)!.availability.map(window=>window.start)):problem.day.start);
 
 const lowerAndHolesKey = (windows: readonly { start: number; end: number }[] | undefined): string => {
   const ordered = [...(windows ?? [])].sort((left, right) => left.start - right.start || left.end - right.end);
@@ -208,40 +227,39 @@ function solveContiguousDirection(
   const failed = new Set<string>();
   const search = (index: number, temporalLimit: number, local: ScheduledTask[], sizes: number[], starts: number[]): boolean => {
     states += 1;
-    if (direction === "arrival" ? index < 0 : index >= tasks.length) return true;
+    if (index >= tasks.length) return true;
     const key = `${index}@${temporalLimit}`;
     if (failed.has(key)) return false;
-    const remaining = direction === "arrival" ? index + 1 : tasks.length - index;
+    const remaining = tasks.length - index;
     for (const [candidateIndex, size] of sizeCandidates(remaining).entries()) {
       if (candidateIndex > 0) {
         alternatives += 1;
         if (consumeAlternative && !consumeAlternative()) return false;
       }
-      const from = direction === "arrival" ? index - size + 1 : index;
+      const from = index;
       const group = tasks.slice(from, from + size);
       const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
       const candidates = transportGroupStarts(problem, group, [...substantive, ...alreadyPlaced, ...local], [], policy)
         .filter((start) => direction === "arrival"
-          ? start + group[0]!.duration <= deadline && start <= temporalLimit
+          ? start + group[0]!.duration <= deadline && start >= temporalLimit
           : start >= deadline && start >= temporalLimit)
-        .sort((left, right) => direction === "arrival" ? right - left : left - right);
+        .sort((left, right) => left - right);
       for (const start of candidates) {
         const scheduled = scheduleTransportGroup(group, start);
         local.push(...scheduled);
-        if (direction === "arrival") { sizes.unshift(size); starts.unshift(start); }
-        else { sizes.push(size); starts.push(start); }
-        const nextLimit = direction === "arrival" ? start - policy.minGapMinutes : start + policy.minGapMinutes;
-        if (search(direction === "arrival" ? from - 1 : index + size, nextLimit, local, sizes, starts)) return true;
+        sizes.push(size); starts.push(start);
+        const nextLimit = start + policy.minGapMinutes;
+        if (search(index + size, nextLimit, local, sizes, starts)) return true;
         local.splice(local.length - scheduled.length, scheduled.length);
-        if (direction === "arrival") { sizes.shift(); starts.shift(); } else { sizes.pop(); starts.pop(); }
+        sizes.pop(); starts.pop();
       }
     }
     failed.add(key);
     return false;
   };
   const scheduled: ScheduledTask[] = [], packetSizes: number[] = [], starts: number[] = [];
-  const initialIndex = direction === "arrival" ? tasks.length - 1 : 0;
-  const initialLimit = direction === "arrival" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+  const initialIndex = 0;
+  const initialLimit = Number.NEGATIVE_INFINITY;
   return { scheduled: search(initialIndex, initialLimit, scheduled, packetSizes, starts) ? scheduled : null,
     packetSizes, starts, states, alternatives };
 }
@@ -253,13 +271,16 @@ export function assessCoreArrivalTransportFeasibility(
 ): TransportArrivalFeasibility {
   const policy = problem.transportPolicy?.arrival;
   const tasks = policy?.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean) ?? [];
+  const pressureById=new Map(tasks.map(task=>[task.id,arrivalPressure(problem,task,
+    coreTasks.filter(placed=>placed.participantId===task.participantId),policy!)]));
   const ordered = [...tasks].sort((left, right) => {
     const deadline = (task: Task) => {
       const obligations = coreTasks.filter((placed) => placed.participantId === task.participantId);
       const obligationBoundary = obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end;
       return individualTransportBoundary(problem, task, "arrival", obligationBoundary);
     };
-    return deadline(left) - deadline(right) || left.participantId!.localeCompare(right.participantId!) || byId(left, right);
+    return earliestHardStart(problem,left)-earliestHardStart(problem,right)||deadline(left)-deadline(right)
+      ||comparePressure(pressureById.get(left.id)!,pressureById.get(right.id)!);
   });
   const classified = classifyTransportContext(problem, ordered);
   const base = { direction: "arrival" as const, orderedTaskIds: ordered.map(({ id }) => id),
@@ -271,7 +292,8 @@ export function assessCoreArrivalTransportFeasibility(
     }),
     packetMembers: [] as string[][], starts: [] as number[], minGapMinutes: policy?.minGapMinutes ?? 0,
     construction: "contiguous" as const, alternativesExplored: 0, classification: classified.classification,
-    classificationBreakers: classified.breakers, contiguousStatesExplored: 0, membershipFallbackEntered: false };
+    classificationBreakers: classified.breakers, contiguousStatesExplored: 0, membershipFallbackEntered: false,
+    participantPressureOrder:ordered.map(task=>pressureById.get(task.id)!) };
   if (!policy || classified.classification === "MEMBERSHIP_REQUIRED")
     return { status: "INCONCLUSIVE", evidence: base, scheduled: null };
   const solved = solveContiguousDirection(problem, "arrival", ordered, coreTasks, [], [], policy, options.consumeFallbackBranch);
@@ -304,9 +326,14 @@ export function materializeTerminalTransport(
         ? (obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end)
         : (obligations.length ? Math.max(...obligations.map(({ end }) => end)) : problem.day.start);
       return individualTransportBoundary(problem, task, direction, obligationBoundary); };
-    const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean)
-      .sort((left, right) => boundary(left) - boundary(right)
-        || left.participantId!.localeCompare(right.participantId!) || byId(left, right));
+    const sourceTasks=policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean);
+    const pressureById=direction==="arrival"?new Map(sourceTasks.map(task=>[task.id,arrivalPressure(problem,task,
+      substantive.filter(item=>item.participantId===task.participantId&&!transportIds.has(item.id)),policy)]))
+      :new Map<string,ReturnType<typeof arrivalPressure>>();
+    const tasks = sourceTasks.sort((left, right) => direction==="arrival"
+      ?earliestHardStart(problem,left)-earliestHardStart(problem,right)||boundary(left)-boundary(right)
+        ||comparePressure(pressureById.get(left.id)!,pressureById.get(right.id)!)
+      :boundary(left)-boundary(right)||left.participantId!.localeCompare(right.participantId!)||byId(left,right));
     const classified = classifyTransportContext(problem, tasks);
     if (classified.classification === "CONTIGUOUS_EXACT") {
       const solved = solveContiguousDirection(problem, direction, tasks, substantive, participantMeals, placed, policy,
@@ -319,7 +346,8 @@ export function materializeTerminalTransport(
         orderedDeadlines: tasks.map(boundary),
         packetMembers, starts: solved.starts, minGapMinutes: policy.minGapMinutes, construction: "contiguous",
         alternativesExplored: solved.alternatives, classification: classified.classification,
-        classificationBreakers: [], contiguousStatesExplored: solved.states, membershipFallbackEntered: false });
+        classificationBreakers: [], contiguousStatesExplored: solved.states, membershipFallbackEntered: false,
+        ...(direction==="arrival"?{participantPressureOrder:tasks.map(task=>pressureById.get(task.id)!)}:{}) });
       placed.push(...solved.scheduled);
       continue;
     }
@@ -336,17 +364,17 @@ export function materializeTerminalTransport(
       alternativesExplored += 1;
       if (options.consumeFallbackBranch && !options.consumeFallbackBranch()) break;
       const local: ScheduledTask[] = [], starts: number[] = [];
-      const indices = direction === "arrival" ? groups.map((_, index) => index).reverse() : groups.map((_, index) => index);
+      const indices = groups.map((_, index) => index);
       const place = (position: number): boolean => {
         if (position === indices.length) return true;
         const index = indices[position]!;
         const group = groups[index]!;
-        const limit = direction === "arrival" ? (starts[index + 1] ?? Number.POSITIVE_INFINITY) - policy.minGapMinutes
+        const limit = direction === "arrival" ? (starts[index - 1] ?? Number.NEGATIVE_INFINITY) + policy.minGapMinutes
           : (starts[index - 1] ?? Number.NEGATIVE_INFINITY) + policy.minGapMinutes;
         const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
         const candidates = transportGroupStarts(problem, group, [...substantive, ...placed, ...local], [], policy)
-          .filter((candidate) => direction === "arrival" ? candidate + group[0]!.duration <= deadline && candidate <= limit : candidate >= deadline && candidate >= limit)
-          .sort((left, right) => direction === "arrival" ? right - left : left - right);
+          .filter((candidate) => direction === "arrival" ? candidate + group[0]!.duration <= deadline && candidate >= limit : candidate >= deadline && candidate >= limit)
+          .sort((left, right) => left - right);
         for (const start of candidates) {
           const scheduled = scheduleTransportGroup(group, start);
           starts[index] = start; local.push(...scheduled);
@@ -363,7 +391,8 @@ export function materializeTerminalTransport(
       packetSizes: witnessGroups.map(({ length }) => length), packetMembers: witnessGroups.map((group) => group.map(({ id }) => id)),
       starts: witnessStarts, minGapMinutes: policy.minGapMinutes, construction: "fallback", alternativesExplored,
       classification: classified.classification, classificationBreakers: classified.breakers,
-      contiguousStatesExplored: 0, membershipFallbackEntered: true });
+      contiguousStatesExplored: 0, membershipFallbackEntered: true,
+      ...(direction==="arrival"?{participantPressureOrder:tasks.map(task=>pressureById.get(task.id)!)}:{}) });
     placed.push(...witness);
   }
   const fingerprint = createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex");

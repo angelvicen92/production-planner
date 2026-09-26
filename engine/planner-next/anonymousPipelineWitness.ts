@@ -300,7 +300,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   }
   feederGeometryCompleted=true;
 
-  // Styling geometry is a serial set of latest boundary-derived spots, not grid points.
+  // Styling geometry is a serial set of boundary-derived spots, not grid points.
   const styleSpace=layers[0]!.styling.spaceId;
   if(layers.some(x=>x.styling.spaceId!==styleSpace||x.styling.duration!==layers[0]!.styling.duration))
     return rejected("INCONCLUSIVE","HETEROGENEOUS_STYLING_GEOMETRY");
@@ -310,7 +310,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   let stylingSpots:AnonymousPipelineSpot[]=[];
   const deadlines=[...architecture.slots].sort((a,b)=>a-b)
     .map(deadline=>deadline-problem.participantTransitionMinutes);
-  // Latest left-justified serial block satisfying every prefix deadline. Its origin is
+  // A left-justified serial block satisfying every prefix deadline. Its origin is
   // an interval boundary/slack calculation; no clock grid is enumerated.
   const styleStarts=styleWindows.flatMap(window=>[window.start,window.end-layers.length*duration,
     ...deadlines.map((deadline,i)=>deadline-(i+1)*duration),
