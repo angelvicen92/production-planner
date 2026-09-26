@@ -520,8 +520,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       if(protectedMismatch)return;
       bundleEdgesBeforeReservation++;
       const local:ScheduledTask[]=[...protectedPlacements.filter(task=>!bundle.some(item=>item.id===task.id))];
-      const protectedCompatible=bundle.every(task=>canPlaceTask(problem,task,task.start,
-        protectedPlacements.filter(fixed=>fixed.id!==task.id)));
+      const protectedCompatible=bundle.every(task=>canPlaceTask(problem,task,task.start,local));
       let edgeValid=protectedCompatible;
       for(const task of [...bundle].sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id))){
         if(!canPlaceTask(problem,task,task.start,local)&&!protectedById.has(task.id)){edgeValid=false;break;}
