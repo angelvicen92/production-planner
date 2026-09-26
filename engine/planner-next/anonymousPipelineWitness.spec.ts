@@ -183,6 +183,31 @@ describe("anonymous structural pipeline witness",()=>{
     assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
   });
 
+  it("skips an early entry boundary that ARRIVAL cannot feed and accepts the first joint opening",()=>{
+    const p=problem();
+    p.tasks.find(task=>task.id==="style0")!.availability=[{start:0,end:30}];
+    p.tasks.find(task=>task.id==="in0")!.availability=[{start:0,end:20}];
+    p.participantTransitionMinutes=5;
+    let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[120]},value=>{diagnostic=value;});
+    assert.equal(witness.status,"FEASIBLE",witness.reason);
+    assert.deepEqual(diagnostic?.entryCandidateStartsConsidered.slice(0,2),[0,20]);
+    assert.deepEqual(diagnostic?.entryCandidatesRejectedByArrival,[0]);
+    assert.equal(diagnostic?.selectedEntryBlockStart,20);
+    assert.ok(witness.inGroups.every(group=>group.end+5<=witness.stylingSpots.find(spot=>
+      witness.assignments.some(item=>item.inGroupId===group.id&&item.stylingSpotId===spot.id))!.start));
+  });
+
+  it("uses availability pressure before nominal identity for equivalent early entry spots",()=>{
+    const p=problem(["A","A"]);p.participants[0]!.availability=[{start:0,end:300}];
+    p.participants[1]!.availability=[{start:0,end:220}];
+    const materialized=materializeNominalPipelineWitness(p,{pattern:["A","A"],slots:[180,195]});
+    assert.equal(materialized.witness.status,"FEASIBLE",materialized.witness.reason);
+    const style0=materialized.scheduledTasks.find(task=>task.id==="style0")!;
+    const style1=materialized.scheduledTasks.find(task=>task.id==="style1")!;
+    assert.ok(style1.start<style0.start);
+  });
+
   it("reaches a hard-valid later meal start without splitting a logical Main run",()=>{
     const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
     p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};

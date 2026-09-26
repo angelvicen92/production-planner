@@ -208,41 +208,38 @@ function solveContiguousDirection(
   const failed = new Set<string>();
   const search = (index: number, temporalLimit: number, local: ScheduledTask[], sizes: number[], starts: number[]): boolean => {
     states += 1;
-    if (direction === "arrival" ? index < 0 : index >= tasks.length) return true;
+    if (index >= tasks.length) return true;
     const key = `${index}@${temporalLimit}`;
     if (failed.has(key)) return false;
-    const remaining = direction === "arrival" ? index + 1 : tasks.length - index;
+    const remaining = tasks.length - index;
     for (const [candidateIndex, size] of sizeCandidates(remaining).entries()) {
       if (candidateIndex > 0) {
         alternatives += 1;
         if (consumeAlternative && !consumeAlternative()) return false;
       }
-      const from = direction === "arrival" ? index - size + 1 : index;
+      const from = index;
       const group = tasks.slice(from, from + size);
       const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
       const candidates = transportGroupStarts(problem, group, [...substantive, ...alreadyPlaced, ...local], [], policy)
         .filter((start) => direction === "arrival"
-          ? start + group[0]!.duration <= deadline && start <= temporalLimit
+          ? start + group[0]!.duration <= deadline && start >= temporalLimit
           : start >= deadline && start >= temporalLimit)
-        .sort((left, right) => direction === "arrival" ? right - left : left - right);
+        .sort((left, right) => left - right);
       for (const start of candidates) {
         const scheduled = scheduleTransportGroup(group, start);
         local.push(...scheduled);
-        if (direction === "arrival") { sizes.unshift(size); starts.unshift(start); }
-        else { sizes.push(size); starts.push(start); }
-        const nextLimit = direction === "arrival" ? start - policy.minGapMinutes : start + policy.minGapMinutes;
-        if (search(direction === "arrival" ? from - 1 : index + size, nextLimit, local, sizes, starts)) return true;
+        sizes.push(size); starts.push(start);
+        const nextLimit = start + policy.minGapMinutes;
+        if (search(index + size, nextLimit, local, sizes, starts)) return true;
         local.splice(local.length - scheduled.length, scheduled.length);
-        if (direction === "arrival") { sizes.shift(); starts.shift(); } else { sizes.pop(); starts.pop(); }
+        sizes.pop(); starts.pop();
       }
     }
     failed.add(key);
     return false;
   };
   const scheduled: ScheduledTask[] = [], packetSizes: number[] = [], starts: number[] = [];
-  const initialIndex = direction === "arrival" ? tasks.length - 1 : 0;
-  const initialLimit = direction === "arrival" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
-  return { scheduled: search(initialIndex, initialLimit, scheduled, packetSizes, starts) ? scheduled : null,
+  return { scheduled: search(0, Number.NEGATIVE_INFINITY, scheduled, packetSizes, starts) ? scheduled : null,
     packetSizes, starts, states, alternatives };
 }
 
@@ -336,17 +333,16 @@ export function materializeTerminalTransport(
       alternativesExplored += 1;
       if (options.consumeFallbackBranch && !options.consumeFallbackBranch()) break;
       const local: ScheduledTask[] = [], starts: number[] = [];
-      const indices = direction === "arrival" ? groups.map((_, index) => index).reverse() : groups.map((_, index) => index);
+      const indices = groups.map((_, index) => index);
       const place = (position: number): boolean => {
         if (position === indices.length) return true;
         const index = indices[position]!;
         const group = groups[index]!;
-        const limit = direction === "arrival" ? (starts[index + 1] ?? Number.POSITIVE_INFINITY) - policy.minGapMinutes
-          : (starts[index - 1] ?? Number.NEGATIVE_INFINITY) + policy.minGapMinutes;
+        const limit = (starts[index - 1] ?? Number.NEGATIVE_INFINITY) + policy.minGapMinutes;
         const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
         const candidates = transportGroupStarts(problem, group, [...substantive, ...placed, ...local], [], policy)
-          .filter((candidate) => direction === "arrival" ? candidate + group[0]!.duration <= deadline && candidate <= limit : candidate >= deadline && candidate >= limit)
-          .sort((left, right) => direction === "arrival" ? right - left : left - right);
+          .filter((candidate) => direction === "arrival" ? candidate + group[0]!.duration <= deadline && candidate >= limit : candidate >= deadline && candidate >= limit)
+          .sort((left, right) => left - right);
         for (const start of candidates) {
           const scheduled = scheduleTransportGroup(group, start);
           starts[index] = start; local.push(...scheduled);
