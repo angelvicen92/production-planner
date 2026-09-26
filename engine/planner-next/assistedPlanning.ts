@@ -17,6 +17,7 @@ import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupPreparationId } from "./setupPreparation";
+import { openingPrerequisiteBundles } from "./openingPrerequisites";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -37,6 +38,8 @@ export interface AssistedProblem {
   readonly retainedParticipantMealSourceIds: readonly string[];
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
+  /** Opening obligations certified ephemerally unless explicitly scoped or accepted. */
+  readonly virtualSupportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
 }
 
@@ -46,6 +49,7 @@ export interface AssistedPlanningEvidence {
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId?: Readonly<Record<string, readonly string[]>>;
   readonly virtualSupportingReservations?:readonly string[];
+  readonly virtualSupportingTaskIds?:readonly string[];
   readonly ephemeralSupportingPlacements?:readonly import("./contracts").ScheduledTask[];
   readonly acceptedSupportingPlacements?:readonly import("./contracts").ScheduledTask[];
   readonly protectedPlacementCount: number;
@@ -122,6 +126,7 @@ export interface AssistedPlanningEvidence {
   };
   readonly futureStructuralWitnesses?:{readonly round:{readonly checks:number;readonly passes:number;readonly prunes:number;
     readonly abstentions:number;readonly preparedBuilds:number;readonly cacheHits:number;readonly invalidations:number;
+    readonly relevantStateCacheHits:number;readonly irrelevantChangesSkipped:number;readonly witnessReuses:number;
     readonly repairs:number;readonly exactFallbacks:number;readonly exactBranches:number;
     readonly firstWitnessLoss:ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]}};
   readonly work: Readonly<Record<string, number>>;
@@ -339,6 +344,9 @@ export function buildAssistedProblem(
   }
 
   const fixedById = new Map(protectedPlacements.map((placement) => [placement.id, placement]));
+  const openingIds=new Set(openingPrerequisiteBundles(problem).flatMap(bundle=>[bundle.arrival.id,bundle.entry.id]));
+  const virtualSupportingTaskIds=canonicalIds([...supporting].filter(id=>openingIds.has(id)
+    &&!scopeIds.includes(id)&&!fixedById.has(id)));
   // Capture the full-problem authorities before projecting executable tasks.
   // The search never iterates this collection: participant-causal probes alone
   // consult it after a provisional placement.
@@ -457,6 +465,7 @@ export function buildAssistedProblem(
     retainedParticipantMealSourceIds: canonicalIds([...retainedMealSourceIds]),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
     supportingTaskIds: canonicalIds([...supporting]),
+    virtualSupportingTaskIds,
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
       [id, Object.freeze([...(supportingReasons.get(id) ?? [])].sort())]))),
   };
@@ -576,7 +585,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     scopeTaskIds: input.scope.resolvedTaskIds,
     supportingTaskIds: input.supportingTaskIds,
     supportingReasonByTaskId: input.supportingReasonByTaskId,
-    virtualSupportingReservations:[...input.supportingTaskIds],
+    virtualSupportingReservations:[...input.virtualSupportingTaskIds],
+    virtualSupportingTaskIds:[...input.virtualSupportingTaskIds],
     ephemeralSupportingPlacements:structuredClone(searchScheduled.filter(task=>input.supportingTaskIds.includes(task.id)
       &&!protectedIds.has(task.id))),
     acceptedSupportingPlacements:structuredClone(input.protectedPlacements.filter(task=>input.supportingTaskIds.includes(task.id))),
@@ -692,6 +702,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       passes:Number(evidenceRecord.futureRoundWitnessPasses??0),prunes:Number(evidenceRecord.futureRoundWitnessPrunes??0),
       abstentions:Number(evidenceRecord.futureRoundWitnessAbstentions??0),
       preparedBuilds:Number(evidenceRecord.futureRoundPreparedBuilds??0),cacheHits:Number(evidenceRecord.futureRoundCacheHits??0),
+      relevantStateCacheHits:Number(evidenceRecord.futureRoundRelevantStateCacheHits??0),
+      irrelevantChangesSkipped:Number(evidenceRecord.futureRoundIrrelevantChangesSkipped??0),
+      witnessReuses:Number(evidenceRecord.futureRoundWitnessReuses??0),
       invalidations:Number(evidenceRecord.futureRoundWitnessInvalidations??0),repairs:Number(evidenceRecord.futureRoundWitnessRepairs??0),
       exactFallbacks:Number(evidenceRecord.futureRoundExactFallbacks??0),exactBranches:Number(evidenceRecord.futureRoundExactBranches??0),
       firstWitnessLoss:(evidenceRecord.firstFutureRoundWitnessLoss as ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]|undefined)??null}},

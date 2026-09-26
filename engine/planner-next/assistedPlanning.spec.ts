@@ -51,7 +51,8 @@ test("assisted projection is immutable, fixes accepted placements and never move
   assert.equal(first.evidence.requiredValid, true);
   assert.equal(first.evidence.proposalCount, 1);
   assert.deepEqual(first.evidence.supportingTaskIds, ["feed"]);
-  assert.deepEqual(first.evidence.virtualSupportingReservations,["feed"]);
+  assert.deepEqual(first.evidence.virtualSupportingReservations,[]);
+  assert.deepEqual(first.evidence.virtualSupportingTaskIds,[]);
   assert.deepEqual(first.evidence.ephemeralSupportingPlacements?.map(({id})=>id),["feed"]);
   assert.deepEqual(first.evidence.acceptedSupportingPlacements,[]);
   assert.equal(first.evidence.fingerprint, second.evidence.fingerprint);
@@ -71,6 +72,23 @@ test("protected placements remain traversal roots without becoming automatic var
   assert.deepEqual(assisted.supportingTaskIds, ["feed", "outside"]);
   assert.equal(assisted.automaticTaskIds.includes("protected"), false);
   assert.equal(assisted.problem.tasks.some(({ id }) => id === "outside"), true);
+});
+
+test("opening prerequisites are virtual only when supporting and become ordinary when explicitly scoped",()=>{
+  const source=fixture();
+  source.tasks.push(
+    {id:"arrival",kind:"auxiliary",duration:5,spaceId:"other-space",participantId:"p1",dependencies:[]},
+    {id:"entry",kind:"auxiliary",duration:10,spaceId:"other-space",participantId:"p1",dependencies:["arrival"]},
+  );
+  source.tasks.find(task=>task.id==="main")!.dependencies.push("entry");
+  const grouping={taskIds:["arrival"],targetGroupSize:1,minimumGroupSize:1,maximumGroupSize:1,minGapMinutes:0,groupingWeight:1};
+  source.transportPolicy={arrival:grouping,departure:{...grouping,taskIds:[]}};
+  const supporting=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[]);
+  assert.deepEqual(supporting.virtualSupportingTaskIds,["arrival","entry"]);
+  const explicit=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"opening"},{},["arrival","entry","main"]),[]);
+  assert.deepEqual(explicit.virtualSupportingTaskIds,[]);
+  assert.equal(explicit.automaticTaskIds.includes("arrival"),true);
+  assert.equal(explicit.automaticTaskIds.includes("entry"),true);
 });
 
 test("an out-of-scope pending participant meal remains analytic without becoming automatic or proposed",()=>{

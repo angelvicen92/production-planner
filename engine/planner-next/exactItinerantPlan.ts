@@ -103,6 +103,9 @@ export interface ExactItinerantPlanEvidence {
   futureRoundWitnessAbstentions:number;
   futureRoundPreparedBuilds:number;
   futureRoundCacheHits:number;
+  futureRoundRelevantStateCacheHits:number;
+  futureRoundIrrelevantChangesSkipped:number;
+  futureRoundWitnessReuses:number;
   futureRoundWitnessInvalidations:number;
   futureRoundWitnessRepairs:number;
   futureRoundExactFallbacks:number;
@@ -627,22 +630,31 @@ function prepareFutureRoundAuthority(problem:PlannerNextProblem,ledger:ExactSear
   const structures=[...(problem.analyticalFutureRoundSynchronizations??[])].sort((a,b)=>a.policy.id.localeCompare(b.policy.id))
     .map(source=>({source,last:null as ExactRoundSynchronizationCandidate|null,cache:new Map<string,"PASS"|"PRUNE">()}));
   evidence.futureRoundPreparedBuilds+=structures.length;
-  const stateKey=(placed:readonly ScheduledTask[],setup:readonly ScheduledSetupPreparation[],round:readonly ScheduledRoundPreparation[],
-    meals:readonly ScheduledSpaceMeal[])=>createHash("sha256").update(JSON.stringify({placed:[...placed].sort(byId).map(x=>[x.id,x.start,x.end]),
-      setup:[...setup].sort(byId).map(x=>[x.id,x.start,x.end]),round:[...round].sort(byId).map(x=>[x.id,x.start,x.end]),
-      meals:[...meals].sort(byId).map(x=>[x.id,x.start,x.end])})).digest("hex");
   return {assess(placed,setup,round,meals){
     for(const structure of structures){
-      const key=stateKey(placed,setup,round,meals),cached=structure.cache.get(key);
-      if(cached){evidence.futureRoundCacheHits++;if(cached==="PRUNE")return "PRUNE";continue;}
       const local={...problem,tasks:[...problem.tasks,...structure.source.tasks],roundSynchronizations:[structure.source.policy]};
+      const laneSpaces=new Set(structure.source.policy.lanes.map(lane=>lane.spaceId));
+      const futureIds=new Set(structure.source.tasks.map(task=>task.id));
+      const relevant=placed.filter(task=>structure.source.tasks.some(future=>tasksCanAffectEachOther(task,future))
+        ||laneSpaces.has(task.spaceId));
+      const key=createHash("sha256").update(JSON.stringify({participants:[...new Set(structure.source.tasks
+        .flatMap(task=>task.participantId?[task.participantId]:[]))].sort(),lanes:[...laneSpaces].sort(),
+        placed:[...relevant].sort(byId).map(x=>[x.id,x.start,x.end]),
+        setup:[...setup].filter(x=>laneSpaces.has(x.spaceId)).sort(byId).map(x=>[x.id,x.start,x.end]),
+        round:[...round].filter(x=>laneSpaces.has(x.spaceId)).sort(byId).map(x=>[x.id,x.start,x.end]),
+        meals:[...meals].filter(x=>laneSpaces.has(x.spaceId)).sort(byId).map(x=>[x.id,x.start,x.end]),
+        dependencies:structure.source.tasks.map(task=>[task.id,task.dependencies.filter(id=>futureIds.has(id)).sort()])})).digest("hex");
+      const cached=structure.cache.get(key);
+      if(cached){evidence.futureRoundCacheHits++;evidence.futureRoundRelevantStateCacheHits++;
+        evidence.futureRoundIrrelevantChangesSkipped+=Math.max(0,placed.length-relevant.length);
+        if(cached==="PRUNE")return "PRUNE";evidence.futureRoundWitnessReuses++;continue;}
       if(structure.last){
         const conflicts=(left:{start:number;end:number},right:{start:number;end:number})=>left.start<right.end&&right.start<left.end;
         const preparationsValid=structure.last.preparations.every(item=>![...placed,...setup,...round,...meals]
           .some(other=>"spaceId" in other&&other.spaceId===item.spaceId&&conflicts(item,other)));
         const valid=preparationsValid&&structure.last.tasks.every(task=>canPlaceTask(local,local.tasks.find(x=>x.id===task.id)!,task.start,
           [...placed,...structure.last!.tasks.filter(other=>other.id!==task.id)],[...meals]));
-        if(valid){evidence.futureRoundCacheHits++;structure.cache.set(key,"PASS");continue;}
+        if(valid){evidence.futureRoundWitnessReuses++;structure.cache.set(key,"PASS");continue;}
         evidence.futureRoundWitnessInvalidations++;
       }
       evidence.futureRoundExactFallbacks++;const before=ledger.branchesExplored;let selected:ExactRoundSynchronizationCandidate|null=null;
@@ -1390,7 +1402,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const operationalMeals=new PreparedOperationalMealAuthority(coreOperationalMealProblem);
   const evidence: ExactItinerantPlanEvidence = {
     futureRoundWitnessChecks:0,futureRoundWitnessPasses:0,futureRoundWitnessPrunes:0,futureRoundWitnessAbstentions:0,
-    futureRoundPreparedBuilds:0,futureRoundCacheHits:0,futureRoundWitnessInvalidations:0,futureRoundWitnessRepairs:0,
+    futureRoundPreparedBuilds:0,futureRoundCacheHits:0,futureRoundRelevantStateCacheHits:0,
+    futureRoundIrrelevantChangesSkipped:0,futureRoundWitnessReuses:0,
+    futureRoundWitnessInvalidations:0,futureRoundWitnessRepairs:0,
     futureRoundExactFallbacks:0,futureRoundExactBranches:0,
     firstFutureRoundWitnessLoss:null,
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
