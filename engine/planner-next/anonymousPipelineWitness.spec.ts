@@ -294,6 +294,39 @@ describe("anonymous structural pipeline witness",()=>{
     assert.deepEqual(rematched.scheduledTasks.find(task=>task.id===fixed.id),fixed);
   });
 
+  it("keeps a nominal grouped-IN edge when only task-by-task bundle validation rejects it",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const prepared=preparePipelineBundleGraph(p,architecture,[],nominal);assert.ok(prepared);
+    for(const main of p.tasks.filter(task=>task.kind==="main")){
+      const projected=nominal.scheduledTasks.find(task=>task.id===main.id)!;
+      const position=nominal.witness.assignments.findIndex(assignment=>
+        nominal.witness.mainSpots.find(spot=>spot.id===assignment.mainSpotId)?.start===projected.start);
+      assert.ok(prepared.candidates.get(main.id)?.has(position),main.id);
+    }
+  });
+
+  it("does not let a nominal projection override a conflict with a protected placement",()=>{
+    const p=problem();const architecture={pattern:["A"],slots:[225]};
+    const baseline=preparePipelineBundleGraph(p,architecture);assert.ok(baseline);
+    const supporting=baseline.candidates.get("main0")!.get(0)!.find(task=>task.id!=="main0")!;
+    const protectedTask={...supporting,id:"protected-overlap",dependencies:[]};
+    const prepared=preparePipelineBundleGraph(p,architecture,[protectedTask]);assert.ok(prepared);
+    assert.equal(prepared.candidates.get("main0")!.size,0);
+  });
+
+  it("rematches onto another hard-valid position when a protected placement removes the nominal edge",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const initial=materializePipelineBundleMatching(p,architecture);assert.ok(initial);
+    const nominalPosition=initial.matching.get("main0")!;
+    const main=initial.scheduledTasks.find(task=>task.id==="main0")!;
+    p.spaces.push({id:"protected-space",availability:windows});
+    const blocker={...main,id:"protected-participant",spaceId:"protected-space",coachId:undefined,
+      dependencies:[],requiredResourceIds:[],itinerantUnitId:undefined};
+    const rematched=materializePipelineBundleMatching(p,architecture,[blocker]);assert.ok(rematched);
+    assert.notEqual(rematched.matching.get("main0"),nominalPosition);
+  });
+
   const addTightCollectiveFuture=(p:PlannerNextProblem)=>{
     p.participants[0]!.availability=[{start:160,end:300}];
     p.participantMealCapacity={maxSimultaneous:1};
