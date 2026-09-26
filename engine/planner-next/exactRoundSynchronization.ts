@@ -71,6 +71,11 @@ export interface ExactRoundSynchronizationContinuationResult {
   terminalFutureResult?: "PASS" | "PRUNE" | "ABSTAIN" | "NOT_CHECKED";
 }
 
+export interface ExactRoundSynchronizationAuthorities {
+  /** Test seam; production always uses the canonical participant-future authority. */
+  participantFutureProbe?: typeof probeParticipantFutureReservations;
+}
+
 export interface ExactRoundSynchronizationMacroDomain {
   domainSize: number;
   structuralCandidateCount: number;
@@ -315,7 +320,9 @@ export function exploreExactRoundSynchronizationPolicy(
   ledger: ExactSearchLedger,
   continuation: (candidate: ExactRoundSynchronizationCandidate) =>
     ExactRoundSynchronizationOutcome | ExactRoundSynchronizationContinuationResult,
+  authorities: ExactRoundSynchronizationAuthorities = {},
 ): ExactRoundSynchronizationSearchResult {
+  const participantFutureProbe=authorities.participantFutureProbe??probeParticipantFutureReservations;
   const evidence: ExactRoundSynchronizationEvidence = {
     startCandidates: 0,
     assignmentBranches: 0,
@@ -364,7 +371,7 @@ export function exploreExactRoundSynchronizationPolicy(
         const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
         const cacheKey=`${task.id}@${slot.spaceId}:${slot.start}`;
         let futureStatus=analyticEdgeCache.get(cacheKey);
-        if(futureStatus===undefined){futureStatus=probeParticipantFutureReservations(problem,[...baseTasks,scheduled],[scheduled],undefined,"ANALYTIC_ONLY").status;
+        if(futureStatus===undefined){futureStatus=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],undefined,"ANALYTIC_ONLY").status;
           analyticEdgeCache.set(cacheKey,futureStatus);}
         evidence.futureEdgeChecks+=1;
         if(futureStatus==="PRUNE"){evidence.analyticPrunedEdges+=1;continue;}
@@ -419,7 +426,7 @@ export function exploreExactRoundSynchronizationPolicy(
     const newlyForbidden:string[]=[];
     for(const [taskId,position] of matching){const task=taskByMatchingId.get(taskId)!,slot=slotById.get(slotIds[position]!)!;
       const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
-      const exact=probeParticipantFutureReservations(problem,[...baseTasks,scheduled],[scheduled],{consume:()=>ledger.consume("STANDALONE")},"EXACT");
+      const exact=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],{consume:()=>ledger.consume("STANDALONE")},"EXACT");
       if(exact.status==="ABSTAIN"&&exact.abstainCause==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
       if(exact.status==="PRUNE")newlyForbidden.push(`${taskId}@${position}`);
     }
