@@ -286,6 +286,24 @@ test("future analytical authority excludes included and protected tasks and defa
   assert.deepEqual(buildAssistedProblem(source,scope,[]).problem.analyticalFutureParticipantTasks,[]);
 });
 
+test("future required rounds stay read-only and do not masquerade as independent participant futures",()=>{
+  const source=fixture();
+  source.tasks.push(
+    {id:"future-round-a",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,dependencies:[]},
+    {id:"future-round-b",kind:"auxiliary",participantId:"p2",spaceId:"vocal-space",duration:10,dependencies:[]},
+  );
+  source.roundSynchronizations=[{id:"future-round",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",lanes:[
+    {spaceId:"other-space",taskIds:["future-round-a"],preparationMinutesBetweenRounds:0},
+    {spaceId:"vocal-space",taskIds:["future-round-b"],preparationMinutesBetweenRounds:0},
+  ]}];
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],
+    new Set(["future-round-a","future-round-b"]));
+  assert.deepEqual(assisted.problem.analyticalFutureRoundSynchronizations?.map(item=>item.policy.id),["future-round"]);
+  assert.deepEqual(assisted.problem.analyticalFutureParticipantTasks?.filter(task=>task.id.startsWith("future-round")),[]);
+  assert.equal(assisted.problem.tasks.some(task=>task.id.startsWith("future-round")),false);
+  assert.equal(assisted.automaticTaskIds.some(id=>id.startsWith("future-round")),false);
+});
+
 const futureDependencyProjection=(prerequisiteAvailability:readonly {start:number;end:number}[]|null)=>{
   const source=fixture();
   source.tasks.push({id:"future",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,

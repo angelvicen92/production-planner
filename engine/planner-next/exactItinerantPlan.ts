@@ -97,6 +97,11 @@ export interface StandaloneDeadEndCause {
 }
 
 export interface ExactItinerantPlanEvidence {
+  futureRoundWitnessChecks:number;
+  futureRoundWitnessPasses:number;
+  futureRoundWitnessPrunes:number;
+  futureRoundWitnessAbstentions:number;
+  firstFutureRoundWitnessLoss:{policyId:string;causingTaskId:string|null}|null;
   branchesExplored: number;
   coreBranches: number;
   standaloneBranches: number;
@@ -692,6 +697,19 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       &&actualSubstantive.every((id,index)=>id===expected[index]);
     const exactSubstantive = transportAlreadyMaterialized||(actualSubstantive.length === expectedSubstantive.length
       && actualSubstantive.every((id, index) => id === expectedSubstantive[index]));
+    if(exactSubstantive&&(problem.analyticalFutureRoundSynchronizations?.length??0)>0){
+      for(const future of [...problem.analyticalFutureRoundSynchronizations!].sort((a,b)=>a.policy.id.localeCompare(b.policy.id))){
+        evidence.futureRoundWitnessChecks++;
+        const localProblem={...problem,tasks:[...problem.tasks,...future.tasks],roundSynchronizations:[future.policy]};
+        const witness=exploreExactRoundSynchronizationPolicy(localProblem,future.policy,substantive,preparations,
+          roundPreparations,coreMeals,ledger,()=>"FOUND");
+        // Exhaustion is uncertainty, never permission to publish a proposal.
+        if(witness.outcome==="BUDGET_EXHAUSTED"){evidence.futureRoundWitnessAbstentions++;return "BUDGET_EXHAUSTED";}
+        if(witness.outcome!=="FOUND"){evidence.futureRoundWitnessPrunes++;evidence.firstFutureRoundWitnessLoss??={policyId:future.policy.id,
+          causingTaskId:selectionOrder.at(-1)??null};return "DEAD_END";}
+        evidence.futureRoundWitnessPasses++;
+      }
+    }
     if(exactSubstantive&&(problem.analyticalFutureParticipantTasks?.length??0)>0){
       const terminalReservation=probeParticipantFutureReservations(problem,substantive,substantive,{consume:()=>ledger.consume("STANDALONE")},"EXACT");
       recordParticipantFutureReservation(evidence,terminalReservation);evidence.participantFutureTerminalExactChecks+=1;
@@ -1333,6 +1351,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ?{...problem,operationalMealPolicies:(problem.operationalMealPolicies??[]).filter(policy=>!coreMainMealAuthority.sourceIds.includes(policy.id))}:problem;
   const operationalMeals=new PreparedOperationalMealAuthority(coreOperationalMealProblem);
   const evidence: ExactItinerantPlanEvidence = {
+    futureRoundWitnessChecks:0,futureRoundWitnessPasses:0,futureRoundWitnessPrunes:0,futureRoundWitnessAbstentions:0,
+    firstFutureRoundWitnessLoss:null,
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
     jointGroupAnalyticallyEliminatedStarts: 0, jointGroupStartsEvaluated: 0,

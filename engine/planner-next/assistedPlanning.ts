@@ -117,6 +117,8 @@ export interface AssistedPlanningEvidence {
       "nominalPipelineWitnessFeasible"|"nominalPipelineWitnessInfeasible"|"nominalPipelineWitnessInconclusive"|
       "nominalPipelineWitnessRejectsByReason"|"continuityRejects"|"authorizedArchitecturesYielded">;
   };
+  readonly futureStructuralWitnesses?:{readonly round:{readonly checks:number;readonly passes:number;readonly prunes:number;
+    readonly abstentions:number;readonly firstWitnessLoss:ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]}};
   readonly work: Readonly<Record<string, number>>;
   readonly bundleMatching?: Pick<ExactItinerantPlanEvidence,"bundleForbiddenEdges"|"bundleRepairSequence"|"bundleTerminalCause"|
     "bundleNogoodsCreated"|"bundleNogoodBranches"|"bundleNogoodDeduplications"|"bundleNogoodRepairsSucceeded"|"conflictEdges">;
@@ -335,8 +337,18 @@ export function buildAssistedProblem(
   // Capture the full-problem authorities before projecting executable tasks.
   // The search never iterates this collection: participant-causal probes alone
   // consult it after a provisional placement.
+  const futureRoundMemberIds=new Set((problem.roundSynchronizations??[])
+    .filter(policy=>policy.synchronization==="START_TOGETHER_WHILE_ALL_LANES_ACTIVE"
+      &&policy.lanes.flatMap(lane=>lane.taskIds).every(id=>analyticalFutureEligibleTaskIds.has(id)&&!included.has(id)))
+    .flatMap(policy=>policy.lanes.flatMap(lane=>lane.taskIds)));
+  problem.analyticalFutureRoundSynchronizations=(problem.roundSynchronizations??[])
+    .filter(policy=>policy.synchronization==="START_TOGETHER_WHILE_ALL_LANES_ACTIVE"
+      &&policy.lanes.flatMap(lane=>lane.taskIds).every(id=>futureRoundMemberIds.has(id)))
+    .sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>({policy:structuredClone(policy),tasks:policy.lanes
+      .flatMap(lane=>lane.taskIds).sort().map(id=>structuredClone(tasksById.get(id)!))}));
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
+    .filter(task=>!futureRoundMemberIds.has(task.id))
     .map((task) => structuredClone(task));
   // Preserve the complete task-prerequisite closure needed by analytical
   // participant futures. These vertices remain executable/supporting context;
@@ -667,6 +679,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         continuityRejects:Number(evidenceRecord.continuityRejects??0),authorizedArchitecturesYielded:Number(evidenceRecord.authorizedArchitecturesYielded??0),
       },
     },
+    futureStructuralWitnesses:{round:{checks:Number(evidenceRecord.futureRoundWitnessChecks??0),
+      passes:Number(evidenceRecord.futureRoundWitnessPasses??0),prunes:Number(evidenceRecord.futureRoundWitnessPrunes??0),
+      abstentions:Number(evidenceRecord.futureRoundWitnessAbstentions??0),
+      firstWitnessLoss:(evidenceRecord.firstFutureRoundWitnessLoss as ExactItinerantPlanEvidence["firstFutureRoundWitnessLoss"]|undefined)??null}},
     work,
     bundleMatching:{bundleForbiddenEdges:[...(evidenceRecord.bundleForbiddenEdges as string[]|undefined)??[]],
       bundleRepairSequence:[...(evidenceRecord.bundleRepairSequence as ExactItinerantPlanEvidence["bundleRepairSequence"]|undefined)??[]],

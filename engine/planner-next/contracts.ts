@@ -155,6 +155,8 @@ export interface PlannerNextProblem {
   analyticalFutureParticipantSupportingTaskIds?: string[];
   /** Read-only Assisted structures. Their members are probes, never search variables. */
   analyticalFutureTechnicalChains?: Array<{ policy: TechnicalChainPolicy; tasks: Task[] }>;
+  /** Read-only REQUIRED round structures omitted from an Assisted scope. */
+  analyticalFutureRoundSynchronizations?: Array<{ policy: RoundSynchronizationPolicy; tasks: Task[] }>;
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;
