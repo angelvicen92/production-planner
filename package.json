@@ -63,6 +63,7 @@
     "benchmark:planner-next:spec10-020": "tsx engine/planner-next/benchmarks/runSpec10020FlexibleSetupOrderBenchmark.ts",
     "benchmark:planner-next:a2-assisted-proposal-e1": "tsx engine/planner-next/benchmarks/runPlannerNextA2AssistedProposalE1Cli.ts"
     ,"benchmark:planner-next:a2-pipeline-witness": "tsx engine/planner-next/benchmarks/runA2AnonymousPipelineWitnessProbe.ts",
+    "benchmark:planner-next:a2-opening": "tsx engine/planner-next/benchmarks/runA2AnonymousPipelineWitnessProbe.ts",
     "benchmark:planner-next:a2-assist-2": "tsx server/benchmarks/runA2Assist2Evidence.ts",
     "benchmark:planner-next:a2-assist-5": "tsx server/benchmarks/runA2Assist5Evidence.ts",
     "benchmark:planner-next:a2-assist-6": "tsx engine/planner-next/benchmarks/runA2Assist6Evidence.ts",

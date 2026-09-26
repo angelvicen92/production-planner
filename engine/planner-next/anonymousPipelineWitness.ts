@@ -46,6 +46,11 @@ export interface AnonymousPipelineWitnessDiagnostic {
     matching?:readonly {tokenId:string;ordinal:number}[]; exactDomainIntervalCount:number;
     candidateStartBoundaryCount:number; blockStartCandidatesEvaluated:number; perfectMatchingChecks:number }[];
   stylingCandidateStartBoundaryCount: number;
+  entryCandidateStartsConsidered: readonly number[];
+  entryCandidatesRejectedByArrival: readonly number[];
+  selectedEntryBlockStart: number | null;
+  selectedEntryBlockEnd: number | null;
+  pressureOrder: readonly string[];
   anchoredOperationIntervals: readonly { id:string; start:number; end:number }[];
   operationalMealPoliciesChecked: number;
   operationalMealFutureFeasible: boolean | null;
@@ -98,6 +103,8 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
   let arrivalSolverExecuted=false,arrivalClassification:string|null=null,arrivalContiguousStatesExplored=0;
   let arrivalMembershipFallbackEntered=false,stylingCandidateStartBoundaryCount=0;
+  const entryCandidateStartsConsidered:number[]=[],entryCandidatesRejectedByArrival:number[]=[];
+  let selectedEntryBlockStart:number|null=null,selectedEntryBlockEnd:number|null=null,pressureOrder:string[]=[];
   let operationalMealPoliciesChecked=0,operationalMealFutureFeasible:boolean|null=null,operationalMealBranchesExplored=0;
   let operationalMealBlockingPolicyIds:string[]=[];
   let participantMealsChecked=0,participantMealFutureFeasible:boolean|null=null,participantMealAnalyticDomainBuilds=0;
@@ -111,7 +118,8 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   const emitDiagnostic=()=>onDiagnostic?.({mainMatchingCompleted,anchorsCompleted,feederGeometryCompleted,
     stylingGeometryCompleted,arrivalSolverExecuted,arrivalClassification,arrivalContiguousStatesExplored,
     arrivalMembershipFallbackEntered,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
-    stylingCandidateStartBoundaryCount,anchoredOperationIntervals:diagnosticAnchors,
+    stylingCandidateStartBoundaryCount,entryCandidateStartsConsidered,entryCandidatesRejectedByArrival,
+    selectedEntryBlockStart,selectedEntryBlockEnd,pressureOrder,anchoredOperationIntervals:diagnosticAnchors,
     operationalMealPoliciesChecked,operationalMealFutureFeasible,operationalMealBlockingPolicyIds,
     operationalMealBranchesExplored,participantMealsChecked,participantMealFutureFeasible,
     participantMealBlockingTaskIds,participantMealAnalyticDomainBuilds});
@@ -300,7 +308,8 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   }
   feederGeometryCompleted=true;
 
-  // Styling geometry is a serial set of latest boundary-derived spots, not grid points.
+  // Entry uses boundary candidates only. Each candidate is matched and then proved
+  // together with ARRIVAL, earliest first, instead of committing a local late block.
   const styleSpace=layers[0]!.styling.spaceId;
   if(layers.some(x=>x.styling.spaceId!==styleSpace||x.styling.duration!==layers[0]!.styling.duration))
     return rejected("INCONCLUSIVE","HETEROGENEOUS_STYLING_GEOMETRY");
@@ -308,70 +317,73 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   const styleWindows=orderedWindows(problem.spaces.find(s=>s.id===styleSpace)?.availability,problem.day);
   const stylingDomains=layers.map(layer=>exactTaskStartDomain(problem,layer.styling,[]));
   let stylingSpots:AnonymousPipelineSpot[]=[];
-  const deadlines=[...architecture.slots].sort((a,b)=>a-b)
-    .map(deadline=>deadline-problem.participantTransitionMinutes);
-  // Latest left-justified serial block satisfying every prefix deadline. Its origin is
-  // an interval boundary/slack calculation; no clock grid is enumerated.
-  const styleStarts=styleWindows.flatMap(window=>[window.start,window.end-layers.length*duration,
+  const deadlines=[...architecture.slots].sort((a,b)=>a-b).map(deadline=>deadline-problem.participantTransitionMinutes);
+  const styleStarts=[...new Set(styleWindows.flatMap(window=>[window.start,window.end-layers.length*duration,
     ...deadlines.map((deadline,i)=>deadline-(i+1)*duration),
     ...stylingDomains.flatMap(domain=>domain.intervals.flatMap(interval=>layers.flatMap((_,ordinal)=>
       [interval.start-ordinal*duration,interval.end-ordinal*duration]))),
     ...feederSpots.flatMap(spot=>[spot.start-duration,spot.end]),
     ...anchoredOperationSpots.flatMap(spot=>[spot.start-duration,spot.end])])
-    .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end))
-    .sort((a,b)=>b-a);
-  stylingCandidateStartBoundaryCount=new Set(styleStarts).size;
+    .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end)))]
+    .sort((a,b)=>a-b);
+  stylingCandidateStartBoundaryCount=styleStarts.length;
   if(!styleStarts.length)return rejected("INCONCLUSIVE","STYLING_CAPACITY");
 
-  // Bipartite matching couples Styling with the already concrete Vocal/Main route and
-  // admits either Styling->Vocal or Vocal->Styling, but never overlap.
-  let styleOwner=new Map<number,Layer & {position:number}>();
-  const augment=(x:Layer&{position:number},seen:Set<number>):boolean=>{
-    const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!; const main=mainSpots[x.position]!;
-    for(let i=0;i<stylingSpots.length;i++){
-      if(seen.has(i))continue; const spot=stylingSpots[i]!;
-      const operation=anchoredOperations.get(x.tokenId);
-      const placed=[{...x.feeder,start:vocal.start,end:vocal.end},
-        ...(operation?.tasks??[{...x.main,start:main.start,end:main.end}])];
-      // Styling is external to an anchored bundle. Delegate overlap, dependency,
-      // participant/resource transition and availability semantics to the same
-      // placement authority used by search and validation. Internal bundle phases
-      // remain adjacent because materializeAnchoredOperation validates them as one unit.
-      if(!canPlaceTask(problem,x.styling,spot.start,placed))continue;
-      seen.add(i); const prior=styleOwner.get(i);
-      if(!prior||augment(prior,seen)){styleOwner.set(i,x);return true;}
-    } return false;
-  };
-  let stylingMatched=false;
-  for(const start of [...new Set(styleStarts)]){
-    stylingSpots=layers.map((_,i)=>({id:`styling:${i}`,start:start+i*duration,end:start+(i+1)*duration}));
-    styleOwner=new Map();let matched=true;
-    for(const x of assigned)if(!augment(x,new Set())){matched=false;break;}
-    if(matched){stylingMatched=true;break;}
-  }
-  if(!stylingMatched)return rejected("INCONCLUSIVE","JOINT_STYLING_FEEDER_MATCHING");
-  stylingGeometryCompleted=true;
-  for(const [i,x] of styleOwner){stylingSpots[i]={...stylingSpots[i]!,profileKey:x.profileKey,tokenId:x.tokenId};}
+  const availabilityEnd=(x:Layer&{position:number})=>Math.max(...orderedWindows(
+    problem.participants.find(p=>p.id===x.main.participantId)?.availability,problem.day).map(window=>window.end));
+  const futureLoad=(x:Layer&{position:number})=>[
+    ...(problem.analyticalFutureParticipantTasks??[]).filter(task=>task.participantId===x.main.participantId),
+    ...(problem.analyticalFutureTechnicalChains??[]).flatMap(chain=>chain.tasks.filter(task=>task.participantId===x.main.participantId)),
+  ].reduce((sum,task)=>sum+task.duration,0);
+  const requiredLoad=(x:Layer&{position:number})=>(problem.analyticalFutureTechnicalChains??[])
+    .filter(chain=>chain.policy.adjacency==="REQUIRED"&&chain.tasks.some(task=>task.participantId===x.main.participantId))
+    .reduce((sum,chain)=>sum+chain.tasks.filter(task=>task.participantId===x.main.participantId).reduce((n,task)=>n+task.duration,0),0);
+  const domainCardinality=(x:Layer&{position:number})=>stylingDomains[layers.findIndex(layer=>layer.tokenId===x.tokenId)]!.intervals
+    .reduce((sum,interval)=>sum+Math.max(0,Math.floor((interval.end-interval.start)/Math.max(1,duration))+1),0);
+  const pressure=[...assigned].sort((a,b)=>availabilityEnd(a)-availabilityEnd(b)
+    ||(availabilityEnd(a)-futureLoad(a))-(availabilityEnd(b)-futureLoad(b))
+    ||domainCardinality(a)-domainCardinality(b)||requiredLoad(b)-requiredLoad(a)||a.tokenId.localeCompare(b.tokenId));
+  pressureOrder=pressure.map(x=>x.tokenId);
 
-  // Reuse the exact contiguous arrival authority with anonymous token ids at its API edge.
   const anonymousArrivals:Task[]=assigned.map(x=>({...x.arrival,id:`in:${x.tokenId}`,participantId:x.tokenId,dependencies:[]}));
   const anonymousParticipants=assigned.map(x=>({id:x.tokenId,availability:problem.participants.find(p=>p.id===x.main.participantId)?.availability??[]}));
-  const obligations:ScheduledTask[]=assigned.flatMap(x=>{
-    const style=stylingSpots.find(s=>s.tokenId===x.tokenId)!; const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!;
-    return [{...x.styling,id:`styling:${x.tokenId}`,participantId:x.tokenId,dependencies:[`in:${x.tokenId}`],start:style.start,end:style.end},
-      {...x.feeder,id:`feeder:${x.tokenId}`,participantId:x.tokenId,dependencies:[`in:${x.tokenId}`],start:vocal.start,end:vocal.end}];
-  });
   const anonymousProblem={...problem,participants:anonymousParticipants,
     tasks:[...problem.tasks.filter(t=>!arrivalIds.has(t.id)),...anonymousArrivals],
     transportPolicy:{...problem.transportPolicy,arrival:{...problem.transportPolicy.arrival,taskIds:anonymousArrivals.map(t=>t.id)}}} as PlannerNextProblem;
-  arrivalSolverExecuted=true;
-  const arrival=assessCoreArrivalTransportFeasibility(anonymousProblem,obligations);
-  arrivalClassification=arrival.evidence.classification;
-  arrivalContiguousStatesExplored=arrival.evidence.contiguousStatesExplored;
-  arrivalMembershipFallbackEntered=arrival.evidence.membershipFallbackEntered;
-  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return rejected(arrival.status,"JOINT_ARRIVAL_GEOMETRY");
-  const inGroups=arrival.evidence.packetSizes.map((size,i)=>({id:`in-group:${i}`,start:arrival.evidence.starts[i]!,
-    end:arrival.evidence.starts[i]!+anonymousArrivals[0]!.duration,size}));
+  let styleOwner=new Map<number,Layer & {position:number}>();
+  let arrival:ReturnType<typeof assessCoreArrivalTransportFeasibility>|null=null;
+  let matchingFound=false;
+  for(const start of styleStarts){
+    entryCandidateStartsConsidered.push(start);
+    stylingSpots=layers.map((_,i)=>({id:`styling:${i}`,start:start+i*duration,end:start+(i+1)*duration}));
+    styleOwner=new Map();
+    const augment=(x:Layer&{position:number},seen:Set<number>):boolean=>{
+      const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!,main=mainSpots[x.position]!;
+      for(let i=0;i<stylingSpots.length;i++){
+        if(seen.has(i))continue;const spot=stylingSpots[i]!,operation=anchoredOperations.get(x.tokenId);
+        const placed=[{...x.feeder,start:vocal.start,end:vocal.end},...(operation?.tasks??[{...x.main,start:main.start,end:main.end}])];
+        if(!canPlaceTask(problem,x.styling,spot.start,placed))continue;
+        seen.add(i);const prior=styleOwner.get(i);if(!prior||augment(prior,seen)){styleOwner.set(i,x);return true;}
+      }return false;
+    };
+    if(!pressure.every(x=>augment(x,new Set())))continue;
+    matchingFound=true;
+    for(const [i,x] of styleOwner)stylingSpots[i]={...stylingSpots[i]!,profileKey:x.profileKey,tokenId:x.tokenId};
+    const obligations:ScheduledTask[]=assigned.flatMap(x=>{const style=stylingSpots.find(s=>s.tokenId===x.tokenId)!;
+      const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!;return [
+        {...x.styling,id:`styling:${x.tokenId}`,participantId:x.tokenId,dependencies:[`in:${x.tokenId}`],start:style.start,end:style.end},
+        {...x.feeder,id:`feeder:${x.tokenId}`,participantId:x.tokenId,dependencies:[`in:${x.tokenId}`],start:vocal.start,end:vocal.end}];});
+    arrivalSolverExecuted=true;const candidate=assessCoreArrivalTransportFeasibility(anonymousProblem,obligations);
+    arrivalClassification=candidate.evidence.classification;arrivalContiguousStatesExplored+=candidate.evidence.contiguousStatesExplored;
+    arrivalMembershipFallbackEntered||=candidate.evidence.membershipFallbackEntered;
+    if(candidate.status!=="FEASIBLE"||!candidate.scheduled){entryCandidatesRejectedByArrival.push(start);continue;}
+    arrival=candidate;selectedEntryBlockStart=start;selectedEntryBlockEnd=start+layers.length*duration;break;
+  }
+  if(!arrival)return rejected("INCONCLUSIVE",
+    matchingFound?"JOINT_ARRIVAL_GEOMETRY":"JOINT_STYLING_FEEDER_MATCHING");
+  stylingGeometryCompleted=true;
+  const inGroups=arrival.evidence.packetSizes.map((size,i)=>({id:`in-group:${i}`,start:arrival!.evidence.starts[i]!,
+    end:arrival!.evidence.starts[i]!+anonymousArrivals[0]!.duration,size}));
   const inGroupByToken=new Map<string,string>();
   arrival.evidence.packetMembers.forEach((members,i)=>members.forEach(id=>inGroupByToken.set(id.slice(3),`in-group:${i}`)));
   // Reattach anonymous geometry to its original tasks only for the existing meal

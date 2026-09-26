@@ -134,6 +134,18 @@ export function runA2AnonymousPipelineWitnessProbe() {
       anchoredOperationCount:firstFeasible.anchoredOperationSpots.length,
       anchoredOperationSpots:firstFeasible.anchoredOperationSpots,
       profileCount:firstFeasible.profileCount,fingerprint:firstFeasible.fingerprint}:null,
+    opening:firstFeasible&&firstFeasibleDiagnostic?{
+      entryCandidateStartsConsidered:firstFeasibleDiagnostic.entryCandidateStartsConsidered,
+      entryCandidatesRejectedByArrival:firstFeasibleDiagnostic.entryCandidatesRejectedByArrival,
+      selectedEntryBlockStart:firstFeasibleDiagnostic.selectedEntryBlockStart,
+      selectedEntryBlockEnd:firstFeasibleDiagnostic.selectedEntryBlockEnd,
+      entryAssignments:firstFeasible.assignments.map(assignment=>({tokenId:assignment.tokenId,
+        stylingSpot:firstFeasible.stylingSpots.find(spot=>spot.id===assignment.stylingSpotId)})),
+      arrivalGroups:firstFeasible.inGroups.map(group=>({...group,members:firstFeasible.assignments
+        .filter(assignment=>assignment.inGroupId===group.id).map(assignment=>assignment.tokenId).sort()})),
+      pressureOrder:firstFeasibleDiagnostic.pressureOrder,
+      matchingResult:firstFeasible.status,hardGate:firstFeasible.status==="FEASIBLE",
+    }:null,
     operationalMealPoliciesChecked:firstFeasibleDiagnostic?.operationalMealPoliciesChecked??0,
     operationalMealFutureFeasible:firstFeasibleDiagnostic?.operationalMealFutureFeasible??null,
     operationalMealBlockingPolicyIds:firstFeasibleDiagnostic?.operationalMealBlockingPolicyIds??[],
