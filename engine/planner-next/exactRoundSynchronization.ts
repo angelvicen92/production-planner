@@ -18,6 +18,8 @@ import { overlaps } from "./time";
 import { roundPreparationId } from "./roundSynchronization";
 import { findCanonicalPerfectMatching } from "./macroScheduling";
 import { operationalMealCandidates } from "./operationalMeals";
+import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
+import { incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 
 export type ExactRoundSynchronizationOutcome =
   | "FOUND"
@@ -39,6 +41,15 @@ export interface ExactRoundSynchronizationEvidence {
   selectedBreakIntervals: Array<{ policyId:string;start:number;end:number }>;
   mealAwareShapesFeasible: number;
   noBreakHolePrunes: number;
+  rawCompatibleEdges: number;
+  futureEdgeChecks: number;
+  analyticPrunedEdges: number;
+  causalForbiddenEdges: number;
+  incrementalRepairs: number;
+  shapesRescuedByRematching: number;
+  matchingTraversals: number;
+  terminalFutureResult: "PASS" | "PRUNE" | "ABSTAIN" | "NOT_CHECKED";
+  matchingWitnesses: Array<{ first: Record<string,string>; repaired?: Record<string,string> }>;
 }
 
 export interface ExactRoundSynchronizationCandidate {
@@ -51,6 +62,18 @@ export interface ExactRoundSynchronizationCandidate {
 export interface ExactRoundSynchronizationSearchResult {
   outcome: ExactRoundSynchronizationOutcome;
   evidence: ExactRoundSynchronizationEvidence;
+}
+
+export interface ExactRoundSynchronizationContinuationResult {
+  outcome: ExactRoundSynchronizationOutcome;
+  /** True only when the complete candidate reached participant Future EXACT and it pruned. */
+  participantFutureExactPrune?: boolean;
+  terminalFutureResult?: "PASS" | "PRUNE" | "ABSTAIN" | "NOT_CHECKED";
+}
+
+export interface ExactRoundSynchronizationAuthorities {
+  /** Test seam; production always uses the canonical participant-future authority. */
+  participantFutureProbe?: typeof probeParticipantFutureReservations;
 }
 
 export interface ExactRoundSynchronizationMacroDomain {
@@ -295,8 +318,11 @@ export function exploreExactRoundSynchronizationPolicy(
   existingRoundPreparations: ScheduledRoundPreparation[],
   meals: ScheduledSpaceMeal[],
   ledger: ExactSearchLedger,
-  continuation: (candidate: ExactRoundSynchronizationCandidate) => ExactRoundSynchronizationOutcome,
+  continuation: (candidate: ExactRoundSynchronizationCandidate) =>
+    ExactRoundSynchronizationOutcome | ExactRoundSynchronizationContinuationResult,
+  authorities: ExactRoundSynchronizationAuthorities = {},
 ): ExactRoundSynchronizationSearchResult {
+  const participantFutureProbe=authorities.participantFutureProbe??probeParticipantFutureReservations;
   const evidence: ExactRoundSynchronizationEvidence = {
     startCandidates: 0,
     assignmentBranches: 0,
@@ -309,10 +335,13 @@ export function exploreExactRoundSynchronizationPolicy(
     assignmentBranchesAvoided: 0,
     sharedOperationalMealPolicyIds:sharedOperationalMealPolicies(problem,policy).map(({id})=>id),breakVariantsConsidered:0,
     selectedBreakIntervals:[],mealAwareShapesFeasible:0,noBreakHolePrunes:0,
+    rawCompatibleEdges:0,futureEdgeChecks:0,analyticPrunedEdges:0,causalForbiddenEdges:0,
+    incrementalRepairs:0,shapesRescuedByRematching:0,matchingTraversals:0,terminalFutureResult:"NOT_CHECKED",matchingWitnesses:[],
   };
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
   const laneTasks = policy.lanes.map((lane) =>
     lane.taskIds.map((id) => taskById.get(id)).filter((task): task is Task => Boolean(task)).sort(byId));
+  const analyticEdgeCache=new Map<string,"PASS"|"PRUNE"|"ABSTAIN">();
   if (laneTasks.some((tasks, index) => tasks.length !== policy.lanes[index]!.taskIds.length)) {
     return { outcome: "DEAD_END", evidence };
   }
@@ -332,42 +361,80 @@ export function exploreExactRoundSynchronizationPolicy(
     const slotById = new Map(shape.slots.map((slot) => [slotKey(slot), slot]));
     const allTasks = laneTasks.flat();
     const taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
-    const matching = findCanonicalPerfectMatching(
-      [...slotById.keys()],
-      allTasks.map(({ id }) => id),
-      (taskId, key) => {
-        evidence.assignmentChecks += 1;
-        const task = taskByMatchingId.get(taskId)!;
-        const slot = slotById.get(key)!;
-        return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId)
-          && canPlaceTask(problem, task, slot.start, baseTasks, meals);
-      },
-    );
-    if (!matching) {
-      evidence.zeroAlternativePrunes += 1;
-      continue;
+    const slotIds=[...slotById.keys()];
+    const positionBySlotId=new Map(slotIds.map((id,index)=>[id,index]));
+    const validPositions=new Map<string,number[]>();
+    for(const task of allTasks){const positions:number[]=[];
+      for(const key of slotIds){evidence.assignmentChecks+=1;const slot=slotById.get(key)!;
+        if(!laneTasks[slot.laneIndex]!.some(({id})=>id===task.id)||!canPlaceTask(problem,task,slot.start,baseTasks,meals))continue;
+        evidence.rawCompatibleEdges+=1;
+        const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
+        const cacheKey=`${task.id}@${slot.spaceId}:${slot.start}`;
+        let futureStatus=analyticEdgeCache.get(cacheKey);
+        if(futureStatus===undefined){futureStatus=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],undefined,"ANALYTIC_ONLY").status;
+          analyticEdgeCache.set(cacheKey,futureStatus);}
+        evidence.futureEdgeChecks+=1;
+        if(futureStatus==="PRUNE"){evidence.analyticPrunedEdges+=1;continue;}
+        positions.push(positionBySlotId.get(key)!);
+      }
+      validPositions.set(task.id,positions);
     }
-    const scheduled = [...matching].map(([key, taskId]) => {
-      const slot = slotById.get(key)!;
-      return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
-    });
+    let forbidden=new Set<string>(),previousForbidden=new Set<string>(),previous=new Map<string,number>();
+    let repaired=false, firstWitness:Record<string,string>|undefined;
+    while(true){
+      const result=incrementallyRepairMatchingWitness(allTasks.map(({id})=>id),validPositions,forbidden,previousForbidden,previous,
+        ()=>ledger.consume("STANDALONE"));
+      evidence.matchingTraversals+=result.traversals;
+      if(result.outcome==="BUDGET_EXHAUSTED")return {outcome:"BUDGET_EXHAUSTED",evidence};
+      if(result.outcome!=="PERFECT"||!result.matching){
+      evidence.zeroAlternativePrunes += 1;
+        break;
+      }
+      const matching=result.matching;
+      const witness=Object.fromEntries([...matching].sort(([a],[b])=>a.localeCompare(b)).map(([taskId,position])=>[taskId,slotIds[position]!]));
+      firstWitness??=witness;
+      const scheduled = [...matching].map(([taskId,position]) => {
+        const slot = slotById.get(slotIds[position]!)!;
+        return scoreAuxiliaryTask(problem, taskByMatchingId.get(taskId)!, slot.start, baseTasks).scheduled;
+      });
     if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
       [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) {
       evidence.zeroAlternativePrunes += 1;
-      continue;
-    }
+        break;
+      }
     evidence.matchingSuccesses += 1;
     evidence.assignmentBranchesAvoided += Math.max(0, allTasks.length - 1);
     evidence.completeAssignments += 1;
-    const outcome = continuation({
+    const continuationResult = continuation({
       tasks: scheduled.sort((left, right) => left.start - right.start || byId(left, right)),
       preparations: [...shape.preparations],
       selectionOrder: scheduled.map(({ id }) => id),
       operationalMealReservations:reservations.map(({policyId,start,end})=>({policyId,start,end})),
     });
+    const decision:ExactRoundSynchronizationContinuationResult=typeof continuationResult==="string"
+      ?{outcome:continuationResult}:{...continuationResult};
+    const outcome=decision.outcome;
+    evidence.terminalFutureResult=decision.terminalFutureResult??evidence.terminalFutureResult;
+    if(firstWitness)evidence.matchingWitnesses.push({first:firstWitness,...(repaired?{repaired:witness}:{})});
     if(outcome!=="DEAD_END")evidence.selectedBreakIntervals=reservations.map(({policyId,start,end})=>({policyId,start,end}));
-    if (outcome !== "DEAD_END") return { outcome, evidence };
+    if (outcome !== "DEAD_END") {
+      if(repaired)evidence.shapesRescuedByRematching+=1;
+      return { outcome, evidence };
+    }
     evidence.backtracks += 1;
+    if(!decision.participantFutureExactPrune)break;
+    const newlyForbidden:string[]=[];
+    for(const [taskId,position] of matching){const task=taskByMatchingId.get(taskId)!,slot=slotById.get(slotIds[position]!)!;
+      const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
+      const exact=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],{consume:()=>ledger.consume("STANDALONE")},"EXACT");
+      if(exact.status==="ABSTAIN"&&exact.abstainCause==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
+      if(exact.status==="PRUNE")newlyForbidden.push(`${taskId}@${position}`);
+    }
+    if(!newlyForbidden.length)break;
+    previousForbidden=forbidden;previous=new Map(matching);forbidden=new Set([...forbidden,...newlyForbidden]);
+    evidence.causalForbiddenEdges+=newlyForbidden.filter(edge=>!previousForbidden.has(edge)).length;
+    evidence.incrementalRepairs+=1;evidence.matchingAttempts+=1;repaired=true;
+    }
     }
   }
 

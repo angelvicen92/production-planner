@@ -23,6 +23,7 @@ import { preflight, validatePlan } from "./validate";
 import { overlaps } from "./time";
 import { PreparedOperationalMealAuthority } from "./preparedOperationalMealAuthority";
 import type { ExactRoundSynchronizationCandidate } from "./exactRoundSynchronization";
+import type { ParticipantFutureReservationProbe, ParticipantFutureReservationStatus } from "./participantFutureFeasibility";
 
 function supportedProblem(): PlannerNextProblem {
   const result = adaptEngineInputToPlannerNextProblem(
@@ -365,4 +366,106 @@ test("a shared policy with no free authoritative interval prunes before round as
   assert.equal(result.outcome,"DEAD_END");
   assert.ok(result.evidence.noBreakHolePrunes>0);
   assert.equal(result.evidence.completeAssignments,0);
+});
+
+function focusedRoundProblem():{problem:PlannerNextProblem;policy:NonNullable<PlannerNextProblem["roundSynchronizations"]>[number]} {
+  const problem=structuredClone(supportedProblem());
+  problem.day={start:480,end:545};problem.protectedMeal=undefined;
+  problem.tasks=problem.tasks.filter(({id})=>["task:401","task:402","task:403","task:404"].includes(id));
+  problem.participants=problem.participants.filter(({id})=>id.startsWith("participant:21"))
+    .map(participant=>({...participant,availability:[{start:480,end:545}]}));
+  problem.spaces=problem.spaces.filter(({id})=>id==="space:304"||id==="space:305")
+    .map(space=>({...space,availability:[{start:480,end:545}]}));
+  problem.resources=[];problem.coaches=[];
+  const policy=problem.roundSynchronizations![0]!;
+  return{problem,policy};
+}
+
+const futureProbe=(status:ParticipantFutureReservationStatus,abstainCause:ParticipantFutureReservationProbe["abstainCause"]=null):ParticipantFutureReservationProbe=>({
+  status,affectedParticipants:[],affectedFutureTasksChecked:0,affectedMealsChecked:0,individualDomainChecks:0,
+  individualZeroDomainPrunes:Number(status==="PRUNE"),jointTaskMealChecks:0,jointTaskMealPrunes:0,
+  collectiveChecks:0,collectivePasses:0,collectivePrunes:0,collectiveObligationIds:[],collectiveDomainSizes:{},
+  collectiveWitnessFound:false,compatiblePairChecks:0,analyticChecks:1,branchesConsumed:0,unresolvedDependencyIds:[],
+  abstainCause,reasonCode:status==="PRUNE"?"FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN":status==="ABSTAIN"
+    ?"FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE":null,futureTaskId:null,mealTaskId:null,participantId:null,
+  futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0,participantDiagnostics:[],
+});
+
+function focusedLedger(limit=10000){return{limit,branchesExplored:0,coreBranches:0,standaloneBranches:0,lastExhaustionPhase:null as "CORE"|"STANDALONE"|null,
+  consume(_phase:"CORE"|"STANDALONE",count=1){if(this.branchesExplored+count>this.limit){this.lastExhaustionPhase=_phase;return false;}
+    this.branchesExplored+=count;this.standaloneBranches+=count;return true;}};}
+
+test("future-aware round edges prune ANALYTIC_ONLY impossibility before matching and retain ABSTAIN",()=>{
+  const {problem,policy}=focusedRoundProblem();let selected:ExactRoundSynchronizationCandidate|null=null;
+  const probe:typeof import("./participantFutureFeasibility").probeParticipantFutureReservations=(...args)=>{
+    const added=args[2],mode=args[4];
+    if(mode==="ANALYTIC_ONLY"&&added[0]!.id==="task:401"&&added[0]!.start===480)return futureProbe("PRUNE");
+    return futureProbe("ABSTAIN","INCONCLUSIVE_SHAPE");
+  };
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),candidate=>{selected=candidate;return"FOUND";},
+    {participantFutureProbe:probe});
+  assert.equal(result.outcome,"FOUND");assert.ok(selected);
+  assert.equal(selected.tasks.find(({id})=>id==="task:401")!.start,515);
+  assert.ok(result.evidence.analyticPrunedEdges>0);assert.equal(result.evidence.rawCompatibleEdges,result.evidence.futureEdgeChecks);
+});
+
+test("future-aware round matching repairs the same geometry after an edge-local EXACT prune",()=>{
+  const {problem,policy}=focusedRoundProblem();const attempts:ExactRoundSynchronizationCandidate[]=[];
+  const probe:typeof import("./participantFutureFeasibility").probeParticipantFutureReservations=(...args)=>{
+    const added=args[2],mode=args[4];
+    return mode==="EXACT"&&added[0]!.id==="task:401"&&added[0]!.start===515?futureProbe("PRUNE"):futureProbe("PASS");
+  };
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),candidate=>{
+    attempts.push(candidate);return attempts.length===1
+      ?{outcome:"DEAD_END",participantFutureExactPrune:true,terminalFutureResult:"PRUNE"}
+      :{outcome:"FOUND",terminalFutureResult:"PASS"};
+  },{participantFutureProbe:probe});
+  assert.equal(result.outcome,"FOUND");assert.equal(attempts.length,2);
+  assert.equal(attempts[0]!.tasks.find(({id})=>id==="task:401")!.start,515);
+  assert.equal(attempts[1]!.tasks.find(({id})=>id==="task:401")!.start,480);
+  assert.equal(result.evidence.causalForbiddenEdges,1);assert.equal(result.evidence.incrementalRepairs,1);
+  assert.equal(result.evidence.shapesRescuedByRematching,1);assert.ok(result.evidence.matchingWitnesses.some(item=>item.repaired));
+});
+
+test("a collective EXACT prune creates no false edge-local nogood",()=>{
+  const {problem,policy}=focusedRoundProblem();let calls=0;
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),()=>{
+    calls++;return{outcome:"DEAD_END",participantFutureExactPrune:true,terminalFutureResult:"PRUNE"};
+  },{participantFutureProbe:()=>futureProbe("PASS")});
+  assert.equal(result.outcome,"DEAD_END");assert.equal(calls,1);
+  assert.equal(result.evidence.causalForbiddenEdges,0);assert.equal(result.evidence.incrementalRepairs,0);
+});
+
+test("sound future edge removal with no perfect matching is a DEAD_END",()=>{
+  const {problem,policy}=focusedRoundProblem();
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),()=>"FOUND",{
+    participantFutureProbe:(...args)=>args[4]==="ANALYTIC_ONLY"&&args[2][0]!.id==="task:401"?futureProbe("PRUNE"):futureProbe("PASS"),
+  });
+  assert.equal(result.outcome,"DEAD_END");assert.equal(result.evidence.completeAssignments,0);
+  assert.equal(result.evidence.analyticPrunedEdges,2);assert.ok(result.evidence.zeroAlternativePrunes>0);
+});
+
+test("round matching budget exhaustion is explicit during initial matching and repair",()=>{
+  const initial=focusedRoundProblem();
+  const exhausted=exploreExactRoundSynchronizationPolicy(initial.problem,initial.policy,[],[],[],[],focusedLedger(1),()=>"FOUND",
+    {participantFutureProbe:()=>futureProbe("PASS")});
+  assert.equal(exhausted.outcome,"BUDGET_EXHAUSTED");
+
+  const repair=focusedRoundProblem();let continuationCalls=0;
+  const repairResult=exploreExactRoundSynchronizationPolicy(repair.problem,repair.policy,[],[],[],[],focusedLedger(7),()=>{
+    continuationCalls++;return{outcome:"DEAD_END",participantFutureExactPrune:true,terminalFutureResult:"PRUNE"};
+  },{participantFutureProbe:(...args)=>args[4]==="EXACT"&&args[2][0]!.id==="task:401"?futureProbe("PRUNE"):futureProbe("PASS")});
+  assert.equal(repairResult.outcome,"BUDGET_EXHAUSTED");assert.equal(continuationCalls,1);
+});
+
+test("future-aware round witness is canonical under equivalent input order and never promotes PASS or ABSTAIN to PRUNE",()=>{
+  const run=(reverse:boolean,status:"PASS"|"ABSTAIN")=>{const {problem,policy}=focusedRoundProblem();
+    if(reverse){problem.tasks.reverse();problem.participants.reverse();policy.lanes.reverse();policy.lanes.forEach(lane=>lane.taskIds.reverse());}
+    let accepted:ExactRoundSynchronizationCandidate|null=null;
+    const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),candidate=>{accepted=candidate;return"FOUND";},
+      {participantFutureProbe:()=>futureProbe(status,status==="ABSTAIN"?"INCONCLUSIVE_SHAPE":null)});
+    assert.equal(result.outcome,"FOUND");assert.ok(accepted);assert.equal(result.evidence.analyticPrunedEdges,0);
+    return accepted.tasks.map(({id,start})=>({id,start})).sort((a,b)=>a.id.localeCompare(b.id));};
+  assert.deepEqual(run(false,"PASS"),run(true,"PASS"));
+  assert.deepEqual(run(false,"ABSTAIN"),run(true,"ABSTAIN"));
 });
