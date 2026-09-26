@@ -208,6 +208,15 @@ describe("anonymous structural pipeline witness",()=>{
     assert.ok(style1.start<style0.start);
   });
 
+  it("does not promote exhausted reduced styling geometry to hard infeasibility",()=>{
+    const p=problem();
+    p.tasks.find(task=>task.id==="style0")!.availability=[{start:0,end:10}];
+    p.tasks.find(task=>task.id==="feed0")!.availability=[{start:0,end:15}];
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[30]});
+    assert.equal(witness.status,"INCONCLUSIVE");
+    assert.equal(witness.reason,"JOINT_STYLING_FEEDER_MATCHING");
+  });
+
   it("reaches a hard-valid later meal start without splitting a logical Main run",()=>{
     const p=problem(["A","A"]);p.mainFlow.preferredEnd=60;
     p.spaces.find(space=>space.id==="main")!.mealPolicy={window:{start:60,end:100},duration:10};

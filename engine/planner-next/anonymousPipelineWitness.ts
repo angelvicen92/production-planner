@@ -379,7 +379,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     if(candidate.status!=="FEASIBLE"||!candidate.scheduled){entryCandidatesRejectedByArrival.push(start);continue;}
     arrival=candidate;selectedEntryBlockStart=start;selectedEntryBlockEnd=start+layers.length*duration;break;
   }
-  if(!arrival)return rejected(matchingFound?"INCONCLUSIVE":"INFEASIBLE",
+  if(!arrival)return rejected("INCONCLUSIVE",
     matchingFound?"JOINT_ARRIVAL_GEOMETRY":"JOINT_STYLING_FEEDER_MATCHING");
   stylingGeometryCompleted=true;
   const inGroups=arrival.evidence.packetSizes.map((size,i)=>({id:`in-group:${i}`,start:arrival!.evidence.starts[i]!,
