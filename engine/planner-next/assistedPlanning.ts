@@ -84,6 +84,7 @@ export interface AssistedPlanningEvidence {
     readonly terminalExactChecks:number;readonly terminalExactPasses:number;readonly terminalExactPrunes:number;
     readonly terminalExactAbstentions:number;readonly terminalExactBranches:number;
     readonly firstPrune:ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"];
+    readonly firstTerminalExact:ExactItinerantPlanEvidence["firstParticipantFutureTerminalExact"];
   };
   readonly operationalMealFutureReservation: ExactItinerantPlanEvidence["operationalMealFutureReservation"];
   readonly fixedMainFeederMealChecks:number;readonly fixedMainFeederMealPasses:number;readonly fixedMainFeederMealPrunes:number;
@@ -612,6 +613,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       terminalExactPasses:Number(evidenceRecord.participantFutureTerminalExactPasses??0),terminalExactPrunes:Number(evidenceRecord.participantFutureTerminalExactPrunes??0),
       terminalExactAbstentions:Number(evidenceRecord.participantFutureTerminalExactAbstentions??0),terminalExactBranches:Number(evidenceRecord.participantFutureTerminalExactBranches??0),
       firstPrune:(evidenceRecord.firstParticipantFutureReservationPrune as ExactItinerantPlanEvidence["firstParticipantFutureReservationPrune"]|undefined)??null,
+      firstTerminalExact:(evidenceRecord.firstParticipantFutureTerminalExact as ExactItinerantPlanEvidence["firstParticipantFutureTerminalExact"]|undefined)??null,
     },
     technicalChainFutureReservation:{
       checks:Number(evidenceRecord.technicalChainFutureReservationChecks??0),passes:Number(evidenceRecord.technicalChainFutureReservationPasses??0),

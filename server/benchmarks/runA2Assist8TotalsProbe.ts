@@ -5,7 +5,9 @@ type CausalCandidate={fingerprint:string;participantFuture:{status:string};outco
 
 // Replays only the accepted prefix needed to reconstruct S3 and stops after the
 // Totales attempt. It never executes the later A2 completion stages.
-const evidence=await runA2Assist8Evidence({stopAfterIterationCount:4});
+const diagnosticBudget=Number(process.env.PLANNER_TOTALS_DIAGNOSTIC_BUDGET);
+const evidence=await runA2Assist8Evidence({stopAfterIterationCount:4,
+  branchBudget:Number.isFinite(diagnosticBudget)&&diagnosticBudget>0?diagnosticBudget:undefined});
 const totals=evidence.iterations[3];
 assert.equal(totals?.orchestration.selectedUnitId,"ROUND_SYNCHRONIZATION:a2-totales-rounds");
 const reconciliation=totals.standaloneDiagnostic?.macroCandidateCausalReconciliation;
@@ -27,4 +29,8 @@ console.log(JSON.stringify({benchmark:"A2-ASSIST-8-TOTALES-CAUSAL-PROBE",milesto
     dominantPath:totals.standaloneDiagnostic?.standaloneDominantPathFirst20,
     selectionsByTaskId:totals.standaloneDiagnostic?.standaloneSelectionsByTaskId,
     firstDeadEnd:totals.standaloneDiagnostic?.firstStandaloneDeadEndCause},
+  terminalParticipantFuture:totals.participantFutureReservation.firstTerminalExact,
+  terminalParticipantFutureAggregate:{checks:totals.participantFutureReservation.terminalExactChecks,
+    passes:totals.participantFutureReservation.terminalExactPasses,prunes:totals.participantFutureReservation.terminalExactPrunes,
+    abstentions:totals.participantFutureReservation.terminalExactAbstentions,branches:totals.participantFutureReservation.terminalExactBranches},
   candidates,blocker:evidence.firstBlocker},null,2));
