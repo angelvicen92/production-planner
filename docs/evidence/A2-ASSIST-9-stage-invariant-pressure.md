@@ -24,21 +24,17 @@ At P15 the reconstructed fixed Main bundle is now hard-valid:
 - one fixed-bundle hard-gate pass and zero hard-gate rejects;
 - 109 reconstructed core tasks (71 auxiliary, 19 vocal, 19 Main).
 
-This confirms that the CURRENT/FUTURE discontinuity in pressure was causal for the previously observed reconstructed-supporting hard-gate rejection. P15 still does not enter standalone: `coreBranches=19`, `standaloneBranches=0`.
+This confirms that the CURRENT/FUTURE discontinuity in pressure was causal for the previously observed reconstructed-supporting hard-gate rejection.
 
 ## First next blocker
 
-The first blocker is the participant future-reservation gate immediately after the fixed Main bundle hard gate:
+The initial participant-future result is `ABSTAIN / INCONCLUSIVE_SHAPE`. Its unresolved dependencies are exactly the 36 P15 obligations in `remainingStandalone`; `outside` is empty. The callback therefore defers it correctly and enters standalone search. It is not the rejection cause.
 
-- `firstFixedMainBundleRejection = FUTURE_FEASIBILITY_REJECTED`;
-- one participant-future check over 19 affected participants, 102 future tasks and 19 meals;
-- 185 individual-domain checks and 83 task/meal compatibility checks;
-- no zero-domain, task/meal, collective, or explicit prune;
-- the check returns one abstention, zero passes and zero prunes;
-- technical-chain and operational-meal future gates are not reached;
-- standalone remains at zero branches.
+The first real dead-end was instead an incomplete round reachability check: it required every task in the retained Totales policy to remain pending, although all those round tasks were already present as protected core context. This returned before macro selection and consumed zero standalone branches. The correction treats round identities already present in immutable core as represented hard context and creates a round macro only when the policy still has pending members.
 
-Therefore the remaining failure is not supporting geometry or fixed Main hard validation. It is an inconclusive participant-future reservation result being treated as rejection before standalone. Resolving that is a separate causal delta; this change does not soften that gate, alter hard domains, or increase budgets.
+After that correction P15 performs real search (`coreBranches=19`, `standaloneBranches=99,981`). Its first macro is resource task `task:10001`, with exact domain size 16; prerequisite reservation passes, participant-future ABSTAIN is deferred, participant-meal and operational-meal future checks pass, recursion enters another macro and eventually ordinary/terminal search. The first descendant dead-end is `SETUP_SEARCH_DEAD_END` for Croma unit `setup:space:3009`: 82 hard-valid top-level candidates were evaluated at depth 19. Across the run the setup authority executed 18 times, explored 2,523 starts and produced 1,445 complete candidates before the unchanged 100,000-branch budget was exhausted. P15 remains `NO_PROPOSAL` at 65/266.
+
+The single next causal classification is therefore **SETUP_SEARCH_DEAD_END**, under `probeExactSetupMacroDomain` for the complete 17-task Croma setup unit. This change does not optimize that new blocker, soften hard authorities, or increase budgets.
 
 ## Regression evidence
 

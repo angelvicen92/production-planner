@@ -1002,7 +1002,9 @@ const synchronizedTaskIds = roundSynchronizationTaskIds(problem);
 const roundPolicies = [...(problem.roundSynchronizations ?? [])].sort((left, right) => left.id.localeCompare(right.id));
 const roundTaskIds = new Set(roundPolicies.flatMap((policy) => policy.lanes.flatMap((lane) => lane.taskIds)));
 const roundPendingIds = new Set(pending.filter((task) => roundTaskIds.has(task.id)).map((task) => task.id));
-if (roundPendingIds.size !== roundTaskIds.size || [...synchronizedTaskIds].some((id) => !roundTaskIds.has(id))) {
+const roundPlacedIds = new Set(coreTasks.filter((task) => roundTaskIds.has(task.id)).map((task) => task.id));
+if ([...roundTaskIds].some((id) => !roundPendingIds.has(id) && !roundPlacedIds.has(id))
+  || [...synchronizedTaskIds].some((id) => !roundTaskIds.has(id))) {
   return { outcome: "DEAD_END", tasks: null, preparations: [], roundPreparations: [], selectionOrder: [], participantMeals: null, operationalMeals: null };
 }
 const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
@@ -1040,7 +1042,8 @@ const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tas
 const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
   && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
-const roundItems = roundPolicies.map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
+const roundItems = roundPolicies.filter((policy)=>policy.lanes.some((lane)=>lane.taskIds.some((id)=>roundPendingIds.has(id))))
+  .map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
   tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
 const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
 type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
