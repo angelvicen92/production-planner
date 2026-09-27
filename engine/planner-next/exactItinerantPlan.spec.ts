@@ -390,6 +390,20 @@ test("shared resources never overlap and the narrower task is selected first", (
   assert.ok(tasks[0]!.end <= tasks[1]!.start); assert.equal(result.evidence.standaloneMaximumDepth, 2);
 });
 
+test("tasks sharing a PREFERRED resource are searched as one rematchable geometry unit", () => {
+  const input = problem([
+    auxiliary("flexible", "a", [{ start: 0, end: 60 }], ["unit"]),
+    auxiliary("narrow", "b", [{ start: 10, end: 20 }], ["unit"]),
+  ]);
+  input.resources[0]!.presenceConcentrationPolicy = "PREFERRED";
+  const result = constructExactItinerantPlan(input);
+  assert.equal(result.status, "COMPLETE");
+  assert.equal(result.evidence.macroSelectionOrder[0], "RESOURCE_GROUP:preferred-resource:unit");
+  assert.equal(result.evidence.macroSelectionOrder.filter(item => item.startsWith("RESOURCE_TASK:")).length, 0);
+  const tasks = result.scheduledTasks.filter(({ id }) => id === "flexible" || id === "narrow").sort((a, b) => a.start - b.start);
+  assert.ok(tasks[0]!.end <= tasks[1]!.start);
+});
+
 test("bestK=1 retains a deferred standalone start", () => {
   const input = problem([
     auxiliary("a-first", "shared", [{ start: 0, end: 30 }], ["unit"]),
