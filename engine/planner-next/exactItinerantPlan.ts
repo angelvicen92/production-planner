@@ -157,7 +157,7 @@ export interface ExactItinerantPlanEvidence {
     pendingTasksByKind: Record<string, number>;
   } | null;
   /** Read-only causal snapshot of the first core passed to standalone search. */
-  firstHardValidCoreTasks: Array<{ id:string; kind:string; start:number; end:number; protected:boolean }>;
+  firstHardValidCoreTasks: Array<{ id:string; kind:string; participantId?:string; spaceId:string; start:number; end:number; protected:boolean }>;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
   standaloneSearchInvocations: number;
@@ -1845,7 +1845,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const immutableCoreTasks=[...structuralTasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
     if(evidence.firstHardValidCoreTasks.length===0)evidence.firstHardValidCoreTasks=[...immutableCoreTasks]
       .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))
-      .map(task=>({id:task.id,kind:task.kind,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
+      .map(task=>({id:task.id,kind:task.kind,participantId:task.participantId,spaceId:task.spaceId,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
     const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
       consumeFallbackBranch: () => ledger.consume("STANDALONE"),
     });
