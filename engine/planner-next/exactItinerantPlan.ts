@@ -1843,9 +1843,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const structuralTasks=conditioned?candidate.tasks:(pipelinePreservesFixed ? [...pipeline!.scheduledTasks] : candidate.tasks);
     const coreIds = new Set(structuralTasks.map(({ id }) => id));
     const immutableCoreTasks=[...structuralTasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
-    if(evidence.firstHardValidCoreTasks.length===0)evidence.firstHardValidCoreTasks=[...immutableCoreTasks]
-      .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))
-      .map(task=>({id:task.id,kind:task.kind,participantId:task.participantId,spaceId:task.spaceId,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
     const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
       consumeFallbackBranch: () => ledger.consume("STANDALONE"),
     });
@@ -1896,6 +1893,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       }
     }
     if(conditioned)evidence.structuralCandidateFingerprintBeforeStandalone=candidate.fingerprint;
+    if(evidence.firstHardValidCoreTasks.length===0)evidence.firstHardValidCoreTasks=[...immutableCoreTasks]
+      .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))
+      .map(task=>({id:task.id,kind:task.kind,participantId:task.participantId,spaceId:task.spaceId,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations);
