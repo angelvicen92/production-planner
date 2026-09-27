@@ -183,7 +183,7 @@ describe("anonymous structural pipeline witness",()=>{
     assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
   });
 
-  it("skips an early entry boundary that ARRIVAL cannot feed and accepts the first joint opening",()=>{
+  it("adds the exact ARRIVAL release frontier when reduced boundaries skip the first joint opening",()=>{
     const p=problem();
     p.tasks.find(task=>task.id==="style0")!.availability=[{start:0,end:30}];
     p.tasks.find(task=>task.id==="in0")!.availability=[{start:0,end:20}];
@@ -191,21 +191,45 @@ describe("anonymous structural pipeline witness",()=>{
     let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
     const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[120]},value=>{diagnostic=value;});
     assert.equal(witness.status,"FEASIBLE",witness.reason);
-    assert.deepEqual(diagnostic?.entryCandidateStartsConsidered.slice(0,2),[0,20]);
+    assert.deepEqual(diagnostic?.entryCandidateStartsConsidered.slice(0,2),[0,15]);
     assert.deepEqual(diagnostic?.entryCandidatesRejectedByArrival,[0]);
-    assert.equal(diagnostic?.selectedEntryBlockStart,20);
+    assert.equal(diagnostic?.selectedEntryBlockStart,15);
     assert.ok(witness.inGroups.every(group=>group.end+5<=witness.stylingSpots.find(spot=>
       witness.assignments.some(item=>item.inGroupId===group.id&&item.stylingSpotId===spot.id))!.start));
   });
 
-  it("uses availability pressure before nominal identity for equivalent early entry spots",()=>{
+  it("starts Styling exactly at ARRIVAL completion when participant transition is zero",()=>{
+    const p=problem();
+    p.tasks.find(task=>task.id==="style0")!.availability=[{start:0,end:30}];
+    p.tasks.find(task=>task.id==="in0")!.availability=[{start:0,end:20}];
+    let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[120]},value=>{diagnostic=value;});
+    assert.equal(witness.status,"FEASIBLE",witness.reason);
+    assert.equal(diagnostic?.selectedEntryBlockStart,10);
+    assert.equal(witness.inGroups[0]!.end,witness.stylingSpots[0]!.start);
+  });
+
+  it("lets a real Styling availability boundary delay the otherwise earliest opening",()=>{
+    const p=problem();
+    p.tasks.find(task=>task.id==="style0")!.availability=[{start:25,end:35}];
+    p.tasks.find(task=>task.id==="in0")!.availability=[{start:0,end:20}];
+    const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[120]});
+    assert.equal(witness.status,"FEASIBLE",witness.reason);
+    assert.deepEqual(witness.stylingSpots.map(spot=>[spot.start,spot.end]),[[25,35]]);
+  });
+
+  it("keeps availability pressure ahead of nominal identity while opening earlier",()=>{
     const p=problem(["A","A"]);p.participants[0]!.availability=[{start:0,end:300}];
     p.participants[1]!.availability=[{start:0,end:220}];
-    const materialized=materializeNominalPipelineWitness(p,{pattern:["A","A"],slots:[180,195]});
+    let pressure:readonly string[]=[];
+    const architecture={pattern:["A","A"],slots:[180,195]};
+    buildAnonymousPipelineWitness(p,architecture,diagnostic=>{pressure=diagnostic.pressureOrder;});
+    const materialized=materializeNominalPipelineWitness(p,architecture);
     assert.equal(materialized.witness.status,"FEASIBLE",materialized.witness.reason);
-    const style0=materialized.scheduledTasks.find(task=>task.id==="style0")!;
-    const style1=materialized.scheduledTasks.find(task=>task.id==="style1")!;
-    assert.ok(style1.start<style0.start);
+    let reordered:readonly string[]=[];
+    buildAnonymousPipelineWitness({...p,tasks:[...p.tasks].reverse()},architecture,
+      diagnostic=>{reordered=diagnostic.pressureOrder;});
+    assert.equal(pressure.length,2);assert.deepEqual(reordered,pressure);
   });
 
   it("keeps pending-work pressure invariant across current and analytical-future classification",()=>{
@@ -215,10 +239,9 @@ describe("anonymous structural pipeline witness",()=>{
     const current=problem(["A","A"]);current.tasks.push(pending);
     current.analyticalRemainingParticipantTasks=[pending];
     const architecture={pattern:["A","A"],slots:[180,195]};
-    const placement=(p:PlannerNextProblem)=>materializeNominalPipelineWitness(p,architecture).scheduledTasks
-      .filter(task=>task.kind==="auxiliary"&&task.id.startsWith("style")).map(task=>[task.id,task.start]);
-    assert.deepEqual(placement(current),placement(future));
-    assert.ok(placement(current).find(([id])=>id==="style0")![1]!<placement(current).find(([id])=>id==="style1")![1]!);
+    const pressure=(p:PlannerNextProblem)=>{let result:readonly string[]=[];
+      buildAnonymousPipelineWitness(p,architecture,diagnostic=>{result=diagnostic.pressureOrder;});return result;};
+    assert.deepEqual(pressure(current),pressure(future));
   });
 
   it("deduplicates pending pressure and remains invariant when pressure inputs are reordered",()=>{

@@ -316,12 +316,26 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   const duration=layers[0]!.styling.duration;
   const styleWindows=orderedWindows(problem.spaces.find(s=>s.id===styleSpace)?.availability,problem.day);
   const stylingDomains=layers.map(layer=>exactTaskStartDomain(problem,layer.styling,[]));
+  const arrivalDomains=layers.map(layer=>exactTaskStartDomain(problem,layer.arrival,[]));
+  const arrivalGap=problem.transportPolicy.arrival.minGapMinutes;
+  const arrivalReleaseFrontiers=arrivalDomains.flatMap((domain,layerIndex)=>domain.intervals.flatMap(interval=>
+    Array.from({length:layers.length},(_,groupIndex)=>interval.start+groupIndex*Math.max(arrivalGap,
+      layers[layerIndex]!.arrival.duration)+layers[layerIndex]!.arrival.duration+problem.participantTransitionMinutes)
+      .flatMap(release=>layers.map((_,ordinal)=>release-ordinal*duration))));
   let stylingSpots:AnonymousPipelineSpot[]=[];
   const deadlines=[...architecture.slots].sort((a,b)=>a-b).map(deadline=>deadline-problem.participantTransitionMinutes);
   const styleStarts=[...new Set(styleWindows.flatMap(window=>[window.start,window.end-layers.length*duration,
     ...deadlines.map((deadline,i)=>deadline-(i+1)*duration),
     ...stylingDomains.flatMap(domain=>domain.intervals.flatMap(interval=>layers.flatMap((_,ordinal)=>
       [interval.start-ordinal*duration,interval.end-ordinal*duration]))),
+    // Styling is matched to identities only after its serial geometry is chosen.  An
+    // ARRIVAL-domain boundary can therefore release any identity into any Styling
+    // ordinal.  Preserve those exact release frontiers (including the participant
+    // transition) so the reduced boundary set cannot skip the earliest joint witness.
+    ...arrivalReleaseFrontiers,
+    ...arrivalDomains.flatMap((domain,layerIndex)=>domain.intervals.flatMap(interval=>layers.flatMap((_,ordinal)=>
+      [interval.start+layers[layerIndex]!.arrival.duration+problem.participantTransitionMinutes-ordinal*duration,
+        interval.end+layers[layerIndex]!.arrival.duration+problem.participantTransitionMinutes-ordinal*duration]))),
     ...feederSpots.flatMap(spot=>[spot.start-duration,spot.end]),
     ...anchoredOperationSpots.flatMap(spot=>[spot.start-duration,spot.end])])
     .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end)))]

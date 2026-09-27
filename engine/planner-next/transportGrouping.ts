@@ -249,10 +249,12 @@ export function assessCoreArrivalTransportFeasibility(
   options: Readonly<TransportMaterializationOptions> = {},
 ): TransportArrivalFeasibility {
   const policy = problem.transportPolicy?.arrival;
+  const transportIds = transportTaskIds(problem);
+  const substantiveCoreTasks = coreTasks.filter(({ id }) => !transportIds.has(id));
   const tasks = policy?.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean) ?? [];
   const ordered = [...tasks].sort((left, right) => {
     const deadline = (task: Task) => {
-      const obligations = coreTasks.filter((placed) => placed.participantId === task.participantId);
+      const obligations = substantiveCoreTasks.filter((placed) => placed.participantId === task.participantId);
       const obligationBoundary = obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end;
       return individualTransportBoundary(problem, task, "arrival", obligationBoundary);
     };
@@ -262,7 +264,7 @@ export function assessCoreArrivalTransportFeasibility(
   const base = { direction: "arrival" as const, orderedTaskIds: ordered.map(({ id }) => id),
     orderedParticipantIds: ordered.map(({ participantId }) => participantId!), packetSizes: [] as number[],
     orderedDeadlines: ordered.map((task) => {
-      const obligations = coreTasks.filter((placed) => placed.participantId === task.participantId);
+      const obligations = substantiveCoreTasks.filter((placed) => placed.participantId === task.participantId);
       return individualTransportBoundary(problem, task, "arrival",
         obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end);
     }),
@@ -271,7 +273,7 @@ export function assessCoreArrivalTransportFeasibility(
     classificationBreakers: classified.breakers, contiguousStatesExplored: 0, membershipFallbackEntered: false };
   if (!policy || classified.classification === "MEMBERSHIP_REQUIRED")
     return { status: "INCONCLUSIVE", evidence: base, scheduled: null };
-  const solved = solveContiguousDirection(problem, "arrival", ordered, coreTasks, [], [], policy, options.consumeFallbackBranch);
+  const solved = solveContiguousDirection(problem, "arrival", ordered, substantiveCoreTasks, [], [], policy, options.consumeFallbackBranch);
   const groups: string[][] = []; let offset = 0;
   for (const size of solved.packetSizes) { groups.push(ordered.slice(offset, offset + size).map(({ id }) => id)); offset += size; }
   const evidence = { ...base, packetSizes: solved.packetSizes, packetMembers: groups, starts: solved.starts,
