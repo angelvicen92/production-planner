@@ -34,7 +34,7 @@ import { assessCoreArrivalTransportFeasibility, materializeTerminalTransport, tr
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
-import { generateExactPreferredResourceUnitCandidates } from "./exactPreferredResourceUnit";
+import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
   materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
@@ -340,7 +340,13 @@ export interface ExactItinerantPlanEvidence {
   setupBlockPermutationBranchesAvoided: number;
   preferredResourceUnit: { unitId:string; memberTaskCount:number; resourceTaskCount:number; setupTaskCount:number;
     sharedResourceId:string; geometryCount:number; matchingAttempts:number; matchingSuccesses:number;
-    supportingRematches:number; selectedPresence:[number,number,number]|null } | null;
+    supportingRematches:number; selectedPresence:[number,number,number]|null;rawCompatibleEdges:number;futureEdgeChecks:number;
+    analyticPrunedEdges:number;matchingTraversals:number;causalForbiddenEdges:number;incrementalRepairs:number;
+    mealEdgeChecks:number;mealPrunedEdges:number;
+    firstMealPrunedEdge:{taskId:string;spotId:string;start:number;blockingMealTaskId:string|null}|null;
+    blockingMealTaskId:string|null;
+    geometriesRescuedByRematching:number;firstMatchingWitness:Record<string,string>|null;
+    selectedMatchingWitness:Record<string,string>|null;terminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED" } | null;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -1245,17 +1251,36 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     return finish(searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]));
   };
   if(unit.kind==="PREFERRED_RESOURCE_UNIT"){
-    const generated=generateExactPreferredResourceUnitCandidates({problem,resourceId:unit.resourceId,
-      resourceTasks:unit.resourceTasks,setupTasks:unit.setupTasks,placed:[...coreTasks,...placed],preparations,meals:coreMeals,ledger});
-    evidence.setupBlockSearchInvocations+=1;evidence.setupBlockCompleteCandidateCount+=generated.candidates.length;
+    let selectedPresence:[number,number,number]|null=null;
+    const explored=exploreExactPreferredResourceUnit({problem,resourceId:unit.resourceId,
+      resourceTasks:unit.resourceTasks,setupTasks:unit.setupTasks,placed:[...coreTasks,...placed],preparations,meals:coreMeals,ledger,
+      continuation:(candidate)=>{candidatesEvaluated+=1;
+        const exactPrunesBefore=evidence.participantFutureTerminalExactPrunes;
+        const exactPassesBefore=evidence.participantFutureTerminalExactPasses;
+        const exactAbstentionsBefore=evidence.participantFutureTerminalExactAbstentions;
+        const mealPrunesBefore=evidence.participantMealFutureInfeasibleBranches;
+        const outcome=recurse([...candidate.tasks],[...preparations,...candidate.preparations]);
+        const terminalFutureResult=evidence.participantFutureTerminalExactPrunes>exactPrunesBefore?"PRUNE"
+          :evidence.participantFutureTerminalExactPasses>exactPassesBefore?"PASS"
+          :evidence.participantFutureTerminalExactAbstentions>exactAbstentionsBefore?"ABSTAIN":"NOT_CHECKED";
+        if(outcome!=="DEAD_END")selectedPresence=[...candidate.presence];
+        return{outcome,participantFutureExactPrune:terminalFutureResult==="PRUNE",
+          participantMealPrune:evidence.participantMealFutureInfeasibleBranches>mealPrunesBefore,terminalFutureResult};
+      }});
+    evidence.setupBlockSearchInvocations+=1;
     evidence.preferredResourceUnit={unitId:unit.id,memberTaskCount:unit.tasks.length,resourceTaskCount:unit.resourceTasks.length,
-      setupTaskCount:unit.setupTasks.length,sharedResourceId:unit.resourceId,geometryCount:generated.geometryCount,
-      matchingAttempts:generated.matchingAttempts,matchingSuccesses:generated.matchingSuccesses,supportingRematches:0,selectedPresence:null};
-    for(const candidate of generated.candidates){candidatesEvaluated++;const outcome=recurse([...candidate.tasks],
-      [...preparations,...candidate.preparations]);if(outcome!=="DEAD_END"){
-        evidence.preferredResourceUnit={...evidence.preferredResourceUnit,selectedPresence:[...candidate.presence]};return outcome;
-      }evidence.standaloneBacktracks++;}
-    if(generated.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+      setupTaskCount:unit.setupTasks.length,sharedResourceId:unit.resourceId,geometryCount:explored.evidence.geometryCount,
+      matchingAttempts:explored.evidence.matchingAttempts,matchingSuccesses:explored.evidence.matchingSuccesses,supportingRematches:0,selectedPresence,
+      rawCompatibleEdges:explored.evidence.rawCompatibleEdges,futureEdgeChecks:explored.evidence.futureEdgeChecks,
+      analyticPrunedEdges:explored.evidence.analyticPrunedEdges,matchingTraversals:explored.evidence.matchingTraversals,
+      mealEdgeChecks:explored.evidence.mealEdgeChecks,mealPrunedEdges:explored.evidence.mealPrunedEdges,
+      firstMealPrunedEdge:explored.evidence.firstMealPrunedEdge,blockingMealTaskId:explored.evidence.blockingMealTaskId,
+      causalForbiddenEdges:explored.evidence.causalForbiddenEdges,incrementalRepairs:explored.evidence.incrementalRepairs,
+      geometriesRescuedByRematching:explored.evidence.geometriesRescuedByRematching,
+      firstMatchingWitness:explored.evidence.firstMatchingWitness,selectedMatchingWitness:explored.evidence.selectedMatchingWitness,
+      terminalFutureResult:explored.evidence.terminalFutureResult};
+    evidence.setupBlockCompleteCandidateCount+=explored.evidence.matchingSuccesses;
+    if(explored.outcome!=="DEAD_END")return explored.outcome;
   } else if(unit.kind==="RESOURCE_GROUP"){
     const scheduleGroup=(remaining:readonly Task[],scheduled:ScheduledTask[]):StandaloneOutcome=>{
       if(!remaining.length)return recurse(scheduled);
