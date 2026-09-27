@@ -26,3 +26,18 @@ The execution order is:
 This iteration stops under gate C. Applying `analyticalReservedPlacements` only inside `exactPreferredResourceUnit` would establish that an alternative matching exists, but could not substitute the rematched supporting placements into the state validated by the continuation. Doing so correctly requires a narrow new seam: the core boundary must pass a prepared pipeline graph plus a deterministic `reserve-and-rematerialize` operation into standalone, and standalone must evaluate a macro continuation against the returned core while retaining fixed/protected placements verbatim. Without that seam, a local patch would either be diagnostic-only or would require broad mutable-core/threading changes across standalone recursion and caches.
 
 No search policy, budget, hard constraint, placement, database, API, or UI was changed.
+
+## Follow-up audit — smaller seam candidate
+
+A subsequent source/code audit found a narrower candidate than making the core mutable after standalone begins.
+
+`runExactItinerantPlanSearch` already computes `standaloneTasks` as all non-core, non-fixed tasks. Arrival transport and entry styling therefore naturally remain pending unless `onHardValidCoreLeaf` promotes them from `pipeline.scheduledTasks` into `structuralTasks` and then `immutableCoreTasks`.
+
+The current placement authority allows a task whose predecessor is not yet materialized, provided any already-materialized endpoints remain temporally consistent. Arrival transport is then materialized terminally against the substantive obligations. Therefore a smaller generic counterfactual exists:
+
+- preserve every fixed/protected placement verbatim;
+- preserve the pipeline matching as a feasibility witness;
+- do not promote pipeline-only, unprotected supporting tasks into the immutable core;
+- leave those supporting tasks in the existing standalone/terminal machinery so they can be materialized around the selected structural macro.
+
+This is not yet a product conclusion. It must be tested causally before introducing a prepared-graph rematerialization seam. If the smaller seam cannot preserve the pipeline contract or fails to rescue P15, only then should the broader reserve-and-rematerialize seam be reconsidered.
