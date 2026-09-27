@@ -58,3 +58,11 @@ The productive exclusion was therefore reverted. The state that must survive the
 - a deterministic reservation/rematerialization operation returning a coherent replacement cohort after a structural macro reservation.
 
 No mutable core, broad prepared-graph threading, budget change, HARD relaxation, or `reserveAndRematerialize` implementation is retained in this iteration. The only code change retained is read-only observability: the first hard-valid core snapshot is captured before later arrival/future-reservation exits, and its aggregate now reports pipeline materialization count, immutable-core count, protected count, and excluded pipeline-only count (zero after reverting the counterfactual).
+
+## Opening-frontier causal measurement
+
+The canonical benchmark was rerun after enumerating the earliest entry frontier. This changes the causal space materially **before P15**: Stage 1 accepts only the 19 Main obligations and Stage 2 (`TECHNICAL_CHAIN:plannerNext.mainFlow.feeders`) returns `NO_PROPOSAL`, so there is no Stage 5/P15 observation in this run. Completion moves from the prior 65/266 frontier to 19/266, with 19 protected placements at the blocker.
+
+The Stage 2 first hard-valid core contains 82 tasks: 19 protected Main placements, 19 vocal tasks, and 44 unprotected supporting tasks. Its IN support occupies seven five-minute waves from 540–545 through 720–725; Styling support is a contiguous sequence from 630–640 through 810–820. Search explores 19 core branches and 143 standalone branches. No macro is selected, the preferred-resource unit is not entered, there is no standalone dead-end cause or rejection reason, and no Croma, Sillón, Estrellas, or P15 placement is accepted.
+
+The new first blocker is `INFEASIBILITY_REQUIRES_SEPARATE_CAUSAL_DELTA` in `constructExactItinerantPlan completion`, with no narrower `causalAuthority`. This replaces the prior Stage 5 `SEARCH_CAPACITY_EXHAUSTED` frontier rather than rescuing P15. The benchmark remains deterministic (`deterministicEquivalent: true`). The generated Evidence is therefore the exact new frontier; P15-specific preferred-resource candidate/completion/prune counts are unavailable because execution never reaches that unit.
