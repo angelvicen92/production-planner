@@ -31,7 +31,7 @@ function fixture(reverse=false,withMeal=false){
     dependencies:[],availability:[{start:20,end:30}],setupFamilyId:"family"}];
   const problem:PlannerNextProblem={day:{start:0,end:60},spaces:[...resourceTasks.map(task=>({id:task.spaceId,availability})),
     {id:"setup-space",availability,secondaryContinuity:"REQUIRED",setupPolicy:{familyOrder:["family"],reentry:"FORBIDDEN"}}],
-    resources:[{id:"preferred",availability,presencePreference:"PREFERRED",transitionMinutes:0}],
+    resources:[{id:"preferred",availability,presencePreference:"OFF",presenceConcentrationPolicy:"PREFERRED",transitionMinutes:0}],
     participants:[...resourceTasks,...setupTasks].map(task=>({id:task.participantId!,availability})),coaches:[],
     tasks:reverse?[...setupTasks,...resourceTasks].reverse():[...resourceTasks,...setupTasks],participantTransitionMinutes:0,
     resourceTransitionMinutes:0,auxiliaryPolicy:{participantPresencePreference:"OFF"},
@@ -182,7 +182,7 @@ test("two-block family follows exhausted one-block continuations, while a viable
 });
 
 test("REQUIRED resource presence does not open the two-block counterfactual",()=>{
-  const {problem,resourceTasks,setupTasks}=fixture();problem.resources[0]!.presencePreference="REQUIRED";
+  const {problem,resourceTasks,setupTasks}=fixture();problem.resources[0]!.presenceConcentrationPolicy="REQUIRED";
   const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],ledger:createExactSearchLedger(10_000),
     continuation:()=>({outcome:"DEAD_END",terminalFutureResult:"PRUNE"}),authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
   assert.equal(result.outcome,"DEAD_END");assert.equal(result.evidence.completeCandidatesAttemptedByBlockCount["2"],0);
