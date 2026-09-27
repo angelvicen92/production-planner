@@ -169,3 +169,29 @@ test("natural structural boundaries are continued before exact grid fallback",()
   assert.deepEqual(starts,[0,20]);
   assert.equal(result.evidence.geometryCount,2);
 });
+
+test("two-block family follows exhausted one-block continuations, while a viable one-block wins",()=>{
+  const run=(findOneBlock:boolean)=>{const {problem,resourceTasks,setupTasks}=fixture();const visited:number[]=[];
+    const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],ledger:createExactSearchLedger(10_000),
+      continuation:candidate=>{visited.push(candidate.blockCount);return(findOneBlock||candidate.blockCount===2)?{outcome:"FOUND",terminalFutureResult:"PASS"}:{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};},
+      authorities:{participantFutureProbe:()=>futureProbe("PASS")}});return{result,visited};};
+  const fallback=run(false);assert.equal(fallback.result.outcome,"FOUND");assert.ok(fallback.result.evidence.completeCandidatesAttemptedByBlockCount["1"]>0);
+  assert.equal(fallback.result.evidence.completeCandidatesAttemptedByBlockCount["2"],1);assert.equal(fallback.visited.slice(0,-1).every(value=>value===1),true);
+  assert.equal(fallback.result.evidence.firstTwoBlockCandidate?.intervals.length,2);assert.equal(fallback.result.evidence.firstTwoBlockCandidate?.terminalResult,"PASS");
+  const preferred=run(true);assert.deepEqual(preferred.visited,[1]);assert.equal(preferred.result.evidence.firstTwoBlockCandidate,null);
+});
+
+test("REQUIRED resource presence does not open the two-block counterfactual",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture();problem.resources[0]!.presencePreference="REQUIRED";
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],ledger:createExactSearchLedger(10_000),
+    continuation:()=>({outcome:"DEAD_END",terminalFutureResult:"PRUNE"}),authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+  assert.equal(result.outcome,"DEAD_END");assert.equal(result.evidence.completeCandidatesAttemptedByBlockCount["2"],0);
+});
+
+test("two anonymous blocks precede nominal identity and are input-order invariant",()=>{
+  const run=(reverse:boolean)=>{const {problem,resourceTasks,setupTasks}=fixture(reverse);let observed:any=null;
+    const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],ledger:createExactSearchLedger(10_000),
+      continuation:candidate=>{if(candidate.blockCount===2){observed={intervals:candidate.blockIntervals,matching:Object.fromEntries(candidate.tasks.filter(task=>task.id!=="setup").map(task=>[task.id,task.start]))};return{outcome:"FOUND",terminalFutureResult:"PASS"};}return{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};},
+      authorities:{participantFutureProbe:()=>futureProbe("PASS")}});assert.equal(result.outcome,"FOUND");return observed;};
+  const forward=run(false);assert.deepEqual(forward,run(true));assert.equal(forward.intervals.length,2);assert.equal(forward.intervals[0].end<=forward.intervals[1].start,true);
+});

@@ -348,7 +348,11 @@ export interface ExactItinerantPlanEvidence {
     firstMealPrunedEdge:{taskId:string;spotId:string;start:number;blockingMealTaskId:string|null}|null;
     blockingMealTaskId:string|null;
     geometriesRescuedByRematching:number;firstMatchingWitness:Record<string,string>|null;
-    selectedMatchingWitness:Record<string,string>|null;terminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED" } | null;
+    selectedMatchingWitness:Record<string,string>|null;terminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";
+    completeCandidatesAttemptedByBlockCount:Record<"1"|"2",number>;
+    terminalResultCountsByBlockCount:Record<"1"|"2",Record<"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED",number>>;
+    firstTwoBlockCandidate:{intervals:readonly {start:number;end:number}[];firstMatching:Record<string,string>;
+      terminalResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";branchesConsumedAtEntry:number}|null } | null;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -1285,7 +1289,10 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       causalForbiddenEdges:explored.evidence.causalForbiddenEdges,incrementalRepairs:explored.evidence.incrementalRepairs,
       geometriesRescuedByRematching:explored.evidence.geometriesRescuedByRematching,
       firstMatchingWitness:explored.evidence.firstMatchingWitness,selectedMatchingWitness:explored.evidence.selectedMatchingWitness,
-      terminalFutureResult:explored.evidence.terminalFutureResult};
+      terminalFutureResult:explored.evidence.terminalFutureResult,
+      completeCandidatesAttemptedByBlockCount:explored.evidence.completeCandidatesAttemptedByBlockCount,
+      terminalResultCountsByBlockCount:explored.evidence.terminalResultCountsByBlockCount,
+      firstTwoBlockCandidate:explored.evidence.firstTwoBlockCandidate};
     evidence.setupBlockCompleteCandidateCount+=explored.evidence.matchingSuccesses;
     if(explored.outcome!=="DEAD_END")return explored.outcome;
   } else if(unit.kind==="RESOURCE_GROUP"){
