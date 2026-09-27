@@ -697,7 +697,7 @@ export function exploreExactPreferredResourceUnit(args: {
   // blockCount is an outer search family: exhaust every one-block structural continuation before entering two blocks.
   const blockCountFamilies =
     problem.resources.find((item) => item.id === resourceId)
-      ?.presencePreference === "PREFERRED"
+      ?.presenceConcentrationPolicy === "PREFERRED"
       ? ([1, 2] as const)
       : ([1] as const);
   for (const blockCount of blockCountFamilies)
