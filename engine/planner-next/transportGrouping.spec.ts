@@ -335,6 +335,27 @@ test("different arrival deadlines remain CONTIGUOUS_EXACT and input order does n
   assert.deepEqual(original.problem, snapshot);
 });
 
+test("core arrival deadlines ignore already materialized transport rows deterministically", () => {
+  const fixture = interchangeableArrivalProblem([40]);
+  const substantiveOnly = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core);
+  const materializedArrival = scheduled(fixture.problem.tasks.find(({ id }) => id === "in-0")!, 10);
+  const withArrival = assessCoreArrivalTransportFeasibility(
+    fixture.problem,
+    [materializedArrival, ...fixture.core],
+  );
+  const reversedCore = assessCoreArrivalTransportFeasibility(
+    fixture.problem,
+    [...fixture.core, materializedArrival].reverse(),
+  );
+
+  assert.equal(substantiveOnly.status, "FEASIBLE");
+  assert.deepEqual(substantiveOnly.evidence.orderedDeadlines, [40]);
+  assert.equal(withArrival.status, "FEASIBLE");
+  assert.deepEqual(withArrival.evidence.orderedDeadlines, [40]);
+  assert.deepEqual(withArrival, substantiveOnly, "a materialized ARRIVAL must not change the substantive deadline or witness");
+  assert.deepEqual(reversedCore, substantiveOnly, "core order must not change the result");
+});
+
 test("contiguous arrival infeasibility is exact and never enters membership enumeration", () => {
   const fixture = interchangeableArrivalProblem([20, 20, 20, 20, 20]);
   const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core);
