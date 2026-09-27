@@ -533,7 +533,13 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const space of requiredSecondarySpaces(problem)) {
     const expected = secondaryTasks(problem.tasks, space.id);
     const actual = secondaryTasks(scheduled, space.id);
-    const occupations = spaceOccupations(actual, preparations, space.id, meals);
+    // An explicitly authorized operational pause is part of the logical
+    // continuous occupation of a REQUIRED secondary space. Arbitrary gaps are
+    // still gaps: only a published meal whose policy names the space bridges it.
+    const operationalBridges=operationalMeals.filter(meal=>meal.spaceIds.includes(space.id))
+      .map(({id,start,end})=>({id:`operational-meal:${id}`,start,end}));
+    const occupations = [...spaceOccupations(actual, preparations, space.id, meals),...operationalBridges]
+      .sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id));
     if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(occupations)) secondaryContinuity += 1;
   }
   for (const space of setupSpaces(problem)) {

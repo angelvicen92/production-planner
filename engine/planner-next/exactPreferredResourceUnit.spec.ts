@@ -5,6 +5,7 @@ import { createExactSearchLedger } from "./exactMainAndFeederCore";
 import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit";
 import type { ParticipantFutureReservationProbe, ParticipantFutureReservationStatus } from "./participantFutureFeasibility";
 import type { ParticipantMealProbe } from "./participantMeals";
+import { validatePlan } from "./validate";
 
 const futureProbe=(status:ParticipantFutureReservationStatus,reason:ParticipantFutureReservationProbe["reasonCode"]=null,
   abstainCause:ParticipantFutureReservationProbe["abstainCause"]=null):ParticipantFutureReservationProbe=>({
@@ -119,4 +120,42 @@ test("preferred-resource future-aware matching is invariant to input order",()=>
         participantMealProbe:(_problem,_state,added)=>mealProbe(!(added?.[0]!.id==="a"&&added[0]!.start===10))}});
     assert.equal(result.outcome,"FOUND");return selected;};
   assert.deepEqual(run(false),run(true));
+});
+
+function operationalFixture(reverse=false){
+  const base=fixture(reverse);base.problem.operationalMealPolicies=[{id:"operations-break",duration:10,
+    window:{start:10,end:30},resourceIds:["preferred"],spaceIds:[]}];
+  return base;
+}
+
+test("preferred-resource geometry reserves a complete applicable operational meal before nominal matching",()=>{
+  const {problem,resourceTasks,setupTasks}=operationalFixture();let selected:{tasks:readonly {id:string;start:number;end:number}[];meals:readonly {id:string;start:number;end:number}[]}|null=null;
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:candidate=>{selected={tasks:candidate.tasks,meals:candidate.operationalMealReservations};return{outcome:"FOUND"};},
+    authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+  assert.equal(result.outcome,"FOUND");assert.ok(selected);assert.equal(selected.meals.length,1);
+  assert.deepEqual(selected.meals.map(({id,start,end})=>({id,start,end})),[{id:"operations-break",start:20,end:30}]);
+  assert.ok(selected.tasks.every(task=>task.end<=20||task.start>=30||task.id==="setup"));
+  assert.ok(result.evidence.mealAwareGeometries>0);assert.equal(result.evidence.selectedOperationalMealReservations.length,1);
+});
+
+test("only an authorized operational pause bridges REQUIRED secondary continuity",()=>{
+  const {problem}=fixture();const setup=problem.tasks.find(task=>task.id==="setup")!;
+  problem.mainFlow={spaceId:"setup-space",preferredEnd:60,continuity:"PREFERRED",maxBlocksByKey:1,minTasksPerBlock:1};
+  const second={...setup,id:"setup-2",participantId:"setup-2"};problem.tasks=[setup,second];
+  problem.participants.push({id:"setup-2",availability:[{start:0,end:60}]});
+  problem.operationalMealPolicies=[{id:"authorized",duration:10,window:{start:30,end:40},resourceIds:[],spaceIds:["setup-space"]}];
+  const tasks=[{...setup,start:20,end:30},{...second,start:40,end:50}];
+  const meal={id:"authorized",duration:10,start:30,end:40,resourceIds:[],spaceIds:["setup-space"]};
+  assert.equal(validatePlan(problem,tasks,[],[],[],[],[],[],[meal]).secondaryContinuityViolationCount,0);
+  assert.equal(validatePlan(problem,tasks).secondaryContinuityViolationCount,1);
+});
+
+test("meal-aware preferred-resource geometry is invariant to input order",()=>{
+  const run=(reverse:boolean)=>{const {problem,resourceTasks,setupTasks}=operationalFixture(reverse);let signature="";
+    const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+      ledger:createExactSearchLedger(1000),continuation:candidate=>{signature=JSON.stringify({tasks:[...candidate.tasks].sort((a,b)=>a.id.localeCompare(b.id)).map(({id,start,end})=>({id,start,end})),
+        meals:candidate.operationalMealReservations.map(({id,start,end})=>({id,start,end}))});return{outcome:"FOUND"};},authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+    assert.equal(result.outcome,"FOUND");return signature;};
+  assert.equal(run(false),run(true));
 });
