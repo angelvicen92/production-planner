@@ -7,7 +7,9 @@ Baseline: `5f24e9b3dff5e2b09197f6f6ac5563c0816ebc17`
 
 The canonical benchmark remains blocked at Stage 5 (`NO_PROPOSAL`) after 65 accepted placements. The first hard-valid core reports 109 tasks: 65 protected placements and 44 additional pipeline placements. The preferred-resource macro is then entered with that core and evaluates 429 complete candidates, selecting `PREFERRED_RESOURCE_UNIT` as its only macro unit.
 
-The generated benchmark Evidence does **not** contain `standaloneDiagnostic.firstHardValidCoreTasks`, despite the field being listed by the Assisted evidence projection. Consequently this checkout cannot produce the requested identity-level split (the 19 IN rows, 19 Estilismo Entrada rows, and any other ephemeral rows) from the canonical command. The aggregate `firstHardValidCoreLeaf` is present, but it is insufficient to prove which 44 placements are provisional or to compare them with the 65 accepted IDs.
+The generated benchmark Evidence now persists `standaloneDiagnostic.firstHardValidCoreTasks`. At the blocked fifth iteration it records all 109 immutable-core placements with `id`, `kind`, `participantId`, `spaceId`, `start`, `end`, and `protected`: 65 are protected and 44 are unprotected pipeline supporting placements. The aggregate records 109 pipeline-materialized tasks, 109 immutable-core tasks, 65 protected tasks, and zero excluded pipeline-only tasks after the counterfactual was reverted.
+
+The canonical result remains `NO_PROPOSAL` at 65/266 completed obligations. The preferred-resource unit reaches 425 complete matching candidates and ends in `PRUNE`; the subsequent exact blocker remains standalone branch-budget exhaustion (19 core branches plus 99,981 standalone branches). No P15 placement is accepted, so the accepted Croma block count remains zero; the previously accepted 65 placements are unchanged. The benchmark reports `deterministicEquivalent: true`.
 
 ## Causal boundary in the current architecture
 
@@ -41,3 +43,18 @@ The current placement authority allows a task whose predecessor is not yet mater
 - leave those supporting tasks in the existing standalone/terminal machinery so they can be materialized around the selected structural macro.
 
 This is not yet a product conclusion. It must be tested causally before introducing a prepared-graph rematerialization seam. If the smaller seam cannot preserve the pipeline contract or fails to rescue P15, only then should the broader reserve-and-rematerialize seam be reconsidered.
+
+## Counterfactual result — smallest exclusion seam
+
+The identity-based counterfactual was executed on 2026-09-27: only the `main`/`vocal`/anchored structural authority and fixed placements were retained in the immutable core, while the 44 unprotected pipeline-only placements were returned to the existing standalone machinery. The focused exact-itinerant suite remained green, but the canonical `benchmark:planner-next:a2-assist-8` did not complete its contractual waterfall. It spent more than 25 minutes inside the newly enlarged standalone search and then failed the benchmark invariant `A2 must attempt the scarce Reality C + EVA continuity unit`; it never produced canonical Stage 5 Evidence or a P15 proposal.
+
+This is gate C, not a sound production seam. The pipeline-only rows are not equivalent to unrelated standalone tasks: their feasible identities are coupled by the prepared pipeline perfect matching. Dropping only their placements also drops the matching cohort/edge choice that makes the pipeline witness executable, so ordinary standalone DFS has neither a bounded rematerialization unit nor the prepared matching state needed to repair it around a later macro.
+
+The productive exclusion was therefore reverted. The state that must survive the core/standalone frontier for a future broader seam is narrowly identified as:
+
+- the prepared pipeline graph and current deterministic perfect-matching witness;
+- the fixed/protected placements, retained byte-for-byte as hard exclusions;
+- the set of pipeline-only unprotected supporting identities eligible for rematerialization;
+- a deterministic reservation/rematerialization operation returning a coherent replacement cohort after a structural macro reservation.
+
+No mutable core, broad prepared-graph threading, budget change, HARD relaxation, or `reserveAndRematerialize` implementation is retained in this iteration. The only code change retained is read-only observability: the first hard-valid core snapshot is captured before later arrival/future-reservation exits, and its aggregate now reports pipeline materialization count, immutable-core count, protected count, and excluded pipeline-only count (zero after reverting the counterfactual).

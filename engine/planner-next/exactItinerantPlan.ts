@@ -150,6 +150,10 @@ export interface ExactItinerantPlanEvidence {
   coreLeafArrivalEvidence: TransportMaterializationEvidence["directions"][number] | null;
   firstHardValidCoreLeaf: {
     coreTaskCount: number;
+    pipelineMaterializedTaskCount: number;
+    immutableCoreTaskCount: number;
+    protectedTaskCount: number;
+    pipelineOnlySupportingExcludedCount: number;
     coreTasksByKind: Record<string, number>;
     pendingSupportingTotal: number;
     pendingOrdinaryNoTransport: number;
@@ -1820,14 +1824,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       evidence.structuralCandidateFingerprintAtHardGate=candidate.fingerprint;
       evidence.structuralCandidateFingerprintAtContinuation=candidate.fingerprint;
     }
-    if (evidence.firstHardValidCoreLeaf === null) {
-      const counts=(tasks:readonly {kind:string}[])=>tasks.reduce<Record<string,number>>((result,task)=>{
-        result[task.kind]=(result[task.kind]??0)+1;return result;},{});
-      const dynamicTransport=transportTaskIds(problem);
-      evidence.firstHardValidCoreLeaf={coreTaskCount:candidate.tasks.length,coreTasksByKind:counts(candidate.tasks),
-        pendingSupportingTotal:standaloneTasks.length,pendingOrdinaryNoTransport:standaloneTasks.filter(task=>!dynamicTransport.has(task.id)).length,
-        pendingDynamicTransport:standaloneTasks.filter(task=>dynamicTransport.has(task.id)).length,pendingTasksByKind:counts(standaloneTasks)};
-    }
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const orderedMains=candidate.tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const pipeline=!conditioned&&orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
@@ -1843,6 +1839,21 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const structuralTasks=conditioned?candidate.tasks:(pipelinePreservesFixed ? [...pipeline!.scheduledTasks] : candidate.tasks);
     const coreIds = new Set(structuralTasks.map(({ id }) => id));
     const immutableCoreTasks=[...structuralTasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
+    const pipelineOnlySupportingExcludedCount=0;
+    if (evidence.firstHardValidCoreLeaf === null) {
+      const counts=(tasks:readonly {kind:string}[])=>tasks.reduce<Record<string,number>>((result,task)=>{
+        result[task.kind]=(result[task.kind]??0)+1;return result;},{});
+      const dynamicTransport=transportTaskIds(problem);
+      evidence.firstHardValidCoreLeaf={coreTaskCount:candidate.tasks.length,
+        pipelineMaterializedTaskCount:pipelinePreservesFixed?pipeline!.scheduledTasks.length:candidate.tasks.length,
+        immutableCoreTaskCount:immutableCoreTasks.length,protectedTaskCount:fixedById.size,
+        pipelineOnlySupportingExcludedCount,coreTasksByKind:counts(immutableCoreTasks),
+        pendingSupportingTotal:standaloneTasks.length,pendingOrdinaryNoTransport:standaloneTasks.filter(task=>!dynamicTransport.has(task.id)).length,
+        pendingDynamicTransport:standaloneTasks.filter(task=>dynamicTransport.has(task.id)).length,pendingTasksByKind:counts(standaloneTasks)};
+    }
+    if(evidence.firstHardValidCoreTasks.length===0)evidence.firstHardValidCoreTasks=[...immutableCoreTasks]
+      .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))
+      .map(task=>({id:task.id,kind:task.kind,participantId:task.participantId,spaceId:task.spaceId,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
     const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
       consumeFallbackBranch: () => ledger.consume("STANDALONE"),
     });
@@ -1893,9 +1904,6 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       }
     }
     if(conditioned)evidence.structuralCandidateFingerprintBeforeStandalone=candidate.fingerprint;
-    if(evidence.firstHardValidCoreTasks.length===0)evidence.firstHardValidCoreTasks=[...immutableCoreTasks]
-      .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))
-      .map(task=>({id:task.id,kind:task.kind,participantId:task.participantId,spaceId:task.spaceId,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations);
