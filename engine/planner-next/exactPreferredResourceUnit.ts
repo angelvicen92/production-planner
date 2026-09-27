@@ -102,7 +102,7 @@ export function exploreExactPreferredResourceUnit(args:{
           :Array.from({length:Math.max(0,Math.floor((problem.day.end-problem.day.start)/5)+1)},(_,i)=>problem.day.start+i*5);
         for(const start of candidateStarts){let cursor=start;const offsets:number[]=[];const reservations:ScheduledOperationalMeal[]=[];let valid=true;
           for(let boundary=0;boundary<=resourceTasks.length;boundary+=1){
-            for(const [policyIndex,policy] of operationalPolicies.entries().filter(([i])=>boundaries[i]===boundary)){
+            for(const [policyIndex,policy] of operationalPolicies.map((policy,index)=>[index,policy] as const).filter(([i])=>boundaries[i]===boundary)){
               const candidate=operationalMealCandidates(problem,policy,[...placed,...structural.tasks],reservations).find(item=>item.start===cursor);
               if(!candidate){valid=false;break;}reservations.push(candidate);cursor=candidate.end;
             }
