@@ -343,6 +343,8 @@ export interface ExactItinerantPlanEvidence {
     supportingRematches:number; selectedPresence:[number,number,number]|null;rawCompatibleEdges:number;futureEdgeChecks:number;
     analyticPrunedEdges:number;matchingTraversals:number;causalForbiddenEdges:number;incrementalRepairs:number;
     mealEdgeChecks:number;mealPrunedEdges:number;
+    mealAwareGeometries:number;mealReservationVariants:number;
+    selectedOperationalMealReservations:Array<{id:string;start:number;end:number}>;
     firstMealPrunedEdge:{taskId:string;spotId:string;start:number;blockingMealTaskId:string|null}|null;
     blockingMealTaskId:string|null;
     geometriesRescuedByRematching:number;firstMatchingWitness:Record<string,string>|null;
@@ -1218,14 +1220,16 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       enteredOrdinarySearch:false,firstDescendantDeadEnd:null,firstOrdinaryRejection:null,reachedCompleteLeaf:false,
       terminalParticipantFuture:{status:"NOT_CHECKED" as const,cause:null},outcome:"DEAD_ENDED_BY_AUTHORITY" as const,
     }:null;
-    if(rootTrace){activeMacroCandidateTrace=rootTrace;activeRoundOperationalMealReservations=operationalMealReservations;}
-    const finish=(result:StandaloneOutcome,pruned=false):StandaloneOutcome=>{if(!rootTrace)return result;
+    const previousOperationalMealReservations=activeRoundOperationalMealReservations;
+    activeRoundOperationalMealReservations=[...previousOperationalMealReservations,...operationalMealReservations];
+    if(rootTrace)activeMacroCandidateTrace=rootTrace;
+    const finish=(result:StandaloneOutcome,pruned=false):StandaloneOutcome=>{activeRoundOperationalMealReservations=previousOperationalMealReservations;if(!rootTrace)return result;
       rootTrace.outcome=pruned?"PRUNED":rootTrace.enteredOrdinarySearch||rootTrace.reachedCompleteLeaf
         ?"ENTERED_RESIDUAL_OR_TERMINAL":"DEAD_ENDED_BY_AUTHORITY";
       evidence.macroCandidateCausalTraces.push(rootTrace);const reconciliation=evidence.macroCandidateCausalReconciliation;
       reconciliation.total+=1;if(rootTrace.outcome==="PRUNED")reconciliation.pruned+=1;
       else if(rootTrace.outcome==="DEAD_ENDED_BY_AUTHORITY")reconciliation.deadEndedByAuthority+=1;
-      else reconciliation.enteredResidualOrTerminal+=1;activeMacroCandidateTrace=null;activeRoundOperationalMealReservations=[];return result;};
+      else reconciliation.enteredResidualOrTerminal+=1;activeMacroCandidateTrace=null;return result;};
     const pendingForCheck=[...ordinaryPending,...rest.flatMap(item=>item.tasks)].filter((task,index,array)=>array.findIndex(item=>item.id===task.id)===index);
     const checked=checkMacroPendingPrerequisites(problem,pendingForCheck,[...coreTasks,...placed],tasks,coreMeals,macroPendingPrerequisiteCache);
     evidence.macroPendingPrerequisiteForwardChecks+=1;evidence.macroPendingPrerequisiteTasksChecked+=checked.tasksChecked;
@@ -1259,7 +1263,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         const exactPassesBefore=evidence.participantFutureTerminalExactPasses;
         const exactAbstentionsBefore=evidence.participantFutureTerminalExactAbstentions;
         const mealPrunesBefore=evidence.participantMealFutureInfeasibleBranches;
-        const outcome=recurse([...candidate.tasks],[...preparations,...candidate.preparations]);
+        const outcome=recurse([...candidate.tasks],[...preparations,...candidate.preparations],roundPreparations,
+          candidate.operationalMealReservations.map(({id,start,end})=>({policyId:id,start,end})));
         const terminalFutureResult=evidence.participantFutureTerminalExactPrunes>exactPrunesBefore?"PRUNE"
           :evidence.participantFutureTerminalExactPasses>exactPassesBefore?"PASS"
           :evidence.participantFutureTerminalExactAbstentions>exactAbstentionsBefore?"ABSTAIN":"NOT_CHECKED";
@@ -1274,6 +1279,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       rawCompatibleEdges:explored.evidence.rawCompatibleEdges,futureEdgeChecks:explored.evidence.futureEdgeChecks,
       analyticPrunedEdges:explored.evidence.analyticPrunedEdges,matchingTraversals:explored.evidence.matchingTraversals,
       mealEdgeChecks:explored.evidence.mealEdgeChecks,mealPrunedEdges:explored.evidence.mealPrunedEdges,
+      mealAwareGeometries:explored.evidence.mealAwareGeometries,mealReservationVariants:explored.evidence.mealReservationVariants,
+      selectedOperationalMealReservations:explored.evidence.selectedOperationalMealReservations.map(({id,start,end})=>({id,start,end})),
       firstMealPrunedEdge:explored.evidence.firstMealPrunedEdge,blockingMealTaskId:explored.evidence.blockingMealTaskId,
       causalForbiddenEdges:explored.evidence.causalForbiddenEdges,incrementalRepairs:explored.evidence.incrementalRepairs,
       geometriesRescuedByRematching:explored.evidence.geometriesRescuedByRematching,

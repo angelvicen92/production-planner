@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { OperationalMealPolicy, PlannerNextProblem, ScheduledOperationalMeal, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { incrementallyRepairMatchingWitness, type ExactSearchLedger } from "./exactMainAndFeederCore";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
 import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
@@ -6,11 +6,14 @@ import { probeParticipantMealFutureFeasibility } from "./participantMeals";
 import { canPlaceTask } from "./placement";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateResourcePresence } from "./resourcePresence";
+import { operationalMealCandidates } from "./operationalMeals";
+import { overlaps } from "./time";
 
 export interface ExactPreferredResourceUnitCandidate {
   readonly tasks: readonly ScheduledTask[];
   readonly preparations: readonly ScheduledSetupPreparation[];
   readonly presence: readonly [blocks:number, span:number, idle:number];
+  readonly operationalMealReservations: readonly ScheduledOperationalMeal[];
 }
 
 export type ExactPreferredResourceUnitOutcome="FOUND"|"DEAD_END"|"BUDGET_EXHAUSTED";
@@ -26,6 +29,7 @@ export interface ExactPreferredResourceUnitEvidence {
   geometryCount:number;matchingSuccesses:number;rawCompatibleEdges:number;futureEdgeChecks:number;
   analyticPrunedEdges:number;matchingAttempts:number;matchingTraversals:number;causalForbiddenEdges:number;
   mealEdgeChecks:number;mealPrunedEdges:number;
+  mealAwareGeometries:number;mealReservationVariants:number;selectedOperationalMealReservations:ScheduledOperationalMeal[];
   firstMealPrunedEdge:{taskId:string;spotId:string;start:number;blockingMealTaskId:string|null}|null;
   blockingMealTaskId:string|null;
   incrementalRepairs:number;geometriesRescuedByRematching:number;
@@ -52,7 +56,7 @@ export function exploreExactPreferredResourceUnit(args:{
   const participantMealProbe=args.authorities?.participantMealProbe??probeParticipantMealFutureFeasibility;
   const evidence:ExactPreferredResourceUnitEvidence={geometryCount:0,matchingSuccesses:0,rawCompatibleEdges:0,
     futureEdgeChecks:0,analyticPrunedEdges:0,matchingAttempts:0,matchingTraversals:0,causalForbiddenEdges:0,
-    mealEdgeChecks:0,mealPrunedEdges:0,firstMealPrunedEdge:null,blockingMealTaskId:null,
+    mealEdgeChecks:0,mealPrunedEdges:0,mealAwareGeometries:0,mealReservationVariants:0,selectedOperationalMealReservations:[],firstMealPrunedEdge:null,blockingMealTaskId:null,
     incrementalRepairs:0,geometriesRescuedByRematching:0,firstMatchingWitness:null,selectedMatchingWitness:null,
     terminalFutureResult:"NOT_CHECKED"};
   const mutableMeals=[...meals];
@@ -63,13 +67,60 @@ export function exploreExactPreferredResourceUnit(args:{
   const mealApplicable=(problem.participantMeals?.length??0)>0;
   const analyticEdgeCache=new Map<string,"PASS"|"PRUNE"|"ABSTAIN">();
   const mealEdgeCache=new Map<string,{feasible:boolean;blockingMealTaskId:string|null}>();
-  for(const structural of setup.candidates){
+  const effectiveResourceIds=(task:Task):string[]=>task.coachId===undefined?[...(task.requiredResourceIds??[])]:[...(task.requiredResourceIds??[]),task.coachId];
+  const unitTasks=[...resourceTasks,...setupTasks];
+  const operationalPolicies=[...(problem.operationalMealPolicies??[])].filter(policy=>unitTasks.some(task=>
+    policy.spaceIds.includes(task.spaceId)||effectiveResourceIds(task).some(id=>policy.resourceIds.includes(id)))).sort((a,b)=>a.id.localeCompare(b.id));
+  const conflicts=(task:ScheduledTask,policy:OperationalMealPolicy,meal:ScheduledOperationalMeal)=>
+    (policy.spaceIds.includes(task.spaceId)||effectiveResourceIds(task).some(id=>policy.resourceIds.includes(id)))&&overlaps(task,meal);
+  const structuralCandidates=[...setup.candidates].sort((a,b)=>{
+    const quality=(candidate:typeof a)=>{const ordered=[...candidate.tasks,...candidate.preparations].sort((x,y)=>x.start-y.start||x.end-y.end||x.id.localeCompare(y.id));
+      const blocks=ordered.reduce((count,item,index)=>count+Number(index===0||item.start>ordered[index-1]!.end),0);
+      const span=ordered.length?ordered.at(-1)!.end-ordered[0]!.start:0;
+      const occupied=ordered.reduce((sum,item)=>sum+item.end-item.start,0);return[blocks,span,span-occupied] as const;};
+    const aq=quality(a),bq=quality(b);return aq[0]-bq[0]||aq[1]-bq[1]||aq[2]-bq[2]
+      ||a.tasks.map(task=>`${task.id}@${task.start}`).sort().join("|").localeCompare(b.tasks.map(task=>`${task.id}@${task.start}`).sort().join("|"));
+  });
+  for(const structural of structuralCandidates){
     const occupations=[...structural.tasks,...structural.preparations];
     const first=Math.min(...occupations.map(item=>item.start)),last=Math.max(...occupations.map(item=>item.end));
-    for(const start of [first-duration,last]){
+    type Geometry={start:number;reservations:ScheduledOperationalMeal[];offsets:number[]};
+    function* geometries():Generator<Geometry>{const seen=new Set<string>();
+      for(const tier of [0,1,2] as const)for(const orientation of ["BEFORE","AFTER"] as const){
+      const naturalBoundary=orientation==="BEFORE"?resourceTasks.length:0;
+      const assignments=function* (index=0,current:number[]=[]):Generator<number[]>{if(index===operationalPolicies.length){yield current;return;}
+        const boundaries=tier===0?[naturalBoundary]:[naturalBoundary,...Array.from({length:resourceTasks.length+1},(_,i)=>i)]
+          .filter((value,index,array)=>array.indexOf(value)===index);
+        for(const boundary of boundaries)yield* assignments(index+1,[...current,boundary]);};
+      for(const boundaries of assignments()){
+        const mealMinutes=operationalPolicies.reduce((sum,policy)=>sum+policy.duration,0);
+        const anchoredStart=orientation==="BEFORE"?first-duration-mealMinutes:last;
+        const structuralBoundaries=[...new Set(occupations.flatMap(item=>[item.start,item.end]))].sort((a,b)=>a-b);
+        const taskBoundaries=[...new Set([...placed].flatMap(item=>[item.start,item.end]))].sort((a,b)=>a-b);
+        const candidateStarts=tier===0?[anchoredStart,...structuralBoundaries.flatMap(boundary=>[boundary,boundary-duration-mealMinutes])]
+          :tier===1?taskBoundaries.flatMap(boundary=>[boundary,boundary-duration-mealMinutes])
+          :Array.from({length:Math.max(0,Math.floor((problem.day.end-problem.day.start)/5)+1)},(_,i)=>problem.day.start+i*5);
+        for(const start of candidateStarts){let cursor=start;const offsets:number[]=[];const reservations:ScheduledOperationalMeal[]=[];let valid=true;
+          for(let boundary=0;boundary<=resourceTasks.length;boundary+=1){
+            for(const [policyIndex,policy] of operationalPolicies.map((policy,index)=>[index,policy] as const).filter(([i])=>boundaries[i]===boundary)){
+              const candidate=operationalMealCandidates(problem,policy,[...placed,...structural.tasks],reservations).find(item=>item.start===cursor);
+              if(!candidate){valid=false;break;}reservations.push(candidate);cursor=candidate.end;
+            }
+            if(!valid)break;if(boundary<resourceTasks.length){offsets.push(cursor-start);cursor+=resourceTasks[boundary]!.duration;}
+          }
+          if(!valid)continue;
+          // Preserve the original structural adjacency for the first class of candidates.
+          if(start===anchoredStart&&((orientation==="BEFORE"&&cursor!==first)||(orientation==="AFTER"&&start!==last)))continue;
+          const key=`${start}|${offsets.join(",")}|${reservations.map(x=>`${x.id}@${x.start}`).join(",")}`;
+          if(!seen.has(key)){seen.add(key);yield{start,reservations,offsets};}
+        }
+      }
+    }}
+    for(const geometry of geometries()){const {start,reservations}=geometry;
       evidence.geometryCount+=1;
+      evidence.mealReservationVariants+=reservations.length>0?1:0;
       const slots=resourceTasks.map((_,index)=>`spot:${index}`);
-      const spotStart=(position:number)=>start+resourceTasks.slice(0,position).reduce((sum,item)=>sum+item.duration,0);
+      const spotStart=(position:number)=>start+geometry.offsets[position]!;
       const validPositions=new Map<string,number[]>();
       const base=[...placed,...structural.tasks];
       const baseKey=base.map(task=>`${task.id}@${task.start}-${task.end}`).sort().join("|");
@@ -78,6 +129,7 @@ export function exploreExactPreferredResourceUnit(args:{
           if(!canPlaceTask(problem,task,at,base,mutableMeals))continue;
           evidence.rawCompatibleEdges+=1;evidence.futureEdgeChecks+=1;
           const scheduled=scoreAuxiliaryTask(problem,task,at,base).scheduled;
+          if(reservations.some(meal=>{const policy=operationalPolicies.find(item=>item.id===meal.id);return policy?conflicts(scheduled,policy,meal):false;}))continue;
           const edgeKey=`${task.id}@${task.spaceId}:${at}`;
           const futureKey=`${baseKey}|${edgeKey}`;
           let futureStatus=analyticEdgeCache.get(futureKey);
@@ -113,11 +165,13 @@ export function exploreExactPreferredResourceUnit(args:{
         if(scheduled.some(task=>!canPlaceTask(problem,task,task.start,[...placed,...all.filter(item=>item.id!==task.id)],mutableMeals)))break;
         evidence.matchingSuccesses+=1;
         const resource=problem.resources.find(item=>item.id===resourceId)!;
-        const decision=continuation({tasks:all,preparations:structural.preparations,
-          presence:evaluateResourcePresence(resource,all).preferredLexicographicTuple});
+        evidence.mealAwareGeometries+=Number(reservations.length>0);
+        const decision=continuation({tasks:all,preparations:structural.preparations,operationalMealReservations:reservations,
+          presence:evaluateResourcePresence(resource,all,[],[],reservations).preferredLexicographicTuple});
         evidence.terminalFutureResult=decision.terminalFutureResult??evidence.terminalFutureResult;
         if(decision.outcome!=="DEAD_END"){
           evidence.selectedMatchingWitness=witness;
+          evidence.selectedOperationalMealReservations=[...reservations];
           if(repaired)evidence.geometriesRescuedByRematching+=1;
           return{outcome:decision.outcome,evidence};
         }

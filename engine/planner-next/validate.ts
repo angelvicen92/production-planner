@@ -533,7 +533,13 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const space of requiredSecondarySpaces(problem)) {
     const expected = secondaryTasks(problem.tasks, space.id);
     const actual = secondaryTasks(scheduled, space.id);
-    const occupations = spaceOccupations(actual, preparations, space.id, meals);
+    // An explicitly authorized operational pause is part of the logical
+    // continuous occupation of a REQUIRED secondary space. Arbitrary gaps are
+    // still gaps: only a published meal whose policy names the space bridges it.
+    const operationalBridges=operationalMeals.filter(meal=>meal.spaceIds.includes(space.id))
+      .map(({id,start,end})=>({id:`operational-meal:${id}`,start,end}));
+    const occupations = [...spaceOccupations(actual, preparations, space.id, meals),...operationalBridges]
+      .sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id));
     if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(occupations)) secondaryContinuity += 1;
   }
   for (const space of setupSpaces(problem)) {
@@ -736,7 +742,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if(itinerantUnitResourceAlias)reasonCodes.push("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
     if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
-    const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals);
+    const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals,operationalMeals);
     if (!presence.requiredPolicySatisfied) { reasonCodes.push(`RESOURCE_REQUIRED_PRESENCE_VIOLATION:${resource.id}`); addViolation("RESOURCE_REQUIRED_PRESENCE_VIOLATION","REQUIRED",scheduled.filter(task=>(task.requiredResourceIds??[]).includes(resource.id)),[resource.id],[],{policy:resource.presenceConcentrationPolicy}); }
   }
   const scheduledIds=new Set(scheduled.map(task=>task.id));

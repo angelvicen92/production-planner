@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, PreferenceLevel, Resource, ScheduledResourceMeal, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
+import type { PlannerNextProblem, PreferenceLevel, Resource, ScheduledOperationalMeal, ScheduledResourceMeal, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
 import { effectiveResourceTransitionMinutes } from "./placement";
 
 /** Small fixed weights keep NEXT-003 explicit; callers cannot supply arbitrary numeric weights. */
@@ -63,6 +63,7 @@ export function evaluateResourcePresence(
   tasks: ScheduledTask[],
   scheduledSpaceMeals: ScheduledSpaceMeal[] = [],
   scheduledResourceMeals: ScheduledResourceMeal[] = [],
+  scheduledOperationalMeals: ScheduledOperationalMeal[] = [],
 ): ContinuousResourcePresence {
   const own = tasks
     .filter((task) => (task.requiredResourceIds ?? []).includes(resource.id))
@@ -82,7 +83,16 @@ export function evaluateResourcePresence(
     .map((meal) => ({ id: meal.id, start: Math.max(meal.start, presenceStart), end: Math.min(meal.end, presenceEnd) }))
     .filter((meal) => meal.start < meal.end);
   const directMeals=scheduledResourceMeals.filter(meal=>meal.resourceIds.includes(resource.id)&&own.some(task=>task.end<=meal.start)&&own.some(task=>task.start>=meal.end)).map(meal=>({id:meal.id,start:Math.max(meal.start,presenceStart),end:Math.min(meal.end,presenceEnd)})).filter(meal=>meal.start<meal.end);
-  const authorizedMeals=[...spaceMeals,...directMeals];
+  const operationalMeals=scheduledOperationalMeals.filter(meal=>{
+    if(!own.some(task=>task.end<=meal.start)||!own.some(task=>task.start>=meal.end))return false;
+    if(meal.resourceIds.includes(resource.id))return true;
+    const before=[...own].filter(task=>task.end<=meal.start).sort((a,b)=>b.end-a.end||a.id.localeCompare(b.id))[0];
+    const after=[...own].filter(task=>task.start>=meal.end).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))[0];
+    const scheduledBefore=before&&tasks.find(task=>task.id===before.id),scheduledAfter=after&&tasks.find(task=>task.id===after.id);
+    return scheduledBefore!==undefined&&scheduledAfter!==undefined
+      &&meal.spaceIds.includes(scheduledBefore.spaceId)&&meal.spaceIds.includes(scheduledAfter.spaceId);
+  }).map(meal=>({id:meal.id,start:Math.max(meal.start,presenceStart),end:Math.min(meal.end,presenceEnd)})).filter(meal=>meal.start<meal.end);
+  const authorizedMeals=[...spaceMeals,...directMeals,...operationalMeals];
   const mealUnion = union(authorizedMeals);
   const occupations = union([...taskUnion, ...mealUnion]);
   const productiveTaskMinutes = taskUnion.reduce((sum, interval) => sum + interval.end - interval.start, 0);

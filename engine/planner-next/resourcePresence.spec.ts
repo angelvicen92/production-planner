@@ -120,3 +120,36 @@ test("resource-scoped meal bridges presence without a false operational block",(
   const result=evaluateResourcePresence(resource,tasks,[],[{id:"meal",sourceTaskId:"task:meal",resourceIds:["r"],start:720,end:780,duration:60}]);
   assert.deepEqual({span:result.presenceSpanMinutes,meal:result.authorizedMealMinutes,gap:result.internalGapMinutes,blocks:result.operationalBlockCount,crosses:result.crossesAuthorizedMeal,required:result.requiredPolicySatisfied},{span:120,meal:60,gap:0,blocks:1,crosses:true,required:true});
 });
+
+test("an operational meal is neutral quality, but a single-space pause cannot bridge a resource working elsewhere",()=>{
+  const resource={id:"r",availability:[{start:0,end:120}],presencePreference:"PREFERRED" as const,presenceConcentrationPolicy:"REQUIRED" as const};
+  const tasks=[
+    {id:"before",kind:"technical" as const,spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:0,end:30},
+    {id:"after",kind:"technical" as const,spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:60,end:90},
+  ];
+  const direct={id:"pause",resourceIds:["r"],spaceIds:[],duration:30,start:30,end:60};
+  const authorized=evaluateResourcePresence(resource,tasks,[],[],[direct]);
+  assert.deepEqual({blocks:authorized.operationalBlockCount,idle:authorized.internalGapMinutes,productive:authorized.productiveTaskMinutes,
+    authorized:authorized.authorizedMealMinutes,required:authorized.requiredPolicySatisfied},{blocks:1,idle:0,productive:60,authorized:30,required:true});
+  const wrongSpace=evaluateResourcePresence(resource,[tasks[0]!,{...tasks[1]!,spaceId:"other"}],[],[],
+    [{...direct,resourceIds:[],spaceIds:["covered"]}]);
+  assert.deepEqual({blocks:wrongSpace.operationalBlockCount,idle:wrongSpace.internalGapMinutes,authorized:wrongSpace.authorizedMealMinutes,
+    required:wrongSpace.requiredPolicySatisfied},{blocks:2,idle:30,authorized:0,required:false});
+});
+
+
+test("canonical validation lets an authorized operational meal bridge REQUIRED resource presence",()=>{
+  const resource={id:"r",availability:[{start:0,end:120}],presencePreference:"PREFERRED" as const,presenceConcentrationPolicy:"REQUIRED" as const};
+  const tasks=[
+    {id:"before",kind:"auxiliary" as const,participantId:"p1",spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:0,end:30},
+    {id:"after",kind:"auxiliary" as const,participantId:"p2",spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:60,end:90},
+  ];
+  const meal={id:"pause",resourceIds:["r"],spaceIds:[],duration:30,start:30,end:60};
+  const problem:PlannerNextProblem={day:{start:0,end:120},spaces:[{id:"covered",availability:[{start:0,end:120}]}],
+    resources:[resource],participants:[{id:"p1",availability:[{start:0,end:120}]},{id:"p2",availability:[{start:0,end:120}]}],coaches:[],tasks,mainFlow:{spaceId:"covered",preferredEnd:120,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
+    operationalMealPolicies:[{id:"pause",window:{start:30,end:60},duration:30,resourceIds:["r"],spaceIds:[]}],
+    budget:{bestK:1,maxBacktracks:0,maxPatterns:10,maxBranchExpansions:100},searchPolicy:"EXACT_CONSTRUCTIVE"};
+  const validation=validatePlan(problem,tasks,[],[],[],[],[],[],[meal]);
+  assert.equal(validation.hardValid,true,validation.reasonCodes.join(","));
+  assert.ok(!validation.reasonCodes.some(code=>code.startsWith("RESOURCE_REQUIRED_PRESENCE_VIOLATION")));
+});
