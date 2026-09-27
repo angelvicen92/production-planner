@@ -84,6 +84,15 @@ function macroCompetitionProblem(options: { setup?: [number, number]; rounds?: [
   return input;
 }
 
+test("a fully protected round remains hard context without becoming a pending macro",()=>{
+  const input=macroCompetitionProblem({rounds:[0,30],resource:[40,70]});
+  const fixed=input.tasks.filter(task=>task.id==="round-a"||task.id==="round-b")
+    .map(task=>({...task,start:0,end:task.duration}));
+  const result=runExactItinerantPlanSearch(input,{fixedPlacements:fixed,fixedPlacementsAsContext:true});
+  assert.ok(result.evidence.standaloneBranches>0);
+  assert.equal(result.evidence.roundSynchronizationSearchInvocations,0);
+});
+
 function coreLeafContinuationProblem(): PlannerNextProblem {
   const input = problem([auxiliary("standalone", "core", [{ start: 60, end: 70 }])]);
   const availability = [{ start: 0, end: 120 }];

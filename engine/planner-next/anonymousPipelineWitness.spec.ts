@@ -208,6 +208,35 @@ describe("anonymous structural pipeline witness",()=>{
     assert.ok(style1.start<style0.start);
   });
 
+  it("keeps pending-work pressure invariant across current and analytical-future classification",()=>{
+    const pending={id:"pending-p0",kind:"auxiliary" as const,participantId:"p0",duration:30,
+      spaceId:"in",availability:windows,dependencies:[]};
+    const future=problem(["A","A"]);future.analyticalFutureParticipantTasks=[pending];
+    const current=problem(["A","A"]);current.tasks.push(pending);
+    current.analyticalRemainingParticipantTasks=[pending];
+    const architecture={pattern:["A","A"],slots:[180,195]};
+    const placement=(p:PlannerNextProblem)=>materializeNominalPipelineWitness(p,architecture).scheduledTasks
+      .filter(task=>task.kind==="auxiliary"&&task.id.startsWith("style")).map(task=>[task.id,task.start]);
+    assert.deepEqual(placement(current),placement(future));
+    assert.ok(placement(current).find(([id])=>id==="style0")![1]!<placement(current).find(([id])=>id==="style1")![1]!);
+  });
+
+  it("deduplicates pending pressure and remains invariant when pressure inputs are reordered",()=>{
+    const p=problem(["A","A"]);
+    const first={id:"pending-a",kind:"auxiliary" as const,participantId:"p0",duration:20,
+      spaceId:"in",availability:windows,dependencies:[]};
+    const second={...first,id:"pending-b",duration:10};
+    p.analyticalRemainingParticipantTasks=[first,second];
+    p.analyticalFutureTechnicalChains=[{policy:{id:"future",orderedTaskIds:[first.id],adjacency:"REQUIRED",
+      resourceContinuity:"REQUIRED",requiredResourceIds:[]},tasks:[first]}];
+    const architecture={pattern:["A","A"],slots:[180,195]};
+    const pressure=(value:PlannerNextProblem)=>{let result:readonly string[]=[];
+      buildAnonymousPipelineWitness(value,architecture,diagnostic=>{result=diagnostic.pressureOrder;});return result;};
+    const reordered={...p,tasks:[...p.tasks].reverse(),analyticalRemainingParticipantTasks:[second,first],
+      analyticalFutureTechnicalChains:[...p.analyticalFutureTechnicalChains!].reverse()};
+    assert.deepEqual(pressure(p),pressure(reordered));
+  });
+
   it("does not promote exhausted reduced styling geometry to hard infeasibility",()=>{
     const p=problem();
     p.tasks.find(task=>task.id==="style0")!.availability=[{start:0,end:10}];

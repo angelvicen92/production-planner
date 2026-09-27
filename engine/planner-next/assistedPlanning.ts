@@ -338,6 +338,15 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  // Entry matching needs a classification-independent view of remaining work:
+  // moving a pending task from analytical future into the current scope must not
+  // make its pressure disappear. Protected work remains hard context, but is no
+  // longer remaining load. The explicit status-derived eligibility authority
+  // prevents fixed/completed work from being inferred from temporal domains.
+  problem.analyticalRemainingParticipantTasks = problem.tasks.filter((task) =>
+    analyticalFutureEligibleTaskIds.has(task.id) && !fixedById.has(task.id) && task.participantId !== undefined
+      && (scopeIds.includes(task.id) || !included.has(task.id)))
+    .map((task) => structuredClone(task));
   // Preserve the complete task-prerequisite closure needed by analytical
   // participant futures. These vertices remain executable/supporting context;
   // the list only makes them visible to the read-only future reservation probe.
