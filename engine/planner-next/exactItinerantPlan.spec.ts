@@ -93,7 +93,7 @@ test("a fully protected round remains hard context without becoming a pending ma
   assert.equal(result.evidence.roundSynchronizationSearchInvocations,0);
   assert.deepEqual(result.evidence.firstHardValidCoreTasks.filter(task=>task.protected).map(task=>task.id).sort(),
     ["round-a","round-b"]);
-  assert.ok(result.evidence.firstHardValidCoreTasks.every(task=>task.end>task.start));
+  assert.ok(result.evidence.firstHardValidCoreTasks.every(task=>task.end>task.start&&task.spaceId.length>0));
 });
 
 function coreLeafContinuationProblem(): PlannerNextProblem {
