@@ -121,6 +121,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     orderConstraint: "UNSPECIFIED",
     reentry: "FORBIDDEN",
     preparationMinutesBetweenFamilies: expansion.rules.setup.preparationMinutesBetweenFamilies,
+    continuity: "PREFERRED",
   }];
   input.roundSynchronizations = [{
     id: "a2-totales-rounds",

@@ -189,7 +189,12 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable resource ${id}`);
-    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes };
+    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])],
+      presencePreference: source.presencePreference ?? "OFF" as const,
+      ...(source.presenceConcentrationPolicy === undefined ? {} : {
+        presenceConcentrationPolicy: source.presenceConcentrationPolicy,
+      }),
+      transitionMinutes: config.resourceTransitionMinutes };
   });
   const coaches = [...coachResourceIds].sort((a, b) => a - b).map((id) => {
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
@@ -215,10 +220,10 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     if (setupPolicy.orderConstraint === "EXPLICIT") {
       const familyOrder = setupPolicy.familyOrder!.map(canonicalFamily);
       const preparationMinutesByFamily = Object.fromEntries(familyOrder.slice(1).map((family) => [family, setupPolicy.preparationMinutesBetweenFamilies] as const).sort(([left], [right]) => compare(left, right)));
-      return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
+      return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: setupPolicy.continuity ?? "REQUIRED" as const, setupPolicy: { familyOrder, reentry: "FORBIDDEN" as const, preparationMinutesByFamily } };
     }
     const familyOrder = [...setupPolicy.families].sort(compare).map(canonicalFamily);
-    return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: "REQUIRED" as const, setupPolicy: {
+    return { id: canonicalSpace, availability: [window(availability)], secondaryContinuity: setupPolicy.continuity ?? "REQUIRED" as const, setupPolicy: {
       familyOrder,
       flexibleFamilyOrder: true,
       reentry: "FORBIDDEN" as const,

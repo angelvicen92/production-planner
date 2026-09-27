@@ -11,7 +11,7 @@ import {
   type ExactFutureFeasibilityCausalAssessment,
 } from "./exactMainAndFeederCore";
 import type { MainFeederArchitecture, MainFeederStructuralRejection } from "./mainFlowPatterns";
-import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
+import { exploreExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
@@ -19,6 +19,7 @@ import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
+import { compareOperationalQuality, evaluateOperationalQuality, type OperationalQuality } from "./operationalQuality";
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
@@ -329,6 +330,12 @@ export interface ExactItinerantPlanEvidence {
   selectedCompleteFingerprint: string | null;
   firstCompleteQuality: CompleteParticipantQuality | null;
   selectedCompleteQuality: CompleteParticipantQuality | null;
+  firstHardValidQuality: OperationalQuality | null;
+  selectedQuality: OperationalQuality | null;
+  completeCandidatesObserved: number;
+  incumbentReplacements: number;
+  optimalityProven: boolean;
+  stoppedByBudget: boolean;
   setupBlockBranchesExplored: number;
   setupBlockSearchInvocations: number;
   setupBlockStartsExplored: number;
@@ -756,6 +763,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if (transport !== null && exact && mealWitness?.complete && operationalMealWitness?.complete && validationAccepted) {
       evidence.terminalTransportWitness = terminalTransportWitness;
       const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
+      const operationalQuality=evaluateOperationalQuality(problem,candidate,preparations,coreMeals);
       const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
         maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
         totalGapCount: quality.totalGapCount, totalSpaceChangeCount: quality.totalSpaceChangeCount };
@@ -764,10 +772,16 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       if (!found) {
         found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; foundOperationalMeals=operationalMealWitness; evidence.firstCompleteFingerprint = candidateFingerprint;
         evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact; evidence.selectedCompleteQuality = compact;
-      } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
+        evidence.firstHardValidQuality=operationalQuality;evidence.selectedQuality=operationalQuality;
+      } else if (compareOperationalQuality(operationalQuality,evidence.selectedQuality!) === 1
+        || (compareOperationalQuality(operationalQuality,evidence.selectedQuality!)===0
+          &&compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1)) {
         found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; foundOperationalMeals=operationalMealWitness; evidence.completeIncumbentReplacements += 1;
         evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;
+        evidence.selectedQuality=operationalQuality;
       }
+      evidence.completeCandidatesObserved=evidence.completePlansObserved;
+      evidence.incumbentReplacements=evidence.completeIncumbentReplacements;
       return selection === "FIRST_HARD_VALID" ? "FOUND" : "DEAD_END";
     }
     return "DEAD_END";
@@ -1086,7 +1100,8 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
     : unit.kind === "JOINT" ? unit.tasks.length : 0;
-  return { unit, id: unit.id, domainSize:measure.domainSize, domainMeasure:"hard-valid-top-level-macro-placements", domainExact:true,
+  return { unit, id: unit.id, domainSize:measure.domainSize, domainMeasure:"hard-valid-top-level-macro-placements",
+    domainExact:unit.kind==="SETUP_GROUP"?Boolean((measure as {domainExact?:boolean}).domainExact):true,
     structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
     hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
     exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
@@ -1243,7 +1258,14 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
-    const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
+    let childOutcome:StandaloneOutcome="DEAD_END";
+    const generated = exploreExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger,
+      (candidate) => {
+        candidatesEvaluated += 1;
+        childOutcome = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
+        if (childOutcome === "DEAD_END") { evidence.standaloneBacktracks += 1; return "CONTINUE"; }
+        return "FOUND";
+      });
     evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
     evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
     evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
@@ -1252,11 +1274,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
     mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
     if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
-    for (const candidate of generated.candidates) {
-      candidatesEvaluated += 1;
-      const child = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
-      if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;
-    }
+    if (generated.outcome === "FOUND") return childOutcome;
   } else if (unit.kind === "ROUND_SYNCHRONIZATION") {
     evidence.roundSynchronizationSearchInvocations += 1;
     const explored = exploreExactRoundSynchronizationPolicy(problem, unit.policy, [...coreTasks, ...placed], preparations,
@@ -1292,6 +1310,8 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
 };
 const searchOutcome = searchMacroUnits(macroUnits, [], [...fixedSetupPreparations], [], 0, []);
 const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
+evidence.stoppedByBudget=searchOutcome==="BUDGET_EXHAUSTED";
+evidence.optimalityProven=selection==="BEST_DOMINATING_WITHIN_BUDGET"&&found!==null&&searchOutcome==="DEAD_END";
 evidence.standaloneBranchesAfterFirstOrdinaryCompleteLeaf = evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf === null
   ? 0 : ledger.standaloneBranches - invocationStartBranches - evidence.standaloneBranchesBeforeFirstOrdinaryCompleteLeaf;
 const dominantBlocker = Object.entries(evidence.standaloneBlockingTaskCounts)
@@ -1443,6 +1463,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     completePlansObserved: 0, completeIncumbentReplacements: 0, completeSelectionMode,
     completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
     firstCompleteQuality: null, selectedCompleteQuality: null,
+    firstHardValidQuality:null,selectedQuality:null,completeCandidatesObserved:0,incumbentReplacements:0,
+    optimalityProven:false,stoppedByBudget:false,
     setupBlockBranchesExplored: 0, setupBlockSearchInvocations: 0, setupBlockStartsExplored: 0,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
     setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockPermutationBranchesAvoided: 0,
@@ -1816,6 +1838,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     if (standalone.outcome === "BUDGET_EXHAUSTED") {
       evidence.completeSelectionStoppedByBudget = completeSelectionMode === "BEST_DOMINATING_WITHIN_BUDGET" && standalone.tasks !== null;
+      evidence.stoppedByBudget=evidence.completeSelectionStoppedByBudget;
       return "BUDGET_EXHAUSTED";
     }
     if (standalone.outcome === "DEAD_END" || !standalone.tasks) {
@@ -2015,10 +2038,9 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
     coreOrderer: orderer.options,
-    // Assisted search protects an accepted baseline and needs one canonical
-    // hard-valid completion around it; spending the full residual budget on
-    // incumbent domination cannot improve the human-protected placements.
-    standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
+    // Protected placements remain immutable, but the pending operational unit
+    // can still have materially different hard-valid geometries around them.
+    standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET",
     causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, preferredArchitecture,
     preferredBundleCandidate:matchedBundles??undefined,repairPreferredBundleCandidate,
   });

@@ -314,6 +314,8 @@ function sourceProjection(input: EngineInput): unknown {
     isAvailable: resource.isAvailable,
     availabilityStart: projectAvailabilityEndpoint(resource, "availabilityStart"),
     availabilityEnd: projectAvailabilityEndpoint(resource, "availabilityEnd"),
+    presencePreference: resource.presencePreference,
+    presenceConcentrationPolicy: resource.presenceConcentrationPolicy,
   }));
   const endpoint = (row: Record<string, unknown>, key: string): unknown => Object.prototype.hasOwnProperty.call(row, key) && row[key] === undefined ? { undefined: true } : Object.prototype.hasOwnProperty.call(row, key) ? row[key] : { absent: true };
   const planZoneSettings = input.planZoneSettings?.map((row) => ({ id: endpoint(row as unknown as Record<string, unknown>, "id"), zoneId: row.zoneId, availabilityStart: endpoint(row as unknown as Record<string, unknown>, "availabilityStart"), availabilityEnd: endpoint(row as unknown as Record<string, unknown>, "availabilityEnd"), source: endpoint(row as unknown as Record<string, unknown>, "source") }));
@@ -924,6 +926,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (families.length === 0 || invalidFamilies.length || duplicateFamilies.length) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.families`, "Setup policy families must be a non-empty set of trimmed strings.", { invalidFamilies, duplicateFamilies });
     if (policy.oneBlockPerFamily !== true) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.oneBlockPerFamily`, "oneBlockPerFamily must be exactly true.");
     if (policy.reentry !== "FORBIDDEN") addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.reentry`, "reentry must be exactly FORBIDDEN.");
+    if (policy.continuity !== undefined && (typeof policy.continuity !== "string" || !["REQUIRED", "PREFERRED", "OFF"].includes(policy.continuity)))
+      addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.continuity`, "Setup continuity must be REQUIRED, PREFERRED, or OFF.", { continuity: policy.continuity });
     const prep = policy.preparationMinutesBetweenFamilies;
     if (!isPositiveInteger(prep) || (isPositiveInteger(timeGrid) && isPositiveInteger(prep) && prep % timeGrid !== 0)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.preparationMinutesBetweenFamilies`, "Preparation minutes must be a positive integer compatible with timeGridMinutes.", { preparationMinutesBetweenFamilies: prep, timeGridMinutes: timeGrid });
     if (policy.orderConstraint === "UNSPECIFIED") {

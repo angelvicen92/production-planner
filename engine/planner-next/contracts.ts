@@ -65,7 +65,7 @@ export interface CoachRouteTransition {
   minutes: Minute;
 }
 
-export type SecondaryContinuity = "OFF" | "REQUIRED";
+export type SecondaryContinuity = "OFF" | "PREFERRED" | "REQUIRED";
 
 export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
 export type PresenceConcentrationPolicy = "OFF" | "PREFERRED" | "REQUIRED";

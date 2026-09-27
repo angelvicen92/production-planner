@@ -123,6 +123,8 @@ export interface PlanResourceItemInput {
   isAvailable: boolean;
   availabilityStart?: string | null;
   availabilityEnd?: string | null;
+  presencePreference?: "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
+  presenceConcentrationPolicy?: "OFF" | "PREFERRED" | "REQUIRED";
 }
 
 export interface PlanZoneAvailabilityInput {
@@ -240,6 +242,8 @@ export interface EngineInputSetupPolicyInput {
   familyOrder?: string[];
   reentry: "FORBIDDEN";
   preparationMinutesBetweenFamilies: number;
+  /** Whether otherwise hard-valid idle inside the setup unit is forbidden or optimized. */
+  continuity?: "REQUIRED" | "PREFERRED" | "OFF";
 }
 
 export interface EngineInputRoundSynchronizationLaneInput {

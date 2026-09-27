@@ -254,14 +254,14 @@ export function preflight(problem: PlannerNextProblem): string[] {
         }
       }
       if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
-      if (space.secondaryContinuity !== "REQUIRED") reasons.add("SETUP_REQUIRES_REQUIRED_CONTINUITY");
+      if (space.secondaryContinuity === undefined) reasons.add("SETUP_REQUIRES_EXPLICIT_CONTINUITY");
       const own = tasks.filter((task) => task?.spaceId === space.id);
       if (own.some((task) => task.kind !== "auxiliary")) reasons.add("SETUP_WITH_NON_AUXILIARY_TASK");
       if (own.some((task) => typeof task.setupFamilyId !== "string" || task.setupFamilyId.length === 0)) reasons.add("MISSING_SETUP_FAMILY");
       if (own.some((task) => typeof task.setupFamilyId === "string" && !order.includes(task.setupFamilyId))) reasons.add("UNKNOWN_SETUP_FAMILY");
       if (order.some((family) => !own.some((task) => task.setupFamilyId === family))) reasons.add("EMPTY_SETUP_FAMILY");
     }
-    if (space.secondaryContinuity !== undefined && space.secondaryContinuity !== "OFF" && space.secondaryContinuity !== "REQUIRED") reasons.add("INVALID_SECONDARY_CONTINUITY");
+    if (space.secondaryContinuity !== undefined && space.secondaryContinuity !== "OFF" && space.secondaryContinuity !== "PREFERRED" && space.secondaryContinuity !== "REQUIRED") reasons.add("INVALID_SECONDARY_CONTINUITY");
     if (space.secondaryContinuity !== "REQUIRED") continue;
     const own = tasks.filter((task) => task?.spaceId === space.id);
     const auxiliaryCount = own.filter((task) => task?.kind === "auxiliary").length;
