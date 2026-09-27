@@ -34,6 +34,7 @@ import { assessCoreArrivalTransportFeasibility, materializeTerminalTransport, tr
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
+import { generateExactPreferredResourceUnitCandidates } from "./exactPreferredResourceUnit";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
   materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
@@ -337,6 +338,9 @@ export interface ExactItinerantPlanEvidence {
   setupBlockMatchingAttempts: number;
   setupBlockMatchingSuccesses: number;
   setupBlockPermutationBranchesAvoided: number;
+  preferredResourceUnit: { unitId:string; memberTaskCount:number; resourceTaskCount:number; setupTaskCount:number;
+    sharedResourceId:string; geometryCount:number; matchingAttempts:number; matchingSuccesses:number;
+    supportingRematches:number; selectedPresence:[number,number,number]|null } | null;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -1039,16 +1043,35 @@ const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((
 const technicalRepresentativeIds=new Set(technicalItems.flatMap(({tasks})=>tasks.map(({id})=>id)));
 const jointItems = jointGroupIds(pending).filter((id)=>!jointGroupMembers(pending,id).some(({id:taskId})=>technicalRepresentativeIds.has(taskId))).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));
-const resourceItems = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
+const preferredResourceIds=new Set(problem.resources.filter(resource=>resource.presenceConcentrationPolicy==="PREFERRED").map(resource=>resource.id));
+const rawResourceTasks = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
-  && !dynamicTransportIds.has(task.id)).map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] }));
+  && !dynamicTransportIds.has(task.id));
+const preferredGroups=new Map<string,Task[]>();
+const individualResourceTasks:Task[]=[];
+for(const task of rawResourceTasks){const key=(task.requiredResourceIds??[]).filter(id=>preferredResourceIds.has(id)).sort().join("+");
+  if(key)preferredGroups.set(key,[...(preferredGroups.get(key)??[]),task]);else individualResourceTasks.push(task);}
+const resourceItems = [...individualResourceTasks.map((task) => ({ id: `resource:${task.id}`, kind: "RESOURCE_TASK" as const, tasks: [task] })),
+  ...[...preferredGroups].map(([key,tasks])=>tasks.length===1?({id:`resource:${tasks[0]!.id}`,kind:"RESOURCE_TASK" as const,tasks})
+    :({id:`preferred-resource:${key}`,kind:"RESOURCE_GROUP" as const,tasks:tasks.sort(byId)}))];
 const roundItems = roundPolicies.filter((policy)=>policy.lanes.some((lane)=>lane.taskIds.some((id)=>roundPendingIds.has(id))))
   .map((policy) => ({ id: `round:${policy.id}`, kind: "ROUND_SYNCHRONIZATION" as const, policy,
   tasks: policy.lanes.flatMap((lane) => lane.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!)).filter(Boolean).sort(byId) }));
 const setupItems = setupGroups.map((group) => ({ id: `setup:${group.spaceId}`, kind: "SETUP_GROUP" as const, ...group }));
+const absorbedResourceIds=new Set<string>(),absorbedSetupIds=new Set<string>();
+const preferredResourceUnits=[...preferredResourceIds].sort().flatMap(resourceId=>{
+  const resource=resourceItems.find(item=>item.tasks.every(task=>task.requiredResourceIds?.includes(resourceId)));
+  const setup=setupItems.find(item=>item.tasks.length>0&&item.tasks.every(task=>task.requiredResourceIds?.includes(resourceId)));
+  if(!resource||!setup)return [];
+  absorbedResourceIds.add(resource.id);absorbedSetupIds.add(setup.id);
+  return [{id:`preferred-resource-unit:${resourceId}`,kind:"PREFERRED_RESOURCE_UNIT" as const,resourceId,
+    resourceTasks:resource.tasks,setupTasks:setup.tasks,tasks:[...resource.tasks,...setup.tasks]}];
+});
 type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
-  | typeof roundItems[number] | typeof setupItems[number];
-const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems, ...resourceItems, ...roundItems, ...setupItems]
+  | typeof roundItems[number] | typeof setupItems[number] | typeof preferredResourceUnits[number];
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems,
+  ...resourceItems.filter(item=>!absorbedResourceIds.has(item.id)),...roundItems,
+  ...setupItems.filter(item=>!absorbedSetupIds.has(item.id)),...preferredResourceUnits]
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));
 const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
@@ -1075,6 +1098,8 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   if(unit.kind==="TECHNICAL_CHAIN"){evidence.technicalChainMacroDomainQueries+=1;if(measure)evidence.technicalChainMacroDomainCacheHits+=1;else evidence.technicalChainMacroDomainCacheMisses+=1;}
   if(!measure){
     if(unit.kind==="RESOURCE_TASK")measure={domainSize:taskDomain(unit.tasks[0]!)};
+    else if(unit.kind==="RESOURCE_GROUP")measure={domainSize:Math.min(...unit.tasks.map(taskDomain))};
+    else if(unit.kind==="PREFERRED_RESOURCE_UNIT")measure={domainSize:Math.min(...unit.tasks.map(taskDomain))};
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
     else if(unit.kind==="ROUND_SYNCHRONIZATION")measure=probeExactRoundSynchronizationMacroDomain(problem,unit.policy,allPlaced,preparations,roundPreparations,coreMeals);
     else if(unit.kind==="SETUP_GROUP")measure=probeExactSetupMacroDomain(problem,unit.tasks,allPlaced,preparations,coreMeals);
@@ -1159,7 +1184,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   const unit = selected.unit;
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
   let candidatesEvaluated=0;
-  const macroDomainAuthority=({JOINT:"standaloneJointGroupStartDomain",RESOURCE_TASK:"standaloneForwardDynamicDomain",
+  const macroDomainAuthority=({JOINT:"standaloneJointGroupStartDomain",RESOURCE_TASK:"standaloneForwardDynamicDomain",RESOURCE_GROUP:"preferredResourceGroupDomain",PREFERRED_RESOURCE_UNIT:"exactPreferredResourceUnit",
     ROUND_SYNCHRONIZATION:"probeExactRoundSynchronizationMacroDomain",SETUP_GROUP:"probeExactSetupMacroDomain",
     TECHNICAL_CHAIN:"probeExactTechnicalChainMacroDomain"} as const)[unit.kind];
   const chainContext=unit.kind==="TECHNICAL_CHAIN"?partialTechnicalChainContext(problem,unit.tasks,[...coreTasks,...placed]):null;
@@ -1219,7 +1244,34 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(rootTrace)rootTrace.enteredRecurseAfterMacro=true;
     return finish(searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]));
   };
-  if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
+  if(unit.kind==="PREFERRED_RESOURCE_UNIT"){
+    const generated=generateExactPreferredResourceUnitCandidates({problem,resourceId:unit.resourceId,
+      resourceTasks:unit.resourceTasks,setupTasks:unit.setupTasks,placed:[...coreTasks,...placed],preparations,meals:coreMeals,ledger});
+    evidence.setupBlockSearchInvocations+=1;evidence.setupBlockCompleteCandidateCount+=generated.candidates.length;
+    evidence.preferredResourceUnit={unitId:unit.id,memberTaskCount:unit.tasks.length,resourceTaskCount:unit.resourceTasks.length,
+      setupTaskCount:unit.setupTasks.length,sharedResourceId:unit.resourceId,geometryCount:generated.geometryCount,
+      matchingAttempts:generated.matchingAttempts,matchingSuccesses:generated.matchingSuccesses,supportingRematches:0,selectedPresence:null};
+    for(const candidate of generated.candidates){candidatesEvaluated++;const outcome=recurse([...candidate.tasks],
+      [...preparations,...candidate.preparations]);if(outcome!=="DEAD_END"){
+        evidence.preferredResourceUnit={...evidence.preferredResourceUnit,selectedPresence:[...candidate.presence]};return outcome;
+      }evidence.standaloneBacktracks++;}
+    if(generated.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+  } else if(unit.kind==="RESOURCE_GROUP"){
+    const scheduleGroup=(remaining:readonly Task[],scheduled:ScheduledTask[]):StandaloneOutcome=>{
+      if(!remaining.length)return recurse(scheduled);
+      const domains=remaining.map(task=>({task,domain:standaloneForwardDynamicDomain(problem,task,[...coreTasks,...placed,...scheduled],standaloneForwardStaticDomain(problem,task,coreMeals))}))
+        .sort((a,b)=>a.domain.eligibleStartCount-b.domain.eligibleStartCount||a.task.id.localeCompare(b.task.id));
+      const selectedTask=domains[0]!;
+      for(const start of selectedTask.domain.starts()){
+        if(!ledger.consume("STANDALONE"))return "BUDGET_EXHAUSTED";
+        candidatesEvaluated++;const next=scoreAuxiliaryTask(problem,selectedTask.task,start,[...coreTasks,...placed,...scheduled]).scheduled;
+        const outcome=scheduleGroup(remaining.filter(task=>task.id!==selectedTask.task.id),[...scheduled,next]);
+        if(outcome!=="DEAD_END")return outcome;evidence.standaloneBacktracks++;
+      }
+      return "DEAD_END";
+    };
+    const outcome=scheduleGroup(unit.tasks,[]);if(outcome!=="DEAD_END")return outcome;
+  } else if (unit.kind === "JOINT" || unit.kind === "RESOURCE_TASK") {
     const duration = unit.tasks[0]!.duration;
     const fullGridCount = Math.max(0, Math.floor((problem.day.end - duration - problem.day.start) / 5) + 1);
     const domain = unit.kind === "JOINT" ? standaloneJointGroupStartDomain(problem, unit.tasks, [...coreTasks, ...placed], coreMeals)
@@ -1446,6 +1498,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     setupBlockBranchesExplored: 0, setupBlockSearchInvocations: 0, setupBlockStartsExplored: 0,
     setupBlockCompleteCandidateCount: 0, setupBlockBudgetExhaustions: 0,
     setupBlockMatchingAttempts: 0, setupBlockMatchingSuccesses: 0, setupBlockPermutationBranchesAvoided: 0,
+    preferredResourceUnit:null,
     setupFamilyOrderCandidateCountsBySpaceId: {}, selectedSetupFamilySequenceBySpaceId: {},
     selectedSetupPreparationIds: [],
     roundSynchronizationSearchInvocations: 0, roundSynchronizationStartCandidates: 0,

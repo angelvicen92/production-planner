@@ -86,7 +86,11 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
   input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
   input.zoneResourceAssignments = {};
-  input.spaceResourceAssignments = {};
+  // Daily effective-resource authority: CAM 2 serves the complete P15 unit,
+  // independently of the nominal task template used in either member space.
+  input.spaceResourceAssignments = Object.fromEntries(["p15-croma", "p15-estrellas-sillon"]
+    .map(space => [spaceId.get(space)!, [resourceId.get("cam-2")!]]));
+  input.resourcePresenceConcentrationPolicies = { [resourceId.get("cam-2")!]: "PREFERRED" };
   input.zoneResourceTypeRequirements = {};
   input.spaceResourceTypeRequirements = {};
   input.resourceItemComponents = {};

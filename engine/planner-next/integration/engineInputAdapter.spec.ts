@@ -288,6 +288,15 @@ test("generic resource locks are projected once, preserve all distinct IDs, and 
   assert.deepEqual(supported(reversed), first);
 });
 
+test("generic resource presence policy is projected without changing effective assignment", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.tasks.find(task => task.id === 105)!.assignedResourceIds = [504];
+  input.resourcePresenceConcentrationPolicies = { 504: "PREFERRED" };
+  const result = supported(input);
+  assert.equal(result.problem.resources.find(resource => resource.id === "plan-resource:504")?.presenceConcentrationPolicy, "PREFERRED");
+  assert.ok(result.problem.tasks.find(task => task.id === "task:105")?.requiredResourceIds?.includes("plan-resource:504"));
+});
+
 function withAnchor(): EngineInput {
   const input = createSupportedEngineInputAdapterFixture();
   for (const id of [106, 107, 108, 109]) input.tasks.push({ id, planId: 701, templateId: 900 + id, status: "pending", durationOverrideMin: 30, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402, assignedResourceIds: [504] });

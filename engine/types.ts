@@ -360,6 +360,8 @@ export interface EngineInput {
   // Recursos anclados a ESPACIOS dentro del plan (override del snapshot)
   // Key: spaceId -> planResourceItemIds
   spaceResourceAssignments: Record<number, number[]>;
+  /** Optional search policy for concrete daily resources, keyed by plan resource item id. */
+  resourcePresenceConcentrationPolicies?: Record<number, "OFF" | "PREFERRED" | "REQUIRED">;
 
   // ✅ Jerarquía de espacios para herencia de pools
   // Key: spaceId -> parentSpaceId (o null si no tiene)
