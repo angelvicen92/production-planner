@@ -742,7 +742,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if(itinerantUnitResourceAlias)reasonCodes.push("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
     if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
-    const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals);
+    const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals,operationalMeals);
     if (!presence.requiredPolicySatisfied) { reasonCodes.push(`RESOURCE_REQUIRED_PRESENCE_VIOLATION:${resource.id}`); addViolation("RESOURCE_REQUIRED_PRESENCE_VIOLATION","REQUIRED",scheduled.filter(task=>(task.requiredResourceIds??[]).includes(resource.id)),[resource.id],[],{policy:resource.presenceConcentrationPolicy}); }
   }
   const scheduledIds=new Set(scheduled.map(task=>task.id));
