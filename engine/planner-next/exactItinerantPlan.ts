@@ -522,7 +522,7 @@ function recordTechnicalChainFutureReservation(evidence:ExactItinerantPlanEviden
 }
 
 type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
-interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
+interface Positions { task: Task; variants: Array<{ task:Task; starts:number[] }>; starts: number[]; effectiveDeadline: number }
 export type StandaloneForwardStartDomainMode = "STATIC_DOMAIN" | "FULL_GRID";
 export type JointGroupStartDomainMode = "ANALYTIC_DOMAIN" | "FULL_GRID";
 type ClosedStartInterval = { start: number; end: number };
@@ -655,10 +655,11 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
   const ordinaryStaticDomainCache = new Map<string, StandaloneForwardStaticDomain>();
   const ordinaryStaticDomain = (task: Task): StandaloneForwardStaticDomain => {
-    const cached = ordinaryStaticDomainCache.get(task.id);
+    const key=`${task.id}|${task.itinerantUnitId??"-"}`;
+    const cached = ordinaryStaticDomainCache.get(key);
     if (cached) return cached;
     const domain = standaloneForwardStaticDomain(problem, task, coreMeals);
-    ordinaryStaticDomainCache.set(task.id, domain);
+    ordinaryStaticDomainCache.set(key, domain);
     return domain;
   };
   const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
@@ -867,30 +868,40 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const alternatives: Positions[] = [];
     const allPlaced = [...coreTasks, ...placed];
     for (const task of [...remaining].sort(byId)) {
+      const variants=(task.allowedItinerantUnitIds?.length&&!task.itinerantUnitId
+        ?[...task.allowedItinerantUnitIds].sort().map(itinerantUnitId=>({...task,itinerantUnitId}))
+        :[task]);
+      const variantDomains:Array<{task:Task;starts:number[]}>=[];
+      let largestStaticDomain=0;
       evidence.ordinaryDomainQueries += 1;
-      const staticDomain = ordinaryStaticDomain(task);
-      const signature = standaloneForwardAuthoritySignature(problem, task, allPlaced, coreMeals, staticDomain, "STATIC_DOMAIN");
-      let domain = ordinaryDomainCache.get(signature);
-      if (domain) evidence.ordinaryDomainCacheHits += 1;
-      else {
-        evidence.ordinaryDomainCacheMisses += 1;
-        evidence.ordinaryAnalyticDomainBuilds += 1;
-        evidence.ordinaryDomainRecomputations += 1;
-        domain = standaloneForwardDynamicDomain(problem, task, allPlaced, staticDomain);
-        if (ordinaryDomainCache.size >= 2048) ordinaryDomainCache.delete(ordinaryDomainCache.keys().next().value!);
-        ordinaryDomainCache.set(signature, domain);
+      for(const variant of variants){
+        const staticDomain = ordinaryStaticDomain(variant);
+        largestStaticDomain=Math.max(largestStaticDomain,staticDomain.eligibleStartCount);
+        const signature = standaloneForwardAuthoritySignature(problem, variant, allPlaced, coreMeals, staticDomain, "STATIC_DOMAIN");
+        let domain = ordinaryDomainCache.get(signature);
+        if (domain) evidence.ordinaryDomainCacheHits += 1;
+        else {
+          evidence.ordinaryDomainCacheMisses += 1;
+          evidence.ordinaryAnalyticDomainBuilds += 1;
+          evidence.ordinaryDomainRecomputations += 1;
+          domain = standaloneForwardDynamicDomain(problem, variant, allPlaced, staticDomain);
+          if (ordinaryDomainCache.size >= 2048) ordinaryDomainCache.delete(ordinaryDomainCache.keys().next().value!);
+          ordinaryDomainCache.set(signature, domain);
+        }
+        evidence.ordinaryAnalyticEligibleStarts += domain.eligibleStartCount;
+        if(domain.eligibleStartCount>0)variantDomains.push({task:variant,starts:[...domain.starts()]});
       }
-      evidence.ordinaryAnalyticEligibleStarts += domain.eligibleStartCount;
-      if (domain.eligibleStartCount === 0) {
+      if (variantDomains.length === 0) {
         recordDeadEnd({kind:"ORDINARY_ZERO_DYNAMIC_DOMAIN",phase:"ORDINARY",depth,
-          workItemId:task.id,workItemKind:task.kind,taskIds:[task.id],domainBefore:staticDomain.eligibleStartCount,
+          workItemId:task.id,workItemKind:task.kind,taskIds:[task.id],domainBefore:largestStaticDomain,
           domainAfter:0,candidatesEvaluated:0,blockingTaskId:null,blockingAuthority:"exactTaskDynamicStartDomain",
           firstPlacementRejection:null,ancestralDecisions:ancestors(selectionOrder,placed)});
         evidence.standaloneZeroAlternativePrunes += 1;
         recordBlockingTask(task);
         return "DEAD_END";
       }
-      alternatives.push({ task, starts: [...domain.starts()], effectiveDeadline: effectiveDeadline(problem, task) });
+      alternatives.push({ task, variants:variantDomains, starts:variantDomains.flatMap(item=>item.starts),
+        effectiveDeadline: Math.min(...variantDomains.map(item=>effectiveDeadline(problem,item.task))) });
     }
     alternatives.sort((a, b) => a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
       || b.task.duration - a.task.duration
@@ -904,12 +915,14 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     evidence.standaloneSelectionsByTaskId[choice.task.id] = (evidence.standaloneSelectionsByTaskId[choice.task.id] ?? 0) + 1;
     evidence.ordinaryMRVSelections += 1;
     evidence.ordinaryExactStartEnumerations += 1;
-    const feasibleStarts = choice.starts.filter((start) => {
+    const feasibleAssignments = choice.variants.flatMap(variant=>variant.starts.flatMap(start => {
       evidence.ordinaryExactStartChecks += 1;
       evidence.standaloneStartChecks += 1;
-      return canPlaceTask(problem, choice.task, start, allPlaced, coreMeals)
-        &&preservesRoundOperationalMealReservations({...choice.task,start,end:start+choice.task.duration});
-    });
+      return canPlaceTask(problem, variant.task, start, allPlaced, coreMeals)
+        &&preservesRoundOperationalMealReservations({...variant.task,start,end:start+variant.task.duration})
+        ?[{task:variant.task,start}]:[];
+    }));
+    const feasibleStarts=feasibleAssignments.map(item=>item.start);
     evidence.standaloneCandidateStartsByTaskId[choice.task.id]
       = (evidence.standaloneCandidateStartsByTaskId[choice.task.id] ?? 0) + feasibleStarts.length;
     if (feasibleStarts.length === 0) {
@@ -925,8 +938,9 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       recordBlockingTask(choice.task);
       return "DEAD_END";
     }
-    const orderedStarts = feasibleStarts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
+    const orderedStarts = feasibleAssignments.map(({task,start}) => scoreAuxiliaryTask(problem, task, start,
       allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
+        ||(a.scheduled.itinerantUnitId??"").localeCompare(b.scheduled.itinerantUnitId??"")
         || a.scheduled.id.localeCompare(b.scheduled.id));
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)

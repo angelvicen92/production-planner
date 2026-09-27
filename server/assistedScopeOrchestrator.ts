@@ -150,6 +150,9 @@ export function recommendNextAssistedScope(
   }));
   const teamWindows=new Map((input.itinerantTeamAvailability??[]).map(team=>[team.itinerantTeamId,
     unionWindowMinutes(team.windows,dayStart,dayEnd)] as const));
+  const snapshotByTaskId=new Map(snapshot.tasks.filter(row=>row.startPlanned&&row.endPlanned).map(row=>[row.taskId,row]));
+  const protectedTasks=input.tasks.filter(task=>snapshotByTaskId.has(task.id));
+  const operationalMeals=input.operationalMealPolicies??[];
   const pendingResourceUsers=new Map<number,Set<number>>();
   for(const task of tasks)for(const resourceId of task.assignedResourceIds??[]){
     const users=pendingResourceUsers.get(resourceId)??new Set<number>();users.add(task.id);pendingResourceUsers.set(resourceId,users);
@@ -161,7 +164,7 @@ export function recommendNextAssistedScope(
     const authorityIds = [...new Set(authority.filter(item => item.kind === kind).map(item => item.id))].sort();
     const memberSpaceIds = canonical(members.flatMap(task => task.spaceId == null ? [] : [task.spaceId]));
     const duration = members.reduce((sum, task) => sum + (task.durationOverrideMin ?? 0), 0);
-    const deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
+    let deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
     const resources = members.flatMap(task => task.assignedResourceIds ?? []);
     const sharedResourcePressure = resources.length - new Set(resources).size;
     const loads:{load:number;capacity:number;pressureClass:number}[]=[];
@@ -178,6 +181,36 @@ export function recommendNextAssistedScope(
       loads.push({load,capacity,pressureClass:capacity<dayCapacity?2:0});}
     for(const [id,load] of loadByTeam){const capacity=teamWindows.get(id)??dayCapacity;
       loads.push({load,capacity,pressureClass:capacity<dayCapacity?2:0});}
+    const itinerantDomain=canonical(members.flatMap(task=>task.allowedItinerantTeamIds?.length
+      ?task.allowedItinerantTeamIds:task.itinerantTeamId==null?[]:[task.itinerantTeamId]));
+    if(kind==="ITINERANT_AGENDA"&&itinerantDomain.length){
+      const domainResources=new Set(input.tasks.filter(task=>task.itinerantTeamId!=null&&itinerantDomain.includes(task.itinerantTeamId))
+        .flatMap(task=>task.assignedResourceIds??[]));
+      const futureStarts=protectedTasks.filter(task=>{
+        const outsideDomain=task.itinerantTeamId!=null&&!itinerantDomain.includes(task.itinerantTeamId);
+        return outsideDomain&&(task.assignedResourceIds??[]).some(id=>domainResources.has(id));
+      }).map(task=>snapshotByTaskId.get(task.id)!.startPlanned!).sort();
+      const boundary=futureStarts.length?minute(futureStarts[0]!):dayEnd;
+      let capacity=0;
+      for(const teamId of itinerantDomain){
+        const availability=(input.itinerantTeamAvailability??[]).find(entry=>entry.itinerantTeamId===teamId)?.windows??[input.workDay];
+        capacity+=unionWindowMinutes(availability,dayStart,boundary);
+        capacity-=protectedTasks.filter(task=>task.itinerantTeamId===teamId).reduce((sum,task)=>{
+          const row=snapshotByTaskId.get(task.id)!;return sum+windowMinutes(row.startPlanned!,row.endPlanned!);
+        },0);
+        const teamResources=new Set(input.tasks.filter(task=>task.itinerantTeamId===teamId).flatMap(task=>task.assignedResourceIds??[]));
+        capacity-=operationalMeals.filter(policy=>policy.planResourceItemIds.some(id=>teamResources.has(id)))
+          .reduce((sum,policy)=>sum+policy.durationMinutes,0);
+      }
+      capacity=Math.max(0,capacity-Math.max(0,members.length-itinerantDomain.length)*(input.plannerNext?.resourceTransitionMinutes??0));
+      loads.push({load:duration,capacity,pressureClass:boundary<dayEnd?2:1});
+      if(boundary<dayEnd){
+        // The boundary is evidence, not an A2 literal: it comes from the first
+        // protected operation that recomposes resources of this pool.
+        const hours=Math.floor(boundary/60),minutes=boundary%60;
+        deadline=`${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}`;
+      }
+    }
     // Round lanes occupy their spaces in parallel.  Their sound minimum
     // wall-clock footprint is therefore the longest lane, including the
     // configured preparation between its remaining rounds, never the sum of

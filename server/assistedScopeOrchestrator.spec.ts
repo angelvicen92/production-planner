@@ -109,3 +109,27 @@ test("provided equivalent itinerant domains form one agenda while provided speci
   const units=recommendNextAssistedScope(source,blank(source.tasks))!.candidates.filter(candidate=>candidate.unitKind==="ITINERANT_AGENDA");
   assert.ok(units.some(unit=>unit.memberTaskIds.join() === "1,2"));assert.ok(units.some(unit=>unit.memberTaskIds.join() === "3"));
 });
+
+test("a protected future recomposition, fixed work, meals and transitions reduce pooled two-lane capacity",()=>{
+  const source=input([
+    task(1,10,30,{allowedItinerantTeamIds:[7,8],itinerantTeamRequirement:"any",assignedResourceIds:[70]}),
+    task(2,20,30,{allowedItinerantTeamIds:[8,7],itinerantTeamRequirement:"any",assignedResourceIds:[80]}),
+    task(5,50,30,{allowedItinerantTeamIds:[7,8],itinerantTeamRequirement:"any",assignedResourceIds:[70]}),
+    task(3,30,30,{itinerantTeamId:7,assignedResourceIds:[70],status:"done"}),
+    task(4,40,30,{itinerantTeamId:9,assignedResourceIds:[70,80],status:"done"}),
+    task(6,60,30,{itinerantTeamId:8,assignedResourceIds:[80]}),
+  ]);
+  source.plannerNext={searchPolicy:"EXACT_CONSTRUCTIVE",searchBudget:{bestK:1,maxBacktracks:1,maxPatterns:1,maxBranchExpansions:1},timeGridMinutes:5,
+    participantTransitionMinutes:0,resourceTransitionMinutes:5,mainFlow:{spaceId:99,preferredEnd:"20:00",continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1}};
+  source.itinerantTeamAvailability=[7,8,9].map(itinerantTeamId=>({itinerantTeamId,windows:[{start:"08:00",end:"20:00"}]}));
+  source.operationalMealPolicies=[{id:"pool-meal",window:{start:"13:00",end:"15:00"},durationMinutes:30,planResourceItemIds:[70,80],spaceIds:[]}];
+  const snapshot:any=blank(source.tasks);snapshot.tasks.find((row:any)=>row.taskId===3)!.startPlanned="10:00";snapshot.tasks.find((row:any)=>row.taskId===3)!.endPlanned="10:30";
+  snapshot.tasks.find(row=>row.taskId===4)!.startPlanned="16:00";snapshot.tasks.find(row=>row.taskId===4)!.endPlanned="16:30";
+  const recommendation=recommendNextAssistedScope(source,snapshot,[1,2,5])!;
+  assert.equal(recommendation.selectedUnitKind,"ITINERANT_AGENDA");
+  assert.deepEqual(recommendation.memberTaskIds,[1,2,5]);
+  assert.equal(recommendation.priority.effectiveDeadline,"16:00");
+  assert.equal(recommendation.priority.effectiveWindowCapacityMinutes,865);
+  assert.equal(recommendation.priority.effectiveWindowLoadMinutes,90);
+  assert.equal(source.tasks[0]!.fixedWindowEnd,undefined,"criticality analysis must not mutate EngineInput");
+});

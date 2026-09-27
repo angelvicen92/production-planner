@@ -415,7 +415,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const expectedTaskById=new Map(problem.tasks.map(task=>[task.id,task]));
 
   for (const task of scheduled) {
-    if(expectedTaskById.get(task.id)?.itinerantUnitId!==task.itinerantUnitId)itinerantUnitMeal+=1;
+    const expectedUnit=expectedTaskById.get(task.id);
+    if(expectedUnit?.itinerantUnitId!==task.itinerantUnitId
+      &&!(expectedUnit?.allowedItinerantUnitIds?.includes(task.itinerantUnitId??"")))itinerantUnitMeal+=1;
     if(task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))itinerantUnitResourceAlias=true;
     const participant = task.participantId === undefined ? undefined : participants.get(task.participantId);
     const coach = task.coachId === undefined ? undefined : coaches.get(task.coachId);
@@ -628,7 +630,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const chainIdentityMatches=(expected:Task,actual:ScheduledTask)=>expected.kind==="technical"?technicalIdentityMatches(expected,actual):
     actual.id===expected.id&&actual.kind===expected.kind&&actual.spaceId===expected.spaceId&&actual.duration===expected.duration&&actual.end-actual.start===expected.duration
     &&actual.participantId===expected.participantId&&actual.coachId===expected.coachId&&actual.blockKey===expected.blockKey&&actual.setupFamilyId===expected.setupFamilyId
-    &&actual.jointGroupId===expected.jointGroupId&&actual.itinerantUnitId===expected.itinerantUnitId
+    &&actual.jointGroupId===expected.jointGroupId&&(actual.itinerantUnitId===expected.itinerantUnitId
+      ||Boolean(expected.allowedItinerantUnitIds?.includes(actual.itinerantUnitId??"")))
     &&JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.requiredResourceIds??[])].sort())
     &&JSON.stringify([...actual.dependencies].sort())===JSON.stringify([...expected.dependencies].sort());
   const invalidTechnicalChainRootIds=new Set<string>();

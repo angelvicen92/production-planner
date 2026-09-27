@@ -61,6 +61,22 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
       ...(task.itinerantUnitId ? { itinerantTeamId: itinerantUnitId.get(task.itinerantUnitId)! } : {}),
     };
   });
+  // Standalone Reality A/B operations belong to one two-lane pool.  The
+  // human reference is a feasibility witness, not an assignment authority;
+  // anchored Plató operations remain specific because their identity is part
+  // of the protected accompaniment contract.
+  const realityPool = [itinerantUnitId.get("reality-unit-a")!, itinerantUnitId.get("reality-unit-b")!].sort((a, b) => a - b);
+  const anchoredTaskIds = new Set(expansion.anchoredOperations.flatMap(operation => [
+    operation.anchorTaskId, ...operation.beforeTaskIds, ...operation.afterTaskIds,
+  ]));
+  for (const [index, expanded] of expansion.tasks.entries()) {
+    if (expanded.itinerantUnitId !== "reality-unit-a" && expanded.itinerantUnitId !== "reality-unit-b") continue;
+    if (anchoredTaskIds.has(expanded.id)) continue;
+    const task = tasks[index]!;
+    delete task.itinerantTeamId;
+    task.itinerantTeamRequirement = "any";
+    task.allowedItinerantTeamIds = [...realityPool];
+  }
   
   const input: EngineInput = createSupportedEngineInputAdapterFixture();
   input.planId = planId;

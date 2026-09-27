@@ -115,13 +115,15 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     const sharedParticipant=task.participantId!==undefined&&other.participantId===task.participantId;
     const sharedCoach=task.coachId!==undefined&&other.coachId===task.coachId;
     const sharedResources=(task.requiredResourceIds??[]).filter(id=>(other.requiredResourceIds??[]).includes(id));
+    const sharedItinerantUnit=task.itinerantUnitId!==undefined&&task.itinerantUnitId===other.itinerantUnitId;
     const sharedSpace=task.spaceId===other.spaceId;
-    if(!sharedParticipant&&!sharedCoach&&!sharedSpace&&sharedResources.length===0)continue;
+    if(!sharedParticipant&&!sharedCoach&&!sharedSpace&&sharedResources.length===0&&!sharedItinerantUnit)continue;
     let before=0,after=0;
     if(!sharedSpace){
       if(sharedParticipant)before=after=problem.participantTransitionMinutes;
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
       for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
+      if(sharedItinerantUnit)before=after=Math.max(before,after,problem.resourceTransitionMinutes);
     }
     domain=subtractOccupation(domain,{start:other.start-before,end:other.end+after},task.duration);
   }
@@ -173,12 +175,15 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     const sharedResources = (task.requiredResourceIds ?? [])
       .filter((id) => (other.requiredResourceIds ?? []).includes(id));
     const sharedResource = sharedResources.length > 0;
+    const sharedItinerantUnit = task.itinerantUnitId !== undefined
+      && other.itinerantUnitId === task.itinerantUnitId;
 
     if (overlaps(other,{start,end})) {
       if (sharedParticipant) return reject("OVERLAP_PARTICIPANT",other.id);
       if (sharedCoach) return reject("OVERLAP_COACH",other.id);
       if (other.spaceId===task.spaceId) return reject("OVERLAP_SPACE",other.id);
       if (sharedResource) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
+      if (sharedItinerantUnit) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
     }
     if (other.spaceId === task.spaceId) continue;
 
@@ -196,6 +201,7 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     if (sharedParticipant && gap < problem.participantTransitionMinutes) return reject("TRANSITION_PARTICIPANT",other.id);
     if (sharedCoach && gap < coachMargin) return reject("TRANSITION_COACH",other.id);
     if (sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
+    if (sharedItinerantUnit && gap < problem.resourceTransitionMinutes) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
   }
   return {valid:true,firstRejectionReason:null,blockingPlacedTaskId:null};
 }
