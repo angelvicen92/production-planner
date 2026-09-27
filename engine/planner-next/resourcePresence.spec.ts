@@ -146,7 +146,7 @@ test("canonical validation lets an authorized operational meal bridge REQUIRED r
   ];
   const meal={id:"pause",resourceIds:["r"],spaceIds:[],duration:30,start:30,end:60};
   const problem:PlannerNextProblem={day:{start:0,end:120},spaces:[{id:"covered",availability:[{start:0,end:120}]}],
-    resources:[resource],participants:[],coaches:[],tasks,participantTransitionMinutes:0,resourceTransitionMinutes:0,
+    resources:[resource],participants:[],coaches:[],tasks,mainFlow:{spaceId:"covered",preferredEnd:120,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
     operationalMealPolicies:[{id:"pause",window:{start:30,end:60},duration:30,resourceIds:["r"],spaceIds:[]}],
     budget:{bestK:1,maxBacktracks:0,maxPatterns:10,maxBranchExpansions:100},searchPolicy:"EXACT_CONSTRUCTIVE"};
   const validation=validatePlan(problem,tasks,[],[],[],[],[],[],[meal]);
