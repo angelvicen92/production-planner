@@ -64,6 +64,33 @@ test("collective-only PRUNE creates no edge nogood, while ABSTAIN retains edges"
   assert.equal(collective.evidence.incrementalRepairs,0);assert.equal(collective.evidence.analyticPrunedEdges,0);
 });
 
+test("participant-future analytic cache is isolated by structural geometry",()=>{
+  const {problem,resourceTasks}=fixture();
+  const setupTasks:Task[]=[
+    {id:"setup-a",kind:"auxiliary",participantId:"setup-a",duration:10,spaceId:"setup-space",dependencies:[],
+      availability:[{start:20,end:40}],setupFamilyId:"family-a"},
+    {id:"setup-b",kind:"auxiliary",participantId:"setup-b",duration:10,spaceId:"setup-space",dependencies:[],
+      availability:[{start:20,end:40}],setupFamilyId:"family-b"},
+  ];
+  problem.tasks=[...resourceTasks,...setupTasks];
+  problem.participants=[...resourceTasks,...setupTasks].map(task=>({id:task.participantId!,availability:[{start:0,end:60}]}));
+  const setupSpace=problem.spaces.find(space=>space.id==="setup-space")!;
+  setupSpace.availability=[{start:20,end:40}];
+  setupSpace.setupPolicy={familyOrder:["family-a","family-b"],flexibleFamilyOrder:true,reentry:"FORBIDDEN"};
+  const observedSetupAStarts:number[]=[];
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:()=>({outcome:"DEAD_END"}),authorities:{participantFutureProbe:(_problem,placed,added,_budget,mode)=>{
+      if(mode==="ANALYTIC_ONLY"&&added[0]?.id==="a"&&added[0].start===10){
+        const setupAStart=placed.find(task=>task.id==="setup-a")?.start;
+        if(setupAStart!==undefined)observedSetupAStarts.push(setupAStart);
+        return futureProbe(setupAStart===30?"PRUNE":"PASS",setupAStart===30?"FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN":null);
+      }
+      return futureProbe("PASS");
+    }}});
+  assert.equal(result.outcome,"DEAD_END");
+  assert.deepEqual([...new Set(observedSetupAStarts)].sort((a,b)=>a-b),[20,30]);
+});
+
 test("participant-meal edge filtering swaps nominal tasks without changing geometry",()=>{
   const {problem,resourceTasks,setupTasks}=fixture(false,true);let selected:Record<string,number>|null=null;
   const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
