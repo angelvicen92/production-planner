@@ -73,24 +73,33 @@ export function exploreExactPreferredResourceUnit(args:{
     policy.spaceIds.includes(task.spaceId)||effectiveResourceIds(task).some(id=>policy.resourceIds.includes(id)))).sort((a,b)=>a.id.localeCompare(b.id));
   const conflicts=(task:ScheduledTask,policy:OperationalMealPolicy,meal:ScheduledOperationalMeal)=>
     (policy.spaceIds.includes(task.spaceId)||effectiveResourceIds(task).some(id=>policy.resourceIds.includes(id)))&&overlaps(task,meal);
-  for(const structural of setup.candidates){
+  const structuralCandidates=[...setup.candidates].sort((a,b)=>{
+    const quality=(candidate:typeof a)=>{const ordered=[...candidate.tasks,...candidate.preparations].sort((x,y)=>x.start-y.start||x.end-y.end||x.id.localeCompare(y.id));
+      const blocks=ordered.reduce((count,item,index)=>count+Number(index===0||item.start>ordered[index-1]!.end),0);
+      const span=ordered.length?ordered.at(-1)!.end-ordered[0]!.start:0;
+      const occupied=ordered.reduce((sum,item)=>sum+item.end-item.start,0);return[blocks,span,span-occupied] as const;};
+    const aq=quality(a),bq=quality(b);return aq[0]-bq[0]||aq[1]-bq[1]||aq[2]-bq[2]
+      ||a.tasks.map(task=>`${task.id}@${task.start}`).sort().join("|").localeCompare(b.tasks.map(task=>`${task.id}@${task.start}`).sort().join("|"));
+  });
+  for(const structural of structuralCandidates){
     const occupations=[...structural.tasks,...structural.preparations];
     const first=Math.min(...occupations.map(item=>item.start)),last=Math.max(...occupations.map(item=>item.end));
     type Geometry={start:number;reservations:ScheduledOperationalMeal[];offsets:number[]};
-    const geometries:Geometry[]=[];
-    for(const orientation of ["BEFORE","AFTER"] as const){
+    function* geometries():Generator<Geometry>{const seen=new Set<string>();
+      for(const tier of [0,1,2] as const)for(const orientation of ["BEFORE","AFTER"] as const){
       const naturalBoundary=orientation==="BEFORE"?resourceTasks.length:0;
-      const assignments:number[][]=[];
-      const visit=(index:number,current:number[])=>{if(index===operationalPolicies.length){assignments.push([...current]);return;}
-        const boundaries=[naturalBoundary,...Array.from({length:Math.max(0,resourceTasks.length-1)},(_,i)=>i+1),
-          ...Array.from({length:resourceTasks.length+1},(_,i)=>i)].filter((value,i,array)=>array.indexOf(value)===i);
-        for(const boundary of boundaries)visit(index+1,[...current,boundary]);};
-      visit(0,[]);
-      for(const boundaries of assignments){
+      const assignments=function* (index=0,current:number[]=[]):Generator<number[]>{if(index===operationalPolicies.length){yield current;return;}
+        const boundaries=tier===0?[naturalBoundary]:[naturalBoundary,...Array.from({length:resourceTasks.length+1},(_,i)=>i)]
+          .filter((value,index,array)=>array.indexOf(value)===index);
+        for(const boundary of boundaries)yield* assignments(index+1,[...current,boundary]);};
+      for(const boundaries of assignments()){
         const mealMinutes=operationalPolicies.reduce((sum,policy)=>sum+policy.duration,0);
         const anchoredStart=orientation==="BEFORE"?first-duration-mealMinutes:last;
-        const candidateStarts=[anchoredStart,...Array.from({length:Math.max(0,Math.floor((problem.day.end-problem.day.start)/5)+1)},(_,i)=>problem.day.start+i*5)]
-          .filter((value,i,array)=>array.indexOf(value)===i);
+        const structuralBoundaries=[...new Set(occupations.flatMap(item=>[item.start,item.end]))].sort((a,b)=>a-b);
+        const taskBoundaries=[...new Set([...placed].flatMap(item=>[item.start,item.end]))].sort((a,b)=>a-b);
+        const candidateStarts=tier===0?[anchoredStart,...structuralBoundaries.flatMap(boundary=>[boundary,boundary-duration-mealMinutes])]
+          :tier===1?taskBoundaries.flatMap(boundary=>[boundary,boundary-duration-mealMinutes])
+          :Array.from({length:Math.max(0,Math.floor((problem.day.end-problem.day.start)/5)+1)},(_,i)=>problem.day.start+i*5);
         for(const start of candidateStarts){let cursor=start;const offsets:number[]=[];const reservations:ScheduledOperationalMeal[]=[];let valid=true;
           for(let boundary=0;boundary<=resourceTasks.length;boundary+=1){
             for(const [policyIndex,policy] of operationalPolicies.entries().filter(([i])=>boundaries[i]===boundary)){
@@ -102,14 +111,12 @@ export function exploreExactPreferredResourceUnit(args:{
           if(!valid)continue;
           // Preserve the original structural adjacency for the first class of candidates.
           if(start===anchoredStart&&((orientation==="BEFORE"&&cursor!==first)||(orientation==="AFTER"&&start!==last)))continue;
-          geometries.push({start,reservations,offsets});
+          const key=`${start}|${offsets.join(",")}|${reservations.map(x=>`${x.id}@${x.start}`).join(",")}`;
+          if(!seen.has(key)){seen.add(key);yield{start,reservations,offsets};}
         }
       }
-    }
-    if(!operationalPolicies.length)geometries.push({start:first-duration,reservations:[],offsets:resourceTasks.map((_,i)=>resourceTasks.slice(0,i).reduce((s,t)=>s+t.duration,0))},
-      {start:last,reservations:[],offsets:resourceTasks.map((_,i)=>resourceTasks.slice(0,i).reduce((s,t)=>s+t.duration,0))});
-    const uniqueGeometries=[...new Map(geometries.map(item=>[`${item.start}|${item.offsets.join(",")}|${item.reservations.map(x=>`${x.id}@${x.start}`).join(",")}`,item])).values()];
-    for(const geometry of uniqueGeometries){const {start,reservations}=geometry;
+    }}
+    for(const geometry of geometries()){const {start,reservations}=geometry;
       evidence.geometryCount+=1;
       evidence.mealReservationVariants+=reservations.length>0?1:0;
       const slots=resourceTasks.map((_,index)=>`spot:${index}`);
@@ -160,7 +167,7 @@ export function exploreExactPreferredResourceUnit(args:{
         const resource=problem.resources.find(item=>item.id===resourceId)!;
         evidence.mealAwareGeometries+=Number(reservations.length>0);
         const decision=continuation({tasks:all,preparations:structural.preparations,operationalMealReservations:reservations,
-          presence:evaluateResourcePresence(resource,all).preferredLexicographicTuple});
+          presence:evaluateResourcePresence(resource,all,[],[],reservations).preferredLexicographicTuple});
         evidence.terminalFutureResult=decision.terminalFutureResult??evidence.terminalFutureResult;
         if(decision.outcome!=="DEAD_END"){
           evidence.selectedMatchingWitness=witness;

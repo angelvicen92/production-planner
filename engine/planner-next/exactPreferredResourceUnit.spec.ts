@@ -159,3 +159,13 @@ test("meal-aware preferred-resource geometry is invariant to input order",()=>{
     assert.equal(result.outcome,"FOUND");return signature;};
   assert.equal(run(false),run(true));
 });
+
+test("natural structural boundaries are continued before exact grid fallback",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture();const starts:number[]=[];
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:candidate=>{starts.push(Math.min(...candidate.tasks.filter(task=>task.id!=="setup").map(task=>task.start)));
+      return{outcome:starts.length===2?"FOUND":"DEAD_END"};},authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+  assert.equal(result.outcome,"FOUND");
+  assert.deepEqual(starts,[0,20]);
+  assert.equal(result.evidence.geometryCount,2);
+});

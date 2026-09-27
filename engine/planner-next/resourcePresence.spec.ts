@@ -120,3 +120,19 @@ test("resource-scoped meal bridges presence without a false operational block",(
   const result=evaluateResourcePresence(resource,tasks,[],[{id:"meal",sourceTaskId:"task:meal",resourceIds:["r"],start:720,end:780,duration:60}]);
   assert.deepEqual({span:result.presenceSpanMinutes,meal:result.authorizedMealMinutes,gap:result.internalGapMinutes,blocks:result.operationalBlockCount,crosses:result.crossesAuthorizedMeal,required:result.requiredPolicySatisfied},{span:120,meal:60,gap:0,blocks:1,crosses:true,required:true});
 });
+
+test("an operational meal is neutral quality, but a single-space pause cannot bridge a resource working elsewhere",()=>{
+  const resource={id:"r",availability:[{start:0,end:120}],presencePreference:"PREFERRED" as const,presenceConcentrationPolicy:"REQUIRED" as const};
+  const tasks=[
+    {id:"before",kind:"technical" as const,spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:0,end:30},
+    {id:"after",kind:"technical" as const,spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:60,end:90},
+  ];
+  const direct={id:"pause",resourceIds:["r"],spaceIds:[],duration:30,start:30,end:60};
+  const authorized=evaluateResourcePresence(resource,tasks,[],[],[direct]);
+  assert.deepEqual({blocks:authorized.operationalBlockCount,idle:authorized.internalGapMinutes,productive:authorized.productiveTaskMinutes,
+    authorized:authorized.authorizedMealMinutes,required:authorized.requiredPolicySatisfied},{blocks:1,idle:0,productive:60,authorized:30,required:true});
+  const wrongSpace=evaluateResourcePresence(resource,[tasks[0]!,{...tasks[1]!,spaceId:"other"}],[],[],
+    [{...direct,resourceIds:[],spaceIds:["covered"]}]);
+  assert.deepEqual({blocks:wrongSpace.operationalBlockCount,idle:wrongSpace.internalGapMinutes,authorized:wrongSpace.authorizedMealMinutes,
+    required:wrongSpace.requiredPolicySatisfied},{blocks:2,idle:30,authorized:0,required:false});
+});
