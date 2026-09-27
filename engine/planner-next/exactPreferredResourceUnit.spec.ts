@@ -4,6 +4,7 @@ import type { PlannerNextProblem, Task } from "./contracts";
 import { createExactSearchLedger } from "./exactMainAndFeederCore";
 import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit";
 import type { ParticipantFutureReservationProbe, ParticipantFutureReservationStatus } from "./participantFutureFeasibility";
+import type { ParticipantMealProbe } from "./participantMeals";
 
 const futureProbe=(status:ParticipantFutureReservationStatus,reason:ParticipantFutureReservationProbe["reasonCode"]=null,
   abstainCause:ParticipantFutureReservationProbe["abstainCause"]=null):ParticipantFutureReservationProbe=>({
@@ -15,8 +16,13 @@ const futureProbe=(status:ParticipantFutureReservationStatus,reason:ParticipantF
   participantId:null,futureTaskCandidateCount:0,mealCandidateCount:0,compatiblePairCount:0,participantDiagnostics:[],
   dominatedLaterStartsSkipped:0,earliestDominanceBranches:0,
 });
+const mealProbe=(feasible:boolean,blockingMealTaskId="meal-a"):ParticipantMealProbe=>({feasible,
+  affectedObligationsChecked:1,zeroDomainPrunes:Number(!feasible),analyticCollectivePrunes:0,analyticDomainBuilds:1,
+  logicalGridStarts:1,analyticallyEliminatedStarts:Number(!feasible),actuallyEvaluatedStarts:0,
+  blockingMealTaskIds:feasible?[]:[blockingMealTaskId],candidateCountByTaskId:{[blockingMealTaskId]:Number(feasible)},
+  reasonCodes:feasible?[]:["PARTICIPANT_MEAL_ZERO_DOMAIN"],readOnly:true});
 
-function fixture(reverse=false){
+function fixture(reverse=false,withMeal=false){
   const availability=[{start:0,end:60}];
   const resourceTasks:Task[]=["a","b"].map(id=>({id,kind:"auxiliary",participantId:id,duration:10,
     spaceId:`space-${id}`,dependencies:[],availability,requiredResourceIds:["preferred"]}));
@@ -29,6 +35,8 @@ function fixture(reverse=false){
     tasks:reverse?[...setupTasks,...resourceTasks].reverse():[...resourceTasks,...setupTasks],participantTransitionMinutes:0,
     resourceTransitionMinutes:0,auxiliaryPolicy:{participantPresencePreference:"OFF"},
     budget:{bestK:1,maxBacktracks:0,maxPatterns:20,maxBranchExpansions:1000},searchPolicy:"EXACT_CONSTRUCTIVE"};
+  if(withMeal){problem.participantMealCapacity={maxSimultaneous:1};problem.participantMeals=[{id:"meal-a",sourceTaskId:"meal-a",
+    participantId:"a",duration:10,window:{start:10,end:30},status:"pending"}];}
   return{problem,resourceTasks:reverse?[...resourceTasks].reverse():resourceTasks,setupTasks};
 }
 
@@ -56,11 +64,32 @@ test("collective-only PRUNE creates no edge nogood, while ABSTAIN retains edges"
   assert.equal(collective.evidence.incrementalRepairs,0);assert.equal(collective.evidence.analyticPrunedEdges,0);
 });
 
+test("participant-meal edge filtering swaps nominal tasks without changing geometry",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture(false,true);let selected:Record<string,number>|null=null;
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:candidate=>{selected=Object.fromEntries(candidate.tasks.filter(task=>task.id!=="setup")
+      .map(task=>[task.id,task.start]));return{outcome:"FOUND"};},authorities:{participantFutureProbe:()=>futureProbe("ABSTAIN",null,"INCONCLUSIVE_SHAPE"),
+      participantMealProbe:(_problem,_state,added)=>mealProbe(!(added?.[0]!.id==="a"&&added[0]!.start===10))}});
+  assert.equal(result.outcome,"FOUND");assert.deepEqual(selected,{a:0,b:10});
+  assert.ok(result.evidence.mealEdgeChecks>0);assert.equal(result.evidence.mealPrunedEdges,1);
+  assert.deepEqual(result.evidence.firstMealPrunedEdge,{taskId:"a",spotId:"spot:1",start:10,blockingMealTaskId:"meal-a"});
+});
+
+test("a collective participant-meal prune without edge-local proof creates no nogood",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture(false,true);let continuations=0;
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:()=>{continuations+=1;return{outcome:"DEAD_END",participantMealPrune:true};},
+    authorities:{participantFutureProbe:()=>futureProbe("PASS"),participantMealProbe:()=>mealProbe(true)}});
+  assert.equal(result.outcome,"DEAD_END");assert.ok(continuations>0);
+  assert.equal(result.evidence.causalForbiddenEdges,0);assert.equal(result.evidence.incrementalRepairs,0);
+});
+
 test("preferred-resource future-aware matching is invariant to input order",()=>{
-  const run=(reverse:boolean)=>{const {problem,resourceTasks,setupTasks}=fixture(reverse);let selected:Record<string,number>|null=null;
+  const run=(reverse:boolean)=>{const {problem,resourceTasks,setupTasks}=fixture(reverse,true);let selected:Record<string,number>|null=null;
     const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
       ledger:createExactSearchLedger(1000),continuation:candidate=>{selected=Object.fromEntries(candidate.tasks.filter(task=>task.id!=="setup")
-        .map(task=>[task.id,task.start]));return{outcome:"FOUND"};},authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+        .map(task=>[task.id,task.start]));return{outcome:"FOUND"};},authorities:{participantFutureProbe:()=>futureProbe("PASS"),
+        participantMealProbe:(_problem,_state,added)=>mealProbe(!(added?.[0]!.id==="a"&&added[0]!.start===10))}});
     assert.equal(result.outcome,"FOUND");return selected;};
   assert.deepEqual(run(false),run(true));
 });
