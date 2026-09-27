@@ -64,6 +64,21 @@ test("collective-only PRUNE creates no edge nogood, while ABSTAIN retains edges"
   assert.equal(collective.evidence.incrementalRepairs,0);assert.equal(collective.evidence.analyticPrunedEdges,0);
 });
 
+test("participant-future analytic cache isolates identical edges across setup geometries",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture();
+  setupTasks[0]!.availability=[{start:20,end:40}];
+  const sharedEdgeGeometryStarts:number[]=[];
+  exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:()=>({outcome:"DEAD_END"}),authorities:{participantFutureProbe:(_problem,state,added)=>{
+      if(added?.[0]!.id==="a"&&added[0]!.start===10){
+        const setupStart=state.find(task=>task.id==="setup")!.start;sharedEdgeGeometryStarts.push(setupStart);
+        return futureProbe(setupStart===20?"PRUNE":"PASS");
+      }
+      return futureProbe("PASS");
+    }}});
+  assert.deepEqual(sharedEdgeGeometryStarts,[30,20]);
+});
+
 test("participant-meal edge filtering swaps nominal tasks without changing geometry",()=>{
   const {problem,resourceTasks,setupTasks}=fixture(false,true);let selected:Record<string,number>|null=null;
   const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
