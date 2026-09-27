@@ -23,7 +23,8 @@ export function generateExactPreferredResourceUnitCandidates(args:{
   meals:readonly ScheduledSpaceMeal[];ledger:ExactSearchLedger;
 }):{outcome:"COMPLETE"|"BUDGET_EXHAUSTED";candidates:readonly ExactPreferredResourceUnitCandidate[];geometryCount:number;matchingAttempts:number;matchingSuccesses:number}{
   const {problem,resourceId,resourceTasks,setupTasks,placed,preparations,meals,ledger}=args;
-  const setup=generateExactSetupBlockCandidates(problem,[...setupTasks],[...placed],[...preparations],[...meals],ledger);
+  const mutableMeals=[...meals];
+  const setup=generateExactSetupBlockCandidates(problem,[...setupTasks],[...placed],[...preparations],mutableMeals,ledger);
   let geometryCount=0,matchingAttempts=0,matchingSuccesses=0;
   const candidates:ExactPreferredResourceUnitCandidate[]=[];
   const duration=resourceTasks.reduce((sum,task)=>sum+task.duration,0);
@@ -38,14 +39,14 @@ export function generateExactPreferredResourceUnitCandidates(args:{
         const task=resourceTasks.find(item=>item.id===taskId)!;
         const index=Number(slotId.slice(slotId.indexOf(":")+1));
         return canPlaceTask(problem,task,start+resourceTasks.slice(0,index).reduce((sum,item)=>sum+item.duration,0),
-          [...placed,...structural.tasks],meals);
+          [...placed,...structural.tasks],mutableMeals);
       });
       if(!matching)continue;
       const scheduled=[...matching].map(([slotId,taskId])=>{const task=resourceTasks.find(item=>item.id===taskId)!;
         const index=Number(slotId.slice(slotId.indexOf(":")+1));const spot=start+resourceTasks.slice(0,index).reduce((sum,item)=>sum+item.duration,0);
         return scoreAuxiliaryTask(problem,task,spot,[...placed,...structural.tasks]).scheduled;});
       const all=[...structural.tasks,...scheduled];
-      if(scheduled.some(task=>!canPlaceTask(problem,task,task.start,[...placed,...all.filter(item=>item.id!==task.id)],meals)))continue;
+      if(scheduled.some(task=>!canPlaceTask(problem,task,task.start,[...placed,...all.filter(item=>item.id!==task.id)],mutableMeals)))continue;
       matchingSuccesses++;const resource=problem.resources.find(item=>item.id===resourceId)!;
       candidates.push({tasks:all,preparations:structural.preparations,presence:evaluateResourcePresence(resource,all).preferredLexicographicTuple});
     }
