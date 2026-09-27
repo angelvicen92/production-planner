@@ -79,9 +79,10 @@ export function exploreExactPreferredResourceUnit(args:{
           evidence.rawCompatibleEdges+=1;evidence.futureEdgeChecks+=1;
           const scheduled=scoreAuxiliaryTask(problem,task,at,base).scheduled;
           const edgeKey=`${task.id}@${task.spaceId}:${at}`;
-          let futureStatus=analyticEdgeCache.get(edgeKey);
+          const futureKey=`${baseKey}|${edgeKey}`;
+          let futureStatus=analyticEdgeCache.get(futureKey);
           if(futureStatus===undefined){futureStatus=participantFutureProbe(problem,[...base,scheduled],[scheduled],undefined,"ANALYTIC_ONLY").status;
-            analyticEdgeCache.set(edgeKey,futureStatus);}
+            analyticEdgeCache.set(futureKey,futureStatus);}
           let mealResult={feasible:true,blockingMealTaskId:null as string|null};
           if(mealApplicable){evidence.mealEdgeChecks+=1;
             const mealKey=`${baseKey}|${edgeKey}`,cached=mealEdgeCache.get(mealKey);
