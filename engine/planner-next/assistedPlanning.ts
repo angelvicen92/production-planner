@@ -153,7 +153,7 @@ export interface AssistedPlanningEvidence {
     | "terminalTransportWitness"
     | "terminalCompletionRejectionsByCause" | "firstTerminalCompletionRejection"
     | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
-    | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf"
+    | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf" | "firstHardValidCoreTasks"
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
     | "corePrerequisiteReservationChecks" | "corePrerequisiteReservationPrunes"
     | "ordinaryPrerequisiteReservationChecks" | "ordinaryPrerequisiteReservationPrunes"
@@ -521,7 +521,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "roundSynchronizationMatchingTraversals","roundSynchronizationTerminalFutureResult","roundSynchronizationMatchingWitnesses","totalesMatchingAttempts",
     "terminalTransportMaterializationFailures","terminalTransportWitness","terminalCompletionRejectionsByCause","firstTerminalCompletionRejection","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
-    "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf",
+    "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf","firstHardValidCoreTasks",
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
     "corePrerequisiteReservationChecks","corePrerequisiteReservationPrunes",
     "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune",
