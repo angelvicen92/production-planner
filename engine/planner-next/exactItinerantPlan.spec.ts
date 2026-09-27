@@ -404,6 +404,27 @@ test("tasks sharing a PREFERRED resource are searched as one rematchable geometr
   assert.ok(tasks[0]!.end <= tasks[1]!.start);
 });
 
+test("a preferred resource and its setup families form one structural macro", () => {
+  const input = problem([
+    auxiliary("resource-a", "a", [{ start: 0, end: 100 }], ["unit"]),
+    {...auxiliary("setup-a", "b", [{ start: 0, end: 100 }], ["unit"]),spaceId:"setup",setupFamilyId:"a"},
+    {...auxiliary("setup-b", "c", [{ start: 0, end: 100 }], ["unit"]),spaceId:"setup",setupFamilyId:"b"},
+  ]);
+  input.resources[0]!.presenceConcentrationPolicy="PREFERRED";
+  input.spaces=input.spaces.filter(space=>space.id!=="setup");
+  input.spaces.push({id:"setup",availability:[{start:0,end:100}],secondaryContinuity:"REQUIRED",
+    setupPolicy:{familyOrder:["a","b"],flexibleFamilyOrder:true,reentry:"FORBIDDEN",preparationMinutesBetweenFamilies:5}});
+  const result=constructExactItinerantPlan(input);
+  assert.equal(result.status,"COMPLETE");
+  assert.deepEqual(result.evidence.macroSelectionOrder.filter(item=>item.includes("resource")||item.includes("setup")),
+    ["PREFERRED_RESOURCE_UNIT:preferred-resource-unit:unit"]);
+  assert.deepEqual(result.evidence.preferredResourceUnit&&{
+    members:result.evidence.preferredResourceUnit.memberTaskCount,
+    resource:result.evidence.preferredResourceUnit.resourceTaskCount,
+    setup:result.evidence.preferredResourceUnit.setupTaskCount,
+  },{members:3,resource:1,setup:2});
+});
+
 test("bestK=1 retains a deferred standalone start", () => {
   const input = problem([
     auxiliary("a-first", "shared", [{ start: 0, end: 30 }], ["unit"]),
