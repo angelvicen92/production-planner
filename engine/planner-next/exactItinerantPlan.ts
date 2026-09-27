@@ -156,6 +156,8 @@ export interface ExactItinerantPlanEvidence {
     pendingDynamicTransport: number;
     pendingTasksByKind: Record<string, number>;
   } | null;
+  /** Read-only causal snapshot of the first core passed to standalone search. */
+  firstHardValidCoreTasks: Array<{ id:string; kind:string; start:number; end:number; protected:boolean }>;
   coreCompleteLeavesEvaluated: number;
   coreLeavesRejectedByStandalone: number;
   standaloneSearchInvocations: number;
@@ -1446,6 +1448,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       OPERATIONAL_MEAL_WITNESS_INCOMPLETE:0,TRANSPORT_MATERIALIZATION_FAILED:0,CANDIDATE_IDENTITY_MISMATCH:0,VALIDATION_REJECTED:0},
     firstTerminalCompletionRejection:null,
     coreLeafTransportPrunes:0,transportContiguousStates:0,membershipFallbackEntered:0,coreLeafArrivalEvidence:null,firstHardValidCoreLeaf:null,
+    firstHardValidCoreTasks:[],
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
     standaloneForwardChecks: 0, standaloneForwardStartChecks: 0, standaloneForwardWitnessesFound: 0,
     standaloneForwardPrunes: 0, standaloneForwardBlockingTaskCounts: {}, standaloneForwardPrunesByDepth: {},
@@ -1840,6 +1843,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     const structuralTasks=conditioned?candidate.tasks:(pipelinePreservesFixed ? [...pipeline!.scheduledTasks] : candidate.tasks);
     const coreIds = new Set(structuralTasks.map(({ id }) => id));
     const immutableCoreTasks=[...structuralTasks.filter(task=>!fixedById.has(task.id)),...fixedById.values()];
+    if(evidence.firstHardValidCoreTasks.length===0)evidence.firstHardValidCoreTasks=[...immutableCoreTasks]
+      .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))
+      .map(task=>({id:task.id,kind:task.kind,start:task.start,end:task.end,protected:fixedById.has(task.id)}));
     const arrival = assessCoreArrivalTransportFeasibility(problem, immutableCoreTasks, {
       consumeFallbackBranch: () => ledger.consume("STANDALONE"),
     });
