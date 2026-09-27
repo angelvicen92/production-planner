@@ -141,12 +141,12 @@ test("an operational meal is neutral quality, but a single-space pause cannot br
 test("canonical validation lets an authorized operational meal bridge REQUIRED resource presence",()=>{
   const resource={id:"r",availability:[{start:0,end:120}],presencePreference:"PREFERRED" as const,presenceConcentrationPolicy:"REQUIRED" as const};
   const tasks=[
-    {id:"before",kind:"auxiliary" as const,spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:0,end:30},
-    {id:"after",kind:"auxiliary" as const,spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:60,end:90},
+    {id:"before",kind:"auxiliary" as const,participantId:"p1",spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:0,end:30},
+    {id:"after",kind:"auxiliary" as const,participantId:"p2",spaceId:"covered",dependencies:[],requiredResourceIds:["r"],duration:30,start:60,end:90},
   ];
   const meal={id:"pause",resourceIds:["r"],spaceIds:[],duration:30,start:30,end:60};
   const problem:PlannerNextProblem={day:{start:0,end:120},spaces:[{id:"covered",availability:[{start:0,end:120}]}],
-    resources:[resource],participants:[],coaches:[],tasks,mainFlow:{spaceId:"covered",preferredEnd:120,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
+    resources:[resource],participants:[{id:"p1",availability:[{start:0,end:120}]},{id:"p2",availability:[{start:0,end:120}]}],coaches:[],tasks,mainFlow:{spaceId:"covered",preferredEnd:120,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
     operationalMealPolicies:[{id:"pause",window:{start:30,end:60},duration:30,resourceIds:["r"],spaceIds:[]}],
     budget:{bestK:1,maxBacktracks:0,maxPatterns:10,maxBranchExpansions:100},searchPolicy:"EXACT_CONSTRUCTIVE"};
   const validation=validatePlan(problem,tasks,[],[],[],[],[],[],[meal]);
