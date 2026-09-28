@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildCanonicalA2AssistedStage1Fixture } from "../../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture";
 import { standaloneForwardStaticDomain } from "../../engine/planner-next/exactItinerantPlan";
+import { materializeItinerantUnitAssignment } from "../../engine/planner-next/itinerantUnitAssignment";
 import { resolveAssistedScope } from "../assistedScopeResolver";
 import { recommendNextAssistedScope } from "../assistedScopeOrchestrator";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
@@ -153,10 +154,18 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     }
     const proposedRows=(result.proposal??[]).filter(row=>!protectedBefore.has(row.taskId)).map(row=>{
       const task=input.tasks.find(item=>item.id===row.taskId)!;
+      const accepted=result.proposedDraftSnapshot?.tasks.find(item=>item.taskId===row.taskId);
+      const canonicalTask=adapter.problem.tasks.find(item=>item.id===`task:${row.taskId}`)!;
+      const acceptedTask=accepted?.itinerantTeamId===undefined?canonicalTask:materializeItinerantUnitAssignment(adapter.problem,canonicalTask,`itinerant-team:${accepted.itinerantTeamId}`)!;
+      const effectiveResourceIds=(acceptedTask.requiredResourceIds??[]).map(id=>{
+        const matches=adapter.identityMap.filter(identity=>identity.namespace==="plan-resource"&&identity.canonicalId===id);
+        assert.equal(matches.length,1,`effective resource ${id} must project uniquely`);return Number(matches[0]!.sourceId);
+      }).sort((a,b)=>a-b);
       return {taskId:row.taskId,templateName:task.templateName,participantId:task.contestantId??null,
         participantOrdinal:task.contestantId==null?null:contestantOrdinalById.get(task.contestantId)??null,
         spaceId:task.spaceId??null,start:row.startPlanned,end:row.endPlanned,
-        durationMinutes:task.durationOverrideMin,resourceIds:[...(task.assignedResourceIds??[])].sort()};
+        durationMinutes:task.durationOverrideMin,resourceIds:[...(task.assignedResourceIds??[])].sort((a,b)=>a-b),
+        assignedResourceIds:[...(accepted?.assignedResourceIds??[])].sort((a,b)=>a-b),effectiveResourceIds};
     }).sort((a,b)=>a.taskId-b.taskId);
     const terminalRejection=evidence.standaloneDiagnostic?.firstTerminalCompletionRejection;
     const acceptedMeals=result.outcome==="PROPOSAL"?evidence.selectedMealWitnesses:null;

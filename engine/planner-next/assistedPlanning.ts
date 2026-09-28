@@ -17,6 +17,7 @@ import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupPreparationId } from "./setupPreparation";
+import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -159,6 +160,10 @@ export interface AssistedPlanningEvidence {
     | "ordinaryPrerequisiteReservationChecks" | "ordinaryPrerequisiteReservationPrunes"
     | "firstPrerequisiteReservationPrune" | "firstStandaloneDeadEndCause"
     | "macroUnitsSelected" | "macroSelectionOrder" | "macroSelectionSteps" | "macroDomainSizes"
+    | "ordinaryBranchesExplored" | "itinerantAgendaPoolOperations" | "itinerantAgendaUnitVariantsByTaskId"
+    | "itinerantAgendaStaticStarts" | "itinerantAgendaDynamicStarts" | "itinerantAgendaBranchesBeforeSelection"
+    | "itinerantAgendaBranches" | "itinerantAgendaCandidates" | "itinerantAgendaAssignmentsAndOrders"
+    | "itinerantAgendaEventBoundaryStarts" | "itinerantAgendaFirstCompleteBranch"
     | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
@@ -250,7 +255,9 @@ export function buildAssistedProblem(
     if (!task) throw new Error("UNKNOWN_PROTECTED_PLACEMENT_TASK_ID");
     if (placement.start >= placement.end || placement.end - placement.start !== placement.duration) throw new Error("INVALID_PROTECTED_PLACEMENT");
     const { start: _start, end: _end, ...placedTask } = placement;
-    if (JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(task)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
+    const expected=placement.itinerantUnitId!==task.itinerantUnitId
+      ?materializeItinerantUnitAssignment(problem,task,placement.itinerantUnitId??""):task;
+    if (!expected||JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(expected)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
   }
   const protectedMealBySourceId=new Map<string,ScheduledParticipantMeal>();
   for(const fixed of protectedParticipantMeals){
@@ -526,6 +533,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "corePrerequisiteReservationChecks","corePrerequisiteReservationPrunes",
     "ordinaryPrerequisiteReservationChecks","ordinaryPrerequisiteReservationPrunes","firstPrerequisiteReservationPrune",
     "firstStandaloneDeadEndCause","macroUnitsSelected","macroSelectionOrder","macroSelectionSteps","macroDomainSizes",
+    "ordinaryBranchesExplored","itinerantAgendaPoolOperations","itinerantAgendaUnitVariantsByTaskId",
+    "itinerantAgendaStaticStarts","itinerantAgendaDynamicStarts","itinerantAgendaBranchesBeforeSelection",
+    "itinerantAgendaBranches","itinerantAgendaCandidates","itinerantAgendaAssignmentsAndOrders",
+    "itinerantAgendaEventBoundaryStarts","itinerantAgendaFirstCompleteBranch",
     "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",

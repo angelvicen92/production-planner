@@ -13,6 +13,8 @@ export interface Person {
 export interface ItinerantUnit {
   id: string;
   availability: Window[];
+  resourceIds?: string[];
+  transitionMinutes?: Minute;
 }
 
 export interface Space {
@@ -87,6 +89,8 @@ interface BaseTask {
   requiredResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;
+  /** Solver-owned assignment domain. A singleton remains a specific unit. */
+  allowedItinerantUnitIds?: string[];
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";

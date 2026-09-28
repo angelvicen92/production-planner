@@ -556,6 +556,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   });
   (input.itinerantTeamAvailability ?? []).forEach((entry, index) => {
     addIdentity("itinerant-team", entry?.itinerantTeamId, `itinerantTeamAvailability.${index}.itinerantTeamId`, true);
+    entry?.planResourceItemIds?.forEach(id=>addIdentity("plan-resource",id,`itinerantTeamAvailability.${index}.planResourceItemIds`));
   });
   const runtimeInput = input as unknown as Record<string, unknown>;
   const coachMappingPresent = Object.prototype.hasOwnProperty.call(runtimeInput, "vocalCoachPlanResourceItemIdByContestantId");
@@ -1357,6 +1358,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       continue;
     }
     itinerantAvailabilityById.set(id, [entry]);
+    if(entry.planResourceItemIds?.some(resourceId=>!isPositiveInteger(resourceId)))
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","itinerant-team",id,`${path}.planResourceItemIds`,"Itinerant-unit physical composition contains an invalid resource.");
+    if(entry.transitionMinutes!=null&&(!Number.isFinite(entry.transitionMinutes)||entry.transitionMinutes<0))
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","itinerant-team",id,`${path}.transitionMinutes`,"Itinerant-unit transition must be a non-negative number.");
     const dayStart = toMinutes(input.workDay.start), dayEnd = toMinutes(input.workDay.end);
     for (const [windowIndex, availability] of entry.windows.entries()) {
       const start = toMinutes(availability?.start), end = toMinutes(availability?.end);
@@ -1369,6 +1374,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   for (const task of active) if (isPositiveInteger(task.itinerantTeamId) && !itinerantAvailabilityById.has(task.itinerantTeamId)) {
     addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY", "task", task.id, `tasks.${task.id}.itinerantTeamId`, "Referenced itinerant unit has no explicit availability; full-day availability is never inferred.", { itinerantTeamId: task.itinerantTeamId });
   }
+  for(const task of active)for(const id of [...(task.allowedItinerantTeamIds??[])].sort((a,b)=>Number(a)-Number(b)))if(!isPositiveInteger(id)||!itinerantAvailabilityById.has(id))
+    addIssue("MISSING_ITINERANT_UNIT_AVAILABILITY","task",task.id,`tasks.${task.id}.allowedItinerantTeamIds`,
+      "Allowed itinerant unit has no explicit availability.",{itinerantTeamId:id});
+  for(const task of active)for(const id of task.allowedItinerantTeamIds??[]){const definition=itinerantAvailabilityById.get(id)?.[0];if(definition&&!(definition.planResourceItemIds?.length))
+    addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`tasks.${task.id}.allowedItinerantTeamIds`,"Assignable itinerant unit requires an explicit physical composition.",{itinerantTeamId:id});}
   const participantIdsByCoachId = new Map<number, readonly number[]>();
   for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(
     coachId,
@@ -1377,7 +1387,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const projectedResourcesByTaskId = new Map<number, ProjectedPlannerNextTaskResources>();
   for (const task of active) {
     const unit=task.itinerantTeamId,allowed=task.allowedItinerantTeamIds??[],requirement=task.itinerantTeamRequirement;
-    const invalidUnit=unit!=null&&(!Number.isInteger(unit)||unit<=0),missingRequired=unit==null&&requirement!==undefined&&requirement!==null&&requirement!=="none",missingAllowed=unit==null&&allowed.length>0,incompatible=unit!=null&&allowed.length>0&&!allowed.includes(unit);
+    const domainIsAssignable=unit==null&&requirement==="any"&&allowed.length>0&&allowed.every(isPositiveInteger);
+    const invalidUnit=unit!=null&&(!Number.isInteger(unit)||unit<=0),missingRequired=unit==null&&requirement!==undefined&&requirement!==null&&requirement!=="none"&&!domainIsAssignable,missingAllowed=unit==null&&allowed.length>0&&!domainIsAssignable,incompatible=unit!=null&&allowed.length>0&&!allowed.includes(unit);
     if(invalidUnit||missingRequired||missingAllowed||incompatible)addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`tasks.${task.id}.itinerantTeamRequirement`,"Itinerant-unit requirement has no concrete compatible reversible assignment.",{itinerantTeamId:unit??null,allowedItinerantTeamIds:allowed,itinerantTeamRequirement:requirement??null});
     const assignment = assignmentByTaskId.get(task.id);
     if (assignment) projectedResourcesByTaskId.set(task.id,

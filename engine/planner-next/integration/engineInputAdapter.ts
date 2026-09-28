@@ -174,6 +174,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
       ...(fixed ? { availability: [window(fixed)] } : {}),
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
+      ...(source.allowedItinerantTeamIds?.length ? { allowedItinerantUnitIds: [...new Set(source.allowedItinerantTeamIds)]
+        .sort((a,b)=>a-b).map(id=>canonical("itinerant-team",id)) } : {}),
     };
     if (source.plannerNextKind === "technical") return { ...base, kind: "technical" as const };
     if (source.plannerNextKind === "main" || source.plannerNextKind === "vocal") {
@@ -204,6 +206,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return {
       id: canonical("itinerant-team", id),
       availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
+      ...(availability.planResourceItemIds?.length?{resourceIds:[...new Set(availability.planResourceItemIds)].sort((a,b)=>a-b).map(value=>canonical("plan-resource",value))}:{}),
+      ...(availability.transitionMinutes == null ? {} : {transitionMinutes:availability.transitionMinutes}),
     };
   });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));

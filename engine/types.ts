@@ -289,6 +289,10 @@ export interface EngineInputItinerantTeamAvailabilityInput {
   itinerantTeamId: number;
   /** All hard availability windows for this composition on the planning day. */
   windows: TimeWindow[];
+  /** Physical composition selected atomically with this unit. */
+  planResourceItemIds?: number[];
+  /** Hard changeover between independent operations of this same unit. */
+  transitionMinutes?: number;
 }
 
 export interface EngineInput {

@@ -217,12 +217,12 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if(hasDuplicateIds(itinerantMeals))reasons.add("ITINERANT_UNIT_MEAL_IDENTITY_CONFLICT");
   for(const meal of itinerantMeals)if(typeof meal.id!=="string"||!meal.id||!/^itinerant-team:[1-9]\d*$/.test(meal.itinerantUnitId)||invalidWindow(meal.interval,day)||meal.interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");
   for(let i=0;i<itinerantMeals.length;i++)for(let j=i+1;j<itinerantMeals.length;j++){const a=itinerantMeals[i]!,b=itinerantMeals[j]!;if(a.itinerantUnitId===b.itinerantUnitId&&a.interval.start<b.interval.end&&b.interval.start<a.interval.end)reasons.add("UNREPRESENTABLE_ITINERANT_UNIT_BREAK");}
-  const usedUnitIds=new Set([...tasks.map(task=>task.itinerantUnitId),...itinerantMeals.map(meal=>meal.itinerantUnitId)].filter((id):id is string=>id!==undefined));
+  const usedUnitIds=new Set([...tasks.flatMap(task=>[task.itinerantUnitId,...(task.allowedItinerantUnitIds??[])]),...itinerantMeals.map(meal=>meal.itinerantUnitId)].filter((id):id is string=>id!==undefined));
   const itinerantUnits=Array.isArray(problem.itinerantUnits)?problem.itinerantUnits:[];
   if(hasDuplicateIds(itinerantUnits))reasons.add("DUPLICATE_ITINERANT_UNIT_ID");
-  for(const unit of itinerantUnits)if(typeof unit.id!=="string"||!/^itinerant-team:[1-9]\d*$/.test(unit.id)||!Array.isArray(unit.availability)||unit.availability.length===0||unit.availability.some(interval=>invalidWindow(interval,day)||interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0))reasons.add("INVALID_ITINERANT_UNIT_AVAILABILITY");
+  for(const unit of itinerantUnits)if(typeof unit.id!=="string"||!/^itinerant-team:[1-9]\d*$/.test(unit.id)||!Array.isArray(unit.availability)||unit.availability.length===0||unit.availability.some(interval=>invalidWindow(interval,day)||interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)||unit.transitionMinutes!=null&&(!Number.isFinite(unit.transitionMinutes)||unit.transitionMinutes<0))reasons.add("INVALID_ITINERANT_UNIT_AVAILABILITY");
   const availableUnitIds=new Set(itinerantUnits.map(unit=>unit.id));
-  if(tasks.some(task=>task.itinerantUnitId!==undefined&&!availableUnitIds.has(task.itinerantUnitId)))reasons.add("MISSING_ITINERANT_UNIT_AVAILABILITY");
+  if(tasks.some(task=>task.itinerantUnitId!==undefined&&!availableUnitIds.has(task.itinerantUnitId)||(task.allowedItinerantUnitIds??[]).some(id=>!availableUnitIds.has(id))))reasons.add("MISSING_ITINERANT_UNIT_AVAILABILITY");
   if(tasks.some(task=>task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))||resources.some(resource=>usedUnitIds.has(resource.id)))reasons.add("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
@@ -413,9 +413,19 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const resources = new Map(problem.resources.map((item) => [item.id, item]));
   const taskAvailabilityIds=new Set<string>();
   const expectedTaskById=new Map(problem.tasks.map(task=>[task.id,task]));
+  const assignedItinerantResourcesValid=(expected:Task,actual:ScheduledTask):boolean=>{
+    if(!expected.allowedItinerantUnitIds?.includes(actual.itinerantUnitId??""))return false;
+    const units=(problem.itinerantUnits??[]).filter(unit=>expected.allowedItinerantUnitIds!.includes(unit.id));
+    const allMembers=new Set(units.flatMap(unit=>unit.resourceIds??[]));
+    const selected=units.find(unit=>unit.id===actual.itinerantUnitId);
+    const wanted=[...new Set([...(expected.requiredResourceIds??[]).filter(id=>!allMembers.has(id)),...(selected?.resourceIds??[])])].sort();
+    return JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify(wanted);
+  };
 
   for (const task of scheduled) {
-    if(expectedTaskById.get(task.id)?.itinerantUnitId!==task.itinerantUnitId)itinerantUnitMeal+=1;
+    const expectedUnit=expectedTaskById.get(task.id);
+    if(expectedUnit?.itinerantUnitId!==task.itinerantUnitId
+      &&!(expectedUnit&&assignedItinerantResourcesValid(expectedUnit,task)))itinerantUnitMeal+=1;
     if(task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))itinerantUnitResourceAlias=true;
     const participant = task.participantId === undefined ? undefined : participants.get(task.participantId);
     const coach = task.coachId === undefined ? undefined : coaches.get(task.coachId);
@@ -487,6 +497,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const shared = (a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
       const margin = shared.reduce((maximum, id) => Math.max(maximum, effectiveResourceTransitionMinutes(problem, id)), 0);
       if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin && !isInternalAnchoredPair(problem,a,b)) { resourceTransition += 1; addViolation("RESOURCE_TRANSITION_VIOLATION","HARD",[a,b],shared,[a.spaceId,b.spaceId],{requiredMinutes:margin,actualMinutes:b.start-a.end}); }
+      const sameUnit=a.itinerantUnitId!==undefined&&a.itinerantUnitId===b.itinerantUnitId;
+      const unitMargin=sameUnit?problem.itinerantUnits?.find(unit=>unit.id===a.itinerantUnitId)?.transitionMinutes??0:0;
+      if(sameUnit&&a.spaceId!==b.spaceId&&b.start-a.end<unitMargin&&!isInternalAnchoredPair(problem,a,b)){
+        resourceTransition+=1;addViolation("RESOURCE_TRANSITION_VIOLATION","HARD",[a,b],[],[a.spaceId,b.spaceId],{identityKind:"itinerantUnitId",identity:a.itinerantUnitId,requiredMinutes:unitMargin,actualMinutes:b.start-a.end});
+      }
     }
   }
   const mains = scheduled.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
@@ -628,8 +643,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const chainIdentityMatches=(expected:Task,actual:ScheduledTask)=>expected.kind==="technical"?technicalIdentityMatches(expected,actual):
     actual.id===expected.id&&actual.kind===expected.kind&&actual.spaceId===expected.spaceId&&actual.duration===expected.duration&&actual.end-actual.start===expected.duration
     &&actual.participantId===expected.participantId&&actual.coachId===expected.coachId&&actual.blockKey===expected.blockKey&&actual.setupFamilyId===expected.setupFamilyId
-    &&actual.jointGroupId===expected.jointGroupId&&actual.itinerantUnitId===expected.itinerantUnitId
-    &&JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.requiredResourceIds??[])].sort())
+    &&actual.jointGroupId===expected.jointGroupId&&(actual.itinerantUnitId===expected.itinerantUnitId
+      ?JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.requiredResourceIds??[])].sort())
+      :assignedItinerantResourcesValid(expected,actual))
     &&JSON.stringify([...actual.dependencies].sort())===JSON.stringify([...expected.dependencies].sort());
   const invalidTechnicalChainRootIds=new Set<string>();
   for(const chain of getTechnicalChains(problem.tasks,problem.technicalChains)) {

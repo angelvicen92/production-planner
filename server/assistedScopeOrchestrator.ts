@@ -112,16 +112,19 @@ export function recommendNextAssistedScope(
     attach(input.tasks.filter(task => task.spaceId != null && meal.spaceIds!.includes(task.spaceId)).map(task => task.id), "OPERATIONAL_MEAL", meal.id);
   }
   for (const setup of input.setupPolicies ?? []) attach(input.tasks.filter(task => task.spaceId === setup.spaceId && task.setupFamilyId).map(task => task.id), "SETUP_FAMILY", `setup:${setup.spaceId}`);
-  const itinerantKeys = new Map<string, number[]>();
+  const itinerantMembers = new Map<number, number[]>();
   for (const task of tasks) {
     if(authorities.has(task.id))continue;
-    // This consumes only eligibility already declared by EngineInput.  It does
-    // not infer interchangeable teams from names/resources, and it does not
-    // add alternative-team support to the Planner Next adapter or solver.
+    // This consumes only eligibility already declared by EngineInput; no
+    // interchangeable composition is inferred from names or fixture IDs.
     const ids = canonical([...(task.allowedItinerantTeamIds ?? []), ...(task.itinerantTeamId == null ? [] : [task.itinerantTeamId])]);
-    if (!ids.length) continue; const key = ids.join(","); itinerantKeys.set(key, [...(itinerantKeys.get(key) ?? []), task.id]);
+    if (!ids.length) continue;
+    for(const id of ids)itinerantMembers.set(id,[...(itinerantMembers.get(id)??[]),task.id]);
   }
-  for (const [key, ids] of itinerantKeys) attach(ids, "ITINERANT_AGENDA", `itinerant:${key}`);
+  // Connected explicit identities form one coordinated agenda. Physical
+  // resources deliberately do not participate in this closure.
+  for (const [identity, ids] of [...itinerantMembers].sort(([a],[b])=>a-b))
+    attach(ids, "ITINERANT_AGENDA", `itinerant:${identity}`);
 
   // A SPACE selector resolves every pending obligation in that space.  Close
   // fallback components over that exact scope before producing evidence.
@@ -150,6 +153,9 @@ export function recommendNextAssistedScope(
   }));
   const teamWindows=new Map((input.itinerantTeamAvailability??[]).map(team=>[team.itinerantTeamId,
     unionWindowMinutes(team.windows,dayStart,dayEnd)] as const));
+  const snapshotByTaskId=new Map(snapshot.tasks.filter(row=>row.startPlanned&&row.endPlanned).map(row=>[row.taskId,row]));
+  const protectedTasks=input.tasks.filter(task=>snapshotByTaskId.has(task.id));
+  const operationalMeals=input.operationalMealPolicies??[];
   const pendingResourceUsers=new Map<number,Set<number>>();
   for(const task of tasks)for(const resourceId of task.assignedResourceIds??[]){
     const users=pendingResourceUsers.get(resourceId)??new Set<number>();users.add(task.id);pendingResourceUsers.set(resourceId,users);
@@ -161,7 +167,7 @@ export function recommendNextAssistedScope(
     const authorityIds = [...new Set(authority.filter(item => item.kind === kind).map(item => item.id))].sort();
     const memberSpaceIds = canonical(members.flatMap(task => task.spaceId == null ? [] : [task.spaceId]));
     const duration = members.reduce((sum, task) => sum + (task.durationOverrideMin ?? 0), 0);
-    const deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
+    let deadline = members.map(task => task.fixedWindowEnd).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
     const resources = members.flatMap(task => task.assignedResourceIds ?? []);
     const sharedResourcePressure = resources.length - new Set(resources).size;
     const loads:{load:number;capacity:number;pressureClass:number}[]=[];
@@ -178,6 +184,36 @@ export function recommendNextAssistedScope(
       loads.push({load,capacity,pressureClass:capacity<dayCapacity?2:0});}
     for(const [id,load] of loadByTeam){const capacity=teamWindows.get(id)??dayCapacity;
       loads.push({load,capacity,pressureClass:capacity<dayCapacity?2:0});}
+    const itinerantDomain=canonical(members.flatMap(task=>task.allowedItinerantTeamIds?.length
+      ?task.allowedItinerantTeamIds:task.itinerantTeamId==null?[]:[task.itinerantTeamId]));
+    if(kind==="ITINERANT_AGENDA"&&itinerantDomain.length){
+      const domainResources=new Set(input.tasks.filter(task=>task.itinerantTeamId!=null&&itinerantDomain.includes(task.itinerantTeamId))
+        .flatMap(task=>task.assignedResourceIds??[]));
+      const futureStarts=protectedTasks.filter(task=>{
+        const outsideDomain=task.itinerantTeamId!=null&&!itinerantDomain.includes(task.itinerantTeamId);
+        return outsideDomain&&(task.assignedResourceIds??[]).some(id=>domainResources.has(id));
+      }).map(task=>snapshotByTaskId.get(task.id)!.startPlanned!).sort();
+      const boundary=futureStarts.length?minute(futureStarts[0]!):dayEnd;
+      let capacity=0;
+      for(const teamId of itinerantDomain){
+        const availability=(input.itinerantTeamAvailability??[]).find(entry=>entry.itinerantTeamId===teamId)?.windows??[input.workDay];
+        capacity+=unionWindowMinutes(availability,dayStart,boundary);
+        capacity-=protectedTasks.filter(task=>task.itinerantTeamId===teamId).reduce((sum,task)=>{
+          const row=snapshotByTaskId.get(task.id)!;return sum+windowMinutes(row.startPlanned!,row.endPlanned!);
+        },0);
+        const teamResources=new Set(input.tasks.filter(task=>task.itinerantTeamId===teamId).flatMap(task=>task.assignedResourceIds??[]));
+        capacity-=operationalMeals.filter(policy=>policy.planResourceItemIds.some(id=>teamResources.has(id)))
+          .reduce((sum,policy)=>sum+policy.durationMinutes,0);
+      }
+      capacity=Math.max(0,capacity-Math.max(0,members.length-itinerantDomain.length)*(input.plannerNext?.resourceTransitionMinutes??0));
+      loads.push({load:duration,capacity,pressureClass:boundary<dayEnd?2:1});
+      if(boundary<dayEnd){
+        // The boundary is evidence, not an A2 literal: it comes from the first
+        // protected operation that recomposes resources of this pool.
+        const hours=Math.floor(boundary/60),minutes=boundary%60;
+        deadline=`${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}`;
+      }
+    }
     // Round lanes occupy their spaces in parallel.  Their sound minimum
     // wall-clock footprint is therefore the longest lane, including the
     // configured preparation between its remaining rounds, never the sum of
@@ -229,12 +265,24 @@ export function recommendNextAssistedScope(
   const compareDensity=(aNumerator:number,aDenominator:number,bNumerator:number,bDenominator:number)=>(
     bNumerator*aDenominator-aNumerator*bDenominator
   );
+  const recomposesAgenda=(candidate:OperationalUnitEvidence,agenda:OperationalUnitEvidence):boolean=>{
+    if(agenda.unitKind!=="ITINERANT_AGENDA"||candidate.unitKind!=="TECHNICAL_CHAIN")return false;
+    const domain=new Set(agenda.memberTaskIds.flatMap(id=>{const task=byId.get(id);return [
+      ...(task?.allowedItinerantTeamIds??[]),...(task?.itinerantTeamId==null?[]:[task.itinerantTeamId]),
+    ];}));
+    const allCompositions=input.itinerantTeamAvailability??[];
+    const candidateResources=new Set(candidate.memberTaskIds.flatMap(id=>byId.get(id)?.assignedResourceIds??[]));
+    const recomposed=allCompositions.filter(team=>(team.planResourceItemIds??[]).some(id=>candidateResources.has(id)));
+    return recomposed.length>1&&recomposed.some(team=>domain.has(team.itinerantTeamId));
+  };
   const compare = (a: OperationalUnitEvidence, b: OperationalUnitEvidence) => {
+    const structuralFrontier=recomposesAgenda(a,b)?-1:recomposesAgenda(b,a)?1:0;
     const mainAuthority=b.priority.structuralClass===3?1:a.priority.structuralClass===3?-1:0;
     const mainSupport=(a.priority.structuralClass>=2||b.priority.structuralClass>=2)
       ? b.priority.structuralClass-a.priority.structuralClass:0;
     return mainAuthority
     || mainSupport
+    || structuralFrontier
     || b.priority.effectivePressureClass-a.priority.effectivePressureClass
     || compareDensity(a.priority.effectiveWindowLoadMinutes,a.priority.effectiveWindowCapacityMinutes,
       b.priority.effectiveWindowLoadMinutes,b.priority.effectiveWindowCapacityMinutes)
