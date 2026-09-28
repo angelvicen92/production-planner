@@ -310,6 +310,7 @@ export interface ExactItinerantPlanEvidence {
   conflictEdges:string[]; conflictBackjumps:number; suffixDepthsSkipped:number;
   fixedMainBundlePathEntered:boolean;protectedMainCount:number;protectedMainArchitectureFingerprint:string|null;
   protectedMainSlots:number[];fixedMainBundleGraphPrepared:boolean;fixedMainBundlePreparedEdges:number;
+  fixedMainBundleEdgeRejectionsByComponent:Record<string,number>;fixedMainBundleFirstEdgeRejection:unknown;
   fixedMainBundleCandidatePositions:Record<string,number[]>;fixedMainBundleZeroDomainTaskIds:string[];
   fixedMainBundleParticipantEdgeChecks:number;fixedMainBundleParticipantEdgePrunes:number;
   fixedMainBundleFirstParticipantEdgePrune:unknown;
@@ -1589,6 +1590,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     conflictEdges:[],conflictBackjumps:0,suffixDepthsSkipped:0,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
     fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
+    fixedMainBundleEdgeRejectionsByComponent:{},fixedMainBundleFirstEdgeRejection:null,
     fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
     fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
@@ -2100,6 +2102,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.protectedMainSlots=[...core.evidence.protectedMainSlots];
   evidence.fixedMainBundleGraphPrepared=core.evidence.fixedMainBundleGraphPrepared;
   evidence.fixedMainBundlePreparedEdges=core.evidence.fixedMainBundlePreparedEdges;
+  evidence.fixedMainBundleEdgeRejectionsByComponent={...core.evidence.fixedMainBundleEdgeRejectionsByComponent};
+  evidence.fixedMainBundleFirstEdgeRejection=structuredClone(core.evidence.fixedMainBundleFirstEdgeRejection);
   evidence.fixedMainBundleCandidatePositions=structuredClone(core.evidence.fixedMainBundleCandidatePositions);
   evidence.fixedMainBundleZeroDomainTaskIds=[...core.evidence.fixedMainBundleZeroDomainTaskIds];
   evidence.fixedMainBundleParticipantEdgeChecks=core.evidence.fixedMainBundleParticipantEdgeChecks;

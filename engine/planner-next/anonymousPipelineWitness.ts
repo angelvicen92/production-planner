@@ -5,7 +5,7 @@ import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlo
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain, type PlacementDiagnostic } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching,
   incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 import { assessOperationalMealFutureFeasibility, type OperationalMealSearchBudget } from "./operationalMeals";
@@ -75,9 +75,16 @@ export interface PreparedPipelineBundleGraph {
   readonly protectedPlacements:readonly ScheduledTask[];readonly mainIds:readonly string[];
   readonly candidates:ReadonlyMap<string,ReadonlyMap<number,readonly ScheduledTask[]>>;
   readonly preparedBundleEdges:number;
+  readonly edgeRejectionsByComponent:Readonly<Record<PipelineBundleComponent,number>>;
+  readonly firstEdgeRejection:PipelineBundleEdgeRejection|null;
   readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
     mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
 }
+export type PipelineBundleComponent="arrival"|"styling"|"feeder"|"main"|"anchored";
+export interface PipelineBundleEdgeRejection { readonly mainTaskId:string;readonly participantId:string;readonly position:number;
+  readonly component:PipelineBundleComponent;readonly taskId:string;readonly start:number;readonly end:number;
+  readonly diagnosis:PlacementDiagnostic;readonly blockingProtectedPlacements:readonly ScheduledTask[];
+  readonly accepted:boolean;readonly supportingEphemeral:boolean }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
   architectureStructuralProofChecks:number;architectureStructuralProofRejects:number;
@@ -511,6 +518,8 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
+  const edgeRejectionsByComponent:Record<PipelineBundleComponent,number>={arrival:0,styling:0,feeder:0,main:0,anchored:0};
+  let firstEdgeRejection:PipelineBundleEdgeRejection|null=null;
   const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
     const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
@@ -541,7 +550,14 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       if(protectedMismatch)return;
       bundleEdgesBeforeReservation++;
       const local:ScheduledTask[]=[...protectedPlacements.filter(task=>!bundle.some(item=>item.id===task.id))];
-      const protectedCompatible=bundle.every(task=>canPlaceTask(problem,task,task.start,local));
+      const componentOf=(task:ScheduledTask):PipelineBundleComponent=>task.id===arrival.id?"arrival":task.id===styling.id?"styling":task.id===feeder.id?"feeder":task.id===main.id?"main":"anchored";
+      const failure=bundle.map(task=>({task,diagnosis:diagnoseTaskPlacement(problem,task,task.start,local)})).find(row=>!row.diagnosis.valid);
+      const protectedCompatible=failure===undefined;
+      if(failure){const component=componentOf(failure.task);edgeRejectionsByComponent[component]++;const blocker=failure.diagnosis.blockingPlacedTaskId;
+        firstEdgeRejection??={mainTaskId:main.id,participantId:main.participantId,position,component,taskId:failure.task.id,
+          start:failure.task.start,end:failure.task.end,diagnosis:failure.diagnosis,
+          blockingProtectedPlacements:blocker?protectedPlacements.filter(task=>task.id===blocker):[],
+          accepted:protectedById.has(failure.task.id),supportingEphemeral:!protectedById.has(failure.task.id)};}
       let edgeValid=protectedCompatible;
       for(const task of [...bundle].sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id))){
         if(!canPlaceTask(problem,task,task.start,local)&&!protectedById.has(task.id)){edgeValid=false;break;}
@@ -570,7 +586,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
     candidates.set(main.id,byPosition);
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
-    preparedBundleEdges:bundleEdgesBeforeReservation,participantEdgeEvidence};
+    preparedBundleEdges:bundleEdgesBeforeReservation,edgeRejectionsByComponent,firstEdgeRejection,participantEdgeEvidence};
 }
 
 /** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */

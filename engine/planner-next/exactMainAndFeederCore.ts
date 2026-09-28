@@ -146,6 +146,8 @@ export interface ExactMainAndFeederCoreEvidence {
   protectedMainSlots:number[];
   fixedMainBundleGraphPrepared:boolean;
   fixedMainBundlePreparedEdges:number;
+  fixedMainBundleEdgeRejectionsByComponent:Record<string,number>;
+  fixedMainBundleFirstEdgeRejection:PreparedPipelineBundleGraph["firstEdgeRejection"];
   fixedMainBundleCandidatePositions:Record<string,number[]>;
   fixedMainBundleZeroDomainTaskIds:string[];
   fixedMainBundleParticipantEdgeChecks:number;
@@ -750,6 +752,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     feederRunOptimisticSkippedByTransition:0,feederRunOptimisticSkippedByAuthorizedMeal:0,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
     fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
+    fixedMainBundleEdgeRejectionsByComponent:{},fixedMainBundleFirstEdgeRejection:null,
     fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
     fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
@@ -1021,6 +1024,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.fixedMainBundleGraphPrepared=prepared!==null;
       evidence.fixedMainBundlePreparedEdges=prepared?.preparedBundleEdges??0;
       if(prepared){
+        evidence.fixedMainBundleEdgeRejectionsByComponent={...prepared.edgeRejectionsByComponent};
+        evidence.fixedMainBundleFirstEdgeRejection=prepared.firstEdgeRejection;
         evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...prepared.candidates]
           .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
         evidence.fixedMainBundleZeroDomainTaskIds=[...prepared.candidates]

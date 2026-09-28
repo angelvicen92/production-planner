@@ -133,6 +133,7 @@ export interface AssistedPlanningEvidence {
   readonly fixedMainBundle?:Pick<ExactItinerantPlanEvidence,"fixedMainBundlePathEntered"|"protectedMainCount"|
     "protectedMainArchitectureFingerprint"|"protectedMainSlots"|"fixedMainBundleGraphPrepared"|
     "fixedMainBundlePreparedEdges"|"fixedMainBundleCandidatePositions"|"fixedMainBundleZeroDomainTaskIds"|
+    "fixedMainBundleEdgeRejectionsByComponent"|"fixedMainBundleFirstEdgeRejection"|
     "fixedMainBundleParticipantEdgeChecks"|"fixedMainBundleParticipantEdgePrunes"|"fixedMainBundleFirstParticipantEdgePrune"|
     "fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
     "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
@@ -591,6 +592,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   }:null;
   const fixedMainBundleKeys=["fixedMainBundlePathEntered","protectedMainCount","protectedMainArchitectureFingerprint",
     "protectedMainSlots","fixedMainBundleGraphPrepared","fixedMainBundlePreparedEdges","fixedMainBundleCandidatePositions",
+    "fixedMainBundleEdgeRejectionsByComponent","fixedMainBundleFirstEdgeRejection",
     "fixedMainBundleZeroDomainTaskIds","fixedMainBundleParticipantEdgeChecks","fixedMainBundleParticipantEdgePrunes",
     "fixedMainBundleFirstParticipantEdgePrune","fixedMainBundleMatchingAttempts",
     "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",
