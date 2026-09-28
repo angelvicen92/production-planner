@@ -42,6 +42,17 @@ export interface AssistedSetupPreparationSnapshotV1 {
   readonly end: number;
 }
 
+/** A between-round space occupation accepted with a stage, expressed in source identities. */
+export interface AssistedRoundPreparationSnapshotV1 {
+  readonly id: string;
+  readonly synchronizationId: string;
+  readonly spaceId: number;
+  readonly roundIndex: number;
+  readonly duration: number;
+  readonly start: number;
+  readonly end: number;
+}
+
 export interface AssistedPlanningSnapshotV1 {
   readonly contractVersion: typeof ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION;
   /** Complete task catalog for the day, including unplaced tasks. */
@@ -52,4 +63,6 @@ export interface AssistedPlanningSnapshotV1 {
   readonly operationalMeals?: readonly AssistedOperationalMealSnapshotV1[];
   /** Omitted for legacy snapshots and when no setup preparation was accepted. */
   readonly setupPreparations?: readonly AssistedSetupPreparationSnapshotV1[];
+  /** Omitted for legacy snapshots and when no round preparation was accepted. */
+  readonly roundPreparations?: readonly AssistedRoundPreparationSnapshotV1[];
 }

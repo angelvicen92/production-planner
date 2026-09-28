@@ -104,6 +104,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       firstBlocker={scope:selector,baseStageId:session.draftBaseStageId,completedObligationCount:before.length,
         remainingObligationCount:sourceIds.length-before.length,protectedPlacementCount:before.length,
         protectedSetupPreparations:(session.draftSnapshotJson as AssistedPlanningSnapshotV1).setupPreparations??[],
+        protectedRoundPreparations:(session.draftSnapshotJson as AssistedPlanningSnapshotV1).roundPreparations??[],
         proposalOutcome:"UNSUPPORTED",failureCategory:"UNSUPPORTED",phase:"buildAssistedProblem/supporting closure",
         rejectionReason:error instanceof Error?error.message:String(error),classification:"NEXT_BLOCKER_UNSUPPORTED_SUPPORTING_IDENTITY"};
       break;
@@ -213,6 +214,12 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       searchProtectedOperationalMeals:evidence.protectedOperationalMeals??[],
       baseSnapshotSetupPreparations:(session.draftSnapshotJson as AssistedPlanningSnapshotV1).setupPreparations??[],
       searchProtectedSetupPreparations:evidence.protectedSetupPreparations??[],
+      baseSnapshotRoundPreparations:(session.draftSnapshotJson as AssistedPlanningSnapshotV1).roundPreparations??[],
+      searchProtectedRoundPreparations:evidence.protectedRoundPreparations??[],
+      protectedRoundPreparationIds:evidence.protectedRoundPreparationIds??[],
+      protectedRoundPreparationCount:evidence.protectedRoundPreparationCount??0,
+      selectedRoundPreparationIds:evidence.selectedRoundPreparationIds??[],
+      selectedRoundPreparationCount:evidence.selectedRoundPreparationCount??0,
       proposedSnapshotOperationalMeals:[...(result.proposedDraftSnapshot?.operationalMeals??[])],
       includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal ? [...result.scopeTaskIds] : [],
       supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
@@ -444,7 +451,9 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     remainingObligations:row.remainingObligationCount,branches:row.branchesExplored,result:row.proposalOutcome,
     protectedOperationalMeals:row.searchProtectedOperationalMeals.length,
     baseSnapshotSetupPreparations:row.baseSnapshotSetupPreparations.length,
-    protectedSetupPreparations:row.searchProtectedSetupPreparations.length}));
+    protectedSetupPreparations:row.searchProtectedSetupPreparations.length,
+    protectedRoundPreparations:row.searchProtectedRoundPreparations.length,
+    selectedRoundPreparations:row.selectedRoundPreparationCount}));
   const stage9=iterations.find(row=>row.ordinal===9);
   const stage9MacroFutureFeasibility=stage9?{
     scope:stage9.scopeSelector,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { AssistedPlanningResult, AssistedProblem } from "../engine/planner-next/assistedPlanning";
-import { createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
+import { createSpec10021RoundSynchronizationEngineInputFixture, createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import type { IStorage } from "./storage";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
@@ -179,6 +179,58 @@ test("run derives protected placements only from the base stage and preserves th
   assert.equal(captured?.problem.analyticalFutureParticipantTasks?.some(task=>task.id==="task:101"||task.id==="task:105"),false);
   assert.equal(result.outcome,"PROPOSAL"); assert.ok(result.proposedDraftFingerprint); assert.ok(finished); assert.deepEqual(writes,[]);
   assert.deepEqual(result.proposedDraftSnapshot?.planningBlocks,baseSnapshot.planningBlocks);
+});
+
+test("product proposal round-trips protected and newly selected round preparations without duplicates",async()=>{
+  const roundInput=createSpec10021RoundSynchronizationEngineInputFixture();
+  const protectedProduct={id:"round-preparation:dual-room-rounds:304:2",synchronizationId:"dual-room-rounds",spaceId:304,roundIndex:2,duration:5,start:600,end:605};
+  const roundBase=buildAssistedPlanningSnapshotV1(roundInput.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,
+    spaceId:task.spaceId??null,zoneId:task.zoneId??null})),undefined,undefined,undefined,[protectedProduct]);
+  const roundStage={...stage,snapshotJson:roundBase,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(roundBase)};
+  const roundSession={...session,draftSnapshotJson:roundBase,draftFingerprint:roundStage.snapshotFingerprint};
+  const roundRun={...runRecord(),scope_task_ids_json:[101],scope_json:{selector:{kind:"TASK_IDS",taskIds:[101]}}};
+  const roundStorage=storage({getActiveAssistedPlanningSession:async()=>roundSession,getPlanOptimizerSnapshot:async()=>({}),
+    getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+    getAssistedPlanningStage:async()=>roundStage,listAssistedPlanningStages:async()=>[roundStage]},[]);
+  let captured:AssistedProblem|undefined;
+  const runner=(problem:AssistedProblem):AssistedPlanningResult=>{
+    captured=problem;
+    assert.deepEqual(problem.protectedRoundPreparations,[{...protectedProduct,id:"round-preparation:round-synchronization:dual-room-rounds:space:304:2",
+      kind:"round-preparation",synchronizationId:"round-synchronization:dual-room-rounds",spaceId:"space:304"}]);
+    const second={...problem.protectedRoundPreparations[0]!,id:"round-preparation:round-synchronization:dual-room-rounds:space:305:2",spaceId:"space:305"};
+    const task=problem.problem.tasks.find(item=>item.id==="task:101")!;
+    return {proposal:[{...task,start:660,end:690}],evidence:{...evidence(true),selectedRoundPreparations:[...problem.protectedRoundPreparations,second]}};
+  };
+  const service=new AssistedProposalService(roundStorage,queueMicrotask,access({find:async()=>({data:roundRun,error:null}),finish:async()=>({error:null})}),runner,
+    {buildInput:async()=>structuredClone(roundInput),buildConfigRevision:dependencies().buildConfigRevision});
+  const first=await service.run(planId,9),second=await service.run(planId,9);
+  assert.ok(captured);assert.equal(first.outcome,"PROPOSAL");
+  assert.deepEqual(first.proposedDraftSnapshot?.roundPreparations,[protectedProduct,
+    {id:"round-preparation:dual-room-rounds:305:2",synchronizationId:"dual-room-rounds",spaceId:305,roundIndex:2,duration:5,start:600,end:605}]);
+  assert.equal(new Set(first.proposedDraftSnapshot?.roundPreparations?.map(item=>item.id)).size,2);
+  assert.equal(first.proposedDraftFingerprint,second.proposedDraftFingerprint);
+
+  const legacy=buildAssistedPlanningSnapshotV1(roundInput.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null})));
+  const legacyStage={...roundStage,snapshotJson:legacy,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(legacy)};
+  const legacySession={...roundSession,draftSnapshotJson:legacy,draftFingerprint:legacyStage.snapshotFingerprint};
+  let legacyProtected=-1;
+  const legacyService=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>legacySession,getPlanOptimizerSnapshot:async()=>({}),
+    getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>legacyStage,
+    listAssistedPlanningStages:async()=>[legacyStage]},[]),queueMicrotask,access({find:async()=>({data:roundRun,error:null}),finish:async()=>({error:null})}),
+    problem=>{legacyProtected=problem.protectedRoundPreparations.length;return {proposal:null,evidence:evidence(false)};},
+    {buildInput:async()=>structuredClone(roundInput),buildConfigRevision:dependencies().buildConfigRevision});
+  await legacyService.run(planId,9);assert.equal(legacyProtected,0);
+
+  for(const invalid of [{...protectedProduct,synchronizationId:"missing"},{...protectedProduct,spaceId:999}]){
+    const invalidSnapshot=buildAssistedPlanningSnapshotV1(roundInput.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null})),undefined,undefined,undefined,[invalid]);
+    const invalidStage={...roundStage,snapshotJson:invalidSnapshot,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(invalidSnapshot)};
+    const invalidSession={...roundSession,draftSnapshotJson:invalidSnapshot,draftFingerprint:invalidStage.snapshotFingerprint};
+    const invalidService=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>invalidSession,getPlanOptimizerSnapshot:async()=>({}),
+      getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>invalidStage,
+      listAssistedPlanningStages:async()=>[invalidStage]},[]),queueMicrotask,access({find:async()=>({data:roundRun,error:null})}),runner,
+      {buildInput:async()=>structuredClone(roundInput),buildConfigRevision:dependencies().buildConfigRevision});
+    await assert.rejects(invalidService.run(planId,9),/UNREPRESENTABLE_PROTECTED_ROUND_PREPARATION/);
+  }
 });
 
 test("material participant meals update their source row and restore as fixed meal context",async()=>{

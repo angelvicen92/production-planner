@@ -96,3 +96,20 @@ test("setup preparations are canonical while absent and empty values preserve th
   assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,[preparations[0],preparations[0]]),/duplicate setup preparation/);
   assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,[{...preparations[0],end:95}]),/invalid.*setup preparation/);
 });
+
+test("round preparations are canonical, fingerprinted, replayable, and legacy-compatible",()=>{
+  const legacy=buildAssistedPlanningSnapshotV1(base);
+  const preparations=[
+    {id:"round-preparation:sync:8:3",synchronizationId:"sync",spaceId:8,roundIndex:3,duration:5,start:100,end:105},
+    {id:"round-preparation:sync:7:2",synchronizationId:"sync",spaceId:7,roundIndex:2,duration:5,start:80,end:85},
+  ];
+  const first=buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,preparations);
+  const reordered=buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,[...preparations].reverse());
+  assert.deepEqual(first.roundPreparations?.map(item=>item.start),[80,100]);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(first),fingerprintAssistedPlanningSnapshotV1(reordered));
+  assert.notEqual(fingerprintAssistedPlanningSnapshotV1(first),fingerprintAssistedPlanningSnapshotV1(legacy));
+  assert.deepEqual(buildAssistedPlanningSnapshotV1(first.tasks.map(task=>({id:task.taskId,...task})),undefined,undefined,undefined,first.roundPreparations),first);
+  assert.equal(Object.prototype.hasOwnProperty.call(buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,[]),"roundPreparations"),false);
+  assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,[preparations[0],preparations[0]]),/duplicate round preparation/);
+  assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,[{...preparations[0],end:106}]),/invalid.*round preparation/);
+});
