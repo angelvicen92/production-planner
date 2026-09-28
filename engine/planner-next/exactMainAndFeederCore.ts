@@ -148,6 +148,10 @@ export interface ExactMainAndFeederCoreEvidence {
   fixedMainBundlePreparedEdges:number;
   fixedMainBundleEdgeRejectionsByComponent:Record<string,number>;
   fixedMainBundleFirstEdgeRejection:PreparedPipelineBundleGraph["firstEdgeRejection"];
+  fixedPipelineSupportingWitnessChecks:number;fixedPipelineSupportingPreferredFailures:number;
+  fixedPipelineSupportingFallbacks:number;fixedPipelineSupportingResult:string|null;fixedPipelineSupportingBranches:number;
+  fixedPipelineSupportingFingerprint:string|null;fixedPipelineSupportingStylingCount:number;fixedPipelineSupportingArrivalCount:number;
+  fixedPipelineSupportingFirstReason:string|null;fixedPipelineSupportingUsage:"RECONSTRUCTION"|"FUTURE_FEASIBILITY"|null;
   fixedMainBundleCandidatePositions:Record<string,number[]>;
   fixedMainBundleZeroDomainTaskIds:string[];
   fixedMainBundleParticipantEdgeChecks:number;
@@ -753,6 +757,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
     fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
     fixedMainBundleEdgeRejectionsByComponent:{},fixedMainBundleFirstEdgeRejection:null,
+    fixedPipelineSupportingWitnessChecks:0,fixedPipelineSupportingPreferredFailures:0,fixedPipelineSupportingFallbacks:0,
+    fixedPipelineSupportingResult:null,fixedPipelineSupportingBranches:0,fixedPipelineSupportingFingerprint:null,
+    fixedPipelineSupportingStylingCount:0,fixedPipelineSupportingArrivalCount:0,fixedPipelineSupportingFirstReason:null,fixedPipelineSupportingUsage:null,
     fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
     fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
@@ -1026,6 +1033,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(prepared){
         evidence.fixedMainBundleEdgeRejectionsByComponent={...prepared.edgeRejectionsByComponent};
         evidence.fixedMainBundleFirstEdgeRejection=prepared.firstEdgeRejection;
+        const supporting=prepared.fixedSupportingWitness;if(supporting){evidence.fixedPipelineSupportingWitnessChecks++;
+          evidence.fixedPipelineSupportingPreferredFailures=Number(supporting.preferredFailed);evidence.fixedPipelineSupportingFallbacks=Number(supporting.fallbackUsed);
+          evidence.fixedPipelineSupportingResult=supporting.status;evidence.fixedPipelineSupportingBranches=supporting.branches;
+          evidence.fixedPipelineSupportingFingerprint=supporting.fingerprint;evidence.fixedPipelineSupportingStylingCount=supporting.stylingCount;
+          evidence.fixedPipelineSupportingArrivalCount=supporting.arrivalCount;evidence.fixedPipelineSupportingFirstReason=supporting.reason;
+          evidence.fixedPipelineSupportingUsage="RECONSTRUCTION";}
         evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...prepared.candidates]
           .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
         evidence.fixedMainBundleZeroDomainTaskIds=[...prepared.candidates]

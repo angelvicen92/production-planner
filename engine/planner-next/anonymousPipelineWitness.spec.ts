@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
-  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  buildFixedPipelineSupportingWitness } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -365,6 +366,25 @@ describe("anonymous structural pipeline witness",()=>{
     const protectedTask={...supporting,id:"protected-overlap",dependencies:[]};
     const prepared=preparePipelineBundleGraph(p,architecture,[protectedTask]);assert.ok(prepared);
     assert.equal(prepared.candidates.get("main0")!.size,0);
+  });
+
+  it("falls back from a blocked preferred supporting witness without moving protected work",()=>{
+    const p=problem();const architecture={pattern:["A"],slots:[225]};const nominal=materializeNominalPipelineWitness(p,architecture);
+    const main=nominal.scheduledTasks.find(task=>task.id==="main0")!,feeder=nominal.scheduledTasks.find(task=>task.id==="feed0")!;
+    const style=nominal.scheduledTasks.find(task=>task.id==="style0")!;p.participants.push({id:"external",availability:windows});
+    const external={...style,id:"external",participantId:"external",dependencies:[],start:style.start,end:style.end};
+    const result=buildFixedPipelineSupportingWitness(p,[main,feeder,external],nominal.scheduledTasks);
+    assert.equal(result.status,"FEASIBLE",result.reason??"");assert.equal(result.preferredFailed,true);assert.equal(result.fallbackUsed,true);
+    assert.deepEqual([main,feeder,external],[main,feeder,external]);assert.notEqual(result.placements.find(task=>task.id==="style0")?.start,style.start);
+  });
+
+  it("returns exact infeasible only after exhausting collective supporting geometry",()=>{
+    const p=problem();const architecture={pattern:["A"],slots:[225]};const nominal=materializeNominalPipelineWitness(p,architecture);
+    const main=nominal.scheduledTasks.find(task=>task.id==="main0")!,feeder=nominal.scheduledTasks.find(task=>task.id==="feed0")!;
+    const style=nominal.scheduledTasks.find(task=>task.id==="style0")!;p.tasks.find(task=>task.id==="style0")!.availability=[{start:style.start,end:style.end}];
+    p.participants.push({id:"external",availability:windows});const external={...style,id:"external",participantId:"external",dependencies:[]};
+    const result=buildFixedPipelineSupportingWitness(p,[main,feeder,external],nominal.scheduledTasks);
+    assert.equal(result.status,"INFEASIBLE");assert.equal(result.reason,"NO_COLLECTIVE_STYLING_ARRIVAL_WITNESS");
   });
 
   it("rematches onto another hard-valid position when a protected placement removes the nominal edge",()=>{

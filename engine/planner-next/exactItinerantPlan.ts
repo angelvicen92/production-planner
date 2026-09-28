@@ -311,6 +311,10 @@ export interface ExactItinerantPlanEvidence {
   fixedMainBundlePathEntered:boolean;protectedMainCount:number;protectedMainArchitectureFingerprint:string|null;
   protectedMainSlots:number[];fixedMainBundleGraphPrepared:boolean;fixedMainBundlePreparedEdges:number;
   fixedMainBundleEdgeRejectionsByComponent:Record<string,number>;fixedMainBundleFirstEdgeRejection:unknown;
+  fixedPipelineSupportingWitnessChecks:number;fixedPipelineSupportingPreferredFailures:number;fixedPipelineSupportingFallbacks:number;
+  fixedPipelineSupportingResult:string|null;fixedPipelineSupportingBranches:number;fixedPipelineSupportingFingerprint:string|null;
+  fixedPipelineSupportingStylingCount:number;fixedPipelineSupportingArrivalCount:number;fixedPipelineSupportingFirstReason:string|null;
+  fixedPipelineSupportingUsage:string|null;
   fixedMainBundleCandidatePositions:Record<string,number[]>;fixedMainBundleZeroDomainTaskIds:string[];
   fixedMainBundleParticipantEdgeChecks:number;fixedMainBundleParticipantEdgePrunes:number;
   fixedMainBundleFirstParticipantEdgePrune:unknown;
@@ -1591,6 +1595,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
     fixedMainBundleGraphPrepared:false,fixedMainBundlePreparedEdges:0,fixedMainBundleCandidatePositions:{},
     fixedMainBundleEdgeRejectionsByComponent:{},fixedMainBundleFirstEdgeRejection:null,
+    fixedPipelineSupportingWitnessChecks:0,fixedPipelineSupportingPreferredFailures:0,fixedPipelineSupportingFallbacks:0,
+    fixedPipelineSupportingResult:null,fixedPipelineSupportingBranches:0,fixedPipelineSupportingFingerprint:null,
+    fixedPipelineSupportingStylingCount:0,fixedPipelineSupportingArrivalCount:0,fixedPipelineSupportingFirstReason:null,fixedPipelineSupportingUsage:null,
     fixedMainBundleZeroDomainTaskIds:[],fixedMainBundleParticipantEdgeChecks:0,fixedMainBundleParticipantEdgePrunes:0,
     fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
@@ -2104,6 +2111,16 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.fixedMainBundlePreparedEdges=core.evidence.fixedMainBundlePreparedEdges;
   evidence.fixedMainBundleEdgeRejectionsByComponent={...core.evidence.fixedMainBundleEdgeRejectionsByComponent};
   evidence.fixedMainBundleFirstEdgeRejection=structuredClone(core.evidence.fixedMainBundleFirstEdgeRejection);
+  evidence.fixedPipelineSupportingWitnessChecks=core.evidence.fixedPipelineSupportingWitnessChecks;
+  evidence.fixedPipelineSupportingPreferredFailures=core.evidence.fixedPipelineSupportingPreferredFailures;
+  evidence.fixedPipelineSupportingFallbacks=core.evidence.fixedPipelineSupportingFallbacks;
+  evidence.fixedPipelineSupportingResult=core.evidence.fixedPipelineSupportingResult;
+  evidence.fixedPipelineSupportingBranches=core.evidence.fixedPipelineSupportingBranches;
+  evidence.fixedPipelineSupportingFingerprint=core.evidence.fixedPipelineSupportingFingerprint;
+  evidence.fixedPipelineSupportingStylingCount=core.evidence.fixedPipelineSupportingStylingCount;
+  evidence.fixedPipelineSupportingArrivalCount=core.evidence.fixedPipelineSupportingArrivalCount;
+  evidence.fixedPipelineSupportingFirstReason=core.evidence.fixedPipelineSupportingFirstReason;
+  evidence.fixedPipelineSupportingUsage=core.evidence.fixedPipelineSupportingUsage;
   evidence.fixedMainBundleCandidatePositions=structuredClone(core.evidence.fixedMainBundleCandidatePositions);
   evidence.fixedMainBundleZeroDomainTaskIds=[...core.evidence.fixedMainBundleZeroDomainTaskIds];
   evidence.fixedMainBundleParticipantEdgeChecks=core.evidence.fixedMainBundleParticipantEdgeChecks;

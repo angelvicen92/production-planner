@@ -77,6 +77,7 @@ export interface PreparedPipelineBundleGraph {
   readonly preparedBundleEdges:number;
   readonly edgeRejectionsByComponent:Readonly<Record<PipelineBundleComponent,number>>;
   readonly firstEdgeRejection:PipelineBundleEdgeRejection|null;
+  readonly fixedSupportingWitness:FixedPipelineSupportingWitness|null;
   readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
     mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
 }
@@ -85,6 +86,11 @@ export interface PipelineBundleEdgeRejection { readonly mainTaskId:string;readon
   readonly component:PipelineBundleComponent;readonly taskId:string;readonly start:number;readonly end:number;
   readonly diagnosis:PlacementDiagnostic;readonly blockingProtectedPlacements:readonly ScheduledTask[];
   readonly accepted:boolean;readonly supportingEphemeral:boolean }
+export interface FixedPipelineSupportingWitness {
+  readonly status:"FEASIBLE"|"INFEASIBLE"|"INCONCLUSIVE";readonly placements:readonly ScheduledTask[];
+  readonly branches:number;readonly preferredFailed:boolean;readonly fallbackUsed:boolean;readonly fingerprint:string|null;
+  readonly stylingCount:number;readonly arrivalCount:number;readonly reason:string|null;
+}
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
   architectureStructuralProofChecks:number;architectureStructuralProofRejects:number;
@@ -96,6 +102,50 @@ const orderedWindows = (windows: readonly Window[] | undefined, fallback:Window)
   [...(windows?.length ? windows : [fallback])].sort((a,b)=>a.start-b.start||a.end-b.end);
 const stable = (value:unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const signatureWindows = (windows: readonly Window[] | undefined) => orderedWindows(windows, {start:-1,end:-1});
+
+/** Exact collective reconstruction of ephemeral entry Styling and IN against accepted context. */
+export function buildFixedPipelineSupportingWitness(problem:Readonly<PlannerNextProblem>,protectedPlacements:readonly ScheduledTask[],
+  preferred:readonly ScheduledTask[]=[]):FixedPipelineSupportingWitness {
+  const protectedById=new Map(protectedPlacements.map(task=>[task.id,task]));
+  const arrivals=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  const styles=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="auxiliary"&&task.participantId!==undefined
+    &&task.dependencies.some(id=>arrivals.has(id))&&problem.tasks.some(main=>main.kind==="main"&&main.participantId===task.participantId&&main.dependencies.includes(task.id)))
+    .sort((a,b)=>a.id.localeCompare(b.id));
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  const feeders=problem.tasks.filter(task=>task.kind==="vocal"&&mains.some(main=>main.participantId===task.participantId&&main.dependencies.includes(task.id)));
+  if(!mains.every(task=>protectedById.has(task.id))||!feeders.every(task=>protectedById.has(task.id)))
+    return {status:"INCONCLUSIVE",placements:[],branches:0,preferredFailed:false,fallbackUsed:false,fingerprint:null,stylingCount:0,arrivalCount:0,reason:"FIXED_MAIN_OR_FEEDER_ABSENT"};
+  const fixed=protectedPlacements.filter(task=>!styles.some(style=>style.id===task.id)&&!arrivals.has(task.id));
+  const preferredById=new Map(preferred.map(task=>[task.id,task]));let branches=0,preferredFailed=false,fallbackUsed=false;
+  const budget=Math.min(problem.budget.maxBranchExpansions,problem.budget.maxBacktracks);let exhausted=false;let solution:ScheduledTask[]|null=null;
+  const ordered=[...styles].sort((a,b)=>(preferredById.get(a.id)?.start??Number.POSITIVE_INFINITY)-(preferredById.get(b.id)?.start??Number.POSITIVE_INFINITY)
+    ||a.id.localeCompare(b.id));
+  const preferredStyles=ordered.map(task=>preferredById.get(task.id)).filter((task):task is ScheduledTask=>task!==undefined)
+    .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  if(preferredStyles.length===ordered.length){const placed:ScheduledTask[]=[];let valid=true;
+    for(const task of preferredStyles){if(!canPlaceTask(problem,task,task.start,[...fixed,...placed])){valid=false;break;}placed.push(task);}
+    if(valid){const arrival=assessCoreArrivalTransportFeasibility(problem,[...fixed,...placed]);branches+=arrival.evidence.contiguousStatesExplored;
+      if(arrival.status==="FEASIBLE"&&arrival.scheduled)solution=[...placed,...arrival.scheduled];}}
+  const search=(remaining:readonly ParticipantTask[],placed:ScheduledTask[]):boolean=>{
+    if(remaining.length===0){const arrival=assessCoreArrivalTransportFeasibility(problem,[...fixed,...placed]);branches+=arrival.evidence.contiguousStatesExplored;
+      if(arrival.status==="FEASIBLE"&&arrival.scheduled){solution=[...placed,...arrival.scheduled];return true;}return false;}
+    const choices=[...remaining].sort((a,b)=>{const da=exactTaskStartDomain(problem,a,[...fixed,...placed]).eligibleStartCount,
+      db=exactTaskStartDomain(problem,b,[...fixed,...placed]).eligibleStartCount;return da-db||ordered.indexOf(a)-ordered.indexOf(b);});
+    for(const task of choices){if(branches>=budget){exhausted=true;return false;}const domain=exactTaskStartDomain(problem,task,[...fixed,...placed]);
+      const preferredStart=preferredById.get(task.id)?.start;const starts=[...(preferredStart!==undefined&&domain.intervals.some(i=>i.start<=preferredStart&&preferredStart<=i.end)?[preferredStart]:[]),
+        ...domain.intervals.map(interval=>interval.start)].filter((value,i,all)=>all.indexOf(value)===i);
+      for(const start of starts){branches++;if(start!==preferredStart)fallbackUsed=true;const next=[...placed,{...task,start,end:start+task.duration}];
+        const arrivalProbe=assessCoreArrivalTransportFeasibility(problem,[...fixed,...next]);branches+=arrivalProbe.evidence.contiguousStatesExplored;
+        if(arrivalProbe.status!=="INFEASIBLE"&&search(remaining.filter(other=>other.id!==task.id),next))return true;
+        if(branches>=budget){exhausted=true;return false;}}}
+    return false;};
+  const feasible=solution!==null||search(ordered,[]);preferredFailed=!feasible||solution!.some(task=>preferredById.has(task.id)&&preferredById.get(task.id)!.start!==task.start);
+  if(feasible){const placements=solution!.sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));return {status:"FEASIBLE",placements,branches,
+    preferredFailed,fallbackUsed,fingerprint:stable(placements.map(({id,start,end,spaceId})=>({id,start,end,spaceId}))),stylingCount:styles.length,
+    arrivalCount:placements.filter(task=>arrivals.has(task.id)).length,reason:null};}
+  return {status:exhausted?"INCONCLUSIVE":"INFEASIBLE",placements:[],branches,preferredFailed:true,fallbackUsed,
+    fingerprint:null,stylingCount:0,arrivalCount:0,reason:exhausted?"SUPPORTING_BRANCH_BUDGET_EXHAUSTED":"NO_COLLECTIVE_STYLING_ARRIVAL_WITNESS"};
+}
 
 /**
  * Builds a participant-free, concrete witness for IN -> {entry styling, vocal} -> Main.
@@ -516,6 +566,30 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   const protectedById=new Map(protectedPlacements.map(task=>[task.id,task]));
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined)
     .sort((a,b)=>a.id.localeCompare(b.id));
+  const supportingIds=problem.tasks.filter(task=>task.kind==="auxiliary"&&(arrivalIds.has(task.id)
+    ||task.dependencies.some(id=>arrivalIds.has(id)))).map(task=>task.id);
+  const pipelineFeeders=problem.tasks.filter(task=>task.kind==="vocal"&&mains.some(main=>main.participantId===task.participantId&&main.dependencies.includes(task.id)));
+  const fixedSupporting=mains.length>0&&mains.every(main=>protectedById.has(main.id))&&pipelineFeeders.every(task=>protectedById.has(task.id))
+    &&supportingIds.every(id=>!protectedById.has(id))
+    ?buildFixedPipelineSupportingWitness(problem,protectedPlacements,nominal.scheduledTasks):null;
+  if(fixedSupporting?.status==="FEASIBLE"){
+    const supportByParticipant=(participantId:string)=>fixedSupporting.placements.filter(task=>task.participantId===participantId);
+    const candidates=new Map<string,Map<number,ScheduledTask[]>>();
+    for(const main of mains){const fixedMain=protectedById.get(main.id)!;const position=architecture.slots.findIndex(start=>start===fixedMain.start);
+      const feeder=problem.tasks.find(task=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
+      const fixedFeeder=feeder&&protectedById.get(feeder.id);const row=new Map<number,ScheduledTask[]>();
+      const supportingIds=new Set(supportByParticipant(main.participantId).map(task=>task.id));
+      const retained=nominal.scheduledTasks.filter(task=>task.participantId===main.participantId&&!supportingIds.has(task.id)
+        &&task.id!==main.id&&task.id!==feeder?.id).map(task=>protectedById.get(task.id)??task);
+      if(position>=0&&fixedFeeder)row.set(position,[...supportByParticipant(main.participantId),...retained,fixedFeeder,fixedMain]);candidates.set(main.id,row);}
+    return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
+      preparedBundleEdges:mains.length,edgeRejectionsByComponent:{arrival:0,styling:0,feeder:0,main:0,anchored:0},firstEdgeRejection:null,
+      fixedSupportingWitness:fixedSupporting,participantEdgeEvidence:{checked:0,pruned:0,abstained:0,firstPrune:null}};
+  }
+  if(fixedSupporting)return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),
+    candidates:new Map(mains.map(main=>[main.id,new Map()])),preparedBundleEdges:0,
+    edgeRejectionsByComponent:{arrival:0,styling:0,feeder:0,main:0,anchored:0},firstEdgeRejection:null,
+    fixedSupportingWitness:fixedSupporting,participantEdgeEvidence:{checked:0,pruned:0,abstained:0,firstPrune:null}};
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
   const edgeRejectionsByComponent:Record<PipelineBundleComponent,number>={arrival:0,styling:0,feeder:0,main:0,anchored:0};
@@ -586,7 +660,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
     candidates.set(main.id,byPosition);
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
-    preparedBundleEdges:bundleEdgesBeforeReservation,edgeRejectionsByComponent,firstEdgeRejection,participantEdgeEvidence};
+    preparedBundleEdges:bundleEdgesBeforeReservation,edgeRejectionsByComponent,firstEdgeRejection,fixedSupportingWitness:fixedSupporting,participantEdgeEvidence};
 }
 
 /** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */

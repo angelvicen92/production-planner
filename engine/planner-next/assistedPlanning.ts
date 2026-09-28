@@ -134,6 +134,9 @@ export interface AssistedPlanningEvidence {
     "protectedMainArchitectureFingerprint"|"protectedMainSlots"|"fixedMainBundleGraphPrepared"|
     "fixedMainBundlePreparedEdges"|"fixedMainBundleCandidatePositions"|"fixedMainBundleZeroDomainTaskIds"|
     "fixedMainBundleEdgeRejectionsByComponent"|"fixedMainBundleFirstEdgeRejection"|
+    "fixedPipelineSupportingWitnessChecks"|"fixedPipelineSupportingPreferredFailures"|"fixedPipelineSupportingFallbacks"|
+    "fixedPipelineSupportingResult"|"fixedPipelineSupportingBranches"|"fixedPipelineSupportingFingerprint"|
+    "fixedPipelineSupportingStylingCount"|"fixedPipelineSupportingArrivalCount"|"fixedPipelineSupportingFirstReason"|"fixedPipelineSupportingUsage"|
     "fixedMainBundleParticipantEdgeChecks"|"fixedMainBundleParticipantEdgePrunes"|"fixedMainBundleFirstParticipantEdgePrune"|
     "fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
     "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
@@ -593,6 +596,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const fixedMainBundleKeys=["fixedMainBundlePathEntered","protectedMainCount","protectedMainArchitectureFingerprint",
     "protectedMainSlots","fixedMainBundleGraphPrepared","fixedMainBundlePreparedEdges","fixedMainBundleCandidatePositions",
     "fixedMainBundleEdgeRejectionsByComponent","fixedMainBundleFirstEdgeRejection",
+    "fixedPipelineSupportingWitnessChecks","fixedPipelineSupportingPreferredFailures","fixedPipelineSupportingFallbacks",
+    "fixedPipelineSupportingResult","fixedPipelineSupportingBranches","fixedPipelineSupportingFingerprint",
+    "fixedPipelineSupportingStylingCount","fixedPipelineSupportingArrivalCount","fixedPipelineSupportingFirstReason","fixedPipelineSupportingUsage",
     "fixedMainBundleZeroDomainTaskIds","fixedMainBundleParticipantEdgeChecks","fixedMainBundleParticipantEdgePrunes",
     "fixedMainBundleFirstParticipantEdgePrune","fixedMainBundleMatchingAttempts",
     "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",

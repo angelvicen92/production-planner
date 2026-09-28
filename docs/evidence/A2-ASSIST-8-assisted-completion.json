@@ -411,7 +411,7 @@
       "newObligations": 0,
       "completedObligations": 111,
       "remainingObligations": 155,
-      "branches": 2,
+      "branches": 0,
       "result": "NO_PROPOSAL",
       "protectedOperationalMeals": 1,
       "baseSnapshotSetupPreparations": 1,
@@ -6546,6 +6546,18 @@
         "fixedMainBundleGraphPrepared": false,
         "fixedMainBundlePreparedEdges": 0,
         "fixedMainBundleCandidatePositions": {},
+        "fixedMainBundleEdgeRejectionsByComponent": {},
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 0,
+        "fixedPipelineSupportingPreferredFailures": 0,
+        "fixedPipelineSupportingFallbacks": 0,
+        "fixedPipelineSupportingResult": null,
+        "fixedPipelineSupportingBranches": 0,
+        "fixedPipelineSupportingFingerprint": null,
+        "fixedPipelineSupportingStylingCount": 0,
+        "fixedPipelineSupportingArrivalCount": 0,
+        "fixedPipelineSupportingFirstReason": null,
+        "fixedPipelineSupportingUsage": null,
         "fixedMainBundleZeroDomainTaskIds": [],
         "fixedMainBundleParticipantEdgeChecks": 0,
         "fixedMainBundleParticipantEdgePrunes": 0,
@@ -7798,7 +7810,7 @@
       },
       "acceptedStageId": 2,
       "acceptedStageFingerprint": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
-      "durationMs": 458006
+      "durationMs": 206955
     },
     {
       "ordinal": 2,
@@ -13940,6 +13952,24 @@
             5
           ]
         },
+        "fixedMainBundleEdgeRejectionsByComponent": {
+          "arrival": 0,
+          "styling": 0,
+          "feeder": 0,
+          "main": 0,
+          "anchored": 0
+        },
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 0,
+        "fixedPipelineSupportingPreferredFailures": 0,
+        "fixedPipelineSupportingFallbacks": 0,
+        "fixedPipelineSupportingResult": null,
+        "fixedPipelineSupportingBranches": 0,
+        "fixedPipelineSupportingFingerprint": null,
+        "fixedPipelineSupportingStylingCount": 0,
+        "fixedPipelineSupportingArrivalCount": 0,
+        "fixedPipelineSupportingFirstReason": null,
+        "fixedPipelineSupportingUsage": null,
         "fixedMainBundleZeroDomainTaskIds": [],
         "fixedMainBundleParticipantEdgeChecks": 19,
         "fixedMainBundleParticipantEdgePrunes": 0,
@@ -15364,7 +15394,7 @@
       },
       "acceptedStageId": 3,
       "acceptedStageFingerprint": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
-      "durationMs": 11809
+      "durationMs": 3728
     },
     {
       "ordinal": 3,
@@ -21305,65 +21335,83 @@
         "fixedMainBundlePreparedEdges": 19,
         "fixedMainBundleCandidatePositions": {
           "task:10002": [
-            14
+            5
           ],
           "task:10017": [
-            18
+            9
           ],
           "task:10031": [
-            17
+            8
           ],
           "task:10043": [
-            16
+            7
           ],
           "task:10056": [
             0
           ],
           "task:10072": [
-            13
+            4
           ],
           "task:10088": [
-            10
+            18
           ],
           "task:10102": [
             1
           ],
           "task:10116": [
-            9
+            17
           ],
           "task:10131": [
-            8
+            16
           ],
           "task:10147": [
-            12
-          ],
-          "task:10161": [
-            15
-          ],
-          "task:10175": [
-            4
-          ],
-          "task:10190": [
             3
           ],
-          "task:10203": [
-            2
-          ],
-          "task:10218": [
-            11
-          ],
-          "task:10229": [
-            7
-          ],
-          "task:10243": [
+          "task:10161": [
             6
           ],
+          "task:10175": [
+            12
+          ],
+          "task:10190": [
+            11
+          ],
+          "task:10203": [
+            10
+          ],
+          "task:10218": [
+            2
+          ],
+          "task:10229": [
+            15
+          ],
+          "task:10243": [
+            14
+          ],
           "task:10256": [
-            5
+            13
           ]
         },
+        "fixedMainBundleEdgeRejectionsByComponent": {
+          "arrival": 0,
+          "styling": 0,
+          "feeder": 0,
+          "main": 0,
+          "anchored": 0
+        },
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 1,
+        "fixedPipelineSupportingPreferredFailures": 0,
+        "fixedPipelineSupportingFallbacks": 0,
+        "fixedPipelineSupportingResult": "FEASIBLE",
+        "fixedPipelineSupportingBranches": 8,
+        "fixedPipelineSupportingFingerprint": "de622642bb4e88b048a58c5e7efff652346ad62658eb6e435ebea6e0418db948",
+        "fixedPipelineSupportingStylingCount": 19,
+        "fixedPipelineSupportingArrivalCount": 19,
+        "fixedPipelineSupportingFirstReason": null,
+        "fixedPipelineSupportingUsage": "RECONSTRUCTION",
         "fixedMainBundleZeroDomainTaskIds": [],
-        "fixedMainBundleParticipantEdgeChecks": 19,
+        "fixedMainBundleParticipantEdgeChecks": 0,
         "fixedMainBundleParticipantEdgePrunes": 0,
         "fixedMainBundleFirstParticipantEdgePrune": null,
         "fixedMainBundleMatchingAttempts": 1,
@@ -23006,7 +23054,7 @@
       },
       "acceptedStageId": 4,
       "acceptedStageFingerprint": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
-      "durationMs": 19639
+      "durationMs": 7299
     },
     {
       "ordinal": 4,
@@ -29031,65 +29079,83 @@
         "fixedMainBundlePreparedEdges": 19,
         "fixedMainBundleCandidatePositions": {
           "task:10002": [
-            14
+            5
           ],
           "task:10017": [
-            18
+            9
           ],
           "task:10031": [
-            17
+            8
           ],
           "task:10043": [
-            16
+            7
           ],
           "task:10056": [
             0
           ],
           "task:10072": [
-            13
+            4
           ],
           "task:10088": [
-            10
+            18
           ],
           "task:10102": [
             1
           ],
           "task:10116": [
-            9
+            17
           ],
           "task:10131": [
-            8
+            16
           ],
           "task:10147": [
-            12
-          ],
-          "task:10161": [
-            15
-          ],
-          "task:10175": [
-            4
-          ],
-          "task:10190": [
             3
           ],
-          "task:10203": [
-            2
-          ],
-          "task:10218": [
-            11
-          ],
-          "task:10229": [
-            7
-          ],
-          "task:10243": [
+          "task:10161": [
             6
           ],
+          "task:10175": [
+            12
+          ],
+          "task:10190": [
+            11
+          ],
+          "task:10203": [
+            10
+          ],
+          "task:10218": [
+            2
+          ],
+          "task:10229": [
+            15
+          ],
+          "task:10243": [
+            14
+          ],
           "task:10256": [
-            5
+            13
           ]
         },
+        "fixedMainBundleEdgeRejectionsByComponent": {
+          "arrival": 0,
+          "styling": 0,
+          "feeder": 0,
+          "main": 0,
+          "anchored": 0
+        },
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 1,
+        "fixedPipelineSupportingPreferredFailures": 0,
+        "fixedPipelineSupportingFallbacks": 0,
+        "fixedPipelineSupportingResult": "FEASIBLE",
+        "fixedPipelineSupportingBranches": 8,
+        "fixedPipelineSupportingFingerprint": "74f0a3f7059d3897060265ae2c6d344ec597d1961ad326b2fe627e89507380fd",
+        "fixedPipelineSupportingStylingCount": 19,
+        "fixedPipelineSupportingArrivalCount": 19,
+        "fixedPipelineSupportingFirstReason": null,
+        "fixedPipelineSupportingUsage": "RECONSTRUCTION",
         "fixedMainBundleZeroDomainTaskIds": [],
-        "fixedMainBundleParticipantEdgeChecks": 19,
+        "fixedMainBundleParticipantEdgeChecks": 0,
         "fixedMainBundleParticipantEdgePrunes": 0,
         "fixedMainBundleFirstParticipantEdgePrune": null,
         "fixedMainBundleMatchingAttempts": 1,
@@ -30939,7 +31005,7 @@
       },
       "acceptedStageId": 5,
       "acceptedStageFingerprint": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
-      "durationMs": 9881
+      "durationMs": 4416
     },
     {
       "ordinal": 5,
@@ -37104,65 +37170,83 @@
         "fixedMainBundlePreparedEdges": 19,
         "fixedMainBundleCandidatePositions": {
           "task:10002": [
-            14
+            5
           ],
           "task:10017": [
-            18
+            9
           ],
           "task:10031": [
-            17
+            8
           ],
           "task:10043": [
-            16
+            7
           ],
           "task:10056": [
             0
           ],
           "task:10072": [
-            13
+            4
           ],
           "task:10088": [
-            10
+            18
           ],
           "task:10102": [
             1
           ],
           "task:10116": [
-            9
+            17
           ],
           "task:10131": [
-            8
+            16
           ],
           "task:10147": [
-            12
-          ],
-          "task:10161": [
-            15
-          ],
-          "task:10175": [
-            4
-          ],
-          "task:10190": [
             3
           ],
-          "task:10203": [
-            2
-          ],
-          "task:10218": [
-            11
-          ],
-          "task:10229": [
-            7
-          ],
-          "task:10243": [
+          "task:10161": [
             6
           ],
+          "task:10175": [
+            12
+          ],
+          "task:10190": [
+            11
+          ],
+          "task:10203": [
+            10
+          ],
+          "task:10218": [
+            2
+          ],
+          "task:10229": [
+            15
+          ],
+          "task:10243": [
+            14
+          ],
           "task:10256": [
-            5
+            13
           ]
         },
+        "fixedMainBundleEdgeRejectionsByComponent": {
+          "arrival": 0,
+          "styling": 0,
+          "feeder": 0,
+          "main": 0,
+          "anchored": 0
+        },
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 1,
+        "fixedPipelineSupportingPreferredFailures": 0,
+        "fixedPipelineSupportingFallbacks": 0,
+        "fixedPipelineSupportingResult": "FEASIBLE",
+        "fixedPipelineSupportingBranches": 8,
+        "fixedPipelineSupportingFingerprint": "25de15ba844318029d1a972ee4daac73e51ed90a76fed15e071131ac4271f05f",
+        "fixedPipelineSupportingStylingCount": 19,
+        "fixedPipelineSupportingArrivalCount": 19,
+        "fixedPipelineSupportingFirstReason": null,
+        "fixedPipelineSupportingUsage": "RECONSTRUCTION",
         "fixedMainBundleZeroDomainTaskIds": [],
-        "fixedMainBundleParticipantEdgeChecks": 19,
+        "fixedMainBundleParticipantEdgeChecks": 0,
         "fixedMainBundleParticipantEdgePrunes": 0,
         "fixedMainBundleFirstParticipantEdgePrune": null,
         "fixedMainBundleMatchingAttempts": 1,
@@ -39342,7 +39426,7 @@
       },
       "acceptedStageId": 6,
       "acceptedStageFingerprint": "e1d0dcc98b285ef5ff29ba32fe213b9e49e5d4373fbe9adcee4e94ab244ee200",
-      "durationMs": 29288
+      "durationMs": 11129
     },
     {
       "ordinal": 6,
@@ -46323,65 +46407,83 @@
         "fixedMainBundlePreparedEdges": 19,
         "fixedMainBundleCandidatePositions": {
           "task:10002": [
-            14
+            5
           ],
           "task:10017": [
-            18
+            9
           ],
           "task:10031": [
-            17
+            8
           ],
           "task:10043": [
-            16
+            7
           ],
           "task:10056": [
             0
           ],
           "task:10072": [
-            13
+            4
           ],
           "task:10088": [
-            10
+            18
           ],
           "task:10102": [
             1
           ],
           "task:10116": [
-            9
+            17
           ],
           "task:10131": [
-            8
+            16
           ],
           "task:10147": [
-            12
-          ],
-          "task:10161": [
-            15
-          ],
-          "task:10175": [
-            4
-          ],
-          "task:10190": [
             3
           ],
-          "task:10203": [
-            2
-          ],
-          "task:10218": [
-            11
-          ],
-          "task:10229": [
-            7
-          ],
-          "task:10243": [
+          "task:10161": [
             6
           ],
+          "task:10175": [
+            12
+          ],
+          "task:10190": [
+            11
+          ],
+          "task:10203": [
+            10
+          ],
+          "task:10218": [
+            2
+          ],
+          "task:10229": [
+            15
+          ],
+          "task:10243": [
+            14
+          ],
           "task:10256": [
-            5
+            13
           ]
         },
+        "fixedMainBundleEdgeRejectionsByComponent": {
+          "arrival": 0,
+          "styling": 0,
+          "feeder": 0,
+          "main": 0,
+          "anchored": 0
+        },
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 1,
+        "fixedPipelineSupportingPreferredFailures": 0,
+        "fixedPipelineSupportingFallbacks": 0,
+        "fixedPipelineSupportingResult": "FEASIBLE",
+        "fixedPipelineSupportingBranches": 8,
+        "fixedPipelineSupportingFingerprint": "25de15ba844318029d1a972ee4daac73e51ed90a76fed15e071131ac4271f05f",
+        "fixedPipelineSupportingStylingCount": 19,
+        "fixedPipelineSupportingArrivalCount": 19,
+        "fixedPipelineSupportingFirstReason": null,
+        "fixedPipelineSupportingUsage": "RECONSTRUCTION",
         "fixedMainBundleZeroDomainTaskIds": [],
-        "fixedMainBundleParticipantEdgeChecks": 19,
+        "fixedMainBundleParticipantEdgeChecks": 0,
         "fixedMainBundleParticipantEdgePrunes": 0,
         "fixedMainBundleFirstParticipantEdgePrune": null,
         "fixedMainBundleMatchingAttempts": 1,
@@ -49226,7 +49328,7 @@
       },
       "acceptedStageId": 7,
       "acceptedStageFingerprint": "4f9ed5c50641dc4e397cacf321fb31123625c9c395c749c85f23059817a57c41",
-      "durationMs": 25809
+      "durationMs": 8538
     },
     {
       "ordinal": 7,
@@ -52470,8 +52572,8 @@
         "FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"
       ],
       "work": {
-        "branchesExplored": 2,
-        "coreBranches": 2,
+        "branchesExplored": 0,
+        "coreBranches": 0,
         "standaloneBranches": 0,
         "coreMaximumDepth": 0,
         "patternCandidatesExplored": 0,
@@ -52491,7 +52593,7 @@
         "residualMatchingEdgeCacheMisses": 0,
         "residualMatchingPositionChecks": 0,
         "residualMatchingAugmentTraversals": 0,
-        "residualMatchingBranchesExplored": 2,
+        "residualMatchingBranchesExplored": 0,
         "mainRunWitnessAttempts": 0,
         "mainRunWitnessRepairs": 0,
         "mainRunEquivalentOrdersCollapsed": 0,
@@ -52521,7 +52623,7 @@
         "participantMealAnalyticCollectivePrunes": 0,
         "participantMealExactMaterializations": 0
       },
-      "branchesExplored": 2,
+      "branchesExplored": 0,
       "firstBlocker": {
         "scope": {
           "kind": "TASK_IDS",
@@ -52695,7 +52797,7 @@
           "task:10259"
         ],
         "branches": {
-          "core": 2,
+          "core": 0,
           "standalone": 0
         },
         "blockedObligationId": null,
@@ -52840,63 +52942,68 @@
           1035
         ],
         "fixedMainBundleGraphPrepared": true,
-        "fixedMainBundlePreparedEdges": 19,
+        "fixedMainBundlePreparedEdges": 0,
         "fixedMainBundleCandidatePositions": {
-          "task:10002": [
-            14
-          ],
-          "task:10017": [
-            18
-          ],
+          "task:10002": [],
+          "task:10017": [],
           "task:10031": [],
           "task:10043": [],
-          "task:10056": [
-            0
-          ],
-          "task:10072": [
-            13
-          ],
-          "task:10088": [
-            10
-          ],
-          "task:10102": [
-            1
-          ],
-          "task:10116": [
-            9
-          ],
-          "task:10131": [
-            8
-          ],
-          "task:10147": [
-            12
-          ],
+          "task:10056": [],
+          "task:10072": [],
+          "task:10088": [],
+          "task:10102": [],
+          "task:10116": [],
+          "task:10131": [],
+          "task:10147": [],
           "task:10161": [],
-          "task:10175": [
-            4
-          ],
+          "task:10175": [],
           "task:10190": [],
-          "task:10203": [
-            2
-          ],
-          "task:10218": [
-            11
-          ],
-          "task:10229": [
-            7
-          ],
+          "task:10203": [],
+          "task:10218": [],
+          "task:10229": [],
           "task:10243": [],
           "task:10256": []
         },
+        "fixedMainBundleEdgeRejectionsByComponent": {
+          "arrival": 0,
+          "styling": 0,
+          "feeder": 0,
+          "main": 0,
+          "anchored": 0
+        },
+        "fixedMainBundleFirstEdgeRejection": null,
+        "fixedPipelineSupportingWitnessChecks": 1,
+        "fixedPipelineSupportingPreferredFailures": 1,
+        "fixedPipelineSupportingFallbacks": 1,
+        "fixedPipelineSupportingResult": "INCONCLUSIVE",
+        "fixedPipelineSupportingBranches": 207,
+        "fixedPipelineSupportingFingerprint": null,
+        "fixedPipelineSupportingStylingCount": 0,
+        "fixedPipelineSupportingArrivalCount": 0,
+        "fixedPipelineSupportingFirstReason": "SUPPORTING_BRANCH_BUDGET_EXHAUSTED",
+        "fixedPipelineSupportingUsage": "RECONSTRUCTION",
         "fixedMainBundleZeroDomainTaskIds": [
+          "task:10002",
+          "task:10017",
           "task:10031",
           "task:10043",
+          "task:10056",
+          "task:10072",
+          "task:10088",
+          "task:10102",
+          "task:10116",
+          "task:10131",
+          "task:10147",
           "task:10161",
+          "task:10175",
           "task:10190",
+          "task:10203",
+          "task:10218",
+          "task:10229",
           "task:10243",
           "task:10256"
         ],
-        "fixedMainBundleParticipantEdgeChecks": 13,
+        "fixedMainBundleParticipantEdgeChecks": 0,
         "fixedMainBundleParticipantEdgePrunes": 0,
         "fixedMainBundleFirstParticipantEdgePrune": null,
         "fixedMainBundleMatchingAttempts": 1,
@@ -52994,18 +53101,7 @@
       },
       "orderingComparison": null,
       "causalDiagnostic": {
-        "waterfallByDepth": {
-          "0": {
-            "mainCandidate": 0,
-            "feederStart": 0,
-            "residualMatching": 2,
-            "continuation": 0,
-            "participantMeal": 0,
-            "standaloneForward": 0,
-            "other": 0,
-            "total": 2
-          }
-        },
+        "waterfallByDepth": {},
         "feederByDepth": {},
         "feederRejections": [],
         "feederCoachDomainEliminations": [],
@@ -53024,7 +53120,7 @@
           "collisions": []
         }
       },
-      "durationMs": 22681
+      "durationMs": 9790
     }
   ],
   "firstBlocker": {
@@ -53200,7 +53296,7 @@
       "task:10259"
     ],
     "branches": {
-      "core": 2,
+      "core": 0,
       "standalone": 0
     },
     "blockedObligationId": null,
