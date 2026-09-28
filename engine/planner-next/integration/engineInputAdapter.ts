@@ -79,6 +79,8 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
       ...entry,
       dependencies: [...entry.dependencies].sort(compare),
       ...(entry.requiredResourceIds ? { requiredResourceIds: [...entry.requiredResourceIds].sort(compare) } : {}),
+      ...(entry.itinerantUnitAssignments ? { itinerantUnitAssignments: sorted(entry.itinerantUnitAssignments, option=>option.itinerantUnitId)
+        .map(option=>({...option,requiredResourceIds:[...option.requiredResourceIds].sort(compare)})) } : {}),
       ...(entry.availability ? { availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) } : {}),
       ...(entry.setupFamilyId ? { setupFamilyId: entry.setupFamilyId } : {}),
     })),
@@ -155,7 +157,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
     operationalMealPolicies.flatMap((policy) => [...policy.spaceIds]),
   ));
-  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
+  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds])
+    .concat(activeTasks.flatMap(task=>task.itinerantTeamAssignments?.flatMap(option=>option.assignedResourceIds)??[]),[...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
 
   const tasks: Task[] = activeTasks.map((source) => {
     const projection = projectionsByTaskId.get(source.id)!;
@@ -176,6 +179,9 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
       ...(source.allowedItinerantTeamIds?.length ? { allowedItinerantUnitIds: [...new Set(source.allowedItinerantTeamIds)]
         .sort((a,b)=>a-b).map(id=>canonical("itinerant-team",id)) } : {}),
+      ...(source.itinerantTeamAssignments?.length ? { itinerantUnitAssignments: source.itinerantTeamAssignments
+        .map(assignment=>({itinerantUnitId:canonical("itinerant-team",assignment.itinerantTeamId),requiredResourceIds:[...new Set(assignment.assignedResourceIds)].sort((a,b)=>a-b).map(id=>canonical("plan-resource",id))}))
+        .sort((a,b)=>compare(a.itinerantUnitId,b.itinerantUnitId)) } : {}),
     };
     if (source.plannerNextKind === "technical") return { ...base, kind: "technical" as const };
     if (source.plannerNextKind === "main" || source.plannerNextKind === "vocal") {
@@ -206,6 +212,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return {
       id: canonical("itinerant-team", id),
       availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
+      ...(config.itinerantUnitTransitionMinutes!=null?{transitionMinutes:config.itinerantUnitTransitionMinutes}:{}),
     };
   });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));
@@ -286,6 +293,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     },
     participantTransitionMinutes: config.participantTransitionMinutes,
     resourceTransitionMinutes: config.resourceTransitionMinutes,
+    ...(config.itinerantUnitTransitionMinutes!=null?{itinerantUnitTransitionMinutes:config.itinerantUnitTransitionMinutes}:{}),
     ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
     ...(roundSynchronizations.length ? { roundSynchronizations } : {}),
     ...(technicalChains.length ? { technicalChains } : {}),

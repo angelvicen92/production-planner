@@ -120,11 +120,11 @@ test("a protected future recomposition, fixed work, meals and transitions reduce
     task(6,60,30,{itinerantTeamId:8,assignedResourceIds:[80]}),
   ]);
   source.plannerNext={searchPolicy:"EXACT_CONSTRUCTIVE",searchBudget:{bestK:1,maxBacktracks:1,maxPatterns:1,maxBranchExpansions:1},timeGridMinutes:5,
-    participantTransitionMinutes:0,resourceTransitionMinutes:5,mainFlow:{spaceId:99,preferredEnd:"20:00",continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1}};
+    participantTransitionMinutes:0,resourceTransitionMinutes:40,itinerantUnitTransitionMinutes:5,mainFlow:{spaceId:99,preferredEnd:"20:00",continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1}};
   source.itinerantTeamAvailability=[7,8,9].map(itinerantTeamId=>({itinerantTeamId,windows:[{start:"08:00",end:"20:00"}]}));
   source.operationalMealPolicies=[{id:"pool-meal",window:{start:"13:00",end:"15:00"},durationMinutes:30,planResourceItemIds:[70,80],spaceIds:[]}];
   const snapshot:any=blank(source.tasks);snapshot.tasks.find((row:any)=>row.taskId===3)!.startPlanned="10:00";snapshot.tasks.find((row:any)=>row.taskId===3)!.endPlanned="10:30";
-  snapshot.tasks.find(row=>row.taskId===4)!.startPlanned="16:00";snapshot.tasks.find(row=>row.taskId===4)!.endPlanned="16:30";
+  snapshot.tasks.find((row:any)=>row.taskId===4)!.startPlanned="16:00";snapshot.tasks.find((row:any)=>row.taskId===4)!.endPlanned="16:30";
   const recommendation=recommendNextAssistedScope(source,snapshot,[1,2,5])!;
   assert.equal(recommendation.selectedUnitKind,"ITINERANT_AGENDA");
   assert.deepEqual(recommendation.memberTaskIds,[1,2,5]);

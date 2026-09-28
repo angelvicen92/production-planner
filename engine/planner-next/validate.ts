@@ -103,6 +103,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     || problem.resourceTransitionMinutes < 0) {
     reasons.add("INVALID_TRANSITION_MARGIN");
   }
+  if(problem.itinerantUnitTransitionMinutes!==undefined&&(!Number.isFinite(problem.itinerantUnitTransitionMinutes)||problem.itinerantUnitTransitionMinutes<0))reasons.add("INVALID_TRANSITION_MARGIN");
 
   const participants = Array.isArray(problem.participants) ? problem.participants : [];
   const coaches = Array.isArray(problem.coaches) ? problem.coaches : [];
@@ -632,7 +633,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     &&actual.participantId===expected.participantId&&actual.coachId===expected.coachId&&actual.blockKey===expected.blockKey&&actual.setupFamilyId===expected.setupFamilyId
     &&actual.jointGroupId===expected.jointGroupId&&(actual.itinerantUnitId===expected.itinerantUnitId
       ||Boolean(expected.allowedItinerantUnitIds?.includes(actual.itinerantUnitId??"")))
-    &&JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.requiredResourceIds??[])].sort())
+    &&JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.itinerantUnitAssignments?.find(option=>option.itinerantUnitId===actual.itinerantUnitId)?.requiredResourceIds??expected.requiredResourceIds??[])].sort())
     &&JSON.stringify([...actual.dependencies].sort())===JSON.stringify([...expected.dependencies].sort());
   const invalidTechnicalChainRootIds=new Set<string>();
   for(const chain of getTechnicalChains(problem.tasks,problem.technicalChains)) {

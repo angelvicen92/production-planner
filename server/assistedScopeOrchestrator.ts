@@ -127,7 +127,7 @@ export function recommendNextAssistedScope(
   // fallback components over that exact scope before producing evidence.
   // Otherwise several one-task candidates can advertise the same selector.
   const fallbackSpaceIds=new Set(tasks.filter(task=>!authorities.has(task.id)&&task.spaceId!=null).map(task=>task.spaceId!));
-  for(const spaceId of fallbackSpaceIds)union(tasks.filter(task=>task.spaceId===spaceId).map(task=>task.id));
+  for(const spaceId of fallbackSpaceIds)union(tasks.filter(task=>!authorities.has(task.id)&&task.spaceId===spaceId).map(task=>task.id));
   union(tasks.filter(task=>!authorities.has(task.id)&&task.spaceId==null).map(task=>task.id));
 
   const groups = new Map<number, TaskInput[]>();
@@ -202,7 +202,7 @@ export function recommendNextAssistedScope(
         capacity-=operationalMeals.filter(policy=>policy.planResourceItemIds.some(id=>teamResources.has(id)))
           .reduce((sum,policy)=>sum+policy.durationMinutes,0);
       }
-      capacity=Math.max(0,capacity-Math.max(0,members.length-itinerantDomain.length)*(input.plannerNext?.resourceTransitionMinutes??0));
+      capacity=Math.max(0,capacity-Math.max(0,members.length-itinerantDomain.length)*(input.plannerNext?.itinerantUnitTransitionMinutes??0));
       loads.push({load:duration,capacity,pressureClass:boundary<dayEnd?2:1});
       if(boundary<dayEnd){
         // The boundary is evidence, not an A2 literal: it comes from the first

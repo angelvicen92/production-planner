@@ -74,8 +74,15 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     if (anchoredTaskIds.has(expanded.id)) continue;
     const task = tasks[index]!;
     delete task.itinerantTeamId;
+    delete task.assignedResourceIds;
     task.itinerantTeamRequirement = "any";
     task.allowedItinerantTeamIds = [...realityPool];
+    task.itinerantTeamAssignments = expansion.itinerantUnits
+      .filter(unit => unit.id === "reality-unit-a" || unit.id === "reality-unit-b")
+      .map(unit => ({
+        itinerantTeamId: itinerantUnitId.get(unit.id)!,
+        assignedResourceIds: unit.memberResourceIds.map(id => resourceId.get(id)!).sort((a, b) => a - b),
+      }));
   }
   
   const input: EngineInput = createSupportedEngineInputAdapterFixture();
@@ -117,6 +124,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     timeGridMinutes: 5,
     participantTransitionMinutes: 5,
     resourceTransitionMinutes: 0,
+    itinerantUnitTransitionMinutes: 15,
     mainFlow: {
       spaceId: spaceId.get(expansion.rules.mainFlow.spaceId)!,
       preferredEnd: config.meals.effectiveWindow.start,

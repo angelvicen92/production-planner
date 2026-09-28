@@ -13,6 +13,7 @@ export interface Person {
 export interface ItinerantUnit {
   id: string;
   availability: Window[];
+  transitionMinutes?: Minute;
 }
 
 export interface Space {
@@ -89,6 +90,8 @@ interface BaseTask {
   itinerantUnitId?: string;
   /** Solver-owned assignment domain. A singleton remains a specific unit. */
   allowedItinerantUnitIds?: string[];
+  /** Atomic alternatives; their resources replace the source witness composition. */
+  itinerantUnitAssignments?: Array<{ itinerantUnitId: string; requiredResourceIds: string[] }>;
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";
@@ -168,6 +171,7 @@ export interface PlannerNextProblem {
   };
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
+  itinerantUnitTransitionMinutes?: number;
   coachRouteTransitions?: CoachRouteTransition[];
   roundSynchronizations?: RoundSynchronizationPolicy[];
   technicalChains?: TechnicalChainPolicy[];

@@ -55,6 +55,8 @@ export interface TaskInput {
     setupFamilyId?: string | null;
     itinerantTeamId?: number | null;
     allowedItinerantTeamIds?: number[];
+    /** Atomic unit alternatives: selecting a unit also selects its physical composition. */
+    itinerantTeamAssignments?: Array<{ itinerantTeamId: number; assignedResourceIds: number[] }>;
     itinerantTeamRequirement?: 'none' | 'any' | 'specific' | string | null;
     status: TaskStatus;
     breakId?: number;
@@ -219,6 +221,8 @@ export interface PlannerNextIntegrationConfigurationInput {
   timeGridMinutes: number;
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
+  /** Transition between independent operations of the same itinerant unit. */
+  itinerantUnitTransitionMinutes?: number;
   mainFlow: PlannerNextMainFlowInput;
 }
 

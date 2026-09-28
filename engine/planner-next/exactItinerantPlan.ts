@@ -868,7 +868,9 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const alternatives: Positions[] = [];
     const allPlaced = [...coreTasks, ...placed];
     for (const task of [...remaining].sort(byId)) {
-      const variants=(task.allowedItinerantUnitIds?.length&&!task.itinerantUnitId
+      const variants=(task.itinerantUnitAssignments?.length&&!task.itinerantUnitId
+        ?[...task.itinerantUnitAssignments].sort((a,b)=>a.itinerantUnitId.localeCompare(b.itinerantUnitId)).map(assignment=>({...task,itinerantUnitId:assignment.itinerantUnitId,requiredResourceIds:[...assignment.requiredResourceIds]}))
+        :task.allowedItinerantUnitIds?.length&&!task.itinerantUnitId
         ?[...task.allowedItinerantUnitIds].sort().map(itinerantUnitId=>({...task,itinerantUnitId}))
         :[task]);
       const variantDomains:Array<{task:Task;starts:number[]}>=[];

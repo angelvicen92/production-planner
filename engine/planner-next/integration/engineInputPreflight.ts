@@ -285,6 +285,7 @@ function sourceProjection(input: EngineInput): unknown {
       zoneId: task.zoneId, spaceId: task.spaceId, status: task.status, durationOverrideMin: task.durationOverrideMin,
       camerasOverride: task.camerasOverride, resourceRequirements: task.resourceRequirements,
       itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds,
+      itinerantTeamAssignments: task.itinerantTeamAssignments,
       ...(runtimeJointGroupId == null ? {} : { jointGroupId: runtimeJointGroupId }),
       ...(((task as unknown as Record<string, unknown>).setupFamilyId) == null ? {} : { setupFamilyId: (task as unknown as Record<string, unknown>).setupFamilyId }),
       dependsOnTaskIds: task.dependsOnTaskIds, dependsOnTaskId: task.dependsOnTaskId,
@@ -385,6 +386,7 @@ function sourceProjection(input: EngineInput): unknown {
       timeGridMinutes: plannerNextRecord.timeGridMinutes,
       participantTransitionMinutes: plannerNextRecord.participantTransitionMinutes,
       resourceTransitionMinutes: plannerNextRecord.resourceTransitionMinutes,
+      itinerantUnitTransitionMinutes: plannerNextRecord.itinerantUnitTransitionMinutes,
       mainFlow: projectRecord(plannerNextRecord.mainFlow, ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"]),
     } : plannerNext,
     anchoredAccompaniments,
@@ -532,6 +534,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     (task.dependsOnTemplateIds ?? (task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : []))
       .forEach((id) => addIdentity("template", id, `${path}.templateDependencies`));
     task.allowedItinerantTeamIds?.forEach((id) => addIdentity("itinerant-team", id, `${path}.allowedItinerantTeamIds`));
+    task.itinerantTeamAssignments?.forEach((assignment,index)=>{
+      addIdentity("itinerant-team",assignment.itinerantTeamId,`${path}.itinerantTeamAssignments.${index}.itinerantTeamId`);
+      assignment.assignedResourceIds?.forEach(id=>addIdentity("plan-resource",id,`${path}.itinerantTeamAssignments.${index}.assignedResourceIds`));
+    });
     if (task.status !== "cancelled") task.assignedResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.assignedResourceIds`));
     mapKeys(task.resourceRequirements?.byItem).forEach((id) => addIdentity("resource-item", id, `${path}.resourceRequirements.byItem`));
     mapKeys(task.resourceRequirements?.byType).forEach((id) => addIdentity("resource-type", id, `${path}.resourceRequirements.byType`));
