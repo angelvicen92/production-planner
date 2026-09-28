@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { AssistedPlanningResult, AssistedProblem } from "../engine/planner-next/assistedPlanning";
 import { createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
+import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import type { IStorage } from "./storage";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import type {
@@ -321,4 +322,55 @@ test("future analytical authority selects exactly pending and interrupted canoni
   const authorityInput={...input,tasks:statuses.map((status,index)=>({...input.tasks[0],id:index+1,status}))};
   const identities=statuses.map((_status,index)=>({namespace:"task",sourceId:String(index+1),canonicalId:`task:${index+1}`}));
   assert.deepEqual([...analyticalFutureEligibleTaskIds(authorityInput as any,identities)].sort(),["task:1","task:2"]);
+});
+
+test("accepted itinerant direct assignment survives into the next stage without swallowing inherited resources",async()=>{
+  const source=createSupportedEngineInputAdapterFixture();
+  source.planResourceItems!.push(
+    {id:510,resourceItemId:610,typeId:20,name:"unit-a",isAvailable:true,availabilityStart:null,availabilityEnd:null},
+    {id:511,resourceItemId:611,typeId:20,name:"unit-b",isAvailable:true,availabilityStart:null,availabilityEnd:null},
+    {id:512,resourceItemId:612,typeId:21,name:"direct-other",isAvailable:true,availabilityStart:null,availabilityEnd:null},
+    {id:513,resourceItemId:613,typeId:22,name:"inherited-space",isAvailable:true,availabilityStart:null,availabilityEnd:null},
+  );
+  source.locks=source.locks.filter(lock=>lock.taskId!==105);
+  source.spaceResourceAssignments={...source.spaceResourceAssignments,303:[513]};
+  source.itinerantTeamAvailability=[
+    {itinerantTeamId:7,windows:[source.workDay],planResourceItemIds:[510]},
+    {itinerantTeamId:8,windows:[source.workDay],planResourceItemIds:[511]},
+  ];
+  const pooled={...source.tasks.find(task=>task.id===105)!,assignedResourceIds:[510,512],itinerantTeamRequirement:"any",allowedItinerantTeamIds:[7,8]};
+  source.tasks=source.tasks.map(task=>task.id===105?pooled:task).concat({...pooled,id:106,templateId:906,assignedResourceIds:[510]});
+  const initial=buildAssistedPlanningSnapshotV1(source.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,spaceId:task.spaceId??null,zoneId:task.zoneId??null,assignedResourceIds:task.assignedResourceIds??[]})));
+  let currentStage:any={id:40,sessionId:70,planId,ordinal:0,snapshotJson:initial,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(initial)};
+  let currentSession:any={...session,id:70,activeStageId:40,draftBaseStageId:40,draftSnapshotJson:initial,draftFingerprint:currentStage.snapshotFingerprint};
+  let finished:any;
+  const reads=()=>storage({getActiveAssistedPlanningSession:async()=>currentSession,getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>currentStage,listAssistedPlanningStages:async()=>[currentStage],listPlanningAcceptedExceptions:async()=>[]},[]);
+  const firstRunner=(problem:AssistedProblem):AssistedPlanningResult=>{
+    const task=problem.problem.tasks.find(item=>item.id==="task:105")!;
+    const selected=materializeItinerantUnitAssignment(problem.problem,task,"itinerant-team:8")!;
+    assert.deepEqual([...(selected.requiredResourceIds??[])].sort(),["plan-resource:503","plan-resource:511","plan-resource:512","plan-resource:513"].sort());
+    return {proposal:[{...selected,start:600,end:630}],evidence:evidence(true)};
+  };
+  const first=new AssistedProposalService(reads(),queueMicrotask,access({find:async()=>({data:{...runRecord(),assisted_session_id:70,base_stage_id:40,scope_task_ids_json:[105],scope_json:{selector:{kind:"TASK_IDS",taskIds:[105]}}},error:null}),finish:async(_p,_r,result)=>{finished=result;return {error:null};}}),firstRunner,{buildInput:async()=>structuredClone(source),buildConfigRevision:dependencies().buildConfigRevision});
+  const result=await first.run(planId,9);
+  const accepted=result.proposedDraftSnapshot!;
+  const acceptedRow=accepted.tasks.find(task=>task.taskId===105)!;
+  assert.deepEqual(acceptedRow.assignedResourceIds,[511,512]);
+  assert.equal(accepted.tasks.find(task=>task.taskId===106)!.itinerantTeamId,undefined,"unplaced task remains pooled");
+  assert.notEqual(fingerprintAssistedPlanningSnapshotV1(accepted),fingerprintAssistedPlanningSnapshotV1(initial));
+  let dailyAssigned=[...acceptedRow.assignedResourceIds!];
+  assert.deepEqual(dailyAssigned,[511,512],"accept persists direct resources only");
+  currentStage={...currentStage,id:41,ordinal:1,snapshotJson:accepted,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(accepted)};
+  currentSession={...currentSession,activeStageId:41,draftBaseStageId:41,draftSnapshotJson:accepted,draftFingerprint:currentStage.snapshotFingerprint};
+  const nextInput=structuredClone(source);nextInput.tasks.find(task=>task.id===105)!.assignedResourceIds=dailyAssigned;
+  let protectedNext:any[]=[];
+  const second=new AssistedProposalService(reads(),queueMicrotask,access({find:async()=>({data:{...runRecord(),assisted_session_id:70,base_stage_id:41,scope_task_ids_json:[106],scope_json:{selector:{kind:"TASK_IDS",taskIds:[106]}}},error:null}),finish:async()=>({error:null})}),problem=>{protectedNext=[...problem.protectedPlacements];return {proposal:null,evidence:evidence(false)};},{buildInput:async()=>nextInput,buildConfigRevision:dependencies().buildConfigRevision});
+  await second.run(planId,10);
+  const replay=protectedNext.find(task=>task.id==="task:105")!;
+  assert.equal(replay.itinerantUnitId,"itinerant-team:8");
+  assert.deepEqual(replay.requiredResourceIds.sort(),["plan-resource:503","plan-resource:511","plan-resource:512","plan-resource:513"].sort());
+  assert.equal(protectedNext.some(task=>task.id==="task:106"),false,"unplaced pooled task is not protected");
+  dailyAssigned=[...(initial.tasks.find(task=>task.taskId===105)!.assignedResourceIds??[])];
+  assert.deepEqual(dailyAssigned,[510,512],"rollback restores the prior direct assignment");
+  assert.ok(finished);
 });

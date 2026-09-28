@@ -1225,6 +1225,15 @@
             4002,
             4005,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -1238,7 +1247,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10031,
@@ -1251,7 +1262,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10043,
@@ -1264,7 +1277,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10056,
@@ -1279,6 +1294,15 @@
             4003,
             4004,
             4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ],
+          "effectiveResourceIds": [
+            4003,
+            4008
           ]
         },
         {
@@ -1292,7 +1316,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10088,
@@ -1305,7 +1331,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10102,
@@ -1320,6 +1348,15 @@
             4002,
             4004,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -1333,7 +1370,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10131,
@@ -1346,7 +1385,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10147,
@@ -1359,7 +1400,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10161,
@@ -1372,7 +1415,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10175,
@@ -1385,7 +1430,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10190,
@@ -1398,7 +1445,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10203,
@@ -1411,7 +1460,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10218,
@@ -1424,7 +1475,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10229,
@@ -1437,7 +1490,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10243,
@@ -1450,7 +1505,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10256,
@@ -1463,7 +1520,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [],
@@ -7400,7 +7459,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10017,
@@ -7441,7 +7505,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10072,
@@ -7472,7 +7541,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10116,
@@ -7585,15 +7659,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "8ebab3d0a05270b6dcd3b227213ac9cdccbabaf83f3f6b053910e087799370ed",
+      "acceptedSnapshotFingerprintAfter": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
       "protectedEqualityProof": {
         "beforeCount": 0,
         "afterCount": 0,
         "equal": true
       },
       "acceptedStageId": 2,
-      "acceptedStageFingerprint": "8ebab3d0a05270b6dcd3b227213ac9cdccbabaf83f3f6b053910e087799370ed",
-      "durationMs": 204283
+      "acceptedStageFingerprint": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
+      "durationMs": 213895
     },
     {
       "ordinal": 2,
@@ -8510,7 +8584,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10024,
@@ -8523,7 +8599,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10037,
@@ -8536,7 +8614,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10050,
@@ -8549,7 +8629,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10063,
@@ -8562,7 +8644,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10080,
@@ -8575,7 +8659,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10095,
@@ -8588,7 +8674,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10108,
@@ -8601,7 +8689,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10123,
@@ -8614,7 +8704,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10138,
@@ -8627,7 +8719,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10153,
@@ -8640,7 +8734,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10168,
@@ -8653,7 +8749,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10183,
@@ -8666,7 +8764,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10197,
@@ -8679,7 +8779,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10210,
@@ -8692,7 +8794,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4005
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10224,
@@ -8705,7 +8809,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10236,
@@ -8718,7 +8824,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10249,
@@ -8731,7 +8839,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10262,
@@ -8744,7 +8854,9 @@
           "durationMinutes": 15,
           "resourceIds": [
             4004
-          ]
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [
@@ -8757,7 +8869,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10017,
@@ -8798,7 +8915,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10072,
@@ -8829,7 +8951,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10116,
@@ -8942,7 +9069,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "8ebab3d0a05270b6dcd3b227213ac9cdccbabaf83f3f6b053910e087799370ed",
+      "acceptedSnapshotFingerprintBefore": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -14702,7 +14829,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -14783,7 +14915,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -14844,7 +14981,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -15077,15 +15219,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "3c300a3aa75671a93f4dcc5b83fee7d9b1f16da14f361954e420c360680328f4",
+      "acceptedSnapshotFingerprintAfter": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
       "protectedEqualityProof": {
         "beforeCount": 19,
         "afterCount": 19,
         "equal": true
       },
       "acceptedStageId": 3,
-      "acceptedStageFingerprint": "3c300a3aa75671a93f4dcc5b83fee7d9b1f16da14f361954e420c360680328f4",
-      "durationMs": 3842
+      "acceptedStageFingerprint": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
+      "durationMs": 3868
     },
     {
       "ordinal": 3,
@@ -15891,6 +16033,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15902,7 +16056,9 @@
           "start": "18:00",
           "end": "18:10",
           "durationMinutes": 10,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10081,
@@ -15918,6 +16074,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15929,7 +16097,9 @@
           "start": "18:00",
           "end": "18:10",
           "durationMinutes": 10,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10154,
@@ -15941,6 +16111,18 @@
           "end": "17:30",
           "durationMinutes": 30,
           "resourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4003,
             4006,
@@ -15961,6 +16143,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15977,6 +16171,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15988,7 +16194,9 @@
           "start": "18:10",
           "end": "18:20",
           "durationMinutes": 10,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [
@@ -16001,7 +16209,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -16082,7 +16295,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -16143,7 +16361,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -16376,7 +16599,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "3c300a3aa75671a93f4dcc5b83fee7d9b1f16da14f361954e420c360680328f4",
+      "acceptedSnapshotFingerprintBefore": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -22127,7 +22350,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -22188,7 +22416,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10043,
@@ -22219,7 +22453,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -22270,7 +22509,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10088,
@@ -22301,7 +22546,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -22392,7 +22642,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10161,
@@ -22423,7 +22679,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10173,
@@ -22434,7 +22696,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10175,
@@ -22587,15 +22855,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "fc92899c3441615faf295df183ce7c1311040805dd2ebf22abfab2e5916cf8de",
+      "acceptedSnapshotFingerprintAfter": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
       "protectedEqualityProof": {
         "beforeCount": 38,
         "afterCount": 38,
         "equal": true
       },
       "acceptedStageId": 4,
-      "acceptedStageFingerprint": "fc92899c3441615faf295df183ce7c1311040805dd2ebf22abfab2e5916cf8de",
-      "durationMs": 7460
+      "acceptedStageFingerprint": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
+      "durationMs": 7914
     },
     {
       "ordinal": 4,
@@ -23357,6 +23625,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -23369,6 +23645,14 @@
           "end": "13:15",
           "durationMinutes": 15,
           "resourceIds": [
+            4002,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4007
           ]
@@ -23385,6 +23669,14 @@
           "resourceIds": [
             4003,
             4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
+            4003,
+            4008
           ]
         },
         {
@@ -23397,6 +23689,14 @@
           "end": "12:00",
           "durationMinutes": 15,
           "resourceIds": [
+            4003,
+            4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
             4003,
             4008
           ]
@@ -23413,6 +23713,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -23425,6 +23733,14 @@
           "end": "12:15",
           "durationMinutes": 15,
           "resourceIds": [
+            4002,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4007
           ]
@@ -23441,6 +23757,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
+            4003,
+            4008
           ]
         },
         {
@@ -23455,6 +23779,14 @@
           "resourceIds": [
             4003,
             4008
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -23467,6 +23799,14 @@
           "end": "14:35",
           "durationMinutes": 30,
           "resourceIds": [
+            4003,
+            4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
             4003,
             4008
           ]
@@ -23483,6 +23823,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
+            4003,
+            4008
           ]
         }
       ],
@@ -23496,7 +23844,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -23557,7 +23910,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10043,
@@ -23588,7 +23947,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -23639,7 +24003,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10088,
@@ -23670,7 +24040,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -23761,7 +24136,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10161,
@@ -23792,7 +24173,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10173,
@@ -23803,7 +24190,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10175,
@@ -23956,7 +24349,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "fc92899c3441615faf295df183ce7c1311040805dd2ebf22abfab2e5916cf8de",
+      "acceptedSnapshotFingerprintBefore": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -29734,7 +30127,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -29755,7 +30153,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10011,
@@ -29766,7 +30168,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10017,
@@ -29817,7 +30223,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10043,
@@ -29848,7 +30260,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -29869,7 +30286,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10065,
@@ -29880,7 +30301,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10069,
@@ -29921,7 +30346,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10088,
@@ -29952,7 +30383,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -29973,7 +30409,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10110,
@@ -29984,7 +30424,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10116,
@@ -30015,7 +30459,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10129,
@@ -30056,7 +30504,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10147,
@@ -30087,7 +30539,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10161,
@@ -30118,7 +30576,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10173,
@@ -30129,7 +30593,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10175,
@@ -30250,7 +30720,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10243,
@@ -30301,18 +30775,22 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "268e5058cb3066d67f381b7c3cfeb424a8c7c6ff8d14f7ca7903a00de29d9dfa",
+      "acceptedSnapshotFingerprintAfter": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
       "protectedEqualityProof": {
         "beforeCount": 46,
         "afterCount": 46,
         "equal": true
       },
       "acceptedStageId": 5,
-      "acceptedStageFingerprint": "268e5058cb3066d67f381b7c3cfeb424a8c7c6ff8d14f7ca7903a00de29d9dfa",
-      "durationMs": 4571
+      "acceptedStageFingerprint": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
+      "durationMs": 4606
     },
     {
       "ordinal": 5,
@@ -31045,7 +31523,9 @@
           "start": "14:30",
           "end": "15:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10028,
@@ -31056,7 +31536,9 @@
           "start": "16:15",
           "end": "16:45",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10040,
@@ -31067,7 +31549,9 @@
           "start": "17:25",
           "end": "17:55",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10053,
@@ -31078,7 +31562,9 @@
           "start": "10:55",
           "end": "11:25",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10068,
@@ -31089,7 +31575,9 @@
           "start": "12:05",
           "end": "12:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10084,
@@ -31100,7 +31588,9 @@
           "start": "16:50",
           "end": "17:20",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10099,
@@ -31111,7 +31601,9 @@
           "start": "16:15",
           "end": "16:45",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10113,
@@ -31122,7 +31614,9 @@
           "start": "15:05",
           "end": "15:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10128,
@@ -31133,7 +31627,9 @@
           "start": "15:05",
           "end": "15:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10143,
@@ -31144,7 +31640,9 @@
           "start": "11:30",
           "end": "12:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10158,
@@ -31155,7 +31653,9 @@
           "start": "11:30",
           "end": "12:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10172,
@@ -31166,7 +31666,9 @@
           "start": "12:40",
           "end": "13:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10187,
@@ -31177,7 +31679,9 @@
           "start": "16:50",
           "end": "17:20",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10200,
@@ -31188,7 +31692,9 @@
           "start": "12:05",
           "end": "12:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10214,
@@ -31199,7 +31705,9 @@
           "start": "15:40",
           "end": "16:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10227,
@@ -31210,7 +31718,9 @@
           "start": "12:40",
           "end": "13:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10240,
@@ -31221,7 +31731,9 @@
           "start": "10:55",
           "end": "11:25",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10253,
@@ -31232,7 +31744,9 @@
           "start": "15:40",
           "end": "16:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10266,
@@ -31243,7 +31757,9 @@
           "start": "14:30",
           "end": "15:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [
@@ -31256,7 +31772,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -31277,7 +31798,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10011,
@@ -31288,7 +31813,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10017,
@@ -31339,7 +31868,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10043,
@@ -31370,7 +31905,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -31391,7 +31931,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10065,
@@ -31402,7 +31946,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10069,
@@ -31443,7 +31991,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10088,
@@ -31474,7 +32028,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -31495,7 +32054,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10110,
@@ -31506,7 +32069,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10116,
@@ -31537,7 +32104,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10129,
@@ -31578,7 +32149,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10147,
@@ -31609,7 +32184,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10161,
@@ -31640,7 +32221,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10173,
@@ -31651,7 +32238,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10175,
@@ -31772,7 +32365,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10243,
@@ -31823,10 +32420,14 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "268e5058cb3066d67f381b7c3cfeb424a8c7c6ff8d14f7ca7903a00de29d9dfa",
+      "acceptedSnapshotFingerprintBefore": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -37715,7 +38316,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -37736,7 +38342,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10011,
@@ -37747,7 +38357,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10014,
@@ -37828,7 +38442,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10043,
@@ -37869,7 +38489,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -37890,7 +38515,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10065,
@@ -37901,7 +38530,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10068,
@@ -37952,7 +38585,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10084,
@@ -38003,7 +38642,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -38024,7 +38668,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10110,
@@ -38035,7 +38683,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10113,
@@ -38076,7 +38728,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10128,
@@ -38127,7 +38783,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10143,
@@ -38168,7 +38828,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10158,
@@ -38209,7 +38875,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10172,
@@ -38230,7 +38902,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10175,
@@ -38391,7 +39069,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10240,
@@ -38462,7 +39144,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10266,
@@ -38475,15 +39161,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "8b4189afc64179acae1a7d440479169ed92f07ab7ae157030d637ae393581290",
+      "acceptedSnapshotFingerprintAfter": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
       "protectedEqualityProof": {
         "beforeCount": 56,
         "afterCount": 56,
         "equal": true
       },
       "acceptedStageId": 6,
-      "acceptedStageFingerprint": "8b4189afc64179acae1a7d440479169ed92f07ab7ae157030d637ae393581290",
-      "durationMs": 11355
+      "acceptedStageFingerprint": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
+      "durationMs": 11215
     },
     {
       "ordinal": 6,
@@ -39213,7 +39899,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ]
         },
         {
           "taskId": 10009,
@@ -39234,7 +39925,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10011,
@@ -39245,7 +39940,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10014,
@@ -39326,7 +40025,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10043,
@@ -39367,7 +40072,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ]
         },
         {
           "taskId": 10063,
@@ -39388,7 +40098,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10065,
@@ -39399,7 +40113,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10068,
@@ -39450,7 +40168,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10084,
@@ -39501,7 +40225,12 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ]
         },
         {
           "taskId": 10108,
@@ -39522,7 +40251,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10110,
@@ -39533,7 +40266,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10113,
@@ -39574,7 +40311,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10128,
@@ -39625,7 +40366,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5001
+          "itinerantTeamId": 5001,
+          "assignedResourceIds": [
+            4002,
+            4007
+          ]
         },
         {
           "taskId": 10143,
@@ -39666,7 +40411,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10158,
@@ -39707,7 +40458,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10172,
@@ -39728,7 +40485,13 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5003
+          "itinerantTeamId": 5003,
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ]
         },
         {
           "taskId": 10175,
@@ -39889,7 +40652,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10240,
@@ -39960,7 +40727,11 @@
           "locationLabel": null,
           "durationOverride": null,
           "camerasOverride": null,
-          "itinerantTeamId": 5002
+          "itinerantTeamId": 5002,
+          "assignedResourceIds": [
+            4003,
+            4008
+          ]
         },
         {
           "taskId": 10266,
@@ -39973,7 +40744,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "8b4189afc64179acae1a7d440479169ed92f07ab7ae157030d637ae393581290",
+      "acceptedSnapshotFingerprintBefore": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -102278,7 +103049,7 @@
           "collisions": []
         }
       },
-      "durationMs": 61304
+      "durationMs": 61452
     }
   ],
   "firstBlocker": {
@@ -102485,6 +103256,6 @@
     "classification": "SEARCH_CAPACITY_EXHAUSTED"
   },
   "finalInGroups": null,
-  "deterministicFingerprint": "8b4189afc64179acae1a7d440479169ed92f07ab7ae157030d637ae393581290",
+  "deterministicFingerprint": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
   "deterministicEquivalent": true
 }
