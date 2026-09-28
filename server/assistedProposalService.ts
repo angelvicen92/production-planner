@@ -3,7 +3,7 @@ import { supabaseAdmin } from "./supabase";
 import { buildEngineInput } from "../engine/buildInput";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, minuteToEngineTime } from "../engine/planner-next/integration/engineInputAdapter";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "../engine/planner-next/assistedPlanning";
-import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSetupPreparation, ScheduledTask } from "../engine/planner-next/contracts";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledTask } from "../engine/planner-next/contracts";
 import { analyticalFutureEligibleTaskIds, expandVisiblePrerequisites, resolveAssistedScope, ScopeResolutionError } from "./assistedScopeResolver";
 import { certifyGlobalParticipantMealGate } from "./globalParticipantMealGate";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
@@ -18,6 +18,7 @@ import type { ValidationViolationDetail } from "../engine/planner-next/contracts
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
 import { mainFlowMealPolicy } from "../engine/planner-next/mainFlowMeal";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
+import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
 
 export function projectPlannerViolations(details:readonly ValidationViolationDetail[],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):StageViolation[]{
   const map=(namespace:string,ids:readonly string[])=>ids.map(id=>{const acceptedNamespaces=namespace==="resource"?["resource","plan-resource","resource-item"]:[namespace];const matches=identityMap.filter(item=>acceptedNamespaces.includes(item.namespace)&&item.canonicalId===id);const sourceId=Number(matches[0]?.sourceId);
@@ -192,6 +193,12 @@ export class AssistedProposalService {
       if(!spaceId||!setupFamilyId)throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${item.id}`);
       return {...item,kind:"setup-preparation",spaceId,setupFamilyId};
     });
+    const canonicalSynchronizationBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="round-synchronization").map(i=>[i.sourceId,i.canonicalId]));
+    const protectedRoundPreparations:ScheduledRoundPreparation[]=(baseSnapshot.roundPreparations??[]).map(item=>{
+      const spaceId=canonicalSpaceBySource.get(item.spaceId),synchronizationId=canonicalSynchronizationBySource.get(item.synchronizationId);
+      if(!spaceId||!synchronizationId)throw new Error(`UNREPRESENTABLE_PROTECTED_ROUND_PREPARATION:${item.id}`);
+      return {...item,id:roundPreparationId(synchronizationId,spaceId,item.roundIndex),kind:"round-preparation",spaceId,synchronizationId};
+    });
     const mealBySourceId=new Map((adapter.problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
     const protectedParticipantMeals:ScheduledParticipantMeal[]=baseSnapshot.tasks.flatMap(row=>{
       if(!row.startPlanned||!row.endPlanned)return[];
@@ -211,7 +218,7 @@ export class AssistedProposalService {
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
     const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,
-      protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals);
+      protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations);
     const execution=this.runner(assistedProblem,{violations:baselineViolations});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);let assignedResourceIds:readonly number[]|undefined;if(item.itinerantUnitId!==undefined){const sourceTask=taskInputById.get(taskId)!;const direct=projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.assignedResourceIds??[]);const domain=item.allowedItinerantUnitIds?.length?item.allowedItinerantUnitIds:item.itinerantUnitId?[item.itinerantUnitId]:[];const domainResources=new Set((adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]));const selectedResources=(adapter.problem.itinerantUnits??[]).find(unit=>unit.id===item.itinerantUnitId)?.resourceIds;if(!selectedResources)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...direct.filter(id=>!domainResources.has(id)),...selectedResources]);}return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit,assignedResourceIds})};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
@@ -239,7 +246,13 @@ export class AssistedProposalService {
       if(!spaceId||!setupFamilyId)throw new Error(`UNPROJECTABLE_SETUP_PREPARATION:${item.id}`);
       return {id:item.id,spaceId,setupFamilyId,entryIndex:item.entryIndex,duration:item.duration,start:item.start,end:item.end};
     });
-    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{}),...(mealProposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks, acceptedMeals, acceptedPreparations) : null;
+    const sourceSynchronizationByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="round-synchronization").map(i=>[i.canonicalId,i.sourceId]));
+    const acceptedRoundPreparations=(execution.evidence.selectedRoundPreparations??[]).map(item=>{
+      const spaceId=spaceByCanonical.get(item.spaceId),synchronizationId=sourceSynchronizationByCanonical.get(item.synchronizationId);
+      if(!spaceId||!synchronizationId)throw new Error(`UNPROJECTABLE_ROUND_PREPARATION:${item.id}`);
+      return {id:roundPreparationId(synchronizationId,String(spaceId),item.roundIndex),synchronizationId,spaceId,roundIndex:item.roundIndex,duration:item.duration,start:item.start,end:item.end};
+    });
+    const proposedDraftSnapshot=proposal ? buildAssistedPlanningSnapshotV1(baseSnapshot.tasks.map(task=>({id:task.taskId,...task,...(proposalById.get(task.taskId)??{}),...(mealProposalById.get(task.taskId)??{})})), baseSnapshot.planningBlocks, acceptedMeals, acceptedPreparations, acceptedRoundPreparations) : null;
     const proposedDraftFingerprint=proposedDraftSnapshot ? fingerprintAssistedPlanningSnapshotV1(proposedDraftSnapshot) : null;
     const candidateDetails=(execution.evidence as any).violations as ValidationViolationDetail[]|undefined;
     const candidateViolations=projectPlannerViolations(candidateDetails??[],adapter.identityMap);

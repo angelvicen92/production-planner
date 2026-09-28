@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem, ScheduledTask } from "./contracts";
+import type { PlannerNextProblem, ScheduledRoundPreparation, ScheduledTask } from "./contracts";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "./assistedPlanning";
 import { preflight, validatePlan } from "./validate";
 import { executePlannerNext } from "./executePlannerNext";
+import { roundPreparationId } from "./roundSynchronization";
 
 function fixture(): PlannerNextProblem {
   return {
@@ -260,6 +261,31 @@ test("one shared closure keeps every hard-coupled structure intact and explains 
   assert.match(result.supportingReasonByTaskId.anchor.join(), /ANCHORED_WITH:joint-peer/);
   assert.match(result.supportingReasonByTaskId["chain-peer"].join(), /TECHNICAL_CHAIN:c/);
   assert.match(result.supportingReasonByTaskId["round-peer"].join(), /ROUND_SYNCHRONIZATION:r/);
+});
+
+test("accepted round preparations survive an unrelated assisted stage and fail closed when unrepresentable",()=>{
+  const source=fixture();
+  source.tasks=[...source.tasks.slice(0,2),
+    {id:"a1",kind:"auxiliary",duration:10,spaceId:"main-space",participantId:"p1",dependencies:[]},
+    {id:"a2",kind:"auxiliary",duration:10,spaceId:"main-space",participantId:"p1",dependencies:[]},
+    {id:"b1",kind:"auxiliary",duration:10,spaceId:"vocal-space",participantId:"p2",dependencies:[]},
+    {id:"b2",kind:"auxiliary",duration:10,spaceId:"vocal-space",participantId:"p2",dependencies:[]},
+    {id:"unrelated",kind:"auxiliary",duration:10,spaceId:"other-space",participantId:"p2",dependencies:[]},
+  ];
+  source.roundSynchronizations=[{id:"sync",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",lanes:[
+    {spaceId:"main-space",taskIds:["a1","a2"],preparationMinutesBetweenRounds:5},
+    {spaceId:"vocal-space",taskIds:["b1","b2"],preparationMinutesBetweenRounds:5},
+  ]}];
+  const stageA=executeAssistedPlanning(buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"rounds"},{},["feed","main","a1","a2","b1","b2"]),[]));
+  assert.ok(stageA.proposal,stageA.evidence.reasonCodes.join(","));
+  assert.equal(stageA.evidence.selectedRoundPreparations?.length,2);
+  const protectedRounds=[...(stageA.evidence.selectedRoundPreparations??[])] as ScheduledRoundPreparation[];
+  const stageBProblem=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"unrelated"},{},["unrelated"]),stageA.proposal!,new Set(),[],[],[],protectedRounds);
+  const stageB=executeAssistedPlanning(stageBProblem);
+  assert.ok(stageB.proposal,stageB.evidence.reasonCodes.join(","));
+  assert.deepEqual(stageB.evidence.protectedRoundPreparations?.map(({id})=>id).sort(),protectedRounds.map(({id})=>id).sort());
+  assert.equal(stageB.evidence.reasonCodes.includes("ROUND_PREPARATION_VIOLATION"),false);
+  assert.throws(()=>buildAssistedProblem(source,stageBProblem.scope,stageA.proposal!,new Set(),[],[],[],[{...protectedRounds[0]!,id:roundPreparationId("sync","main-space",99),roundIndex:99}]),/UNREPRESENTABLE_PROTECTED_ROUND_PREPARATION/);
 });
 
 test("scope projection removes structured-space requirements with no surviving tasks", () => {

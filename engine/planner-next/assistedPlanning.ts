@@ -6,6 +6,7 @@ import type {
   ScheduledOperationalMeal,
   ScheduledSetupPreparation,
   ScheduledParticipantMeal,
+  ScheduledRoundPreparation,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -17,6 +18,7 @@ import { operationalMealWitnessFingerprint } from "./operationalMeals";
 import { createViolationKey } from "../../shared/assistedStageValidation";
 import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupPreparationId } from "./setupPreparation";
+import { roundPreparationId } from "./roundSynchronization";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
 export type AssistedPlanningReasonCode =
@@ -34,6 +36,7 @@ export interface AssistedProblem {
   readonly protectedPlacements: readonly ScheduledTask[];
   readonly protectedOperationalMeals: readonly ScheduledOperationalMeal[];
   readonly protectedSetupPreparations: readonly ScheduledSetupPreparation[];
+  readonly protectedRoundPreparations: readonly ScheduledRoundPreparation[];
   readonly protectedParticipantMeals: readonly ScheduledParticipantMeal[];
   readonly retainedParticipantMealSourceIds: readonly string[];
   readonly automaticTaskIds: readonly string[];
@@ -49,6 +52,9 @@ export interface AssistedPlanningEvidence {
   readonly protectedPlacementCount: number;
   readonly protectedOperationalMeals: readonly import("./contracts").ScheduledOperationalMeal[];
   readonly protectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
+  readonly protectedRoundPreparations?: readonly import("./contracts").ScheduledRoundPreparation[];
+  readonly protectedRoundPreparationIds?: readonly string[];
+  readonly protectedRoundPreparationCount?: number;
   readonly protectedParticipantMeals?: readonly import("./contracts").ScheduledParticipantMeal[];
   readonly retainedParticipantMealSourceIds?: readonly string[];
   readonly protectedPlacementsPreserved: boolean;
@@ -68,6 +74,9 @@ export interface AssistedPlanningEvidence {
   } | null;
   /** Read-only structural artifacts selected with the proposal; snapshots currently persist tasks and meals only. */
   readonly selectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
+  readonly selectedRoundPreparations?: readonly import("./contracts").ScheduledRoundPreparation[];
+  readonly selectedRoundPreparationIds?: readonly string[];
+  readonly selectedRoundPreparationCount?: number;
   readonly participantMealFutureFeasibility: {
     readonly futureFeasibilityChecks:number; readonly futureInfeasibleBranches:number;
     readonly affectedObligationsChecked:number; readonly zeroDomainPrunes:number;
@@ -217,6 +226,7 @@ export function buildAssistedProblem(
   protectedOperationalMeals: readonly ScheduledOperationalMeal[] = [],
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
+  protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -241,6 +251,20 @@ export function buildAssistedProblem(
       ||!space.availability.some(window=>window.start<=preparation.start&&preparation.end<=window.end))
       throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${preparation.id}`);
     preparationIds.add(preparation.id);
+  }
+  const roundPreparationIds=new Set<string>();
+  for(const preparation of protectedRoundPreparations){
+    const policy=problem.roundSynchronizations?.find(item=>item.id===preparation.synchronizationId);
+    const lane=policy?.lanes.find(item=>item.spaceId===preparation.spaceId);
+    const space=problem.spaces.find(item=>item.id===preparation.spaceId);
+    if(roundPreparationIds.has(preparation.id)||!policy||!lane||!space
+      ||preparation.id!==roundPreparationId(policy.id,lane.spaceId,preparation.roundIndex)
+      ||preparation.roundIndex<2||preparation.roundIndex>lane.taskIds.length
+      ||preparation.duration!==lane.preparationMinutesBetweenRounds||preparation.duration<=0
+      ||preparation.start>=preparation.end||preparation.end-preparation.start!==preparation.duration
+      ||!space.availability.some(window=>window.start<=preparation.start&&preparation.end<=window.end))
+      throw new Error(`UNREPRESENTABLE_PROTECTED_ROUND_PREPARATION:${preparation.id}`);
+    roundPreparationIds.add(preparation.id);
   }
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
   const mealsBySourceId = new Map((problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
@@ -452,6 +476,7 @@ export function buildAssistedProblem(
     protectedPlacements: structuredClone(protectedPlacements),
     protectedOperationalMeals: structuredClone(protectedOperationalMeals),
     protectedSetupPreparations: structuredClone(protectedSetupPreparations),
+    protectedRoundPreparations: structuredClone(protectedRoundPreparations),
     protectedParticipantMeals: structuredClone(protectedParticipantMeals),
     retainedParticipantMealSourceIds: canonicalIds([...retainedMealSourceIds]),
     automaticTaskIds: canonicalIds([...included].filter((id) => !fixedById.has(id))),
@@ -477,7 +502,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
-    fixedSetupPreparations:input.protectedSetupPreparations });
+    fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -582,6 +607,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     protectedPlacementCount: input.protectedPlacements.length,
     protectedOperationalMeals: structuredClone(input.protectedOperationalMeals),
     protectedSetupPreparations: structuredClone(input.protectedSetupPreparations),
+    protectedRoundPreparations: structuredClone(input.protectedRoundPreparations),
+    protectedRoundPreparationIds: input.protectedRoundPreparations.map(({id})=>id).sort(),
+    protectedRoundPreparationCount: input.protectedRoundPreparations.length,
     protectedParticipantMeals: structuredClone(input.protectedParticipantMeals),
     retainedParticipantMealSourceIds:[...input.retainedParticipantMealSourceIds],
     protectedPlacementsPreserved: protectedPreserved,
@@ -607,6 +635,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     selectedMealWitnesses,
     fixedMainBundle,
     selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),
+    selectedRoundPreparations:structuredClone(result?.scheduledRoundPreparations??[]),
+    selectedRoundPreparationIds:(result?.scheduledRoundPreparations??[]).map(({id})=>id).sort(),
+    selectedRoundPreparationCount:result?.scheduledRoundPreparations?.length??0,
     participantMealFutureFeasibility:{
       futureFeasibilityChecks:Number(evidenceRecord.participantMealFutureFeasibilityChecks??metricsRecord.participantMealFutureFeasibilityChecks??0),
       futureInfeasibleBranches:Number(evidenceRecord.participantMealFutureInfeasibleBranches??0),

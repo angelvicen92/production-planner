@@ -5,6 +5,7 @@ import {
   type AssistedPlanningBlockV1,
   type AssistedOperationalMealSnapshotV1,
   type AssistedSetupPreparationSnapshotV1,
+  type AssistedRoundPreparationSnapshotV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export {
@@ -14,6 +15,7 @@ export {
   type AssistedPlanningBlockV1,
   type AssistedOperationalMealSnapshotV1,
   type AssistedSetupPreparationSnapshotV1,
+  type AssistedRoundPreparationSnapshotV1,
 } from "../shared/assistedPlanningSnapshotContracts";
 
 export type AssistedPlanningTaskSource = Readonly<{
@@ -48,6 +50,7 @@ export function buildAssistedPlanningSnapshotV1(
   planningBlocks?: readonly AssistedPlanningBlockV1[],
   operationalMeals?: readonly AssistedOperationalMealSnapshotV1[],
   setupPreparations?: readonly AssistedSetupPreparationSnapshotV1[],
+  roundPreparations?: readonly AssistedRoundPreparationSnapshotV1[],
 ): AssistedPlanningSnapshotV1 {
   const tasks = rows.map((row) => {
     if (!Number.isInteger(row.id) || row.id <= 0) throw new Error("task id must be a positive integer");
@@ -88,7 +91,18 @@ export function buildAssistedPlanningSnapshotV1(
     preparationIdentities.add(identity);
   }
   const preparationProperty=preparations?.length?{setupPreparations:preparations}:{};
-  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, ...mealProperty, ...preparationProperty });
+  const rounds=roundPreparations?.map(item=>({...item})).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id,"en"));
+  const roundIdentities=new Set<string>(),roundIds=new Set<string>();
+  for(const item of rounds??[]){
+    const identity=`${item.synchronizationId}|${item.spaceId}|${item.roundIndex}`;
+    if(!item.id||!item.synchronizationId||!Number.isInteger(item.spaceId)||item.spaceId<=0
+      ||!Number.isInteger(item.roundIndex)||item.roundIndex<2||!Number.isInteger(item.duration)||item.duration<=0
+      ||!Number.isInteger(item.start)||!Number.isInteger(item.end)||item.start>=item.end||item.end-item.start!==item.duration
+      ||roundIdentities.has(identity)||roundIds.has(item.id))throw new Error("invalid or duplicate round preparation");
+    roundIdentities.add(identity);roundIds.add(item.id);
+  }
+  const roundProperty=rounds?.length?{roundPreparations:rounds}:{};
+  if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, ...mealProperty, ...preparationProperty, ...roundProperty });
   const seen = new Set<number>();
   const blocks = planningBlocks.map((block) => ({
     ...structuredClone(block),
@@ -103,10 +117,10 @@ export function buildAssistedPlanningSnapshotV1(
       seen.add(id);
     }
   }
-  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks, ...mealProperty, ...preparationProperty });
+  return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, planningBlocks: blocks, ...mealProperty, ...preparationProperty, ...roundProperty });
 }
 
 export function fingerprintAssistedPlanningSnapshotV1(snapshot: AssistedPlanningSnapshotV1): string {
-  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks, snapshot.operationalMeals, snapshot.setupPreparations);
+  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks, snapshot.operationalMeals, snapshot.setupPreparations, snapshot.roundPreparations);
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }
