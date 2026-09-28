@@ -20,6 +20,8 @@ export type AssistedProposalRequest = z.infer<typeof assistedProposalRequestSche
 export interface AssistedProposalPlacementV1 {
   readonly taskId: number; readonly startPlanned: string; readonly endPlanned: string;
   readonly spaceId: number; readonly zoneId: number | null;
+  readonly itinerantTeamId?: number;
+  readonly assignedResourceIds?: readonly number[];
 }
 export interface AssistedProposalRunResultV1 {
   readonly contractVersion: 1;

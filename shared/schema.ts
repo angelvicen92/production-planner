@@ -601,6 +601,7 @@ export const dailyTasks = pgTable("daily_tasks", {
   // Planned times (Engine output)
   startPlanned: text("start_planned"),
   endPlanned: text("end_planned"),
+  assignedResourceIds: jsonb("assigned_resource_ids").$type<number[]>(),
 
   // Real times (Execution)
   startReal: text("start_real"),

@@ -30,6 +30,15 @@ test("optional itinerant assignment is fingerprinted while legacy rows retain th
   assert.deepEqual(replay,selected);assert.equal(fingerprintAssistedPlanningSnapshotV1(replay),fingerprintAssistedPlanningSnapshotV1(selected));
 });
 
+test("explicit physical assignments are canonical while absent legacy assignments remain omitted",()=>{
+  const legacy=buildAssistedPlanningSnapshotV1(base);
+  const assigned=buildAssistedPlanningSnapshotV1(base.map(row=>row.id===1?{...row,assignedResources:[81,80,81]}:{...row,assignedResources:null}));
+  assert.deepEqual(assigned.tasks[0]!.assignedResourceIds,[80,81]);
+  assert.deepEqual(assigned.tasks[1]!.assignedResourceIds,[]);
+  assert.notEqual(fingerprintAssistedPlanningSnapshotV1(assigned),fingerprintAssistedPlanningSnapshotV1(legacy));
+  assert.deepEqual(buildAssistedPlanningSnapshotV1(assigned.tasks.map(row=>({id:row.taskId,...row}))),assigned);
+});
+
 test("planning block fingerprints canonicalize block order while preserving member order",()=>{
   const tasks=buildAssistedPlanningSnapshotV1(base).tasks;
   const blocks=[{blockId:"block:a",memberTaskIds:[1,2],scopeProvenance:{kind:"TASK_IDS"},spaceId:4,activityTemplateId:8,order:0}] as const;

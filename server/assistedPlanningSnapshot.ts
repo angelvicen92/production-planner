@@ -26,6 +26,8 @@ export type AssistedPlanningTaskSource = Readonly<{
   durationOverride?: number | null;
   camerasOverride?: number | null;
   itinerantTeamId?: number;
+  assignedResourceIds?: readonly number[] | null;
+  assignedResources?: readonly number[] | null;
 }> & Readonly<Record<string, unknown>>;
 
 function freeze<T>(value: T): T {
@@ -50,6 +52,10 @@ export function buildAssistedPlanningSnapshotV1(
   const tasks = rows.map((row) => {
     if (!Number.isInteger(row.id) || row.id <= 0) throw new Error("task id must be a positive integer");
     if(row.itinerantTeamId!==undefined&&(!Number.isInteger(row.itinerantTeamId)||row.itinerantTeamId<=0))throw new Error("itinerant team id must be a positive integer");
+    const hasResourceAssignment=Object.prototype.hasOwnProperty.call(row,"assignedResourceIds")||Object.prototype.hasOwnProperty.call(row,"assignedResources");
+    const sourceResourceIds=row.assignedResourceIds??row.assignedResources;
+    if(sourceResourceIds!==undefined&&sourceResourceIds!==null&&sourceResourceIds.some(id=>!Number.isInteger(id)||id<=0))throw new Error("assigned resource ids must be positive integers");
+    const assignedResourceIds=sourceResourceIds==null?[]:[...new Set(sourceResourceIds)].sort((a,b)=>a-b);
     return {
       taskId: row.id,
       startPlanned: row.startPlanned ?? null,
@@ -60,6 +66,7 @@ export function buildAssistedPlanningSnapshotV1(
       durationOverride: row.durationOverride ?? null,
       camerasOverride: row.camerasOverride ?? null,
       ...(row.itinerantTeamId===undefined?{}:{itinerantTeamId:row.itinerantTeamId}),
+      ...(hasResourceAssignment?{assignedResourceIds}:{}),
     };
   }).sort((a, b) => a.taskId - b.taskId);
   if (tasks.some((task, index) => index > 0 && tasks[index - 1].taskId === task.taskId)) {

@@ -11,6 +11,8 @@ export interface AssistedPlanningTaskSnapshotV1 {
   readonly camerasOverride: number | null;
   /** Solver-selected unit. Omitted from legacy snapshots and unassigned rows. */
   readonly itinerantTeamId?: number;
+  /** Explicit physical assignment selected for this placement. Omitted from legacy and unassigned rows. */
+  readonly assignedResourceIds?: readonly number[];
 }
 
 export interface AssistedPlanningBlockV1 {

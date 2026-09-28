@@ -76,13 +76,28 @@ const defaultDependencies: AssistedProposalServiceDependencies = {
 };
 const provenance = (authority:string) => ({authority,authorityContractVersion:1});
 
+const resourceNamespaces=new Set(["resource","plan-resource","resource-item"]);
+function projectSnapshotResources(identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[],ids:readonly number[]):string[]{
+  return [...new Set(ids)].sort((a,b)=>a-b).map(id=>{
+    const matches=identityMap.filter(item=>resourceNamespaces.has(item.namespace)&&Number(item.sourceId)===id);
+    const canonical=[...new Set(matches.map(item=>item.canonicalId))];
+    if(canonical.length!==1)throw new Error(`UNPROJECTABLE_SNAPSHOT_RESOURCE:${id}`);
+    return canonical[0]!;
+  });
+}
+function materializeSnapshotTask(problem:PlannerNextProblem,source:ScheduledTask|PlannerNextProblem["tasks"][number],row:AssistedPlanningSnapshotV1["tasks"][number],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[],unitByProduct:ReadonlyMap<number,string>){
+  const selected=row.itinerantTeamId===undefined?source:materializeItinerantUnitAssignment(problem,source,unitByProduct.get(row.itinerantTeamId)??"");
+  if(!selected)return null;
+  return row.assignedResourceIds===undefined?selected:{...selected,requiredResourceIds:projectSnapshotResources(identityMap,row.assignedResourceIds)};
+}
+
 export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
   const adapter=adaptEngineInputToPlannerNextProblem(input);if(adapter.status!=="SUPPORTED")return null;
   const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
   if(touched.some(id=>!canonicalByProduct.has(id)))return null;
   const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
   const unitByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
-  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),source=canonical?taskById.get(canonical):undefined;const task=source&&row.itinerantTeamId!==undefined?materializeItinerantUnitAssignment(adapter.problem,source,unitByProduct.get(row.itinerantTeamId)??""):source;const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,duration:end-start,start,end}]:[];});
+  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),source=canonical?taskById.get(canonical):undefined;const task=source?materializeSnapshotTask(adapter.problem,source,row,adapter.identityMap,unitByProduct):undefined;const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,duration:end-start,start,end}]:[];});
   const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
   const assisted=buildAssistedProblem(adapter.problem,scope,protectedPlacements);
   const evidence=executeAssistedPlanning(assisted).evidence;
@@ -95,7 +110,7 @@ export function createManualDeltaValidationHarness(problem:PlannerNextProblem,id
   return (_input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[])=>{
     const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
     const unitByProduct=new Map(identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
-    const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),source=id?taskById.get(id):undefined;const task=source&&row.itinerantTeamId!==undefined?materializeItinerantUnitAssignment(problem,source,unitByProduct.get(row.itinerantTeamId)??""):source;if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
+    const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),source=id?taskById.get(id):undefined;const task=source?materializeSnapshotTask(problem,source,row,identityMap,unitByProduct):undefined;if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
     const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
     const assisted=buildAssistedProblem(problem,createPlanningScope({kind:"TASK_IDS",value:scopeIds.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds),placements);
     const validation=validatePlan(assisted.originalValidationProblem,placements),completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
@@ -151,7 +166,7 @@ export class AssistedProposalService {
     const baseSnapshot=stage.snapshotJson as unknown as AssistedPlanningSnapshotV1;
     const protectedPlacements: ScheduledTask[]=baseSnapshot.tasks.flatMap(row=>{
       if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const source=id?taskById.get(id):undefined;
-      const task=source&&row.itinerantTeamId!==undefined?materializeItinerantUnitAssignment(adapter.problem,source,canonicalUnitBySource.get(row.itinerantTeamId)??""):source;
+      const task=source?materializeSnapshotTask(adapter.problem,source,row,adapter.identityMap,canonicalUnitBySource):undefined;
       if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);
       const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
       return task?[{...task,duration:end-start,start,end}]:[];
@@ -191,7 +206,7 @@ export class AssistedProposalService {
     const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,
       protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals);
     const execution=this.runner(assistedProblem,{violations:baselineViolations});
-    const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`); return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit})};})??null;
+    const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);const selectedPhysical=item.itinerantUnitId===undefined?undefined:item.requiredResourceIds;const assignedResourceIds=selectedPhysical?.map(id=>{const matches=adapter.identityMap.filter(entry=>resourceNamespaces.has(entry.namespace)&&entry.canonicalId===id);const values=[...new Set(matches.map(entry=>Number(entry.sourceId)).filter(Number.isInteger))];if(values.length!==1)throw new Error(`UNPROJECTABLE_ITINERANT_RESOURCE:${id}`);return values[0]!;}).sort((a,b)=>a-b); return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit,assignedResourceIds:[...new Set(assignedResourceIds)]})};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const mealProposalById=new Map<number,{startPlanned:string;endPlanned:string;spaceId:null}>();
     const retainedMealSources=new Set(assistedProblem.retainedParticipantMealSourceIds);

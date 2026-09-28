@@ -153,10 +153,11 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     }
     const proposedRows=(result.proposal??[]).filter(row=>!protectedBefore.has(row.taskId)).map(row=>{
       const task=input.tasks.find(item=>item.id===row.taskId)!;
+      const accepted=result.proposedDraftSnapshot?.tasks.find(item=>item.taskId===row.taskId);
       return {taskId:row.taskId,templateName:task.templateName,participantId:task.contestantId??null,
         participantOrdinal:task.contestantId==null?null:contestantOrdinalById.get(task.contestantId)??null,
         spaceId:task.spaceId??null,start:row.startPlanned,end:row.endPlanned,
-        durationMinutes:task.durationOverrideMin,resourceIds:[...(task.assignedResourceIds??[])].sort()};
+        durationMinutes:task.durationOverrideMin,resourceIds:[...(accepted?.assignedResourceIds??[])].sort((a,b)=>a-b)};
     }).sort((a,b)=>a.taskId-b.taskId);
     const terminalRejection=evidence.standaloneDiagnostic?.firstTerminalCompletionRejection;
     const acceptedMeals=result.outcome==="PROPOSAL"?evidence.selectedMealWitnesses:null;
