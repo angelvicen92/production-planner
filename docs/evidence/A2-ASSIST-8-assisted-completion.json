@@ -1223,6 +1223,16 @@
           "durationMinutes": 15,
           "resourceIds": [
             4002,
+            4005,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4005,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
             4007
           ]
         },
@@ -1235,7 +1245,11 @@
           "start": "15:00",
           "end": "15:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10031,
@@ -1246,7 +1260,11 @@
           "start": "14:45",
           "end": "15:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10043,
@@ -1257,7 +1275,11 @@
           "start": "14:30",
           "end": "14:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10056,
@@ -1269,6 +1291,16 @@
           "end": "11:45",
           "durationMinutes": 15,
           "resourceIds": [
+            4003,
+            4004,
+            4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4004,
+            4008
+          ],
+          "effectiveResourceIds": [
             4003,
             4008
           ]
@@ -1282,7 +1314,11 @@
           "start": "12:30",
           "end": "12:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10088,
@@ -1293,7 +1329,11 @@
           "start": "17:15",
           "end": "17:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10102,
@@ -1305,6 +1345,16 @@
           "end": "12:00",
           "durationMinutes": 15,
           "resourceIds": [
+            4002,
+            4004,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4004,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4007
           ]
@@ -1318,7 +1368,11 @@
           "start": "17:00",
           "end": "17:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10131,
@@ -1329,7 +1383,11 @@
           "start": "16:45",
           "end": "17:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10147,
@@ -1340,7 +1398,11 @@
           "start": "12:15",
           "end": "12:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10161,
@@ -1351,7 +1413,11 @@
           "start": "14:15",
           "end": "14:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10175,
@@ -1362,7 +1428,11 @@
           "start": "15:45",
           "end": "16:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10190,
@@ -1373,7 +1443,11 @@
           "start": "15:30",
           "end": "15:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10203,
@@ -1384,7 +1458,11 @@
           "start": "15:15",
           "end": "15:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10218,
@@ -1395,7 +1473,11 @@
           "start": "12:00",
           "end": "12:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10229,
@@ -1406,7 +1488,11 @@
           "start": "16:30",
           "end": "16:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10243,
@@ -1417,7 +1503,11 @@
           "start": "16:15",
           "end": "16:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10256,
@@ -1428,7 +1518,11 @@
           "start": "16:00",
           "end": "16:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [],
@@ -7368,6 +7462,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -7413,6 +7508,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -7448,6 +7544,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -7562,15 +7659,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "227cd5b4211d045fc73406e6ec22dd04b752e94d4dc101e340f4b2d9b7a03acd",
+      "acceptedSnapshotFingerprintAfter": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
       "protectedEqualityProof": {
         "beforeCount": 0,
         "afterCount": 0,
         "equal": true
       },
       "acceptedStageId": 2,
-      "acceptedStageFingerprint": "227cd5b4211d045fc73406e6ec22dd04b752e94d4dc101e340f4b2d9b7a03acd",
-      "durationMs": 204576
+      "acceptedStageFingerprint": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
+      "durationMs": 213895
     },
     {
       "ordinal": 2,
@@ -8485,7 +8582,11 @@
           "start": "12:00",
           "end": "12:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10024,
@@ -8496,7 +8597,11 @@
           "start": "11:00",
           "end": "11:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10037,
@@ -8507,7 +8612,11 @@
           "start": "11:15",
           "end": "11:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10050,
@@ -8518,7 +8627,11 @@
           "start": "11:30",
           "end": "11:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10063,
@@ -8529,7 +8642,11 @@
           "start": "10:45",
           "end": "11:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10080,
@@ -8540,7 +8657,11 @@
           "start": "09:45",
           "end": "10:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10095,
@@ -8551,7 +8672,11 @@
           "start": "14:00",
           "end": "14:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10108,
@@ -8562,7 +8687,11 @@
           "start": "10:30",
           "end": "10:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10123,
@@ -8573,7 +8702,11 @@
           "start": "14:15",
           "end": "14:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10138,
@@ -8584,7 +8717,11 @@
           "start": "14:30",
           "end": "14:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10153,
@@ -8595,7 +8732,11 @@
           "start": "10:00",
           "end": "10:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10168,
@@ -8606,7 +8747,11 @@
           "start": "11:45",
           "end": "12:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10183,
@@ -8617,7 +8762,11 @@
           "start": "10:15",
           "end": "10:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10197,
@@ -8628,7 +8777,11 @@
           "start": "10:30",
           "end": "10:45",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10210,
@@ -8639,7 +8792,11 @@
           "start": "10:45",
           "end": "11:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4005
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10224,
@@ -8650,7 +8807,11 @@
           "start": "10:15",
           "end": "10:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10236,
@@ -8661,7 +8822,11 @@
           "start": "14:45",
           "end": "15:00",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10249,
@@ -8672,7 +8837,11 @@
           "start": "15:00",
           "end": "15:15",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10262,
@@ -8683,7 +8852,11 @@
           "start": "15:15",
           "end": "15:30",
           "durationMinutes": 15,
-          "resourceIds": []
+          "resourceIds": [
+            4004
+          ],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [
@@ -8699,6 +8872,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -8744,6 +8918,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -8779,6 +8954,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -8893,7 +9069,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "227cd5b4211d045fc73406e6ec22dd04b752e94d4dc101e340f4b2d9b7a03acd",
+      "acceptedSnapshotFingerprintBefore": "8edf0eca48ff95f7c7afe53638dcdf927e03953a8fbe4403b3c01db7b157abb0",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -14656,6 +14832,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -14741,6 +14918,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -14806,6 +14984,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -15040,15 +15219,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "e4c2f812c81869730c8ed9f6d1b3ac10cc698ced573353a14bfb9ef0bce697a5",
+      "acceptedSnapshotFingerprintAfter": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
       "protectedEqualityProof": {
         "beforeCount": 19,
         "afterCount": 19,
         "equal": true
       },
       "acceptedStageId": 3,
-      "acceptedStageFingerprint": "e4c2f812c81869730c8ed9f6d1b3ac10cc698ced573353a14bfb9ef0bce697a5",
-      "durationMs": 3479
+      "acceptedStageFingerprint": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
+      "durationMs": 3868
     },
     {
       "ordinal": 3,
@@ -15854,6 +16033,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15865,7 +16056,9 @@
           "start": "18:00",
           "end": "18:10",
           "durationMinutes": 10,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10081,
@@ -15881,6 +16074,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15892,7 +16097,9 @@
           "start": "18:00",
           "end": "18:10",
           "durationMinutes": 10,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10154,
@@ -15904,6 +16111,18 @@
           "end": "17:30",
           "durationMinutes": 30,
           "resourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4003,
             4006,
@@ -15924,6 +16143,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15940,6 +16171,18 @@
             4003,
             4006,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4003,
+            4006,
+            4007
           ]
         },
         {
@@ -15951,7 +16194,9 @@
           "start": "18:10",
           "end": "18:20",
           "durationMinutes": 10,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [
@@ -15967,6 +16212,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -16052,6 +16298,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -16117,6 +16364,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -16351,7 +16599,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "e4c2f812c81869730c8ed9f6d1b3ac10cc698ced573353a14bfb9ef0bce697a5",
+      "acceptedSnapshotFingerprintBefore": "0fc132215d37913b4610c79c9a60165e8013a84c28f94398ff0d55298e45f801",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -22105,6 +22353,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -22207,6 +22456,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -22299,6 +22549,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -22604,15 +22855,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "a64013f4ef35fcc23e8b002539ebaf212316bc70dbb60aa4b8386e7148e44f63",
+      "acceptedSnapshotFingerprintAfter": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
       "protectedEqualityProof": {
         "beforeCount": 38,
         "afterCount": 38,
         "equal": true
       },
       "acceptedStageId": 4,
-      "acceptedStageFingerprint": "a64013f4ef35fcc23e8b002539ebaf212316bc70dbb60aa4b8386e7148e44f63",
-      "durationMs": 7306
+      "acceptedStageFingerprint": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
+      "durationMs": 7914
     },
     {
       "ordinal": 4,
@@ -23374,6 +23625,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -23386,6 +23645,14 @@
           "end": "13:15",
           "durationMinutes": 15,
           "resourceIds": [
+            4002,
+            4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4007
           ]
@@ -23402,6 +23669,14 @@
           "resourceIds": [
             4003,
             4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
+            4003,
+            4008
           ]
         },
         {
@@ -23414,6 +23689,14 @@
           "end": "12:00",
           "durationMinutes": 15,
           "resourceIds": [
+            4003,
+            4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
             4003,
             4008
           ]
@@ -23430,6 +23713,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -23444,6 +23735,14 @@
           "resourceIds": [
             4002,
             4007
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
+            4002,
+            4007
           ]
         },
         {
@@ -23456,6 +23755,14 @@
           "end": "13:50",
           "durationMinutes": 30,
           "resourceIds": [
+            4002,
+            4007
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
             4003,
             4008
           ]
@@ -23470,6 +23777,14 @@
           "end": "14:00",
           "durationMinutes": 30,
           "resourceIds": [
+            4003,
+            4008
+          ],
+          "assignedResourceIds": [
+            4002,
+            4007
+          ],
+          "effectiveResourceIds": [
             4002,
             4007
           ]
@@ -23486,6 +23801,14 @@
           "resourceIds": [
             4003,
             4008
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
+            4003,
+            4008
           ]
         },
         {
@@ -23498,6 +23821,14 @@
           "end": "13:05",
           "durationMinutes": 30,
           "resourceIds": [
+            4002,
+            4007
+          ],
+          "assignedResourceIds": [
+            4003,
+            4008
+          ],
+          "effectiveResourceIds": [
             4003,
             4008
           ]
@@ -23516,6 +23847,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -23618,6 +23950,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -23710,6 +24043,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -24015,7 +24349,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "a64013f4ef35fcc23e8b002539ebaf212316bc70dbb60aa4b8386e7148e44f63",
+      "acceptedSnapshotFingerprintBefore": "99f9be0e0f1346165129be73b2f2f4dd33d3d45ea47fad0e526d4d4c438e8ddd",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -29796,6 +30130,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -29928,6 +30263,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -30050,6 +30386,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -30445,15 +30782,15 @@
           ]
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "6ab09a5d5debdc0ba84943fbb85e1b6df2c54752cc0f9659535c591f9b7f1231",
+      "acceptedSnapshotFingerprintAfter": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
       "protectedEqualityProof": {
         "beforeCount": 46,
         "afterCount": 46,
         "equal": true
       },
       "acceptedStageId": 5,
-      "acceptedStageFingerprint": "6ab09a5d5debdc0ba84943fbb85e1b6df2c54752cc0f9659535c591f9b7f1231",
-      "durationMs": 4291
+      "acceptedStageFingerprint": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
+      "durationMs": 4606
     },
     {
       "ordinal": 5,
@@ -31186,7 +31523,9 @@
           "start": "14:30",
           "end": "15:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10028,
@@ -31197,7 +31536,9 @@
           "start": "16:15",
           "end": "16:45",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10040,
@@ -31208,7 +31549,9 @@
           "start": "17:25",
           "end": "17:55",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10053,
@@ -31219,7 +31562,9 @@
           "start": "10:55",
           "end": "11:25",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10068,
@@ -31230,7 +31575,9 @@
           "start": "12:05",
           "end": "12:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10084,
@@ -31241,7 +31588,9 @@
           "start": "16:50",
           "end": "17:20",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10099,
@@ -31252,7 +31601,9 @@
           "start": "16:15",
           "end": "16:45",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10113,
@@ -31263,7 +31614,9 @@
           "start": "15:05",
           "end": "15:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10128,
@@ -31274,7 +31627,9 @@
           "start": "15:05",
           "end": "15:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10143,
@@ -31285,7 +31640,9 @@
           "start": "11:30",
           "end": "12:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10158,
@@ -31296,7 +31653,9 @@
           "start": "11:30",
           "end": "12:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10172,
@@ -31307,7 +31666,9 @@
           "start": "12:40",
           "end": "13:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10187,
@@ -31318,7 +31679,9 @@
           "start": "16:50",
           "end": "17:20",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10200,
@@ -31329,7 +31692,9 @@
           "start": "12:05",
           "end": "12:35",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10214,
@@ -31340,7 +31705,9 @@
           "start": "15:40",
           "end": "16:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10227,
@@ -31351,7 +31718,9 @@
           "start": "12:40",
           "end": "13:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10240,
@@ -31362,7 +31731,9 @@
           "start": "10:55",
           "end": "11:25",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10253,
@@ -31373,7 +31744,9 @@
           "start": "15:40",
           "end": "16:10",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         },
         {
           "taskId": 10266,
@@ -31384,7 +31757,9 @@
           "start": "14:30",
           "end": "15:00",
           "durationMinutes": 30,
-          "resourceIds": []
+          "resourceIds": [],
+          "assignedResourceIds": [],
+          "effectiveResourceIds": []
         }
       ],
       "acceptedSnapshotBefore": [
@@ -31400,6 +31775,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -31532,6 +31908,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -31654,6 +32031,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -32049,7 +32427,7 @@
           ]
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "6ab09a5d5debdc0ba84943fbb85e1b6df2c54752cc0f9659535c591f9b7f1231",
+      "acceptedSnapshotFingerprintBefore": "22e4544d636adb44e17a65f774c3ef53f8bd148c29b5d42fe4b732b2b8c653c9",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -37941,6 +38319,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -38113,6 +38492,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -38265,6 +38645,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -38780,15 +39161,15 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintAfter": "07d6d061dad821127caa5c50a6614c2dead777e8ea2cfd4f542858f19180226b",
+      "acceptedSnapshotFingerprintAfter": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
       "protectedEqualityProof": {
         "beforeCount": 56,
         "afterCount": 56,
         "equal": true
       },
       "acceptedStageId": 6,
-      "acceptedStageFingerprint": "07d6d061dad821127caa5c50a6614c2dead777e8ea2cfd4f542858f19180226b",
-      "durationMs": 10971
+      "acceptedStageFingerprint": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
+      "durationMs": 11215
     },
     {
       "ordinal": 6,
@@ -39521,6 +39902,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4005,
             4007
           ]
         },
@@ -39693,6 +40075,7 @@
           "itinerantTeamId": 5002,
           "assignedResourceIds": [
             4003,
+            4004,
             4008
           ]
         },
@@ -39845,6 +40228,7 @@
           "itinerantTeamId": 5001,
           "assignedResourceIds": [
             4002,
+            4004,
             4007
           ]
         },
@@ -40360,7 +40744,7 @@
           "camerasOverride": null
         }
       ],
-      "acceptedSnapshotFingerprintBefore": "07d6d061dad821127caa5c50a6614c2dead777e8ea2cfd4f542858f19180226b",
+      "acceptedSnapshotFingerprintBefore": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
       "baseSnapshotOperationalMeals": [
         {
           "policyId": "break:main-flow",
@@ -102665,7 +103049,7 @@
           "collisions": []
         }
       },
-      "durationMs": 60163
+      "durationMs": 61452
     }
   ],
   "firstBlocker": {
@@ -102872,6 +103256,6 @@
     "classification": "SEARCH_CAPACITY_EXHAUSTED"
   },
   "finalInGroups": null,
-  "deterministicFingerprint": "07d6d061dad821127caa5c50a6614c2dead777e8ea2cfd4f542858f19180226b",
+  "deterministicFingerprint": "197751123d1254991c360f4c77848f24d738744ff639b7d0e70b6ffbc1e8a648",
   "deterministicEquivalent": true
 }
