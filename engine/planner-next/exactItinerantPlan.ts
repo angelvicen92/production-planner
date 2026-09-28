@@ -408,6 +408,16 @@ export interface ExactItinerantPlanEvidence {
   ordinaryDomainRecomputations: number;
   ordinaryMRVSelections: number;
   ordinaryBranchesExplored: number;
+  itinerantAgendaPoolOperations:number;
+  itinerantAgendaUnitVariantsByTaskId:Record<string,number>;
+  itinerantAgendaStaticStarts:number;
+  itinerantAgendaDynamicStarts:number;
+  itinerantAgendaBranchesBeforeSelection:number|null;
+  itinerantAgendaBranches:number;
+  itinerantAgendaCandidates:number;
+  itinerantAgendaAssignmentsAndOrders:number;
+  itinerantAgendaEventBoundaryStarts:number;
+  itinerantAgendaFirstCompleteBranch:number|null;
   ordinaryIndividualForwardChecks: number;
   ordinaryIndividualForwardTasksChecked: number;
   ordinaryIndividualForwardExactDomainChecks: number;
@@ -1072,8 +1082,15 @@ const technicalRepresentativeIds=new Set(technicalItems.flatMap(({tasks})=>tasks
 const jointItems = jointGroupIds(pending).filter((id)=>!jointGroupMembers(pending,id).some(({id:taskId})=>technicalRepresentativeIds.has(taskId))).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));
 const preferredResourceIds=new Set(problem.resources.filter(resource=>resource.presenceConcentrationPolicy==="PREFERRED").map(resource=>resource.id));
+const agendaGroups=new Map<string,Task[]>();
+for(const task of pending.filter(task=>(task.allowedItinerantUnitIds?.length??0)>1)){
+  const key=[...task.allowedItinerantUnitIds!].sort().join("+");agendaGroups.set(key,[...(agendaGroups.get(key)??[]),task]);
+}
+const agendaItems=[...agendaGroups].map(([domain,tasks])=>({id:`itinerant-agenda:${domain}`,kind:"ITINERANT_AGENDA" as const,
+  unitIds:domain.split("+"),tasks:tasks.sort(byId)}));
+const agendaTaskIds=new Set(agendaItems.flatMap(item=>item.tasks.map(task=>task.id)));
 const rawResourceTasks = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
-  && !coupledTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
+  && !coupledTaskIds.has(task.id) && !agendaTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
   && !dynamicTransportIds.has(task.id));
 const preferredGroups=new Map<string,Task[]>();
 const individualResourceTasks:Task[]=[];
@@ -1096,8 +1113,8 @@ const preferredResourceUnits=[...preferredResourceIds].sort().flatMap(resourceId
     resourceTasks:resource.tasks,setupTasks:setup.tasks,tasks:[...resource.tasks,...setup.tasks]}];
 });
 type MacroUnit = typeof jointItems[number] | typeof technicalItems[number] | typeof resourceItems[number]
-  | typeof roundItems[number] | typeof setupItems[number] | typeof preferredResourceUnits[number];
-const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems,
+  | typeof roundItems[number] | typeof setupItems[number] | typeof preferredResourceUnits[number] | typeof agendaItems[number];
+const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems,...agendaItems,
   ...resourceItems.filter(item=>!absorbedResourceIds.has(item.id)),...roundItems,
   ...setupItems.filter(item=>!absorbedSetupIds.has(item.id)),...preferredResourceUnits]
   .sort((left, right) => left.id.localeCompare(right.id));
@@ -1125,7 +1142,8 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   let measure=macroDomainCache.get(macroSignature);
   if(unit.kind==="TECHNICAL_CHAIN"){evidence.technicalChainMacroDomainQueries+=1;if(measure)evidence.technicalChainMacroDomainCacheHits+=1;else evidence.technicalChainMacroDomainCacheMisses+=1;}
   if(!measure){
-    if(unit.kind==="RESOURCE_TASK")measure={domainSize:taskDomain(unit.tasks[0]!)};
+    if(unit.kind==="ITINERANT_AGENDA")measure={domainSize:unit.tasks.reduce((sum,task)=>sum+(task.allowedItinerantUnitIds?.length??0),0)};
+    else if(unit.kind==="RESOURCE_TASK")measure={domainSize:taskDomain(unit.tasks[0]!)};
     else if(unit.kind==="RESOURCE_GROUP")measure={domainSize:Math.min(...unit.tasks.map(taskDomain))};
     else if(unit.kind==="PREFERRED_RESOURCE_UNIT")measure={domainSize:Math.min(...unit.tasks.map(taskDomain))};
     else if(unit.kind==="JOINT")measure={domainSize:standaloneJointGroupStartDomain(problem,unit.tasks,allPlaced,coreMeals).eligibleStartCount};
@@ -1213,7 +1231,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
   const rest = remainingUnits.filter(({ id }) => id !== unit.id);
   let candidatesEvaluated=0;
   const macroDomainAuthority=({JOINT:"standaloneJointGroupStartDomain",RESOURCE_TASK:"standaloneForwardDynamicDomain",RESOURCE_GROUP:"preferredResourceGroupDomain",PREFERRED_RESOURCE_UNIT:"exactPreferredResourceUnit",
-    ROUND_SYNCHRONIZATION:"probeExactRoundSynchronizationMacroDomain",SETUP_GROUP:"probeExactSetupMacroDomain",
+    ROUND_SYNCHRONIZATION:"probeExactRoundSynchronizationMacroDomain",SETUP_GROUP:"probeExactSetupMacroDomain",ITINERANT_AGENDA:"exactItinerantAgenda",
     TECHNICAL_CHAIN:"probeExactTechnicalChainMacroDomain"} as const)[unit.kind];
   const chainContext=unit.kind==="TECHNICAL_CHAIN"?partialTechnicalChainContext(problem,unit.tasks,[...coreTasks,...placed]):null;
   if(selected.domainSize===0)recordDeadEnd({kind:"MACRO_ZERO_DOMAIN",phase:"MACRO",depth,
@@ -1274,7 +1292,44 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     if(rootTrace)rootTrace.enteredRecurseAfterMacro=true;
     return finish(searchMacroUnits(rest, [...placed, ...tasks], nextPreparations, nextRoundPreparations, depth + 1,[...selectionOrder, ...tasks.map(({ id }) => id)]));
   };
-  if(unit.kind==="PREFERRED_RESOURCE_UNIT"){
+  if(unit.kind==="ITINERANT_AGENDA"){
+    evidence.itinerantAgendaPoolOperations+=unit.tasks.length;
+    evidence.itinerantAgendaBranchesBeforeSelection??=ledger.branchesExplored;
+    const units=unit.unitIds.map(id=>problem.itinerantUnits?.find(item=>item.id===id)).filter((item):item is NonNullable<typeof item>=>Boolean(item));
+    const allMemberResources=new Set(units.flatMap(item=>item.resourceIds??[]));
+    for(const task of unit.tasks)evidence.itinerantAgendaUnitVariantsByTaskId[task.id]=task.allowedItinerantUnitIds?.length??0;
+    const frontier=[...coreTasks,...placed].filter(other=>{
+      const shared=new Set((other.requiredResourceIds??[]).filter(id=>allMemberResources.has(id)));
+      return units.filter(candidate=>(candidate.resourceIds??[]).some(id=>shared.has(id))).length>1;
+    }).reduce((value,task)=>Math.min(value,task.start),problem.day.end);
+    const variant=(task:Task,unitId:string):Task=>{const chosen=units.find(item=>item.id===unitId)!;
+      return {...task,itinerantUnitId:unitId,requiredResourceIds:[...new Set([...(task.requiredResourceIds??[]).filter(id=>!allMemberResources.has(id)),...(chosen.resourceIds??[])])].sort()};};
+    const scheduleAgenda=(remaining:readonly Task[],scheduled:ScheduledTask[]):StandaloneOutcome=>{
+      if(!remaining.length){evidence.itinerantAgendaCandidates++;evidence.itinerantAgendaFirstCompleteBranch??=evidence.itinerantAgendaBranches;return recurse(scheduled);}
+      const choices:Array<{task:Task;assigned:Task;unitId:string;staticDomain:StandaloneForwardStaticDomain;domain:StandaloneForwardDynamicDomain}>=[];
+      for(const task of [...remaining].sort(byId))for(const unitId of [...(task.allowedItinerantUnitIds??[])].sort()){
+        const assigned=variant(task,unitId),staticDomain=standaloneForwardStaticDomain(problem,assigned,coreMeals);
+        evidence.itinerantAgendaStaticStarts+=staticDomain.eligibleStartCount;
+        const domain=standaloneForwardDynamicDomain(problem,assigned,[...coreTasks,...placed,...scheduled],staticDomain);
+        evidence.itinerantAgendaDynamicStarts+=domain.eligibleStartCount;
+        choices.push({task,assigned,unitId,staticDomain,domain});
+      }
+      choices.sort((a,b)=>(a.domain.intervals[0]?.start??Infinity)-(b.domain.intervals[0]?.start??Infinity)
+        ||scheduled.filter(task=>task.itinerantUnitId===a.unitId).length-scheduled.filter(task=>task.itinerantUnitId===b.unitId).length
+        ||a.task.id.localeCompare(b.task.id)||a.unitId.localeCompare(b.unitId));
+      for(const {task,assigned,domain} of choices){
+        // One exact event boundary per lane/order. Later grid points are dominated by this same order;
+        // alternate sequences are represented by selecting a different next task.
+        for(const interval of domain.intervals){const start=interval.start;if(start+assigned.duration>frontier)continue;
+          evidence.itinerantAgendaEventBoundaryStarts++;evidence.itinerantAgendaAssignmentsAndOrders++;
+          if(!ledger.consume("STANDALONE"))return "BUDGET_EXHAUSTED";evidence.itinerantAgendaBranches++;
+          const next=scoreAuxiliaryTask(problem,assigned,start,[...coreTasks,...placed,...scheduled]).scheduled;
+          const outcome=scheduleAgenda(remaining.filter(item=>item.id!==task.id),[...scheduled,next]);if(outcome!=="DEAD_END")return outcome;
+        }
+      }return "DEAD_END";
+    };
+    const outcome=scheduleAgenda(unit.tasks,[]);if(outcome!=="DEAD_END")return outcome;
+  } else if(unit.kind==="PREFERRED_RESOURCE_UNIT"){
     let selectedPresence:[number,number,number]|null=null;
     const explored=exploreExactPreferredResourceUnit({problem,resourceId:unit.resourceId,
       resourceTasks:unit.resourceTasks,setupTasks:unit.setupTasks,placed:[...coreTasks,...placed],preparations,meals:coreMeals,ledger,
@@ -1575,6 +1630,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ordinaryDomainQueries:0,ordinaryAnalyticDomainBuilds:0,ordinaryAnalyticEligibleStarts:0,
     ordinaryExactStartEnumerations:0,ordinaryExactStartChecks:0,ordinaryDomainCacheHits:0,
     ordinaryDomainCacheMisses:0,ordinaryDomainRecomputations:0,ordinaryMRVSelections:0,ordinaryBranchesExplored:0,
+    itinerantAgendaPoolOperations:0,itinerantAgendaUnitVariantsByTaskId:{},itinerantAgendaStaticStarts:0,
+    itinerantAgendaDynamicStarts:0,itinerantAgendaBranchesBeforeSelection:null,itinerantAgendaBranches:0,
+    itinerantAgendaCandidates:0,itinerantAgendaAssignmentsAndOrders:0,itinerantAgendaEventBoundaryStarts:0,
+    itinerantAgendaFirstCompleteBranch:null,
     ordinaryIndividualForwardChecks:0,ordinaryIndividualForwardTasksChecked:0,
     ordinaryIndividualForwardExactDomainChecks:0,ordinaryIndividualForwardStartsChecked:0,
     ordinaryIndividualForwardZeroDomainPrunes:0,ordinaryIndividualForwardUnrelatedSkips:0,

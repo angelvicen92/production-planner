@@ -123,7 +123,7 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
       if(sharedParticipant)before=after=problem.participantTransitionMinutes;
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
       for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
-      if(sharedItinerantUnit)before=after=Math.max(before,after,problem.resourceTransitionMinutes);
+      if(sharedItinerantUnit){const transition=problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0;before=after=Math.max(before,after,transition);}
     }
     domain=subtractOccupation(domain,{start:other.start-before,end:other.end+after},task.duration);
   }
@@ -201,7 +201,8 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     if (sharedParticipant && gap < problem.participantTransitionMinutes) return reject("TRANSITION_PARTICIPANT",other.id);
     if (sharedCoach && gap < coachMargin) return reject("TRANSITION_COACH",other.id);
     if (sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
-    if (sharedItinerantUnit && gap < problem.resourceTransitionMinutes) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
+    const itinerantTransition=sharedItinerantUnit?problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0:0;
+    if (sharedItinerantUnit && gap < itinerantTransition) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
   }
   return {valid:true,firstRejectionReason:null,blockingPlacedTaskId:null};
 }

@@ -907,3 +907,42 @@ test("terminal exact participant-future budget exhaustion is explicit and never 
   assert.ok(exhausted.evidence.participantFutureTerminalExactAbstentions>0);
   assert.equal(exhausted.evidence.participantFutureTerminalExactPasses,0);
 });
+
+test("equivalent itinerant units are scheduled as one bounded deterministic two-lane agenda",()=>{
+  const tasks:Task[]=[1,2,3,4].map(id=>({id:`pool-${id}`,kind:"auxiliary",participantId:`person-${id}`,
+    duration:20,spaceId:`pool-space-${id}`,dependencies:[],requiredResourceIds:["cam-a","sound-a"],
+    allowedItinerantUnitIds:["itinerant-team:7","itinerant-team:8"]}));
+  const input=problem(tasks);input.day={start:0,end:140};input.protectedMeal=undefined;
+  for(const entity of [...input.spaces,...input.participants,...input.coaches])entity.availability=[{start:0,end:140}];
+  input.resources=["cam-a","sound-a","cam-b","sound-b"].map(id=>({id,availability:[{start:0,end:140}],presencePreference:"OFF",transitionMinutes:0}));
+  input.itinerantUnits=[
+    {id:"itinerant-team:7",availability:[{start:0,end:140}],resourceIds:["cam-a","sound-a"],transitionMinutes:15},
+    {id:"itinerant-team:8",availability:[{start:0,end:140}],resourceIds:["cam-b","sound-b"],transitionMinutes:15},
+  ];
+  input.itinerantUnitMeals=[
+    {id:"meal-a",itinerantUnitId:"itinerant-team:7",interval:{start:60,end:75}},
+    {id:"meal-b",itinerantUnitId:"itinerant-team:8",interval:{start:60,end:75}},
+  ];
+  input.budget.maxBranchExpansions=2_000;
+  const anchored:Task={id:"anchored-a",kind:"auxiliary",participantId:"anchored-person",duration:20,
+    spaceId:"anchored-space",dependencies:[],itinerantUnitId:"itinerant-team:7",requiredResourceIds:["cam-a","sound-a"]};
+  const future:Task={id:"combined",kind:"technical",duration:10,spaceId:"combined-space",dependencies:[],
+    itinerantUnitId:"itinerant-team:9",requiredResourceIds:["cam-a","cam-b","sound-a"]};
+  input.tasks.push(anchored,future);input.participants.push({id:"anchored-person",availability:[{start:0,end:140}]});
+  input.spaces.push({id:"anchored-space",availability:[{start:0,end:140}]},{id:"combined-space",availability:[{start:0,end:140}]});
+  input.itinerantUnits.push({id:"itinerant-team:9",availability:[{start:0,end:140}],resourceIds:["cam-a","cam-b","sound-a"],transitionMinutes:0});
+  const fixed=[{...anchored,start:0,end:20},{...future,start:110,end:120}];
+  const first=runExactItinerantPlanSearch(input,{fixedPlacements:fixed,fixedPlacementsAsContext:true});
+  const second=runExactItinerantPlanSearch(structuredClone(input),{fixedPlacements:fixed,fixedPlacementsAsContext:true});
+  assert.equal(first.status,"COMPLETE",JSON.stringify({reasons:first.evidence.reasonCodes,rejection:first.evidence.firstTerminalCompletionRejection,branches:first.evidence.itinerantAgendaBranches}));
+  const pool=first.scheduledTasks.filter(task=>task.id.startsWith("pool-"));
+  assert.equal(pool.length,4);assert.deepEqual([...new Set(pool.map(task=>task.itinerantUnitId))].sort(),["itinerant-team:7","itinerant-team:8"]);
+  assert.ok(pool.some(task=>task.itinerantUnitId==="itinerant-team:8"&&task.requiredResourceIds?.includes("cam-b")));
+  assert.ok(pool.some(a=>pool.some(b=>a.id!==b.id&&a.itinerantUnitId!==b.itinerantUnitId&&a.start<b.end&&b.start<a.end)),`lanes work in parallel: ${JSON.stringify(pool)}`);
+  for(const task of pool){const meal=input.itinerantUnitMeals.find(item=>item.itinerantUnitId===task.itinerantUnitId)!;assert.ok(task.end<=meal.interval.start||task.start>=meal.interval.end);}
+  for(const unitId of ["itinerant-team:7","itinerant-team:8"]){const lane=pool.filter(task=>task.itinerantUnitId===unitId).sort((a,b)=>a.start-b.start);for(let i=1;i<lane.length;i++)assert.ok(lane[i]!.start-lane[i-1]!.end>=15);}
+  assert.equal(first.evidence.ordinaryBranchesExplored,0);assert.ok(first.evidence.itinerantAgendaBranches<100);
+  assert.equal(first.evidence.itinerantAgendaBranches,second.evidence.itinerantAgendaBranches);
+  assert.deepEqual(pool.map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})),
+    second.scheduledTasks.filter(task=>task.id.startsWith("pool-")).map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})));
+});

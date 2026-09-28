@@ -185,6 +185,8 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.itinerantTeamAvailability = Object.entries(config.itinerantUnitAvailability).map(([canonicalId, availability]) => ({
     itinerantTeamId: itinerantUnitId.get(canonicalId)!,
     windows: [{ start: availability.start, end: availability.end }],
+    planResourceItemIds: expansion.itinerantUnits.find(unit=>unit.id===canonicalId)!.memberResourceIds.map(id=>resourceId.get(id)!),
+    transitionMinutes: canonicalId === "reality-unit-a" || canonicalId === "reality-unit-b" ? 15 : 0,
   }));
   input.arrivalGroupingTarget = config.transportPolicy.arrival.targetGroupSize;
   input.departureGroupingTarget = config.transportPolicy.departure.targetGroupSize;

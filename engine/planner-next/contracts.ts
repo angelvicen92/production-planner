@@ -13,6 +13,8 @@ export interface Person {
 export interface ItinerantUnit {
   id: string;
   availability: Window[];
+  resourceIds?: string[];
+  transitionMinutes?: Minute;
 }
 
 export interface Space {

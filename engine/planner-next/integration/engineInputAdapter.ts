@@ -206,6 +206,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return {
       id: canonical("itinerant-team", id),
       availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
+      ...(availability.planResourceItemIds?.length?{resourceIds:[...new Set(availability.planResourceItemIds)].sort((a,b)=>a-b).map(value=>canonical("plan-resource",value))}:{}),
+      ...(availability.transitionMinutes == null ? {} : {transitionMinutes:availability.transitionMinutes}),
     };
   });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));

@@ -115,9 +115,8 @@ export function recommendNextAssistedScope(
   const itinerantKeys = new Map<string, number[]>();
   for (const task of tasks) {
     if(authorities.has(task.id))continue;
-    // This consumes only eligibility already declared by EngineInput.  It does
-    // not infer interchangeable teams from names/resources, and it does not
-    // add alternative-team support to the Planner Next adapter or solver.
+    // This consumes only eligibility already declared by EngineInput; no
+    // interchangeable composition is inferred from names or fixture IDs.
     const ids = canonical([...(task.allowedItinerantTeamIds ?? []), ...(task.itinerantTeamId == null ? [] : [task.itinerantTeamId])]);
     if (!ids.length) continue; const key = ids.join(","); itinerantKeys.set(key, [...(itinerantKeys.get(key) ?? []), task.id]);
   }
@@ -262,12 +261,24 @@ export function recommendNextAssistedScope(
   const compareDensity=(aNumerator:number,aDenominator:number,bNumerator:number,bDenominator:number)=>(
     bNumerator*aDenominator-aNumerator*bDenominator
   );
+  const recomposesAgenda=(candidate:OperationalUnitEvidence,agenda:OperationalUnitEvidence):boolean=>{
+    if(agenda.unitKind!=="ITINERANT_AGENDA"||candidate.unitKind!=="TECHNICAL_CHAIN")return false;
+    const domain=new Set(agenda.memberTaskIds.flatMap(id=>{const task=byId.get(id);return [
+      ...(task?.allowedItinerantTeamIds??[]),...(task?.itinerantTeamId==null?[]:[task.itinerantTeamId]),
+    ];}));
+    const allCompositions=input.itinerantTeamAvailability??[];
+    const candidateResources=new Set(candidate.memberTaskIds.flatMap(id=>byId.get(id)?.assignedResourceIds??[]));
+    const recomposed=allCompositions.filter(team=>(team.planResourceItemIds??[]).some(id=>candidateResources.has(id)));
+    return recomposed.length>1&&recomposed.some(team=>domain.has(team.itinerantTeamId));
+  };
   const compare = (a: OperationalUnitEvidence, b: OperationalUnitEvidence) => {
+    const structuralFrontier=recomposesAgenda(a,b)?-1:recomposesAgenda(b,a)?1:0;
     const mainAuthority=b.priority.structuralClass===3?1:a.priority.structuralClass===3?-1:0;
     const mainSupport=(a.priority.structuralClass>=2||b.priority.structuralClass>=2)
       ? b.priority.structuralClass-a.priority.structuralClass:0;
     return mainAuthority
     || mainSupport
+    || structuralFrontier
     || b.priority.effectivePressureClass-a.priority.effectivePressureClass
     || compareDensity(a.priority.effectiveWindowLoadMinutes,a.priority.effectiveWindowCapacityMinutes,
       b.priority.effectiveWindowLoadMinutes,b.priority.effectiveWindowCapacityMinutes)
