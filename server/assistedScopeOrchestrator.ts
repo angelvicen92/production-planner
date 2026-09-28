@@ -112,15 +112,19 @@ export function recommendNextAssistedScope(
     attach(input.tasks.filter(task => task.spaceId != null && meal.spaceIds!.includes(task.spaceId)).map(task => task.id), "OPERATIONAL_MEAL", meal.id);
   }
   for (const setup of input.setupPolicies ?? []) attach(input.tasks.filter(task => task.spaceId === setup.spaceId && task.setupFamilyId).map(task => task.id), "SETUP_FAMILY", `setup:${setup.spaceId}`);
-  const itinerantKeys = new Map<string, number[]>();
+  const itinerantMembers = new Map<number, number[]>();
   for (const task of tasks) {
     if(authorities.has(task.id))continue;
     // This consumes only eligibility already declared by EngineInput; no
     // interchangeable composition is inferred from names or fixture IDs.
     const ids = canonical([...(task.allowedItinerantTeamIds ?? []), ...(task.itinerantTeamId == null ? [] : [task.itinerantTeamId])]);
-    if (!ids.length) continue; const key = ids.join(","); itinerantKeys.set(key, [...(itinerantKeys.get(key) ?? []), task.id]);
+    if (!ids.length) continue;
+    for(const id of ids)itinerantMembers.set(id,[...(itinerantMembers.get(id)??[]),task.id]);
   }
-  for (const [key, ids] of itinerantKeys) attach(ids, "ITINERANT_AGENDA", `itinerant:${key}`);
+  // Connected explicit identities form one coordinated agenda. Physical
+  // resources deliberately do not participate in this closure.
+  for (const [identity, ids] of [...itinerantMembers].sort(([a],[b])=>a-b))
+    attach(ids, "ITINERANT_AGENDA", `itinerant:${identity}`);
 
   // A SPACE selector resolves every pending obligation in that space.  Close
   // fallback components over that exact scope before producing evidence.

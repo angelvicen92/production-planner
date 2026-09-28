@@ -38,6 +38,7 @@ import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit"
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
   materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
 export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
@@ -1302,13 +1303,12 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       const shared=new Set((other.requiredResourceIds??[]).filter(id=>allMemberResources.has(id)));
       return units.filter(candidate=>(candidate.resourceIds??[]).some(id=>shared.has(id))).length>1;
     }).reduce((value,task)=>Math.min(value,task.start),problem.day.end);
-    const variant=(task:Task,unitId:string):Task=>{const chosen=units.find(item=>item.id===unitId)!;
-      return {...task,itinerantUnitId:unitId,requiredResourceIds:[...new Set([...(task.requiredResourceIds??[]).filter(id=>!allMemberResources.has(id)),...(chosen.resourceIds??[])])].sort()};};
     const scheduleAgenda=(remaining:readonly Task[],scheduled:ScheduledTask[]):StandaloneOutcome=>{
       if(!remaining.length){evidence.itinerantAgendaCandidates++;evidence.itinerantAgendaFirstCompleteBranch??=evidence.itinerantAgendaBranches;return recurse(scheduled);}
       const choices:Array<{task:Task;assigned:Task;unitId:string;staticDomain:StandaloneForwardStaticDomain;domain:StandaloneForwardDynamicDomain}>=[];
       for(const task of [...remaining].sort(byId))for(const unitId of [...(task.allowedItinerantUnitIds??[])].sort()){
-        const assigned=variant(task,unitId),staticDomain=standaloneForwardStaticDomain(problem,assigned,coreMeals);
+        const assigned=materializeItinerantUnitAssignment(problem,task,unitId);if(!assigned)continue;
+        const staticDomain=standaloneForwardStaticDomain(problem,assigned,coreMeals);
         evidence.itinerantAgendaStaticStarts+=staticDomain.eligibleStartCount;
         const domain=standaloneForwardDynamicDomain(problem,assigned,[...coreTasks,...placed,...scheduled],staticDomain);
         evidence.itinerantAgendaDynamicStarts+=domain.eligibleStartCount;

@@ -4,7 +4,7 @@ import type { AssistedPlanningSnapshotV1 } from "../../../shared/assistedPlannin
 import { applyAssistedDraftChanges, cascadeTasks, emptyAssistedDraftHistory, moveTask, recordAssistedDraftEdit, redoAssistedDraft, reorderTasks, resetTasksToBase, shiftTasks, swapTasks, undoAssistedDraft } from "./assisted-draft-editing";
 
 const snapshot = (): AssistedPlanningSnapshotV1 => ({ contractVersion: 1, tasks: [
-  { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", zoneId: 1, spaceId: 1, locationLabel: "A", durationOverride: null, camerasOverride: null },
+  { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", zoneId: 1, spaceId: 1, locationLabel: "A", durationOverride: null, camerasOverride: null, itinerantTeamId: 8 },
   { taskId: 2, startPlanned: "09:40", endPlanned: "10:10", zoneId: 1, spaceId: 1, locationLabel: "A", durationOverride: null, camerasOverride: null },
   { taskId: 3, startPlanned: "10:20", endPlanned: "11:00", zoneId: 1, spaceId: 1, locationLabel: "A", durationOverride: null, camerasOverride: null },
 ] });
@@ -45,6 +45,7 @@ test("draft undo/redo uses inverse/forward patches and a divergent edit clears r
   const history = recordAssistedDraftEdit(emptyAssistedDraftHistory(), operation);
   const undone = undoAssistedDraft(after, history); assert.deepEqual(undone.snapshot, base);
   const redone = redoAssistedDraft(undone.snapshot, undone.history); assert.deepEqual(redone.snapshot, after);
+  assert.equal(redone.snapshot.tasks[0]!.itinerantTeamId,8);
   const divergent = recordAssistedDraftEdit(undone.history, moveTask(undone.snapshot, 2, "10:00"));
   assert.deepEqual(divergent.redo, []);
 });

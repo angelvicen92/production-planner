@@ -25,6 +25,7 @@ export type AssistedPlanningTaskSource = Readonly<{
   locationLabel?: string | null;
   durationOverride?: number | null;
   camerasOverride?: number | null;
+  itinerantTeamId?: number;
 }> & Readonly<Record<string, unknown>>;
 
 function freeze<T>(value: T): T {
@@ -48,6 +49,7 @@ export function buildAssistedPlanningSnapshotV1(
 ): AssistedPlanningSnapshotV1 {
   const tasks = rows.map((row) => {
     if (!Number.isInteger(row.id) || row.id <= 0) throw new Error("task id must be a positive integer");
+    if(row.itinerantTeamId!==undefined&&(!Number.isInteger(row.itinerantTeamId)||row.itinerantTeamId<=0))throw new Error("itinerant team id must be a positive integer");
     return {
       taskId: row.id,
       startPlanned: row.startPlanned ?? null,
@@ -57,6 +59,7 @@ export function buildAssistedPlanningSnapshotV1(
       locationLabel: row.locationLabel ?? null,
       durationOverride: row.durationOverride ?? null,
       camerasOverride: row.camerasOverride ?? null,
+      ...(row.itinerantTeamId===undefined?{}:{itinerantTeamId:row.itinerantTeamId}),
     };
   }).sort((a, b) => a.taskId - b.taskId);
   if (tasks.some((task, index) => index > 0 && tasks[index - 1].taskId === task.taskId)) {

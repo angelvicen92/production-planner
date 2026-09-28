@@ -17,6 +17,7 @@ import { createViolationKey, type StageViolation } from "../shared/assistedStage
 import type { ValidationViolationDetail } from "../engine/planner-next/contracts";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
 import { mainFlowMealPolicy } from "../engine/planner-next/mainFlowMeal";
+import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 
 export function projectPlannerViolations(details:readonly ValidationViolationDetail[],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):StageViolation[]{
   const map=(namespace:string,ids:readonly string[])=>ids.map(id=>{const acceptedNamespaces=namespace==="resource"?["resource","plan-resource","resource-item"]:[namespace];const matches=identityMap.filter(item=>acceptedNamespaces.includes(item.namespace)&&item.canonicalId===id);const sourceId=Number(matches[0]?.sourceId);
@@ -80,7 +81,8 @@ export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlan
   const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
   if(touched.some(id=>!canonicalByProduct.has(id)))return null;
   const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
-  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),task=canonical?taskById.get(canonical):undefined;const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);return task?[{...task,duration:end-start,start,end}]:[];});
+  const unitByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
+  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),source=canonical?taskById.get(canonical):undefined;const task=source&&row.itinerantTeamId!==undefined?materializeItinerantUnitAssignment(adapter.problem,source,unitByProduct.get(row.itinerantTeamId)??""):source;const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,duration:end-start,start,end}]:[];});
   const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
   const assisted=buildAssistedProblem(adapter.problem,scope,protectedPlacements);
   const evidence=executeAssistedPlanning(assisted).evidence;
@@ -92,7 +94,8 @@ export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlan
 export function createManualDeltaValidationHarness(problem:PlannerNextProblem,identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]){
   return (_input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[])=>{
     const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
-    const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),task=id?taskById.get(id):undefined;return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
+    const unitByProduct=new Map(identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
+    const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),source=id?taskById.get(id):undefined;const task=source&&row.itinerantTeamId!==undefined?materializeItinerantUnitAssignment(problem,source,unitByProduct.get(row.itinerantTeamId)??""):source;if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
     const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
     const assisted=buildAssistedProblem(problem,createPlanningScope({kind:"TASK_IDS",value:scopeIds.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds),placements);
     const validation=validatePlan(assisted.originalValidationProblem,placements),completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
@@ -144,9 +147,12 @@ export class AssistedProposalService {
     const stage=await this.storage.getAssistedPlanningStage(Number(run.base_stage_id)); if(!stage) throw new AssistedProposalError("STALE_BASE_STAGE",409);
     const sourceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
     const taskById=new Map(adapter.problem.tasks.map(t=>[t.id,t]));
+    const canonicalUnitBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
     const baseSnapshot=stage.snapshotJson as unknown as AssistedPlanningSnapshotV1;
     const protectedPlacements: ScheduledTask[]=baseSnapshot.tasks.flatMap(row=>{
-      if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const task=id?taskById.get(id):undefined;
+      if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const source=id?taskById.get(id):undefined;
+      const task=source&&row.itinerantTeamId!==undefined?materializeItinerantUnitAssignment(adapter.problem,source,canonicalUnitBySource.get(row.itinerantTeamId)??""):source;
+      if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);
       const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
       return task?[{...task,duration:end-start,start,end}]:[];
     });
@@ -175,6 +181,7 @@ export class AssistedProposalService {
     const productByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
     const spaceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[i.canonicalId,Number(i.sourceId)]));
+    const sourceUnitByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const taskInputById=new Map(input.tasks.map(t=>[t.id,t]));
     const lineage=resolveActiveStageLineage(await this.storage.listAssistedPlanningStages(session.id),stage.id);
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
@@ -184,7 +191,7 @@ export class AssistedProposalService {
     const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,
       protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals);
     const execution=this.runner(assistedProblem,{violations:baselineViolations});
-    const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!; return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null};})??null;
+    const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`); return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit})};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const mealProposalById=new Map<number,{startPlanned:string;endPlanned:string;spaceId:null}>();
     const retainedMealSources=new Set(assistedProblem.retainedParticipantMealSourceIds);

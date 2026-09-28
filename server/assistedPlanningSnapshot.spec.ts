@@ -19,6 +19,17 @@ test("complete planning snapshots are canonical, placement-sensitive and include
   assert.equal(first.tasks[1].startPlanned, null);
 });
 
+test("optional itinerant assignment is fingerprinted while legacy rows retain their exact identity",()=>{
+  const legacy=buildAssistedPlanningSnapshotV1(base),legacyFingerprint=fingerprintAssistedPlanningSnapshotV1(legacy);
+  assert.equal(legacyFingerprint,"69008e0fca5764a24ecd176eea4a8770d69a0391b64ed834a8f36564e85065cb");
+  assert.equal(Object.prototype.hasOwnProperty.call(legacy.tasks[0],"itinerantTeamId"),false);
+  const selected=buildAssistedPlanningSnapshotV1(base.map(row=>row.id===1?{...row,itinerantTeamId:8}:row));
+  assert.equal(selected.tasks[0]!.itinerantTeamId,8);
+  assert.notEqual(fingerprintAssistedPlanningSnapshotV1(selected),legacyFingerprint);
+  const replay=buildAssistedPlanningSnapshotV1(selected.tasks.map(row=>({id:row.taskId,...row})));
+  assert.deepEqual(replay,selected);assert.equal(fingerprintAssistedPlanningSnapshotV1(replay),fingerprintAssistedPlanningSnapshotV1(selected));
+});
+
 test("planning block fingerprints canonicalize block order while preserving member order",()=>{
   const tasks=buildAssistedPlanningSnapshotV1(base).tasks;
   const blocks=[{blockId:"block:a",memberTaskIds:[1,2],scopeProvenance:{kind:"TASK_IDS"},spaceId:4,activityTemplateId:8,order:0}] as const;

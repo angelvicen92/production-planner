@@ -8,6 +8,7 @@ import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCan
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
 import { validatePlan } from "./validate";
+import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -945,4 +946,23 @@ test("equivalent itinerant units are scheduled as one bounded deterministic two-
   assert.equal(first.evidence.itinerantAgendaBranches,second.evidence.itinerantAgendaBranches);
   assert.deepEqual(pool.map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})),
     second.scheduledTasks.filter(task=>task.id.startsWith("pool-")).map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})));
+});
+
+test("itinerant assignment materialization validates the domain and atomically rederives member resources",()=>{
+  const input=problem([]);input.resources.push(
+    {id:"cam-a",availability:[{start:0,end:120}],presencePreference:"OFF"},
+    {id:"cam-b",availability:[{start:0,end:120}],presencePreference:"OFF"},
+    {id:"sound-a",availability:[{start:0,end:120}],presencePreference:"OFF"},
+    {id:"sound-b",availability:[{start:0,end:120}],presencePreference:"OFF"},
+    {id:"extra",availability:[{start:0,end:120}],presencePreference:"OFF"},
+  );
+  input.itinerantUnits=[
+    {id:"itinerant-team:7",availability:[{start:0,end:120}],resourceIds:["cam-a","sound-a"]},
+    {id:"itinerant-team:8",availability:[{start:0,end:120}],resourceIds:["cam-b","sound-b"]},
+  ];
+  const task={...auxiliary("choice","core",[{start:0,end:120}],["cam-a","sound-a","extra"]),allowedItinerantUnitIds:["itinerant-team:7","itinerant-team:8"]};
+  const selected=materializeItinerantUnitAssignment(input,task,"itinerant-team:8");
+  assert.equal(selected?.itinerantUnitId,"itinerant-team:8");
+  assert.deepEqual(selected?.requiredResourceIds,["cam-b","extra","sound-b"]);
+  assert.equal(materializeItinerantUnitAssignment(input,task,"itinerant-team:9"),null);
 });
