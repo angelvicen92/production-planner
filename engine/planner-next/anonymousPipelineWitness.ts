@@ -64,6 +64,8 @@ export interface AnonymousPipelineWitnessDiagnostic {
 
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
 export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[];
+  fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
+  matchingTraversals:number;arrivalEvaluations:number;
   safePerfectMatchingAttempts:number;safePerfectMatchingFound:number;safeGraphEdgeCount:number;intrusiveGraphEdgeCount:number;
   safeMatchingFailures:number;fullGraphFallbacks:number;bundleEdgesBeforeReservation:number;
   bundleEdgesRejectedByReservation:number;bundleEdgesAfterReservation:number;
@@ -71,7 +73,9 @@ export interface PipelineBundleMatchingEvidence { attempts:number; repairs:numbe
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
 export interface PipelineBundleMatchingDiagnostic { attempts:number;perfectMatchingFound:boolean;
-  arrivalResult:string|null;arrivalPacketCount:number;terminalCause:"NO_PERFECT_MATCH"|"ARRIVAL_INFEASIBLE"|"ARRIVAL_INCONCLUSIVE"|"BUDGET_EXHAUSTED"|"FEASIBLE"|null }
+  arrivalResult:string|null;arrivalPacketCount:number;fullMatchingBuilds:number;incrementalRepairs:number;
+  uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;matchingTraversals:number;arrivalEvaluations:number;
+  terminalCause:"NO_PERFECT_MATCH"|"ARRIVAL_INFEASIBLE"|"ARRIVAL_INCONCLUSIVE"|"BUDGET_EXHAUSTED"|"FEASIBLE"|null }
 export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
 export interface PreparedPipelineBundleGraph {
   readonly architecture:MainFeederArchitecture;readonly witness:AnonymousPipelineWitness;
@@ -669,7 +673,9 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
   forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,consumeTraversal:()=>boolean=()=>true,
   futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number,analyticalReservedPlacements:readonly ScheduledTask[]=[],
   diagnostic?:PipelineBundleMatchingDiagnostic):PipelineBundleMaterialization|null {
-  if(diagnostic)Object.assign(diagnostic,{attempts:0,perfectMatchingFound:false,arrivalResult:null,arrivalPacketCount:0,terminalCause:null});
+  if(diagnostic)Object.assign(diagnostic,{attempts:0,perfectMatchingFound:false,arrivalResult:null,arrivalPacketCount:0,
+    fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,duplicatePerfectMatchingsSkipped:0,
+    matchingTraversals:0,arrivalEvaluations:0,terminalCause:null});
   const {witness,protectedPlacements,candidates}=prepared;const protectedById=new Map(protectedPlacements.map(x=>[x.id,x]));
   let bundleEdgesRejectedByReservation=0;const positions=new Map<string,number[]>();
   for(const [id,row] of candidates){const valid:number[]=[];for(const [position,bundle] of row){let edgeValid=true;
@@ -697,19 +703,25 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
     row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
   let safePerfectMatchingAttempts=0,safePerfectMatchingFound=0,safeMatchingFailures=0,fullGraphFallbacks=0;
+  let fullMatchingBuilds=0,incrementalRepairs=0,matchingTraversals=0,arrivalEvaluations=0,duplicatePerfectMatchingsSkipped=0;
   let initial:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined;
   if(futureEdgeIntrusion){safePerfectMatchingAttempts=1;const safePositions=new Map<string,number[]>();
     for(const [id,valid] of positions){const row=pressure.get(id)!;const pressured=[...row.values()].some(value=>value>0);
       safePositions.set(id,valid.filter(position=>!pressured||(row.get(position)??0)===0));}
-    initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
+    fullMatchingBuilds++;initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
+    matchingTraversals+=initial.traversals;
     if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
   const nominalPrevious=prepared.fixedSupporting?new Map([...prepared.fixedSupporting.nominalPositions]
     .filter(([id,position])=>positions.get(id)?.includes(position))):new Map<string,number>();
-  if(!initial)initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
-    previous?.forbiddenEdges??new Set(),previous?.matching??nominalPrevious,consumeTraversal,
-    (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
+  if(!initial){if(previous)incrementalRepairs++;else fullMatchingBuilds++;
+    initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
+      previous?.forbiddenEdges??new Set(),previous?.matching??nominalPrevious,consumeTraversal,
+      (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
+    matchingTraversals+=initial.traversals;}
   if(initial.outcome!=="PERFECT"){if(diagnostic){diagnostic.attempts=1;
+    diagnostic.fullMatchingBuilds=fullMatchingBuilds;diagnostic.incrementalRepairs=incrementalRepairs;
+    diagnostic.matchingTraversals=matchingTraversals;
     diagnostic.terminalCause=initial.outcome==="BUDGET_EXHAUSTED"?"BUDGET_EXHAUSTED":"NO_PERFECT_MATCH";}return null;}
   if(diagnostic)diagnostic.perfectMatchingFound=true;
   let matching=initial.matching!;
@@ -717,26 +729,43 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
   let scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
   let rebuiltArrival:readonly ScheduledTask[]=[];
   let fixedSupportingArrivalResult:string|null=null,fixedSupportingArrivalPacketCount=0;
+  const matchingFingerprint=(value:ReadonlyMap<string,number>)=>[...value].sort(([left],[right])=>left.localeCompare(right))
+    .map(([id,position])=>`${id}@${position}`).join("|");
+  const seenPerfectMatchings=new Set<string>();
+  if(!prepared.fixedSupporting)seenPerfectMatchings.add(matchingFingerprint(matching));
+  const syncDiagnostic=()=>{if(diagnostic)Object.assign(diagnostic,{attempts,fullMatchingBuilds,incrementalRepairs,
+    uniquePerfectMatchings:seenPerfectMatchings.size,duplicatePerfectMatchingsSkipped,matchingTraversals,arrivalEvaluations});};
   if(prepared.fixedSupporting){
-    const queue:Array<Set<string>>=[];const seen=new Set<string>();
+    type MatchingNode={forbidden:Set<string>;parentForbidden:ReadonlySet<string>;parentMatching:ReadonlyMap<string,number>};
+    const queue:Array<MatchingNode>=[];const seenAuthorities=new Set<string>([[...effectiveForbidden].sort().join("|")]);
     while(true){
-      const arrival=assessCoreArrivalTransportFeasibility(problem,[...prepared.fixedSupporting.context,...scheduled]);
-      fixedSupportingArrivalResult=arrival.status;fixedSupportingArrivalPacketCount=arrival.evidence.packetSizes.length;
-      if(diagnostic){diagnostic.arrivalResult=arrival.status;diagnostic.arrivalPacketCount=arrival.evidence.packetSizes.length;}
-      if(arrival.status==="FEASIBLE"&&arrival.scheduled){rebuiltArrival=arrival.scheduled;break;}
-      // ABSTAIN/INCONCLUSIVE is not a certificate and therefore cannot create a nogood.
-      if(arrival.status!=="INFEASIBLE"){if(diagnostic){diagnostic.attempts=attempts;diagnostic.terminalCause="ARRIVAL_INCONCLUSIVE";}return null;}
-      for(const [id,position] of [...matching].sort((a,b)=>a[0].localeCompare(b[0])||a[1]-b[1])){
-        const child=new Set(effectiveForbidden);child.add(`${id}@${position}`);
-        const key=[...child].sort().join("|");if(!seen.has(key)){seen.add(key);queue.push(child);}
+      const fingerprint=matchingFingerprint(matching);
+      if(seenPerfectMatchings.has(fingerprint))duplicatePerfectMatchingsSkipped++;
+      else {
+        seenPerfectMatchings.add(fingerprint);arrivalEvaluations++;
+        const arrival=assessCoreArrivalTransportFeasibility(problem,[...prepared.fixedSupporting.context,...scheduled]);
+        fixedSupportingArrivalResult=arrival.status;fixedSupportingArrivalPacketCount=arrival.evidence.packetSizes.length;
+        if(diagnostic){diagnostic.arrivalResult=arrival.status;diagnostic.arrivalPacketCount=arrival.evidence.packetSizes.length;}
+        if(arrival.status==="FEASIBLE"&&arrival.scheduled){rebuiltArrival=arrival.scheduled;break;}
+        // ABSTAIN/INCONCLUSIVE is not a certificate and therefore cannot create a nogood.
+        if(arrival.status!=="INFEASIBLE"){syncDiagnostic();if(diagnostic)diagnostic.terminalCause="ARRIVAL_INCONCLUSIVE";return null;}
+        // Expanding the first authority that reaches this matching is complete:
+        // every other perfect matching differs by at least one of these edges.
+        // A duplicate witness therefore cannot expose a new solution subtree.
+        for(const [id,position] of [...matching].sort((a,b)=>a[0].localeCompare(b[0])||a[1]-b[1])){
+          const child=new Set(effectiveForbidden);child.add(`${id}@${position}`);
+          const key=[...child].sort().join("|");if(!seenAuthorities.has(key)){seenAuthorities.add(key);
+            queue.push({forbidden:child,parentForbidden:effectiveForbidden,parentMatching:matching});}
+        }
       }
       let next:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined,nextForbidden:Set<string>|undefined;
-      while(queue.length&&!next){const child=queue.shift()!;const candidate=incrementallyRepairMatchingWitness(prepared.mainIds,positions,
-        child,new Set(),new Map(),consumeTraversal);attempts++;
-        if(candidate.outcome==="BUDGET_EXHAUSTED"){if(diagnostic){diagnostic.attempts=attempts;diagnostic.terminalCause="BUDGET_EXHAUSTED";}return null;}
-        if(candidate.outcome==="PERFECT"){next=candidate;nextForbidden=child;}
+      while(queue.length&&!next){const child=queue.shift()!;incrementalRepairs++;
+        const candidate=incrementallyRepairMatchingWitness(prepared.mainIds,positions,
+        child.forbidden,child.parentForbidden,child.parentMatching,consumeTraversal);attempts++;matchingTraversals+=candidate.traversals;
+        if(candidate.outcome==="BUDGET_EXHAUSTED"){syncDiagnostic();if(diagnostic)diagnostic.terminalCause="BUDGET_EXHAUSTED";return null;}
+        if(candidate.outcome==="PERFECT"){next=candidate;nextForbidden=child.forbidden;}
       }
-      if(!next||!nextForbidden){if(diagnostic){diagnostic.attempts=attempts;diagnostic.terminalCause="ARRIVAL_INFEASIBLE";}return null;}
+      if(!next||!nextForbidden){syncDiagnostic();if(diagnostic)diagnostic.terminalCause="ARRIVAL_INFEASIBLE";return null;}
       matching=next.matching!;effectiveForbidden=nextForbidden;
       scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
     }
@@ -747,9 +776,11 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
     :protectedPlacements;
   const unique=[...new Map([...scheduled,...retainedProtected].map(task=>[task.id,task])).values()]
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-  if(diagnostic){diagnostic.attempts=attempts;diagnostic.terminalCause="FEASIBLE";}
+  syncDiagnostic();if(diagnostic)diagnostic.terminalCause="FEASIBLE";
   return {witness,scheduledTasks:unique,matching,forbiddenEdges:effectiveForbidden,evidence:{attempts,repairs:effectiveForbidden.size?1:0,
-    materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
+    materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),fullMatchingBuilds,incrementalRepairs,
+    uniquePerfectMatchings:seenPerfectMatchings.size||1,duplicatePerfectMatchingsSkipped,matchingTraversals,arrivalEvaluations,
+    safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
     intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks,bundleEdgesBeforeReservation:prepared.preparedBundleEdges,bundleEdgesRejectedByReservation,
     bundleEdgesAfterReservation:prepared.preparedBundleEdges-bundleEdgesRejectedByReservation,
     fixedSupportingArrivalResult,fixedSupportingArrivalPacketCount,

@@ -396,6 +396,28 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(validatePlan(p,result.scheduledTasks).hardValid,true);
   });
 
+  it("repairs children from their parent witness and evaluates each perfect matching only once",()=>{
+    const p=problem(["A","A","A"]);const architecture={pattern:["A","A","A"],slots:[180,195,210]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared?.fixedSupporting);
+    // Change only the downstream Arrival authority after graph preparation so every
+    // reachable identity matching is enumerated and rejected by the opaque authority.
+    p.transportPolicy!.arrival.maximumGroupSize=0;
+    const diagnostic={attempts:0,perfectMatchingFound:false,arrivalResult:null,arrivalPacketCount:0,
+      fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,duplicatePerfectMatchingsSkipped:0,
+      matchingTraversals:0,arrivalEvaluations:0,terminalCause:null};
+    assert.equal(materializePreparedPipelineBundleMatching(p,prepared!,new Set(),undefined,()=>true,undefined,[],diagnostic),null);
+    assert.equal(diagnostic.fullMatchingBuilds,1);
+    assert.ok(diagnostic.incrementalRepairs>0);
+    assert.equal(diagnostic.uniquePerfectMatchings,6,"all 3! matchings remain explorable");
+    assert.equal(diagnostic.arrivalEvaluations,diagnostic.uniquePerfectMatchings);
+    assert.ok(diagnostic.duplicatePerfectMatchingsSkipped>0);
+    const repeat={...diagnostic};
+    assert.equal(materializePreparedPipelineBundleMatching(p,prepared!,new Set(),undefined,()=>true,undefined,[],repeat),null);
+    assert.deepEqual(repeat,diagnostic,"frontier traversal and Evidence remain deterministic");
+  });
+
   it("preserves an anchored operation while rematching only ephemeral IN and Styling",()=>{
     const p=problem(["A","A"]);anchor(p,0);const architecture={pattern:["A","A"],slots:[180,195]};
     const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");

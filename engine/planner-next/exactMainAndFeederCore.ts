@@ -162,7 +162,9 @@ export interface ExactMainAndFeederCoreEvidence {
   fixedSupportingRematchedIdentityCount:number;fixedSupportingArrivalResult:string|null;
   fixedSupportingArrivalPacketCount:number;fixedSupportingSameGeometryRescued:boolean;
   fixedSupportingGeometriesAttempted:Array<{fingerprint:string;edges:number;zeroDomainTaskIds:string[];
-    perfectMatchingFound:boolean;arrivalResult:string|null;terminalCause:string|null;hardGate:string;continuation:string|null}>;
+    perfectMatchingFound:boolean;arrivalResult:string|null;terminalCause:string|null;hardGate:string;continuation:string|null;
+    fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
+    matchingTraversals:number;arrivalEvaluations:number}>;
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
   protectedMainSlotChecks:number;
   protectedMainSlotMismatches:number;
@@ -1044,14 +1046,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(prepared.fixedSupporting){evidence.fixedSupportingGeometryFingerprint=prepared.witness.fingerprint;
         evidence.fixedSupportingEdges=prepared.preparedBundleEdges;evidence.fixedSupportingZeroDomainTaskIds=zeroDomainTaskIds;}
       const diagnostic:PipelineBundleMatchingDiagnostic={attempts:0,perfectMatchingFound:false,arrivalResult:null,
-        arrivalPacketCount:0,terminalCause:null};
+        arrivalPacketCount:0,fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
+        duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:0,terminalCause:null};
       evidence.fixedMainBundleMatchingAttempts++;
-      let geometryTraversals=0;
-      // Give the nominal geometry one complete augmenting-path pass, then preserve
-      // the shared ledger for the remaining authorized temporal geometries.
-      const geometryTraversalLimit=Math.max(1,Math.floor(problem.budget.maxBranchExpansions/prepared.mainIds.length));
-      const consumeGeometryTraversal=()=>geometryTraversals++<geometryTraversalLimit&&consumeMatchingBranch();
-      const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,consumeGeometryTraversal,
+      const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,consumeMatchingBranch,
         undefined,[],diagnostic);
       evidence.fixedSupportingMatchingAttempts+=diagnostic.attempts;
       evidence.fixedSupportingPerfectMatchingFound||=diagnostic.perfectMatchingFound;
@@ -1059,7 +1057,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.fixedSupportingArrivalPacketCount=diagnostic.arrivalPacketCount;
       const attempt={fingerprint:prepared.witness.fingerprint,edges:prepared.preparedBundleEdges,zeroDomainTaskIds,
         perfectMatchingFound:diagnostic.perfectMatchingFound,arrivalResult:diagnostic.arrivalResult,
-        terminalCause:diagnostic.terminalCause,hardGate:"NOT_REACHED",continuation:null as string|null};
+        terminalCause:diagnostic.terminalCause,hardGate:"NOT_REACHED",continuation:null as string|null,
+        fullMatchingBuilds:diagnostic.fullMatchingBuilds,incrementalRepairs:diagnostic.incrementalRepairs,
+        uniquePerfectMatchings:diagnostic.uniquePerfectMatchings,
+        duplicatePerfectMatchingsSkipped:diagnostic.duplicatePerfectMatchingsSkipped,
+        matchingTraversals:diagnostic.matchingTraversals,arrivalEvaluations:diagnostic.arrivalEvaluations};
       evidence.fixedSupportingGeometriesAttempted.push(attempt);
       if(!matching){
         evidence.fixedSupportingGeometryFailure=diagnostic.terminalCause;
