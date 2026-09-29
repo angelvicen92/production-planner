@@ -182,6 +182,9 @@ export interface AssistedPlanningEvidence {
     | "terminalTransportMaterializationFailures" | "standaloneFirstSelectedTaskId" | "standaloneDominantPathFirst20"
     | "terminalTransportWitness"
     | "terminalCompletionRejectionsByCause" | "firstTerminalCompletionRejection"
+    | "terminalDeparturePrerequisitePhaseEntered" | "terminalDeparturePrerequisiteTaskIds"
+    | "terminalDeparturePrerequisiteBranches" | "terminalDeparturePrerequisiteFirstCompleteCandidateAtBranch"
+    | "terminalDeparturePrerequisiteTerminalRejectsByCause"
     | "standaloneFirstDominantBlocker" | "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf"
     | "standaloneBranchesAfterFirstOrdinaryCompleteLeaf" | "firstHardValidCoreLeaf" | "firstHardValidCoreTasks"
     | "coreLeafTransportPrunes" | "transportContiguousStates" | "membershipFallbackEntered" | "coreLeafArrivalEvidence"
@@ -578,6 +581,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "roundSynchronizationCausalForbiddenEdges","roundSynchronizationIncrementalRepairs","roundSynchronizationShapesRescuedByRematching",
     "roundSynchronizationMatchingTraversals","roundSynchronizationTerminalFutureResult","roundSynchronizationMatchingWitnesses","totalesMatchingAttempts",
     "terminalTransportMaterializationFailures","terminalTransportWitness","terminalCompletionRejectionsByCause","firstTerminalCompletionRejection","standaloneFirstSelectedTaskId","standaloneDominantPathFirst20",
+    "terminalDeparturePrerequisitePhaseEntered","terminalDeparturePrerequisiteTaskIds","terminalDeparturePrerequisiteBranches",
+    "terminalDeparturePrerequisiteFirstCompleteCandidateAtBranch","terminalDeparturePrerequisiteTerminalRejectsByCause",
     "standaloneFirstDominantBlocker","standaloneBranchesBeforeFirstOrdinaryCompleteLeaf",
     "standaloneBranchesAfterFirstOrdinaryCompleteLeaf","firstHardValidCoreLeaf","firstHardValidCoreTasks",
     "coreLeafTransportPrunes","transportContiguousStates","membershipFallbackEntered","coreLeafArrivalEvidence",
