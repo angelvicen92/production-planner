@@ -513,21 +513,48 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined)
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
+  const pipelineLayers=mains.map(main=>{
+    const arrival=problem.tasks.find((task):task is ParticipantTask=>task.participantId===main.participantId&&arrivalIds.has(task.id));
+    const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId
+      &&main.dependencies.includes(task.id));
+    const styling=problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"&&task.participantId===main.participantId
+      &&task.dependencies.includes(arrival?.id??"")&&main.dependencies.includes(task.id));
+    return {main,arrival,feeder,styling};
+  });
   // Once Main and vocal feeders have been accepted, their identity is fixed but the
   // anonymous Styling geometry is not.  Rebuild the bipartite identity -> spot graph
   // instead of incorrectly moving the whole nominal bundle (including fixed work).
-  const fixedMainAndFeeders=mains.length>0&&mains.every(main=>protectedById.has(main.id)&&problem.tasks.some(task=>
-    task.kind==="vocal"&&task.participantId===main.participantId&&protectedById.has(task.id)));
+  const fixedMainAndFeeders=pipelineLayers.length>0&&pipelineLayers.every(({main,feeder})=>
+    feeder!==undefined&&protectedById.has(main.id)&&protectedById.has(feeder.id));
   if(fixedMainAndFeeders){
     const stylingSpots=[...witness.stylingSpots].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-    const stylingTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"
-      &&task.participantId===main.participantId&&main.dependencies.includes(task.id)&&!arrivalIds.has(task.id))!).filter(Boolean)
+    const stylingTasks=pipelineLayers.map(({styling})=>styling).filter((task):task is ParticipantTask=>task!==undefined)
       .sort((a,b)=>a.id.localeCompare(b.id));
+    if(stylingTasks.length!==mains.length)return null;
+    // Accepted supporting is literal authority. The legacy complete-bundle path is
+    // the safe representation for this uncommon mixed state; it must never silently
+    // turn an accepted IN/Styling placement back into ephemeral work.
+    if([...arrivalIds,...stylingTasks.map(task=>task.id)].some(id=>protectedById.has(id)))return prepareLegacyPipelineBundleGraph();
     const supportingIds=new Set([...arrivalIds,...stylingTasks.map(task=>task.id)]);
     const protectedContext=protectedPlacements.filter(task=>!supportingIds.has(task.id));
-    const fixedFeeders=problem.tasks.filter(task=>task.kind==="vocal").flatMap(task=>{
-      const fixed=protectedById.get(task.id)??nominal.scheduledTasks.find(item=>item.id===task.id);return fixed?[fixed]:[];});
-    const context=[...new Map([...protectedContext,...fixedFeeders].map(task=>[task.id,task])).values()];
+    const anchoredIds=new Set((problem.anchoredAccompaniments??[]).flatMap(contract=>
+      [contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds]));
+    const structural:ScheduledTask[]=[];
+    for(const {main} of pipelineLayers){
+      const fixedMain=protectedById.get(main.id)!;const contract=anchorIndex.get(main.id);
+      if(!contract){structural.push(fixedMain);continue;}
+      const operationIds=new Set([main.id,...contract.beforeTaskIds,...contract.afterTaskIds]);
+      const operation=materializeAnchoredOperation(problem,main,fixedMain.start,
+        protectedContext.filter(task=>!operationIds.has(task.id)));
+      if(!operation)return null;
+      for(const generated of operation.tasks){const fixed=protectedById.get(generated.id);
+        if(fixed&&(fixed.start!==generated.start||fixed.end!==generated.end||fixed.spaceId!==generated.spaceId))return null;
+        structural.push(fixed??generated);
+      }
+    }
+    const remainingStructural=nominal.scheduledTasks.filter(task=>!supportingIds.has(task.id)&&!anchoredIds.has(task.id)
+      &&!protectedById.has(task.id));
+    const context=[...new Map([...protectedContext,...structural,...remainingStructural].map(task=>[task.id,task])).values()];
     const candidates=new Map<string,Map<number,ScheduledTask[]>>();let edges=0;
     const nominalPositions=new Map<string,number>();
     for(const task of stylingTasks){
@@ -547,6 +574,9 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       preparedBundleEdges:edges,participantEdgeEvidence:{checked:0,pruned:0,abstained:0,firstPrune:null},
       fixedSupporting:{stylingTaskIds:stylingTasks.map(task=>task.id),stylingSpots,nominalPositions,context}};
   }
+  return prepareLegacyPipelineBundleGraph();
+
+  function prepareLegacyPipelineBundleGraph():PreparedPipelineBundleGraph {
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
   const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
@@ -608,6 +638,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
     preparedBundleEdges:bundleEdgesBeforeReservation,participantEdgeEvidence};
+  }
 }
 
 /** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */
@@ -648,8 +679,10 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
     initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
     if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
+  const nominalPrevious=prepared.fixedSupporting?new Map([...prepared.fixedSupporting.nominalPositions]
+    .filter(([id,position])=>positions.get(id)?.includes(position))):new Map<string,number>();
   if(!initial)initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
-    previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
+    previous?.forbiddenEdges??new Set(),previous?.matching??nominalPrevious,consumeTraversal,
     (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
   if(initial.outcome!=="PERFECT")return null;
   let matching=initial.matching!;

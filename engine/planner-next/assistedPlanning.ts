@@ -136,7 +136,10 @@ export interface AssistedPlanningEvidence {
     "fixedMainBundleParticipantEdgeChecks"|"fixedMainBundleParticipantEdgePrunes"|"fixedMainBundleFirstParticipantEdgePrune"|
     "fixedMainBundleMatchingAttempts"|"fixedMainBundlePerfectMatchingFound"|
     "fixedMainBundleHardGatePasses"|"fixedMainBundleHardGateRejects"|"fixedMainBundleTaskCount"|
-    "fixedMainBundleTasksByKind"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "fixedMainBundleTasksByKind"|"fixedSupportingGeometryFingerprint"|"fixedSupportingMatchingAttempts"|
+    "fixedSupportingEdges"|"fixedSupportingZeroDomainTaskIds"|"fixedSupportingPerfectMatchingFound"|
+    "fixedSupportingRematchedIdentityCount"|"fixedSupportingArrivalResult"|"fixedSupportingArrivalPacketCount"|
+    "fixedSupportingSameGeometryRescued"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
     "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection"|
     "firstFixedMainBundleHardGateDiagnostic">;
@@ -594,7 +597,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedMainBundleZeroDomainTaskIds","fixedMainBundleParticipantEdgeChecks","fixedMainBundleParticipantEdgePrunes",
     "fixedMainBundleFirstParticipantEdgePrune","fixedMainBundleMatchingAttempts",
     "fixedMainBundlePerfectMatchingFound","fixedMainBundleHardGatePasses","fixedMainBundleHardGateRejects",
-    "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","protectedMainSlotChecks","protectedMainSlotMismatches",
+    "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","fixedSupportingGeometryFingerprint","fixedSupportingMatchingAttempts",
+    "fixedSupportingEdges","fixedSupportingZeroDomainTaskIds","fixedSupportingPerfectMatchingFound",
+    "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
+    "fixedSupportingSameGeometryRescued","protectedMainSlotChecks","protectedMainSlotMismatches",
     "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
     "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection",
     "firstFixedMainBundleHardGateDiagnostic"] as const;

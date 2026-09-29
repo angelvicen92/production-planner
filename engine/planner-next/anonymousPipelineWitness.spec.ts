@@ -387,13 +387,40 @@ describe("anonymous structural pipeline witness",()=>{
     p.spaces.push({id:"protected",availability:windows});
     const blocker={...style0,id:"accepted-context",kind:"auxiliary" as const,spaceId:"protected",dependencies:[]};
     p.tasks.push(blocker);
-    const staleArrival={...nominal.scheduledTasks.find(task=>task.id==="in0")!,start:250,end:260};
-    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker,staleArrival]);assert.ok(prepared?.fixedSupporting);
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker]);assert.ok(prepared?.fixedSupporting);
     const result=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(result);
     assert.notEqual(result.matching.get("style0"),prepared!.fixedSupporting!.nominalPositions.get("style0"));
     for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
-    assert.notEqual(result.scheduledTasks.find(task=>task.id==="in0")?.start,staleArrival.start);
+    assert.equal(result.evidence.fixedSupportingArrivalResult,"FEASIBLE");
+    assert.ok(result.scheduledTasks.some(task=>task.id==="in0"));
     assert.equal(validatePlan(p,result.scheduledTasks).hardValid,true);
+  });
+
+  it("preserves an anchored operation while rematching only ephemeral IN and Styling",()=>{
+    const p=problem(["A","A"]);anchor(p,0);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const style0=nominal.scheduledTasks.find(task=>task.id==="style0")!;
+    p.spaces.push({id:"protected",availability:windows});
+    const blocker={...style0,id:"accepted-anchored-context",spaceId:"protected",dependencies:[]};p.tasks.push(blocker);
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker]);assert.ok(prepared?.fixedSupporting);
+    const result=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(result);
+    assert.notEqual(result.matching.get("style0"),prepared!.fixedSupporting!.nominalPositions.get("style0"));
+    for(const id of ["before0","main0","after0"]){
+      const expected=nominal.scheduledTasks.find(task=>task.id===id);assert.deepEqual(result.scheduledTasks.find(task=>task.id===id),expected);
+    }
+    assert.ok(result.scheduledTasks.some(task=>task.id==="in0"));
+    assert.equal(validatePlan(p,result.scheduledTasks).hardValid,true);
+  });
+
+  it("keeps accepted supporting literal instead of entering fixed-supporting rematch",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal"||task.id==="style0");
+    const protectedStyle=fixed.find(task=>task.id==="style0")!;
+    const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared);assert.equal(prepared.fixedSupporting,undefined);
+    const result=materializePreparedPipelineBundleMatching(p,prepared);assert.ok(result);
+    assert.deepEqual(result.scheduledTasks.find(task=>task.id==="style0"),protectedStyle);
   });
 
   it("reports no matching on fixed Styling geometry without moving protected work",()=>{
