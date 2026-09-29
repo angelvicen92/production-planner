@@ -14,7 +14,7 @@ import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
 import { fixedSupportingPipelineGeometryFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  revalidateFutureStructuralWitness,type FutureStructuralWitnessV1,
+  revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
   type PipelineBundleMatchingDiagnostic, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
@@ -170,6 +170,8 @@ export interface ExactMainAndFeederCoreEvidence {
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
   priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
   priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
+  priorFutureStructuralWitnessRejectCause:FutureStructuralWitnessRejectCause|null;
+  priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
   priorFutureStructuralWitnessFallbackEntered:boolean;futureStructuralWitnesses:FutureStructuralWitnessV1[];
   ephemeralSupportingPlacements:FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
   acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
@@ -776,6 +778,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
+    priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
     ephemeralSupportingPlacements:[],acceptedSupportingPlacements:[],branchesBeforeCurrentContinuation:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
@@ -1049,6 +1052,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&prior.version===1
         &&prior.architectureFingerprint===evidence.protectedMainArchitectureFingerprint;
       if(prior&&!compatiblePrior){evidence.priorFutureStructuralWitnessRevalidation="STALE";
+        evidence.priorFutureStructuralWitnessRejectCause=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+          ?"INVALID_KIND_OR_VERSION":"ARCHITECTURE_FINGERPRINT_MISMATCH";
+        evidence.priorFutureStructuralWitnessRejectDetails=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+          ?{kind:prior.kind,version:prior.version}:{expected:prior.architectureFingerprint,actual:evidence.protectedMainArchitectureFingerprint};
         evidence.priorFutureStructuralWitnessFallbackEntered=true;}
       function* orderedGeometries(){
         if(compatiblePrior)yield {materialized:undefined,prior:true};
@@ -1058,8 +1065,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       for(const entry of orderedGeometries()){
       const {materialized}=entry;
       const prepared=entry.prior?undefined:preparePipelineBundleGraph(problem,architecture,protectedPlacements,materialized);
-      const priorMatching=entry.prior?revalidateFutureStructuralWitness(problem,architecture,protectedPlacements,prior!):undefined;
+      const priorResult=entry.prior?revalidateFutureStructuralWitnessDetailed(problem,architecture,protectedPlacements,prior!):undefined;
+      const priorMatching=priorResult?.materialization;
       if(entry.prior){evidence.priorFutureStructuralWitnessRevalidation=priorMatching?"PASS":"REJECT";
+        evidence.priorFutureStructuralWitnessRejectCause=priorResult?.rejectCause??null;
+        evidence.priorFutureStructuralWitnessRejectDetails=priorResult?.rejectDetails??null;
         evidence.priorFutureStructuralWitnessReused=Boolean(priorMatching);}
       if(!entry.prior&&!prepared)continue;
       if(entry.prior&&!priorMatching){evidence.priorFutureStructuralWitnessFallbackEntered=true;continue;}

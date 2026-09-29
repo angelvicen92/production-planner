@@ -67,6 +67,8 @@ export interface AssistedPlanningEvidence {
   readonly priorFutureStructuralWitnessFound?:boolean;
   readonly priorFutureStructuralWitnessFingerprint?:string|null;
   readonly priorFutureStructuralWitnessRevalidation?:"PASS"|"REJECT"|"STALE"|null;
+  readonly priorFutureStructuralWitnessRejectCause?:import("./anonymousPipelineWitness").FutureStructuralWitnessRejectCause|null;
+  readonly priorFutureStructuralWitnessRejectDetails?:Readonly<Record<string,unknown>>|null;
   readonly priorFutureStructuralWitnessReused?:boolean;
   readonly priorFutureStructuralWitnessFallbackEntered?:boolean;
   readonly ephemeralSupportingPlacements?:ExactItinerantPlanEvidence["ephemeralSupportingPlacements"];
@@ -152,6 +154,7 @@ export interface AssistedPlanningEvidence {
     "fixedSupportingSameGeometryRescued"|"fixedSupportingGeometriesAttempted"|"fixedSupportingGeometryFailure"|
     "fixedSupportingGlobalFailure"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "priorFutureStructuralWitnessFound"|"priorFutureStructuralWitnessFingerprint"|"priorFutureStructuralWitnessRevalidation"|
+    "priorFutureStructuralWitnessRejectCause"|"priorFutureStructuralWitnessRejectDetails"|
     "priorFutureStructuralWitnessReused"|"priorFutureStructuralWitnessFallbackEntered"|"futureStructuralWitnesses"|
     "ephemeralSupportingPlacements"|"acceptedSupportingPlacements"|"branchesBeforeCurrentContinuation"|
     "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
@@ -619,7 +622,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
     "fixedSupportingSameGeometryRescued","fixedSupportingGeometriesAttempted","fixedSupportingGeometryFailure",
     "fixedSupportingGlobalFailure","priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
-    "priorFutureStructuralWitnessRevalidation","priorFutureStructuralWitnessReused","priorFutureStructuralWitnessFallbackEntered",
+    "priorFutureStructuralWitnessRevalidation","priorFutureStructuralWitnessRejectCause","priorFutureStructuralWitnessRejectDetails",
+    "priorFutureStructuralWitnessReused","priorFutureStructuralWitnessFallbackEntered",
     "futureStructuralWitnesses","ephemeralSupportingPlacements","acceptedSupportingPlacements","branchesBeforeCurrentContinuation",
     "protectedMainSlotChecks","protectedMainSlotMismatches",
     "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
@@ -662,6 +666,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     priorFutureStructuralWitnessFound:Boolean(evidenceRecord.priorFutureStructuralWitnessFound),
     priorFutureStructuralWitnessFingerprint:(evidenceRecord.priorFutureStructuralWitnessFingerprint as string|null|undefined)??null,
     priorFutureStructuralWitnessRevalidation:(evidenceRecord.priorFutureStructuralWitnessRevalidation as "PASS"|"REJECT"|"STALE"|null|undefined)??null,
+    priorFutureStructuralWitnessRejectCause:(evidenceRecord.priorFutureStructuralWitnessRejectCause as import("./anonymousPipelineWitness").FutureStructuralWitnessRejectCause|null|undefined)??null,
+    priorFutureStructuralWitnessRejectDetails:structuredClone((evidenceRecord.priorFutureStructuralWitnessRejectDetails as Readonly<Record<string,unknown>>|null|undefined)??null),
     priorFutureStructuralWitnessReused:Boolean(evidenceRecord.priorFutureStructuralWitnessReused),
     priorFutureStructuralWitnessFallbackEntered:Boolean(evidenceRecord.priorFutureStructuralWitnessFallbackEntered),
     ephemeralSupportingPlacements:structuredClone((evidenceRecord.ephemeralSupportingPlacements as ExactItinerantPlanEvidence["ephemeralSupportingPlacements"]|undefined)??[]),

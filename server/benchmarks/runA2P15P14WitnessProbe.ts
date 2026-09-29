@@ -35,6 +35,10 @@ export async function runA2P15P14WitnessProbe(){
 
   assert.equal(p14.orchestration.selectedUnitId,"OPERATIONAL_MEAL:p14-operations");
   const priorAttempt=p14.fixedSupportingGeometriesAttempted[0]??null;
+  const blockingPlacementId=(p14.priorFutureStructuralWitnessRejectDetails as {placementDiagnostic?:{blockingPlacedTaskId?:string}}|null)
+    ?.placementDiagnostic?.blockingPlacedTaskId??null;
+  const relevantProtectedContext=blockingPlacementId===null?[]:p14.acceptedSnapshotBefore.filter((row:any)=>
+    `task:${row.taskId}`===blockingPlacementId||String(row.taskId)===blockingPlacementId);
   const reachedContinuation=p14.branchesBeforeCurrentContinuation!==null;
   const hardGate=reachedContinuation?"PASS":"REJECT";
   const causal={
@@ -44,6 +48,9 @@ export async function runA2P15P14WitnessProbe(){
     priorFutureStructuralWitnessFound:p14.priorFutureStructuralWitnessFound,
     priorFutureStructuralWitnessFingerprint:p14.priorFutureStructuralWitnessFingerprint,
     priorFutureStructuralWitnessRevalidation:p14.priorFutureStructuralWitnessRevalidation,
+    priorFutureStructuralWitnessRejectCause:p14.priorFutureStructuralWitnessRejectCause,
+    priorFutureStructuralWitnessRejectDetails:p14.priorFutureStructuralWitnessRejectDetails,
+    relevantProtectedContext,
     priorFutureStructuralWitnessReused:p14.priorFutureStructuralWitnessReused,
     priorFutureStructuralWitnessFallbackEntered:p14.priorFutureStructuralWitnessFallbackEntered,
     branchesBeforeCurrentContinuation:p14.branchesBeforeCurrentContinuation,
@@ -57,6 +64,7 @@ export async function runA2P15P14WitnessProbe(){
   return {benchmark:"A2-P15-P14-WITNESS-PROBE",branchBudget:6_000,p15:{proposalOutcome:p15.proposalOutcome,
     completedObligations:p15.completedObligationCount,newHardViolationCount:p15.newHardViolationCount,
     newRequiredViolationCount:p15.newRequiredViolationCount,futureStructuralWitnessCount:p15.futureStructuralWitnesses.length,
+    certifiedSupportingPlacements:p15.futureStructuralWitnesses[0]?.ephemeralSupportingPlacements??[],
     ephemeralSupportingPlacementCount:p15.ephemeralSupportingPlacements.length,
     acceptedSupportingPlacementCount:p15.acceptedSupportingPlacements.length,acceptedStageId:p15.acceptedStageId,
     acceptedStageProposalRunId:p15.acceptedStageProposalRunId},p14:causal};

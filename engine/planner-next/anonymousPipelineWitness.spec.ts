@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
   mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  revalidateFutureStructuralWitness } from "./anonymousPipelineWitness";
+  revalidateFutureStructuralWitness, revalidateFutureStructuralWitnessDetailed } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -461,10 +461,30 @@ describe("anonymous structural pipeline witness",()=>{
       geometryFingerprint:prepared!.witness.fingerprint,ephemeralSupportingPlacements:ephemeral};
     const certificate={...unsigned,fingerprint:createHash("sha256").update(JSON.stringify(unsigned)).digest("hex")};
     const reused=revalidateFutureStructuralWitness(p,architecture,fixed,certificate);assert.ok(reused);
+    const validDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,fixed,certificate);
+    assert.ok(validDiagnostic.materialization);assert.equal(validDiagnostic.rejectCause,null);assert.equal(validDiagnostic.rejectDetails,null);
     assert.equal(reused.evidence.matchingTraversals,0);assert.equal(reused.evidence.fullMatchingBuilds,0);
     assert.deepEqual(reused.scheduledTasks.filter(task=>supportingIds.has(task.id))
       .map(({id,start,end,spaceId})=>({id,start,end,spaceId})),ephemeral);
+    const corrupt={...certificate,fingerprint:`corrupt-${certificate.fingerprint}`};
+    const corruptDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,fixed,corrupt);
+    assert.equal(corruptDiagnostic.rejectCause,"CERTIFICATE_FINGERPRINT_MISMATCH");
+    assert.deepEqual(Object.keys(corruptDiagnostic.rejectDetails!).sort(),["actual","expected"]);
+
+    const certifiedStyle=ephemeral.find(item=>item.id.startsWith("style"))!;
+    const styleTask=p.tasks.find(task=>task.id===certifiedStyle.id)!;
+    const blocker={...styleTask,id:"protected-style-blocker",participantId:undefined,dependencies:[],
+      start:certifiedStyle.start,end:certifiedStyle.end};
+    const stylingDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixed,blocker],certificate);
+    assert.equal(stylingDiagnostic.rejectCause,"STYLING_PLACEMENT_REJECTED");
+    assert.equal(stylingDiagnostic.rejectDetails?.taskId,certifiedStyle.id);
+    assert.equal((stylingDiagnostic.rejectDetails?.placementDiagnostic as {firstRejectionReason:string}).firstRejectionReason,"OVERLAP_SPACE");
+
     p.transportPolicy!.arrival.maximumGroupSize=0;
+    const arrivalDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,fixed,certificate);
+    assert.equal(arrivalDiagnostic.rejectCause,"ARRIVAL_REVALIDATION_INFEASIBLE");
+    assert.notEqual(arrivalDiagnostic.rejectDetails?.status,"FEASIBLE");
+    assert.ok(arrivalDiagnostic.rejectDetails?.evidence);
     assert.equal(revalidateFutureStructuralWitness(p,architecture,fixed,certificate),null,"changed Arrival authority enters fallback");
   });
 

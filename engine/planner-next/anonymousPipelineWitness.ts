@@ -5,7 +5,7 @@ import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlo
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching,
   incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 import { assessOperationalMealFutureFeasibility, type OperationalMealSearchBudget } from "./operationalMeals";
@@ -78,6 +78,17 @@ export interface FutureStructuralWitnessV1 {
   readonly ephemeralSupportingPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
   readonly fingerprint:string;
 }
+export type FutureStructuralWitnessRejectCause =
+  |"INVALID_KIND_OR_VERSION"|"ARCHITECTURE_FINGERPRINT_MISMATCH"|"CERTIFICATE_FINGERPRINT_MISMATCH"
+  |"DUPLICATE_CERTIFIED_PLACEMENT_ID"|"INVALID_CERTIFIED_INTERVAL"|"STYLING_CARDINALITY_MISMATCH"
+  |"SUPPORTING_ID_SET_MISMATCH"|"PROTECTED_MAIN_MISSING"|"ANCHORED_OPERATION_MATERIALIZATION_FAILED"
+  |"ANCHORED_PROTECTED_PLACEMENT_MISMATCH"|"STYLING_DURATION_MISMATCH"|"STYLING_SPACE_MISMATCH"
+  |"STYLING_PLACEMENT_REJECTED"|"ARRIVAL_REVALIDATION_INFEASIBLE"|"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH";
+export interface FutureStructuralWitnessRevalidationResult {
+  readonly materialization:PipelineBundleMaterialization|null;
+  readonly rejectCause:FutureStructuralWitnessRejectCause|null;
+  readonly rejectDetails:Readonly<Record<string,unknown>>|null;
+}
 export interface PipelineBundleMatchingDiagnostic { attempts:number;perfectMatchingFound:boolean;
   arrivalResult:string|null;arrivalPacketCount:number;fullMatchingBuilds:number;incrementalRepairs:number;
   uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;matchingTraversals:number;arrivalEvaluations:number;
@@ -94,29 +105,42 @@ export interface PreparedPipelineBundleGraph {
     nominalPositions:ReadonlyMap<string,number>;context:readonly ScheduledTask[]};
 }
 
-/** Revalidates a certified identity-to-spot assignment without rediscovering a matching. */
-export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
-  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
-  if(certificate.kind!=="FIXED_SUPPORTING_PIPELINE"||certificate.version!==1)return null;
-  if(certificate.architectureFingerprint!==JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}))return null;
+/** Revalidates a certified identity-to-spot assignment without rediscovering a matching, exposing its first rejection. */
+export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):FutureStructuralWitnessRevalidationResult {
+  const reject=(rejectCause:FutureStructuralWitnessRejectCause,rejectDetails:Record<string,unknown>):FutureStructuralWitnessRevalidationResult=>
+    ({materialization:null,rejectCause,rejectDetails});
+  if(certificate.kind!=="FIXED_SUPPORTING_PIPELINE"||certificate.version!==1)
+    return reject("INVALID_KIND_OR_VERSION",{kind:certificate.kind,version:certificate.version});
+  const actualArchitectureFingerprint=JSON.stringify({pattern:architecture.pattern,slots:architecture.slots});
+  if(certificate.architectureFingerprint!==actualArchitectureFingerprint)return reject("ARCHITECTURE_FINGERPRINT_MISMATCH",
+    {expected:certificate.architectureFingerprint,actual:actualArchitectureFingerprint});
   const expectedFingerprint=stable({kind:certificate.kind,version:certificate.version,
     architectureFingerprint:certificate.architectureFingerprint,geometryFingerprint:certificate.geometryFingerprint,
     ephemeralSupportingPlacements:certificate.ephemeralSupportingPlacements});
-  if(certificate.fingerprint!==expectedFingerprint)return null;
+  if(certificate.fingerprint!==expectedFingerprint)return reject("CERTIFICATE_FINGERPRINT_MISMATCH",
+    {expected:expectedFingerprint,actual:certificate.fingerprint});
   const certified=new Map(certificate.ephemeralSupportingPlacements.map(item=>[item.id,item]));
-  if(certified.size!==certificate.ephemeralSupportingPlacements.length)return null;
-  if(certificate.ephemeralSupportingPlacements.some(item=>!Number.isFinite(item.start)||!Number.isFinite(item.end)
-    ||item.end<=item.start))return null;
+  if(certified.size!==certificate.ephemeralSupportingPlacements.length){
+    const seen=new Set<string>();const duplicate=certificate.ephemeralSupportingPlacements.find(item=>seen.has(item.id)||!seen.add(item.id));
+    return reject("DUPLICATE_CERTIFIED_PLACEMENT_ID",{placementId:duplicate?.id??null});
+  }
+  const invalidInterval=certificate.ephemeralSupportingPlacements.find(item=>!Number.isFinite(item.start)||!Number.isFinite(item.end)||item.end<=item.start);
+  if(invalidInterval)return reject("INVALID_CERTIFIED_INTERVAL",{placementId:invalidInterval.id,start:invalidInterval.start,end:invalidInterval.end,spaceId:invalidInterval.spaceId});
   const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined);
   const stylingTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"
     &&task.participantId===main.participantId&&task.dependencies.some(id=>arrivalIds.has(id))&&main.dependencies.includes(task.id)))
     .filter((task):task is ParticipantTask=>task!==undefined).sort((a,b)=>a.id.localeCompare(b.id));
-  if(stylingTasks.length!==mains.length)return null;
+  if(stylingTasks.length!==mains.length)return reject("STYLING_CARDINALITY_MISMATCH",{expected:mains.length,actual:stylingTasks.length,
+    mainTaskIds:mains.map(task=>task.id),stylingTaskIds:stylingTasks.map(task=>task.id)});
   const expectedIds=new Set([...stylingTasks.map(task=>task.id),...arrivalIds]);
-  if(expectedIds.size!==certified.size||[...expectedIds].some(id=>!certified.has(id)))return null;
+  const missingIds=[...expectedIds].filter(id=>!certified.has(id)).sort();
+  const unexpectedIds=[...certified.keys()].filter(id=>!expectedIds.has(id)).sort();
+  if(missingIds.length||unexpectedIds.length)return reject("SUPPORTING_ID_SET_MISMATCH",{missingIds,unexpectedIds});
   const protectedById=new Map(protectedPlacements.map(task=>[task.id,task]));
-  if(mains.some(main=>!protectedById.has(main.id)))return null;
+  const missingMain=mains.find(main=>!protectedById.has(main.id));
+  if(missingMain)return reject("PROTECTED_MAIN_MISSING",{mainTaskId:missingMain.id});
   const anchorIndex=anchoredAccompanimentIndex(problem);
   const anchoredIds=new Set((problem.anchoredAccompaniments??[]).flatMap(contract=>
     [contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds]));
@@ -128,9 +152,12 @@ export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,arc
     const operationIds=new Set([main.id,...contract.beforeTaskIds,...contract.afterTaskIds]);
     const operation=materializeAnchoredOperation(problem,main,fixedMain.start,
       protectedContext.filter(task=>!operationIds.has(task.id)));
-    if(!operation)return null;
+    if(!operation)return reject("ANCHORED_OPERATION_MATERIALIZATION_FAILED",{mainTaskId:main.id,placementId:fixedMain.id,
+      start:fixedMain.start,end:fixedMain.end,spaceId:fixedMain.spaceId});
     for(const generated of operation.tasks){const fixed=protectedById.get(generated.id);
-      if(fixed&&(fixed.start!==generated.start||fixed.end!==generated.end||fixed.spaceId!==generated.spaceId))return null;
+      if(fixed&&(fixed.start!==generated.start||fixed.end!==generated.end||fixed.spaceId!==generated.spaceId))
+        return reject("ANCHORED_PROTECTED_PLACEMENT_MISMATCH",{mainTaskId:main.id,placementId:generated.id,
+          expected:{start:generated.start,end:generated.end,spaceId:generated.spaceId},actual:{start:fixed.start,end:fixed.end,spaceId:fixed.spaceId}});
       structural.push(fixed??generated);
     }
   }
@@ -139,29 +166,45 @@ export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,arc
   const matching=new Map<string,number>(),scheduled:ScheduledTask[]=[];
   for(const task of stylingTasks){
     const item=certified.get(task.id)!;
-    if(item.end-item.start!==task.duration||item.spaceId!==task.spaceId)return null;
+    if(item.end-item.start!==task.duration)return reject("STYLING_DURATION_MISMATCH",{taskId:task.id,placementId:item.id,
+      expected:task.duration,actual:item.end-item.start,start:item.start,end:item.end,spaceId:item.spaceId});
+    if(item.spaceId!==task.spaceId)return reject("STYLING_SPACE_MISMATCH",{taskId:task.id,placementId:item.id,
+      expected:task.spaceId,actual:item.spaceId,start:item.start,end:item.end});
     const withoutArrival={...task,dependencies:task.dependencies.filter(dependency=>!arrivalIds.has(dependency))};
-    if(!canPlaceTask(problem,withoutArrival,item.start,[...context,...scheduled]))return null;
+    const placementContext=[...context,...scheduled];
+    if(!canPlaceTask(problem,withoutArrival,item.start,placementContext))return reject("STYLING_PLACEMENT_REJECTED",{
+      taskId:task.id,placementId:item.id,start:item.start,end:item.end,spaceId:item.spaceId,
+      placementDiagnostic:diagnoseTaskPlacement(problem,withoutArrival,item.start,placementContext)});
     matching.set(task.id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
   }
   const arrival=assessCoreArrivalTransportFeasibility(problem,[...context,...scheduled]);
-  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return null;
+  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return reject("ARRIVAL_REVALIDATION_INFEASIBLE",{
+    status:arrival.status,evidence:arrival.evidence,arrivalTaskIds:[...arrivalIds].sort()});
   for(const item of certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id))){
     const actual=arrival.scheduled.find(task=>task.id===item.id);
-    if(!actual||actual.start!==item.start||actual.end!==item.end||actual.spaceId!==item.spaceId)return null;
+    if(!actual||actual.start!==item.start||actual.end!==item.end||actual.spaceId!==item.spaceId)
+      return reject("ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH",{taskId:item.id,placementId:item.id,
+        expected:{start:item.start,end:item.end,spaceId:item.spaceId},actual:actual?{start:actual.start,end:actual.end,spaceId:actual.spaceId}:null});
   }
   const unique=[...new Map([...context,...scheduled,...arrival.scheduled]
     .map(task=>[task.id,task])).values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   const witness:AnonymousPipelineWitness={status:"FEASIBLE",runCount:0,pattern:[...architecture.pattern],mainSpots:[],
     feederSpots:[],stylingSpots:[],inGroups:[],anchoredOperationSpots:[],assignments:[],profileCount:0,tokenCount:0,
     fingerprint:certificate.geometryFingerprint};
-  return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
+  const materialization:PipelineBundleMaterialization={witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
     materializations:1,forbiddenEdges:[],fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
     duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:1,safePerfectMatchingAttempts:0,
     safePerfectMatchingFound:0,safeGraphEdgeCount:0,intrusiveGraphEdgeCount:0,safeMatchingFailures:0,fullGraphFallbacks:0,
     bundleEdgesBeforeReservation:0,bundleEdgesRejectedByReservation:0,
     bundleEdgesAfterReservation:0,fixedSupportingArrivalResult:"FEASIBLE",
     fixedSupportingArrivalPacketCount:arrival.evidence.packetSizes.length,fixedSupportingRematchedIdentityCount:0}};
+  return {materialization,rejectCause:null,rejectDetails:null};
+}
+
+/** Compatibility wrapper for callers that only need PASS/REJECT. */
+export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
+  return revalidateFutureStructuralWitnessDetailed(problem,architecture,protectedPlacements,certificate).materialization;
 }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;

@@ -322,6 +322,8 @@ export interface ExactItinerantPlanEvidence {
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
   priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
   priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
+  priorFutureStructuralWitnessRejectCause:import("./anonymousPipelineWitness").FutureStructuralWitnessRejectCause|null;
+  priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
   priorFutureStructuralWitnessFallbackEntered:boolean;
   futureStructuralWitnesses:import("./anonymousPipelineWitness").FutureStructuralWitnessV1[];
   ephemeralSupportingPlacements:import("./anonymousPipelineWitness").FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
@@ -1610,6 +1612,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
+    priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
     ephemeralSupportingPlacements:[],acceptedSupportingPlacements:[],branchesBeforeCurrentContinuation:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
@@ -2146,6 +2149,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.priorFutureStructuralWitnessFound=core.evidence.priorFutureStructuralWitnessFound;
   evidence.priorFutureStructuralWitnessFingerprint=core.evidence.priorFutureStructuralWitnessFingerprint;
   evidence.priorFutureStructuralWitnessRevalidation=core.evidence.priorFutureStructuralWitnessRevalidation;
+  evidence.priorFutureStructuralWitnessRejectCause=core.evidence.priorFutureStructuralWitnessRejectCause;
+  evidence.priorFutureStructuralWitnessRejectDetails=core.evidence.priorFutureStructuralWitnessRejectDetails;
   evidence.priorFutureStructuralWitnessReused=core.evidence.priorFutureStructuralWitnessReused;
   evidence.priorFutureStructuralWitnessFallbackEntered=core.evidence.priorFutureStructuralWitnessFallbackEntered;
   evidence.futureStructuralWitnesses=structuredClone(core.evidence.futureStructuralWitnesses);

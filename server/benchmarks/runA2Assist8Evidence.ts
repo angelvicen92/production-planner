@@ -288,6 +288,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       priorFutureStructuralWitnessFound:evidence.priorFutureStructuralWitnessFound??false,
       priorFutureStructuralWitnessFingerprint:evidence.priorFutureStructuralWitnessFingerprint??null,
       priorFutureStructuralWitnessRevalidation:evidence.priorFutureStructuralWitnessRevalidation??null,
+      priorFutureStructuralWitnessRejectCause:evidence.priorFutureStructuralWitnessRejectCause??null,
+      priorFutureStructuralWitnessRejectDetails:evidence.priorFutureStructuralWitnessRejectDetails??null,
       priorFutureStructuralWitnessReused:evidence.priorFutureStructuralWitnessReused??false,
       priorFutureStructuralWitnessFallbackEntered:evidence.priorFutureStructuralWitnessFallbackEntered??false,
       futureStructuralWitnesses:evidence.futureStructuralWitnesses??[],
