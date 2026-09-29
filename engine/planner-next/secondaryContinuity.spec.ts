@@ -4,6 +4,7 @@ import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { longSecondaryBlockScenario } from "./scenarios/longSecondaryBlockScenario";
 import { hasRequiredSecondaryContinuity, secondaryBlockCount, secondaryGapMinutes } from "./secondaryContinuity";
 import { preflight, validatePlan } from "./validate";
+import type { PlannerNextProblem, ScheduledOperationalMeal, ScheduledTask } from "./contracts";
 
 test("NEXT-006 schedules a required secondary space as one complete block", () => {
   const problem = longSecondaryBlockScenario();
@@ -36,6 +37,39 @@ test("validator reports one structural incidence for a secondary gap", () => {
   const validation = validatePlan(problem, tasks);
   assert.ok(validation.secondaryContinuityViolationCount > 0);
   assert.ok(validation.reasonCodes.includes("SECONDARY_CONTINUITY_VIOLATION"));
+});
+
+function operationalBridgeFixture():{problem:PlannerNextProblem;tasks:ScheduledTask[];meal:(start:number,end:number,spaceIds?:string[])=>ScheduledOperationalMeal}{
+  const problem:PlannerNextProblem={day:{start:0,end:100},spaces:[{id:"required",availability:[{start:0,end:100}],secondaryContinuity:"REQUIRED"},{id:"other",availability:[{start:0,end:100}]}],resources:[],
+    participants:[{id:"a",availability:[{start:0,end:100}]},{id:"b",availability:[{start:0,end:100}]}],coaches:[],tasks:[],
+    mainFlow:{spaceId:"other",preferredEnd:100,continuity:"PREFERRED",maxBlocksByKey:1,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
+    budget:{maxBranchExpansions:100,bestK:2},searchPolicy:"EXACT_CONSTRUCTIVE",
+    operationalMealPolicies:[{id:"pause",duration:10,window:{start:0,end:100},resourceIds:[],spaceIds:["required","other"]}]};
+  const base=[{id:"a",kind:"auxiliary" as const,participantId:"a",duration:10,spaceId:"required",dependencies:[]},{id:"b",kind:"auxiliary" as const,participantId:"b",duration:10,spaceId:"required",dependencies:[]}];
+  problem.tasks=base;
+  return {problem,tasks:[{...base[0]!,start:20,end:30},{...base[1]!,start:30,end:40}],meal:(start,end,spaceIds=["required","other"])=>({id:"pause",duration:end-start,start,end,resourceIds:[],spaceIds})};
+}
+
+test("operational meals outside a REQUIRED occupation span do not extend it",()=>{
+  const {problem,tasks,meal}=operationalBridgeFixture();
+  assert.equal(validatePlan(problem,tasks,[],[],[],[],[],[],[meal(0,10)]).secondaryContinuityViolationCount,0);
+  assert.equal(validatePlan(problem,tasks,[],[],[],[],[],[],[meal(50,60)]).secondaryContinuityViolationCount,0);
+});
+
+test("an authorized operational meal bridges only an exactly adjacent internal interruption",()=>{
+  const {problem,tasks,meal}=operationalBridgeFixture();
+  const bridged=[tasks[0]!,{...tasks[1]!,start:40,end:50}];
+  assert.equal(validatePlan(problem,bridged,[],[],[],[],[],[],[meal(30,40)]).secondaryContinuityViolationCount,0);
+  const gapBefore=[tasks[0]!,{...tasks[1]!,start:45,end:55}];
+  const gapAfter=[{...tasks[0]!,start:15,end:25},{...tasks[1]!,start:40,end:50}];
+  assert.equal(validatePlan(problem,gapBefore,[],[],[],[],[],[],[meal(30,40)]).secondaryContinuityViolationCount,1);
+  assert.equal(validatePlan(problem,gapAfter,[],[],[],[],[],[],[meal(25,35)]).secondaryContinuityViolationCount,1);
+});
+
+test("a multi-space operational meal does not widen a REQUIRED block whose work is on one side",()=>{
+  const {problem,tasks,meal}=operationalBridgeFixture();
+  const after=[{...tasks[0]!,start:40,end:50},{...tasks[1]!,start:50,end:60}];
+  assert.equal(validatePlan(problem,after,[],[],[],[],[],[],[meal(30,40)]).secondaryContinuityViolationCount,0);
 });
 
 test("preflight rejects unsupported required-secondary configurations stably", () => {
