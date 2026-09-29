@@ -1,5 +1,4 @@
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
-import { createHash } from "node:crypto";
 import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -13,7 +12,7 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { fixedSupportingPipelineGeometryFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
   revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
   type PipelineBundleMatchingDiagnostic, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
@@ -1151,14 +1150,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(!fixedSupporting)break;continue;
       }
       if(fixedSupporting){
-        const supportingIds=new Set([...(entry.prior?prior!.ephemeralSupportingPlacements.map(item=>item.id):prepared!.fixedSupporting!.stylingTaskIds),...(problem.transportPolicy?.arrival.taskIds??[])]);
-        const ephemeral=matching.scheduledTasks.filter(task=>supportingIds.has(task.id))
-          .map(({id,start,end,spaceId})=>({id,start,end,spaceId})).sort((a,b)=>a.id.localeCompare(b.id));
-        const witness:FutureStructuralWitnessV1={kind:"FIXED_SUPPORTING_PIPELINE",version:1,
-          architectureFingerprint:evidence.protectedMainArchitectureFingerprint!,geometryFingerprint:entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint,
-          ephemeralSupportingPlacements:ephemeral,fingerprint:createHash("sha256").update(JSON.stringify({kind:"FIXED_SUPPORTING_PIPELINE",version:1,
-            architectureFingerprint:evidence.protectedMainArchitectureFingerprint,geometryFingerprint:entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint,
-            ephemeralSupportingPlacements:ephemeral})).digest("hex")};
+        const witness=futureStructuralWitnessFromMaterialization(problem,architecture,matching);
+        const ephemeral=[...witness.ephemeralSupportingPlacements];
         evidence.ephemeralSupportingPlacements=ephemeral;evidence.futureStructuralWitnesses=[witness];
       }else evidence.acceptedSupportingPlacements=matching.scheduledTasks.filter(task=>task.kind==="auxiliary");
       for(const id of candidateCoreIds)coreIds.add(id);

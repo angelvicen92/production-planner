@@ -56,7 +56,7 @@ export async function runA2P15P14WitnessProbe(){
     branchesBeforeCurrentContinuation:p14.branchesBeforeCurrentContinuation,
     fixedSupportingMatchingAttempts:p14.fixedSupportingMatchingAttempts,
     fixedSupportingGeometriesAttempted:p14.fixedSupportingGeometriesAttempted,
-    priorAttemptMatchingTraversals:priorAttempt?.matchingTraversals??null,
+    priorAttemptMatchingTraversals:priorAttempt?.matchingTraversals??(p14.priorFutureStructuralWitnessReused?0:null),
     hardGate,reachedStandalone:(p14.work.standaloneBranches??0)>0,reachedContinuation,
     firstFixedMainBundleRejection:p14.fixedMainBundle?.firstFixedMainBundleRejection??null,
     firstCausalBlocker:p14.firstBlocker,reasonCodes:p14.reasonCodes,

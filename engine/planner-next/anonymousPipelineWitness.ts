@@ -216,6 +216,22 @@ export interface PipelineArchitectureEnumerationEvidence {
 const orderedWindows = (windows: readonly Window[] | undefined, fallback:Window): Window[] =>
   [...(windows?.length ? windows : [fallback])].sort((a,b)=>a.start-b.start||a.end-b.end);
 const stable = (value:unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+/** Builds the cross-Stage certificate from the concrete bundle that was accepted. */
+export function futureStructuralWitnessFromMaterialization(problem:Readonly<PlannerNextProblem>,
+  architecture:MainFeederArchitecture,materialization:PipelineBundleMaterialization):FutureStructuralWitnessV1 {
+  const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  const stylingIds=new Set(problem.tasks.filter(task=>task.kind==="auxiliary"&&task.participantId!==undefined
+    &&task.dependencies.some(id=>arrivalIds.has(id))
+    &&problem.tasks.some(main=>main.kind==="main"&&main.participantId===task.participantId&&main.dependencies.includes(task.id)))
+    .map(task=>task.id));
+  const ephemeralSupportingPlacements=materialization.scheduledTasks
+    .filter(task=>arrivalIds.has(task.id)||stylingIds.has(task.id))
+    .map(({id,start,end,spaceId})=>({id,start,end,spaceId})).sort((a,b)=>a.id.localeCompare(b.id));
+  const unsigned={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
+    architectureFingerprint:JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}),
+    geometryFingerprint:materialization.witness.fingerprint,ephemeralSupportingPlacements};
+  return {...unsigned,fingerprint:stable(unsigned)};
+}
 const signatureWindows = (windows: readonly Window[] | undefined) => orderedWindows(windows, {start:-1,end:-1});
 
 /**

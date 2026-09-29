@@ -37,7 +37,8 @@ import { selectMostConstrainedUnit } from "./macroScheduling";
 import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
-  materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+  futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  type FutureStructuralWitnessV1 } from "./anonymousPipelineWitness";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
@@ -1512,6 +1513,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const coreOperationalMealProblem:PlannerNextProblem=coreMainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
     ?{...problem,operationalMealPolicies:(problem.operationalMealPolicies??[]).filter(policy=>!coreMainMealAuthority.sourceIds.includes(policy.id))}:problem;
   const operationalMeals=new PreparedOperationalMealAuthority(coreOperationalMealProblem);
+  const acceptedContinuation={witness:null as FutureStructuralWitnessV1|null};
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
@@ -2017,6 +2019,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     if (standalone.outcome === "DEAD_END" || !standalone.tasks) {
       evidence.coreLeavesRejectedByStandalone += 1; return "REJECT";
     }
+    if(candidate.source==="PREFERRED_BUNDLE"&&pipelinePreservesFixed){
+      acceptedContinuation.witness=futureStructuralWitnessFromMaterialization(problem,
+        {pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},pipeline!);
+    }
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
@@ -2156,6 +2162,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.futureStructuralWitnesses=structuredClone(core.evidence.futureStructuralWitnesses);
   evidence.ephemeralSupportingPlacements=structuredClone(core.evidence.ephemeralSupportingPlacements);
   evidence.acceptedSupportingPlacements=structuredClone(core.evidence.acceptedSupportingPlacements);
+  if(acceptedContinuation.witness&&evidence.futureStructuralWitnesses.length>0){
+    evidence.futureStructuralWitnesses=[structuredClone(acceptedContinuation.witness)];
+    evidence.ephemeralSupportingPlacements=structuredClone(acceptedContinuation.witness.ephemeralSupportingPlacements);
+  }
   evidence.branchesBeforeCurrentContinuation=core.evidence.branchesBeforeCurrentContinuation;
   evidence.protectedMainSlotChecks=core.evidence.protectedMainSlotChecks;
   evidence.protectedMainSlotMismatches=core.evidence.protectedMainSlotMismatches;
