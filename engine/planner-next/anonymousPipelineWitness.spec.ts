@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
@@ -455,14 +456,16 @@ describe("anonymous structural pipeline witness",()=>{
     const supportingIds=new Set([...prepared!.fixedSupporting!.stylingTaskIds,...p.transportPolicy!.arrival.taskIds]);
     const ephemeral=selected.scheduledTasks.filter(task=>supportingIds.has(task.id))
       .map(({id,start,end,spaceId})=>({id,start,end,spaceId}));
-    const certificate={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,architectureFingerprint:"authority",
-      geometryFingerprint:prepared!.witness.fingerprint,ephemeralSupportingPlacements:ephemeral,fingerprint:"certificate"};
-    const reused=revalidateFutureStructuralWitness(p,prepared!,certificate);assert.ok(reused);
+    const unsigned={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
+      architectureFingerprint:JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}),
+      geometryFingerprint:prepared!.witness.fingerprint,ephemeralSupportingPlacements:ephemeral};
+    const certificate={...unsigned,fingerprint:createHash("sha256").update(JSON.stringify(unsigned)).digest("hex")};
+    const reused=revalidateFutureStructuralWitness(p,architecture,fixed,certificate);assert.ok(reused);
     assert.equal(reused.evidence.matchingTraversals,0);assert.equal(reused.evidence.fullMatchingBuilds,0);
     assert.deepEqual(reused.scheduledTasks.filter(task=>supportingIds.has(task.id))
       .map(({id,start,end,spaceId})=>({id,start,end,spaceId})),ephemeral);
     p.transportPolicy!.arrival.maximumGroupSize=0;
-    assert.equal(revalidateFutureStructuralWitness(p,prepared!,certificate),null,"changed Arrival authority enters fallback");
+    assert.equal(revalidateFutureStructuralWitness(p,architecture,fixed,certificate),null,"changed Arrival authority enters fallback");
   });
 
   it("reports no matching on fixed Styling geometry without moving protected work",()=>{

@@ -665,9 +665,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     priorFutureStructuralWitnessReused:Boolean(evidenceRecord.priorFutureStructuralWitnessReused),
     priorFutureStructuralWitnessFallbackEntered:Boolean(evidenceRecord.priorFutureStructuralWitnessFallbackEntered),
     ephemeralSupportingPlacements:structuredClone((evidenceRecord.ephemeralSupportingPlacements as ExactItinerantPlanEvidence["ephemeralSupportingPlacements"]|undefined)??[]),
-    acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)?.length
-      ?evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]
-      :scheduled.filter(task=>input.supportingTaskIds.includes(task.id))),
+    acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)??[]),
     futureStructuralWitnesses:structuredClone((evidenceRecord.futureStructuralWitnesses as ExactItinerantPlanEvidence["futureStructuralWitnesses"]|undefined)??[]),
     branchesBeforeCurrentContinuation:(evidenceRecord.branchesBeforeCurrentContinuation as number|null|undefined)??null,
     selectedMealWitnesses,

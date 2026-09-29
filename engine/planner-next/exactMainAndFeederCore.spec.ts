@@ -1034,6 +1034,42 @@ test("protected Main identities reconstruct complete dependent bundles before st
     result.scheduledTasks.find(task=>task.id===placement.id),placement);
 });
 
+test("a prior structural witness bypasses geometry discovery and keeps ephemeral support unaccepted",()=>{
+  const problem=protectedPipelineProblem();
+  const mains=[0,1].map(index=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const baseline=runExactMainAndFeederSearch(problem,{fixedPlacements:mains,fixedPlacementsAsContext:true});
+  const accepted=baseline.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+  const initial=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true});
+  const certificate=initial.evidence.futureStructuralWitnesses[0];assert.ok(certificate);
+  const reused=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true,
+    priorFutureStructuralWitness:certificate});
+  assert.equal(reused.status,"COMPLETE",reused.evidence.reasonCodes.join(","));
+  assert.equal(reused.evidence.priorFutureStructuralWitnessRevalidation,"PASS");
+  assert.equal(reused.evidence.priorFutureStructuralWitnessReused,true);
+  assert.equal(reused.evidence.fixedSupportingGeometriesAttempted[0]?.matchingTraversals,0);
+  assert.equal(reused.evidence.fixedSupportingGeometriesAttempted[0]?.fingerprint,certificate.geometryFingerprint);
+  assert.deepEqual(reused.evidence.ephemeralSupportingPlacements,certificate.ephemeralSupportingPlacements);
+  assert.deepEqual(reused.evidence.acceptedSupportingPlacements,[]);
+});
+
+test("a stale prior structural witness enters the exact geometry fallback",()=>{
+  const problem=protectedPipelineProblem();
+  const mains=[0,1].map(index=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const baseline=runExactMainAndFeederSearch(problem,{fixedPlacements:mains,fixedPlacementsAsContext:true});
+  const accepted=baseline.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+  const initial=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true});
+  const certificate=initial.evidence.futureStructuralWitnesses[0]!;
+  const stale={...certificate,architectureFingerprint:"stale"};
+  const result=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true,
+    priorFutureStructuralWitness:stale});
+  assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
+  assert.equal(result.evidence.priorFutureStructuralWitnessRevalidation,"STALE");
+  assert.equal(result.evidence.priorFutureStructuralWitnessFallbackEntered,true);
+  assert.ok(result.evidence.fixedSupportingGeometriesAttempted.length>0);
+});
+
 test("an intermediate hard gate defers a REQUIRED technical chain with residual members",()=>{
   const problem=protectedPipelineProblem();
   problem.participants.push({id:"residual",availability:[{start:0,end:300}]});

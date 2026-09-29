@@ -1048,42 +1048,44 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.priorFutureStructuralWitnessFingerprint=prior?.fingerprint??null;
       const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&prior.version===1
         &&prior.architectureFingerprint===evidence.protectedMainArchitectureFingerprint;
-      if(prior&&!compatiblePrior)evidence.priorFutureStructuralWitnessRevalidation="STALE";
+      if(prior&&!compatiblePrior){evidence.priorFutureStructuralWitnessRevalidation="STALE";
+        evidence.priorFutureStructuralWitnessFallbackEntered=true;}
       function* orderedGeometries(){
-        if(compatiblePrior){const candidate=fixedSupportingPipelineGeometryFrontier(problem,validArchitecture).next().value;
-          if(candidate)yield {materialized:candidate,prior:true};else evidence.priorFutureStructuralWitnessRevalidation="STALE";}
+        if(compatiblePrior)yield {materialized:undefined,prior:true};
         for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture))
           yield {materialized:candidate,prior:false};
       }
       for(const entry of orderedGeometries()){
       const {materialized}=entry;
-      const prepared=preparePipelineBundleGraph(problem,architecture,protectedPlacements,materialized);
-      if(!prepared)continue;
+      const prepared=entry.prior?undefined:preparePipelineBundleGraph(problem,architecture,protectedPlacements,materialized);
+      const priorMatching=entry.prior?revalidateFutureStructuralWitness(problem,architecture,protectedPlacements,prior!):undefined;
+      if(entry.prior){evidence.priorFutureStructuralWitnessRevalidation=priorMatching?"PASS":"REJECT";
+        evidence.priorFutureStructuralWitnessReused=Boolean(priorMatching);}
+      if(!entry.prior&&!prepared)continue;
+      if(entry.prior&&!priorMatching){evidence.priorFutureStructuralWitnessFallbackEntered=true;continue;}
       anyPrepared=true;evidence.fixedMainBundleGraphPrepared=true;
-      evidence.fixedMainBundlePreparedEdges=prepared.preparedBundleEdges;
-      evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...prepared.candidates]
+      evidence.fixedMainBundlePreparedEdges=prepared?.preparedBundleEdges??0;
+      evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...(prepared?.candidates??new Map())]
         .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
-      const zeroDomainTaskIds=[...prepared.candidates].filter(([,row])=>row.size===0).map(([id])=>id).sort();
+      const zeroDomainTaskIds=[...(prepared?.candidates??new Map())].filter(([,row])=>row.size===0).map(([id])=>id).sort();
       evidence.fixedMainBundleZeroDomainTaskIds=zeroDomainTaskIds;
-      evidence.fixedMainBundleParticipantEdgeChecks+=prepared.participantEdgeEvidence.checked;
-      evidence.fixedMainBundleParticipantEdgePrunes+=prepared.participantEdgeEvidence.pruned;
-      evidence.fixedMainBundleFirstParticipantEdgePrune??=prepared.participantEdgeEvidence.firstPrune;
-      if(prepared.fixedSupporting){evidence.fixedSupportingGeometryFingerprint=prepared.witness.fingerprint;
-        evidence.fixedSupportingEdges=prepared.preparedBundleEdges;evidence.fixedSupportingZeroDomainTaskIds=zeroDomainTaskIds;}
+      evidence.fixedMainBundleParticipantEdgeChecks+=prepared?.participantEdgeEvidence.checked??0;
+      evidence.fixedMainBundleParticipantEdgePrunes+=prepared?.participantEdgeEvidence.pruned??0;
+      evidence.fixedMainBundleFirstParticipantEdgePrune??=prepared?.participantEdgeEvidence.firstPrune??null;
+      const fixedSupporting=entry.prior||Boolean(prepared?.fixedSupporting);
+      if(fixedSupporting){evidence.fixedSupportingGeometryFingerprint=entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint;
+        evidence.fixedSupportingEdges=prepared?.preparedBundleEdges??0;evidence.fixedSupportingZeroDomainTaskIds=zeroDomainTaskIds;}
       const diagnostic:PipelineBundleMatchingDiagnostic={attempts:0,perfectMatchingFound:false,arrivalResult:null,
         arrivalPacketCount:0,fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
         duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:0,terminalCause:null};
       evidence.fixedMainBundleMatchingAttempts++;
-      const matching=entry.prior?revalidateFutureStructuralWitness(problem,prepared,prior!)
-        :materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,consumeMatchingBranch,
+      const matching=priorMatching??materializePreparedPipelineBundleMatching(problem,prepared!,new Set(),undefined,consumeMatchingBranch,
           undefined,[],diagnostic);
-      if(entry.prior){evidence.priorFutureStructuralWitnessRevalidation=matching?"PASS":"REJECT";
-        evidence.priorFutureStructuralWitnessReused=Boolean(matching);}
       evidence.fixedSupportingMatchingAttempts+=diagnostic.attempts;
       evidence.fixedSupportingPerfectMatchingFound||=diagnostic.perfectMatchingFound;
       evidence.fixedSupportingArrivalResult=diagnostic.arrivalResult;
       evidence.fixedSupportingArrivalPacketCount=diagnostic.arrivalPacketCount;
-      const attempt={fingerprint:prepared.witness.fingerprint,edges:prepared.preparedBundleEdges,zeroDomainTaskIds,
+      const attempt={fingerprint:entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint,edges:prepared?.preparedBundleEdges??0,zeroDomainTaskIds,
         perfectMatchingFound:diagnostic.perfectMatchingFound,arrivalResult:diagnostic.arrivalResult,
         terminalCause:diagnostic.terminalCause,hardGate:"NOT_REACHED",continuation:null as string|null,
         fullMatchingBuilds:diagnostic.fullMatchingBuilds,incrementalRepairs:diagnostic.incrementalRepairs,
@@ -1096,8 +1098,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         evidence.fixedSupportingGeometryFailure=diagnostic.terminalCause;
         evidence.firstFixedMainBundleRejection=diagnostic.terminalCause;
         if(diagnostic.terminalCause==="BUDGET_EXHAUSTED"){incompleteGeometry=true;
-          if(!prepared.fixedSupporting)break;continue;}
-        if(!prepared.fixedSupporting)break;
+          if(!fixedSupporting)break;continue;}
+        if(!fixedSupporting)break;
         continue;
       }
       evidence.fixedMainBundlePerfectMatchingFound=true;
@@ -1124,7 +1126,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           structuredSpaces:problem.spaces.filter(space=>space.secondaryContinuity==="REQUIRED"||space.setupPolicy!==undefined)
             .map(space=>({spaceId:space.id,secondaryContinuity:space.secondaryContinuity??null,setupPolicy:space.setupPolicy??null,
               tasks:matching.scheduledTasks.filter(task=>task.spaceId===space.id).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))}))};
-        if(!prepared.fixedSupporting)break;continue;}
+        if(!fixedSupporting)break;continue;}
       attempt.hardGate="PASS";
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
@@ -1136,16 +1138,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(continuation!=="ACCEPT"){
         evidence.firstFixedMainBundleRejection="FUTURE_FEASIBILITY_REJECTED";
         if(entry.prior)evidence.priorFutureStructuralWitnessFallbackEntered=true;
-        if(!prepared.fixedSupporting)break;continue;
+        if(!fixedSupporting)break;continue;
       }
-      if(prepared.fixedSupporting){
-        const supportingIds=new Set([...prepared.fixedSupporting.stylingTaskIds,...(problem.transportPolicy?.arrival.taskIds??[])]);
+      if(fixedSupporting){
+        const supportingIds=new Set([...(entry.prior?prior!.ephemeralSupportingPlacements.map(item=>item.id):prepared!.fixedSupporting!.stylingTaskIds),...(problem.transportPolicy?.arrival.taskIds??[])]);
         const ephemeral=matching.scheduledTasks.filter(task=>supportingIds.has(task.id))
           .map(({id,start,end,spaceId})=>({id,start,end,spaceId})).sort((a,b)=>a.id.localeCompare(b.id));
         const witness:FutureStructuralWitnessV1={kind:"FIXED_SUPPORTING_PIPELINE",version:1,
-          architectureFingerprint:evidence.protectedMainArchitectureFingerprint!,geometryFingerprint:prepared.witness.fingerprint,
+          architectureFingerprint:evidence.protectedMainArchitectureFingerprint!,geometryFingerprint:entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint,
           ephemeralSupportingPlacements:ephemeral,fingerprint:createHash("sha256").update(JSON.stringify({kind:"FIXED_SUPPORTING_PIPELINE",version:1,
-            architectureFingerprint:evidence.protectedMainArchitectureFingerprint,geometryFingerprint:prepared.witness.fingerprint,
+            architectureFingerprint:evidence.protectedMainArchitectureFingerprint,geometryFingerprint:entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint,
             ephemeralSupportingPlacements:ephemeral})).digest("hex")};
         evidence.ephemeralSupportingPlacements=ephemeral;evidence.futureStructuralWitnesses=[witness];
       }else evidence.acceptedSupportingPlacements=matching.scheduledTasks.filter(task=>task.kind==="auxiliary");

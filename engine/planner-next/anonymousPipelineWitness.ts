@@ -95,35 +95,72 @@ export interface PreparedPipelineBundleGraph {
 }
 
 /** Revalidates a certified identity-to-spot assignment without rediscovering a matching. */
-export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,prepared:PreparedPipelineBundleGraph,
-  certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
-  if(!prepared.fixedSupporting)return null;
+export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
+  if(certificate.kind!=="FIXED_SUPPORTING_PIPELINE"||certificate.version!==1)return null;
+  if(certificate.architectureFingerprint!==JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}))return null;
+  const expectedFingerprint=stable({kind:certificate.kind,version:certificate.version,
+    architectureFingerprint:certificate.architectureFingerprint,geometryFingerprint:certificate.geometryFingerprint,
+    ephemeralSupportingPlacements:certificate.ephemeralSupportingPlacements});
+  if(certificate.fingerprint!==expectedFingerprint)return null;
   const certified=new Map(certificate.ephemeralSupportingPlacements.map(item=>[item.id,item]));
   if(certified.size!==certificate.ephemeralSupportingPlacements.length)return null;
-  const matching=new Map<string,number>(),scheduled:ScheduledTask[]=[];
-  for(const id of prepared.fixedSupporting.stylingTaskIds){
-    const item=certified.get(id);if(!item)return null;
-    const task=problem.tasks.find(candidate=>candidate.id===id);if(!task||item.end-item.start!==task.duration||item.spaceId!==task.spaceId)return null;
-    const withoutArrival={...task,dependencies:task.dependencies.filter(dependency=>!(problem.transportPolicy?.arrival.taskIds??[]).includes(dependency))};
-    if(!canPlaceTask(problem,withoutArrival,item.start,[...prepared.fixedSupporting.context,...scheduled]))return null;
-    matching.set(id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
-  }
-  const arrival=assessCoreArrivalTransportFeasibility(problem,[...prepared.fixedSupporting.context,...scheduled]);
-  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return null;
+  if(certificate.ephemeralSupportingPlacements.some(item=>!Number.isFinite(item.start)||!Number.isFinite(item.end)
+    ||item.end<=item.start))return null;
   const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined);
+  const stylingTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"
+    &&task.participantId===main.participantId&&task.dependencies.some(id=>arrivalIds.has(id))&&main.dependencies.includes(task.id)))
+    .filter((task):task is ParticipantTask=>task!==undefined).sort((a,b)=>a.id.localeCompare(b.id));
+  if(stylingTasks.length!==mains.length)return null;
+  const expectedIds=new Set([...stylingTasks.map(task=>task.id),...arrivalIds]);
+  if(expectedIds.size!==certified.size||[...expectedIds].some(id=>!certified.has(id)))return null;
+  const protectedById=new Map(protectedPlacements.map(task=>[task.id,task]));
+  if(mains.some(main=>!protectedById.has(main.id)))return null;
+  const anchorIndex=anchoredAccompanimentIndex(problem);
+  const anchoredIds=new Set((problem.anchoredAccompaniments??[]).flatMap(contract=>
+    [contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds]));
+  const protectedContext=protectedPlacements.filter(task=>!expectedIds.has(task.id));
+  const structural:ScheduledTask[]=[];
+  for(const main of mains){
+    const fixedMain=protectedById.get(main.id)!;const contract=anchorIndex.get(main.id);
+    if(!contract){structural.push(fixedMain);continue;}
+    const operationIds=new Set([main.id,...contract.beforeTaskIds,...contract.afterTaskIds]);
+    const operation=materializeAnchoredOperation(problem,main,fixedMain.start,
+      protectedContext.filter(task=>!operationIds.has(task.id)));
+    if(!operation)return null;
+    for(const generated of operation.tasks){const fixed=protectedById.get(generated.id);
+      if(fixed&&(fixed.start!==generated.start||fixed.end!==generated.end||fixed.spaceId!==generated.spaceId))return null;
+      structural.push(fixed??generated);
+    }
+  }
+  const context=[...new Map([...protectedContext.filter(task=>!anchoredIds.has(task.id)),...structural]
+    .map(task=>[task.id,task])).values()];
+  const matching=new Map<string,number>(),scheduled:ScheduledTask[]=[];
+  for(const task of stylingTasks){
+    const item=certified.get(task.id)!;
+    if(item.end-item.start!==task.duration||item.spaceId!==task.spaceId)return null;
+    const withoutArrival={...task,dependencies:task.dependencies.filter(dependency=>!arrivalIds.has(dependency))};
+    if(!canPlaceTask(problem,withoutArrival,item.start,[...context,...scheduled]))return null;
+    matching.set(task.id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
+  }
+  const arrival=assessCoreArrivalTransportFeasibility(problem,[...context,...scheduled]);
+  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return null;
   for(const item of certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id))){
     const actual=arrival.scheduled.find(task=>task.id===item.id);
     if(!actual||actual.start!==item.start||actual.end!==item.end||actual.spaceId!==item.spaceId)return null;
   }
-  const unique=[...new Map([...prepared.fixedSupporting.context,...scheduled,...arrival.scheduled,
-    ...prepared.protectedPlacements.filter(task=>!prepared.fixedSupporting!.stylingTaskIds.includes(task.id)&&!arrivalIds.has(task.id))]
+  const unique=[...new Map([...context,...scheduled,...arrival.scheduled]
     .map(task=>[task.id,task])).values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-  return {witness:prepared.witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
+  const witness:AnonymousPipelineWitness={status:"FEASIBLE",runCount:0,pattern:[...architecture.pattern],mainSpots:[],
+    feederSpots:[],stylingSpots:[],inGroups:[],anchoredOperationSpots:[],assignments:[],profileCount:0,tokenCount:0,
+    fingerprint:certificate.geometryFingerprint};
+  return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
     materializations:1,forbiddenEdges:[],fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
     duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:1,safePerfectMatchingAttempts:0,
     safePerfectMatchingFound:0,safeGraphEdgeCount:0,intrusiveGraphEdgeCount:0,safeMatchingFailures:0,fullGraphFallbacks:0,
-    bundleEdgesBeforeReservation:prepared.preparedBundleEdges,bundleEdgesRejectedByReservation:0,
-    bundleEdgesAfterReservation:prepared.preparedBundleEdges,fixedSupportingArrivalResult:"FEASIBLE",
+    bundleEdgesBeforeReservation:0,bundleEdgesRejectedByReservation:0,
+    bundleEdgesAfterReservation:0,fixedSupportingArrivalResult:"FEASIBLE",
     fixedSupportingArrivalPacketCount:arrival.evidence.packetSizes.length,fixedSupportingRematchedIdentityCount:0}};
 }
 export interface PipelineArchitectureEnumerationEvidence {

@@ -111,6 +111,22 @@ test("request requires an ACTIVE session before creating or scheduling a run", a
   assert.equal(created,0); assert.equal(deferred,0);
 });
 
+test("stage proposalRunId recovers its structural witness for the runner",async()=>{
+  const certificate={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,architectureFingerprint:"architecture",
+    geometryFingerprint:"geometry",ephemeralSupportingPlacements:[],fingerprint:"fingerprint"};
+  const priorStage={...stage,proposalRunId:77};
+  const priorRun={...runRecord(),id:77,assisted_result_json:{evidence:{futureStructuralWitnesses:[certificate]}}};
+  const current=runRecord();let captured:AssistedProblem|undefined;
+  const service=new AssistedProposalService(storage({
+    getActiveAssistedPlanningSession:async()=>session,getPlanOptimizerSnapshot:async()=>({}),
+    getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+    getAssistedPlanningStage:async()=>priorStage,listAssistedPlanningStages:async()=>[priorStage],
+  },[]),queueMicrotask,access({find:async(_plan,id)=>({data:id===77?priorRun:current,error:null}),finish:async()=>({error:null})}),
+  problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+  await service.run(planId,9);
+  assert.deepEqual(captured?.priorFutureStructuralWitness,certificate);
+});
+
 test("request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes", async () => {
   const writes: string[] = []; const creates: Record<string, unknown>[] = []; const deferred: Array<() => void> = [];
   const active = { ...session, draftFingerprint: request.expectedDraftFingerprint };

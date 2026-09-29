@@ -52,6 +52,8 @@ test("assisted projection is immutable, fixes accepted placements and never move
   assert.equal(first.evidence.requiredValid, true);
   assert.equal(first.evidence.proposalCount, 1);
   assert.deepEqual(first.evidence.supportingTaskIds, ["feed"]);
+  assert.deepEqual(first.evidence.acceptedSupportingPlacements,[],
+    "automatic supporting work must not be promoted to accepted Evidence");
   assert.equal(first.evidence.fingerprint, second.evidence.fingerprint);
   assert.deepEqual(first.proposal?.map(({ id }) => id), ["main"]);
   assert.equal(first.proposal?.some(({ id }) => id === "feed" || id === "outside" || id === "protected"), false);
