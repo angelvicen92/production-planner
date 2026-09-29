@@ -127,6 +127,32 @@ test("stage proposalRunId recovers its structural witness for the runner",async(
   assert.deepEqual(captured?.priorFutureStructuralWitness,certificate);
 });
 
+test("the nearest stage witness takes precedence and the parent is the fallback",async()=>{
+  const certificate=(fingerprint:string)=>({kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
+    architectureFingerprint:`architecture-${fingerprint}`,geometryFingerprint:`geometry-${fingerprint}`,
+    ephemeralSupportingPlacements:[],fingerprint});
+  const stages=[
+    {...stage,id:2,parentStageId:null,proposalRunId:72},
+    {...stage,id:3,parentStageId:2,proposalRunId:73},
+    {...stage,id:4,parentStageId:3,proposalRunId:74},
+  ];
+  const execute=async(currentHasWitness:boolean)=>{
+    let captured:AssistedProblem|undefined;
+    const records=new Map([[72,certificate("A")],[73,certificate("B")],...(currentHasWitness?[[74,certificate("C")] as const]:[])]);
+    const service=new AssistedProposalService(storage({
+      getActiveAssistedPlanningSession:async()=>session,getPlanOptimizerSnapshot:async()=>({}),
+      getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+      getAssistedPlanningStage:async()=>stages[2],listAssistedPlanningStages:async()=>stages,
+    },[]),queueMicrotask,access({find:async(_plan,id)=>({data:id===9?runRecord():{
+      ...runRecord(),id,assisted_result_json:{evidence:{futureStructuralWitnesses:records.has(id)?[records.get(id)]:[]}}},error:null}),
+      finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+    await service.run(planId,9);
+    return captured?.priorFutureStructuralWitness?.fingerprint;
+  };
+  assert.equal(await execute(true),"C");
+  assert.equal(await execute(false),"B");
+});
+
 test("request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes", async () => {
   const writes: string[] = []; const creates: Record<string, unknown>[] = []; const deferred: Array<() => void> = [];
   const active = { ...session, draftFingerprint: request.expectedDraftFingerprint };

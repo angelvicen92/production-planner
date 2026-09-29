@@ -290,6 +290,7 @@ export function materializeTerminalTransport(
 ): ScheduledTask[] | null {
   if (!problem.transportPolicy) return [];
   const transportIds = transportTaskIds(problem);
+  const alreadyMaterializedTransportIds=new Set(substantive.filter(task=>transportIds.has(task.id)).map(({id})=>id));
   const obligationsFor = (participantId: string) => [
     ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
     ...participantMeals.filter((meal) => meal.participantId === participantId),
@@ -303,7 +304,8 @@ export function materializeTerminalTransport(
         ? (obligations.length ? Math.min(...obligations.map(({ start }) => start)) : problem.day.end)
         : (obligations.length ? Math.max(...obligations.map(({ end }) => end)) : problem.day.start);
       return individualTransportBoundary(problem, task, direction, obligationBoundary); };
-    const tasks = policy.taskIds.map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean)
+    const tasks = policy.taskIds.filter(id=>!alreadyMaterializedTransportIds.has(id))
+      .map((id) => problem.tasks.find((task) => task.id === id)!).filter(Boolean)
       .sort((left, right) => boundary(left) - boundary(right)
         || left.participantId!.localeCompare(right.participantId!) || byId(left, right));
     const classified = classifyTransportContext(problem, tasks);

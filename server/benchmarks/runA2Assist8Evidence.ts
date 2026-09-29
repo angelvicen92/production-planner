@@ -444,7 +444,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const totalsIndex=selectedUnitIds.indexOf("ROUND_SYNCHRONIZATION:a2-totales-rounds");
   const flexibleOperationsIndexes=["OPERATIONAL_MEAL:p15-operations","OPERATIONAL_MEAL:p14-operations"]
     .map(id=>selectedUnitIds.indexOf(id));
-  if(!stopAfterFirstProposal&&options.stopAfterIterationCount===undefined){
+  if(!stopAfterFirstProposal&&options.stopAfterIterationCount===undefined&&!options.initialSnapshot){
     assert.ok(realityContinuityIndex>=0,"A2 must attempt the scarce Reality C + EVA continuity unit");
     assert.ok(standaloneRealityIndexes.every(index=>index<0||realityContinuityIndex<index),
       "A2 must attempt Reality C + EVA before either standalone Reality agenda");

@@ -51,6 +51,49 @@ test("space fallback is one unit whose evidence exactly matches its selector",()
   assert.equal(new Set(recommendation.candidates.map(candidate=>candidate.unitId)).size,recommendation.candidates.length);
 });
 
+test("terminal identities come only from joint, transport, dependency and participant-meal contracts",()=>{
+  const source=input([
+    task(1,10,10,{jointGroupId:"joint-a"}),task(2,20,10,{jointGroupId:"joint-a"}),
+    task(3,30,5,{operationalRole:"transport_arrival",plannerNextKind:"auxiliary"}),
+    task(4,40,10,{operationalRole:"productive_task",plannerNextKind:"auxiliary",dependsOnTaskIds:[3]}),
+    task(5,0,30,{operationalRole:"meal_break_placeholder",breakKind:"participant_meal",plannerNextKind:"auxiliary"}),
+    task(6,50,10,{operationalRole:"productive_task",plannerNextKind:"auxiliary",dependsOnTaskIds:[4,5]}),
+    task(7,60,5,{operationalRole:"transport_departure",plannerNextKind:"auxiliary",dependsOnTaskIds:[4,6]}),
+  ]);
+  const units=recommendNextAssistedScope(source,blank(source.tasks))!.candidates;
+  assert.deepEqual(units.find(unit=>unit.unitKind==="JOINT_OPERATION")?.memberTaskIds,[1,2]);
+  assert.deepEqual(units.find(unit=>unit.unitKind==="PARTICIPANT_OPENING")?.memberTaskIds,[3,4]);
+  assert.deepEqual(units.find(unit=>unit.unitKind==="PARTICIPANT_CLOSURE")?.memberTaskIds,[5,6,7]);
+  assert.ok(!units.some(unit=>unit.unitKind==="SPACE_FALLBACK"));
+});
+
+test("productive and opening units precede participant closure without ordering joint against opening",()=>{
+  const source=input([
+    task(10,10,5,{operationalRole:"transport_arrival",plannerNextKind:"auxiliary"}),
+    task(11,11,5,{operationalRole:"productive_task",plannerNextKind:"auxiliary",dependsOnTaskIds:[10]}),
+    task(20,20,10,{jointGroupId:"joint",operationalRole:"productive_task"}),
+    task(21,21,10,{jointGroupId:"joint",operationalRole:"productive_task"}),
+    task(30,0,30,{operationalRole:"meal_break_placeholder",breakKind:"participant_meal",plannerNextKind:"auxiliary"}),
+    task(31,31,5,{operationalRole:"transport_departure",plannerNextKind:"auxiliary",dependsOnTaskIds:[11,30]}),
+  ]);
+  const candidates=recommendNextAssistedScope(source,blank(source.tasks))!.candidates;
+  const kinds=candidates.map(unit=>unit.unitKind);
+  assert.ok(kinds.indexOf("JOINT_OPERATION")<kinds.indexOf("PARTICIPANT_CLOSURE"));
+  assert.ok(kinds.indexOf("PARTICIPANT_OPENING")<kinds.indexOf("PARTICIPANT_CLOSURE"));
+});
+
+test("renumbering task and space identities preserves terminal unit kinds and cardinalities",()=>{
+  const make=(offset:number)=>input([
+    task(1+offset,10+offset,5,{operationalRole:"transport_arrival",plannerNextKind:"auxiliary"}),
+    task(2+offset,20+offset,5,{operationalRole:"productive_task",plannerNextKind:"auxiliary",dependsOnTaskIds:[1+offset]}),
+    task(3+offset,0,30,{operationalRole:"meal_break_placeholder",breakKind:"participant_meal",plannerNextKind:"auxiliary"}),
+    task(4+offset,30+offset,5,{operationalRole:"transport_departure",plannerNextKind:"auxiliary",dependsOnTaskIds:[2+offset,3+offset]}),
+  ]);
+  const signature=(source:EngineInput)=>recommendNextAssistedScope(source,blank(source.tasks))!.candidates
+    .map(unit=>[unit.unitKind,unit.memberTaskIds.length]).sort();
+  assert.deepEqual(signature(make(0)),signature(make(100)));
+});
+
 test("effective pressure can outrank a nominally higher authority kind",()=>{
   const source=input([task(1,10,10),task(2,20,90,{fixedWindowEnd:"10:00"}),task(3,20,90,{fixedWindowEnd:"10:00"}),task(4,30,10,{dependsOnTaskIds:[2]}),task(5,40,10,{dependsOnTaskIds:[3]})]);
   source.technicalChains=[{id:"short-chain",orderedTaskIds:[1],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[]}];

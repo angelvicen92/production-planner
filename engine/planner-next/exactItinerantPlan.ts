@@ -15,7 +15,7 @@ import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from ".
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, exactStartDomainFromIntervals,
-  exactTaskDynamicStartDomain, exactTaskStaticStartDomain, intersectExactStartIntervals } from "./placement";
+  exactTaskDynamicStartDomain, exactTaskStartDomain, exactTaskStaticStartDomain, intersectExactStartIntervals } from "./placement";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
@@ -146,6 +146,11 @@ export interface ExactItinerantPlanEvidence {
   terminalTransportWitness: TransportMaterializationEvidence | null;
   terminalCompletionRejectionsByCause: Record<TerminalCompletionRejectionCause, number>;
   firstTerminalCompletionRejection: TerminalCompletionRejection | null;
+  terminalDeparturePrerequisitePhaseEntered:boolean;
+  terminalDeparturePrerequisiteTaskIds:string[];
+  terminalDeparturePrerequisiteBranches:number;
+  terminalDeparturePrerequisiteFirstCompleteCandidateAtBranch:number|null;
+  terminalDeparturePrerequisiteTerminalRejectsByCause:Record<string,number>;
   coreLeafTransportPrunes: number;
   transportContiguousStates: number;
   membershipFallbackEntered: number;
@@ -732,9 +737,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if (!consumeLeafBranch(selectionOrder.length)) return "BUDGET_EXHAUSTED";
     evidence.standaloneCompleteLeafCount += 1;
     const substantive = orderScheduled([...coreTasks, ...placed]);
-    const expected = [...problem.tasks].sort(byId).map(({ id }) => id);
-    const expectedSubstantive = problem.tasks.filter(({ id }) => !transportTaskIds(problem).has(id)).sort(byId).map(({ id }) => id);
+    const participantMealSourceIds=new Set((problem.participantMeals??[]).map(({sourceTaskId})=>sourceTaskId));
+    const expected = problem.tasks.filter(({id})=>!participantMealSourceIds.has(id)).sort(byId).map(({ id }) => id);
     const actualSubstantive = [...substantive].sort(byId).map(({ id }) => id);
+    const materializedIds=new Set(actualSubstantive),allTransportIds=transportTaskIds(problem);
+    const expectedSubstantive = problem.tasks.filter(({ id }) => (!allTransportIds.has(id)||materializedIds.has(id))
+      &&!participantMealSourceIds.has(id)).sort(byId).map(({ id }) => id);
     const transportAlreadyMaterialized=actualSubstantive.length===expected.length
       &&actualSubstantive.every((id,index)=>id===expected[index]);
     const exactSubstantive = transportAlreadyMaterialized||(actualSubstantive.length === expectedSubstantive.length
@@ -762,8 +770,9 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     if (mealWitness?.complete&&!transportAlreadyMaterialized) evidence.terminalTransportMaterializationAttempts += 1;
     let terminalTransportWitness: TransportMaterializationEvidence | null = null;
+    let transportFallbackBranches=0;
     const transport = transportAlreadyMaterialized ? [] : mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled, {
-      consumeFallbackBranch: () => ledger.consume("STANDALONE"),
+      consumeFallbackBranch: () => {transportFallbackBranches+=1;return ledger.consume("STANDALONE");},
       onEvidence: (witness) => { terminalTransportWitness = witness; },
     }) : null;
     const observedTerminalTransportWitness = terminalTransportWitness as TransportMaterializationEvidence | null;
@@ -1092,6 +1101,12 @@ const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.totalesAssignmentBranchesAvoided += delta.assignmentBranchesAvoided;
 };
 const dynamicTransportIds = transportTaskIds(problem);
+const pendingById=new Map(pending.map(task=>[task.id,task]));
+const departureIds=new Set(problem.transportPolicy?.departure?.taskIds??[]);
+const directDeparturePrerequisiteCandidates=new Set(problem.tasks
+  .filter(task=>departureIds.has(task.id))
+  .flatMap(task=>task.dependencies)
+  .filter(id=>pendingById.has(id)&&!dynamicTransportIds.has(id)));
 const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
 const technicalRepresentativeIds=new Set(technicalItems.flatMap(({tasks})=>tasks.map(({id})=>id)));
 const jointItems = jointGroupIds(pending).filter((id)=>!jointGroupMembers(pending,id).some(({id:taskId})=>technicalRepresentativeIds.has(taskId))).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
@@ -1134,7 +1149,50 @@ const macroUnits: MacroUnit[] = [...jointItems, ...technicalItems,...agendaItems
   ...setupItems.filter(item=>!absorbedSetupIds.has(item.id)),...preferredResourceUnits]
   .sort((left, right) => left.id.localeCompare(right.id));
 const macroTaskIds = new Set(macroUnits.flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));
-const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)).sort(byId);
+const terminalDeparturePrerequisites=pending.filter(({id})=>directDeparturePrerequisiteCandidates.has(id)&&!macroTaskIds.has(id)).sort(byId);
+const terminalDeparturePrerequisiteIds=new Set(terminalDeparturePrerequisites.map(({id})=>id));
+const ordinaryPending = pending.filter(({ id }) => !macroTaskIds.has(id) && !dynamicTransportIds.has(id)
+  &&!terminalDeparturePrerequisiteIds.has(id)).sort(byId);
+if(terminalDeparturePrerequisites.length){
+  evidence.terminalDeparturePrerequisiteTaskIds=terminalDeparturePrerequisites.map(({id})=>id);
+  completeAfterOrdinary=(placed,preparations,roundPreparations,selectionOrder)=>{
+    evidence.terminalDeparturePrerequisitePhaseEntered=true;
+    const materialize=(remaining:Task[],terminalPlaced:ScheduledTask[],order:string[]):StandaloneOutcome=>{
+      if(!remaining.length){
+        const rejectionBefore={...evidence.terminalCompletionRejectionsByCause};
+        const result=completeLeaf([...placed,...terminalPlaced],preparations,roundPreparations,[...selectionOrder,...order]);
+        if(result==="FOUND")evidence.terminalDeparturePrerequisiteFirstCompleteCandidateAtBranch??=
+          evidence.terminalDeparturePrerequisiteBranches;
+        else for(const [cause,count] of Object.entries(evidence.terminalCompletionRejectionsByCause)){
+          const delta=count-(rejectionBefore[cause as TerminalCompletionRejectionCause]??0);
+          if(delta>0)evidence.terminalDeparturePrerequisiteTerminalRejectsByCause[cause]=
+            (evidence.terminalDeparturePrerequisiteTerminalRejectsByCause[cause]??0)+delta;
+        }
+        return result;
+      }
+      const allPlaced=[...coreTasks,...placed,...terminalPlaced];
+      const domains=remaining.map(task=>({task,starts:[...exactTaskStartDomain(problem,task,allPlaced,coreMeals).starts()]
+        .filter(start=>canPlaceTask(problem,task,start,allPlaced,coreMeals))}))
+        .sort((a,b)=>a.starts.length-b.starts.length||effectiveDeadline(problem,a.task)-effectiveDeadline(problem,b.task)
+          ||b.task.duration-a.task.duration||a.task.id.localeCompare(b.task.id));
+      const choice=domains[0]!;
+      if(!choice.starts.length)return "DEAD_END";
+      for(const start of [...choice.starts].sort((a,b)=>b-a)){
+        if(!ledger.consume("STANDALONE"))return "BUDGET_EXHAUSTED";
+        evidence.terminalDeparturePrerequisiteBranches+=1;
+        const scheduled=scoreAuxiliaryTask(problem,choice.task,start,allPlaced).scheduled;
+        const future=assessFutureAuthorities([...placed,...terminalPlaced],[scheduled],{phase:"STANDALONE",
+          depth:selectionOrder.length+order.length,reachableTaskIds:new Set(remaining.filter(task=>task.id!==choice.task.id).map(({id})=>id))});
+        if(future==="BUDGET_EXHAUSTED")return future;
+        if(future==="DEAD_END")continue;
+        const child=materialize(remaining.filter(task=>task.id!==choice.task.id),[...terminalPlaced,scheduled],[...order,choice.task.id]);
+        if(child!=="DEAD_END")return child;
+      }
+      return "DEAD_END";
+    };
+    return materialize(terminalDeparturePrerequisites,[],[]);
+  };
+}
 const resourceAvailabilityMinutes = (tasks: readonly Task[]): number => {
   const ids = [...new Set(tasks.flatMap((task) => task.requiredResourceIds ?? []))].sort();
   if (ids.length === 0) return problem.day.end - problem.day.start;
@@ -1537,6 +1595,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     terminalCompletionRejectionsByCause:{SUBSTANTIVE_IDENTITY_INCOMPLETE:0,PARTICIPANT_MEAL_WITNESS_INCOMPLETE:0,
       OPERATIONAL_MEAL_WITNESS_INCOMPLETE:0,TRANSPORT_MATERIALIZATION_FAILED:0,CANDIDATE_IDENTITY_MISMATCH:0,VALIDATION_REJECTED:0},
     firstTerminalCompletionRejection:null,
+    terminalDeparturePrerequisitePhaseEntered:false,terminalDeparturePrerequisiteTaskIds:[],
+    terminalDeparturePrerequisiteBranches:0,terminalDeparturePrerequisiteFirstCompleteCandidateAtBranch:null,
+    terminalDeparturePrerequisiteTerminalRejectsByCause:{},
     coreLeafTransportPrunes:0,transportContiguousStates:0,membershipFallbackEntered:0,coreLeafArrivalEvidence:null,firstHardValidCoreLeaf:null,
     firstHardValidCoreTasks:[],
     coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
