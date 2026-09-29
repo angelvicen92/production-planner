@@ -12,8 +12,9 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
+import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
+  type PipelineBundleMatchingDiagnostic, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -157,6 +158,22 @@ export interface ExactMainAndFeederCoreEvidence {
   fixedMainBundleHardGateRejects:number;
   fixedMainBundleTaskCount:number;
   fixedMainBundleTasksByKind:Record<string,number>;
+  fixedSupportingGeometryFingerprint:string|null;fixedSupportingMatchingAttempts:number;fixedSupportingEdges:number;
+  fixedSupportingZeroDomainTaskIds:string[];fixedSupportingPerfectMatchingFound:boolean;
+  fixedSupportingRematchedIdentityCount:number;fixedSupportingArrivalResult:string|null;
+  fixedSupportingArrivalPacketCount:number;fixedSupportingSameGeometryRescued:boolean;
+  fixedSupportingGeometriesAttempted:Array<{fingerprint:string;edges:number;zeroDomainTaskIds:string[];
+    perfectMatchingFound:boolean;arrivalResult:string|null;terminalCause:string|null;hardGate:string;continuation:string|null;
+    fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
+    matchingTraversals:number;arrivalEvaluations:number}>;
+  fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
+  priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
+  priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
+  priorFutureStructuralWitnessRejectCause:FutureStructuralWitnessRejectCause|null;
+  priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
+  priorFutureStructuralWitnessFallbackEntered:boolean;futureStructuralWitnesses:FutureStructuralWitnessV1[];
+  ephemeralSupportingPlacements:FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
+  acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;
   protectedMainSlotMismatches:number;
   pipelineTasksRemovedFromStandalone:number;
@@ -358,6 +375,7 @@ export interface ExactMainAndFeederSearchOptions {
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
+  priorFutureStructuralWitness?:FutureStructuralWitnessV1;
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
   /** Live matching state for the preferred architecture. Not authoritative. */
@@ -754,6 +772,14 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
+    fixedSupportingGeometryFingerprint:null,fixedSupportingMatchingAttempts:0,fixedSupportingEdges:0,
+    fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
+    fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
+    fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
+    priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
+    priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
+    priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
+    ephemeralSupportingPlacements:[],acceptedSupportingPlacements:[],branchesBeforeCurrentContinuation:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
     firstFixedMainBundleHardGateDiagnostic:null,
@@ -1014,32 +1040,81 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     evidence.pendingBeforeFixedMainBundle=allTaskIds.filter(id=>!coreIds.has(id)).length;
     const architecture=deriveArchitectureFromProtectedMains(problem,protectedPlacements);
     if(architecture){
+      const validArchitecture=architecture;
       evidence.fixedMainBundlePathEntered=true;
       evidence.protectedMainSlots=[...architecture.slots];
       evidence.protectedMainArchitectureFingerprint=JSON.stringify({pattern:architecture.pattern,slots:architecture.slots});
-      const prepared=preparePipelineBundleGraph(problem,architecture,protectedPlacements);
-      evidence.fixedMainBundleGraphPrepared=prepared!==null;
+      let anyPrepared=false,incompleteGeometry=false;
+      const prior=options.priorFutureStructuralWitness;
+      evidence.priorFutureStructuralWitnessFound=Boolean(prior);
+      evidence.priorFutureStructuralWitnessFingerprint=prior?.fingerprint??null;
+      const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&prior.version===1
+        &&prior.architectureFingerprint===evidence.protectedMainArchitectureFingerprint;
+      if(prior&&!compatiblePrior){evidence.priorFutureStructuralWitnessRevalidation="STALE";
+        evidence.priorFutureStructuralWitnessRejectCause=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+          ?"INVALID_KIND_OR_VERSION":"ARCHITECTURE_FINGERPRINT_MISMATCH";
+        evidence.priorFutureStructuralWitnessRejectDetails=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+          ?{kind:prior.kind,version:prior.version}:{expected:prior.architectureFingerprint,actual:evidence.protectedMainArchitectureFingerprint};
+        evidence.priorFutureStructuralWitnessFallbackEntered=true;}
+      function* orderedGeometries(){
+        if(compatiblePrior)yield {materialized:undefined,prior:true};
+        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture))
+          yield {materialized:candidate,prior:false};
+      }
+      for(const entry of orderedGeometries()){
+      const {materialized}=entry;
+      const prepared=entry.prior?undefined:preparePipelineBundleGraph(problem,architecture,protectedPlacements,materialized);
+      const priorResult=entry.prior?revalidateFutureStructuralWitnessDetailed(problem,architecture,protectedPlacements,prior!):undefined;
+      const priorMatching=priorResult?.materialization;
+      if(entry.prior){evidence.priorFutureStructuralWitnessRevalidation=priorMatching?"PASS":"REJECT";
+        evidence.priorFutureStructuralWitnessRejectCause=priorResult?.rejectCause??null;
+        evidence.priorFutureStructuralWitnessRejectDetails=priorResult?.rejectDetails??null;
+        evidence.priorFutureStructuralWitnessReused=Boolean(priorMatching);}
+      if(!entry.prior&&!prepared)continue;
+      if(entry.prior&&!priorMatching){evidence.priorFutureStructuralWitnessFallbackEntered=true;continue;}
+      anyPrepared=true;evidence.fixedMainBundleGraphPrepared=true;
       evidence.fixedMainBundlePreparedEdges=prepared?.preparedBundleEdges??0;
-      if(prepared){
-        evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...prepared.candidates]
-          .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
-        evidence.fixedMainBundleZeroDomainTaskIds=[...prepared.candidates]
-          .filter(([,row])=>row.size===0).map(([id])=>id).sort();
-        evidence.fixedMainBundleParticipantEdgeChecks=prepared.participantEdgeEvidence.checked;
-        evidence.fixedMainBundleParticipantEdgePrunes=prepared.participantEdgeEvidence.pruned;
-        evidence.fixedMainBundleFirstParticipantEdgePrune=prepared.participantEdgeEvidence.firstPrune;
-      }
-      if(!prepared){
-        evidence.firstFixedMainBundleRejection="PIPELINE_BUNDLE_GRAPH_INFEASIBLE";
-        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
-      }
+      evidence.fixedMainBundleCandidatePositions=Object.fromEntries([...(prepared?.candidates??new Map())]
+        .map(([id,row])=>[id,[...row.keys()].sort((a,b)=>a-b)]));
+      const zeroDomainTaskIds=[...(prepared?.candidates??new Map())].filter(([,row])=>row.size===0).map(([id])=>id).sort();
+      evidence.fixedMainBundleZeroDomainTaskIds=zeroDomainTaskIds;
+      evidence.fixedMainBundleParticipantEdgeChecks+=prepared?.participantEdgeEvidence.checked??0;
+      evidence.fixedMainBundleParticipantEdgePrunes+=prepared?.participantEdgeEvidence.pruned??0;
+      evidence.fixedMainBundleFirstParticipantEdgePrune??=prepared?.participantEdgeEvidence.firstPrune??null;
+      const fixedSupporting=entry.prior||Boolean(prepared?.fixedSupporting);
+      if(fixedSupporting){evidence.fixedSupportingGeometryFingerprint=entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint;
+        evidence.fixedSupportingEdges=prepared?.preparedBundleEdges??0;evidence.fixedSupportingZeroDomainTaskIds=zeroDomainTaskIds;}
+      const diagnostic:PipelineBundleMatchingDiagnostic={attempts:0,perfectMatchingFound:false,arrivalResult:null,
+        arrivalPacketCount:0,fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
+        duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:0,terminalCause:null};
       evidence.fixedMainBundleMatchingAttempts++;
-      const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,consumeMatchingBranch);
-      evidence.fixedMainBundlePerfectMatchingFound=matching!==null;
+      const matching=priorMatching??materializePreparedPipelineBundleMatching(problem,prepared!,new Set(),undefined,consumeMatchingBranch,
+          undefined,[],diagnostic);
+      evidence.fixedSupportingMatchingAttempts+=diagnostic.attempts;
+      evidence.fixedSupportingPerfectMatchingFound||=diagnostic.perfectMatchingFound;
+      evidence.fixedSupportingArrivalResult=diagnostic.arrivalResult;
+      evidence.fixedSupportingArrivalPacketCount=diagnostic.arrivalPacketCount;
+      const attempt={fingerprint:entry.prior?prior!.geometryFingerprint:prepared!.witness.fingerprint,edges:prepared?.preparedBundleEdges??0,zeroDomainTaskIds,
+        perfectMatchingFound:diagnostic.perfectMatchingFound,arrivalResult:diagnostic.arrivalResult,
+        terminalCause:diagnostic.terminalCause,hardGate:"NOT_REACHED",continuation:null as string|null,
+        fullMatchingBuilds:diagnostic.fullMatchingBuilds,incrementalRepairs:diagnostic.incrementalRepairs,
+        uniquePerfectMatchings:diagnostic.uniquePerfectMatchings,
+        duplicatePerfectMatchingsSkipped:diagnostic.duplicatePerfectMatchingsSkipped,
+        matchingTraversals:diagnostic.matchingTraversals,arrivalEvaluations:diagnostic.arrivalEvaluations};
+      evidence.fixedSupportingGeometriesAttempted.push(attempt);
       if(!matching){
-        evidence.firstFixedMainBundleRejection="NO_PERFECT_PIPELINE_BUNDLE_MATCHING";
-        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
+        if(entry.prior){evidence.priorFutureStructuralWitnessFallbackEntered=true;continue;}
+        evidence.fixedSupportingGeometryFailure=diagnostic.terminalCause;
+        evidence.firstFixedMainBundleRejection=diagnostic.terminalCause;
+        if(diagnostic.terminalCause==="BUDGET_EXHAUSTED"){incompleteGeometry=true;
+          if(!fixedSupporting)break;continue;}
+        if(!fixedSupporting)break;
+        continue;
       }
+      evidence.fixedMainBundlePerfectMatchingFound=true;
+      evidence.fixedSupportingRematchedIdentityCount=matching.evidence.fixedSupportingRematchedIdentityCount;
+      evidence.fixedSupportingSameGeometryRescued=Boolean(evidence.fixedSupportingGeometriesAttempted.length===1
+        &&matching.evidence.fixedSupportingRematchedIdentityCount>0&&matching.evidence.fixedSupportingArrivalResult==="FEASIBLE");
       const protectedMains=protectedPlacements.filter(placement=>allMains.some(main=>main.id===placement.id));
       evidence.protectedMainSlotChecks=protectedMains.length;
       for(const fixed of protectedMains){const actual=matching.scheduledTasks.find(task=>task.id===fixed.id);
@@ -1049,37 +1124,52 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         evidence.firstFixedMainBundleRejection="PROTECTED_MAIN_SLOT_MISMATCH";
         return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);
       }
-      const previousCoreIds=new Set(coreIds);
-      for(const task of matching.scheduledTasks)coreIds.add(task.id);
-      evidence.pipelineTasksRemovedFromStandalone=[...coreIds].filter(id=>!previousCoreIds.has(id)).length;
-      evidence.pendingAfterFixedMainBundle=allTaskIds.filter(id=>!coreIds.has(id)).length;
-      evidence.fixedMainBundleTaskCount=matching.scheduledTasks.length;
-      for(const task of matching.scheduledTasks)evidence.fixedMainBundleTasksByKind[task.kind]=
-        (evidence.fixedMainBundleTasksByKind[task.kind]??0)+1;
+      const candidateCoreIds=new Set([...coreIds,...matching.scheduledTasks.map(task=>task.id)]);
+      evidence.pipelineTasksRemovedFromStandalone=[...candidateCoreIds].filter(id=>!coreIds.has(id)).length;
+      evidence.pendingAfterFixedMainBundle=allTaskIds.filter(id=>!candidateCoreIds.has(id)).length;
       const mealAuthority=mainFlowMealPolicy(problem);
       const meals=mealAuthority&&mealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
-      const gated=hardGateCoreLeaf(matching.scheduledTasks,meals,coreIds,[...fixedMainContracts,...applicableContracts],true);
-      if(!gated){evidence.fixedMainBundleHardGateRejects++;evidence.firstFixedMainBundleRejection=lastHardGateReason;
+      const gated=hardGateCoreLeaf(matching.scheduledTasks,meals,candidateCoreIds,[...fixedMainContracts,...applicableContracts],true);
+      if(!gated){attempt.hardGate=lastHardGateReason;evidence.fixedMainBundleHardGateRejects++;evidence.firstFixedMainBundleRejection=lastHardGateReason;
         evidence.firstFixedMainBundleHardGateDiagnostic={validation:validatePlan(problem,[...matching.scheduledTasks],[...(options.fixedSetupPreparations??[])],meals),preparationCount:options.fixedSetupPreparations?.length??0,
           structuredSpaces:problem.spaces.filter(space=>space.secondaryContinuity==="REQUIRED"||space.setupPolicy!==undefined)
             .map(space=>({spaceId:space.id,secondaryContinuity:space.secondaryContinuity??null,setupPolicy:space.setupPolicy??null,
               tasks:matching.scheduledTasks.filter(task=>task.spaceId===space.id).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))}))};
-        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",lastHardGateReason],coreIds);}
+        if(!fixedSupporting)break;continue;}
+      attempt.hardGate="PASS";
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
-        remainingTaskIds:allTaskIds.filter(id=>!coreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
+        remainingTaskIds:allTaskIds.filter(id=>!candidateCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
         source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined})??"ACCEPT";
+      attempt.continuation=typeof continuation==="string"?continuation:"CERTIFIED_BACKJUMP";
+      evidence.branchesBeforeCurrentContinuation??=ledger.branchesExplored;
       if(continuation==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);
       if(continuation!=="ACCEPT"){
         evidence.firstFixedMainBundleRejection="FUTURE_FEASIBILITY_REJECTED";
-        return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE","FUTURE_FEASIBILITY_REJECTED"],coreIds);
+        if(entry.prior)evidence.priorFutureStructuralWitnessFallbackEntered=true;
+        if(!fixedSupporting)break;continue;
       }
+      if(fixedSupporting){
+        const witness=futureStructuralWitnessFromMaterialization(problem,architecture,matching);
+        const ephemeral=[...witness.ephemeralSupportingPlacements];
+        evidence.ephemeralSupportingPlacements=ephemeral;evidence.futureStructuralWitnesses=[witness];
+      }else evidence.acceptedSupportingPlacements=matching.scheduledTasks.filter(task=>task.kind==="auxiliary");
+      for(const id of candidateCoreIds)coreIds.add(id);
+      evidence.fixedMainBundleTaskCount=matching.scheduledTasks.length;
+      evidence.fixedMainBundleTasksByKind={};
+      for(const task of matching.scheduledTasks)evidence.fixedMainBundleTasksByKind[task.kind]=
+        (evidence.fixedMainBundleTasksByKind[task.kind]??0)+1;
       selected={tasks:gated,meals,pattern:[...architecture.pattern]};evidence.completeLeafCount=1;
       evidence.selectedPattern=[...architecture.pattern];evidence.selectedMainTaskIds=gated.filter(task=>task.kind==="main").map(task=>task.id);
       evidence.selectedFeederTaskIds=gated.filter(task=>task.kind==="vocal").map(task=>task.id);
       evidence.coreFingerprint=fingerprint(gated,[],meals);
       return {status:"COMPLETE",complete:true,scheduledTasks:gated,scheduledSpaceMeals:meals,
         remainingTaskIds:allTaskIds.filter(id=>!coreIds.has(id)),evidence};
+      }
+      if(!anyPrepared)evidence.firstFixedMainBundleRejection="PIPELINE_BUNDLE_GRAPH_INFEASIBLE";
+      if(incompleteGeometry)return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_SUPPORTING_GEOMETRY_BUDGET_EXHAUSTED"],coreIds);
+      evidence.fixedSupportingGlobalFailure=evidence.firstFixedMainBundleRejection??evidence.fixedSupportingGeometryFailure??"AUTHORIZED_GEOMETRIES_EXHAUSTED";
+      return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE",evidence.fixedSupportingGlobalFailure],coreIds);
     }
     evidence.legacyFixedFeederFallbackEntered=true;
     evidence.legacyFixedFeederFallbackReason="PROTECTED_MAIN_ARCHITECTURE_NOT_REPRESENTABLE";

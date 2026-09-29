@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
-  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
+  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  revalidateFutureStructuralWitness, revalidateFutureStructuralWitnessDetailed } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -377,6 +379,157 @@ describe("anonymous structural pipeline witness",()=>{
       dependencies:[],requiredResourceIds:[],itinerantUnitId:undefined};
     const rematched=materializePipelineBundleMatching(p,architecture,[blocker]);assert.ok(rematched);
     assert.notEqual(rematched.matching.get("main0"),nominalPosition);
+  });
+
+  it("keeps fixed Main/feeder geometry while rematching Styling identities and rebuilding Arrival",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const style0=nominal.scheduledTasks.find(task=>task.id==="style0")!;
+    p.spaces.push({id:"protected",availability:windows});
+    const blocker={...style0,id:"accepted-context",kind:"auxiliary" as const,spaceId:"protected",dependencies:[]};
+    p.tasks.push(blocker);
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker]);assert.ok(prepared?.fixedSupporting);
+    const result=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(result);
+    assert.notEqual(result.matching.get("style0"),prepared!.fixedSupporting!.nominalPositions.get("style0"));
+    for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+    assert.equal(result.evidence.fixedSupportingArrivalResult,"FEASIBLE");
+    assert.ok(result.scheduledTasks.some(task=>task.id==="in0"));
+    assert.equal(validatePlan(p,result.scheduledTasks).hardValid,true);
+  });
+
+  it("repairs children from their parent witness and evaluates each perfect matching only once",()=>{
+    const p=problem(["A","A","A"]);const architecture={pattern:["A","A","A"],slots:[180,195,210]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared?.fixedSupporting);
+    // Change only the downstream Arrival authority after graph preparation so every
+    // reachable identity matching is enumerated and rejected by the opaque authority.
+    p.transportPolicy!.arrival.maximumGroupSize=0;
+    const diagnostic={attempts:0,perfectMatchingFound:false,arrivalResult:null,arrivalPacketCount:0,
+      fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,duplicatePerfectMatchingsSkipped:0,
+      matchingTraversals:0,arrivalEvaluations:0,terminalCause:null};
+    assert.equal(materializePreparedPipelineBundleMatching(p,prepared!,new Set(),undefined,()=>true,undefined,[],diagnostic),null);
+    assert.equal(diagnostic.fullMatchingBuilds,1);
+    assert.ok(diagnostic.incrementalRepairs>0);
+    assert.equal(diagnostic.uniquePerfectMatchings,6,"all 3! matchings remain explorable");
+    assert.equal(diagnostic.arrivalEvaluations,diagnostic.uniquePerfectMatchings);
+    assert.ok(diagnostic.duplicatePerfectMatchingsSkipped>0);
+    const repeat={...diagnostic};
+    assert.equal(materializePreparedPipelineBundleMatching(p,prepared!,new Set(),undefined,()=>true,undefined,[],repeat),null);
+    assert.deepEqual(repeat,diagnostic,"frontier traversal and Evidence remain deterministic");
+  });
+
+  it("preserves an anchored operation while rematching only ephemeral IN and Styling",()=>{
+    const p=problem(["A","A"]);anchor(p,0);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const style0=nominal.scheduledTasks.find(task=>task.id==="style0")!;
+    p.spaces.push({id:"protected",availability:windows});
+    const blocker={...style0,id:"accepted-anchored-context",spaceId:"protected",dependencies:[]};p.tasks.push(blocker);
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker]);assert.ok(prepared?.fixedSupporting);
+    const result=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(result);
+    assert.notEqual(result.matching.get("style0"),prepared!.fixedSupporting!.nominalPositions.get("style0"));
+    for(const id of ["before0","main0","after0"]){
+      const expected=nominal.scheduledTasks.find(task=>task.id===id);assert.deepEqual(result.scheduledTasks.find(task=>task.id===id),expected);
+    }
+    assert.ok(result.scheduledTasks.some(task=>task.id==="in0"));
+    assert.equal(validatePlan(p,result.scheduledTasks).hardValid,true);
+  });
+
+  it("keeps accepted supporting literal instead of entering fixed-supporting rematch",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal"||task.id==="style0");
+    const protectedStyle=fixed.find(task=>task.id==="style0")!;
+    const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared);assert.equal(prepared.fixedSupporting,undefined);
+    const result=materializePreparedPipelineBundleMatching(p,prepared);assert.ok(result);
+    assert.deepEqual(result.scheduledTasks.find(task=>task.id==="style0"),protectedStyle);
+  });
+
+  it("revalidates a cross-stage supporting certificate directly and rejects stale authority",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared?.fixedSupporting);
+    const selected=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(selected);
+    const supportingIds=new Set([...prepared!.fixedSupporting!.stylingTaskIds,...p.transportPolicy!.arrival.taskIds]);
+    const ephemeral=selected.scheduledTasks.filter(task=>supportingIds.has(task.id))
+      .map(({id,start,end,spaceId})=>({id,start,end,spaceId}));
+    const unsigned={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
+      architectureFingerprint:JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}),
+      geometryFingerprint:prepared!.witness.fingerprint,ephemeralSupportingPlacements:ephemeral};
+    const certificate={...unsigned,fingerprint:createHash("sha256").update(JSON.stringify(unsigned)).digest("hex")};
+    const reused=revalidateFutureStructuralWitness(p,architecture,fixed,certificate);assert.ok(reused);
+    const validDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,fixed,certificate);
+    assert.ok(validDiagnostic.materialization);assert.equal(validDiagnostic.rejectCause,null);assert.equal(validDiagnostic.rejectDetails,null);
+    assert.equal(reused.evidence.matchingTraversals,0);assert.equal(reused.evidence.fullMatchingBuilds,0);
+    assert.deepEqual(reused.scheduledTasks.filter(task=>supportingIds.has(task.id))
+      .map(({id,start,end,spaceId})=>({id,start,end,spaceId})),ephemeral);
+    const corrupt={...certificate,fingerprint:`corrupt-${certificate.fingerprint}`};
+    const corruptDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,fixed,corrupt);
+    assert.equal(corruptDiagnostic.rejectCause,"CERTIFICATE_FINGERPRINT_MISMATCH");
+    assert.deepEqual(Object.keys(corruptDiagnostic.rejectDetails!).sort(),["actual","expected"]);
+
+    const certifiedStyle=ephemeral.find(item=>item.id.startsWith("style"))!;
+    const styleTask=p.tasks.find(task=>task.id===certifiedStyle.id)!;
+    const blocker={...styleTask,id:"protected-style-blocker",participantId:undefined,dependencies:[],
+      start:certifiedStyle.start,end:certifiedStyle.end};
+    const stylingDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixed,blocker],certificate);
+    assert.equal(stylingDiagnostic.rejectCause,"STYLING_PLACEMENT_REJECTED");
+    assert.equal(stylingDiagnostic.rejectDetails?.taskId,certifiedStyle.id);
+    assert.equal((stylingDiagnostic.rejectDetails?.placementDiagnostic as {firstRejectionReason:string}).firstRejectionReason,"OVERLAP_SPACE");
+
+    p.transportPolicy!.arrival.maximumGroupSize=0;
+    const arrivalDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,fixed,certificate);
+    assert.equal(arrivalDiagnostic.rejectCause,"ARRIVAL_REVALIDATION_INFEASIBLE");
+    assert.notEqual(arrivalDiagnostic.rejectDetails?.status,"FEASIBLE");
+    assert.ok(arrivalDiagnostic.rejectDetails?.evidence);
+    assert.equal(revalidateFutureStructuralWitness(p,architecture,fixed,certificate),null,"changed Arrival authority enters fallback");
+  });
+
+  it("reports no matching on fixed Styling geometry without moving protected work",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const spots=nominal.witness.stylingSpots;
+    const blockers=spots.map((spot,index)=>({...p.tasks.find(task=>task.id==="style0")!,id:`block-${index}`,
+      participantId:undefined,dependencies:[],start:spot.start,end:spot.end}));
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers]);assert.ok(prepared?.fixedSupporting);
+    assert.deepEqual([...prepared!.candidates].filter(([,row])=>row.size===0).map(([id])=>id).sort(),["style0","style1"]);
+    assert.equal(materializePreparedPipelineBundleMatching(p,prepared!),null);
+  });
+
+  it("continues to an authorized Styling geometry when the nominal geometry is blocked",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const frontier=fixedSupportingPipelineGeometryFrontier(p,architecture);
+    const nominal=frontier.next().value!;let alternative=frontier.next().value;
+    while(alternative&&alternative.witness.stylingSpots.some(spot=>nominal.witness.stylingSpots.some(nominalSpot=>
+      spot.start<nominalSpot.end&&nominalSpot.start<spot.end)))alternative=frontier.next().value;
+    assert.ok(alternative);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const blockers=nominal.witness.stylingSpots.map((spot,index)=>({...p.tasks.find(task=>task.id==="style0")!,
+      id:`nominal-only-${index}`,participantId:undefined,dependencies:[],start:spot.start,end:spot.end}));
+    p.tasks.push(...blockers);
+    const first=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers],nominal);assert.ok(first?.fixedSupporting);
+    assert.equal(materializePreparedPipelineBundleMatching(p,first!),null);
+    const rescued=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers],alternative);assert.ok(rescued?.fixedSupporting);
+    const result=materializePreparedPipelineBundleMatching(p,rescued!);assert.ok(result);
+    for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+  });
+
+  it("exhausts every authorized Styling geometry when protected context blocks the Styling space",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const blocker={...p.tasks.find(task=>task.id==="style0")!,id:"all-styling-blocked",participantId:undefined,
+      dependencies:[],start:p.day.start,end:p.day.end};p.tasks.push(blocker);
+    let attempted=0;
+    for(const geometry of fixedSupportingPipelineGeometryFrontier(p,architecture)){
+      attempted++;const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker],geometry);
+      assert.ok(prepared?.fixedSupporting);assert.equal(materializePreparedPipelineBundleMatching(p,prepared!),null);
+    }
+    assert.ok(attempted>1);
   });
 
   const addTightCollectiveFuture=(p:PlannerNextProblem)=>{

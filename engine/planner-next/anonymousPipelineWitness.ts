@@ -5,7 +5,7 @@ import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlo
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
-import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching,
   incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 import { assessOperationalMealFutureFeasibility, type OperationalMealSearchBudget } from "./operationalMeals";
@@ -64,11 +64,35 @@ export interface AnonymousPipelineWitnessDiagnostic {
 
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
 export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[];
+  fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
+  matchingTraversals:number;arrivalEvaluations:number;
   safePerfectMatchingAttempts:number;safePerfectMatchingFound:number;safeGraphEdgeCount:number;intrusiveGraphEdgeCount:number;
   safeMatchingFailures:number;fullGraphFallbacks:number;bundleEdgesBeforeReservation:number;
-  bundleEdgesRejectedByReservation:number;bundleEdgesAfterReservation:number }
+  bundleEdgesRejectedByReservation:number;bundleEdgesAfterReservation:number;
+  fixedSupportingArrivalResult:string|null;fixedSupportingArrivalPacketCount:number;fixedSupportingRematchedIdentityCount:number }
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
+export interface FutureStructuralWitnessV1 {
+  readonly kind:"FIXED_SUPPORTING_PIPELINE";readonly version:1;
+  readonly architectureFingerprint:string;readonly geometryFingerprint:string;
+  readonly ephemeralSupportingPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
+  readonly fingerprint:string;
+}
+export type FutureStructuralWitnessRejectCause =
+  |"INVALID_KIND_OR_VERSION"|"ARCHITECTURE_FINGERPRINT_MISMATCH"|"CERTIFICATE_FINGERPRINT_MISMATCH"
+  |"DUPLICATE_CERTIFIED_PLACEMENT_ID"|"INVALID_CERTIFIED_INTERVAL"|"STYLING_CARDINALITY_MISMATCH"
+  |"SUPPORTING_ID_SET_MISMATCH"|"PROTECTED_MAIN_MISSING"|"ANCHORED_OPERATION_MATERIALIZATION_FAILED"
+  |"ANCHORED_PROTECTED_PLACEMENT_MISMATCH"|"STYLING_DURATION_MISMATCH"|"STYLING_SPACE_MISMATCH"
+  |"STYLING_PLACEMENT_REJECTED"|"ARRIVAL_REVALIDATION_INFEASIBLE"|"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH";
+export interface FutureStructuralWitnessRevalidationResult {
+  readonly materialization:PipelineBundleMaterialization|null;
+  readonly rejectCause:FutureStructuralWitnessRejectCause|null;
+  readonly rejectDetails:Readonly<Record<string,unknown>>|null;
+}
+export interface PipelineBundleMatchingDiagnostic { attempts:number;perfectMatchingFound:boolean;
+  arrivalResult:string|null;arrivalPacketCount:number;fullMatchingBuilds:number;incrementalRepairs:number;
+  uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;matchingTraversals:number;arrivalEvaluations:number;
+  terminalCause:"NO_PERFECT_MATCH"|"ARRIVAL_INFEASIBLE"|"ARRIVAL_INCONCLUSIVE"|"BUDGET_EXHAUSTED"|"FEASIBLE"|null }
 export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
 export interface PreparedPipelineBundleGraph {
   readonly architecture:MainFeederArchitecture;readonly witness:AnonymousPipelineWitness;
@@ -77,6 +101,110 @@ export interface PreparedPipelineBundleGraph {
   readonly preparedBundleEdges:number;
   readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
     mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
+  readonly fixedSupporting?:{stylingTaskIds:readonly string[];stylingSpots:readonly AnonymousPipelineSpot[];
+    nominalPositions:ReadonlyMap<string,number>;context:readonly ScheduledTask[]};
+}
+
+/** Revalidates a certified identity-to-spot assignment without rediscovering a matching, exposing its first rejection. */
+export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):FutureStructuralWitnessRevalidationResult {
+  const reject=(rejectCause:FutureStructuralWitnessRejectCause,rejectDetails:Record<string,unknown>):FutureStructuralWitnessRevalidationResult=>
+    ({materialization:null,rejectCause,rejectDetails});
+  if(certificate.kind!=="FIXED_SUPPORTING_PIPELINE"||certificate.version!==1)
+    return reject("INVALID_KIND_OR_VERSION",{kind:certificate.kind,version:certificate.version});
+  const actualArchitectureFingerprint=JSON.stringify({pattern:architecture.pattern,slots:architecture.slots});
+  if(certificate.architectureFingerprint!==actualArchitectureFingerprint)return reject("ARCHITECTURE_FINGERPRINT_MISMATCH",
+    {expected:certificate.architectureFingerprint,actual:actualArchitectureFingerprint});
+  const expectedFingerprint=stable({kind:certificate.kind,version:certificate.version,
+    architectureFingerprint:certificate.architectureFingerprint,geometryFingerprint:certificate.geometryFingerprint,
+    ephemeralSupportingPlacements:certificate.ephemeralSupportingPlacements});
+  if(certificate.fingerprint!==expectedFingerprint)return reject("CERTIFICATE_FINGERPRINT_MISMATCH",
+    {expected:expectedFingerprint,actual:certificate.fingerprint});
+  const certified=new Map(certificate.ephemeralSupportingPlacements.map(item=>[item.id,item]));
+  if(certified.size!==certificate.ephemeralSupportingPlacements.length){
+    const seen=new Set<string>();const duplicate=certificate.ephemeralSupportingPlacements.find(item=>seen.has(item.id)||!seen.add(item.id));
+    return reject("DUPLICATE_CERTIFIED_PLACEMENT_ID",{placementId:duplicate?.id??null});
+  }
+  const invalidInterval=certificate.ephemeralSupportingPlacements.find(item=>!Number.isFinite(item.start)||!Number.isFinite(item.end)||item.end<=item.start);
+  if(invalidInterval)return reject("INVALID_CERTIFIED_INTERVAL",{placementId:invalidInterval.id,start:invalidInterval.start,end:invalidInterval.end,spaceId:invalidInterval.spaceId});
+  const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined);
+  const stylingTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"
+    &&task.participantId===main.participantId&&task.dependencies.some(id=>arrivalIds.has(id))&&main.dependencies.includes(task.id)))
+    .filter((task):task is ParticipantTask=>task!==undefined).sort((a,b)=>a.id.localeCompare(b.id));
+  if(stylingTasks.length!==mains.length)return reject("STYLING_CARDINALITY_MISMATCH",{expected:mains.length,actual:stylingTasks.length,
+    mainTaskIds:mains.map(task=>task.id),stylingTaskIds:stylingTasks.map(task=>task.id)});
+  const expectedIds=new Set([...stylingTasks.map(task=>task.id),...arrivalIds]);
+  const missingIds=[...expectedIds].filter(id=>!certified.has(id)).sort();
+  const unexpectedIds=[...certified.keys()].filter(id=>!expectedIds.has(id)).sort();
+  if(missingIds.length||unexpectedIds.length)return reject("SUPPORTING_ID_SET_MISMATCH",{missingIds,unexpectedIds});
+  const protectedById=new Map(protectedPlacements.map(task=>[task.id,task]));
+  const missingMain=mains.find(main=>!protectedById.has(main.id));
+  if(missingMain)return reject("PROTECTED_MAIN_MISSING",{mainTaskId:missingMain.id});
+  const anchorIndex=anchoredAccompanimentIndex(problem);
+  const anchoredIds=new Set((problem.anchoredAccompaniments??[]).flatMap(contract=>
+    [contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds]));
+  const protectedContext=protectedPlacements.filter(task=>!expectedIds.has(task.id));
+  const structural:ScheduledTask[]=[];
+  for(const main of mains){
+    const fixedMain=protectedById.get(main.id)!;const contract=anchorIndex.get(main.id);
+    if(!contract){structural.push(fixedMain);continue;}
+    const operationIds=new Set([main.id,...contract.beforeTaskIds,...contract.afterTaskIds]);
+    const operation=materializeAnchoredOperation(problem,main,fixedMain.start,
+      protectedContext.filter(task=>!operationIds.has(task.id)));
+    if(!operation)return reject("ANCHORED_OPERATION_MATERIALIZATION_FAILED",{mainTaskId:main.id,placementId:fixedMain.id,
+      start:fixedMain.start,end:fixedMain.end,spaceId:fixedMain.spaceId});
+    for(const generated of operation.tasks){const fixed=protectedById.get(generated.id);
+      if(fixed&&(fixed.start!==generated.start||fixed.end!==generated.end||fixed.spaceId!==generated.spaceId))
+        return reject("ANCHORED_PROTECTED_PLACEMENT_MISMATCH",{mainTaskId:main.id,placementId:generated.id,
+          expected:{start:generated.start,end:generated.end,spaceId:generated.spaceId},actual:{start:fixed.start,end:fixed.end,spaceId:fixed.spaceId}});
+      structural.push(fixed??generated);
+    }
+  }
+  const context=[...new Map([...protectedContext.filter(task=>!anchoredIds.has(task.id)),...structural]
+    .map(task=>[task.id,task])).values()];
+  const matching=new Map<string,number>(),scheduled:ScheduledTask[]=[];
+  for(const task of stylingTasks){
+    const item=certified.get(task.id)!;
+    if(item.end-item.start!==task.duration)return reject("STYLING_DURATION_MISMATCH",{taskId:task.id,placementId:item.id,
+      expected:task.duration,actual:item.end-item.start,start:item.start,end:item.end,spaceId:item.spaceId});
+    if(item.spaceId!==task.spaceId)return reject("STYLING_SPACE_MISMATCH",{taskId:task.id,placementId:item.id,
+      expected:task.spaceId,actual:item.spaceId,start:item.start,end:item.end});
+    const withoutArrival={...task,dependencies:task.dependencies.filter(dependency=>!arrivalIds.has(dependency))};
+    const placementContext=[...context,...scheduled];
+    if(!canPlaceTask(problem,withoutArrival,item.start,placementContext))return reject("STYLING_PLACEMENT_REJECTED",{
+      taskId:task.id,placementId:item.id,start:item.start,end:item.end,spaceId:item.spaceId,
+      placementDiagnostic:diagnoseTaskPlacement(problem,withoutArrival,item.start,placementContext)});
+    matching.set(task.id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
+  }
+  const arrival=assessCoreArrivalTransportFeasibility(problem,[...context,...scheduled]);
+  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return reject("ARRIVAL_REVALIDATION_INFEASIBLE",{
+    status:arrival.status,evidence:arrival.evidence,arrivalTaskIds:[...arrivalIds].sort()});
+  for(const item of certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id))){
+    const actual=arrival.scheduled.find(task=>task.id===item.id);
+    if(!actual||actual.start!==item.start||actual.end!==item.end||actual.spaceId!==item.spaceId)
+      return reject("ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH",{taskId:item.id,placementId:item.id,
+        expected:{start:item.start,end:item.end,spaceId:item.spaceId},actual:actual?{start:actual.start,end:actual.end,spaceId:actual.spaceId}:null});
+  }
+  const unique=[...new Map([...context,...scheduled,...arrival.scheduled]
+    .map(task=>[task.id,task])).values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  const witness:AnonymousPipelineWitness={status:"FEASIBLE",runCount:0,pattern:[...architecture.pattern],mainSpots:[],
+    feederSpots:[],stylingSpots:[],inGroups:[],anchoredOperationSpots:[],assignments:[],profileCount:0,tokenCount:0,
+    fingerprint:certificate.geometryFingerprint};
+  const materialization:PipelineBundleMaterialization={witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
+    materializations:1,forbiddenEdges:[],fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
+    duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:1,safePerfectMatchingAttempts:0,
+    safePerfectMatchingFound:0,safeGraphEdgeCount:0,intrusiveGraphEdgeCount:0,safeMatchingFailures:0,fullGraphFallbacks:0,
+    bundleEdgesBeforeReservation:0,bundleEdgesRejectedByReservation:0,
+    bundleEdgesAfterReservation:0,fixedSupportingArrivalResult:"FEASIBLE",
+    fixedSupportingArrivalPacketCount:arrival.evidence.packetSizes.length,fixedSupportingRematchedIdentityCount:0}};
+  return {materialization,rejectCause:null,rejectDetails:null};
+}
+
+/** Compatibility wrapper for callers that only need PASS/REJECT. */
+export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
+  return revalidateFutureStructuralWitnessDetailed(problem,architecture,protectedPlacements,certificate).materialization;
 }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
@@ -88,6 +216,22 @@ export interface PipelineArchitectureEnumerationEvidence {
 const orderedWindows = (windows: readonly Window[] | undefined, fallback:Window): Window[] =>
   [...(windows?.length ? windows : [fallback])].sort((a,b)=>a.start-b.start||a.end-b.end);
 const stable = (value:unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+/** Builds the cross-Stage certificate from the concrete bundle that was accepted. */
+export function futureStructuralWitnessFromMaterialization(problem:Readonly<PlannerNextProblem>,
+  architecture:MainFeederArchitecture,materialization:PipelineBundleMaterialization):FutureStructuralWitnessV1 {
+  const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  const stylingIds=new Set(problem.tasks.filter(task=>task.kind==="auxiliary"&&task.participantId!==undefined
+    &&task.dependencies.some(id=>arrivalIds.has(id))
+    &&problem.tasks.some(main=>main.kind==="main"&&main.participantId===task.participantId&&main.dependencies.includes(task.id)))
+    .map(task=>task.id));
+  const ephemeralSupportingPlacements=materialization.scheduledTasks
+    .filter(task=>arrivalIds.has(task.id)||stylingIds.has(task.id))
+    .map(({id,start,end,spaceId})=>({id,start,end,spaceId})).sort((a,b)=>a.id.localeCompare(b.id));
+  const unsigned={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
+    architectureFingerprint:JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}),
+    geometryFingerprint:materialization.witness.fingerprint,ephemeralSupportingPlacements};
+  return {...unsigned,fingerprint:stable(unsigned)};
+}
 const signatureWindows = (windows: readonly Window[] | undefined) => orderedWindows(windows, {start:-1,end:-1});
 
 /**
@@ -99,7 +243,9 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   onDiagnostic?: (diagnostic:AnonymousPipelineWitnessDiagnostic)=>void,
   analyticalParticipantMeals:readonly ParticipantMealObligation[]=[],
   onNominalSchedule?: (scheduled:readonly ScheduledTask[])=>void,
-  operationalMealBudget?:OperationalMealSearchBudget): AnonymousPipelineWitness {
+  operationalMealBudget?:OperationalMealSearchBudget,
+  excludedStylingStarts:ReadonlySet<number>=new Set(),
+  onStylingStarts?:(starts:readonly number[])=>void): AnonymousPipelineWitness {
   let mainMatchingCompleted=false,anchorsCompleted=false,feederGeometryCompleted=false,stylingGeometryCompleted=false;
   let arrivalSolverExecuted=false,arrivalClassification:string|null=null,arrivalContiguousStatesExplored=0;
   let arrivalMembershipFallbackEntered=false,stylingCandidateStartBoundaryCount=0;
@@ -341,6 +487,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end)))]
     .sort((a,b)=>a-b);
   stylingCandidateStartBoundaryCount=styleStarts.length;
+  onStylingStarts?.(styleStarts);
   if(!styleStarts.length)return rejected("INCONCLUSIVE","STYLING_CAPACITY");
 
   const availabilityEnd=(x:Layer&{position:number})=>Math.max(...orderedWindows(
@@ -375,6 +522,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   let arrival:ReturnType<typeof assessCoreArrivalTransportFeasibility>|null=null;
   let matchingFound=false;
   for(const start of styleStarts){
+    if(excludedStylingStarts.has(start))continue;
     entryCandidateStartsConsidered.push(start);
     stylingSpots=layers.map((_,i)=>({id:`styling:${i}`,start:start+i*duration,end:start+(i+1)*duration}));
     styleOwner=new Map();
@@ -475,6 +623,23 @@ export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextP
 
 export type NominalPipelineMaterialization=ReturnType<typeof materializeNominalPipelineWitness>;
 
+/** Enumerates the complete authorized Styling-geometry frontier for fixed Main timelines. */
+export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture):
+  Generator<NominalPipelineMaterialization> {
+  let scheduledTasks:readonly ScheduledTask[]=[],starts:readonly number[]=[];
+  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;},undefined,
+    new Set(),values=>{starts=values;});
+  if(witness.status!=="FEASIBLE"||witness.stylingSpots.length===0)return;
+  const selected=Math.min(...witness.stylingSpots.map(spot=>spot.start));
+  yield {witness,scheduledTasks};
+  const duration=witness.stylingSpots[0]!.end-witness.stylingSpots[0]!.start;
+  for(const start of starts){if(start===selected)continue;
+    const stylingSpots=witness.stylingSpots.map((spot,index)=>({...spot,start:start+index*duration,end:start+(index+1)*duration}));
+    const payload={...witness,stylingSpots,fingerprint:undefined};
+    yield {witness:{...witness,stylingSpots,fingerprint:stable(payload)},scheduledTasks};
+  }
+}
+
 function materializeNominalPipelineWitnessWithBudget(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
   operationalMealBudget?:OperationalMealSearchBudget):NominalPipelineMaterialization {
   let scheduledTasks:readonly ScheduledTask[]=[];
@@ -510,6 +675,70 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined)
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
+  const pipelineLayers=mains.map(main=>{
+    const arrival=problem.tasks.find((task):task is ParticipantTask=>task.participantId===main.participantId&&arrivalIds.has(task.id));
+    const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId
+      &&main.dependencies.includes(task.id));
+    const styling=problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"&&task.participantId===main.participantId
+      &&task.dependencies.includes(arrival?.id??"")&&main.dependencies.includes(task.id));
+    return {main,arrival,feeder,styling};
+  });
+  // Once Main and vocal feeders have been accepted, their identity is fixed but the
+  // anonymous Styling geometry is not.  Rebuild the bipartite identity -> spot graph
+  // instead of incorrectly moving the whole nominal bundle (including fixed work).
+  const fixedMainAndFeeders=pipelineLayers.length>0&&pipelineLayers.every(({main,feeder})=>
+    feeder!==undefined&&protectedById.has(main.id)&&protectedById.has(feeder.id));
+  if(fixedMainAndFeeders){
+    const stylingSpots=[...witness.stylingSpots].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+    const stylingTasks=pipelineLayers.map(({styling})=>styling).filter((task):task is ParticipantTask=>task!==undefined)
+      .sort((a,b)=>a.id.localeCompare(b.id));
+    if(stylingTasks.length!==mains.length)return null;
+    // Accepted supporting is literal authority. The legacy complete-bundle path is
+    // the safe representation for this uncommon mixed state; it must never silently
+    // turn an accepted IN/Styling placement back into ephemeral work.
+    if([...arrivalIds,...stylingTasks.map(task=>task.id)].some(id=>protectedById.has(id)))return prepareLegacyPipelineBundleGraph();
+    const supportingIds=new Set([...arrivalIds,...stylingTasks.map(task=>task.id)]);
+    const protectedContext=protectedPlacements.filter(task=>!supportingIds.has(task.id));
+    const anchoredIds=new Set((problem.anchoredAccompaniments??[]).flatMap(contract=>
+      [contract.anchorTaskId,...contract.beforeTaskIds,...contract.afterTaskIds]));
+    const structural:ScheduledTask[]=[];
+    for(const {main} of pipelineLayers){
+      const fixedMain=protectedById.get(main.id)!;const contract=anchorIndex.get(main.id);
+      if(!contract){structural.push(fixedMain);continue;}
+      const operationIds=new Set([main.id,...contract.beforeTaskIds,...contract.afterTaskIds]);
+      const operation=materializeAnchoredOperation(problem,main,fixedMain.start,
+        protectedContext.filter(task=>!operationIds.has(task.id)));
+      if(!operation)return null;
+      for(const generated of operation.tasks){const fixed=protectedById.get(generated.id);
+        if(fixed&&(fixed.start!==generated.start||fixed.end!==generated.end||fixed.spaceId!==generated.spaceId))return null;
+        structural.push(fixed??generated);
+      }
+    }
+    const remainingStructural=nominal.scheduledTasks.filter(task=>!supportingIds.has(task.id)&&!anchoredIds.has(task.id)
+      &&!protectedById.has(task.id));
+    const context=[...new Map([...protectedContext,...structural,...remainingStructural].map(task=>[task.id,task])).values()];
+    const candidates=new Map<string,Map<number,ScheduledTask[]>>();let edges=0;
+    const nominalPositions=new Map<string,number>();
+    for(const task of stylingTasks){
+      // The nominal position is diagnostic only; recover it from the nominal schedule.
+      const nominalTask=nominal.scheduledTasks.find(item=>item.id===task.id);
+      const nominalPosition=stylingSpots.findIndex(spot=>spot.start===nominalTask?.start&&spot.end===nominalTask?.end);
+      if(nominalPosition>=0)nominalPositions.set(task.id,nominalPosition);
+      const row=new Map<number,ScheduledTask[]>();
+      stylingSpots.forEach((spot,position)=>{
+        const placed={...task,start:spot.start,end:spot.end};
+        const withoutArrival={...task,dependencies:task.dependencies.filter(id=>!arrivalIds.has(id))};
+        if(canPlaceTask(problem,withoutArrival,spot.start,context)){row.set(position,[placed]);edges++;}
+      });
+      candidates.set(task.id,row);
+    }
+    return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:stylingTasks.map(task=>task.id),candidates,
+      preparedBundleEdges:edges,participantEdgeEvidence:{checked:0,pruned:0,abstained:0,firstPrune:null},
+      fixedSupporting:{stylingTaskIds:stylingTasks.map(task=>task.id),stylingSpots,nominalPositions,context}};
+  }
+  return prepareLegacyPipelineBundleGraph();
+
+  function prepareLegacyPipelineBundleGraph():PreparedPipelineBundleGraph {
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
   const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
@@ -571,12 +800,17 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
     preparedBundleEdges:bundleEdgesBeforeReservation,participantEdgeEvidence};
+  }
 }
 
 /** Filters only reservation-incompatible edges, then runs the existing perfect matcher. */
 export function materializePreparedPipelineBundleMatching(problem:Readonly<PlannerNextProblem>,prepared:PreparedPipelineBundleGraph,
   forbiddenEdges:ReadonlySet<string>=new Set(),previous?:PreviousPipelineBundleMatching,consumeTraversal:()=>boolean=()=>true,
-  futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number,analyticalReservedPlacements:readonly ScheduledTask[]=[]):PipelineBundleMaterialization|null {
+  futureEdgeIntrusion?:(operation:readonly ScheduledTask[])=>number,analyticalReservedPlacements:readonly ScheduledTask[]=[],
+  diagnostic?:PipelineBundleMatchingDiagnostic):PipelineBundleMaterialization|null {
+  if(diagnostic)Object.assign(diagnostic,{attempts:0,perfectMatchingFound:false,arrivalResult:null,arrivalPacketCount:0,
+    fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,duplicatePerfectMatchingsSkipped:0,
+    matchingTraversals:0,arrivalEvaluations:0,terminalCause:null});
   const {witness,protectedPlacements,candidates}=prepared;const protectedById=new Map(protectedPlacements.map(x=>[x.id,x]));
   let bundleEdgesRejectedByReservation=0;const positions=new Map<string,number[]>();
   for(const [id,row] of candidates){const valid:number[]=[];for(const [position,bundle] of row){let edgeValid=true;
@@ -604,25 +838,89 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
     row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
   let safePerfectMatchingAttempts=0,safePerfectMatchingFound=0,safeMatchingFailures=0,fullGraphFallbacks=0;
+  let fullMatchingBuilds=0,incrementalRepairs=0,matchingTraversals=0,arrivalEvaluations=0,duplicatePerfectMatchingsSkipped=0;
   let initial:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined;
   if(futureEdgeIntrusion){safePerfectMatchingAttempts=1;const safePositions=new Map<string,number[]>();
     for(const [id,valid] of positions){const row=pressure.get(id)!;const pressured=[...row.values()].some(value=>value>0);
       safePositions.set(id,valid.filter(position=>!pressured||(row.get(position)??0)===0));}
-    initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
+    fullMatchingBuilds++;initial=incrementallyRepairMatchingWitness(prepared.mainIds,safePositions,forbiddenEdges,new Set(),new Map(),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
+    matchingTraversals+=initial.traversals;
     if(initial.outcome==="PERFECT")safePerfectMatchingFound=1;else if(initial.outcome==="NO_PERFECT_MATCH"){safeMatchingFailures=1;fullGraphFallbacks=1;initial=undefined;}}
-  if(!initial)initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
-    previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
-    (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
-  if(initial.outcome!=="PERFECT")return null;
-  const matching=initial.matching!;
-  const scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
-  const unique=[...new Map([...scheduled,...protectedPlacements].map(task=>[task.id,task])).values()]
+  const nominalPrevious=prepared.fixedSupporting?new Map([...prepared.fixedSupporting.nominalPositions]
+    .filter(([id,position])=>positions.get(id)?.includes(position))):new Map<string,number>();
+  if(!initial){if(previous)incrementalRepairs++;else fullMatchingBuilds++;
+    initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
+      previous?.forbiddenEdges??new Set(),previous?.matching??nominalPrevious,consumeTraversal,
+      (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
+    matchingTraversals+=initial.traversals;}
+  if(initial.outcome!=="PERFECT"){if(diagnostic){diagnostic.attempts=1;
+    diagnostic.fullMatchingBuilds=fullMatchingBuilds;diagnostic.incrementalRepairs=incrementalRepairs;
+    diagnostic.matchingTraversals=matchingTraversals;
+    diagnostic.terminalCause=initial.outcome==="BUDGET_EXHAUSTED"?"BUDGET_EXHAUSTED":"NO_PERFECT_MATCH";}return null;}
+  if(diagnostic)diagnostic.perfectMatchingFound=true;
+  let matching=initial.matching!;
+  let effectiveForbidden=new Set(forbiddenEdges);let attempts=1;
+  let scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
+  let rebuiltArrival:readonly ScheduledTask[]=[];
+  let fixedSupportingArrivalResult:string|null=null,fixedSupportingArrivalPacketCount=0;
+  const matchingFingerprint=(value:ReadonlyMap<string,number>)=>[...value].sort(([left],[right])=>left.localeCompare(right))
+    .map(([id,position])=>`${id}@${position}`).join("|");
+  const seenPerfectMatchings=new Set<string>();
+  if(!prepared.fixedSupporting)seenPerfectMatchings.add(matchingFingerprint(matching));
+  const syncDiagnostic=()=>{if(diagnostic)Object.assign(diagnostic,{attempts,fullMatchingBuilds,incrementalRepairs,
+    uniquePerfectMatchings:seenPerfectMatchings.size,duplicatePerfectMatchingsSkipped,matchingTraversals,arrivalEvaluations});};
+  if(prepared.fixedSupporting){
+    type MatchingNode={forbidden:Set<string>;parentForbidden:ReadonlySet<string>;parentMatching:ReadonlyMap<string,number>};
+    const queue:Array<MatchingNode>=[];const seenAuthorities=new Set<string>([[...effectiveForbidden].sort().join("|")]);
+    while(true){
+      const fingerprint=matchingFingerprint(matching);
+      if(seenPerfectMatchings.has(fingerprint))duplicatePerfectMatchingsSkipped++;
+      else {
+        seenPerfectMatchings.add(fingerprint);arrivalEvaluations++;
+        const arrival=assessCoreArrivalTransportFeasibility(problem,[...prepared.fixedSupporting.context,...scheduled]);
+        fixedSupportingArrivalResult=arrival.status;fixedSupportingArrivalPacketCount=arrival.evidence.packetSizes.length;
+        if(diagnostic){diagnostic.arrivalResult=arrival.status;diagnostic.arrivalPacketCount=arrival.evidence.packetSizes.length;}
+        if(arrival.status==="FEASIBLE"&&arrival.scheduled){rebuiltArrival=arrival.scheduled;break;}
+        // ABSTAIN/INCONCLUSIVE is not a certificate and therefore cannot create a nogood.
+        if(arrival.status!=="INFEASIBLE"){syncDiagnostic();if(diagnostic)diagnostic.terminalCause="ARRIVAL_INCONCLUSIVE";return null;}
+        // Expanding the first authority that reaches this matching is complete:
+        // every other perfect matching differs by at least one of these edges.
+        // A duplicate witness therefore cannot expose a new solution subtree.
+        for(const [id,position] of [...matching].sort((a,b)=>a[0].localeCompare(b[0])||a[1]-b[1])){
+          const child=new Set(effectiveForbidden);child.add(`${id}@${position}`);
+          const key=[...child].sort().join("|");if(!seenAuthorities.has(key)){seenAuthorities.add(key);
+            queue.push({forbidden:child,parentForbidden:effectiveForbidden,parentMatching:matching});}
+        }
+      }
+      let next:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined,nextForbidden:Set<string>|undefined;
+      while(queue.length&&!next){const child=queue.shift()!;incrementalRepairs++;
+        const candidate=incrementallyRepairMatchingWitness(prepared.mainIds,positions,
+        child.forbidden,child.parentForbidden,child.parentMatching,consumeTraversal);attempts++;matchingTraversals+=candidate.traversals;
+        if(candidate.outcome==="BUDGET_EXHAUSTED"){syncDiagnostic();if(diagnostic)diagnostic.terminalCause="BUDGET_EXHAUSTED";return null;}
+        if(candidate.outcome==="PERFECT"){next=candidate;nextForbidden=child.forbidden;}
+      }
+      if(!next||!nextForbidden){syncDiagnostic();if(diagnostic)diagnostic.terminalCause="ARRIVAL_INFEASIBLE";return null;}
+      matching=next.matching!;effectiveForbidden=nextForbidden;
+      scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
+    }
+    scheduled=[...prepared.fixedSupporting.context,...scheduled,...rebuiltArrival];
+  }
+  const retainedProtected=prepared.fixedSupporting
+    ?protectedPlacements.filter(task=>!prepared.fixedSupporting!.stylingTaskIds.includes(task.id)&&!new Set(problem.transportPolicy?.arrival.taskIds??[]).has(task.id))
+    :protectedPlacements;
+  const unique=[...new Map([...scheduled,...retainedProtected].map(task=>[task.id,task])).values()]
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-  return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(forbiddenEdges),evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
-    materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
+  syncDiagnostic();if(diagnostic)diagnostic.terminalCause="FEASIBLE";
+  return {witness,scheduledTasks:unique,matching,forbiddenEdges:effectiveForbidden,evidence:{attempts,repairs:effectiveForbidden.size?1:0,
+    materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),fullMatchingBuilds,incrementalRepairs,
+    uniquePerfectMatchings:seenPerfectMatchings.size||1,duplicatePerfectMatchingsSkipped,matchingTraversals,arrivalEvaluations,
+    safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
     intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks,bundleEdgesBeforeReservation:prepared.preparedBundleEdges,bundleEdgesRejectedByReservation,
-    bundleEdgesAfterReservation:prepared.preparedBundleEdges-bundleEdgesRejectedByReservation}};
+    bundleEdgesAfterReservation:prepared.preparedBundleEdges-bundleEdgesRejectedByReservation,
+    fixedSupportingArrivalResult,fixedSupportingArrivalPacketCount,
+    fixedSupportingRematchedIdentityCount:prepared.fixedSupporting?[...matching].filter(([id,position])=>
+      prepared.fixedSupporting!.nominalPositions.get(id)!==position).length:0}};
 }
 
 /** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */

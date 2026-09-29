@@ -17,7 +17,9 @@ process.env.SUPABASE_ANON_KEY ??= "evidence";
 
 export interface A2Assist8Options { readonly branchBudget?: number; readonly writeEvidence?: boolean; readonly stopAfterFirstProposal?:boolean;
   /** Focused diagnostic only; canonical Evidence always runs to completion/blocker. */
-  readonly stopAfterIterationCount?:number }
+  readonly stopAfterIterationCount?:number;
+  /** Benchmark-only entry point for replaying a later Stage without rebuilding its predecessors. */
+  readonly initialSnapshot?:AssistedPlanningSnapshotV1 }
 
 /**
  * ASST-011 completion probe.  It deliberately uses the product request/run/apply,
@@ -44,7 +46,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const mainFlowSpaceId = input.plannerNext?.mainFlow?.spaceId;
   assert.ok(mainFlowSpaceId != null, "canonical A2 requires a configured main-flow space");
 
-  const blank = buildAssistedPlanningSnapshotV1(input.tasks.map(task => ({ id: task.id, startPlanned: null, endPlanned: null, zoneId: task.zoneId ?? null, spaceId: task.spaceId ?? null })));
+  const blank = options.initialSnapshot??buildAssistedPlanningSnapshotV1(input.tasks.map(task => ({ id: task.id, startPlanned: null, endPlanned: null, zoneId: task.zoneId ?? null, spaceId: task.spaceId ?? null })));
   let nextStageId = 1, nextRunId = 1, nextValidationId = 1;
   const stages: any[] = [{ id: nextStageId++, sessionId, planId, ordinal: 0, parentStageId: null, archivedAt: null, configRevisionId: revisionId, snapshotJson: blank, snapshotFingerprint: fingerprintAssistedPlanningSnapshotV1(blank) }];
   let dailyTasks = structuredClone(blank), validation: any = null;
@@ -67,7 +69,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       session.draftValidationId = validation.id; return { error: null };
     }
     if (name === "assisted_accept_stage") {
-      const stage = { id: nextStageId++, sessionId, planId, ordinal: stages.length, parentStageId: session.draftBaseStageId, archivedAt: null, configRevisionId: revisionId, snapshotJson: session.draftSnapshotJson, snapshotFingerprint: session.draftFingerprint };
+      const stage = { id: nextStageId++, sessionId, planId, ordinal: stages.length, parentStageId: session.draftBaseStageId, archivedAt: null, configRevisionId: revisionId,
+        proposalRunId:session.draftScopeJson?.proposalRunId??null,snapshotJson: session.draftSnapshotJson, snapshotFingerprint: session.draftFingerprint };
       stages.push(stage); dailyTasks = structuredClone(stage.snapshotJson);
       session = { ...session, activeStageId: stage.id, draftBaseStageId: stage.id, draftScopeJson: {}, draftValidationId: null };
       return { error: null };
@@ -120,7 +123,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       .map(meal=>productByCanonical.get(meal.sourceTaskId)).filter((id):id is number=>id!==undefined));
     let orderingComparison: any = null;
     let residualBreakdown: any = null;
-    if (iterations.length === 0) {
+    if (iterations.length === 0&&!options.initialSnapshot) {
       const resolution=resolveAssistedScope(input,adapter,selector);
       assert.deepEqual(resolution.scope.resolvedTaskIds,stage1Fixture.scope.resolvedTaskIds);
       const assisted=stage1Fixture.assisted;
@@ -282,6 +285,19 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         nominalIdentityBeginsAt: "exactMainAndFeederCore residual matching",
       },
       residualBreakdown,bundleMatching:evidence.bundleMatching??null,fixedMainBundle:evidence.fixedMainBundle,
+      priorFutureStructuralWitnessFound:evidence.priorFutureStructuralWitnessFound??false,
+      priorFutureStructuralWitnessFingerprint:evidence.priorFutureStructuralWitnessFingerprint??null,
+      priorFutureStructuralWitnessRevalidation:evidence.priorFutureStructuralWitnessRevalidation??null,
+      priorFutureStructuralWitnessRejectCause:evidence.priorFutureStructuralWitnessRejectCause??null,
+      priorFutureStructuralWitnessRejectDetails:evidence.priorFutureStructuralWitnessRejectDetails??null,
+      priorFutureStructuralWitnessReused:evidence.priorFutureStructuralWitnessReused??false,
+      priorFutureStructuralWitnessFallbackEntered:evidence.priorFutureStructuralWitnessFallbackEntered??false,
+      futureStructuralWitnesses:evidence.futureStructuralWitnesses??[],
+      ephemeralSupportingPlacements:evidence.ephemeralSupportingPlacements??[],
+      acceptedSupportingPlacements:evidence.acceptedSupportingPlacements??[],
+      branchesBeforeCurrentContinuation:evidence.branchesBeforeCurrentContinuation??null,
+      fixedSupportingMatchingAttempts:evidence.fixedSupportingMatchingAttempts??0,
+      fixedSupportingGeometriesAttempted:evidence.fixedSupportingGeometriesAttempted??[],
       standaloneDiagnostic:evidence.standaloneDiagnostic??null,orderingComparison,
       causalDiagnostic: evidence.causalDiagnostic ?? null };
     if (result.outcome !== "PROPOSAL") {
@@ -415,6 +431,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.acceptedSnapshotAfter=after;record.acceptedSnapshotFingerprintAfter=session.draftFingerprint;
     record.protectedEqualityProof={beforeCount:protectedBefore.size,afterCount:after.filter(row=>protectedBefore.has(row.taskId)).length,equal:true};
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
+    record.acceptedStageProposalRunId=stages.find(stage=>stage.id===session.activeStageId)?.proposalRunId??null;
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
     if(stopAfterFirstProposal||iterations.length===(options.stopAfterIterationCount??Number.POSITIVE_INFINITY))break;

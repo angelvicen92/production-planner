@@ -18,7 +18,7 @@ import type {
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { effectiveResourceTransitionMinutes } from "./placement";
-import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
+import { continuityBridgesWithinSpan, hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupPolicy, hasSetupReentry, setupBlockCounts, setupFamilySequence, setupSpaces, setupTasks } from "./setupGrouping";
 import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
@@ -548,12 +548,12 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const space of requiredSecondarySpaces(problem)) {
     const expected = secondaryTasks(problem.tasks, space.id);
     const actual = secondaryTasks(scheduled, space.id);
-    // An explicitly authorized operational pause is part of the logical
-    // continuous occupation of a REQUIRED secondary space. Arbitrary gaps are
-    // still gaps: only a published meal whose policy names the space bridges it.
-    const operationalBridges=operationalMeals.filter(meal=>meal.spaceIds.includes(space.id))
-      .map(({id,start,end})=>({id:`operational-meal:${id}`,start,end}));
-    const occupations = [...spaceOccupations(actual, preparations, space.id, meals),...operationalBridges]
+    // An explicitly authorized operational pause can connect real occupations
+    // inside their span. It cannot extend the start or end of the REQUIRED block.
+    const realOccupations=spaceOccupations(actual, preparations, space.id, meals);
+    const operationalBridges=continuityBridgesWithinSpan(realOccupations,operationalMeals.filter(meal=>meal.spaceIds.includes(space.id))
+      .map(({id,start,end})=>({id:`operational-meal:${id}`,start,end})));
+    const occupations = [...realOccupations,...operationalBridges]
       .sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id));
     if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(occupations)) secondaryContinuity += 1;
   }

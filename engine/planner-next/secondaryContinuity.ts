@@ -27,3 +27,11 @@ export function hasRequiredSecondaryContinuity<T extends TemporalInterval>(tasks
   return tasks.length > 0 && secondaryGapMinutes(tasks) === 0 && secondaryBlockCount(tasks) === 1
     && temporal(tasks).slice(1).every((task, index) => task.start === temporal(tasks)[index]!.end);
 }
+
+/** Authorized pauses can connect occupations, but cannot widen their operative span. */
+export function continuityBridgesWithinSpan<T extends TemporalInterval, B extends TemporalInterval>(occupations:T[], bridges:B[]):B[] {
+  const ordered=temporal(occupations);
+  const start=ordered[0]?.start,end=ordered.length?Math.max(...ordered.map(item=>item.end)):undefined;
+  if(start===undefined||end===undefined)return [];
+  return temporal(bridges).filter(bridge=>bridge.start>=start&&bridge.end<=end);
+}
