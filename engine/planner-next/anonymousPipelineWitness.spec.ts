@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
-import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, materializeNominalPipelineWitness, materializePipelineBundleMatching,
+import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
   mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
@@ -433,6 +433,38 @@ describe("anonymous structural pipeline witness",()=>{
     const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers]);assert.ok(prepared?.fixedSupporting);
     assert.deepEqual([...prepared!.candidates].filter(([,row])=>row.size===0).map(([id])=>id).sort(),["style0","style1"]);
     assert.equal(materializePreparedPipelineBundleMatching(p,prepared!),null);
+  });
+
+  it("continues to an authorized Styling geometry when the nominal geometry is blocked",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const frontier=fixedSupportingPipelineGeometryFrontier(p,architecture);
+    const nominal=frontier.next().value!;let alternative=frontier.next().value;
+    while(alternative&&alternative.witness.stylingSpots.some(spot=>nominal.witness.stylingSpots.some(nominalSpot=>
+      spot.start<nominalSpot.end&&nominalSpot.start<spot.end)))alternative=frontier.next().value;
+    assert.ok(alternative);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const blockers=nominal.witness.stylingSpots.map((spot,index)=>({...p.tasks.find(task=>task.id==="style0")!,
+      id:`nominal-only-${index}`,participantId:undefined,dependencies:[],start:spot.start,end:spot.end}));
+    p.tasks.push(...blockers);
+    const first=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers],nominal);assert.ok(first?.fixedSupporting);
+    assert.equal(materializePreparedPipelineBundleMatching(p,first!),null);
+    const rescued=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers],alternative);assert.ok(rescued?.fixedSupporting);
+    const result=materializePreparedPipelineBundleMatching(p,rescued!);assert.ok(result);
+    for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+  });
+
+  it("exhausts every authorized Styling geometry when protected context blocks the Styling space",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const blocker={...p.tasks.find(task=>task.id==="style0")!,id:"all-styling-blocked",participantId:undefined,
+      dependencies:[],start:p.day.start,end:p.day.end};p.tasks.push(blocker);
+    let attempted=0;
+    for(const geometry of fixedSupportingPipelineGeometryFrontier(p,architecture)){
+      attempted++;const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker],geometry);
+      assert.ok(prepared?.fixedSupporting);assert.equal(materializePreparedPipelineBundleMatching(p,prepared!),null);
+    }
+    assert.ok(attempted>1);
   });
 
   const addTightCollectiveFuture=(p:PlannerNextProblem)=>{

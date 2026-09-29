@@ -318,6 +318,8 @@ export interface ExactItinerantPlanEvidence {
   fixedSupportingGeometryFingerprint:string|null;fixedSupportingMatchingAttempts:number;fixedSupportingEdges:number;
   fixedSupportingZeroDomainTaskIds:string[];fixedSupportingPerfectMatchingFound:boolean;fixedSupportingRematchedIdentityCount:number;
   fixedSupportingArrivalResult:string|null;fixedSupportingArrivalPacketCount:number;fixedSupportingSameGeometryRescued:boolean;
+  fixedSupportingGeometriesAttempted:import("./exactMainAndFeederCore").ExactMainAndFeederCoreEvidence["fixedSupportingGeometriesAttempted"];
+  fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
   pendingBeforeFixedMainBundle:number;pendingAfterFixedMainBundle:number;legacyFixedFeederFallbackEntered:boolean;
   legacyFixedFeederFallbackReason:string|null;firstFixedMainBundleRejection:string|null;
@@ -1599,6 +1601,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     fixedSupportingGeometryFingerprint:null,fixedSupportingMatchingAttempts:0,fixedSupportingEdges:0,
     fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
+    fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,firstFixedMainBundleHardGateDiagnostic:null,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
@@ -2126,6 +2129,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.fixedSupportingArrivalResult=core.evidence.fixedSupportingArrivalResult;
   evidence.fixedSupportingArrivalPacketCount=core.evidence.fixedSupportingArrivalPacketCount;
   evidence.fixedSupportingSameGeometryRescued=core.evidence.fixedSupportingSameGeometryRescued;
+  evidence.fixedSupportingGeometriesAttempted=core.evidence.fixedSupportingGeometriesAttempted;
+  evidence.fixedSupportingGeometryFailure=core.evidence.fixedSupportingGeometryFailure;
+  evidence.fixedSupportingGlobalFailure=core.evidence.fixedSupportingGlobalFailure;
   evidence.protectedMainSlotChecks=core.evidence.protectedMainSlotChecks;
   evidence.protectedMainSlotMismatches=core.evidence.protectedMainSlotMismatches;
   evidence.pipelineTasksRemovedFromStandalone=core.evidence.pipelineTasksRemovedFromStandalone;

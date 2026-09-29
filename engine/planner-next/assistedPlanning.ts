@@ -139,7 +139,8 @@ export interface AssistedPlanningEvidence {
     "fixedMainBundleTasksByKind"|"fixedSupportingGeometryFingerprint"|"fixedSupportingMatchingAttempts"|
     "fixedSupportingEdges"|"fixedSupportingZeroDomainTaskIds"|"fixedSupportingPerfectMatchingFound"|
     "fixedSupportingRematchedIdentityCount"|"fixedSupportingArrivalResult"|"fixedSupportingArrivalPacketCount"|
-    "fixedSupportingSameGeometryRescued"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "fixedSupportingSameGeometryRescued"|"fixedSupportingGeometriesAttempted"|"fixedSupportingGeometryFailure"|
+    "fixedSupportingGlobalFailure"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
     "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection"|
     "firstFixedMainBundleHardGateDiagnostic">;
@@ -600,7 +601,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedMainBundleTaskCount","fixedMainBundleTasksByKind","fixedSupportingGeometryFingerprint","fixedSupportingMatchingAttempts",
     "fixedSupportingEdges","fixedSupportingZeroDomainTaskIds","fixedSupportingPerfectMatchingFound",
     "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
-    "fixedSupportingSameGeometryRescued","protectedMainSlotChecks","protectedMainSlotMismatches",
+    "fixedSupportingSameGeometryRescued","fixedSupportingGeometriesAttempted","fixedSupportingGeometryFailure",
+    "fixedSupportingGlobalFailure","protectedMainSlotChecks","protectedMainSlotMismatches",
     "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
     "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection",
     "firstFixedMainBundleHardGateDiagnostic"] as const;
