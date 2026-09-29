@@ -13,17 +13,34 @@ export interface TransportMaterializationDirectionEvidence {
   packetMembers: string[][];
   starts: number[];
   minGapMinutes: number;
-  construction: "canonical" | "contiguous" | "fallback";
+  construction: "canonical" | "contiguous" | "interval-exact" | "fallback";
   alternativesExplored: number;
   classification: TransportContextClassification;
   classificationBreakers: string[];
   contiguousStatesExplored: number;
   membershipFallbackEntered: boolean;
+  taskCount: number;
+  candidateStartCount: number;
+  contextClasses: string[][];
+  algorithm: "CONTIGUOUS_EXACT" | "INTERVAL_CAPACITY_MATCHING" | "LEGACY_MEMBERSHIP_ENUMERATION";
+  statesExplored: number;
+  matchingChecks: number;
+  matchingTraversals: number;
+  membershipBranches: number;
+  budgetExhausted: boolean;
+  failureCause: "INFEASIBLE" | "BUDGET_EXHAUSTED" | null;
 }
 
 export interface TransportMaterializationEvidence {
   directions: TransportMaterializationDirectionEvidence[];
   fingerprint: string;
+}
+
+export type TransportMaterializationStatus = "FEASIBLE" | "INFEASIBLE" | "BUDGET_EXHAUSTED";
+export interface DetailedTransportMaterialization {
+  status: TransportMaterializationStatus;
+  scheduled: ScheduledTask[] | null;
+  evidence: TransportMaterializationEvidence;
 }
 
 export interface TransportMaterializationOptions {
@@ -32,6 +49,16 @@ export interface TransportMaterializationOptions {
 }
 
 export type TransportContextClassification = "CONTIGUOUS_EXACT" | "MEMBERSHIP_REQUIRED";
+
+const detailedFields = (tasks: readonly Task[], algorithm: TransportMaterializationDirectionEvidence["algorithm"]) => ({
+  taskCount: tasks.length, candidateStartCount: 0,
+  contextClasses: [...new Map(tasks.map((task) => [JSON.stringify({ duration: task.duration, spaceId: task.spaceId,
+    resources: [...(task.requiredResourceIds ?? [])].sort() }), [] as string[]])).entries()].map(([key]) =>
+    tasks.filter((task) => JSON.stringify({ duration: task.duration, spaceId: task.spaceId,
+      resources: [...(task.requiredResourceIds ?? [])].sort() }) === key).map(({ id }) => id)),
+  algorithm, statesExplored: 0, matchingChecks: 0, matchingTraversals: 0, membershipBranches: 0,
+  budgetExhausted: false, failureCause: null as "INFEASIBLE" | "BUDGET_EXHAUSTED" | null,
+});
 
 export interface TransportArrivalFeasibility {
   status: "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
@@ -270,25 +297,64 @@ export function assessCoreArrivalTransportFeasibility(
     }),
     packetMembers: [] as string[][], starts: [] as number[], minGapMinutes: policy?.minGapMinutes ?? 0,
     construction: "contiguous" as const, alternativesExplored: 0, classification: classified.classification,
-    classificationBreakers: classified.breakers, contiguousStatesExplored: 0, membershipFallbackEntered: false };
+    classificationBreakers: classified.breakers, contiguousStatesExplored: 0, membershipFallbackEntered: false,
+    ...detailedFields(ordered,"CONTIGUOUS_EXACT") };
   if (!policy || classified.classification === "MEMBERSHIP_REQUIRED")
     return { status: "INCONCLUSIVE", evidence: base, scheduled: null };
   const solved = solveContiguousDirection(problem, "arrival", ordered, substantiveCoreTasks, [], [], policy, options.consumeFallbackBranch);
   const groups: string[][] = []; let offset = 0;
   for (const size of solved.packetSizes) { groups.push(ordered.slice(offset, offset + size).map(({ id }) => id)); offset += size; }
   const evidence = { ...base, packetSizes: solved.packetSizes, packetMembers: groups, starts: solved.starts,
-    alternativesExplored: solved.alternatives, contiguousStatesExplored: solved.states };
+    alternativesExplored: solved.alternatives, contiguousStatesExplored: solved.states, statesExplored: solved.states,
+    failureCause: solved.scheduled ? null : "INFEASIBLE" as const };
   return { status: solved.scheduled ? "FEASIBLE" : "INFEASIBLE", evidence, scheduled: solved.scheduled };
 }
 
+/** Exact lower/upper-capacity matching for a chosen set of starts. */
+function intervalCapacityMatching(domains: readonly ReadonlySet<number>[], starts: readonly number[], minimum: number,
+  maximum: number): { assignment: number[] | null; traversals: number } {
+  type Edge={to:number;rev:number;cap:number;initial:number;lower:number};
+  const n=domains.length,k=starts.length,s=0,task0=1,slot0=task0+n,t=slot0+k,ss=t+1,tt=ss+1;
+  const graph:Edge[][]=Array.from({length:tt+1},()=>[]);const demand=Array(tt+1).fill(0);let traversals=0;
+  const add=(from:number,to:number,lower:number,upper:number)=>{const a:Edge={to,rev:graph[to]!.length,cap:upper-lower,initial:upper-lower,lower};const b:Edge={to:from,rev:graph[from]!.length,cap:0,initial:0,lower:0};graph[from]!.push(a);graph[to]!.push(b);demand[from]-=lower;demand[to]+=lower;return a;};
+  for(let i=0;i<n;i++){add(s,task0+i,1,1);for(let j=0;j<k;j++)if(domains[i]!.has(starts[j]!))add(task0+i,slot0+j,0,1);}
+  for(let j=0;j<k;j++)add(slot0+j,t,minimum,maximum);add(t,s,0,n);
+  let required=0;for(let v=0;v<=t;v++){if(demand[v]>0){add(ss,v,0,demand[v]);required+=demand[v];}else if(demand[v]<0)add(v,tt,0,-demand[v]);}
+  const flow=(source:number,sink:number)=>{let total=0;for(;;){const level=Array(graph.length).fill(-1),queue=[source];level[source]=0;for(let q=0;q<queue.length;q++)for(const edge of graph[queue[q]!]!){traversals++;if(edge.cap>0&&level[edge.to]<0){level[edge.to]=level[queue[q]!]+1;queue.push(edge.to);}}if(level[sink]<0)return total;const next=Array(graph.length).fill(0);const dfs=(v:number,pushed:number):number=>{if(v===sink)return pushed;for(;next[v]<graph[v]!.length;next[v]++){const edge=graph[v]![next[v]!]!;traversals++;if(edge.cap<=0||level[edge.to]!==level[v]+1)continue;const sent=dfs(edge.to,Math.min(pushed,edge.cap));if(sent){edge.cap-=sent;graph[edge.to]![edge.rev]!.cap+=sent;return sent;}}return 0;};for(let sent;(sent=dfs(source,Number.MAX_SAFE_INTEGER))>0;)total+=sent;}};
+  if(flow(ss,tt)!==required)return {assignment:null,traversals};
+  const assignment=Array(n).fill(-1);for(let i=0;i<n;i++)for(const edge of graph[task0+i]!)if(edge.to>=slot0&&edge.to<slot0+k&&edge.initial-edge.cap>0)assignment[i]=edge.to-slot0;
+  return {assignment:assignment.every(value=>value>=0)?assignment:null,traversals};
+}
+
+/** Testable generic authority used by interval transport batching. */
+export function exactIntervalCapacityAssignment(domains:readonly (readonly number[])[],starts:readonly number[],minimum:number,maximum:number):number[]|null {
+  return intervalCapacityMatching(domains.map(domain=>new Set(domain)),starts,minimum,maximum).assignment;
+}
+
+function solveIntervalDirection(problem:PlannerNextProblem,direction:TransportDirection,tasks:readonly Task[],fixed:readonly ScheduledTask[],
+  policy:Readonly<TransportGroupingPolicy>,boundary:(task:Task)=>number): {supported:boolean;scheduled:ScheduledTask[]|null;groups:Task[][];starts:number[];candidateStarts:number;states:number;checks:number;traversals:number} {
+  const domains=tasks.map(task=>new Set(transportGroupStarts(problem,[task],fixed,[],policy).filter(start=>direction==="arrival"?start+task.duration<=boundary(task):start>=boundary(task))));
+  const supported=tasks.every(task=>task.duration===tasks[0]?.duration)&&domains.every(domain=>{const values=[...domain].sort((a,b)=>a-b);return values.every((value,index)=>index===0||value-values[index-1]===5);});
+  const candidates=[...new Set(domains.flatMap(domain=>[...domain]))].filter(start=>domains.filter(domain=>domain.has(start)).length>=policy.minimumGroupSize).sort((a,b)=>a-b);
+  let states=0,checks=0,traversals=0;if(!supported)return {supported,scheduled:null,groups:[],starts:[],candidateStarts:candidates.length,states,checks,traversals};
+  const minGroups=Math.ceil(tasks.length/policy.maximumGroupSize),maxGroups=Math.floor(tasks.length/policy.minimumGroupSize);
+  const target=Math.max(policy.minimumGroupSize,Math.min(policy.targetGroupSize??1,policy.maximumGroupSize));
+  const counts=Array.from({length:maxGroups-minGroups+1},(_,i)=>minGroups+i).sort((a,b)=>Math.abs(tasks.length/a-target)-Math.abs(tasks.length/b-target)||b-a);
+  for(const count of counts){const selected:number[]=[];let found:number[]|null=null;
+    const choose=(from:number):boolean=>{states++;if(selected.length===count){checks++;const match=intervalCapacityMatching(domains,selected,policy.minimumGroupSize,policy.maximumGroupSize);traversals+=match.traversals;if(match.assignment){found=match.assignment;return true;}return false;}for(let i=from;i<candidates.length;i++){if(selected.length&&candidates[i]!-selected.at(-1)!<policy.minGapMinutes)continue;if(candidates.length-i<count-selected.length)break;selected.push(candidates[i]!);if(choose(i+1))return true;selected.pop();}return false;};
+    if(choose(0)&&found){const assignment=found as number[];const groups=selected.map((_,slot)=>tasks.filter((__,index)=>assignment[index]===slot));return {supported,scheduled:groups.flatMap((group,index)=>scheduleTransportGroup(group,selected[index]!)),groups,starts:[...selected],candidateStarts:candidates.length,states,checks,traversals};}
+  }
+  return {supported,scheduled:null,groups:[],starts:[],candidateStarts:candidates.length,states,checks,traversals};
+}
+
 /** Exact contiguous scheduling for interchangeable identities, retaining membership fallback otherwise. */
-export function materializeTerminalTransport(
+export function materializeTerminalTransportDetailed(
   problem: PlannerNextProblem,
   substantive: readonly ScheduledTask[],
   participantMeals: readonly ScheduledParticipantMeal[] = [],
   options: Readonly<TransportMaterializationOptions> = {},
-): ScheduledTask[] | null {
-  if (!problem.transportPolicy) return [];
+): DetailedTransportMaterialization {
+  if (!problem.transportPolicy) return {status:"FEASIBLE",scheduled:[],evidence:{directions:[],fingerprint:createHash("sha256").update("[]").digest("hex")}};
   const transportIds = transportTaskIds(problem);
   const alreadyMaterializedTransportIds=new Set(substantive.filter(task=>transportIds.has(task.id)).map(({id})=>id));
   const obligationsFor = (participantId: string) => [
@@ -312,7 +378,10 @@ export function materializeTerminalTransport(
     if (classified.classification === "CONTIGUOUS_EXACT") {
       const solved = solveContiguousDirection(problem, direction, tasks, substantive, participantMeals, placed, policy,
         options.consumeFallbackBranch);
-      if (!solved.scheduled) return null;
+      if (!solved.scheduled) {
+        const item={ direction, orderedTaskIds: tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:[],packetMembers:[],starts:[],minGapMinutes:policy.minGapMinutes,construction:"contiguous" as const,alternativesExplored:solved.alternatives,classification:classified.classification,classificationBreakers:[],contiguousStatesExplored:solved.states,membershipFallbackEntered:false,...detailedFields(tasks,"CONTIGUOUS_EXACT"),statesExplored:solved.states,failureCause:"INFEASIBLE" as const};
+        directionEvidence.push(item);const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:"INFEASIBLE",scheduled:null,evidence};
+      }
       const packetMembers: string[][] = []; let offset = 0;
       for (const size of solved.packetSizes) { packetMembers.push(tasks.slice(offset, offset + size).map(({ id }) => id)); offset += size; }
       directionEvidence.push({ direction, orderedTaskIds: tasks.map(({ id }) => id),
@@ -320,9 +389,15 @@ export function materializeTerminalTransport(
         orderedDeadlines: tasks.map(boundary),
         packetMembers, starts: solved.starts, minGapMinutes: policy.minGapMinutes, construction: "contiguous",
         alternativesExplored: solved.alternatives, classification: classified.classification,
-        classificationBreakers: [], contiguousStatesExplored: solved.states, membershipFallbackEntered: false });
+        classificationBreakers: [], contiguousStatesExplored: solved.states, membershipFallbackEntered: false,
+        ...detailedFields(tasks,"CONTIGUOUS_EXACT"), statesExplored: solved.states });
       placed.push(...solved.scheduled);
       continue;
+    }
+    const interval=solveIntervalDirection(problem,direction,tasks,[...substantive,...participantMeals.map(meal=>({...meal,kind:"auxiliary" as const,spaceId:"",dependencies:[]})),...placed],policy,boundary);
+    if(interval.supported){
+      const item:TransportMaterializationDirectionEvidence={direction,orderedTaskIds:tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:interval.groups.map(group=>group.length),packetMembers:interval.groups.map(group=>group.map(({id})=>id)),starts:interval.starts,minGapMinutes:policy.minGapMinutes,construction:"interval-exact",alternativesExplored:0,classification:classified.classification,classificationBreakers:classified.breakers,contiguousStatesExplored:0,membershipFallbackEntered:false,...detailedFields(tasks,"INTERVAL_CAPACITY_MATCHING"),candidateStartCount:interval.candidateStarts,statesExplored:interval.states,matchingChecks:interval.checks,matchingTraversals:interval.traversals,failureCause:interval.scheduled?null:"INFEASIBLE"};
+      directionEvidence.push(item);if(!interval.scheduled){const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:"INFEASIBLE",scheduled:null,evidence};}placed.push(...interval.scheduled);continue;
     }
     let alternativesExplored = 0;
     const partitions = function* (remaining: readonly Task[], groups: Task[][] = []): Generator<Task[][]> {
@@ -332,10 +407,10 @@ export function materializeTerminalTransport(
         yield* partitions(remaining.filter(({ id }) => !ids.has(id)), [...groups, group]);
       }
     };
-    let witness: ScheduledTask[] | null = null, witnessGroups: Task[][] = [], witnessStarts: number[] = [];
+    let witness: ScheduledTask[] | null = null, witnessGroups: Task[][] = [], witnessStarts: number[] = [], budgetExhausted=false;
     for (const groups of partitions(tasks)) {
       alternativesExplored += 1;
-      if (options.consumeFallbackBranch && !options.consumeFallbackBranch()) break;
+      if (options.consumeFallbackBranch && !options.consumeFallbackBranch()) {budgetExhausted=true;break;}
       const local: ScheduledTask[] = [], starts: number[] = [];
       const indices = groups.map((_, index) => index);
       const place = (position: number): boolean => {
@@ -357,18 +432,23 @@ export function materializeTerminalTransport(
       };
       if (place(0)) { witness = local; witnessGroups = groups; witnessStarts = starts; break; }
     }
-    if (!witness) return null;
+    if (!witness) {const item:TransportMaterializationDirectionEvidence={direction,orderedTaskIds:tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:[],packetMembers:[],starts:[],minGapMinutes:policy.minGapMinutes,construction:"fallback",alternativesExplored,classification:classified.classification,classificationBreakers:classified.breakers,contiguousStatesExplored:0,membershipFallbackEntered:true,...detailedFields(tasks,"LEGACY_MEMBERSHIP_ENUMERATION"),membershipBranches:alternativesExplored,budgetExhausted,failureCause:budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE"};directionEvidence.push(item);const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE",scheduled:null,evidence};}
     directionEvidence.push({ direction, orderedTaskIds: tasks.map(({ id }) => id), orderedParticipantIds: tasks.map(({ participantId }) => participantId!),
       orderedDeadlines: tasks.map(boundary),
       packetSizes: witnessGroups.map(({ length }) => length), packetMembers: witnessGroups.map((group) => group.map(({ id }) => id)),
       starts: witnessStarts, minGapMinutes: policy.minGapMinutes, construction: "fallback", alternativesExplored,
       classification: classified.classification, classificationBreakers: classified.breakers,
-      contiguousStatesExplored: 0, membershipFallbackEntered: true });
+      contiguousStatesExplored: 0, membershipFallbackEntered: true,
+      ...detailedFields(tasks,"LEGACY_MEMBERSHIP_ENUMERATION"), membershipBranches: alternativesExplored });
     placed.push(...witness);
   }
   const fingerprint = createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex");
   options.onEvidence?.({ directions: directionEvidence, fingerprint });
-  return placed;
+  return {status:"FEASIBLE",scheduled:placed,evidence:{directions:directionEvidence,fingerprint}};
+}
+
+export function materializeTerminalTransport(problem:PlannerNextProblem,substantive:readonly ScheduledTask[],participantMeals:readonly ScheduledParticipantMeal[]=[],options:Readonly<TransportMaterializationOptions>={}):ScheduledTask[]|null {
+  return materializeTerminalTransportDetailed(problem,substantive,participantMeals,options).scheduled;
 }
 
 export function canPlaceTransportGroup(
