@@ -67,7 +67,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       session.draftValidationId = validation.id; return { error: null };
     }
     if (name === "assisted_accept_stage") {
-      const stage = { id: nextStageId++, sessionId, planId, ordinal: stages.length, parentStageId: session.draftBaseStageId, archivedAt: null, configRevisionId: revisionId, snapshotJson: session.draftSnapshotJson, snapshotFingerprint: session.draftFingerprint };
+      const stage = { id: nextStageId++, sessionId, planId, ordinal: stages.length, parentStageId: session.draftBaseStageId, archivedAt: null, configRevisionId: revisionId,
+        proposalRunId:session.draftScopeJson?.proposalRunId??null,snapshotJson: session.draftSnapshotJson, snapshotFingerprint: session.draftFingerprint };
       stages.push(stage); dailyTasks = structuredClone(stage.snapshotJson);
       session = { ...session, activeStageId: stage.id, draftBaseStageId: stage.id, draftScopeJson: {}, draftValidationId: null };
       return { error: null };

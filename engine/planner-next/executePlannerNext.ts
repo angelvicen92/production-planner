@@ -36,7 +36,7 @@ export type PlannerNextExecution =
       result: ExactItinerantPlanResult;
     };
 
-export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[];fixedRoundPreparations?:readonly ScheduledRoundPreparation[]}={}): PlannerNextExecution {
+export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[];fixedRoundPreparations?:readonly ScheduledRoundPreparation[];priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1}={}): PlannerNextExecution {
   const policyResolution = resolvePlannerSearchPolicy(problem);
 
   if (!policyResolution.compatible) {
@@ -54,6 +54,6 @@ export function executePlannerNext(problem: PlannerNextProblem, options:{causalD
   return {
     kind: "EXACT_CONSTRUCTIVE",
     policyResolution,
-      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements,options.fixedPlacementsAsContext,options.fixedSetupPreparations,options.fixedRoundPreparations)),
+      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements,options.fixedPlacementsAsContext,options.fixedSetupPreparations,options.fixedRoundPreparations,options.priorFutureStructuralWitness)),
   };
 }

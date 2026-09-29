@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
-  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph } from "./anonymousPipelineWitness";
+  mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+  revalidateFutureStructuralWitness } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -443,6 +444,25 @@ describe("anonymous structural pipeline witness",()=>{
     const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared);assert.equal(prepared.fixedSupporting,undefined);
     const result=materializePreparedPipelineBundleMatching(p,prepared);assert.ok(result);
     assert.deepEqual(result.scheduledTasks.find(task=>task.id==="style0"),protectedStyle);
+  });
+
+  it("revalidates a cross-stage supporting certificate directly and rejects stale authority",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const prepared=preparePipelineBundleGraph(p,architecture,fixed);assert.ok(prepared?.fixedSupporting);
+    const selected=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(selected);
+    const supportingIds=new Set([...prepared!.fixedSupporting!.stylingTaskIds,...p.transportPolicy!.arrival.taskIds]);
+    const ephemeral=selected.scheduledTasks.filter(task=>supportingIds.has(task.id))
+      .map(({id,start,end,spaceId})=>({id,start,end,spaceId}));
+    const certificate={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,architectureFingerprint:"authority",
+      geometryFingerprint:prepared!.witness.fingerprint,ephemeralSupportingPlacements:ephemeral,fingerprint:"certificate"};
+    const reused=revalidateFutureStructuralWitness(p,prepared!,certificate);assert.ok(reused);
+    assert.equal(reused.evidence.matchingTraversals,0);assert.equal(reused.evidence.fullMatchingBuilds,0);
+    assert.deepEqual(reused.scheduledTasks.filter(task=>supportingIds.has(task.id))
+      .map(({id,start,end,spaceId})=>({id,start,end,spaceId})),ephemeral);
+    p.transportPolicy!.arrival.maximumGroupSize=0;
+    assert.equal(revalidateFutureStructuralWitness(p,prepared!,certificate),null,"changed Arrival authority enters fallback");
   });
 
   it("reports no matching on fixed Styling geometry without moving protected work",()=>{

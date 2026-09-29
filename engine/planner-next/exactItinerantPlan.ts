@@ -320,6 +320,12 @@ export interface ExactItinerantPlanEvidence {
   fixedSupportingArrivalResult:string|null;fixedSupportingArrivalPacketCount:number;fixedSupportingSameGeometryRescued:boolean;
   fixedSupportingGeometriesAttempted:import("./exactMainAndFeederCore").ExactMainAndFeederCoreEvidence["fixedSupportingGeometriesAttempted"];
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
+  priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
+  priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
+  priorFutureStructuralWitnessFallbackEntered:boolean;
+  futureStructuralWitnesses:import("./anonymousPipelineWitness").FutureStructuralWitnessV1[];
+  ephemeralSupportingPlacements:import("./anonymousPipelineWitness").FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
+  acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
   pendingBeforeFixedMainBundle:number;pendingAfterFixedMainBundle:number;legacyFixedFeederFallbackEntered:boolean;
   legacyFixedFeederFallbackReason:string|null;firstFixedMainBundleRejection:string|null;
@@ -1484,6 +1490,7 @@ export interface ExactItinerantPlanSearchOptions {
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
   fixedRoundPreparations?: readonly ScheduledRoundPreparation[];
+  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1;
   /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
   preferredArchitecture?: MainFeederArchitecture;
   preferredBundleCandidate?: Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;
@@ -1602,6 +1609,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
+    priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
+    priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
+    ephemeralSupportingPlacements:[],acceptedSupportingPlacements:[],branchesBeforeCurrentContinuation:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,firstFixedMainBundleHardGateDiagnostic:null,
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
@@ -1754,6 +1764,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     futureEdgePressure:operation=>futureTechnicalChains.pressure(operation), acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
     fixedSetupPreparations:options.fixedSetupPreparations,
+    priorFutureStructuralWitness:options.priorFutureStructuralWitness,
     preferredArchitecture:options.preferredArchitecture,
     preferredBundleCandidate:constructiveBundle,
     repairPreferredBundleCandidate:constructiveRepair,
@@ -2132,6 +2143,15 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.fixedSupportingGeometriesAttempted=core.evidence.fixedSupportingGeometriesAttempted;
   evidence.fixedSupportingGeometryFailure=core.evidence.fixedSupportingGeometryFailure;
   evidence.fixedSupportingGlobalFailure=core.evidence.fixedSupportingGlobalFailure;
+  evidence.priorFutureStructuralWitnessFound=core.evidence.priorFutureStructuralWitnessFound;
+  evidence.priorFutureStructuralWitnessFingerprint=core.evidence.priorFutureStructuralWitnessFingerprint;
+  evidence.priorFutureStructuralWitnessRevalidation=core.evidence.priorFutureStructuralWitnessRevalidation;
+  evidence.priorFutureStructuralWitnessReused=core.evidence.priorFutureStructuralWitnessReused;
+  evidence.priorFutureStructuralWitnessFallbackEntered=core.evidence.priorFutureStructuralWitnessFallbackEntered;
+  evidence.futureStructuralWitnesses=structuredClone(core.evidence.futureStructuralWitnesses);
+  evidence.ephemeralSupportingPlacements=structuredClone(core.evidence.ephemeralSupportingPlacements);
+  evidence.acceptedSupportingPlacements=structuredClone(core.evidence.acceptedSupportingPlacements);
+  evidence.branchesBeforeCurrentContinuation=core.evidence.branchesBeforeCurrentContinuation;
   evidence.protectedMainSlotChecks=core.evidence.protectedMainSlotChecks;
   evidence.protectedMainSlotMismatches=core.evidence.protectedMainSlotMismatches;
   evidence.pipelineTasksRemovedFromStandalone=core.evidence.pipelineTasksRemovedFromStandalone;
@@ -2188,7 +2208,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[]): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1): ExactItinerantPlanResult {
   const pipeline=fixedPlacementsAsContext?materializeFirstNominalPipelineWitness(problem):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,
@@ -2204,7 +2224,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
   if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{causalDiagnostic,acceptsValidation,
-    fixedPlacements,fixedPlacementsAsContext,fixedSetupPreparations,fixedRoundPreparations,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
+    fixedPlacements,fixedPlacementsAsContext,fixedSetupPreparations,fixedRoundPreparations,priorFutureStructuralWitness,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
     repairPreferredBundleCandidate});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
   return runExactItinerantPlanSearch(problem, {
@@ -2213,7 +2233,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, fixedRoundPreparations, preferredArchitecture,
+    causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, fixedRoundPreparations, priorFutureStructuralWitness, preferredArchitecture,
     preferredBundleCandidate:matchedBundles??undefined,repairPreferredBundleCandidate,
   });
 }

@@ -42,6 +42,7 @@ export interface AssistedProblem {
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
+  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1;
 }
 
 export interface AssistedPlanningEvidence {
@@ -63,6 +64,15 @@ export interface AssistedPlanningEvidence {
   readonly hardValid: boolean;
   readonly requiredValid: boolean;
   readonly fingerprint: string | null;
+  readonly priorFutureStructuralWitnessFound?:boolean;
+  readonly priorFutureStructuralWitnessFingerprint?:string|null;
+  readonly priorFutureStructuralWitnessRevalidation?:"PASS"|"REJECT"|"STALE"|null;
+  readonly priorFutureStructuralWitnessReused?:boolean;
+  readonly priorFutureStructuralWitnessFallbackEntered?:boolean;
+  readonly ephemeralSupportingPlacements?:ExactItinerantPlanEvidence["ephemeralSupportingPlacements"];
+  readonly acceptedSupportingPlacements?:ExactItinerantPlanEvidence["acceptedSupportingPlacements"];
+  readonly futureStructuralWitnesses?:ExactItinerantPlanEvidence["futureStructuralWitnesses"];
+  readonly branchesBeforeCurrentContinuation?:number|null;
   /** Solver-selected analytical witnesses. They are Evidence only, never proposal placements. */
   readonly selectedMealWitnesses: {
     readonly participant: { readonly scheduled: readonly import("./contracts").ScheduledParticipantMeal[];
@@ -141,6 +151,9 @@ export interface AssistedPlanningEvidence {
     "fixedSupportingRematchedIdentityCount"|"fixedSupportingArrivalResult"|"fixedSupportingArrivalPacketCount"|
     "fixedSupportingSameGeometryRescued"|"fixedSupportingGeometriesAttempted"|"fixedSupportingGeometryFailure"|
     "fixedSupportingGlobalFailure"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "priorFutureStructuralWitnessFound"|"priorFutureStructuralWitnessFingerprint"|"priorFutureStructuralWitnessRevalidation"|
+    "priorFutureStructuralWitnessReused"|"priorFutureStructuralWitnessFallbackEntered"|"futureStructuralWitnesses"|
+    "ephemeralSupportingPlacements"|"acceptedSupportingPlacements"|"branchesBeforeCurrentContinuation"|
     "pipelineTasksRemovedFromStandalone"|"pendingBeforeFixedMainBundle"|"pendingAfterFixedMainBundle"|
     "legacyFixedFeederFallbackEntered"|"legacyFixedFeederFallbackReason"|"firstFixedMainBundleRejection"|
     "firstFixedMainBundleHardGateDiagnostic">;
@@ -231,6 +244,7 @@ export function buildAssistedProblem(
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
   protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
+  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1,
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -487,6 +501,7 @@ export function buildAssistedProblem(
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
       [id, Object.freeze([...(supportingReasons.get(id) ?? [])].sort())]))),
+    priorFutureStructuralWitness:priorFutureStructuralWitness?structuredClone(priorFutureStructuralWitness):undefined,
   };
 }
 
@@ -506,7 +521,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
-    fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations });
+    fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations,
+    priorFutureStructuralWitness:input.priorFutureStructuralWitness });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
@@ -602,7 +618,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedSupportingEdges","fixedSupportingZeroDomainTaskIds","fixedSupportingPerfectMatchingFound",
     "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
     "fixedSupportingSameGeometryRescued","fixedSupportingGeometriesAttempted","fixedSupportingGeometryFailure",
-    "fixedSupportingGlobalFailure","protectedMainSlotChecks","protectedMainSlotMismatches",
+    "fixedSupportingGlobalFailure","priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
+    "priorFutureStructuralWitnessRevalidation","priorFutureStructuralWitnessReused","priorFutureStructuralWitnessFallbackEntered",
+    "futureStructuralWitnesses","ephemeralSupportingPlacements","acceptedSupportingPlacements","branchesBeforeCurrentContinuation",
+    "protectedMainSlotChecks","protectedMainSlotMismatches",
     "pipelineTasksRemovedFromStandalone","pendingBeforeFixedMainBundle","pendingAfterFixedMainBundle",
     "legacyFixedFeederFallbackEntered","legacyFixedFeederFallbackReason","firstFixedMainBundleRejection",
     "firstFixedMainBundleHardGateDiagnostic"] as const;
@@ -640,6 +659,17 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     // the combined state retains an inherited, human-accepted HARD exception.
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
+    priorFutureStructuralWitnessFound:Boolean(evidenceRecord.priorFutureStructuralWitnessFound),
+    priorFutureStructuralWitnessFingerprint:(evidenceRecord.priorFutureStructuralWitnessFingerprint as string|null|undefined)??null,
+    priorFutureStructuralWitnessRevalidation:(evidenceRecord.priorFutureStructuralWitnessRevalidation as "PASS"|"REJECT"|"STALE"|null|undefined)??null,
+    priorFutureStructuralWitnessReused:Boolean(evidenceRecord.priorFutureStructuralWitnessReused),
+    priorFutureStructuralWitnessFallbackEntered:Boolean(evidenceRecord.priorFutureStructuralWitnessFallbackEntered),
+    ephemeralSupportingPlacements:structuredClone((evidenceRecord.ephemeralSupportingPlacements as ExactItinerantPlanEvidence["ephemeralSupportingPlacements"]|undefined)??[]),
+    acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)?.length
+      ?evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]
+      :scheduled.filter(task=>input.supportingTaskIds.includes(task.id))),
+    futureStructuralWitnesses:structuredClone((evidenceRecord.futureStructuralWitnesses as ExactItinerantPlanEvidence["futureStructuralWitnesses"]|undefined)??[]),
+    branchesBeforeCurrentContinuation:(evidenceRecord.branchesBeforeCurrentContinuation as number|null|undefined)??null,
     selectedMealWitnesses,
     fixedMainBundle,
     selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),

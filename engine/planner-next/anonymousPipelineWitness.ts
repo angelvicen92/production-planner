@@ -72,6 +72,12 @@ export interface PipelineBundleMatchingEvidence { attempts:number; repairs:numbe
   fixedSupportingArrivalResult:string|null;fixedSupportingArrivalPacketCount:number;fixedSupportingRematchedIdentityCount:number }
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
+export interface FutureStructuralWitnessV1 {
+  readonly kind:"FIXED_SUPPORTING_PIPELINE";readonly version:1;
+  readonly architectureFingerprint:string;readonly geometryFingerprint:string;
+  readonly ephemeralSupportingPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
+  readonly fingerprint:string;
+}
 export interface PipelineBundleMatchingDiagnostic { attempts:number;perfectMatchingFound:boolean;
   arrivalResult:string|null;arrivalPacketCount:number;fullMatchingBuilds:number;incrementalRepairs:number;
   uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;matchingTraversals:number;arrivalEvaluations:number;
@@ -86,6 +92,39 @@ export interface PreparedPipelineBundleGraph {
     mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
   readonly fixedSupporting?:{stylingTaskIds:readonly string[];stylingSpots:readonly AnonymousPipelineSpot[];
     nominalPositions:ReadonlyMap<string,number>;context:readonly ScheduledTask[]};
+}
+
+/** Revalidates a certified identity-to-spot assignment without rediscovering a matching. */
+export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,prepared:PreparedPipelineBundleGraph,
+  certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
+  if(!prepared.fixedSupporting)return null;
+  const certified=new Map(certificate.ephemeralSupportingPlacements.map(item=>[item.id,item]));
+  if(certified.size!==certificate.ephemeralSupportingPlacements.length)return null;
+  const matching=new Map<string,number>(),scheduled:ScheduledTask[]=[];
+  for(const id of prepared.fixedSupporting.stylingTaskIds){
+    const item=certified.get(id);if(!item)return null;
+    const task=problem.tasks.find(candidate=>candidate.id===id);if(!task||item.end-item.start!==task.duration||item.spaceId!==task.spaceId)return null;
+    const withoutArrival={...task,dependencies:task.dependencies.filter(dependency=>!(problem.transportPolicy?.arrival.taskIds??[]).includes(dependency))};
+    if(!canPlaceTask(problem,withoutArrival,item.start,[...prepared.fixedSupporting.context,...scheduled]))return null;
+    matching.set(id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
+  }
+  const arrival=assessCoreArrivalTransportFeasibility(problem,[...prepared.fixedSupporting.context,...scheduled]);
+  if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return null;
+  const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  for(const item of certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id))){
+    const actual=arrival.scheduled.find(task=>task.id===item.id);
+    if(!actual||actual.start!==item.start||actual.end!==item.end||actual.spaceId!==item.spaceId)return null;
+  }
+  const unique=[...new Map([...prepared.fixedSupporting.context,...scheduled,...arrival.scheduled,
+    ...prepared.protectedPlacements.filter(task=>!prepared.fixedSupporting!.stylingTaskIds.includes(task.id)&&!arrivalIds.has(task.id))]
+    .map(task=>[task.id,task])).values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  return {witness:prepared.witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
+    materializations:1,forbiddenEdges:[],fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
+    duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:1,safePerfectMatchingAttempts:0,
+    safePerfectMatchingFound:0,safeGraphEdgeCount:0,intrusiveGraphEdgeCount:0,safeMatchingFailures:0,fullGraphFallbacks:0,
+    bundleEdgesBeforeReservation:prepared.preparedBundleEdges,bundleEdgesRejectedByReservation:0,
+    bundleEdgesAfterReservation:prepared.preparedBundleEdges,fixedSupportingArrivalResult:"FEASIBLE",
+    fixedSupportingArrivalPacketCount:arrival.evidence.packetSizes.length,fixedSupportingRematchedIdentityCount:0}};
 }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
