@@ -353,6 +353,17 @@ test("different arrival deadlines remain CONTIGUOUS_EXACT and input order does n
   assert.deepEqual(original.problem, snapshot);
 });
 
+test("contiguous transport reports budget exhaustion instead of infeasibility", () => {
+  const fixture = interchangeableArrivalProblem([20, 20, 20, 100, 100]);
+  const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core, {
+    consumeFallbackBranch: () => false,
+  });
+  assert.equal(result.status, "INCONCLUSIVE");
+  assert.equal(result.scheduled, null);
+  assert.equal(result.evidence.failureCause, "BUDGET_EXHAUSTED");
+  assert.equal(result.evidence.budgetExhausted, true);
+});
+
 test("core arrival deadlines ignore already materialized transport rows deterministically", () => {
   const fixture = interchangeableArrivalProblem([40]);
   const substantiveOnly = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core);

@@ -211,7 +211,8 @@ function solveContiguousDirection(
   alreadyPlaced: readonly ScheduledTask[],
   policy: Readonly<TransportGroupingPolicy>,
   consumeAlternative?: () => boolean,
-): { scheduled: ScheduledTask[] | null; packetSizes: number[]; starts: number[]; states: number; alternatives: number } {
+): { scheduled: ScheduledTask[] | null; packetSizes: number[]; starts: number[]; states: number; alternatives: number;
+  budgetExhausted: boolean } {
   const transportIds = transportTaskIds(problem);
   const obligationsFor = (participantId: string) => [
     ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
@@ -231,7 +232,7 @@ function solveContiguousDirection(
     (_, index) => policy.minimumGroupSize + index,
   ).filter((size) => canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
     .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || left - right);
-  let states = 0, alternatives = 0;
+  let states = 0, alternatives = 0, budgetExhausted = false;
   const failed = new Set<string>();
   const search = (index: number, temporalLimit: number, local: ScheduledTask[], sizes: number[], starts: number[]): boolean => {
     states += 1;
@@ -240,10 +241,8 @@ function solveContiguousDirection(
     if (failed.has(key)) return false;
     const remaining = tasks.length - index;
     for (const [candidateIndex, size] of sizeCandidates(remaining).entries()) {
-      if (candidateIndex > 0) {
-        alternatives += 1;
-        if (consumeAlternative && !consumeAlternative()) return false;
-      }
+      if (candidateIndex > 0) alternatives += 1;
+      if (consumeAlternative && !consumeAlternative()) { budgetExhausted = true; return false; }
       const from = index;
       const group = tasks.slice(from, from + size);
       const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
@@ -260,6 +259,7 @@ function solveContiguousDirection(
         if (search(index + size, nextLimit, local, sizes, starts)) return true;
         local.splice(local.length - scheduled.length, scheduled.length);
         sizes.pop(); starts.pop();
+        if (budgetExhausted) return false;
       }
     }
     failed.add(key);
@@ -267,7 +267,7 @@ function solveContiguousDirection(
   };
   const scheduled: ScheduledTask[] = [], packetSizes: number[] = [], starts: number[] = [];
   return { scheduled: search(0, Number.NEGATIVE_INFINITY, scheduled, packetSizes, starts) ? scheduled : null,
-    packetSizes, starts, states, alternatives };
+    packetSizes, starts, states, alternatives, budgetExhausted };
 }
 
 export function assessCoreArrivalTransportFeasibility(
@@ -306,8 +306,10 @@ export function assessCoreArrivalTransportFeasibility(
   for (const size of solved.packetSizes) { groups.push(ordered.slice(offset, offset + size).map(({ id }) => id)); offset += size; }
   const evidence = { ...base, packetSizes: solved.packetSizes, packetMembers: groups, starts: solved.starts,
     alternativesExplored: solved.alternatives, contiguousStatesExplored: solved.states, statesExplored: solved.states,
-    failureCause: solved.scheduled ? null : "INFEASIBLE" as const };
-  return { status: solved.scheduled ? "FEASIBLE" : "INFEASIBLE", evidence, scheduled: solved.scheduled };
+    budgetExhausted: solved.budgetExhausted,
+    failureCause: solved.scheduled ? null : solved.budgetExhausted ? "BUDGET_EXHAUSTED" as const : "INFEASIBLE" as const };
+  return { status: solved.scheduled ? "FEASIBLE" : solved.budgetExhausted ? "INCONCLUSIVE" : "INFEASIBLE",
+    evidence, scheduled: solved.scheduled };
 }
 
 /** Exact lower/upper-capacity matching for a chosen set of starts. */
@@ -379,8 +381,10 @@ export function materializeTerminalTransportDetailed(
       const solved = solveContiguousDirection(problem, direction, tasks, substantive, participantMeals, placed, policy,
         options.consumeFallbackBranch);
       if (!solved.scheduled) {
-        const item={ direction, orderedTaskIds: tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:[],packetMembers:[],starts:[],minGapMinutes:policy.minGapMinutes,construction:"contiguous" as const,alternativesExplored:solved.alternatives,classification:classified.classification,classificationBreakers:[],contiguousStatesExplored:solved.states,membershipFallbackEntered:false,...detailedFields(tasks,"CONTIGUOUS_EXACT"),statesExplored:solved.states,failureCause:"INFEASIBLE" as const};
-        directionEvidence.push(item);const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:"INFEASIBLE",scheduled:null,evidence};
+        const item:TransportMaterializationDirectionEvidence={ direction, orderedTaskIds: tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:[],packetMembers:[],starts:[],minGapMinutes:policy.minGapMinutes,construction:"contiguous",alternativesExplored:solved.alternatives,classification:classified.classification,classificationBreakers:[],contiguousStatesExplored:solved.states,membershipFallbackEntered:false,...detailedFields(tasks,"CONTIGUOUS_EXACT"),statesExplored:solved.states,failureCause:"INFEASIBLE"};
+        item.budgetExhausted=solved.budgetExhausted;
+        item.failureCause=solved.budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE";
+        directionEvidence.push(item);const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:solved.budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE",scheduled:null,evidence};
       }
       const packetMembers: string[][] = []; let offset = 0;
       for (const size of solved.packetSizes) { packetMembers.push(tasks.slice(offset, offset + size).map(({ id }) => id)); offset += size; }
