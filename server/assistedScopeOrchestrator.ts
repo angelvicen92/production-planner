@@ -4,7 +4,8 @@ import type { AssistedScopeSelector } from "../shared/assistedProposalContracts"
 import { resolveEffectivePlanSpatialAvailability } from "../shared/effectivePlanSpatialAvailability";
 
 export type OperationalUnitKind = "MAIN_PIPELINE" | "TECHNICAL_CHAIN" | "ROUND_SYNCHRONIZATION" |
-  "OPERATIONAL_MEAL" | "ITINERANT_AGENDA" | "SETUP_FAMILY" | "SPACE_FALLBACK";
+  "OPERATIONAL_MEAL" | "ITINERANT_AGENDA" | "SETUP_FAMILY" | "JOINT_OPERATION" |
+  "PARTICIPANT_OPENING" | "PARTICIPANT_CLOSURE" | "SPACE_FALLBACK";
 
 export interface OperationalUnitPriority {
   readonly structuralClass: number;
@@ -51,7 +52,8 @@ export interface AssistedScopeRecommendation {
 // deliberately not used to rank independent operational units.
 const authorityKindOrder: Record<OperationalUnitKind, number> = {
   MAIN_PIPELINE: 0, TECHNICAL_CHAIN: 1, ROUND_SYNCHRONIZATION: 2, OPERATIONAL_MEAL: 3,
-  ITINERANT_AGENDA: 4, SETUP_FAMILY: 5, SPACE_FALLBACK: 6,
+  ITINERANT_AGENDA: 4, SETUP_FAMILY: 5, JOINT_OPERATION: 6, PARTICIPANT_OPENING: 7,
+  PARTICIPANT_CLOSURE: 8, SPACE_FALLBACK: 9,
 };
 const compareNumbers = (a: number, b: number) => a - b;
 const canonical = (values: Iterable<number>) => [...new Set(values)].sort(compareNumbers);
@@ -99,13 +101,36 @@ export function recommendNextAssistedScope(
   const mainSupportingTaskIds=new Set(input.tasks.filter(task=>task.spaceId!=null&&feederSpaceIds.has(task.spaceId)).map(task=>task.id));
   if(feederSpaceIds.size)attach([...mainSupportingTaskIds],
     "TECHNICAL_CHAIN","plannerNext.mainFlow.feeders");
+  const technicalJointGroupIds=new Set<string>();
   for (const chain of input.technicalChains ?? []) {
     const members = [...chain.orderedTaskIds];
     // Joint identity is an explicit authority and therefore closes chain members losslessly.
     const jointIds = new Set(members.map(id => byId.get(id)?.jointGroupId).filter((id): id is string => Boolean(id)));
+    for(const id of jointIds)technicalJointGroupIds.add(id);
     members.push(...input.tasks.filter(task => task.jointGroupId && jointIds.has(task.jointGroupId)).map(task => task.id));
     attach(members, "TECHNICAL_CHAIN", chain.id);
   }
+  const standaloneJointGroups=new Map<string,number[]>();
+  for(const task of tasks)if(task.jointGroupId&&!technicalJointGroupIds.has(task.jointGroupId))
+    standaloneJointGroups.set(task.jointGroupId,[...(standaloneJointGroups.get(task.jointGroupId)??[]),task.id]);
+  for(const [id,ids] of [...standaloneJointGroups].sort(([left],[right])=>left.localeCompare(right)))
+    attach(ids,"JOINT_OPERATION",id);
+
+  const arrivalIds=new Set(tasks.filter(task=>task.operationalRole==="transport_arrival").map(task=>task.id));
+  const openingPreparationIds=tasks.filter(task=>task.plannerNextKind==="auxiliary"
+    &&task.operationalRole==="productive_task"&&(task.dependsOnTaskIds?.length??0)>0
+    &&task.dependsOnTaskIds!.every(id=>arrivalIds.has(id))).map(task=>task.id);
+  const openingIds=canonical([...arrivalIds,...openingPreparationIds]);
+  if(openingIds.length)attach(openingIds,"PARTICIPANT_OPENING","transport.arrival+direct-preparation");
+
+  const departureTasks=tasks.filter(task=>task.operationalRole==="transport_departure");
+  const openingSet=new Set(openingIds);
+  const departurePrerequisiteIds=canonical(departureTasks.flatMap(task=>task.dependsOnTaskIds??[])
+    .filter(id=>parent.has(id)&&!openingSet.has(id)));
+  const participantMealIds=tasks.filter(task=>task.operationalRole==="meal_break_placeholder"
+    &&task.breakKind==="participant_meal").map(task=>task.id);
+  const closureIds=canonical([...participantMealIds,...departurePrerequisiteIds,...departureTasks.map(task=>task.id)]);
+  if(closureIds.length)attach(closureIds,"PARTICIPANT_CLOSURE","participant.meal+departure-prerequisites+transport.departure");
   for (const rounds of input.roundSynchronizations ?? []) attach(rounds.lanes.flatMap(lane => lane.taskIds), "ROUND_SYNCHRONIZATION", rounds.id);
   for (const meal of input.operationalMealPolicies ?? []) {
     if (!meal.spaceIds?.length) continue;
@@ -276,6 +301,14 @@ export function recommendNextAssistedScope(
     return recomposed.length>1&&recomposed.some(team=>domain.has(team.itinerantTeamId));
   };
   const compare = (a: OperationalUnitEvidence, b: OperationalUnitEvidence) => {
+    // Closure is a terminal unit. This is the sole constructive-order override;
+    // opening and joint work otherwise retain the existing criticality ordering.
+    if(a.unitKind==="PARTICIPANT_CLOSURE"&&b.unitKind!=="PARTICIPANT_CLOSURE")return 1;
+    if(b.unitKind==="PARTICIPANT_CLOSURE"&&a.unitKind!=="PARTICIPANT_CLOSURE")return -1;
+    // A configured operational block remains productive work and must be fixed
+    // before opening consumes the previously certified supporting geometry.
+    if(a.unitKind==="PARTICIPANT_OPENING"&&b.unitKind==="OPERATIONAL_MEAL")return 1;
+    if(b.unitKind==="PARTICIPANT_OPENING"&&a.unitKind==="OPERATIONAL_MEAL")return -1;
     const structuralFrontier=recomposesAgenda(a,b)?-1:recomposesAgenda(b,a)?1:0;
     const mainAuthority=b.priority.structuralClass===3?1:a.priority.structuralClass===3?-1:0;
     const mainSupport=(a.priority.structuralClass>=2||b.priority.structuralClass>=2)

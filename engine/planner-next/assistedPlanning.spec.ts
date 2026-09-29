@@ -104,6 +104,26 @@ test("task dependencies retain participant-meal source vertices without turning 
   assert.ok(meal&&exit&&meal.end<=exit.start,result.evidence.reasonCodes.join(","));
 });
 
+test("mixed task and participant-meal scopes are complete only when both authorities materialize",()=>{
+  const source=fixture();source.participantMealCapacity={maxSimultaneous:1};
+  source.participantMeals=[{id:"meal",sourceTaskId:"meal-source",participantId:"p2",duration:15,
+    window:{start:60,end:120},status:"pending"}];
+  const scope=createPlanningScope({kind:"ids",value:"main+meal"},{},["main","meal-source"]);
+  const complete=executeAssistedPlanning(buildAssistedProblem(source,scope,[]));
+  assert.equal(complete.evidence.completeForScope,true,complete.evidence.reasonCodes.join(","));
+  assert.deepEqual(complete.proposal?.map(task=>task.id),["main"]);
+  assert.ok(complete.evidence.selectedMealWitnesses?.participant?.scheduled.some(meal=>meal.sourceTaskId==="meal-source"));
+  assert.equal(complete.evidence.hardValid,true);
+  assert.equal(complete.evidence.requiredValid,true);
+
+  source.participantMeals[0]!.window={start:170,end:180};
+  source.participantMeals[0]!.duration=15;
+  const absent=executeAssistedPlanning(buildAssistedProblem(source,scope,[]));
+  assert.equal(absent.evidence.completeForScope,false);
+  assert.equal(absent.proposal,null);
+  assert.ok(absent.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE"));
+});
+
 test("participant-meal closure traverses task and meal dependencies heterogeneously",()=>{
   const source=fixture();source.participantMealCapacity={maxSimultaneous:2};
   source.tasks.find(task=>task.id==="outside")!.dependencies=["meal-second"];

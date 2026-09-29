@@ -548,11 +548,14 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "scheduledRoundPreparations" in result ? result.scheduledRoundPreparations : [],
     "scheduledOperationalMeals" in result ? result.scheduledOperationalMeals : []) : null;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
+  const materializedParticipantMealSourceIds=new Set(projectedParticipantMeals.map(meal=>meal.sourceTaskId));
   const protectedPreserved = input.protectedPlacements.every((fixed) => {
     const actual = byId.get(fixed.id);
     return actual !== undefined && JSON.stringify(actual) === JSON.stringify(fixed);
   });
-  const completeForScope = input.scope.resolvedTaskIds.every((id) => byId.has(id));
+  const participantMealSourceIds=new Set((input.originalValidationProblem.participantMeals??[]).map(meal=>meal.sourceTaskId));
+  const completeForScope = input.scope.resolvedTaskIds.every((id) => byId.has(id)
+    ||(participantMealSourceIds.has(id)&&materializedParticipantMealSourceIds.has(id)));
   const searchHardValid = Boolean(searchValidation && protectedPreserved
     && (searchValidation.hardValid || acceptsValidation(searchValidation)));
   const hardValid = Boolean(validation?.hardValid && protectedPreserved);

@@ -218,13 +218,16 @@ export class AssistedProposalService {
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
     let priorFutureStructuralWitness:FutureStructuralWitnessV1|undefined;
-    if(stage.proposalRunId!==null&&stage.proposalRunId!==undefined){
-      const {data:priorRun,error:priorError}=await this.runs.find(planId,Number(stage.proposalRunId));
+    for(const witnessStage of [...lineage].reverse()){
+      const proposalRunId=(witnessStage as typeof witnessStage&{proposalRunId?:number|null}).proposalRunId;
+      if(proposalRunId===null||proposalRunId===undefined)continue;
+      const {data:priorRun,error:priorError}=await this.runs.find(planId,Number(proposalRunId));
       if(priorError)throw priorError;
       const witnesses=(priorRun?.assisted_result_json?.evidence?.futureStructuralWitnesses
         ??priorRun?.assistedResultJson?.evidence?.futureStructuralWitnesses
         ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitnessV1[]|undefined;
       priorFutureStructuralWitness=witnesses?.find(item=>item?.kind==="FIXED_SUPPORTING_PIPELINE"&&item.version===1);
+      if(priorFutureStructuralWitness)break;
     }
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
     const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,

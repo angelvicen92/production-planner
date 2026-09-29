@@ -170,6 +170,13 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
       expected:task.duration,actual:item.end-item.start,start:item.start,end:item.end,spaceId:item.spaceId});
     if(item.spaceId!==task.spaceId)return reject("STYLING_SPACE_MISMATCH",{taskId:task.id,placementId:item.id,
       expected:task.spaceId,actual:item.spaceId,start:item.start,end:item.end});
+    const accepted=protectedById.get(task.id);
+    if(accepted){
+      if(accepted.start!==item.start||accepted.end!==item.end||accepted.spaceId!==item.spaceId)
+        return reject("STYLING_PLACEMENT_REJECTED",{taskId:task.id,placementId:item.id,
+          expected:{start:item.start,end:item.end,spaceId:item.spaceId},actual:{start:accepted.start,end:accepted.end,spaceId:accepted.spaceId}});
+      matching.set(task.id,scheduled.length);scheduled.push(accepted);continue;
+    }
     const withoutArrival={...task,dependencies:task.dependencies.filter(dependency=>!arrivalIds.has(dependency))};
     const placementContext=[...context,...scheduled];
     if(!canPlaceTask(problem,withoutArrival,item.start,placementContext))return reject("STYLING_PLACEMENT_REJECTED",{
@@ -177,7 +184,11 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
       placementDiagnostic:diagnoseTaskPlacement(problem,withoutArrival,item.start,placementContext)});
     matching.set(task.id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
   }
-  const arrival=assessCoreArrivalTransportFeasibility(problem,[...context,...scheduled]);
+  const protectedArrivals=[...arrivalIds].map(id=>protectedById.get(id)).filter((task):task is ScheduledTask=>Boolean(task));
+  const allArrivalsProtected=protectedArrivals.length===arrivalIds.size;
+  const arrival=allArrivalsProtected
+    ?{status:"FEASIBLE" as const,scheduled:protectedArrivals,evidence:{packetSizes:[]}}
+    :assessCoreArrivalTransportFeasibility(problem,[...context,...scheduled]);
   if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return reject("ARRIVAL_REVALIDATION_INFEASIBLE",{
     status:arrival.status,evidence:arrival.evidence,arrivalTaskIds:[...arrivalIds].sort()});
   for(const item of certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id))){
