@@ -30,7 +30,7 @@ import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { assessCoreArrivalTransportFeasibility, materializeTerminalTransport, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
+import { assessCoreArrivalTransportFeasibility, materializeTerminalTransportDetailed, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
@@ -771,10 +771,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if (mealWitness?.complete&&!transportAlreadyMaterialized) evidence.terminalTransportMaterializationAttempts += 1;
     let terminalTransportWitness: TransportMaterializationEvidence | null = null;
     let transportFallbackBranches=0;
-    const transport = transportAlreadyMaterialized ? [] : mealWitness?.complete ? materializeTerminalTransport(problem, substantive, mealWitness.scheduled, {
+    const transportResult = transportAlreadyMaterialized ? null : mealWitness?.complete ? materializeTerminalTransportDetailed(problem, substantive, mealWitness.scheduled, {
       consumeFallbackBranch: () => {transportFallbackBranches+=1;return ledger.consume("STANDALONE");},
       onEvidence: (witness) => { terminalTransportWitness = witness; },
     }) : null;
+    if(transportResult?.status==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+    const transport=transportAlreadyMaterialized?[]:transportResult?.scheduled??null;
     const observedTerminalTransportWitness = terminalTransportWitness as TransportMaterializationEvidence | null;
     if (observedTerminalTransportWitness) {
       evidence.transportContiguousStates += observedTerminalTransportWitness.directions
@@ -1171,9 +1173,11 @@ if(terminalDeparturePrerequisites.length){
         return result;
       }
       const allPlaced=[...coreTasks,...placed,...terminalPlaced];
+      const departureTasks=(problem.transportPolicy?.departure.taskIds??[]).map(id=>problem.tasks.find(task=>task.id===id)).filter((task):task is Task=>Boolean(task));
+      const outLatestStart=(task:Task)=>{const out=departureTasks.find(candidate=>candidate.participantId===task.participantId);if(!out)return Number.POSITIVE_INFINITY;const values=[...exactTaskStartDomain(problem,out,allPlaced,coreMeals).starts()];return values.at(-1)??Number.NEGATIVE_INFINITY;};
       const domains=remaining.map(task=>({task,starts:[...exactTaskStartDomain(problem,task,allPlaced,coreMeals).starts()]
         .filter(start=>canPlaceTask(problem,task,start,allPlaced,coreMeals))}))
-        .sort((a,b)=>a.starts.length-b.starts.length||effectiveDeadline(problem,a.task)-effectiveDeadline(problem,b.task)
+        .sort((a,b)=>outLatestStart(a.task)-outLatestStart(b.task)||a.starts.length-b.starts.length||effectiveDeadline(problem,a.task)-effectiveDeadline(problem,b.task)
           ||b.task.duration-a.task.duration||a.task.id.localeCompare(b.task.id));
       const choice=domains[0]!;
       if(!choice.starts.length)return "DEAD_END";

@@ -9,6 +9,7 @@ import {
   classifyTransportContext,
   assessCoreArrivalTransportFeasibility,
   materializeTerminalTransport,
+  exactIntervalCapacityAssignment,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -264,7 +265,7 @@ test("canonical IN places the first group at its earliest hard-valid start and t
   ]);
   assert.deepEqual(evidence.directions[0].packetSizes, [2, 2]);
   assert.deepEqual(evidence.directions[0].starts, [0, 40]);
-  assert.equal(evidence.directions[0].construction, "fallback");
+  assert.equal(evidence.directions[0].construction, "interval-exact");
   assert.equal(evidence.directions[0].classification, "MEMBERSHIP_REQUIRED");
 });
 
@@ -274,7 +275,7 @@ test("canonical OUT places consecutive boundary packets first-to-last at earlies
   const result = materializeTerminalTransport(problem, substantive, [], { onEvidence: (value) => { evidence = value; } });
   assert.ok(result);
   assert.deepEqual(evidence.directions[1].starts, [50, 70]);
-  assert.equal(evidence.directions[1].construction, "fallback");
+  assert.equal(evidence.directions[1].construction, "interval-exact");
   assert.equal(evidence.directions[1].classification, "MEMBERSHIP_REQUIRED");
 });
 
@@ -291,12 +292,29 @@ test("exact fallback changes membership when the preferred contiguous packets ar
     onEvidence: (value) => { evidence = value; },
   });
   assert.ok(result);
-  assert.equal(evidence.directions[0].construction, "fallback");
+  assert.equal(evidence.directions[0].construction, "interval-exact");
   assert.deepEqual(evidence.directions[0].packetMembers, [
     ["arrival-a", "arrival-c"], ["arrival-b", "arrival-d"],
   ]);
   assert.deepEqual(evidence.directions[0].starts, [0, 20]);
-  assert.equal(evidence.directions[0].alternativesExplored, consumed);
+  assert.equal(consumed, 0, "interval matching must not enumerate nominal memberships");
+});
+
+test("interval capacity matching agrees with an exhaustive membership oracle", () => {
+  const brute=(domains:number[][],starts:number[],minimum:number,maximum:number):boolean=>{
+    const counts=Array(starts.length).fill(0);const visit=(task:number):boolean=>task===domains.length
+      ?counts.every(value=>value>=minimum&&value<=maximum)
+      :domains[task]!.some(start=>{const slot=starts.indexOf(start);if(slot<0||counts[slot]>=maximum)return false;counts[slot]++;const ok=visit(task+1);counts[slot]--;return ok;});
+    return visit(0);
+  };
+  for(let n=1;n<=7;n++)for(let minimum=1;minimum<=3;minimum++)for(let maximum=minimum;maximum<=3;maximum++){
+    const starts=[0,20,40].slice(0,Math.min(3,n));
+    for(let seed=0;seed<24;seed++){
+      const domains=Array.from({length:n},(_,task)=>starts.filter((_,slot)=>((seed+task*5+slot*3)%(slot+2))!==0));
+      const exact=exactIntervalCapacityAssignment(domains,starts,minimum,maximum);
+      assert.equal(exact!==null,brute(domains,starts,minimum,maximum),JSON.stringify({n,minimum,maximum,domains}));
+    }
+  }
 });
 
 function interchangeableArrivalProblem(deadlines: readonly number[], reverse = false): { problem: PlannerNextProblem; core: ScheduledTask[] } {
@@ -333,6 +351,17 @@ test("different arrival deadlines remain CONTIGUOUS_EXACT and input order does n
   assert.ok(first.evidence.contiguousStatesExplored > 0);
   assert.equal(first.evidence.membershipFallbackEntered, false);
   assert.deepEqual(original.problem, snapshot);
+});
+
+test("contiguous transport reports budget exhaustion instead of infeasibility", () => {
+  const fixture = interchangeableArrivalProblem([20, 20, 20, 100, 100]);
+  const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core, {
+    consumeFallbackBranch: () => false,
+  });
+  assert.equal(result.status, "INCONCLUSIVE");
+  assert.equal(result.scheduled, null);
+  assert.equal(result.evidence.failureCause, "BUDGET_EXHAUSTED");
+  assert.equal(result.evidence.budgetExhausted, true);
 });
 
 test("core arrival deadlines ignore already materialized transport rows deterministically", () => {
