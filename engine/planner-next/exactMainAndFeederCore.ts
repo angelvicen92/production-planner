@@ -157,6 +157,10 @@ export interface ExactMainAndFeederCoreEvidence {
   fixedMainBundleHardGateRejects:number;
   fixedMainBundleTaskCount:number;
   fixedMainBundleTasksByKind:Record<string,number>;
+  fixedSupportingGeometryFingerprint:string|null;fixedSupportingMatchingAttempts:number;fixedSupportingEdges:number;
+  fixedSupportingZeroDomainTaskIds:string[];fixedSupportingPerfectMatchingFound:boolean;
+  fixedSupportingRematchedIdentityCount:number;fixedSupportingArrivalResult:string|null;
+  fixedSupportingArrivalPacketCount:number;fixedSupportingSameGeometryRescued:boolean;
   protectedMainSlotChecks:number;
   protectedMainSlotMismatches:number;
   pipelineTasksRemovedFromStandalone:number;
@@ -754,6 +758,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedMainBundleFirstParticipantEdgePrune:null,fixedMainBundleMatchingAttempts:0,
     fixedMainBundlePerfectMatchingFound:false,fixedMainBundleHardGatePasses:0,fixedMainBundleHardGateRejects:0,
     fixedMainBundleTaskCount:0,fixedMainBundleTasksByKind:{},protectedMainSlotChecks:0,protectedMainSlotMismatches:0,
+    fixedSupportingGeometryFingerprint:null,fixedSupportingMatchingAttempts:0,fixedSupportingEdges:0,
+    fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
+    fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,
     firstFixedMainBundleHardGateDiagnostic:null,
@@ -1028,6 +1035,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         evidence.fixedMainBundleParticipantEdgeChecks=prepared.participantEdgeEvidence.checked;
         evidence.fixedMainBundleParticipantEdgePrunes=prepared.participantEdgeEvidence.pruned;
         evidence.fixedMainBundleFirstParticipantEdgePrune=prepared.participantEdgeEvidence.firstPrune;
+        if(prepared.fixedSupporting){evidence.fixedSupportingGeometryFingerprint=prepared.witness.fingerprint;
+          evidence.fixedSupportingEdges=prepared.preparedBundleEdges;
+          evidence.fixedSupportingZeroDomainTaskIds=[...prepared.candidates].filter(([,row])=>row.size===0).map(([id])=>id).sort();}
       }
       if(!prepared){
         evidence.firstFixedMainBundleRejection="PIPELINE_BUNDLE_GRAPH_INFEASIBLE";
@@ -1036,6 +1046,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.fixedMainBundleMatchingAttempts++;
       const matching=materializePreparedPipelineBundleMatching(problem,prepared,new Set(),undefined,consumeMatchingBranch);
       evidence.fixedMainBundlePerfectMatchingFound=matching!==null;
+      evidence.fixedSupportingMatchingAttempts=matching?.evidence.attempts??1;
+      evidence.fixedSupportingPerfectMatchingFound=matching!==null;
+      evidence.fixedSupportingRematchedIdentityCount=matching?.evidence.fixedSupportingRematchedIdentityCount??0;
+      evidence.fixedSupportingArrivalResult=matching?.evidence.fixedSupportingArrivalResult??null;
+      evidence.fixedSupportingArrivalPacketCount=matching?.evidence.fixedSupportingArrivalPacketCount??0;
+      evidence.fixedSupportingSameGeometryRescued=Boolean(matching&&matching.evidence.fixedSupportingRematchedIdentityCount>0
+        &&matching.evidence.fixedSupportingArrivalResult==="FEASIBLE");
       if(!matching){
         evidence.firstFixedMainBundleRejection="NO_PERFECT_PIPELINE_BUNDLE_MATCHING";
         return fail("INFEASIBLE",["FIXED_MAIN_DEPENDENT_BUNDLE_INFEASIBLE"],coreIds);

@@ -66,7 +66,8 @@ type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:Participant
 export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[];
   safePerfectMatchingAttempts:number;safePerfectMatchingFound:number;safeGraphEdgeCount:number;intrusiveGraphEdgeCount:number;
   safeMatchingFailures:number;fullGraphFallbacks:number;bundleEdgesBeforeReservation:number;
-  bundleEdgesRejectedByReservation:number;bundleEdgesAfterReservation:number }
+  bundleEdgesRejectedByReservation:number;bundleEdgesAfterReservation:number;
+  fixedSupportingArrivalResult:string|null;fixedSupportingArrivalPacketCount:number;fixedSupportingRematchedIdentityCount:number }
 export interface PipelineBundleMaterialization { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];
   matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string>; evidence:PipelineBundleMatchingEvidence }
 export interface PreviousPipelineBundleMatching { matching:ReadonlyMap<string,number>; forbiddenEdges:ReadonlySet<string> }
@@ -77,6 +78,8 @@ export interface PreparedPipelineBundleGraph {
   readonly preparedBundleEdges:number;
   readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
     mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
+  readonly fixedSupporting?:{stylingTaskIds:readonly string[];stylingSpots:readonly AnonymousPipelineSpot[];
+    nominalPositions:ReadonlyMap<string,number>;context:readonly ScheduledTask[]};
 }
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
@@ -510,6 +513,40 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined)
     .sort((a,b)=>a.id.localeCompare(b.id));
   const assignments=[...witness.assignments].sort((a,b)=>a.mainSpotId.localeCompare(b.mainSpotId));
+  // Once Main and vocal feeders have been accepted, their identity is fixed but the
+  // anonymous Styling geometry is not.  Rebuild the bipartite identity -> spot graph
+  // instead of incorrectly moving the whole nominal bundle (including fixed work).
+  const fixedMainAndFeeders=mains.length>0&&mains.every(main=>protectedById.has(main.id)&&problem.tasks.some(task=>
+    task.kind==="vocal"&&task.participantId===main.participantId&&protectedById.has(task.id)));
+  if(fixedMainAndFeeders){
+    const stylingSpots=[...witness.stylingSpots].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+    const stylingTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"
+      &&task.participantId===main.participantId&&main.dependencies.includes(task.id)&&!arrivalIds.has(task.id))!).filter(Boolean)
+      .sort((a,b)=>a.id.localeCompare(b.id));
+    const supportingIds=new Set([...arrivalIds,...stylingTasks.map(task=>task.id)]);
+    const protectedContext=protectedPlacements.filter(task=>!supportingIds.has(task.id));
+    const fixedFeeders=problem.tasks.filter(task=>task.kind==="vocal").flatMap(task=>{
+      const fixed=protectedById.get(task.id)??nominal.scheduledTasks.find(item=>item.id===task.id);return fixed?[fixed]:[];});
+    const context=[...new Map([...protectedContext,...fixedFeeders].map(task=>[task.id,task])).values()];
+    const candidates=new Map<string,Map<number,ScheduledTask[]>>();let edges=0;
+    const nominalPositions=new Map<string,number>();
+    for(const task of stylingTasks){
+      // The nominal position is diagnostic only; recover it from the nominal schedule.
+      const nominalTask=nominal.scheduledTasks.find(item=>item.id===task.id);
+      const nominalPosition=stylingSpots.findIndex(spot=>spot.start===nominalTask?.start&&spot.end===nominalTask?.end);
+      if(nominalPosition>=0)nominalPositions.set(task.id,nominalPosition);
+      const row=new Map<number,ScheduledTask[]>();
+      stylingSpots.forEach((spot,position)=>{
+        const placed={...task,start:spot.start,end:spot.end};
+        const withoutArrival={...task,dependencies:task.dependencies.filter(id=>!arrivalIds.has(id))};
+        if(canPlaceTask(problem,withoutArrival,spot.start,context)){row.set(position,[placed]);edges++;}
+      });
+      candidates.set(task.id,row);
+    }
+    return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:stylingTasks.map(task=>task.id),candidates,
+      preparedBundleEdges:edges,participantEdgeEvidence:{checked:0,pruned:0,abstained:0,firstPrune:null},
+      fixedSupporting:{stylingTaskIds:stylingTasks.map(task=>task.id),stylingSpots,nominalPositions,context}};
+  }
   const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
   const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
@@ -615,14 +652,47 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
     previous?.forbiddenEdges??new Set(),previous?.matching??new Map(),consumeTraversal,
     (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
   if(initial.outcome!=="PERFECT")return null;
-  const matching=initial.matching!;
-  const scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
-  const unique=[...new Map([...scheduled,...protectedPlacements].map(task=>[task.id,task])).values()]
+  let matching=initial.matching!;
+  let effectiveForbidden=new Set(forbiddenEdges);let attempts=1;
+  let scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
+  let rebuiltArrival:readonly ScheduledTask[]=[];
+  let fixedSupportingArrivalResult:string|null=null,fixedSupportingArrivalPacketCount=0;
+  if(prepared.fixedSupporting){
+    const queue:Array<Set<string>>=[];const seen=new Set<string>();
+    while(true){
+      const arrival=assessCoreArrivalTransportFeasibility(problem,[...prepared.fixedSupporting.context,...scheduled]);
+      fixedSupportingArrivalResult=arrival.status;fixedSupportingArrivalPacketCount=arrival.evidence.packetSizes.length;
+      if(arrival.status==="FEASIBLE"&&arrival.scheduled){rebuiltArrival=arrival.scheduled;break;}
+      // ABSTAIN/INCONCLUSIVE is not a certificate and therefore cannot create a nogood.
+      if(arrival.status!=="INFEASIBLE")return null;
+      for(const [id,position] of [...matching].sort((a,b)=>a[0].localeCompare(b[0])||a[1]-b[1])){
+        const child=new Set(effectiveForbidden);child.add(`${id}@${position}`);
+        const key=[...child].sort().join("|");if(!seen.has(key)){seen.add(key);queue.push(child);}
+      }
+      let next:ReturnType<typeof incrementallyRepairMatchingWitness>|undefined,nextForbidden:Set<string>|undefined;
+      while(queue.length&&!next){const child=queue.shift()!;const candidate=incrementallyRepairMatchingWitness(prepared.mainIds,positions,
+        child,new Set(),new Map(),consumeTraversal);attempts++;
+        if(candidate.outcome==="BUDGET_EXHAUSTED")return null;
+        if(candidate.outcome==="PERFECT"){next=candidate;nextForbidden=child;}
+      }
+      if(!next||!nextForbidden)return null;
+      matching=next.matching!;effectiveForbidden=nextForbidden;
+      scheduled=[...matching].sort((a,b)=>a[1]-b[1]).flatMap(([id,position])=>candidates.get(id)!.get(position)!);
+    }
+    scheduled=[...prepared.fixedSupporting.context,...scheduled,...rebuiltArrival];
+  }
+  const retainedProtected=prepared.fixedSupporting
+    ?protectedPlacements.filter(task=>!prepared.fixedSupporting!.stylingTaskIds.includes(task.id)&&!new Set(problem.transportPolicy?.arrival.taskIds??[]).has(task.id))
+    :protectedPlacements;
+  const unique=[...new Map([...scheduled,...retainedProtected].map(task=>[task.id,task])).values()]
     .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-  return {witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(forbiddenEdges),evidence:{attempts:1,repairs:forbiddenEdges.size?1:0,
+  return {witness,scheduledTasks:unique,matching,forbiddenEdges:effectiveForbidden,evidence:{attempts,repairs:effectiveForbidden.size?1:0,
     materializations:1,forbiddenEdges:[...forbiddenEdges].sort(),safePerfectMatchingAttempts,safePerfectMatchingFound,safeGraphEdgeCount,
     intrusiveGraphEdgeCount,safeMatchingFailures,fullGraphFallbacks,bundleEdgesBeforeReservation:prepared.preparedBundleEdges,bundleEdgesRejectedByReservation,
-    bundleEdgesAfterReservation:prepared.preparedBundleEdges-bundleEdgesRejectedByReservation}};
+    bundleEdgesAfterReservation:prepared.preparedBundleEdges-bundleEdgesRejectedByReservation,
+    fixedSupportingArrivalResult,fixedSupportingArrivalPacketCount,
+    fixedSupportingRematchedIdentityCount:prepared.fixedSupporting?[...matching].filter(([id,position])=>
+      prepared.fixedSupporting!.nominalPositions.get(id)!==position).length:0}};
 }
 
 /** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */

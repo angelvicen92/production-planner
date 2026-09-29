@@ -379,6 +379,35 @@ describe("anonymous structural pipeline witness",()=>{
     assert.notEqual(rematched.matching.get("main0"),nominalPosition);
   });
 
+  it("keeps fixed Main/feeder geometry while rematching Styling identities and rebuilding Arrival",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);assert.equal(nominal.witness.status,"FEASIBLE");
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const style0=nominal.scheduledTasks.find(task=>task.id==="style0")!;
+    p.spaces.push({id:"protected",availability:windows});
+    const blocker={...style0,id:"accepted-context",kind:"auxiliary" as const,spaceId:"protected",dependencies:[]};
+    p.tasks.push(blocker);
+    const staleArrival={...nominal.scheduledTasks.find(task=>task.id==="in0")!,start:250,end:260};
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,blocker,staleArrival]);assert.ok(prepared?.fixedSupporting);
+    const result=materializePreparedPipelineBundleMatching(p,prepared!);assert.ok(result);
+    assert.notEqual(result.matching.get("style0"),prepared!.fixedSupporting!.nominalPositions.get("style0"));
+    for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+    assert.notEqual(result.scheduledTasks.find(task=>task.id==="in0")?.start,staleArrival.start);
+    assert.equal(validatePlan(p,result.scheduledTasks).hardValid,true);
+  });
+
+  it("reports no matching on fixed Styling geometry without moving protected work",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const nominal=materializeNominalPipelineWitness(p,architecture);
+    const fixed=nominal.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+    const spots=nominal.witness.stylingSpots;
+    const blockers=spots.map((spot,index)=>({...p.tasks.find(task=>task.id==="style0")!,id:`block-${index}`,
+      participantId:undefined,dependencies:[],start:spot.start,end:spot.end}));
+    const prepared=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers]);assert.ok(prepared?.fixedSupporting);
+    assert.deepEqual([...prepared!.candidates].filter(([,row])=>row.size===0).map(([id])=>id).sort(),["style0","style1"]);
+    assert.equal(materializePreparedPipelineBundleMatching(p,prepared!),null);
+  });
+
   const addTightCollectiveFuture=(p:PlannerNextProblem)=>{
     p.participants[0]!.availability=[{start:160,end:300}];
     p.participantMealCapacity={maxSimultaneous:1};
