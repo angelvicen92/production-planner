@@ -18,6 +18,8 @@ process.env.SUPABASE_ANON_KEY ??= "evidence";
 export interface A2Assist8Options { readonly branchBudget?: number; readonly writeEvidence?: boolean; readonly stopAfterFirstProposal?:boolean;
   /** Focused diagnostic only; canonical Evidence always runs to completion/blocker. */
   readonly stopAfterIterationCount?:number;
+  /** Emits only elapsed-time progress for long-running focused diagnostics. */
+  readonly reportIterationDurations?:boolean;
   /** Benchmark-only entry point for replaying a later Stage without rebuilding its predecessors. */
   readonly initialSnapshot?:AssistedPlanningSnapshotV1 }
 
@@ -223,6 +225,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       protectedRoundPreparationCount:evidence.protectedRoundPreparationCount??0,
       selectedRoundPreparationIds:evidence.selectedRoundPreparationIds??[],
       selectedRoundPreparationCount:evidence.selectedRoundPreparationCount??0,
+      selectedRoundPreparations:evidence.selectedRoundPreparations??[],
       proposedSnapshotOperationalMeals:[...(result.proposedDraftSnapshot?.operationalMeals??[])],
       includePrerequisites: result.includePrerequisites, visibleProposalTaskIds: result.proposal ? [...result.scopeTaskIds] : [],
       supportingTaskIds: evidence.supportingTaskIds ?? [], supportingTaskCount: evidence.supportingTaskIds?.length ?? 0,
@@ -299,7 +302,10 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       fixedSupportingMatchingAttempts:evidence.fixedSupportingMatchingAttempts??0,
       fixedSupportingGeometriesAttempted:evidence.fixedSupportingGeometriesAttempted??[],
       standaloneDiagnostic:evidence.standaloneDiagnostic??null,orderingComparison,
-      causalDiagnostic: evidence.causalDiagnostic ?? null };
+      causalDiagnostic: evidence.causalDiagnostic ?? null,
+      // The closure probe needs only the accepted meal choice, not another clone
+      // of the complete (and large) per-stage Evidence object.
+      acceptedMealWitnesses: result.outcome === "PROPOSAL" ? evidence.selectedMealWitnesses ?? null : null };
     if (result.outcome !== "PROPOSAL") {
       const standalone=evidence.standaloneDiagnostic;
       const preflightFailure = result.reasonCodes.includes("CORE_PREFLIGHT_FAILED");
@@ -434,6 +440,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.acceptedStageProposalRunId=stages.find(stage=>stage.id===session.activeStageId)?.proposalRunId??null;
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
+    if(options.reportIterationDurations)console.error(JSON.stringify({completedObligationCount:after.length,durationMs:record.durationMs}));
     if(stopAfterFirstProposal||iterations.length===(options.stopAfterIterationCount??Number.POSITIVE_INFINITY))break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
