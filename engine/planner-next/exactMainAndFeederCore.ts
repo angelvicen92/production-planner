@@ -8,6 +8,7 @@ import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMai
   type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
+import { participantGapMinutes } from "./participantTransition";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
@@ -697,7 +698,9 @@ export const residualMatchingOperationsMayInteract = (problem: PlannerNextProble
 
   const candidateAfterAdded = added.end <= candidate.start;
   const gap = candidateAfterAdded ? candidate.start - added.end : added.start - candidate.end;
-  if (participant && gap < problem.participantTransitionMinutes) return true;
+  if (participant && gap < (candidateAfterAdded
+    ? participantGapMinutes(problem, added, candidate)
+    : participantGapMinutes(problem, candidate, added))) return true;
   if (coach && gap < effectiveCoachTransitionMinutes(problem, candidate.coachId!,
     candidateAfterAdded ? added.spaceId : candidate.spaceId,
     candidateAfterAdded ? candidate.spaceId : added.spaceId)) return true;

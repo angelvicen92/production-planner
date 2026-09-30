@@ -2478,6 +2478,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     itinerantTeamRequirement: "none",
     itinerantTeamId: null,
     autoCreateOnContestantCreate: false,
+    participantMarginBeforeMinutes: null,
+    participantMarginAfterMinutes: null,
   });
 
   const [editData, setEditData] = useState<any | null>(null);
@@ -2633,6 +2635,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         tpl.defaultDuration ?? tpl.default_duration ?? 30,
       ),
       defaultCameras: Number(tpl.defaultCameras ?? tpl.default_cameras ?? 0),
+      participantMarginBeforeMinutes: tpl.participantMarginBeforeMinutes ?? tpl.participant_margin_before_minutes ?? null,
+      participantMarginAfterMinutes: tpl.participantMarginAfterMinutes ?? tpl.participant_margin_after_minutes ?? null,
       autoCreateOnContestantCreate: Boolean(
         tpl.autoCreateOnContestantCreate ??
           tpl.auto_create_on_contestant_create ??
@@ -3091,6 +3095,12 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                     }))
                   }
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input type="number" min={0} placeholder="Antes: heredado" value={formData.participantMarginBeforeMinutes ?? ""}
+                    onChange={(e) => setFormData((p:any)=>({...p,participantMarginBeforeMinutes:e.target.value===""?null:Number(e.target.value)}))}/>
+                  <Input type="number" min={0} placeholder="Después: heredado" value={formData.participantMarginAfterMinutes ?? ""}
+                    onChange={(e) => setFormData((p:any)=>({...p,participantMarginAfterMinutes:e.target.value===""?null:Number(e.target.value)}))}/>
+                </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="task-template-auto-create-on-contestant-create"
@@ -3256,6 +3266,16 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                           }
                           placeholder="30"
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Margen antes (vacío = heredado)</Label>
+                        <Input className="h-9" type="number" min={0} value={editData?.participantMarginBeforeMinutes ?? ""}
+                          onChange={(e)=>setEditData((p:any)=>({...p,participantMarginBeforeMinutes:e.target.value===""?null:Number(e.target.value)}))}/>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Margen después (vacío = heredado)</Label>
+                        <Input className="h-9" type="number" min={0} value={editData?.participantMarginAfterMinutes ?? ""}
+                          onChange={(e)=>setEditData((p:any)=>({...p,participantMarginAfterMinutes:e.target.value===""?null:Number(e.target.value)}))}/>
                       </div>
                       <div className="space-y-1">
                         <Label>Abrev</Label>

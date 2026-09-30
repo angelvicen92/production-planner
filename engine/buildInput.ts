@@ -613,7 +613,7 @@ export async function buildEngineInput(
 
   return {
     planId: p.id,
-    taskTemplateSnapshotContractVersion: 1,
+    taskTemplateSnapshotContractVersion: 2,
     taskTemplateSnapshotCount: taskTemplateSnapshots.length,
     taskTemplateSnapshotSources,
     taskTemplateSnapshotFingerprint,
@@ -893,6 +893,8 @@ export async function buildEngineInput(
           itinerantTeamId: tpl.itinerantTeamId,
           allowedItinerantTeamIds: [...tpl.allowedItinerantTeamIds],
           itinerantTeamRequirement: tpl.itinerantTeamRequirement,
+          participantMarginBeforeMinutes: t.participant_margin_before_minutes ?? t.participantMarginBeforeMinutes ?? tpl.participantMarginBeforeMinutes,
+          participantMarginAfterMinutes: t.participant_margin_after_minutes ?? t.participantMarginAfterMinutes ?? tpl.participantMarginAfterMinutes,
 
           // ✅ Dependencias (ya resueltas a taskIds)
           hasDependency: isManualBlock ? false : hasDependency,

@@ -3768,6 +3768,8 @@ function mapDeleteError(err: any, fallback: string) {
       if (input.contestantId !== undefined) patchDb.contestant_id = input.contestantId;
       if (input.durationOverride !== undefined) patchDb.duration_override = input.durationOverride;
       if (input.durationMinutes !== undefined) patchDb.duration_override = input.durationMinutes;
+      if (input.participantMarginBeforeMinutes !== undefined) patchDb.participant_margin_before_minutes = input.participantMarginBeforeMinutes;
+      if (input.participantMarginAfterMinutes !== undefined) patchDb.participant_margin_after_minutes = input.participantMarginAfterMinutes;
       if (input.duration_minutes !== undefined) patchDb.duration_override = input.duration_minutes;
       if (input.camerasOverride !== undefined) patchDb.cameras_override = input.camerasOverride;
 

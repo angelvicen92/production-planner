@@ -3,6 +3,7 @@ import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal, protectedMealBlocksSpace } from "./spaceMeals";
 import { taskFitsAvailability } from "./taskAvailability";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
+import { participantGapMinutes } from "./participantTransition";
 
 /** Resolves the resource-specific margin without mutation or throwing for an unknown id. */
 export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, resourceId: string): number {
@@ -120,7 +121,7 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     if(!sharedParticipant&&!sharedCoach&&!sharedSpace&&sharedResources.length===0&&!sharedItinerantUnit)continue;
     let before=0,after=0;
     if(!sharedSpace){
-      if(sharedParticipant)before=after=problem.participantTransitionMinutes;
+      if(sharedParticipant){before=participantGapMinutes(problem,task,other);after=participantGapMinutes(problem,other,task);}
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
       for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
       if(sharedItinerantUnit){const transition=problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0;before=after=Math.max(before,after,transition);}
@@ -185,8 +186,6 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
       if (sharedResource) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
       if (sharedItinerantUnit) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
     }
-    if (other.spaceId === task.spaceId) continue;
-
     const afterOther = other.end <= start;
     const beforeOther = end <= other.start;
     if (!afterOther && !beforeOther) continue;
@@ -198,7 +197,9 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
         : effectiveCoachTransitionMinutes(problem, task.coachId, task.spaceId, other.spaceId);
 
     const gap = afterOther ? start - other.end : other.start - end;
-    if (sharedParticipant && gap < problem.participantTransitionMinutes) return reject("TRANSITION_PARTICIPANT",other.id);
+    const participantMargin = afterOther ? participantGapMinutes(problem,other,task) : participantGapMinutes(problem,task,other);
+    if (sharedParticipant && gap < participantMargin) return reject("TRANSITION_PARTICIPANT",other.id);
+    if (other.spaceId === task.spaceId) continue;
     if (sharedCoach && gap < coachMargin) return reject("TRANSITION_COACH",other.id);
     if (sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
     const itinerantTransition=sharedItinerantUnit?problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0:0;

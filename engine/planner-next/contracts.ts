@@ -91,6 +91,9 @@ interface BaseTask {
   itinerantUnitId?: string;
   /** Solver-owned assignment domain. A singleton remains a specific unit. */
   allowedItinerantUnitIds?: string[];
+  /** Explicit participant boundary overrides; zero must not be treated as absent. */
+  participantMarginBeforeMinutes?: Minute;
+  participantMarginAfterMinutes?: Minute;
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";

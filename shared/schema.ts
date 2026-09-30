@@ -109,6 +109,7 @@ export const planningRuns = pgTable("planning_runs", {
 export const programSettings = pgTable("program_settings", {
   id: integer("id").primaryKey(),
   defaultWorkStart: text("default_work_start").notNull().default("09:00"),
+  defaultParticipantTransitionMinutes: integer("default_participant_transition_minutes").notNull().default(5),
   defaultWorkEnd: text("default_work_end").notNull().default("21:00"),
   mealStart: text("meal_start").notNull(),
   mealEnd: text("meal_end").notNull(),
@@ -425,6 +426,8 @@ export const taskTemplates = pgTable("task_templates", {
   exclusiveAuxiliar: boolean("exclusive_auxiliar").notNull().default(false),
   setupId: integer("setup_id"), // Self reference possible, but simplified for now
   rulesJson: jsonb("rules_json").$type<any>(), // Flexible for engine rules
+  participantMarginBeforeMinutes: integer("participant_margin_before_minutes"),
+  participantMarginAfterMinutes: integer("participant_margin_after_minutes"),
 
   // ✅ Color configurable para la UI (hex: #RRGGBB o #RRGGBBAA)
   uiColor: text("ui_color"),
@@ -454,7 +457,7 @@ export const planTaskTemplateSnapshots = pgTable("plan_task_template_snapshots",
   id: bigint("id", { mode: "number" }).primaryKey(),
   planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
   sourceTemplateId: integer("source_template_id").notNull(),
-  contractVersion: integer("contract_version").notNull().default(1),
+  contractVersion: integer("contract_version").notNull().default(2),
   source: text("source").notNull(),
   templateName: text("template_name").notNull(),
   defaultDuration: integer("default_duration").notNull(),
@@ -473,12 +476,14 @@ export const planTaskTemplateSnapshots = pgTable("plan_task_template_snapshots",
   itinerantTeamId: integer("itinerant_team_id"),
   allowedItinerantTeamIds: jsonb("allowed_itinerant_team_ids").$type<number[]>().notNull().default([]),
   setupId: integer("setup_id"),
+  participantMarginBeforeMinutes: integer("participant_margin_before_minutes"),
+  participantMarginAfterMinutes: integer("participant_margin_after_minutes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   planIdx: index("plan_task_template_snapshots_plan_id_idx").on(table.planId),
   planTemplateUnique: uniqueIndex("plan_task_template_snapshots_plan_template_key").on(table.planId, table.sourceTemplateId),
-  versionCheck: check("plan_task_template_snapshots_contract_version_check", sql`${table.contractVersion} = 1`),
+  versionCheck: check("plan_task_template_snapshots_contract_version_check", sql`${table.contractVersion} = 2`),
   sourceCheck: check("plan_task_template_snapshots_source_check", sql`${table.source} in ('inherited', 'legacy_backfill', 'ad_hoc_from_default')`),
   templateNameCheck: check("plan_task_template_snapshots_template_name_check", sql`length(btrim(${table.templateName})) > 0`),
   durationCheck: check("plan_task_template_snapshots_duration_check", sql`${table.defaultDuration} > 0`),
@@ -589,6 +594,8 @@ export const dailyTasks = pgTable("daily_tasks", {
   contestantId: integer("contestant_id").references(() => contestants.id),
   durationOverride: integer("duration_override"),
   camerasOverride: integer("cameras_override"),
+  participantMarginBeforeMinutes: integer("participant_margin_before_minutes"),
+  participantMarginAfterMinutes: integer("participant_margin_after_minutes"),
   status: taskStatusEnum("status").notNull().default('pending'),
 
   // Location (override per task)

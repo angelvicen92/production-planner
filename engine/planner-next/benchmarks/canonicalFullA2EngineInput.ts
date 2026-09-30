@@ -59,6 +59,8 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
       ...(task.jointGroupId ? { jointGroupId: task.jointGroupId } : {}),
       ...(task.setupFamilyId ? { setupFamilyId: task.setupFamilyId } : {}),
       ...(task.itinerantUnitId ? { itinerantTeamId: itinerantUnitId.get(task.itinerantUnitId)! } : {}),
+      ...(task.participantMarginBeforeMinutes == null ? {} : { participantMarginBeforeMinutes: task.participantMarginBeforeMinutes }),
+      ...(task.participantMarginAfterMinutes == null ? {} : { participantMarginAfterMinutes: task.participantMarginAfterMinutes }),
     };
   });
   // Standalone Reality A/B operations belong to one two-lane pool.  The

@@ -39,6 +39,9 @@ export interface TaskInput {
     templateId: number;
     // Para excepciones operativas (ej. tarea "comida")
     templateName?: string | null;
+    /** Per-boundary participant margin overrides. Explicit zero is authoritative. */
+    participantMarginBeforeMinutes?: number | null;
+    participantMarginAfterMinutes?: number | null;
 
     // ✅ Requisitos de recursos de la plantilla (aún NO resueltos)
     resourceRequirements?: ResourceRequirementsInput | null;
@@ -298,7 +301,7 @@ export interface EngineInputItinerantTeamAvailabilityInput {
 export interface EngineInput {
   planId: number;
   /** Derived from the authoritative per-plan task-template snapshot catalog. */
-  taskTemplateSnapshotContractVersion?: 1;
+  taskTemplateSnapshotContractVersion?: 2;
   taskTemplateSnapshotCount?: number;
   taskTemplateSnapshotSources?: Readonly<Record<
     "inherited" | "legacy_backfill" | "ad_hoc_from_default",

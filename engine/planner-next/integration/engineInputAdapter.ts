@@ -176,6 +176,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
       ...(source.allowedItinerantTeamIds?.length ? { allowedItinerantUnitIds: [...new Set(source.allowedItinerantTeamIds)]
         .sort((a,b)=>a-b).map(id=>canonical("itinerant-team",id)) } : {}),
+      ...(source.participantMarginBeforeMinutes == null ? {} : { participantMarginBeforeMinutes: source.participantMarginBeforeMinutes }),
+      ...(source.participantMarginAfterMinutes == null ? {} : { participantMarginAfterMinutes: source.participantMarginAfterMinutes }),
     };
     if (source.plannerNextKind === "technical") return { ...base, kind: "technical" as const };
     if (source.plannerNextKind === "main" || source.plannerNextKind === "vocal") {

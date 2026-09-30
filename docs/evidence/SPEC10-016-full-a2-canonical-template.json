@@ -19,11 +19,11 @@
     },
     {
       "path": "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
-      "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
+      "sha256": "e760490567340077546ff4d48e4d0f18a496843220fa4c9e61005372e6a79daf"
     }
   ],
-  "manifestFingerprint": "78073779bed60eaa08527de76ee37d387d4d7b099969e0031ca121548d549f3c",
-  "expansionFingerprint": "01d9b3a738e8c75d9953082cbe4c364c5149c6a274d62787d6a57d9dc38da3d4",
+  "manifestFingerprint": "8abea2baafb063502b1d936bb23df8b3046eec2d9de914d061bed80fc5fbf8ad",
+  "expansionFingerprint": "e802093a8233b1dab55a50d78c02a40d3cac315a9f3b215f913e3214293387b0",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 0,
@@ -1131,75 +1131,75 @@
       },
       "C02": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C03": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C04": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C05": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C06": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C07": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C08": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C09": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C10": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C11": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C12": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C13": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C14": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C15": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C16": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C17": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C18": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       },
       "C19": {
         "start": "09:00",
-        "end": "18:40"
+        "end": "19:00"
       }
     },
     "transportPolicy": {
@@ -1611,7 +1611,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "01d9b3a738e8c75d9953082cbe4c364c5149c6a274d62787d6a57d9dc38da3d4",
+    "shuffledExpansionFingerprint": "e802093a8233b1dab55a50d78c02a40d3cac315a9f3b215f913e3214293387b0",
     "matches": true
   },
   "inputImmutable": {

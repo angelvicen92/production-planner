@@ -283,6 +283,8 @@ function sourceProjection(input: EngineInput): unknown {
     return {
       id: task.id, planId: task.planId, templateId: task.templateId, contestantId: task.contestantId,
       zoneId: task.zoneId, spaceId: task.spaceId, status: task.status, durationOverrideMin: task.durationOverrideMin,
+      ...(task.participantMarginBeforeMinutes == null ? {} : { participantMarginBeforeMinutes: task.participantMarginBeforeMinutes }),
+      ...(task.participantMarginAfterMinutes == null ? {} : { participantMarginAfterMinutes: task.participantMarginAfterMinutes }),
       camerasOverride: task.camerasOverride, resourceRequirements: task.resourceRequirements,
       itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds,
       ...(runtimeJointGroupId == null ? {} : { jointGroupId: runtimeJointGroupId }),
@@ -1007,6 +1009,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         });
       } else {
         auditedDurations.push(effectiveDuration);
+      }
+    }
+    for (const [field, value] of [["participantMarginBeforeMinutes", task.participantMarginBeforeMinutes], ["participantMarginAfterMinutes", task.participantMarginAfterMinutes]] as const) {
+      if (value != null && (!Number.isInteger(value) || value < 0)) {
+        addIssue("UNSUPPORTED_TIME_VALUE", "task", task.id, `${path}.${field}`, "Participant margin must be a non-negative integer.", { receivedValue: value });
       }
     }
 
