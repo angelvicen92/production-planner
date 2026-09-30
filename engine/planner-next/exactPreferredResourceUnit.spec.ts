@@ -55,6 +55,16 @@ test("preferred-resource matching repairs a future-infeasible nominal edge witho
   assert.equal(result.evidence.geometriesRescuedByRematching,1);assert.notDeepEqual(result.evidence.firstMatchingWitness,result.evidence.selectedMatchingWitness);
 });
 
+test("collective Hall causality branches only participant-relevant selected edges",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture();const attempts:Array<Record<string,number>>=[];
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],
+    meals:[],ledger:createExactSearchLedger(1000),continuation:candidate=>{attempts.push(Object.fromEntries(candidate.tasks
+      .filter(task=>task.id==="a"||task.id==="b").map(task=>[task.id,task.start])));return attempts.length===1
+        ?{outcome:"DEAD_END",collectiveClosurePrune:true,collectiveClosureParticipantIds:["a"]}:{outcome:"FOUND"};}});
+  assert.equal(result.outcome,"FOUND");assert.deepEqual(attempts.slice(0,2),[{a:10,b:0},{a:0,b:10}]);
+  assert.equal(result.evidence.causalForbiddenEdges,1);assert.equal(result.evidence.incrementalRepairs,1);
+});
+
 test("collective-only PRUNE creates no edge nogood, while ABSTAIN retains edges",()=>{
   const {problem,resourceTasks,setupTasks}=fixture();let continuations=0;
   const collective=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],

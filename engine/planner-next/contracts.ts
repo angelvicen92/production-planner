@@ -155,6 +155,8 @@ export interface PlannerNextProblem {
   tasks: Task[];
   /** Read-only Assisted context. These tasks are never ordinary search variables. */
   analyticalFutureParticipantTasks?: Task[];
+  /** Explicit, read-only departure identities retained from the source transport policy. */
+  analyticalFutureTransportDepartures?: Task[];
   /** Read-only pending-work view used only to rank anonymous pipeline entry matching. */
   analyticalRemainingParticipantTasks?: Task[];
   /** Executable supporting vertices that also close a future analytical chain. */

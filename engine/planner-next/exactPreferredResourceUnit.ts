@@ -23,6 +23,9 @@ export interface ExactPreferredResourceUnitContinuationResult {
   participantFutureExactPrune?:boolean;
   /** True only when the continuation was pruned by participant-meal future feasibility. */
   participantMealPrune?:boolean;
+  /** Complete assignment rejected by the exact collective future-closure authority. */
+  collectiveClosurePrune?:boolean;
+  collectiveClosureParticipantIds?:readonly string[];
   terminalFutureResult?:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";
 }
 export interface ExactPreferredResourceUnitEvidence {
@@ -149,6 +152,7 @@ export function exploreExactPreferredResourceUnit(args:{
         validPositions.set(taskId,positions);
       }
       let forbidden=new Set<string>(),previousForbidden=new Set<string>(),previous=new Map<string,number>();
+      const collectiveNogoods:Array<{forbidden:Set<string>;previousForbidden:Set<string>;previous:Map<string,number>}>=[];
       let repaired=false;
       while(true){
         evidence.matchingAttempts+=1;
@@ -156,7 +160,8 @@ export function exploreExactPreferredResourceUnit(args:{
           ()=>ledger.consume("STANDALONE"));
         evidence.matchingTraversals+=result.traversals;
         if(result.outcome==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
-        if(result.outcome!=="PERFECT"||!result.matching)break;
+        if(result.outcome!=="PERFECT"||!result.matching){const alternative=collectiveNogoods.shift();if(alternative){
+          forbidden=alternative.forbidden;previousForbidden=alternative.previousForbidden;previous=alternative.previous;continue;}break;}
         const matching=result.matching;
         const witness=Object.fromEntries([...matching].sort(([a],[b])=>a.localeCompare(b)).map(([taskId,position])=>[taskId,slots[position]!]));
         evidence.firstMatchingWitness??=witness;
@@ -175,15 +180,31 @@ export function exploreExactPreferredResourceUnit(args:{
           if(repaired)evidence.geometriesRescuedByRematching+=1;
           return{outcome:decision.outcome,evidence};
         }
-        if(!decision.participantFutureExactPrune&&!decision.participantMealPrune)break;
+        if(!decision.participantFutureExactPrune&&!decision.participantMealPrune&&!decision.collectiveClosurePrune)break;
         const newlyForbidden:string[]=[];
+        if(decision.collectiveClosurePrune){
+          // A complete-assignment nogood is a disjunction.  Exclude one selected
+          // edge per repair, never their conjunction and never only unmatched ids.
+          const blockers=new Set(decision.collectiveClosureParticipantIds??[]);
+          const allSelected=[...matching].sort(([a],[b])=>a.localeCompare(b));
+          // Same-participant identity is an exact hard interaction with every
+          // Hall prerequisite. If no such edge is present, retain the complete
+          // single-edge fallback rather than making an unsound causal claim.
+          const causal=allSelected.filter(([taskId])=>blockers.has(taskById.get(taskId)?.participantId??""));
+          const selected=causal.length?causal:allSelected;
+          for(const [taskId,position] of [...selected].reverse()){const edge=`${taskId}@${position}`,branch=new Set(forbidden).add(edge);
+            collectiveNogoods.unshift({forbidden:branch,previousForbidden:new Set(forbidden),previous:new Map(matching)});}
+          evidence.causalForbiddenEdges+=selected.length;evidence.incrementalRepairs+=1;repaired=true;
+          const alternative=collectiveNogoods.shift();if(!alternative)break;
+          forbidden=alternative.forbidden;previousForbidden=alternative.previousForbidden;previous=alternative.previous;continue;
+        }
         for(const [taskId,position] of matching){const task=taskById.get(taskId)!;
           const edge=scoreAuxiliaryTask(problem,task,spotStart(position),base).scheduled;
           let prune=false;
           if(decision.participantFutureExactPrune){const exact=participantFutureProbe(problem,[...base,edge],[edge],{consume:()=>ledger.consume("STANDALONE")},"EXACT");
             if(exact.status==="ABSTAIN"&&exact.abstainCause==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
             prune=exact.status==="PRUNE";}
-          if(decision.participantMealPrune){const meal=participantMealProbe(problem,[...base,edge],[edge]);
+          if(decision.participantMealPrune&&!decision.collectiveClosurePrune){const meal=participantMealProbe(problem,[...base,edge],[edge]);
             prune=prune||!meal.feasible;}
           if(prune)newlyForbidden.push(`${taskId}@${position}`);
         }

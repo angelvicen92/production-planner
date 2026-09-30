@@ -196,7 +196,8 @@ export interface AssistedPlanningEvidence {
     | "itinerantAgendaStaticStarts" | "itinerantAgendaDynamicStarts" | "itinerantAgendaBranchesBeforeSelection"
     | "itinerantAgendaBranches" | "itinerantAgendaCandidates" | "itinerantAgendaAssignmentsAndOrders"
     | "itinerantAgendaEventBoundaryStarts" | "itinerantAgendaFirstCompleteBranch"
-    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit">;
+    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit"
+    | "branchesBeforeFirstCollectiveClosurePrune" | "collectiveClosureHallSets">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -393,6 +394,9 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  const sourceDepartureIds=new Set(problem.transportPolicy?.departure.taskIds??[]);
+  problem.analyticalFutureTransportDepartures=problem.tasks.filter(task=>sourceDepartureIds.has(task.id)
+    &&analyticalFutureEligibleTaskIds.has(task.id)&&!included.has(task.id)).map(task=>structuredClone(task));
   // Entry matching needs a classification-independent view of remaining work:
   // moving a pending task from analytical future into the current scope must not
   // make its pressure disappear. Protected work remains hard context, but is no
@@ -593,7 +597,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "itinerantAgendaStaticStarts","itinerantAgendaDynamicStarts","itinerantAgendaBranchesBeforeSelection",
     "itinerantAgendaBranches","itinerantAgendaCandidates","itinerantAgendaAssignmentsAndOrders",
     "itinerantAgendaEventBoundaryStarts","itinerantAgendaFirstCompleteBranch",
-    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit"] as const;
+    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit",
+    "branchesBeforeFirstCollectiveClosurePrune","collectiveClosureHallSets"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
@@ -609,7 +614,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
     "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
-    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations"]
+    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations",
+    "participantMealBranchesExplored","collectiveClosureChecks","collectiveClosureCacheHits","collectiveClosureMatchingTraversals"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
