@@ -120,8 +120,10 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     const sharedSpace=task.spaceId===other.spaceId;
     if(!sharedParticipant&&!sharedCoach&&!sharedSpace&&sharedResources.length===0&&!sharedItinerantUnit)continue;
     let before=0,after=0;
+    // Participant travel is a boundary contract even when both tasks share a space.
+    // The other transition authorities intentionally remain zero within one space.
+    if(sharedParticipant){before=participantGapMinutes(problem,task,other);after=participantGapMinutes(problem,other,task);}
     if(!sharedSpace){
-      if(sharedParticipant){before=participantGapMinutes(problem,task,other);after=participantGapMinutes(problem,other,task);}
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
       for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
       if(sharedItinerantUnit){const transition=problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0;before=after=Math.max(before,after,transition);}
