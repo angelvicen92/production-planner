@@ -13,11 +13,12 @@ import { runA2Assist8Evidence } from "./runA2Assist8Evidence";
 import { buildCanonicalA2AssistedStage1Fixture } from "../../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture";
 import { buildAssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 
-export type ClosureProbeStatus="PASS"|"INFEASIBLE"|"BUDGET_EXHAUSTED"|"REJECT_MEAL_WITNESS";
+export type ClosureProbeStatus="PASS"|"INFEASIBLE"|"BUDGET_EXHAUSTED";
 type Edge={taskId:string;start:number};
 export interface ClosureProbeEvidence {candidateEdges:number;matchingChecks:number;matchingTraversals:number;
   perfectMatchingsTried:number;rejectedMatchingsByOut:number;transportStates:number;
-  matchingAlgorithm:"BIPARTITE_UNIT_SLOTS"|"CONFLICT_AWARE_DFS"}
+  matchingAlgorithm:"BIPARTITE_UNIT_SLOTS"|"CONFLICT_AWARE_DFS";closureStates:number;
+  futureOutChecks:number;futureOutPrunes:number;budgetLimit:number;budgetExhausted:boolean}
 export interface ClosureProbeResult {status:ClosureProbeStatus;scheduledPrerequisites:ScheduledTask[];scheduledOut:ScheduledTask[];
   evidence:ClosureProbeEvidence;transport:DetailedTransportMaterialization|null;validation:ValidationSummary|null}
 
@@ -65,7 +66,8 @@ const hasUnitSlotGeometry=(tasks:readonly Task[],domains:ReadonlyMap<string,read
 export function solveStageClosure(problem:PlannerNextProblem,protectedTasks:readonly ScheduledTask[],meals:readonly ScheduledParticipantMeal[],
   options:Readonly<{transport?:(problem:PlannerNextProblem,substantive:readonly ScheduledTask[],meals:readonly ScheduledParticipantMeal[])=>DetailedTransportMaterialization;
     setupPreparations?:readonly ScheduledSetupPreparation[];roundPreparations?:readonly ScheduledRoundPreparation[];
-    operationalMeals?:readonly ScheduledOperationalMeal[];validate?:(tasks:ScheduledTask[])=>ValidationSummary}>={}):ClosureProbeResult {
+    operationalMeals?:readonly ScheduledOperationalMeal[];validate?:(tasks:ScheduledTask[])=>ValidationSummary;
+    maxClosureStates?:number}>={}):ClosureProbeResult {
   const outIds=new Set(problem.transportPolicy?.departure.taskIds??[]),protectedIds=new Set(protectedTasks.map(task=>task.id));
   const mealSourceIds=new Set(meals.map(meal=>meal.sourceTaskId));
   const prerequisites=semanticTaskOrder(problem,problem.tasks.filter(task=>!protectedIds.has(task.id)&&!outIds.has(task.id)
@@ -79,7 +81,8 @@ export function solveStageClosure(problem:PlannerNextProblem,protectedTasks:read
     .sort((a,b)=>a-b);domains.set(task.id,starts);candidateEdges+=starts.length;}
   const unitSlots=hasUnitSlotGeometry(prerequisites,domains);
   const evidence:ClosureProbeEvidence={candidateEdges,matchingChecks:0,matchingTraversals:0,perfectMatchingsTried:0,rejectedMatchingsByOut:0,transportStates:0,
-    matchingAlgorithm:unitSlots?"BIPARTITE_UNIT_SLOTS":"CONFLICT_AWARE_DFS"};
+    matchingAlgorithm:unitSlots?"BIPARTITE_UNIT_SLOTS":"CONFLICT_AWARE_DFS",closureStates:0,futureOutChecks:0,futureOutPrunes:0,
+    budgetLimit:options.maxClosureStates??50_000,budgetExhausted:false};
   const transportFn=options.transport??materializeTerminalTransportDetailed;
   const scheduledMealSources=meals.flatMap(meal=>{const source=problem.tasks.find(task=>task.id===meal.sourceTaskId);
     return source?[{...source,start:meal.start,end:meal.end}]:[];});
@@ -91,9 +94,14 @@ export function solveStageClosure(problem:PlannerNextProblem,protectedTasks:read
     const priorEnds=[...protectedTasks,...scheduledMealSources].filter(task=>task.participantId===out.participantId).map(task=>task.end);
     return [out.id,Math.max(...priorEnds,prerequisiteStart===undefined?-Infinity:prerequisiteStart+prerequisite!.duration)] as const;}));
   const minimumDepartureGroup=problem.transportPolicy?.departure.minimumGroupSize??1;
-  const relaxedGroupImpossible=departureTasks.some(out=>![...(relaxedDepartureDomains.get(out.id)??[])].some(start=>
-    start>=(earliestReady.get(out.id)??-Infinity)&&departureTasks.filter(partner=>start>=(earliestReady.get(partner.id)??-Infinity)
-      &&relaxedDepartureDomains.get(partner.id)?.has(start)).length>=minimumDepartureGroup));
+  const futureOutFeasible=(scheduled:readonly ScheduledTask[]):boolean=>{evidence.futureOutChecks++;
+    const placedByParticipant=new Map(scheduled.map(task=>[task.participantId!,task]));
+    const ready=(out:Task)=>placedByParticipant.get(out.participantId!)?.end??earliestReady.get(out.id)??-Infinity;
+    const possible=(out:Task,start:number)=>start>=ready(out)&&Boolean(relaxedDepartureDomains.get(out.id)?.has(start));
+    const feasible=departureTasks.every(out=>[...(relaxedDepartureDomains.get(out.id)??[])].some(start=>possible(out,start)
+      &&departureTasks.filter(partner=>possible(partner,start)).length>=minimumDepartureGroup));
+    if(!feasible)evidence.futureOutPrunes++;return feasible;};
+  const relaxedGroupImpossible=!futureOutFeasible([]);
   const tryScheduled=(scheduled:ScheduledTask[]):ClosureProbeResult|null=>{
     evidence.perfectMatchingsTried++;
     const transport=transportFn(problem,[...protectedTasks,...scheduledMealSources,...scheduled],meals);evidence.transportStates+=transport.evidence.directions.reduce((n,item)=>n+(item.statesExplored??0),0);
@@ -108,9 +116,12 @@ export function solveStageClosure(problem:PlannerNextProblem,protectedTasks:read
   };
   if(unitSlots){
     const queue:ReadonlySet<string>[]=[new Set()],seen=new Set<string>();
-    while(queue.length){const forbidden=queue.shift()!,fingerprint=[...forbidden].sort().join("|");if(seen.has(fingerprint))continue;seen.add(fingerprint);
+    while(queue.length){if(++evidence.closureStates>evidence.budgetLimit){evidence.budgetExhausted=true;
+        return {status:"BUDGET_EXHAUSTED",scheduledPrerequisites:[],scheduledOut:[],evidence,transport:null,validation:null};}
+      const forbidden=queue.shift()!,fingerprint=[...forbidden].sort().join("|");if(seen.has(fingerprint))continue;seen.add(fingerprint);
       const matching=earliestPerfectMatching(prerequisites,domains,forbidden,evidence);if(!matching)continue;
       const scheduled=prerequisites.map(task=>({...task,start:matching.get(task.id)!,end:matching.get(task.id)!+task.duration}));
+      if(!futureOutFeasible(scheduled)){for(const [taskId,start] of matching)queue.push(new Set([...forbidden,edgeKey({taskId,start})]));continue;}
       const result=tryScheduled(scheduled);if(result)return result;
       // Explore a genuinely different geometry before the exhaustive
       // single-edge exclusions (which often produce near-duplicates).
@@ -120,18 +131,21 @@ export function solveStageClosure(problem:PlannerNextProblem,protectedTasks:read
   }else{
     const placed:ScheduledTask[]=[];
     const search=(index:number):ClosureProbeResult|null=>{
+      if(++evidence.closureStates>evidence.budgetLimit){evidence.budgetExhausted=true;return null;}
+      if(!futureOutFeasible(placed))return null;
       if(index===prerequisites.length)return tryScheduled([...placed]);
       const task=prerequisites[index]!;
       for(const start of domains.get(task.id)??[]){evidence.matchingChecks++;evidence.matchingTraversals++;
         const end=start+task.duration;
         if(meals.some(meal=>meal.participantId===task.participantId&&start<meal.end&&meal.start<end))continue;
         if(!canPlaceTask(problem,task,start,[...protectedTasks,...placed],[]))continue;
-        placed.push({...task,start,end});const result=search(index+1);placed.pop();if(result)return result;
+        placed.push({...task,start,end});const result=search(index+1);placed.pop();if(result||evidence.budgetExhausted)return result;
       }
       return null;
     };
     const result=search(0);if(result)return result;
   }
+  if(evidence.budgetExhausted)return {status:"BUDGET_EXHAUSTED",scheduledPrerequisites:[],scheduledOut:[],evidence,transport:null,validation:null};
   return {status:"INFEASIBLE",scheduledPrerequisites:[],scheduledOut:[],evidence,transport:null,validation:null};
 }
 
@@ -156,8 +170,8 @@ async function run(){const prior=JSON.parse(readFileSync("docs/evidence/A2-ASSIS
   const witness=meals.filter(meal=>pendingMealSources.has(meal.sourceTaskId));
   let accepted:ScheduledParticipantMeal[]=[];for(const meal of witness){const obligation=problem.participantMeals?.find(item=>item.sourceTaskId===meal.sourceTaskId);
     const exact=obligation&&participantMealCandidates(problem,obligation,protectedTasks,accepted).find(item=>item.start===meal.start&&item.end===meal.end);
-    if(!exact){console.log(JSON.stringify({status:"REJECT_MEAL_WITNESS",sourceTaskId:meal.sourceTaskId,cause:"CANONICAL_PARTICIPANT_MEAL_CANDIDATE_REJECTED"}));return;}accepted=[...accepted,meal];}
-  if(witness.length!==pendingMealSources.size){console.log(JSON.stringify({status:"REJECT_MEAL_WITNESS",cause:"WITNESS_CARDINALITY",expected:pendingMealSources.size,actual:witness.length}));return;}
+    assert.ok(exact,`canonical participant-meal witness rejected for ${meal.sourceTaskId}`);accepted=[...accepted,meal];}
+  assert.equal(witness.length,pendingMealSources.size,"participant-meal witness cardinality");
   const closureStartedAt=performance.now();
   const result=solveStageClosure(problem,protectedTasks,witness,{setupPreparations:[...captured.searchProtectedSetupPreparations,...captured.selectedSetupPreparations],
     roundPreparations:[...captured.searchProtectedRoundPreparations,...captured.selectedRoundPreparations],
