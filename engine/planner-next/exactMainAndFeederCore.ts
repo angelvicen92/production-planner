@@ -1979,10 +1979,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(child!=="DEAD_END")return child;
       }
       descriptors.length=descriptorBase;
-      // A collectively rejected complete assignment is a matching nogood. Branch
-      // on each selected edge independently: forbidding their union would skip
-      // valid rematchings which retain any one of the other selected edges.
-      for(const [taskId,position] of runAssignments)enqueueForbidden(forbidden,matching,edgeKey(taskId,position));
+      // A feeder failure changes cohort membership, not nominal order.  Exclude one
+      // selected edge at a time so matching can produce every structurally distinct
+      // cohort without regenerating permutations of a cohort already evaluated.
+      for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,matching,taskId);
     }
     if(runWitnessBudgetExhausted)return "BUDGET_EXHAUSTED";
     return "DEAD_END";

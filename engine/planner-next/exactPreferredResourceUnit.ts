@@ -186,7 +186,12 @@ export function exploreExactPreferredResourceUnit(args:{
           // A complete-assignment nogood is a disjunction.  Exclude one selected
           // edge per repair, never their conjunction and never only unmatched ids.
           const blockers=new Set(decision.collectiveClosureParticipantIds??[]);
-          const selected=[...matching].sort(([a],[b])=>Number(blockers.has(taskById.get(b)?.participantId??""))-Number(blockers.has(taskById.get(a)?.participantId??""))||a.localeCompare(b));
+          const allSelected=[...matching].sort(([a],[b])=>a.localeCompare(b));
+          // Same-participant identity is an exact hard interaction with every
+          // Hall prerequisite. If no such edge is present, retain the complete
+          // single-edge fallback rather than making an unsound causal claim.
+          const causal=allSelected.filter(([taskId])=>blockers.has(taskById.get(taskId)?.participantId??""));
+          const selected=causal.length?causal:allSelected;
           for(const [taskId,position] of [...selected].reverse()){const edge=`${taskId}@${position}`,branch=new Set(forbidden).add(edge);
             collectiveNogoods.unshift({forbidden:branch,previousForbidden:new Set(forbidden),previous:new Map(matching)});}
           evidence.causalForbiddenEdges+=selected.length;evidence.incrementalRepairs+=1;repaired=true;

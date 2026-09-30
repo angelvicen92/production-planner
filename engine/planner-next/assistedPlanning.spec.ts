@@ -338,6 +338,16 @@ test("future analytical authority excludes included and protected tasks and defa
   assert.deepEqual(buildAssistedProblem(source,scope,[]).problem.analyticalFutureParticipantTasks,[]);
 });
 
+test("Assisted preserves explicit future departure identities before transport projection",()=>{
+  const source=fixture(),departure={id:"opaque-departure",kind:"auxiliary" as const,participantId:"p2",spaceId:"other-space",
+    duration:10,availability:[{start:100,end:140}],dependencies:["outside"]};
+  source.tasks.push(departure);source.transportPolicy={arrival:{taskIds:[],minimumGroupSize:1,maximumGroupSize:1,minGapMinutes:0,groupingWeight:0},
+    departure:{taskIds:[departure.id],minimumGroupSize:1,maximumGroupSize:1,minGapMinutes:0,groupingWeight:0}};
+  const assisted=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],new Set([departure.id,"outside"]));
+  assert.deepEqual(assisted.problem.analyticalFutureTransportDepartures?.map(task=>task.id),[departure.id]);
+  assert.deepEqual(assisted.problem.transportPolicy?.departure.taskIds,[]);
+});
+
 const futureDependencyProjection=(prerequisiteAvailability:readonly {start:number;end:number}[]|null)=>{
   const source=fixture();
   source.tasks.push({id:"future",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,

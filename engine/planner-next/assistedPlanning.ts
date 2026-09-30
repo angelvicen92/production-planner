@@ -196,7 +196,8 @@ export interface AssistedPlanningEvidence {
     | "itinerantAgendaStaticStarts" | "itinerantAgendaDynamicStarts" | "itinerantAgendaBranchesBeforeSelection"
     | "itinerantAgendaBranches" | "itinerantAgendaCandidates" | "itinerantAgendaAssignmentsAndOrders"
     | "itinerantAgendaEventBoundaryStarts" | "itinerantAgendaFirstCompleteBranch"
-    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit">;
+    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit"
+    | "branchesBeforeFirstCollectiveClosurePrune" | "collectiveClosureHallSets">;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -596,7 +597,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "itinerantAgendaStaticStarts","itinerantAgendaDynamicStarts","itinerantAgendaBranchesBeforeSelection",
     "itinerantAgendaBranches","itinerantAgendaCandidates","itinerantAgendaAssignmentsAndOrders",
     "itinerantAgendaEventBoundaryStarts","itinerantAgendaFirstCompleteBranch",
-    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit"] as const;
+    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit",
+    "branchesBeforeFirstCollectiveClosurePrune","collectiveClosureHallSets"] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
@@ -612,7 +614,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
     "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
-    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations"]
+    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations",
+    "participantMealBranchesExplored","collectiveClosureChecks","collectiveClosureCacheHits","collectiveClosureMatchingTraversals"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
