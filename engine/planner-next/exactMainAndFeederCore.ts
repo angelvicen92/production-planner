@@ -1,5 +1,5 @@
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
-import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
+import { anchoredTaskIds, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, orderTimelines,
@@ -957,7 +957,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     continuation:(scheduled:ScheduledTask[])=>SearchOutcome):SearchOutcome=>{
     if(index===fixedMainFeeders.length)return continuation(placed);
     const {main,placement,feeder}=fixedMainFeeders[index]!;
-    const deadline=latestFeederEndBeforeMain(problem,feeder,main.spaceId,placement.start,placement.start);
+    const deadline=latestFeederEndBeforeMain(problem,feeder,firstParticipantObligationTask(main,problem),main.spaceId,placement.start,placement.start);
     const domain=exactFeederStartDomain(problem,feeder,deadline-feeder.duration,placed,options.feederStartDomainMode);
     const starts=[...domain.starts()];
     starts.sort((left,right)=>options.fixedMainFeederStartComparator?.(
@@ -1386,7 +1386,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const blockMeals = [...meals, ...fixedCohortMeals.filter((meal) => !meals.some(({ id }) => id === meal.id))];
         const cohortDeadlines = cohort.map((choice) => {
           const mainStart = Math.min(...choice.operation.map(({ start }) => start));
-          const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId, mainStart, mainStart);
+          const deadline = latestFeederEndBeforeMain(problem, choice.feeder, firstParticipantObligationTask(choice.task,problem), choice.task.spaceId, mainStart, mainStart);
           return {choice,deadline};
         });
         const latestBlockStart = Math.max(...cohortDeadlines.map(({ choice, deadline }) => deadline-choice.feeder.duration));
@@ -1894,7 +1894,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             resources:[...(item.requiredResourceIds??[])].sort(),dependencies:item.dependencies.map(dependencyProfile)})),
           feeder:{duration:feeder.duration,spaceId:feeder.spaceId,availability:feeder.availability??null,
             dependencies:feeder.dependencies.map(dependencyProfile),resources:[...(feeder.requiredResourceIds??[])].sort(),
-            transition:latestFeederEndBeforeMain(problem,feeder,task.spaceId,anchor.start,anchor.start)-anchor.start},
+            transition:latestFeederEndBeforeMain(problem,feeder,firstParticipantObligationTask(task,problem),task.spaceId,anchor.start,anchor.start)-anchor.start},
           future,continuity:problem.mainFlow.continuity,
           analyticalFutureTechnicalChains:analyticalTechnicalChainProfile(problem,task.participantId),
         });

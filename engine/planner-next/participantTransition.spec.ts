@@ -27,16 +27,24 @@ test("canonical participant gap preserves explicit zero and takes max of concret
   assert.equal(participantGapMinutes(p,task("a","a",{participantMarginAfterMinutes:30}),task("b","b",{participantMarginBeforeMinutes:0})),30);
 });
 
-test("domain, placement and validator agree for same-space participant boundaries",()=>{
-  const previous=task("previous","a",{participantMarginAfterMinutes:0});
-  const next=task("next","a",{participantMarginBeforeMinutes:0});
-  const p=problem([previous,next]),placed=[scheduled(previous,0)];
-  assert.deepEqual([...exactTaskStartDomain(p,next,placed).starts()].slice(0,2),[10,15]);
-  assert.equal(canPlaceTask(p,next,10,placed),true);
-  assert.equal(validatePlan(p,[...placed,scheduled(next,10)],[],[],[]).hardValid,true);
-  const plain=problem([task("previous"),task("next")]),plainPlaced=[scheduled(plain.tasks[0]!,0)];
-  assert.equal(canPlaceTask(plain,plain.tasks[1]!,10,plainPlaced),false);
-  assert.equal(validatePlan(plain,[...plainPlaced,scheduled(plain.tasks[1]!,10)],[],[],[]).hardValid,false);
+test("domain, placement and validator agree exactly for every same-space participant boundary",()=>{
+  const cases:[string,Partial<Task>,Partial<Task>,number][]=[
+    ["default5",{},{},15],
+    ["after0",{participantMarginAfterMinutes:0},{},10],
+    ["before0",{},{participantMarginBeforeMinutes:0},10],
+    ["after30",{participantMarginAfterMinutes:30},{},40],
+    ["max overrides",{participantMarginAfterMinutes:0},{participantMarginBeforeMinutes:30},40],
+  ];
+  for(const [name,previousMargins,nextMargins,firstValid] of cases){
+    const previous=task(`previous-${name}`,"a",previousMargins),next=task(`next-${name}`,"a",nextMargins);
+    const p=problem([previous,next]),placed=[scheduled(previous,0)],domain=new Set(exactTaskStartDomain(p,next,placed).starts());
+    assert.equal(Math.min(...domain),firstValid,name);
+    for(let start=10;start<=45;start+=5){
+      const accepted=domain.has(start);
+      assert.equal(canPlaceTask(p,next,start,placed),accepted,`${name} placement ${start}`);
+      assert.equal(validatePlan(p,[...placed,scheduled(next,start)],[],[],[]).hardValid,accepted,`${name} validator ${start}`);
+    }
+  }
 });
 
 test("INCLUDED anchored phases have no internal participant buffer",()=>{
