@@ -10,6 +10,7 @@ import { recommendNextAssistedScope } from "../assistedScopeOrchestrator";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
+import type { PlannerNextProblem } from "../../engine/planner-next/contracts";
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
@@ -19,7 +20,11 @@ export interface A2Assist8Options { readonly branchBudget?: number; readonly wri
   /** Focused diagnostic only; canonical Evidence always runs to completion/blocker. */
   readonly stopAfterIterationCount?:number;
   /** Benchmark-only entry point for replaying a later Stage without rebuilding its predecessors. */
-  readonly initialSnapshot?:AssistedPlanningSnapshotV1 }
+  readonly initialSnapshot?:AssistedPlanningSnapshotV1;
+  /** Benchmark-only observation point; it cannot alter proposal or acceptance. */
+  readonly onAcceptedStage?:(stage:Readonly<{completedObligationCount:number;snapshot:AssistedPlanningSnapshotV1;
+    problem:PlannerNextProblem;
+    identityMap:readonly any[];evidence:Readonly<Record<string,any>>}>)=>void }
 
 /**
  * ASST-011 completion probe.  It deliberately uses the product request/run/apply,
@@ -434,6 +439,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     record.acceptedStageProposalRunId=stages.find(stage=>stage.id===session.activeStageId)?.proposalRunId??null;
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
+    options.onAcceptedStage?.({completedObligationCount:after.length,snapshot:structuredClone(session.draftSnapshotJson),
+      problem:structuredClone(adapter.problem),identityMap:structuredClone(adapter.identityMap),evidence:structuredClone(evidence)});
     if(stopAfterFirstProposal||iterations.length===(options.stopAfterIterationCount??Number.POSITIVE_INFINITY))break;
   }
   const finalRows = (dailyTasks as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned && sourceSet.has(row.taskId));
