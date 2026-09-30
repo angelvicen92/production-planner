@@ -2,7 +2,7 @@ import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal,
 import { anchoredTaskIds, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, orderTimelines,
+import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, materializeMainFlowOperationalMeals, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
@@ -363,6 +363,7 @@ export interface ExactCoreLeafCandidate {
   fingerprint: string;
   source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
   architectureFingerprint?: string;
+  selectedMainMealStart?: number;
   selectedFutureReservations?: readonly AnalyticalFutureReservation[];
   selectedFutureReservationFingerprints?: readonly string[];
 }
@@ -1003,7 +1004,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   let lastHardGateReason="HARD_VALIDATION_REJECTED";
   let lastHardGateValidation:ReturnType<typeof validatePlan>|null=null;
   const hardGateCoreLeaf=(placed:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],expectedIds:ReadonlySet<string>,
-    contracts=applicableContracts,includeTransport=false):ScheduledTask[]|null=>{
+    contracts=applicableContracts,includeTransport=false,selectedMealStart?:number):ScheduledTask[]|null=>{
     const expected=[...expectedIds].sort(),actual=placed.map(({id})=>id).sort();
     if(actual.length!==expected.length||actual.some((id,index)=>id!==expected[index])){lastHardGateReason="INCOMPLETE_CORE_SHAPE";return null;}
     for(const fixed of protectedPlacements){const candidate=placed.find(task=>task.id===fixed.id);
@@ -1033,8 +1034,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const reducedPlaced=placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>expectedIds.has(id))}));
     const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
       resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-    const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>{const meal=createMainFlowMeal(problem);return {
-      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:meal.start,end:meal.end};});
+    const operationalMealStart=selectedMealStart??(mainMealAuthority?createMainFlowMeal(problem).start:problem.mainFlow.preferredEnd);
+    const fixedOperationalMeals=materializeMainFlowOperationalMeals(problem,operationalMealStart)
+      .filter(meal=>operationalMainMealPolicies.some(policy=>policy.id===meal.id));
     const validation=validatePlan(reduced,reducedPlaced,[...(options.fixedSetupPreparations??[])],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
       fixedResourceMeals,materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
     lastHardGateValidation=validation;
@@ -1043,7 +1045,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return placed.map(task=>({...task,dependencies:[...(originalById.get(task.id)?.dependencies??task.dependencies)]}))
       .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
   };
-  const unstructuredBundleAffectedTaskIds=(ruleCode:string,placed:readonly ScheduledTask[]):string[]=>{
+  const unstructuredBundleAffectedTaskIds=(ruleCode:string,placed:readonly ScheduledTask[],selectedMealStart?:number):string[]=>{
     const affected=new Set<string>();
     if(ruleCode==="BLOCK_VIOLATION"){
       const mains=placed.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
@@ -1058,7 +1060,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         for(const run of runs.filter(candidate=>candidate.key===key))for(const task of run.tasks)affected.add(task.id);
     }
     if(ruleCode==="OPERATIONAL_MEAL_VIOLATION")for(const policy of problem.operationalMealPolicies??[]){
-      const canonical=createMainFlowMeal(problem),meal={start:canonical.start,end:canonical.end};
+      const canonical=createMainFlowMeal(problem),start=selectedMealStart??canonical.start,meal={start,end:start+canonical.duration};
       for(const task of placed)if(task.start<meal.end&&meal.start<task.end
         &&(policy.spaceIds.includes(task.spaceId)||(task.coachId!==undefined&&policy.resourceIds.includes(task.coachId))
           ||(task.requiredResourceIds??[]).some(id=>policy.resourceIds.includes(id))))affected.add(task.id);
@@ -1227,7 +1229,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     lastHardGateValidation=null;
     const preferredMealAuthority=mainFlowMealPolicy(problem);
     const meals=preferredMealAuthority&&preferredMealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
-    const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true);
+    const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true,
+      structuralCandidate?.architecture.mealStart);
     if(diagnostic){
       const selectedEdges=[...bundleState.matching.entries()].map(([taskId,position])=>({taskId,
         participantId:problem.tasks.find(task=>task.id===taskId)?.participantId??null,position}))
@@ -1240,7 +1243,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         hardValid:validation?.hardValid??false,reasonCodes:[...(validation?.reasonCodes??[])],
         violations:[...(validation?.violations??[]).map(violation=>({ruleCode:violation.ruleCode,
           affectedTaskIds:[...violation.affectedTaskIds].sort()})),...(validation?.unstructuredReasonCodes??[])
-          .map(ruleCode=>({ruleCode,affectedTaskIds:unstructuredBundleAffectedTaskIds(ruleCode,preferred)}))]});
+          .map(ruleCode=>({ruleCode,affectedTaskIds:unstructuredBundleAffectedTaskIds(ruleCode,preferred,
+            structuralCandidate?.architecture.mealStart)}))]});
     }
     if(!gated||structuralCandidate?.acceptComplete?.(gated)===false){evidence.bundleHardValidationRejects++;if(structuralCandidate)options.onStructuralHardGateReject?.(structuralCandidate.architecture);
       evidence.bundleTerminalCause=lastHardGateReason??"STRUCTURAL_RESERVATION_REJECTED";
@@ -1249,6 +1253,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
         source:structuralCandidate?"STRUCTURAL_FUTURE_CONDITIONED":"PREFERRED_BUNDLE",
         architectureFingerprint:structuralCandidate?.architectureFingerprint,
+        selectedMainMealStart:structuralCandidate?.architecture.mealStart,
         selectedFutureReservations:structuralCandidate?.selectedFutureReservations,
         selectedFutureReservationFingerprints:structuralCandidate?.selectedFutureReservationFingerprints})??"ACCEPT";
     if(continuation==="ACCEPT"){

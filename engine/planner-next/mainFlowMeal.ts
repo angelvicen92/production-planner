@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, SpaceMealPolicy } from "./contracts";
+import type { PlannerNextProblem, ScheduledOperationalMeal, ScheduledSpaceMeal, ScheduledTask, SpaceMealPolicy } from "./contracts";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 export interface MainFlowMealAuthority extends SpaceMealPolicy { source:"SPACE_MEAL_POLICY"|"OPERATIONAL_MEAL_POLICY"|"CANONICALIZED"; sourceIds:string[] }
 export interface MainFlowTimeline { key:string; slots:number[]; meal:ScheduledSpaceMeal; mealAuthority:MainFlowMealAuthority; splitIndex:number; morningTaskCount:number; afternoonTaskCount:number; strategyRank:number }
@@ -17,6 +17,15 @@ export function mainFlowMealPolicy(p:PlannerNextProblem):MainFlowMealAuthority|u
 export const hasMainFlowMeal=(p:PlannerNextProblem)=>mainFlowMealPolicy(p)!==undefined;
 export const mainFlowMealAligned=(p:PlannerNextProblem)=>{const x=mainFlowMealPolicy(p),m=p.protectedMeal;if(!x)return false;return m?x.window.start===m.start&&x.window.end===m.end&&x.duration===m.end-m.start&&p.mainFlow.preferredEnd===m.start:x.window.start<=p.mainFlow.preferredEnd&&p.mainFlow.preferredEnd+x.duration<=x.window.end};
 export const createMainFlowMeal=(p:PlannerNextProblem)=>{const policy=mainFlowMealPolicy(p)!;const latest=policy.window.end-policy.duration;const start=Math.min(Math.max(p.mainFlow.preferredEnd,policy.window.start),latest);return createScheduledSpaceMeal(p.mainFlow.spaceId,start,policy.duration)};
+/** Materializes the operational side of the effective Main meal at the already-selected structural start. */
+export const materializeMainFlowOperationalMeals=(p:PlannerNextProblem,selectedMealStart:number):ScheduledOperationalMeal[]=>{
+  const authority=mainFlowMealPolicy(p);if(!authority)return [];
+  return (p.operationalMealPolicies??[]).filter(policy=>authority.sourceIds.includes(policy.id))
+    .sort((left,right)=>left.id.localeCompare(right.id)).map(policy=>({
+    id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:authority.duration,
+    start:selectedMealStart,end:selectedMealStart+authority.duration,
+  }));
+};
 /** Deterministic repair frontier: preference first, then every other complete slot. */
 export const mainFlowMealStarts=(p:PlannerNextProblem)=>{const policy=mainFlowMealPolicy(p)!;
   const preferred=createMainFlowMeal(p).start,starts:number[]=[];
