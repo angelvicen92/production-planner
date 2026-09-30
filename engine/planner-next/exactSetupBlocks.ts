@@ -43,6 +43,13 @@ export interface ExactSetupBlockGenerationResult {
   evidence: ExactSetupBlockGenerationEvidence;
 }
 
+export interface ExactSetupBlockGenerationControl {
+  /** Stop as soon as a compound caller accepts this structural candidate. */
+  readonly acceptCandidate?: (candidate: ExactSetupBlockCandidate) => boolean;
+  /** Deterministic exhaustive order supplied by a compound geometry authority. */
+  readonly canonicalStarts?: readonly number[];
+}
+
 export interface ExactSetupMacroDomain {
   domainSize: number;
   structuralCandidateCount: number;
@@ -76,6 +83,7 @@ export function generateExactSetupBlockCandidates(
   meals: ScheduledSpaceMeal[],
   ledger: ExactSearchLedger,
   countOnly = false,
+  control: ExactSetupBlockGenerationControl = {},
 ): ExactSetupBlockGenerationResult {
   const ordered = [...tasks].sort(byId);
   const spaceId = ordered[0]?.spaceId;
@@ -91,6 +99,7 @@ export function generateExactSetupBlockCandidates(
   let matchingAttempts = 0;
   let matchingSuccesses = 0;
   let permutationBranchesAvoided = 0;
+  let accepted = false;
 
   const finish = (
     outcome: ExactSetupBlockGenerationResult["outcome"],
@@ -130,7 +139,7 @@ export function generateExactSetupBlockCandidates(
     cost: number,
     depth: number,
   ): void => {
-    if (exhausted) return;
+    if (exhausted || accepted) return;
     maximumDepth = Math.max(maximumDepth, depth);
     if (remaining.length === 0) {
       const candidate = {
@@ -142,6 +151,7 @@ export function generateExactSetupBlockCandidates(
       const key = setupFamilySequence(partialTasks).join(">");
       familyOrderCandidateCounts[key] =
         (familyOrderCandidateCounts[key] ?? 0) + 1;
+      accepted = control.acceptCandidate?.(candidate) ?? false;
       return;
     }
 
@@ -236,18 +246,17 @@ export function generateExactSetupBlockCandidates(
           familyTasks.find(({ id }) => id === task.id)!, task.start, priorTasks).cost, 0),
         depth + scheduledFamily.length,
       );
-      if (exhausted) return;
+      if (exhausted || accepted) return;
     }
   };
 
-  for (
-    let canonicalStart = problem.day.start;
-    canonicalStart < problem.day.end;
-    canonicalStart += 5
-  ) {
+  const canonicalStarts=control.canonicalStarts??Array.from(
+    {length:Math.max(0,Math.ceil((problem.day.end-problem.day.start)/5))},(_,index)=>problem.day.start+index*5);
+  for (const canonicalStart of canonicalStarts) {
     startsExplored += 1;
     visit(canonicalStart, ordered, [], [], 0, 0);
     if (exhausted) return finish("BUDGET_EXHAUSTED");
+    if (accepted) return finish("COMPLETE");
   }
   return finish("COMPLETE");
 }

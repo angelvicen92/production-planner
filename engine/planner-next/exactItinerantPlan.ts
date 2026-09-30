@@ -375,7 +375,10 @@ export interface ExactItinerantPlanEvidence {
     firstMealPrunedEdge:{taskId:string;spotId:string;start:number;blockingMealTaskId:string|null}|null;
     blockingMealTaskId:string|null;
     geometriesRescuedByRematching:number;firstMatchingWitness:Record<string,string>|null;
-    selectedMatchingWitness:Record<string,string>|null;terminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED" } | null;
+    selectedMatchingWitness:Record<string,string>|null;terminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";
+    setupMatchingAttempts:number;setupMatchingTraversals:number;setupIncrementalRepairs:number;
+    mealFreeClosureChecks:number;mealFreeClosurePrunes:number;mealFreeClosureCacheHits:number;
+    releaseDefiningCausalEdges:Array<{taskId:string;familyId:string|null;slotStart:number}> } | null;
   setupFamilyOrderCandidateCountsBySpaceId: Record<string, Record<string, number>>;
   selectedSetupFamilySequenceBySpaceId: Record<string, string[]>;
   selectedSetupPreparationIds: string[];
@@ -1425,6 +1428,15 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     let selectedPresence:[number,number,number]|null=null;
     const explored=exploreExactPreferredResourceUnit({problem,resourceId:unit.resourceId,
       resourceTasks:unit.resourceTasks,setupTasks:unit.setupTasks,placed:[...coreTasks,...placed],preparations,meals:coreMeals,ledger,
+      collectivePrecheck:(candidate)=>{const substantive=orderScheduled([...coreTasks,...placed,...candidate.tasks]);
+        const closure=collectiveClosure.evaluate(substantive,[],()=>ledger.consume("STANDALONE"));
+        evidence.collectiveClosureChecks+=Number(!closure.cacheHit);evidence.collectiveClosureCacheHits+=Number(closure.cacheHit);
+        evidence.collectiveClosureMatchingTraversals+=closure.matchingTraversals;
+        if(closure.status==="INFEASIBLE"){collectiveClosurePrunes+=1;collectiveClosureParticipantIds=closure.hall?.participantIds??[];
+          evidence.branchesBeforeFirstCollectiveClosurePrune??=ledger.branchesExplored;
+          if(closure.hall){const projected={prerequisiteIds:closure.hall.prerequisiteIds,participantIds:closure.hall.participantIds,neighbourSlots:closure.hall.neighbourSlots};
+            if(!evidence.collectiveClosureHallSets.some(item=>JSON.stringify(item)===JSON.stringify(projected)))evidence.collectiveClosureHallSets.push(projected);}}
+        return closure;},
       continuation:(candidate)=>{candidatesEvaluated+=1;
         const exactPrunesBefore=evidence.participantFutureTerminalExactPrunes;
         const exactPassesBefore=evidence.participantFutureTerminalExactPasses;
@@ -1455,7 +1467,11 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
       causalForbiddenEdges:explored.evidence.causalForbiddenEdges,incrementalRepairs:explored.evidence.incrementalRepairs,
       geometriesRescuedByRematching:explored.evidence.geometriesRescuedByRematching,
       firstMatchingWitness:explored.evidence.firstMatchingWitness,selectedMatchingWitness:explored.evidence.selectedMatchingWitness,
-      terminalFutureResult:explored.evidence.terminalFutureResult};
+      terminalFutureResult:explored.evidence.terminalFutureResult,setupMatchingAttempts:explored.evidence.setupMatchingAttempts,
+      setupMatchingTraversals:explored.evidence.setupMatchingTraversals,setupIncrementalRepairs:explored.evidence.setupIncrementalRepairs,
+      mealFreeClosureChecks:explored.evidence.mealFreeClosureChecks,mealFreeClosurePrunes:explored.evidence.mealFreeClosurePrunes,
+      mealFreeClosureCacheHits:explored.evidence.mealFreeClosureCacheHits,
+      releaseDefiningCausalEdges:explored.evidence.releaseDefiningCausalEdges};
     evidence.setupBlockCompleteCandidateCount+=explored.evidence.matchingSuccesses;
     if(explored.outcome!=="DEAD_END")return explored.outcome;
   } else if(unit.kind==="RESOURCE_GROUP"){

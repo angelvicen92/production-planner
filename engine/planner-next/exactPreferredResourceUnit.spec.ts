@@ -179,3 +179,14 @@ test("natural structural boundaries are continued before exact grid fallback",()
   assert.deepEqual(starts,[0,20]);
   assert.equal(result.evidence.geometryCount,2);
 });
+
+test("meal-free collective infeasibility prunes before participant-meal continuation",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture(false,true);let continuations=0;
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
+    ledger:createExactSearchLedger(1000),continuation:()=>{continuations+=1;return{outcome:"FOUND"};},
+    collectivePrecheck:()=>({status:"INFEASIBLE",matching:new Map(),prerequisiteIds:["future"],hall:{prerequisiteIds:["future"],
+      participantIds:["a"],neighbourSlots:[],prerequisiteCardinality:1,neighbourCardinality:0},branchesConsumed:1,
+      matchingTraversals:0,reason:"NO_PERFECT_MATCH",cacheHit:false}),authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+  assert.equal(result.outcome,"DEAD_END");assert.equal(continuations,0);
+  assert.ok(result.evidence.mealFreeClosureChecks>0);assert.ok(result.evidence.mealFreeClosurePrunes>0);
+});
