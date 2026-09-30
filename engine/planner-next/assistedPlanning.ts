@@ -393,6 +393,9 @@ export function buildAssistedProblem(
   problem.analyticalFutureParticipantTasks = problem.tasks.filter((task) =>
     analyticalFutureEligibleTaskIds.has(task.id) && !included.has(task.id) && task.participantId !== undefined)
     .map((task) => structuredClone(task));
+  const sourceDepartureIds=new Set(problem.transportPolicy?.departure.taskIds??[]);
+  problem.analyticalFutureTransportDepartures=problem.tasks.filter(task=>sourceDepartureIds.has(task.id)
+    &&analyticalFutureEligibleTaskIds.has(task.id)&&!included.has(task.id)).map(task=>structuredClone(task));
   // Entry matching needs a classification-independent view of remaining work:
   // moving a pending task from analytical future into the current scope must not
   // make its pressure disappear. Protected work remains hard context, but is no

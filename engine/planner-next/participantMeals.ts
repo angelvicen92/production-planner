@@ -157,7 +157,9 @@ export function probeParticipantMealFutureFeasibility(problem: PlannerNextProble
 }
 
 /** Exact deterministic joint witness; smallest-domain-first and ID only as final tie-break. */
-export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode): ParticipantMealWitness {
+export type ParticipantMealTerminalCheck=(scheduled:readonly ScheduledParticipantMeal[])=>"ACCEPT"|"REJECT"|"BUDGET_EXHAUSTED";
+export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode,
+  terminalCheck?:ParticipantMealTerminalCheck): ParticipantMealWitness {
   const obligations = [...(problem.participantMeals ?? [])].sort(byIdentity);
   if (obligations.length === 0) return freeze({ complete: true, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: [], rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: [], readOnly: true });
   const capacity = problem.participantMealCapacity?.maxSimultaneous;
@@ -178,7 +180,14 @@ export function assessParticipantMealFutureFeasibility(problem: PlannerNextProbl
     const remaining = pending.filter((item) => item !== selected.obligation);
     for (const candidate of selected.candidates) {
       if (!consume()) return null;
-      const result = search(remaining, [...placed, candidate], [...path, selected.obligation.sourceTaskId]);
+      const nextPlaced=[...placed,candidate];
+      // Collective closure is monotone under added meal occupations: an exact
+      // deficit now cannot be repaired by placing more meals.  Checking partial
+      // witnesses avoids enumerating a cartesian suffix after the causal choice.
+      const terminal=terminalCheck?.(nextPlaced)??"ACCEPT";
+      if(terminal==="BUDGET_EXHAUSTED"){exhausted=true;return null;}
+      if(terminal==="REJECT"){rejected+=1;backtracks+=1;continue;}
+      const result = search(remaining, nextPlaced, [...path, selected.obligation.sourceTaskId]);
       if (result) return result;
       backtracks += 1; rejected += 1;
     }

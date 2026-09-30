@@ -22,6 +22,7 @@ import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySu
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
+import {certifyFutureCollectiveParticipantClosure} from "./futureCollectiveParticipantClosure";
 import { probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations, type PreparedFutureTechnicalChainEvidence, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
 import { operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
@@ -680,6 +681,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     ?operationalMealWitnessFingerprint(initialOperationalMealWitness.scheduled):null;
   const invocationStartBranches = ledger.standaloneBranches;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
+  let collectiveClosurePrunes=0;
+  let collectiveClosureParticipantIds:readonly string[]=[];
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
@@ -761,7 +764,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       if(terminalReservation.status!=="PASS")return "DEAD_END";
     }
     const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE"):null;
+    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE",meals=>{
+      const closure=certifyFutureCollectiveParticipantClosure(problem,substantive,meals,()=>ledger.consume("STANDALONE"));
+      if(closure.status==="INFEASIBLE"){collectiveClosurePrunes+=1;collectiveClosureParticipantIds=closure.blockingParticipantIds??[];}
+      return closure.status==="PASS"||closure.reason==="UNCERTIFIED_GEOMETRY"?"ACCEPT"
+        :closure.status==="INFEASIBLE"?"REJECT":"BUDGET_EXHAUSTED";
+    }):null;
     if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealExactMaterializations+=1;evidence.participantMealLogicalGridStarts+=mealWitness.logicalGridStarts;evidence.participantMealActuallyEvaluatedStarts+=mealWitness.actuallyEvaluatedStarts;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
     const operationalMealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
     const operationalMealWitness=exactSubstantive?operationalMeals.materialize(substantive,operationalMealBudget):null;
@@ -1414,6 +1422,7 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
         const exactPassesBefore=evidence.participantFutureTerminalExactPasses;
         const exactAbstentionsBefore=evidence.participantFutureTerminalExactAbstentions;
         const mealPrunesBefore=evidence.participantMealFutureInfeasibleBranches;
+        const collectiveClosurePrunesBefore=collectiveClosurePrunes;
         const outcome=recurse([...candidate.tasks],[...preparations,...candidate.preparations],roundPreparations,
           candidate.operationalMealReservations.map(({id,start,end})=>({policyId:id,start,end})));
         const terminalFutureResult=evidence.participantFutureTerminalExactPrunes>exactPrunesBefore?"PRUNE"
@@ -1421,7 +1430,9 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
           :evidence.participantFutureTerminalExactAbstentions>exactAbstentionsBefore?"ABSTAIN":"NOT_CHECKED";
         if(outcome!=="DEAD_END")selectedPresence=[...candidate.presence];
         return{outcome,participantFutureExactPrune:terminalFutureResult==="PRUNE",
-          participantMealPrune:evidence.participantMealFutureInfeasibleBranches>mealPrunesBefore,terminalFutureResult};
+          participantMealPrune:evidence.participantMealFutureInfeasibleBranches>mealPrunesBefore,
+          collectiveClosurePrune:collectiveClosurePrunes>collectiveClosurePrunesBefore,
+          collectiveClosureParticipantIds,terminalFutureResult};
       }});
     evidence.setupBlockSearchInvocations+=1;
     evidence.preferredResourceUnit={unitId:unit.id,memberTaskCount:unit.tasks.length,resourceTaskCount:unit.resourceTasks.length,
