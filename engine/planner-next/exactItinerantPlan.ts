@@ -27,7 +27,7 @@ import { probeParticipantFutureReservations, type ParticipantFutureReservationPr
 import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations, type PreparedFutureTechnicalChainEvidence, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
 import { operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
 import { PreparedOperationalMealAuthority, type PreparedOperationalMealEvidence } from "./preparedOperationalMealAuthority";
-import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
+import { createMainFlowMeal, mainFlowMealPolicy, materializeMainFlowOperationalMeals } from "./mainFlowMeal";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
@@ -666,17 +666,17 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
   technicalChainStartDomainMode:TechnicalChainStartDomainMode,
   acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],initialOperationalMealWitness:OperationalMealWitness|null=null,
-  fixedSetupPreparations:readonly ScheduledSetupPreparation[]=[],fixedRoundPreparations:readonly ScheduledRoundPreparation[]=[]): StandaloneSearchResult {
+  fixedSetupPreparations:readonly ScheduledSetupPreparation[]=[],fixedRoundPreparations:readonly ScheduledRoundPreparation[]=[],
+  selectedMainMealStart?:number): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   const mainMealAuthority=mainFlowMealPolicy(problem);
   // A fully protected Main stage has no newly constructed core meal. The
   // effective (possibly Assisted-narrowed) authority is nevertheless fixed
   // context for standalone completion and terminal validation.
-  const effectiveMainMeal=mainMealAuthority?(coreMeals[0]??createMainFlowMeal(problem)):undefined;
-  const fixedMainOperationalMeals:ScheduledOperationalMeal[]=mainMealAuthority ? (problem.operationalMealPolicies??[])
-    .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)).flatMap(policy=>effectiveMainMeal?[{
-      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:effectiveMainMeal.start,end:effectiveMainMeal.end,
-    }]:[]) : [];
+  const effectiveMainMealStart=mainMealAuthority
+    ?selectedMainMealStart??coreMeals[0]?.start??createMainFlowMeal(problem).start:undefined;
+  const fixedMainOperationalMeals:ScheduledOperationalMeal[]=effectiveMainMealStart===undefined
+    ?[]:materializeMainFlowOperationalMeals(problem,effectiveMainMealStart);
   const operationalMeals=new PreparedOperationalMealAuthority(problem,fixedMainOperationalMeals,initialOperationalMealWitness);
   evidence.standaloneEntryMealWitness=initialOperationalMealWitness?.complete
     ?operationalMealWitnessFingerprint(initialOperationalMealWitness.scheduled):null;
@@ -2072,7 +2072,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     if(conditioned)evidence.structuralCandidateFingerprintBeforeStandalone=candidate.fingerprint;
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations,options.fixedRoundPreparations);
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations,
+      options.fixedRoundPreparations,candidate.selectedMainMealStart);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = mainFlowMealPolicy(problem)?.source==="OPERATIONAL_MEAL_POLICY"?[]:candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
