@@ -120,7 +120,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     if (!identity) throw new Error(`Preflight omitted supported identity ${namespace}:${sourceId}`);
     return identity.canonicalId;
   };
-  const config = input.plannerNext!;
+  const config = {...input.plannerNext!,participantTransitionMinutes:
+    input.defaultParticipantTransitionMinutes??input.plannerNext!.participantTransitionMinutes};
   const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
   const sourceRoundSynchronizations = input.roundSynchronizations ?? [];
   const sourceTechnicalChains = input.technicalChains ?? [];

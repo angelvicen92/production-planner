@@ -310,6 +310,8 @@ export interface EngineInput {
   taskTemplateSnapshotFingerprint?: string;
   /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
   plannerNext?: PlannerNextIntegrationConfigurationInput;
+  /** Effective participant transition authority snapshotted on the plan/day. */
+  defaultParticipantTransitionMinutes?: number;
   /** Explicit ordered Planner Next anchored-operation contract. */
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
   /** Explicit setup-family grouping and preparation policies. */

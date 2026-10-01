@@ -518,6 +518,15 @@ describe("anonymous structural pipeline witness",()=>{
     for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
   });
 
+  it("reports fixed-supporting witness diagnostics without changing the geometry frontier",()=>{
+    const p=problem(["A","A"]),architecture={pattern:["A","A"],slots:[180,195]};
+    const baseline=[...fixedSupportingPipelineGeometryFrontier(p,architecture)].map(row=>row.witness.fingerprint);
+    let diagnostic:unknown;
+    const observed=[...fixedSupportingPipelineGeometryFrontier(p,architecture,value=>{diagnostic=value;})]
+      .map(row=>row.witness.fingerprint);
+    assert.deepEqual(observed,baseline);assert.ok(diagnostic);
+  });
+
   it("exhausts every authorized Styling geometry when protected context blocks the Styling space",()=>{
     const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
     const nominal=materializeNominalPipelineWitness(p,architecture);

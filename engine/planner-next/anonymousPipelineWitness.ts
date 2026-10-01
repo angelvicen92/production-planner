@@ -10,7 +10,7 @@ import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching
   incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 import { assessOperationalMealFutureFeasibility, type OperationalMealSearchBudget } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
-import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
+import { createMainFlowMeal, mainFlowMealPolicy, materializeMainFlowOperationalMeals } from "./mainFlowMeal";
 import { normalizeParticipantFuturePlacements, probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
@@ -581,13 +581,9 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
       ...(operation?.tasks.filter(task=>task.id!==x.main.id)??[]),
     ];
   });
-  const mainMealAuthority=mainFlowMealPolicy(problem as PlannerNextProblem);
-  const fixedMainMeals=mainMealAuthority ? (problem.operationalMealPolicies??[])
-    .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id))
-    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);const start=architecture.mealStart??meal.start;return {
-      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,
-      start,end:start+policy.duration,
-    };}) : [];
+  const selectedMealStart=architecture.mealStart??(mainFlowMealPolicy(problem as PlannerNextProblem)
+    ?createMainFlowMeal(problem as PlannerNextProblem).start:problem.mainFlow.preferredEnd);
+  const fixedMainMeals=materializeMainFlowOperationalMeals(problem as PlannerNextProblem,selectedMealStart);
   operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
   const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
     operationalMealBudget??{remaining:problem.budget.maxBranchExpansions},"PROBE",fixedMainMeals);
@@ -626,20 +622,24 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
 
 /** Internal constructive projection of the already-proved anonymous assignments. */
 export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture):
-  { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[] } {
-  let scheduledTasks:readonly ScheduledTask[]=[];
-  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;});
-  return {witness,scheduledTasks};
+  { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[];diagnostic?:AnonymousPipelineWitnessDiagnostic } {
+  let scheduledTasks:readonly ScheduledTask[]=[],diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+  const witness=buildPipelineWitness(problem,architecture,value=>{diagnostic=value;},[],scheduled=>{scheduledTasks=scheduled;});
+  return {witness,scheduledTasks,diagnostic};
 }
 
 export type NominalPipelineMaterialization=ReturnType<typeof materializeNominalPipelineWitness>;
 
 /** Enumerates the complete authorized Styling-geometry frontier for fixed Main timelines. */
-export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture):
-  Generator<NominalPipelineMaterialization> {
+export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
+  onDiagnostic?:(result:{witness:Pick<AnonymousPipelineWitness,"status"|"reason">;diagnostic:AnonymousPipelineWitnessDiagnostic;
+    stylingSpotCount:number;candidateStarts:readonly number[]})=>void):Generator<NominalPipelineMaterialization> {
   let scheduledTasks:readonly ScheduledTask[]=[],starts:readonly number[]=[];
-  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;},undefined,
+  let diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+  const witness=buildPipelineWitness(problem,architecture,value=>{diagnostic=value;},[],scheduled=>{scheduledTasks=scheduled;},undefined,
     new Set(),values=>{starts=values;});
+  if(diagnostic)onDiagnostic?.({witness:{status:witness.status,reason:witness.reason},diagnostic,
+    stylingSpotCount:witness.stylingSpots.length,candidateStarts:[...starts]});
   if(witness.status!=="FEASIBLE"||witness.stylingSpots.length===0)return;
   const selected=Math.min(...witness.stylingSpots.map(spot=>spot.start));
   yield {witness,scheduledTasks};
@@ -653,9 +653,9 @@ export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<Planne
 
 function materializeNominalPipelineWitnessWithBudget(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
   operationalMealBudget?:OperationalMealSearchBudget):NominalPipelineMaterialization {
-  let scheduledTasks:readonly ScheduledTask[]=[];
-  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;},operationalMealBudget);
-  return {witness,scheduledTasks};
+  let scheduledTasks:readonly ScheduledTask[]=[],diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+  const witness=buildPipelineWitness(problem,architecture,value=>{diagnostic=value;},[],scheduled=>{scheduledTasks=scheduled;},operationalMealBudget);
+  return {witness,scheduledTasks,diagnostic};
 }
 
 /**

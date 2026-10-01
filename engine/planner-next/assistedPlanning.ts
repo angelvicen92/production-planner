@@ -132,7 +132,7 @@ export interface AssistedPlanningEvidence {
       "conditionedLeafFutureRevalidationPasses"|"conditionedLeafFutureRevalidationRejects"|
       "genericFutureAssessSkippedForConditionedLeaf"|"structuralCandidateFingerprintAtHardGate"|
       "structuralCandidateFingerprintAtContinuation"|"structuralCandidateFingerprintBeforeStandalone"|
-      "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint"|"mainPatternCountGenerated"|
+      "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint"|"selectedAnonymousPipelineWitnessDiagnostic"|"selectedAnonymousPipelineWitnessAuthority"|"mainPatternCountGenerated"|
       "participantBundleEdgesChecked"|"participantBundleEdgesPruned"|"participantBundleEdgesAbstained"|"firstParticipantBundleEdgePrune"|
       "mainPatternGenerationExhausted"|"mainPatternsVisited"|"timelinesGenerated"|"architectureStructuralProofChecks"|
       "architectureStructuralProofRejects"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
@@ -152,7 +152,7 @@ export interface AssistedPlanningEvidence {
     "fixedSupportingEdges"|"fixedSupportingZeroDomainTaskIds"|"fixedSupportingPerfectMatchingFound"|
     "fixedSupportingRematchedIdentityCount"|"fixedSupportingArrivalResult"|"fixedSupportingArrivalPacketCount"|
     "fixedSupportingSameGeometryRescued"|"fixedSupportingGeometriesAttempted"|"fixedSupportingGeometryFailure"|
-    "fixedSupportingGlobalFailure"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "fixedSupportingGlobalFailure"|"fixedSupportingWitnessDiagnostic"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "priorFutureStructuralWitnessFound"|"priorFutureStructuralWitnessFingerprint"|"priorFutureStructuralWitnessRevalidation"|
     "priorFutureStructuralWitnessRejectCause"|"priorFutureStructuralWitnessRejectDetails"|
     "priorFutureStructuralWitnessReused"|"priorFutureStructuralWitnessFallbackEntered"|"futureStructuralWitnesses"|
@@ -629,7 +629,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedSupportingEdges","fixedSupportingZeroDomainTaskIds","fixedSupportingPerfectMatchingFound",
     "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
     "fixedSupportingSameGeometryRescued","fixedSupportingGeometriesAttempted","fixedSupportingGeometryFailure",
-    "fixedSupportingGlobalFailure","priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
+    "fixedSupportingGlobalFailure","fixedSupportingWitnessDiagnostic","priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
     "priorFutureStructuralWitnessRevalidation","priorFutureStructuralWitnessRejectCause","priorFutureStructuralWitnessRejectDetails",
     "priorFutureStructuralWitnessReused","priorFutureStructuralWitnessFallbackEntered",
     "futureStructuralWitnesses","ephemeralSupportingPlacements","acceptedSupportingPlacements","branchesBeforeCurrentContinuation",
@@ -758,6 +758,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         branchesBeforeResidualDfs:(evidenceRecord.branchesBeforeResidualDfs as number|null|undefined)??null,
         selectedArchitectureFingerprint:(evidenceRecord.selectedArchitectureFingerprint as string|null|undefined)??null,
         selectedFutureReservationFingerprint:(evidenceRecord.selectedFutureReservationFingerprint as string|null|undefined)??null,
+        selectedAnonymousPipelineWitnessDiagnostic:(evidenceRecord.selectedAnonymousPipelineWitnessDiagnostic as ExactItinerantPlanEvidence["selectedAnonymousPipelineWitnessDiagnostic"]|undefined)??null,
+        selectedAnonymousPipelineWitnessAuthority:evidenceRecord.selectedAnonymousPipelineWitnessAuthority??null,
         mainPatternCountGenerated:Number(evidenceRecord.mainPatternCountGenerated??0),mainPatternGenerationExhausted:Boolean(evidenceRecord.mainPatternGenerationExhausted),
         mainPatternsVisited:Number(evidenceRecord.mainPatternsVisited??0),timelinesGenerated:Number(evidenceRecord.timelinesGenerated??0),
         architectureStructuralProofChecks:Number(evidenceRecord.architectureStructuralProofChecks??0),architectureStructuralProofRejects:Number(evidenceRecord.architectureStructuralProofRejects??0),

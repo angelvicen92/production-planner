@@ -27,7 +27,7 @@ import { probeParticipantFutureReservations, type ParticipantFutureReservationPr
 import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations, type PreparedFutureTechnicalChainEvidence, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
 import { operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
 import { PreparedOperationalMealAuthority, type PreparedOperationalMealEvidence } from "./preparedOperationalMealAuthority";
-import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
+import { createMainFlowMeal, mainFlowMealPolicy, materializeMainFlowOperationalMeals } from "./mainFlowMeal";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
@@ -293,6 +293,8 @@ export interface ExactItinerantPlanEvidence {
   structuralCandidateFingerprintAtHardGate:string|null;structuralCandidateFingerprintAtContinuation:string|null;
   structuralCandidateFingerprintBeforeStandalone:string|null;
   selectedArchitectureFingerprint:string|null;selectedFutureReservationFingerprint:string|null;
+  selectedAnonymousPipelineWitnessDiagnostic:import("./anonymousPipelineWitness").AnonymousPipelineWitnessDiagnostic|null;
+  selectedAnonymousPipelineWitnessAuthority:unknown|null;
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
   architectureStructuralProofChecks:number;architectureStructuralProofRejects:number;architectureStructuralRejectsByReason:Record<string,number>;
   nominalPipelineWitnessChecks:number;nominalPipelineWitnessFeasible:number;nominalPipelineWitnessInfeasible:number;
@@ -327,6 +329,7 @@ export interface ExactItinerantPlanEvidence {
   fixedSupportingArrivalResult:string|null;fixedSupportingArrivalPacketCount:number;fixedSupportingSameGeometryRescued:boolean;
   fixedSupportingGeometriesAttempted:import("./exactMainAndFeederCore").ExactMainAndFeederCoreEvidence["fixedSupportingGeometriesAttempted"];
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
+  fixedSupportingWitnessDiagnostic:import("./exactMainAndFeederCore").ExactMainAndFeederCoreEvidence["fixedSupportingWitnessDiagnostic"];
   priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
   priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
   priorFutureStructuralWitnessRejectCause:import("./anonymousPipelineWitness").FutureStructuralWitnessRejectCause|null;
@@ -666,17 +669,17 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   selection: StandaloneCompletionSelection, jointGroupStartDomainMode: JointGroupStartDomainMode,
   technicalChainStartDomainMode:TechnicalChainStartDomainMode,
   acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],initialOperationalMealWitness:OperationalMealWitness|null=null,
-  fixedSetupPreparations:readonly ScheduledSetupPreparation[]=[],fixedRoundPreparations:readonly ScheduledRoundPreparation[]=[]): StandaloneSearchResult {
+  fixedSetupPreparations:readonly ScheduledSetupPreparation[]=[],fixedRoundPreparations:readonly ScheduledRoundPreparation[]=[],
+  selectedMainMealStart?:number): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   const mainMealAuthority=mainFlowMealPolicy(problem);
   // A fully protected Main stage has no newly constructed core meal. The
   // effective (possibly Assisted-narrowed) authority is nevertheless fixed
   // context for standalone completion and terminal validation.
-  const effectiveMainMeal=mainMealAuthority?(coreMeals[0]??createMainFlowMeal(problem)):undefined;
-  const fixedMainOperationalMeals:ScheduledOperationalMeal[]=mainMealAuthority ? (problem.operationalMealPolicies??[])
-    .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)).flatMap(policy=>effectiveMainMeal?[{
-      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:effectiveMainMeal.start,end:effectiveMainMeal.end,
-    }]:[]) : [];
+  const effectiveMainMealStart=mainMealAuthority
+    ?selectedMainMealStart??coreMeals[0]?.start??createMainFlowMeal(problem).start:undefined;
+  const fixedMainOperationalMeals:ScheduledOperationalMeal[]=effectiveMainMealStart===undefined
+    ?[]:materializeMainFlowOperationalMeals(problem,effectiveMainMealStart);
   const operationalMeals=new PreparedOperationalMealAuthority(problem,fixedMainOperationalMeals,initialOperationalMealWitness);
   evidence.standaloneEntryMealWitness=initialOperationalMealWitness?.complete
     ?operationalMealWitnessFingerprint(initialOperationalMealWitness.scheduled):null;
@@ -1660,6 +1663,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     genericFutureAssessSkippedForConditionedLeaf:0,structuralCandidateFingerprintAtHardGate:null,
     structuralCandidateFingerprintAtContinuation:null,structuralCandidateFingerprintBeforeStandalone:null,
     branchesBeforeResidualDfs:null,selectedArchitectureFingerprint:null,selectedFutureReservationFingerprint:null,
+    selectedAnonymousPipelineWitnessDiagnostic:null,
+    selectedAnonymousPipelineWitnessAuthority:null,
     mainPatternCountGenerated:0,mainPatternGenerationExhausted:false,mainPatternsVisited:0,timelinesGenerated:0,
     architectureStructuralProofChecks:0,architectureStructuralProofRejects:0,architectureStructuralRejectsByReason:{},
     nominalPipelineWitnessChecks:0,nominalPipelineWitnessFeasible:0,nominalPipelineWitnessInfeasible:0,
@@ -1680,6 +1685,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
+    fixedSupportingWitnessDiagnostic:null,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
@@ -1822,7 +1828,15 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       yield {architecture,architectureFingerprint:prepared.witness.fingerprint,bundle:matching,
         repair:(previous,forbidden,consume)=>materializePreparedPipelineBundleMatching(problem,prepared,forbidden,previous,consume,
           operation=>futureTechnicalChains.intrusion(operation)),
-        acceptComplete:()=>{evidence.selectedArchitectureFingerprint=prepared.witness.fingerprint;return true;}};
+        acceptComplete:()=>{evidence.selectedArchitectureFingerprint=prepared.witness.fingerprint;
+          evidence.selectedAnonymousPipelineWitnessDiagnostic=materialized.diagnostic??null;
+          evidence.selectedAnonymousPipelineWitnessAuthority={day:problem.day,participantTransitionMinutes:problem.participantTransitionMinutes,
+            participants:problem.participants.map(item=>({id:item.id,availability:item.availability})),
+            analyticalFutureTechnicalChains:(problem.analyticalFutureTechnicalChains??[]).map(chain=>({taskIds:chain.tasks.map(task=>task.id)})),
+            analyticalRemainingParticipantTaskIds:(problem.analyticalRemainingParticipantTasks??[]).map(task=>task.id),
+            pipelineTasks:problem.tasks.filter(task=>["main","vocal","auxiliary"].includes(task.kind))
+              .map(task=>({id:task.id,kind:task.kind,availability:task.availability})),
+            operationalMealPolicies:problem.operationalMealPolicies,fixedPlacements:options.fixedPlacements};return true;}};
       evidence.structuralArchitecturesFullyVisited++;
     }
     if(structuralBudgetExhausted)return;
@@ -2072,7 +2086,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     if(conditioned)evidence.structuralCandidateFingerprintBeforeStandalone=candidate.fingerprint;
     const standalone = searchStandaloneForCoreCandidate(problem, immutableCoreTasks, candidate.meals, remainingStandalone, ledger, evidence,
       completeSelectionMode, options.jointGroupStartDomainMode ?? "ANALYTIC_DOMAIN",
-      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations,options.fixedRoundPreparations);
+      options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations,
+      options.fixedRoundPreparations,candidate.selectedMainMealStart);
     if (standalone.tasks) {
       selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = mainFlowMealPolicy(problem)?.source==="OPERATIONAL_MEAL_POLICY"?[]:candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
@@ -2219,6 +2234,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.fixedSupportingGeometriesAttempted=core.evidence.fixedSupportingGeometriesAttempted;
   evidence.fixedSupportingGeometryFailure=core.evidence.fixedSupportingGeometryFailure;
   evidence.fixedSupportingGlobalFailure=core.evidence.fixedSupportingGlobalFailure;
+  evidence.fixedSupportingWitnessDiagnostic=core.evidence.fixedSupportingWitnessDiagnostic;
   evidence.priorFutureStructuralWitnessFound=core.evidence.priorFutureStructuralWitnessFound;
   evidence.priorFutureStructuralWitnessFingerprint=core.evidence.priorFutureStructuralWitnessFingerprint;
   evidence.priorFutureStructuralWitnessRevalidation=core.evidence.priorFutureStructuralWitnessRevalidation;
