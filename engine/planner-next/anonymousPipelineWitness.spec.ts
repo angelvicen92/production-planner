@@ -471,6 +471,14 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(corruptDiagnostic.rejectCause,"CERTIFICATE_FINGERPRINT_MISMATCH");
     assert.deepEqual(Object.keys(corruptDiagnostic.rejectDetails!).sort(),["actual","expected"]);
 
+    const certifiedArrival=ephemeral.find(item=>item.id.startsWith("in"))!;
+    const arrivalTask=p.tasks.find(task=>task.id===certifiedArrival.id)!;
+    const movedArrival={...arrivalTask,start:certifiedArrival.start+5,end:certifiedArrival.end+5};
+    const protectedArrivalDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixed,movedArrival],certificate);
+    assert.equal(protectedArrivalDiagnostic.rejectCause,"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH");
+    assert.deepEqual(protectedArrivalDiagnostic.rejectDetails?.actual,
+      {start:movedArrival.start,end:movedArrival.end,spaceId:movedArrival.spaceId});
+
     const certifiedStyle=ephemeral.find(item=>item.id.startsWith("style"))!;
     const styleTask=p.tasks.find(task=>task.id===certifiedStyle.id)!;
     const blocker={...styleTask,id:"protected-style-blocker",participantId:undefined,dependencies:[],
@@ -500,6 +508,19 @@ describe("anonymous structural pipeline witness",()=>{
       const actual=result.materialization.scheduledTasks.find(task=>task.id===certified.id);
       assert.deepEqual(actual&&{id:actual.id,start:actual.start,end:actual.end,spaceId:actual.spaceId},certified);
     }
+    const certifiedArrival=certificate.ephemeralSupportingPlacements.find(item=>item.id.startsWith("in"))!;
+    const arrivalTask=p.tasks.find(task=>task.id===certifiedArrival.id)!;
+    const exactProtected={...arrivalTask,start:certifiedArrival.start,end:certifiedArrival.end};
+    const protectedResult=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixedMains,exactProtected],certificate);
+    assert.ok(protectedResult.materialization);assert.equal(protectedResult.rejectCause,null);
+    assert.deepEqual(protectedResult.materialization.scheduledTasks.find(task=>task.id===exactProtected.id),exactProtected);
+    assert.equal(protectedResult.materialization.evidence.matchingTraversals,0);
+    assert.equal(protectedResult.materialization.evidence.arrivalEvaluations,0);
+    const movedProtected={...exactProtected,start:exactProtected.start+5,end:exactProtected.end+5};
+    const protectedMismatch=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixedMains,movedProtected],certificate);
+    assert.equal(protectedMismatch.rejectCause,"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH");
+    assert.deepEqual(protectedMismatch.rejectDetails?.actual,
+      {start:movedProtected.start,end:movedProtected.end,spaceId:movedProtected.spaceId});
     const feeder=certificate.certifiedFeederPlacements[0]!;
     const staleFeeder={...p,tasks:p.tasks.map(task=>task.id===feeder.id?{...task,availability:[{start:feeder.end,end:300}]}:task)};
     assert.equal(revalidateFutureStructuralWitnessDetailed(staleFeeder,architecture,fixedMains,certificate).rejectCause,"FEEDER_PLACEMENT_REJECTED");

@@ -286,6 +286,13 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
     matching.set(task.id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
   }
   const protectedArrivals=[...arrivalIds].map(id=>protectedById.get(id)).filter((task):task is ScheduledTask=>Boolean(task));
+  for(const actual of protectedArrivals){
+    const expected=certified.get(actual.id);
+    if(!expected||actual.start!==expected.start||actual.end!==expected.end||actual.spaceId!==expected.spaceId)
+      return reject("ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH",{taskId:actual.id,placementId:actual.id,
+        expected:expected?{start:expected.start,end:expected.end,spaceId:expected.spaceId}:null,
+        actual:{start:actual.start,end:actual.end,spaceId:actual.spaceId}});
+  }
   const allArrivalsProtected=protectedArrivals.length===arrivalIds.size;
   const directArrival=certificate.version===2
     ?validateCertifiedArrivalSchedule(problem,[...context,...scheduled],certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id)))
