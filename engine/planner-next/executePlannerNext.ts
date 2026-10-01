@@ -36,7 +36,7 @@ export type PlannerNextExecution =
       result: ExactItinerantPlanResult;
     };
 
-export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[];fixedRoundPreparations?:readonly ScheduledRoundPreparation[];priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1}={}): PlannerNextExecution {
+export function executePlannerNext(problem: PlannerNextProblem, options:{causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[];fixedRoundPreparations?:readonly ScheduledRoundPreparation[];priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness}={}): PlannerNextExecution {
   const policyResolution = resolvePlannerSearchPolicy(problem);
 
   if (!policyResolution.compatible) {

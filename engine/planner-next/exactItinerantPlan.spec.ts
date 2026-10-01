@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
-import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
+import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
@@ -9,6 +9,7 @@ import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
 import { validatePlan } from "./validate";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
+import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -36,6 +37,38 @@ function problem(auxiliaries: Task[]): PlannerNextProblem {
 const auxiliary = (id: string, participantId: string, availability: Array<{ start: number; end: number }>,
   requiredResourceIds: string[] = []): Task => ({ id, kind: "auxiliary", participantId, duration: 10,
   spaceId: `space-${id}`, dependencies: [], availability, requiredResourceIds });
+
+function crossStagePipelineProblem():PlannerNextProblem{
+  const availability=[{start:0,end:300}];const tasks:Task[]=[];
+  for(let index=0;index<2;index++){const participantId=`cross-p${index}`;tasks.push(
+    {id:`cross-in${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"in",dependencies:[]},
+    {id:`cross-style${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"style",dependencies:[`cross-in${index}`]},
+    {id:`cross-vocal${index}`,kind:"vocal",participantId,coachId:"cross-coach",duration:15,spaceId:"vocal",dependencies:[`cross-in${index}`]},
+    {id:`cross-main${index}`,kind:"main",participantId,coachId:"cross-coach",blockKey:"cross-coach",duration:15,
+      spaceId:"main",dependencies:[`cross-vocal${index}`,`cross-style${index}`]});}
+  return {day:{start:0,end:300},spaces:["in","style","vocal","main"].map(id=>({id,availability})),resources:[],
+    participants:[0,1].map(index=>({id:`cross-p${index}`,availability})),coaches:[{id:"cross-coach",availability}],tasks,
+    mainFlow:{spaceId:"main",preferredEnd:240,continuity:"REQUIRED",maxBlocksByKey:2,minTasksPerBlock:1},
+    participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:100,maxPatterns:100,maxBranchExpansions:100},
+    auxiliaryPolicy:{participantPresencePreference:"OFF"},searchPolicy:"EXACT_CONSTRUCTIVE",
+    transportPolicy:{arrival:{taskIds:["cross-in0","cross-in1"],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1},
+      departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1}}};
+}
+
+test("the itinerant accepted continuation preserves the exact reused V2",()=>{
+  const input=crossStagePipelineProblem();const mains=[0,1].map(index=>({...input.tasks.find(task=>task.id===`cross-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const baseline=runExactMainAndFeederSearch(input,{fixedPlacements:mains,fixedPlacementsAsContext:true});
+  const accepted=baseline.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+  const initial=runExactMainAndFeederSearch(input,{fixedPlacements:accepted,fixedPlacementsAsContext:true});
+  const v1=initial.evidence.futureStructuralWitnesses[0]!;
+  const prior=futureStructuralWitnessV2FromAcceptedPipeline(input,{pattern:["cross-coach","cross-coach"],slots:[200,215]},
+    v1.geometryFingerprint,initial.scheduledTasks);
+  const result=runExactItinerantPlanSearch(input,{fixedPlacements:accepted,fixedPlacementsAsContext:true,priorFutureStructuralWitness:prior});
+  assert.equal(result.status,"COMPLETE");assert.equal(result.evidence.futureStructuralWitnesses.length,1);
+  assert.equal(result.evidence.futureStructuralWitnesses[0]?.version,2);
+  assert.equal(result.evidence.futureStructuralWitnesses[0]?.fingerprint,prior.fingerprint);
+});
 
 function macroCompetitionProblem(options: { setup?: [number, number]; rounds?: [number, number]; resource?: [number, number]; dynamic?: boolean }): PlannerNextProblem {
   const extra: Task[] = [];

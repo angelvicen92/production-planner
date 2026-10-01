@@ -29,6 +29,8 @@ export interface TransportMaterializationDirectionEvidence {
   membershipBranches: number;
   budgetExhausted: boolean;
   failureCause: "INFEASIBLE" | "BUDGET_EXHAUSTED" | null;
+  contiguousFirstDeadEnd: {index:number;remaining:number;groupTaskIds:string[];groupSize:number;
+    deadline:number;temporalLimit:number;startsBeforeBoundaryFilter:number;startsAfterBoundaryFilter:number}|null;
 }
 
 export interface TransportMaterializationEvidence {
@@ -58,12 +60,23 @@ const detailedFields = (tasks: readonly Task[], algorithm: TransportMaterializat
       resources: [...(task.requiredResourceIds ?? [])].sort() }) === key).map(({ id }) => id)),
   algorithm, statesExplored: 0, matchingChecks: 0, matchingTraversals: 0, membershipBranches: 0,
   budgetExhausted: false, failureCause: null as "INFEASIBLE" | "BUDGET_EXHAUSTED" | null,
+  contiguousFirstDeadEnd: null as TransportMaterializationDirectionEvidence["contiguousFirstDeadEnd"],
 });
 
 export interface TransportArrivalFeasibility {
   status: "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
   evidence: TransportMaterializationDirectionEvidence;
   scheduled: ScheduledTask[] | null;
+}
+
+export type CertifiedArrivalRejectCause = "ARRIVAL_ID_SET_MISMATCH" | "ARRIVAL_INVALID_PLACEMENT"
+  | "ARRIVAL_DURATION_MISMATCH" | "ARRIVAL_SPACE_MISMATCH" | "ARRIVAL_PARTICIPANT_MISSING"
+  | "ARRIVAL_GROUP_SIZE_INVALID" | "ARRIVAL_GROUP_POLICY_REJECTED" | "ARRIVAL_BOUNDARY_REJECTED";
+export interface CertifiedArrivalValidation {
+  readonly scheduled:readonly ScheduledTask[]|null;
+  readonly rejectCause:CertifiedArrivalRejectCause|null;
+  readonly rejectDetails:Readonly<Record<string,unknown>>|null;
+  readonly packetStarts:readonly number[];
 }
 
 const byId = (left: Task, right: Task): number => left.id.localeCompare(right.id);
@@ -110,6 +123,50 @@ function individualTransportBoundary(problem: Readonly<PlannerNextProblem>, task
   }
   const earliestStart = Math.max(problem.day.start, ...windows.map((items) => Math.min(...items.map(({ start }) => start))));
   return Math.max(obligationBoundary, earliestStart);
+}
+
+/** Validates one certified Arrival realization literally; it never discovers a replacement schedule. */
+export function validateCertifiedArrivalSchedule(problem:PlannerNextProblem,substantiveContext:readonly ScheduledTask[],
+  certifiedPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[]):CertifiedArrivalValidation {
+  const reject=(rejectCause:CertifiedArrivalRejectCause,rejectDetails:Record<string,unknown>):CertifiedArrivalValidation=>
+    ({scheduled:null,rejectCause,rejectDetails,packetStarts:[]});
+  const policy=problem.transportPolicy?.arrival;
+  const expectedIds=new Set(policy?.taskIds??[]),certifiedById=new Map(certifiedPlacements.map(item=>[item.id,item]));
+  const missingIds=[...expectedIds].filter(id=>!certifiedById.has(id)).sort();
+  const unexpectedIds=[...certifiedById.keys()].filter(id=>!expectedIds.has(id)).sort();
+  if(!policy||certifiedById.size!==certifiedPlacements.length||missingIds.length||unexpectedIds.length)
+    return reject("ARRIVAL_ID_SET_MISMATCH",{missingIds,unexpectedIds,duplicateIds:certifiedPlacements.length-certifiedById.size});
+  const scheduled:ScheduledTask[]=[];
+  for(const id of [...expectedIds].sort()){
+    const task=problem.tasks.find(candidate=>candidate.id===id),item=certifiedById.get(id)!;
+    if(!task||!Number.isFinite(item.start)||!Number.isFinite(item.end)||item.end<=item.start)
+      return reject("ARRIVAL_INVALID_PLACEMENT",{taskId:id,placement:item,taskFound:Boolean(task)});
+    if(!task.participantId||!problem.participants.some(participant=>participant.id===task.participantId))
+      return reject("ARRIVAL_PARTICIPANT_MISSING",{taskId:id,participantId:task.participantId??null});
+    if(item.end-item.start!==task.duration)return reject("ARRIVAL_DURATION_MISMATCH",{taskId:id,expected:task.duration,actual:item.end-item.start});
+    if(item.spaceId!==task.spaceId)return reject("ARRIVAL_SPACE_MISMATCH",{taskId:id,expected:task.spaceId,actual:item.spaceId});
+    scheduled.push({...task,start:item.start,end:item.end});
+  }
+  const grouped=new Map<string,ScheduledTask[]>();
+  for(const task of scheduled){const key=`${task.start}:${task.end}`;const group=grouped.get(key)??[];group.push(task);grouped.set(key,group);}
+  const groups=[...grouped.values()].sort((left,right)=>left[0]!.start-right[0]!.start||left[0]!.end-right[0]!.end);
+  const previousStarts:number[]=[];
+  for(const group of groups){
+    const start=group[0]!.start,size=group.length;
+    if(size<policy.minimumGroupSize||size>policy.maximumGroupSize)
+      return reject("ARRIVAL_GROUP_SIZE_INVALID",{taskIds:group.map(task=>task.id).sort(),size,minimum:policy.minimumGroupSize,maximum:policy.maximumGroupSize});
+    if(!canPlaceTransportGroup(problem,group,start,substantiveContext,previousStarts,policy))
+      return reject("ARRIVAL_GROUP_POLICY_REJECTED",{taskIds:group.map(task=>task.id).sort(),start,previousStarts:[...previousStarts],minGapMinutes:policy.minGapMinutes});
+    for(const task of group){
+      const obligations=substantiveContext.filter(placed=>placed.participantId===task.participantId&&!expectedIds.has(placed.id));
+      const obligationBoundary=obligations.length?Math.min(...obligations.map(({start})=>start)):problem.day.end;
+      const boundary=individualTransportBoundary(problem,task,"arrival",obligationBoundary);
+      if(task.end>boundary)return reject("ARRIVAL_BOUNDARY_REJECTED",{taskId:task.id,start:task.start,end:task.end,boundary,obligationBoundary});
+    }
+    previousStarts.push(start);
+  }
+  return {scheduled:scheduled.sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)),rejectCause:null,rejectDetails:null,
+    packetStarts:groups.map(group=>group[0]!.start)};
 }
 
 export function transportTaskIds(problem: Readonly<PlannerNextProblem>): ReadonlySet<string> {
@@ -212,7 +269,7 @@ function solveContiguousDirection(
   policy: Readonly<TransportGroupingPolicy>,
   consumeAlternative?: () => boolean,
 ): { scheduled: ScheduledTask[] | null; packetSizes: number[]; starts: number[]; states: number; alternatives: number;
-  budgetExhausted: boolean } {
+  budgetExhausted: boolean; firstDeadEnd:TransportMaterializationDirectionEvidence["contiguousFirstDeadEnd"] } {
   const transportIds = transportTaskIds(problem);
   const obligationsFor = (participantId: string) => [
     ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
@@ -233,6 +290,7 @@ function solveContiguousDirection(
   ).filter((size) => canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
     .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || left - right);
   let states = 0, alternatives = 0, budgetExhausted = false;
+  let firstDeadEnd:TransportMaterializationDirectionEvidence["contiguousFirstDeadEnd"]=null;
   const failed = new Set<string>();
   const search = (index: number, temporalLimit: number, local: ScheduledTask[], sizes: number[], starts: number[]): boolean => {
     states += 1;
@@ -246,11 +304,15 @@ function solveContiguousDirection(
       const from = index;
       const group = tasks.slice(from, from + size);
       const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
-      const candidates = transportGroupStarts(problem, group, [...substantive, ...alreadyPlaced, ...local], [], policy)
+      const startsBeforeBoundaryFilter=transportGroupStarts(problem, group, [...substantive, ...alreadyPlaced, ...local], [], policy);
+      const candidates = startsBeforeBoundaryFilter
         .filter((start) => direction === "arrival"
           ? start + group[0]!.duration <= deadline && start >= temporalLimit
           : start >= deadline && start >= temporalLimit)
         .sort((left, right) => left - right);
+      if(candidates.length===0&&!firstDeadEnd)firstDeadEnd={index,remaining,groupTaskIds:group.map(task=>task.id),
+        groupSize:size,deadline,temporalLimit,startsBeforeBoundaryFilter:startsBeforeBoundaryFilter.length,
+        startsAfterBoundaryFilter:candidates.length};
       for (const start of candidates) {
         const scheduled = scheduleTransportGroup(group, start);
         local.push(...scheduled);
@@ -267,7 +329,7 @@ function solveContiguousDirection(
   };
   const scheduled: ScheduledTask[] = [], packetSizes: number[] = [], starts: number[] = [];
   return { scheduled: search(0, Number.NEGATIVE_INFINITY, scheduled, packetSizes, starts) ? scheduled : null,
-    packetSizes, starts, states, alternatives, budgetExhausted };
+    packetSizes, starts, states, alternatives, budgetExhausted,firstDeadEnd };
 }
 
 export function assessCoreArrivalTransportFeasibility(
@@ -307,6 +369,7 @@ export function assessCoreArrivalTransportFeasibility(
   const evidence = { ...base, packetSizes: solved.packetSizes, packetMembers: groups, starts: solved.starts,
     alternativesExplored: solved.alternatives, contiguousStatesExplored: solved.states, statesExplored: solved.states,
     budgetExhausted: solved.budgetExhausted,
+    contiguousFirstDeadEnd:solved.firstDeadEnd,
     failureCause: solved.scheduled ? null : solved.budgetExhausted ? "BUDGET_EXHAUSTED" as const : "INFEASIBLE" as const };
   return { status: solved.scheduled ? "FEASIBLE" : solved.budgetExhausted ? "INCONCLUSIVE" : "INFEASIBLE",
     evidence, scheduled: solved.scheduled };

@@ -42,7 +42,7 @@ export interface AssistedProblem {
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
-  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1;
+  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness;
 }
 
 export interface AssistedPlanningEvidence {
@@ -75,6 +75,8 @@ export interface AssistedPlanningEvidence {
   readonly acceptedSupportingPlacements?:ExactItinerantPlanEvidence["acceptedSupportingPlacements"];
   readonly futureStructuralWitnesses?:ExactItinerantPlanEvidence["futureStructuralWitnesses"];
   readonly branchesBeforeCurrentContinuation?:number|null;
+  readonly selectedPipelineWitnessDiagnostic?:ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"];
+  readonly selectedPipelineWitnessAuthority?:ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"];
   /** Solver-selected analytical witnesses. They are Evidence only, never proposal placements. */
   readonly selectedMealWitnesses: {
     readonly participant: { readonly scheduled: readonly import("./contracts").ScheduledParticipantMeal[];
@@ -152,7 +154,8 @@ export interface AssistedPlanningEvidence {
     "fixedSupportingEdges"|"fixedSupportingZeroDomainTaskIds"|"fixedSupportingPerfectMatchingFound"|
     "fixedSupportingRematchedIdentityCount"|"fixedSupportingArrivalResult"|"fixedSupportingArrivalPacketCount"|
     "fixedSupportingSameGeometryRescued"|"fixedSupportingGeometriesAttempted"|"fixedSupportingGeometryFailure"|
-    "fixedSupportingGlobalFailure"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "fixedSupportingGlobalFailure"|"fixedSupportingWitnessDiagnostic"|"fixedSupportingWitnessAuthority"|
+    "protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "priorFutureStructuralWitnessFound"|"priorFutureStructuralWitnessFingerprint"|"priorFutureStructuralWitnessRevalidation"|
     "priorFutureStructuralWitnessRejectCause"|"priorFutureStructuralWitnessRejectDetails"|
     "priorFutureStructuralWitnessReused"|"priorFutureStructuralWitnessFallbackEntered"|"futureStructuralWitnesses"|
@@ -250,7 +253,7 @@ export function buildAssistedProblem(
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
   protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
-  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1,
+  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness,
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -629,7 +632,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedSupportingEdges","fixedSupportingZeroDomainTaskIds","fixedSupportingPerfectMatchingFound",
     "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
     "fixedSupportingSameGeometryRescued","fixedSupportingGeometriesAttempted","fixedSupportingGeometryFailure",
-    "fixedSupportingGlobalFailure","priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
+    "fixedSupportingGlobalFailure","fixedSupportingWitnessDiagnostic","fixedSupportingWitnessAuthority",
+    "priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
     "priorFutureStructuralWitnessRevalidation","priorFutureStructuralWitnessRejectCause","priorFutureStructuralWitnessRejectDetails",
     "priorFutureStructuralWitnessReused","priorFutureStructuralWitnessFallbackEntered",
     "futureStructuralWitnesses","ephemeralSupportingPlacements","acceptedSupportingPlacements","branchesBeforeCurrentContinuation",
@@ -682,6 +686,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)??[]),
     futureStructuralWitnesses:structuredClone((evidenceRecord.futureStructuralWitnesses as ExactItinerantPlanEvidence["futureStructuralWitnesses"]|undefined)??[]),
     branchesBeforeCurrentContinuation:(evidenceRecord.branchesBeforeCurrentContinuation as number|null|undefined)??null,
+    selectedPipelineWitnessDiagnostic:structuredClone((evidenceRecord.selectedPipelineWitnessDiagnostic as ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"]|undefined)??null),
+    selectedPipelineWitnessAuthority:structuredClone((evidenceRecord.selectedPipelineWitnessAuthority as ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"]|undefined)??null),
     selectedMealWitnesses,
     fixedMainBundle,
     selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),

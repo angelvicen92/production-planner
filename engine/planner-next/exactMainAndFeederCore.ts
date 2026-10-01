@@ -13,9 +13,9 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
-  type PipelineBundleMatchingDiagnostic, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
+import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, pipelineWitnessAuthorityDiagnostic, preparePipelineBundleGraph,
+  revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitness,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
+  type PipelineBundleMatchingDiagnostic, type PipelineWitnessAuthorityDiagnostic, type PipelineWitnessObservation, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -168,11 +168,13 @@ export interface ExactMainAndFeederCoreEvidence {
     fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
     matchingTraversals:number;arrivalEvaluations:number}>;
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
+  fixedSupportingWitnessDiagnostic:PipelineWitnessObservation|null;
+  fixedSupportingWitnessAuthority:PipelineWitnessAuthorityDiagnostic|null;
   priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
   priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
   priorFutureStructuralWitnessRejectCause:FutureStructuralWitnessRejectCause|null;
   priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
-  priorFutureStructuralWitnessFallbackEntered:boolean;futureStructuralWitnesses:FutureStructuralWitnessV1[];
+  priorFutureStructuralWitnessFallbackEntered:boolean;futureStructuralWitnesses:FutureStructuralWitness[];
   ephemeralSupportingPlacements:FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
   acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;
@@ -363,6 +365,8 @@ export interface ExactCoreLeafCandidate {
   fingerprint: string;
   source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
   architectureFingerprint?: string;
+  geometryFingerprint?: string;
+  reusedFutureStructuralWitness?: FutureStructuralWitness;
   selectedMainMealStart?: number;
   selectedFutureReservations?: readonly AnalyticalFutureReservation[];
   selectedFutureReservationFingerprints?: readonly string[];
@@ -387,7 +391,7 @@ export interface ExactMainAndFeederSearchOptions {
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
-  priorFutureStructuralWitness?:FutureStructuralWitnessV1;
+  priorFutureStructuralWitness?:FutureStructuralWitness;
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
   /** Live matching state for the preferred architecture. Not authoritative. */
@@ -790,6 +794,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
+    fixedSupportingWitnessDiagnostic:null,fixedSupportingWitnessAuthority:null,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
@@ -1087,17 +1092,20 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const prior=options.priorFutureStructuralWitness;
       evidence.priorFutureStructuralWitnessFound=Boolean(prior);
       evidence.priorFutureStructuralWitnessFingerprint=prior?.fingerprint??null;
-      const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&prior.version===1
+      const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&(prior.version===1||prior.version===2)
         &&prior.architectureFingerprint===evidence.protectedMainArchitectureFingerprint;
       if(prior&&!compatiblePrior){evidence.priorFutureStructuralWitnessRevalidation="STALE";
-        evidence.priorFutureStructuralWitnessRejectCause=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+        evidence.priorFutureStructuralWitnessRejectCause=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||(prior.version!==1&&prior.version!==2)
           ?"INVALID_KIND_OR_VERSION":"ARCHITECTURE_FINGERPRINT_MISMATCH";
-        evidence.priorFutureStructuralWitnessRejectDetails=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+        evidence.priorFutureStructuralWitnessRejectDetails=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||(prior.version!==1&&prior.version!==2)
           ?{kind:prior.kind,version:prior.version}:{expected:prior.architectureFingerprint,actual:evidence.protectedMainArchitectureFingerprint};
         evidence.priorFutureStructuralWitnessFallbackEntered=true;}
       function* orderedGeometries(){
         if(compatiblePrior)yield {materialized:undefined,prior:true};
-        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture))
+        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture,observation=>{
+          evidence.fixedSupportingWitnessDiagnostic=structuredClone(observation);
+          evidence.fixedSupportingWitnessAuthority=pipelineWitnessAuthorityDiagnostic(problem,protectedPlacements);
+        }))
           yield {materialized:candidate,prior:false};
       }
       for(const entry of orderedGeometries()){
@@ -1151,6 +1159,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         continue;
       }
       evidence.fixedMainBundlePerfectMatchingFound=true;
+      if(entry.prior){
+        evidence.fixedSupportingArrivalResult=matching.evidence.fixedSupportingArrivalResult;
+        evidence.fixedSupportingArrivalPacketCount=matching.evidence.fixedSupportingArrivalPacketCount;
+      }
       evidence.fixedSupportingRematchedIdentityCount=matching.evidence.fixedSupportingRematchedIdentityCount;
       evidence.fixedSupportingSameGeometryRescued=Boolean(evidence.fixedSupportingGeometriesAttempted.length===1
         &&matching.evidence.fixedSupportingRematchedIdentityCount>0&&matching.evidence.fixedSupportingArrivalResult==="FEASIBLE");
@@ -1179,7 +1191,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!candidateCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
-        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined})??"ACCEPT";
+        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined,
+        reusedFutureStructuralWitness:entry.prior?prior:undefined})??"ACCEPT";
       attempt.continuation=typeof continuation==="string"?continuation:"CERTIFIED_BACKJUMP";
       evidence.branchesBeforeCurrentContinuation??=ledger.branchesExplored;
       if(continuation==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);
@@ -1189,7 +1202,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(!fixedSupporting)break;continue;
       }
       if(fixedSupporting){
-        const witness=futureStructuralWitnessFromMaterialization(problem,architecture,matching);
+        const witness=entry.prior?prior!:futureStructuralWitnessFromMaterialization(problem,architecture,matching);
         const ephemeral=[...witness.ephemeralSupportingPlacements];
         evidence.ephemeralSupportingPlacements=ephemeral;evidence.futureStructuralWitnesses=[witness];
       }else evidence.acceptedSupportingPlacements=matching.scheduledTasks.filter(task=>task.kind==="auxiliary");
@@ -1253,6 +1266,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
         source:structuralCandidate?"STRUCTURAL_FUTURE_CONDITIONED":"PREFERRED_BUNDLE",
         architectureFingerprint:structuralCandidate?.architectureFingerprint,
+        geometryFingerprint:structuralCandidate?.architectureFingerprint,
         selectedMainMealStart:structuralCandidate?.architecture.mealStart,
         selectedFutureReservations:structuralCandidate?.selectedFutureReservations,
         selectedFutureReservationFingerprints:structuralCandidate?.selectedFutureReservationFingerprints})??"ACCEPT";
