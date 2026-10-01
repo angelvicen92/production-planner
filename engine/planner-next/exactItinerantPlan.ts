@@ -2098,7 +2098,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     if (standalone.outcome === "DEAD_END" || !standalone.tasks) {
       evidence.coreLeavesRejectedByStandalone += 1; return "REJECT";
     }
-    if(candidate.source==="PREFERRED_BUNDLE"&&pipelinePreservesFixed){
+    if(candidate.reusedFutureStructuralWitness){
+      acceptedContinuation.witness=candidate.reusedFutureStructuralWitness;
+    }else if(candidate.source==="PREFERRED_BUNDLE"&&pipelinePreservesFixed){
       acceptedContinuation.witness=futureStructuralWitnessFromMaterialization(problem,
         {pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},pipeline!);
     }

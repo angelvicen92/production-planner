@@ -366,6 +366,7 @@ export interface ExactCoreLeafCandidate {
   source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
   architectureFingerprint?: string;
   geometryFingerprint?: string;
+  reusedFutureStructuralWitness?: FutureStructuralWitness;
   selectedMainMealStart?: number;
   selectedFutureReservations?: readonly AnalyticalFutureReservation[];
   selectedFutureReservationFingerprints?: readonly string[];
@@ -1190,7 +1191,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!candidateCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
-        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined})??"ACCEPT";
+        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined,
+        reusedFutureStructuralWitness:entry.prior?prior:undefined})??"ACCEPT";
       attempt.continuation=typeof continuation==="string"?continuation:"CERTIFIED_BACKJUMP";
       evidence.branchesBeforeCurrentContinuation??=ledger.branchesExplored;
       if(continuation==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);
@@ -1200,7 +1202,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(!fixedSupporting)break;continue;
       }
       if(fixedSupporting){
-        const witness=futureStructuralWitnessFromMaterialization(problem,architecture,matching);
+        const witness=entry.prior?prior!:futureStructuralWitnessFromMaterialization(problem,architecture,matching);
         const ephemeral=[...witness.ephemeralSupportingPlacements];
         evidence.ephemeralSupportingPlacements=ephemeral;evidence.futureStructuralWitnesses=[witness];
       }else evidence.acceptedSupportingPlacements=matching.scheduledTasks.filter(task=>task.kind==="auxiliary");
