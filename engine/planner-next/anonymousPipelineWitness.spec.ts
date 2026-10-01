@@ -518,6 +518,19 @@ describe("anonymous structural pipeline witness",()=>{
     for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
   });
 
+  it("keeps the fixed supporting frontier identical when observation is enabled",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const original=structuredClone(p);
+    const baseline=[...fixedSupportingPipelineGeometryFrontier(p,architecture)];
+    const observations:unknown[]=[];
+    const observed=[...fixedSupportingPipelineGeometryFrontier(p,architecture,value=>observations.push(value))];
+    assert.deepEqual(observed,baseline,"observation preserves geometry content, order, fingerprints, and result");
+    assert.deepEqual(p,original,"observation does not mutate its input");
+    assert.equal(observations.length,1);
+    assert.deepEqual((observations[0] as {candidateStarts:number[]}).candidateStarts,
+      [...(observations[0] as {candidateStarts:number[]}).candidateStarts].sort((a,b)=>a-b));
+  });
+
   it("exhausts every authorized Styling geometry when protected context blocks the Styling space",()=>{
     const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
     const nominal=materializeNominalPipelineWitness(p,architecture);

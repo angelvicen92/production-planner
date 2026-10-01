@@ -13,9 +13,9 @@ import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequi
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
+import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, pipelineWitnessAuthorityDiagnostic, preparePipelineBundleGraph,
   revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
-  type PipelineBundleMatchingDiagnostic, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
+  type PipelineBundleMatchingDiagnostic, type PipelineWitnessAuthorityDiagnostic, type PipelineWitnessObservation, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -168,6 +168,8 @@ export interface ExactMainAndFeederCoreEvidence {
     fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
     matchingTraversals:number;arrivalEvaluations:number}>;
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
+  fixedSupportingWitnessDiagnostic:PipelineWitnessObservation|null;
+  fixedSupportingWitnessAuthority:PipelineWitnessAuthorityDiagnostic|null;
   priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
   priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
   priorFutureStructuralWitnessRejectCause:FutureStructuralWitnessRejectCause|null;
@@ -790,6 +792,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
+    fixedSupportingWitnessDiagnostic:null,fixedSupportingWitnessAuthority:null,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
@@ -1097,7 +1100,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         evidence.priorFutureStructuralWitnessFallbackEntered=true;}
       function* orderedGeometries(){
         if(compatiblePrior)yield {materialized:undefined,prior:true};
-        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture))
+        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture,observation=>{
+          evidence.fixedSupportingWitnessDiagnostic=structuredClone(observation);
+          evidence.fixedSupportingWitnessAuthority=pipelineWitnessAuthorityDiagnostic(problem,protectedPlacements);
+        }))
           yield {materialized:candidate,prior:false};
       }
       for(const entry of orderedGeometries()){

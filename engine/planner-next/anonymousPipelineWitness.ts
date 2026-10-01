@@ -61,6 +61,50 @@ export interface AnonymousPipelineWitnessDiagnostic {
   participantMealBlockingTaskIds: readonly string[];
   participantMealAnalyticDomainBuilds: number;
 }
+export interface PipelineWitnessObservation {
+  readonly status: AnonymousPipelineWitnessStatus;
+  readonly reason: string | null;
+  readonly stylingSpotCount: number;
+  readonly candidateStarts: readonly number[];
+  readonly diagnostic: AnonymousPipelineWitnessDiagnostic;
+}
+export interface PipelineWitnessAuthorityDiagnostic {
+  readonly day: Window;
+  readonly defaultParticipantTransitionMinutes: number;
+  readonly participants: readonly {id:string;availability:readonly Window[]}[];
+  readonly pipelineTasks: readonly {id:string;kind:string;participantId:string|null;availability:readonly Window[];
+    participantMarginBeforeMinutes:number|null;participantMarginAfterMinutes:number|null}[];
+  readonly analyticalFutureTechnicalChains: readonly {id:string;taskIds:readonly string[]}[];
+  readonly analyticalRemainingParticipantTaskIds: readonly string[];
+  readonly analyticalFutureParticipantSupportingTaskIds: readonly string[];
+  readonly operationalMealPolicyIds: readonly string[];
+  readonly participantMealTaskIds: readonly string[];
+  readonly fixedPlacements: readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
+  readonly supportingTaskIds: readonly string[];
+}
+
+/** Compact snapshot of the temporal authority read by an anonymous pipeline proof. */
+export function pipelineWitnessAuthorityDiagnostic(problem:Readonly<PlannerNextProblem>,
+  fixedPlacements:readonly ScheduledTask[]=[]):PipelineWitnessAuthorityDiagnostic {
+  const pipelineTasks=problem.tasks.filter(task=>task.kind==="main"||task.kind==="vocal"||
+    problem.transportPolicy?.arrival.taskIds.includes(task.id)||task.dependencies.some(id=>
+      problem.transportPolicy?.arrival.taskIds.includes(id)));
+  const pipelineIds=new Set(pipelineTasks.map(task=>task.id));
+  return {day:{...problem.day},defaultParticipantTransitionMinutes:problem.participantTransitionMinutes,
+    participants:problem.participants.map(person=>({id:person.id,availability:(person.availability??[]).map(window=>({...window}))})),
+    pipelineTasks:pipelineTasks.map(task=>({id:task.id,kind:task.kind,participantId:task.participantId??null,
+      availability:(task.availability??[]).map(window=>({...window})),
+      participantMarginBeforeMinutes:task.participantMarginBeforeMinutes??null,
+      participantMarginAfterMinutes:task.participantMarginAfterMinutes??null})),
+    analyticalFutureTechnicalChains:(problem.analyticalFutureTechnicalChains??[]).map(chain=>
+      ({id:chain.policy.id,taskIds:chain.tasks.map(task=>task.id)})),
+    analyticalRemainingParticipantTaskIds:(problem.analyticalRemainingParticipantTasks??[]).map(task=>task.id),
+    analyticalFutureParticipantSupportingTaskIds:[...(problem.analyticalFutureParticipantSupportingTaskIds??[])],
+    operationalMealPolicyIds:(problem.operationalMealPolicies??[]).map(policy=>policy.id),
+    participantMealTaskIds:(problem.participantMeals??[]).map(meal=>meal.sourceTaskId),
+    fixedPlacements:fixedPlacements.map(({id,start,end,spaceId})=>({id,start,end,spaceId})),
+    supportingTaskIds:problem.tasks.filter(task=>!pipelineIds.has(task.id)).map(task=>task.id)};
+}
 
 type Layer = { main:ParticipantTask; feeder:ParticipantTask; styling:ParticipantTask; arrival:ParticipantTask; profileKey:string; tokenId:string };
 export interface PipelineBundleMatchingEvidence { attempts:number; repairs:number; materializations:number; forbiddenEdges:readonly string[];
@@ -622,36 +666,39 @@ export function buildAnonymousPipelineWitness(problem: Readonly<PlannerNextProbl
 
 /** Internal constructive projection of the already-proved anonymous assignments. */
 export function materializeNominalPipelineWitness(problem: Readonly<PlannerNextProblem>, architecture:MainFeederArchitecture):
-  { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[] } {
-  let scheduledTasks:readonly ScheduledTask[]=[];
-  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;});
-  return {witness,scheduledTasks};
+  { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[]; diagnostic:AnonymousPipelineWitnessDiagnostic } {
+  let scheduledTasks:readonly ScheduledTask[]=[],diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+  const witness=buildPipelineWitness(problem,architecture,value=>{diagnostic=value;},[],scheduled=>{scheduledTasks=scheduled;});
+  return {witness,scheduledTasks,diagnostic:diagnostic!};
 }
 
 export type NominalPipelineMaterialization=ReturnType<typeof materializeNominalPipelineWitness>;
 
 /** Enumerates the complete authorized Styling-geometry frontier for fixed Main timelines. */
-export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture):
+export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
+  onObservation?:(observation:PipelineWitnessObservation)=>void):
   Generator<NominalPipelineMaterialization> {
-  let scheduledTasks:readonly ScheduledTask[]=[],starts:readonly number[]=[];
-  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;},undefined,
+  let scheduledTasks:readonly ScheduledTask[]=[],starts:readonly number[]=[],diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+  const witness=buildPipelineWitness(problem,architecture,value=>{diagnostic=value;},[],scheduled=>{scheduledTasks=scheduled;},undefined,
     new Set(),values=>{starts=values;});
+  onObservation?.({status:witness.status,reason:witness.reason??null,stylingSpotCount:witness.stylingSpots.length,
+    candidateStarts:[...starts],diagnostic:diagnostic!});
   if(witness.status!=="FEASIBLE"||witness.stylingSpots.length===0)return;
   const selected=Math.min(...witness.stylingSpots.map(spot=>spot.start));
-  yield {witness,scheduledTasks};
+  yield {witness,scheduledTasks,diagnostic:diagnostic!};
   const duration=witness.stylingSpots[0]!.end-witness.stylingSpots[0]!.start;
   for(const start of starts){if(start===selected)continue;
     const stylingSpots=witness.stylingSpots.map((spot,index)=>({...spot,start:start+index*duration,end:start+(index+1)*duration}));
     const payload={...witness,stylingSpots,fingerprint:undefined};
-    yield {witness:{...witness,stylingSpots,fingerprint:stable(payload)},scheduledTasks};
+    yield {witness:{...witness,stylingSpots,fingerprint:stable(payload)},scheduledTasks,diagnostic:diagnostic!};
   }
 }
 
 function materializeNominalPipelineWitnessWithBudget(problem:Readonly<PlannerNextProblem>,architecture:MainFeederArchitecture,
   operationalMealBudget?:OperationalMealSearchBudget):NominalPipelineMaterialization {
-  let scheduledTasks:readonly ScheduledTask[]=[];
-  const witness=buildPipelineWitness(problem,architecture,undefined,[],scheduled=>{scheduledTasks=scheduled;},operationalMealBudget);
-  return {witness,scheduledTasks};
+  let scheduledTasks:readonly ScheduledTask[]=[],diagnostic:AnonymousPipelineWitnessDiagnostic|undefined;
+  const witness=buildPipelineWitness(problem,architecture,value=>{diagnostic=value;},[],scheduled=>{scheduledTasks=scheduled;},operationalMealBudget);
+  return {witness,scheduledTasks,diagnostic:diagnostic!};
 }
 
 /**
