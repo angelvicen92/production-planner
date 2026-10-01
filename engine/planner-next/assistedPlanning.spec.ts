@@ -188,7 +188,10 @@ test("protected-vs-protected inherited incompatibility remains an ASST-008 Accep
   assert.equal(result.evidence.proposalCount, 0);
   assert.ok(result.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE")
     || result.evidence.reasonCodes.includes("ASSISTED_HARD_VALIDATION_FAILED"));
-  const accepted=executeAssistedPlanning(assisted,{violations:validatePlan(assisted.originalValidationProblem,protectedPlacements).violations?.filter(item=>item.ruleCode==="OVERLAP_VIOLATION")??[]});
+  const inherited=validatePlan(assisted.originalValidationProblem,protectedPlacements).violations
+    ?.filter(item=>item.affectedTaskIds.every(id=>protectedPlacements.some(task=>task.id===id)))??[];
+  assert.deepEqual(inherited.map(item=>item.ruleCode),["OVERLAP_VIOLATION","TRANSITION_VIOLATION"]);
+  const accepted=executeAssistedPlanning(assisted,{violations:inherited});
   assert.deepEqual(accepted.proposal?.map(task=>task.id),["main"]);
   assert.equal(accepted.evidence.hardValid,false);
   assert.deepEqual(accepted.evidence.unstructuredReasonCodes,[]);
