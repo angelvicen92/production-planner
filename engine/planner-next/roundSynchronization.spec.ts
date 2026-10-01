@@ -243,6 +243,25 @@ test("canonical validation permits residual rounds after the shorter lane is exh
       end: 910,
     },
   ];
+  const transitionLimited = validatePlan(
+    problem,
+    scheduled(problem, { "task:405": 910 }),
+    [],
+    [],
+    [],
+    [],
+    [],
+    preparations,
+  );
+  assert.equal(transitionLimited.hardValid, false);
+  assert.ok(transitionLimited.reasonCodes.includes("TRANSITION_VIOLATION"));
+
+  // This synthetic fixture explicitly opts out of the participant gap on this
+  // repeated-participant boundary so the test isolates round synchronization.
+  // Round synchronization itself does not imply INCLUDED transition semantics.
+  template.participantMarginAfterMinutes=0;
+  residualTask.participantMarginBeforeMinutes=0;
+
   const valid = validatePlan(
     problem,
     scheduled(problem, { "task:405": 910 }),

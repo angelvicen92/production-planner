@@ -4,23 +4,6 @@ import { runA2Assist1Benchmark } from "./runPlannerNextA2Assist1Benchmark";
 
 test("A2-ASSIST-1 small budget terminates deterministically within its ledger", () => {
   const first=runA2Assist1Benchmark(6_000);
-  const materializations=first.causalDiagnostic?.bundleMaterializations??[];
-  const reasonCounts:Record<string,number>={};
-  for(const row of materializations)for(const code of row.reasonCodes)reasonCounts[code]=(reasonCounts[code]??0)+1;
-  console.log("A2_STAGE1_DIAGNOSTIC="+JSON.stringify({
-    outcome:first.proposalCount===1?"PROPOSAL":"NO_PROPOSAL",
-    branches:first.work.branchesExplored??0,
-    coreBranches:first.work.coreBranches??0,
-    standaloneBranches:first.work.standaloneBranches??0,
-    bundleAttempts:first.work.bundleMatchingAttempts??0,
-    bundleMaterializations:first.work.bundleMatchingMaterializations??0,
-    bundleHardRejects:first.work.bundleHardValidationRejects??0,
-    reasonCounts,
-    uniqueOperationalFingerprints:new Set(materializations.map(row=>row.operationalFingerprint)).size,
-    first:materializations[0]??null,
-    firstHardValid:materializations.find(row=>row.hardValid)??null,
-    last:materializations.at(-1)??null,
-  }));
   assert.ok((first.work.branchesExplored??0)<=6_000);
   assert.ok(first.proposalCount===1||first.reasonCodes.some(code=>code.includes("BUDGET_EXHAUSTED")));
 });
