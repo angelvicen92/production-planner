@@ -69,6 +69,16 @@ export interface TransportArrivalFeasibility {
   scheduled: ScheduledTask[] | null;
 }
 
+export type CertifiedArrivalRejectCause = "ARRIVAL_ID_SET_MISMATCH" | "ARRIVAL_INVALID_PLACEMENT"
+  | "ARRIVAL_DURATION_MISMATCH" | "ARRIVAL_SPACE_MISMATCH" | "ARRIVAL_PARTICIPANT_MISSING"
+  | "ARRIVAL_GROUP_SIZE_INVALID" | "ARRIVAL_GROUP_POLICY_REJECTED" | "ARRIVAL_BOUNDARY_REJECTED";
+export interface CertifiedArrivalValidation {
+  readonly scheduled:readonly ScheduledTask[]|null;
+  readonly rejectCause:CertifiedArrivalRejectCause|null;
+  readonly rejectDetails:Readonly<Record<string,unknown>>|null;
+  readonly packetStarts:readonly number[];
+}
+
 const byId = (left: Task, right: Task): number => left.id.localeCompare(right.id);
 
 const lowerAndHolesKey = (windows: readonly { start: number; end: number }[] | undefined): string => {
@@ -113,6 +123,50 @@ function individualTransportBoundary(problem: Readonly<PlannerNextProblem>, task
   }
   const earliestStart = Math.max(problem.day.start, ...windows.map((items) => Math.min(...items.map(({ start }) => start))));
   return Math.max(obligationBoundary, earliestStart);
+}
+
+/** Validates one certified Arrival realization literally; it never discovers a replacement schedule. */
+export function validateCertifiedArrivalSchedule(problem:PlannerNextProblem,substantiveContext:readonly ScheduledTask[],
+  certifiedPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[]):CertifiedArrivalValidation {
+  const reject=(rejectCause:CertifiedArrivalRejectCause,rejectDetails:Record<string,unknown>):CertifiedArrivalValidation=>
+    ({scheduled:null,rejectCause,rejectDetails,packetStarts:[]});
+  const policy=problem.transportPolicy?.arrival;
+  const expectedIds=new Set(policy?.taskIds??[]),certifiedById=new Map(certifiedPlacements.map(item=>[item.id,item]));
+  const missingIds=[...expectedIds].filter(id=>!certifiedById.has(id)).sort();
+  const unexpectedIds=[...certifiedById.keys()].filter(id=>!expectedIds.has(id)).sort();
+  if(!policy||certifiedById.size!==certifiedPlacements.length||missingIds.length||unexpectedIds.length)
+    return reject("ARRIVAL_ID_SET_MISMATCH",{missingIds,unexpectedIds,duplicateIds:certifiedPlacements.length-certifiedById.size});
+  const scheduled:ScheduledTask[]=[];
+  for(const id of [...expectedIds].sort()){
+    const task=problem.tasks.find(candidate=>candidate.id===id),item=certifiedById.get(id)!;
+    if(!task||!Number.isFinite(item.start)||!Number.isFinite(item.end)||item.end<=item.start)
+      return reject("ARRIVAL_INVALID_PLACEMENT",{taskId:id,placement:item,taskFound:Boolean(task)});
+    if(!task.participantId||!problem.participants.some(participant=>participant.id===task.participantId))
+      return reject("ARRIVAL_PARTICIPANT_MISSING",{taskId:id,participantId:task.participantId??null});
+    if(item.end-item.start!==task.duration)return reject("ARRIVAL_DURATION_MISMATCH",{taskId:id,expected:task.duration,actual:item.end-item.start});
+    if(item.spaceId!==task.spaceId)return reject("ARRIVAL_SPACE_MISMATCH",{taskId:id,expected:task.spaceId,actual:item.spaceId});
+    scheduled.push({...task,start:item.start,end:item.end});
+  }
+  const grouped=new Map<string,ScheduledTask[]>();
+  for(const task of scheduled){const key=`${task.start}:${task.end}`;const group=grouped.get(key)??[];group.push(task);grouped.set(key,group);}
+  const groups=[...grouped.values()].sort((left,right)=>left[0]!.start-right[0]!.start||left[0]!.end-right[0]!.end);
+  const previousStarts:number[]=[];
+  for(const group of groups){
+    const start=group[0]!.start,size=group.length;
+    if(size<policy.minimumGroupSize||size>policy.maximumGroupSize)
+      return reject("ARRIVAL_GROUP_SIZE_INVALID",{taskIds:group.map(task=>task.id).sort(),size,minimum:policy.minimumGroupSize,maximum:policy.maximumGroupSize});
+    if(!canPlaceTransportGroup(problem,group,start,substantiveContext,previousStarts,policy))
+      return reject("ARRIVAL_GROUP_POLICY_REJECTED",{taskIds:group.map(task=>task.id).sort(),start,previousStarts:[...previousStarts],minGapMinutes:policy.minGapMinutes});
+    for(const task of group){
+      const obligations=substantiveContext.filter(placed=>placed.participantId===task.participantId&&!expectedIds.has(placed.id));
+      const obligationBoundary=obligations.length?Math.min(...obligations.map(({start})=>start)):problem.day.end;
+      const boundary=individualTransportBoundary(problem,task,"arrival",obligationBoundary);
+      if(task.end>boundary)return reject("ARRIVAL_BOUNDARY_REJECTED",{taskId:task.id,start:task.start,end:task.end,boundary,obligationBoundary});
+    }
+    previousStarts.push(start);
+  }
+  return {scheduled:scheduled.sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)),rejectCause:null,rejectDetails:null,
+    packetStarts:groups.map(group=>group[0]!.start)};
 }
 
 export function transportTaskIds(problem: Readonly<PlannerNextProblem>): ReadonlySet<string> {

@@ -39,7 +39,8 @@ import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit"
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
 import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
   futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, pipelineWitnessAuthorityDiagnostic, preparePipelineBundleGraph,
-  type AnonymousPipelineWitnessDiagnostic, type FutureStructuralWitnessV1, type PipelineWitnessAuthorityDiagnostic,
+  futureStructuralWitnessV2FromAcceptedPipeline,
+  type AnonymousPipelineWitnessDiagnostic, type FutureStructuralWitness, type FutureStructuralWitnessV1, type PipelineWitnessAuthorityDiagnostic,
   type PipelineWitnessObservation } from "./anonymousPipelineWitness";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
@@ -337,7 +338,7 @@ export interface ExactItinerantPlanEvidence {
   priorFutureStructuralWitnessRejectCause:import("./anonymousPipelineWitness").FutureStructuralWitnessRejectCause|null;
   priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
   priorFutureStructuralWitnessFallbackEntered:boolean;
-  futureStructuralWitnesses:import("./anonymousPipelineWitness").FutureStructuralWitnessV1[];
+  futureStructuralWitnesses:import("./anonymousPipelineWitness").FutureStructuralWitness[];
   ephemeralSupportingPlacements:import("./anonymousPipelineWitness").FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
   acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
@@ -1562,7 +1563,7 @@ export interface ExactItinerantPlanSearchOptions {
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
   fixedRoundPreparations?: readonly ScheduledRoundPreparation[];
-  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1;
+  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness;
   /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
   preferredArchitecture?: MainFeederArchitecture;
   preferredBundleCandidate?: Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;
@@ -1582,7 +1583,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const coreOperationalMealProblem:PlannerNextProblem=coreMainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
     ?{...problem,operationalMealPolicies:(problem.operationalMealPolicies??[]).filter(policy=>!coreMainMealAuthority.sourceIds.includes(policy.id))}:problem;
   const operationalMeals=new PreparedOperationalMealAuthority(coreOperationalMealProblem);
-  const acceptedContinuation={witness:null as FutureStructuralWitnessV1|null};
+  const acceptedContinuation={witness:null as FutureStructuralWitness|null};
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
@@ -2101,6 +2102,12 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       acceptedContinuation.witness=futureStructuralWitnessFromMaterialization(problem,
         {pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},pipeline!);
     }
+    if(conditioned&&candidate.geometryFingerprint){
+      acceptedContinuation.witness=futureStructuralWitnessV2FromAcceptedPipeline(problem,
+        {pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start),
+          ...(candidate.selectedMainMealStart===undefined?{}:{mealStart:candidate.selectedMainMealStart})},
+        candidate.geometryFingerprint,candidate.tasks);
+    }
     return "ACCEPT";
   }});
   evidence.causalDiagnostic=core.evidence.causalDiagnostic;
@@ -2242,7 +2249,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.futureStructuralWitnesses=structuredClone(core.evidence.futureStructuralWitnesses);
   evidence.ephemeralSupportingPlacements=structuredClone(core.evidence.ephemeralSupportingPlacements);
   evidence.acceptedSupportingPlacements=structuredClone(core.evidence.acceptedSupportingPlacements);
-  if(acceptedContinuation.witness&&evidence.futureStructuralWitnesses.length>0){
+  if(acceptedContinuation.witness){
     evidence.futureStructuralWitnesses=[structuredClone(acceptedContinuation.witness)];
     evidence.ephemeralSupportingPlacements=structuredClone(acceptedContinuation.witness.ephemeralSupportingPlacements);
   }
@@ -2303,7 +2310,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness): ExactItinerantPlanResult {
   const pipeline=fixedPlacementsAsContext?materializeFirstNominalPipelineWitness(problem):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,

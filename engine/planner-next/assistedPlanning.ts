@@ -42,7 +42,7 @@ export interface AssistedProblem {
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
-  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1;
+  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness;
 }
 
 export interface AssistedPlanningEvidence {
@@ -253,7 +253,7 @@ export function buildAssistedProblem(
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
   protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
-  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1,
+  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness,
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);

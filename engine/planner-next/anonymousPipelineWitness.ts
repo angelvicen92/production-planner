@@ -3,7 +3,7 @@ import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, Sc
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlowMealStarts, timelineSignature } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
-import { assessCoreArrivalTransportFeasibility } from "./transportGrouping";
+import { assessCoreArrivalTransportFeasibility, validateCertifiedArrivalSchedule } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
 import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain } from "./placement";
 import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching,
@@ -128,12 +128,22 @@ export interface FutureStructuralWitnessV1 {
   readonly ephemeralSupportingPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
   readonly fingerprint:string;
 }
+export interface FutureStructuralWitnessV2 {
+  readonly kind:"FIXED_SUPPORTING_PIPELINE";readonly version:2;
+  readonly architectureFingerprint:string;readonly geometryFingerprint:string;
+  readonly ephemeralSupportingPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
+  readonly certifiedFeederPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
+  readonly fingerprint:string;
+}
+export type FutureStructuralWitness=FutureStructuralWitnessV1|FutureStructuralWitnessV2;
 export type FutureStructuralWitnessRejectCause =
   |"INVALID_KIND_OR_VERSION"|"ARCHITECTURE_FINGERPRINT_MISMATCH"|"CERTIFICATE_FINGERPRINT_MISMATCH"
   |"DUPLICATE_CERTIFIED_PLACEMENT_ID"|"INVALID_CERTIFIED_INTERVAL"|"STYLING_CARDINALITY_MISMATCH"
   |"SUPPORTING_ID_SET_MISMATCH"|"PROTECTED_MAIN_MISSING"|"ANCHORED_OPERATION_MATERIALIZATION_FAILED"
   |"ANCHORED_PROTECTED_PLACEMENT_MISMATCH"|"STYLING_DURATION_MISMATCH"|"STYLING_SPACE_MISMATCH"
-  |"STYLING_PLACEMENT_REJECTED"|"ARRIVAL_REVALIDATION_INFEASIBLE"|"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH";
+  |"STYLING_PLACEMENT_REJECTED"|"ARRIVAL_REVALIDATION_INFEASIBLE"|"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH"
+  |"FEEDER_ID_SET_MISMATCH"|"FEEDER_DURATION_MISMATCH"|"FEEDER_SPACE_MISMATCH"
+  |"FEEDER_PROTECTED_PLACEMENT_MISMATCH"|"FEEDER_PLACEMENT_REJECTED"|"ARRIVAL_CERTIFIED_SCHEDULE_REJECTED";
 export interface FutureStructuralWitnessRevalidationResult {
   readonly materialization:PipelineBundleMaterialization|null;
   readonly rejectCause:FutureStructuralWitnessRejectCause|null;
@@ -157,17 +167,18 @@ export interface PreparedPipelineBundleGraph {
 
 /** Revalidates a certified identity-to-spot assignment without rediscovering a matching, exposing its first rejection. */
 export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
-  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):FutureStructuralWitnessRevalidationResult {
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitness):FutureStructuralWitnessRevalidationResult {
   const reject=(rejectCause:FutureStructuralWitnessRejectCause,rejectDetails:Record<string,unknown>):FutureStructuralWitnessRevalidationResult=>
     ({materialization:null,rejectCause,rejectDetails});
-  if(certificate.kind!=="FIXED_SUPPORTING_PIPELINE"||certificate.version!==1)
+  if(certificate.kind!=="FIXED_SUPPORTING_PIPELINE"||(certificate.version!==1&&certificate.version!==2))
     return reject("INVALID_KIND_OR_VERSION",{kind:certificate.kind,version:certificate.version});
   const actualArchitectureFingerprint=JSON.stringify({pattern:architecture.pattern,slots:architecture.slots});
   if(certificate.architectureFingerprint!==actualArchitectureFingerprint)return reject("ARCHITECTURE_FINGERPRINT_MISMATCH",
     {expected:certificate.architectureFingerprint,actual:actualArchitectureFingerprint});
   const expectedFingerprint=stable({kind:certificate.kind,version:certificate.version,
     architectureFingerprint:certificate.architectureFingerprint,geometryFingerprint:certificate.geometryFingerprint,
-    ephemeralSupportingPlacements:certificate.ephemeralSupportingPlacements});
+    ephemeralSupportingPlacements:certificate.ephemeralSupportingPlacements,
+    ...(certificate.version===2?{certifiedFeederPlacements:certificate.certifiedFeederPlacements}:{})});
   if(certificate.fingerprint!==expectedFingerprint)return reject("CERTIFICATE_FINGERPRINT_MISMATCH",
     {expected:expectedFingerprint,actual:certificate.fingerprint});
   const certified=new Map(certificate.ephemeralSupportingPlacements.map(item=>[item.id,item]));
@@ -182,12 +193,32 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
   const stylingTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"
     &&task.participantId===main.participantId&&task.dependencies.some(id=>arrivalIds.has(id))&&main.dependencies.includes(task.id)))
     .filter((task):task is ParticipantTask=>task!==undefined).sort((a,b)=>a.id.localeCompare(b.id));
+  const feederTasks=mains.map(main=>problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"
+    &&task.participantId===main.participantId&&main.dependencies.includes(task.id)))
+    .filter((task):task is ParticipantTask=>task!==undefined).sort((a,b)=>a.id.localeCompare(b.id));
   if(stylingTasks.length!==mains.length)return reject("STYLING_CARDINALITY_MISMATCH",{expected:mains.length,actual:stylingTasks.length,
     mainTaskIds:mains.map(task=>task.id),stylingTaskIds:stylingTasks.map(task=>task.id)});
   const expectedIds=new Set([...stylingTasks.map(task=>task.id),...arrivalIds]);
   const missingIds=[...expectedIds].filter(id=>!certified.has(id)).sort();
   const unexpectedIds=[...certified.keys()].filter(id=>!expectedIds.has(id)).sort();
   if(missingIds.length||unexpectedIds.length)return reject("SUPPORTING_ID_SET_MISMATCH",{missingIds,unexpectedIds});
+  const certifiedFeeders=certificate.version===2
+    ?new Map(certificate.certifiedFeederPlacements.map(item=>[item.id,item])):new Map<string,never>();
+  if(certificate.version===2){
+    if(certifiedFeeders.size!==certificate.certifiedFeederPlacements.length){
+      const seen=new Set<string>();const duplicate=certificate.certifiedFeederPlacements.find(item=>seen.has(item.id)||!seen.add(item.id));
+      return reject("DUPLICATE_CERTIFIED_PLACEMENT_ID",{placementId:duplicate?.id??null,placementKind:"FEEDER"});
+    }
+    const invalidFeeder=certificate.certifiedFeederPlacements.find(item=>!Number.isFinite(item.start)||!Number.isFinite(item.end)||item.end<=item.start);
+    if(invalidFeeder)return reject("INVALID_CERTIFIED_INTERVAL",{placementId:invalidFeeder.id,start:invalidFeeder.start,end:invalidFeeder.end,
+      spaceId:invalidFeeder.spaceId,placementKind:"FEEDER"});
+    const expectedFeederIds=new Set(feederTasks.map(task=>task.id));
+    const missingFeederIds=[...expectedFeederIds].filter(id=>!certifiedFeeders.has(id)).sort();
+    const unexpectedFeederIds=[...certifiedFeeders.keys()].filter(id=>!expectedFeederIds.has(id)).sort();
+    if(feederTasks.length!==mains.length||missingFeederIds.length||unexpectedFeederIds.length)
+      return reject("FEEDER_ID_SET_MISMATCH",{expectedMainCount:mains.length,actualFeederTaskCount:feederTasks.length,
+        missingIds:missingFeederIds,unexpectedIds:unexpectedFeederIds});
+  }
   const protectedById=new Map(protectedPlacements.map(task=>[task.id,task]));
   const missingMain=mains.find(main=>!protectedById.has(main.id));
   if(missingMain)return reject("PROTECTED_MAIN_MISSING",{mainTaskId:missingMain.id});
@@ -214,6 +245,26 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
   const context=[...new Map([...protectedContext.filter(task=>!anchoredIds.has(task.id)),...structural]
     .map(task=>[task.id,task])).values()];
   const matching=new Map<string,number>(),scheduled:ScheduledTask[]=[];
+  if(certificate.version===2){
+    const certifiedArrivalContext=[...arrivalIds].map(id=>{const task=problem.tasks.find(candidate=>candidate.id===id),item=certified.get(id);
+      return task&&item?{...task,start:item.start,end:item.end}:null;}).filter((task):task is ScheduledTask=>task!==null);
+    for(const task of feederTasks){
+      const item=certifiedFeeders.get(task.id)!;
+      if(item.end-item.start!==task.duration)return reject("FEEDER_DURATION_MISMATCH",{taskId:task.id,expected:task.duration,actual:item.end-item.start});
+      if(item.spaceId!==task.spaceId)return reject("FEEDER_SPACE_MISMATCH",{taskId:task.id,expected:task.spaceId,actual:item.spaceId});
+      const accepted=protectedById.get(task.id);
+      if(accepted){
+        if(accepted.start!==item.start||accepted.end!==item.end||accepted.spaceId!==item.spaceId)
+          return reject("FEEDER_PROTECTED_PLACEMENT_MISMATCH",{taskId:task.id,expected:item,
+            actual:{start:accepted.start,end:accepted.end,spaceId:accepted.spaceId}});
+        matching.set(task.id,scheduled.length);scheduled.push(accepted);continue;
+      }
+      const placementContext=[...context,...certifiedArrivalContext,...scheduled];
+      if(!canPlaceTask(problem,task,item.start,placementContext))return reject("FEEDER_PLACEMENT_REJECTED",{taskId:task.id,
+        start:item.start,end:item.end,spaceId:item.spaceId,placementDiagnostic:diagnoseTaskPlacement(problem,task,item.start,placementContext)});
+      matching.set(task.id,scheduled.length);scheduled.push({...task,start:item.start,end:item.end});
+    }
+  }
   for(const task of stylingTasks){
     const item=certified.get(task.id)!;
     if(item.end-item.start!==task.duration)return reject("STYLING_DURATION_MISMATCH",{taskId:task.id,placementId:item.id,
@@ -236,8 +287,15 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
   }
   const protectedArrivals=[...arrivalIds].map(id=>protectedById.get(id)).filter((task):task is ScheduledTask=>Boolean(task));
   const allArrivalsProtected=protectedArrivals.length===arrivalIds.size;
-  const arrival=allArrivalsProtected
-    ?{status:"FEASIBLE" as const,scheduled:protectedArrivals,evidence:{packetSizes:[]}}
+  const directArrival=certificate.version===2
+    ?validateCertifiedArrivalSchedule(problem,[...context,...scheduled],certificate.ephemeralSupportingPlacements.filter(({id})=>arrivalIds.has(id)))
+    :null;
+  if(directArrival&&!directArrival.scheduled)return reject("ARRIVAL_CERTIFIED_SCHEDULE_REJECTED",{
+    cause:directArrival.rejectCause,details:directArrival.rejectDetails});
+  const arrival=directArrival
+    ?{status:"FEASIBLE" as const,scheduled:directArrival.scheduled!,evidence:{packetSizes:directArrival.packetStarts}}
+    :allArrivalsProtected
+      ?{status:"FEASIBLE" as const,scheduled:protectedArrivals,evidence:{packetSizes:[]}}
     :assessCoreArrivalTransportFeasibility(problem,[...context,...scheduled]);
   if(arrival.status!=="FEASIBLE"||!arrival.scheduled)return reject("ARRIVAL_REVALIDATION_INFEASIBLE",{
     status:arrival.status,evidence:arrival.evidence,arrivalTaskIds:[...arrivalIds].sort()});
@@ -254,7 +312,7 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
     fingerprint:certificate.geometryFingerprint};
   const materialization:PipelineBundleMaterialization={witness,scheduledTasks:unique,matching,forbiddenEdges:new Set(),evidence:{attempts:0,repairs:0,
     materializations:1,forbiddenEdges:[],fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,
-    duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:1,safePerfectMatchingAttempts:0,
+    duplicatePerfectMatchingsSkipped:0,matchingTraversals:0,arrivalEvaluations:certificate.version===2?0:1,safePerfectMatchingAttempts:0,
     safePerfectMatchingFound:0,safeGraphEdgeCount:0,intrusiveGraphEdgeCount:0,safeMatchingFailures:0,fullGraphFallbacks:0,
     bundleEdgesBeforeReservation:0,bundleEdgesRejectedByReservation:0,
     bundleEdgesAfterReservation:0,fixedSupportingArrivalResult:"FEASIBLE",
@@ -264,7 +322,7 @@ export function revalidateFutureStructuralWitnessDetailed(problem:PlannerNextPro
 
 /** Compatibility wrapper for callers that only need PASS/REJECT. */
 export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,architecture:MainFeederArchitecture,
-  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitnessV1):PipelineBundleMaterialization|null {
+  protectedPlacements:readonly ScheduledTask[],certificate:FutureStructuralWitness):PipelineBundleMaterialization|null {
   return revalidateFutureStructuralWitnessDetailed(problem,architecture,protectedPlacements,certificate).materialization;
 }
 export interface PipelineArchitectureEnumerationEvidence {
@@ -291,6 +349,25 @@ export function futureStructuralWitnessFromMaterialization(problem:Readonly<Plan
   const unsigned={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
     architectureFingerprint:JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}),
     geometryFingerprint:materialization.witness.fingerprint,ephemeralSupportingPlacements};
+  return {...unsigned,fingerprint:stable(unsigned)};
+}
+/** Builds a V2 certificate from the concrete tasks that reached the final ACCEPT gate. */
+export function futureStructuralWitnessV2FromAcceptedPipeline(problem:Readonly<PlannerNextProblem>,
+  architecture:MainFeederArchitecture,geometryFingerprint:string,
+  acceptedTasks:readonly ScheduledTask[]):FutureStructuralWitnessV2 {
+  const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
+  const mains=problem.tasks.filter((task):task is ParticipantTask=>task.kind==="main"&&task.participantId!==undefined);
+  const stylingIds=new Set(mains.flatMap(main=>problem.tasks.filter(task=>task.kind==="auxiliary"
+    &&task.participantId===main.participantId&&task.dependencies.some(id=>arrivalIds.has(id))&&main.dependencies.includes(task.id)).map(task=>task.id)));
+  const feederIds=new Set(mains.flatMap(main=>problem.tasks.filter(task=>task.kind==="vocal"
+    &&task.participantId===main.participantId&&main.dependencies.includes(task.id)).map(task=>task.id)));
+  const placement=({id,start,end,spaceId}:ScheduledTask)=>({id,start,end,spaceId});
+  const ephemeralSupportingPlacements=acceptedTasks.filter(task=>arrivalIds.has(task.id)||stylingIds.has(task.id))
+    .map(placement).sort((a,b)=>a.id.localeCompare(b.id));
+  const certifiedFeederPlacements=acceptedTasks.filter(task=>feederIds.has(task.id)).map(placement).sort((a,b)=>a.id.localeCompare(b.id));
+  const unsigned={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:2 as const,
+    architectureFingerprint:JSON.stringify({pattern:architecture.pattern,slots:architecture.slots}),geometryFingerprint,
+    ephemeralSupportingPlacements,certifiedFeederPlacements};
   return {...unsigned,fingerprint:stable(unsigned)};
 }
 const signatureWindows = (windows: readonly Window[] | undefined) => orderedWindows(windows, {start:-1,end:-1});

@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
   mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  revalidateFutureStructuralWitness, revalidateFutureStructuralWitnessDetailed } from "./anonymousPipelineWitness";
+  futureStructuralWitnessV2FromAcceptedPipeline, revalidateFutureStructuralWitness, revalidateFutureStructuralWitnessDetailed } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -486,6 +486,27 @@ describe("anonymous structural pipeline witness",()=>{
     assert.notEqual(arrivalDiagnostic.rejectDetails?.status,"FEASIBLE");
     assert.ok(arrivalDiagnostic.rejectDetails?.evidence);
     assert.equal(revalidateFutureStructuralWitness(p,architecture,fixed,certificate),null,"changed Arrival authority enters fallback");
+  });
+
+  it("revalidates literal V2 Arrival with only Main protected and rejects stale feeder and packet authorities",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const selected=materializePipelineBundleMatching(p,architecture);assert.ok(selected);
+    const certificate=futureStructuralWitnessV2FromAcceptedPipeline(p,architecture,selected.witness.fingerprint,selected.scheduledTasks);
+    const fixedMains=selected.scheduledTasks.filter(task=>task.kind==="main");
+    const result=revalidateFutureStructuralWitnessDetailed(p,architecture,fixedMains,certificate);
+    assert.equal(result.rejectCause,null);assert.ok(result.materialization);assert.equal(certificate.certifiedFeederPlacements.length,2);
+    assert.equal(result.materialization.evidence.matchingTraversals,0);assert.equal(result.materialization.evidence.arrivalEvaluations,0);
+    for(const certified of certificate.ephemeralSupportingPlacements){
+      const actual=result.materialization.scheduledTasks.find(task=>task.id===certified.id);
+      assert.deepEqual(actual&&{id:actual.id,start:actual.start,end:actual.end,spaceId:actual.spaceId},certified);
+    }
+    const feeder=certificate.certifiedFeederPlacements[0]!;
+    const staleFeeder={...p,tasks:p.tasks.map(task=>task.id===feeder.id?{...task,availability:[{start:feeder.end,end:300}]}:task)};
+    assert.equal(revalidateFutureStructuralWitnessDetailed(staleFeeder,architecture,fixedMains,certificate).rejectCause,"FEEDER_PLACEMENT_REJECTED");
+    const stalePolicy=structuredClone(p);stalePolicy.transportPolicy!.arrival.maximumGroupSize=0;
+    const policyResult=revalidateFutureStructuralWitnessDetailed(stalePolicy,architecture,fixedMains,certificate);
+    assert.equal(policyResult.rejectCause,"ARRIVAL_CERTIFIED_SCHEDULE_REJECTED");
+    assert.equal(policyResult.rejectDetails?.cause,"ARRIVAL_GROUP_SIZE_INVALID");
   });
 
   it("reports no matching on fixed Styling geometry without moving protected work",()=>{

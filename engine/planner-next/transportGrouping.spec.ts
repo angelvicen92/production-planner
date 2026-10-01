@@ -10,6 +10,7 @@ import {
   assessCoreArrivalTransportFeasibility,
   materializeTerminalTransport,
   exactIntervalCapacityAssignment,
+  validateCertifiedArrivalSchedule,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -351,6 +352,21 @@ test("different arrival deadlines remain CONTIGUOUS_EXACT and input order does n
   assert.ok(first.evidence.contiguousStatesExplored > 0);
   assert.equal(first.evidence.membershipFallbackEntered, false);
   assert.deepEqual(original.problem, snapshot);
+});
+
+test("a different feasible Arrival canonicalization does not invalidate a literal certified realization",()=>{
+  const fixture=interchangeableArrivalProblem([100,100,100]);
+  fixture.problem.transportPolicy!.arrival.maximumGroupSize=2;
+  fixture.problem.transportPolicy!.arrival.targetGroupSize=2;
+  const constructed=assessCoreArrivalTransportFeasibility(fixture.problem,fixture.core);assert.equal(constructed.status,"FEASIBLE");
+  const byId=new Map(constructed.scheduled!.map(task=>[task.id,task]));
+  const first=byId.get("in-0")!,last=byId.get("in-2")!;
+  const certified=constructed.scheduled!.map(task=>task.id==="in-0"?{...task,start:last.start,end:last.end}
+    :task.id==="in-2"?{...task,start:first.start,end:first.end}:task);
+  assert.notDeepEqual(certified.map(task=>[task.id,task.start]),constructed.scheduled!.map(task=>[task.id,task.start]));
+  const validated=validateCertifiedArrivalSchedule(fixture.problem,fixture.core,certified);
+  assert.equal(validated.rejectCause,null);assert.deepEqual(validated.scheduled!.map(task=>[task.id,task.start]).sort(),
+    certified.map(task=>[task.id,task.start]).sort());
 });
 
 test("contiguous transport reports budget exhaustion instead of infeasibility", () => {
