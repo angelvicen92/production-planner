@@ -33,6 +33,11 @@ export const plans = pgTable("plans", {
   mealConfigSource: text("meal_config_source").notNull(),
   mealOverrideBy: uuid("meal_override_by"),
   mealOverrideAt: timestamp("meal_override_at", { withTimezone: true }),
+  participantTransitionMinutes: integer("participant_transition_minutes").notNull().default(5),
+  participantTransitionBaselineMinutes: integer("participant_transition_baseline_minutes").notNull().default(5),
+  participantTransitionConfigSource: text("participant_transition_config_source").notNull().default("LEGACY_BACKFILL"),
+  participantTransitionOverrideBy: uuid("participant_transition_override_by"),
+  participantTransitionOverrideAt: timestamp("participant_transition_override_at", { withTimezone: true }),
   currentConfigRevisionId: bigint("current_config_revision_id", { mode: "number" }),
 
   // ✅ Comida concursantes (por plan)

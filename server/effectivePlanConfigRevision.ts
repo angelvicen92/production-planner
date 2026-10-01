@@ -251,7 +251,8 @@ export function projectEffectiveAuthoritiesFromEngineInputV1(
   const provenance = (authority: string): EffectivePlanConfigProvenanceV1 => ({ authority, authorityContractVersion: 1 });
   const bundleUnavailable = (input.resourceBundleLoadWarnings?.length ?? 0) > 0;
   return {
-    plan_workday: { semanticValue: [{ workDay: input.workDay, meal: input.meal, mealWindow: input.mealWindow, mealMode: input.mealMode }], provenance: provenance("plans") },
+    plan_workday: { semanticValue: [{ workDay: input.workDay, meal: input.meal, mealWindow: input.mealWindow, mealMode: input.mealMode,
+      defaultParticipantTransitionMinutes:input.defaultParticipantTransitionMinutes }], provenance: provenance("plans") },
     contestant_availability: { semanticValue: Object.entries(input.contestantAvailabilityById ?? {}).map(([contestantId, availability]) => ({ contestantId: Number(contestantId), ...availability })), provenance: provenance("contestants") },
     spatial_configuration: { semanticValue: [
       ...(input.planZoneSettings ?? []).map(({ zoneId, availabilityStart, availabilityEnd, name, mealStartPreferred, mealEndPreferred, groupingLevel, groupingMinChain, maxTemplateChanges, spaceMealBreakMinutes }) => ({ kind: "zone", zoneId, availabilityStart: availabilityStart ?? null, availabilityEnd: availabilityEnd ?? null, name: name ?? "", mealStartPreferred: mealStartPreferred ?? null, mealEndPreferred: mealEndPreferred ?? null, groupingLevel: groupingLevel ?? 0, groupingMinChain: groupingMinChain ?? 4, maxTemplateChanges: maxTemplateChanges ?? 4, spaceMealBreakMinutes: spaceMealBreakMinutes ?? null })),

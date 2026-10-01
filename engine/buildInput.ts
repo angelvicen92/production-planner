@@ -624,6 +624,10 @@ export async function buildEngineInput(
       start: p.work_start ?? p.workStart,
       end: p.work_end ?? p.workEnd,
     },
+    defaultParticipantTransitionMinutes: (()=>{
+      const value=p.participant_transition_minutes??p.participantTransitionMinutes;
+      return value===undefined||value===null?undefined:Number(value);
+    })(),
 
     mealMode: (() => {
       const value = String(p.meal_mode ?? p.mealMode ?? "").trim().toLowerCase();
