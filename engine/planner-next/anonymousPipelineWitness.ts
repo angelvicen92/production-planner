@@ -48,6 +48,12 @@ export interface AnonymousPipelineWitnessDiagnostic {
   stylingCandidateStartBoundaryCount: number;
   entryCandidateStartsConsidered: readonly number[];
   entryCandidatesRejectedByArrival: readonly number[];
+  entryArrivalAttempts: readonly {stylingStart:number;status:string;
+    evidence:ReturnType<typeof assessCoreArrivalTransportFeasibility>["evidence"];
+    obligations:readonly {id:string;participantId:string|null;start:number;end:number;dependencies:readonly string[]}[];
+    arrivalTasks:readonly {id:string;participantId:string|null;duration:number;availability:readonly Window[]}[];
+    participants:readonly {id:string;availability:readonly Window[]}[];
+    policy:PlannerNextProblem["transportPolicy"] extends infer T ? T : never}[];
   selectedEntryBlockStart: number | null;
   selectedEntryBlockEnd: number | null;
   pressureOrder: readonly string[];
@@ -305,6 +311,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   let arrivalSolverExecuted=false,arrivalClassification:string|null=null,arrivalContiguousStatesExplored=0;
   let arrivalMembershipFallbackEntered=false,stylingCandidateStartBoundaryCount=0;
   const entryCandidateStartsConsidered:number[]=[],entryCandidatesRejectedByArrival:number[]=[];
+  const entryArrivalAttempts:AnonymousPipelineWitnessDiagnostic["entryArrivalAttempts"][number][]=[];
   let selectedEntryBlockStart:number|null=null,selectedEntryBlockEnd:number|null=null,pressureOrder:string[]=[];
   let operationalMealPoliciesChecked=0,operationalMealFutureFeasible:boolean|null=null,operationalMealBranchesExplored=0;
   let operationalMealBlockingPolicyIds:string[]=[];
@@ -319,7 +326,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   const emitDiagnostic=()=>onDiagnostic?.({mainMatchingCompleted,anchorsCompleted,feederGeometryCompleted,
     stylingGeometryCompleted,arrivalSolverExecuted,arrivalClassification,arrivalContiguousStatesExplored,
     arrivalMembershipFallbackEntered,mainRuns:diagnosticMainRuns,feederRuns:diagnosticFeederRuns,
-    stylingCandidateStartBoundaryCount,entryCandidateStartsConsidered,entryCandidatesRejectedByArrival,
+    stylingCandidateStartBoundaryCount,entryCandidateStartsConsidered,entryCandidatesRejectedByArrival,entryArrivalAttempts,
     selectedEntryBlockStart,selectedEntryBlockEnd,pressureOrder,anchoredOperationIntervals:diagnosticAnchors,
     operationalMealPoliciesChecked,operationalMealFutureFeasible,operationalMealBlockingPolicyIds,
     operationalMealBranchesExplored,participantMealsChecked,participantMealFutureFeasible,
@@ -598,6 +605,13 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
         {...x.styling,id:`styling:${x.tokenId}`,participantId:x.tokenId,dependencies:[`in:${x.tokenId}`],start:style.start,end:style.end},
         {...x.feeder,id:`feeder:${x.tokenId}`,participantId:x.tokenId,dependencies:[`in:${x.tokenId}`],start:vocal.start,end:vocal.end}];});
     arrivalSolverExecuted=true;const candidate=assessCoreArrivalTransportFeasibility(anonymousProblem,obligations);
+    entryArrivalAttempts.push({stylingStart:start,status:candidate.status,evidence:candidate.evidence,
+      obligations:obligations.map(task=>({id:task.id,participantId:task.participantId??null,start:task.start,end:task.end,
+        dependencies:[...task.dependencies]})),
+      arrivalTasks:anonymousArrivals.map(task=>({id:task.id,participantId:task.participantId??null,duration:task.duration,
+        availability:(task.availability??[]).map(window=>({...window}))})),
+      participants:anonymousParticipants.map(person=>({id:person.id,availability:person.availability.map(window=>({...window}))})),
+      policy:structuredClone(anonymousProblem.transportPolicy)});
     arrivalClassification=candidate.evidence.classification;arrivalContiguousStatesExplored+=candidate.evidence.contiguousStatesExplored;
     arrivalMembershipFallbackEntered||=candidate.evidence.membershipFallbackEntered;
     if(candidate.status!=="FEASIBLE"||!candidate.scheduled){entryCandidatesRejectedByArrival.push(start);continue;}

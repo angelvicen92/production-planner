@@ -387,11 +387,16 @@ test("core arrival deadlines ignore already materialized transport rows determin
 
 test("contiguous arrival infeasibility is exact and never enters membership enumeration", () => {
   const fixture = interchangeableArrivalProblem([20, 20, 20, 20, 20]);
+  const snapshot=structuredClone(fixture);
   const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core);
   assert.equal(result.status, "INFEASIBLE");
   assert.equal(result.evidence.classification, "CONTIGUOUS_EXACT");
   assert.equal(result.evidence.membershipFallbackEntered, false);
   assert.ok(result.evidence.contiguousStatesExplored > 0);
+  assert.ok(result.evidence.contiguousFirstDeadEnd);
+  assert.ok(result.evidence.contiguousFirstDeadEnd.startsBeforeBoundaryFilter>=
+    result.evidence.contiguousFirstDeadEnd.startsAfterBoundaryFilter);
+  assert.deepEqual(fixture,snapshot,"dead-end observation must not mutate Arrival input");
 });
 
 test("individual availability holes and fixed identities require membership search", () => {

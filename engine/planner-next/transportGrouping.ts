@@ -29,6 +29,8 @@ export interface TransportMaterializationDirectionEvidence {
   membershipBranches: number;
   budgetExhausted: boolean;
   failureCause: "INFEASIBLE" | "BUDGET_EXHAUSTED" | null;
+  contiguousFirstDeadEnd: {index:number;remaining:number;groupTaskIds:string[];groupSize:number;
+    deadline:number;temporalLimit:number;startsBeforeBoundaryFilter:number;startsAfterBoundaryFilter:number}|null;
 }
 
 export interface TransportMaterializationEvidence {
@@ -58,6 +60,7 @@ const detailedFields = (tasks: readonly Task[], algorithm: TransportMaterializat
       resources: [...(task.requiredResourceIds ?? [])].sort() }) === key).map(({ id }) => id)),
   algorithm, statesExplored: 0, matchingChecks: 0, matchingTraversals: 0, membershipBranches: 0,
   budgetExhausted: false, failureCause: null as "INFEASIBLE" | "BUDGET_EXHAUSTED" | null,
+  contiguousFirstDeadEnd: null as TransportMaterializationDirectionEvidence["contiguousFirstDeadEnd"],
 });
 
 export interface TransportArrivalFeasibility {
@@ -212,7 +215,7 @@ function solveContiguousDirection(
   policy: Readonly<TransportGroupingPolicy>,
   consumeAlternative?: () => boolean,
 ): { scheduled: ScheduledTask[] | null; packetSizes: number[]; starts: number[]; states: number; alternatives: number;
-  budgetExhausted: boolean } {
+  budgetExhausted: boolean; firstDeadEnd:TransportMaterializationDirectionEvidence["contiguousFirstDeadEnd"] } {
   const transportIds = transportTaskIds(problem);
   const obligationsFor = (participantId: string) => [
     ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
@@ -233,6 +236,7 @@ function solveContiguousDirection(
   ).filter((size) => canPartitionTransportCount(remaining - size, policy.minimumGroupSize, policy.maximumGroupSize))
     .sort((left, right) => Math.abs(left - target) - Math.abs(right - target) || left - right);
   let states = 0, alternatives = 0, budgetExhausted = false;
+  let firstDeadEnd:TransportMaterializationDirectionEvidence["contiguousFirstDeadEnd"]=null;
   const failed = new Set<string>();
   const search = (index: number, temporalLimit: number, local: ScheduledTask[], sizes: number[], starts: number[]): boolean => {
     states += 1;
@@ -246,11 +250,15 @@ function solveContiguousDirection(
       const from = index;
       const group = tasks.slice(from, from + size);
       const deadline = direction === "arrival" ? Math.min(...group.map(boundary)) : Math.max(...group.map(boundary));
-      const candidates = transportGroupStarts(problem, group, [...substantive, ...alreadyPlaced, ...local], [], policy)
+      const startsBeforeBoundaryFilter=transportGroupStarts(problem, group, [...substantive, ...alreadyPlaced, ...local], [], policy);
+      const candidates = startsBeforeBoundaryFilter
         .filter((start) => direction === "arrival"
           ? start + group[0]!.duration <= deadline && start >= temporalLimit
           : start >= deadline && start >= temporalLimit)
         .sort((left, right) => left - right);
+      if(candidates.length===0&&!firstDeadEnd)firstDeadEnd={index,remaining,groupTaskIds:group.map(task=>task.id),
+        groupSize:size,deadline,temporalLimit,startsBeforeBoundaryFilter:startsBeforeBoundaryFilter.length,
+        startsAfterBoundaryFilter:candidates.length};
       for (const start of candidates) {
         const scheduled = scheduleTransportGroup(group, start);
         local.push(...scheduled);
@@ -267,7 +275,7 @@ function solveContiguousDirection(
   };
   const scheduled: ScheduledTask[] = [], packetSizes: number[] = [], starts: number[] = [];
   return { scheduled: search(0, Number.NEGATIVE_INFINITY, scheduled, packetSizes, starts) ? scheduled : null,
-    packetSizes, starts, states, alternatives, budgetExhausted };
+    packetSizes, starts, states, alternatives, budgetExhausted,firstDeadEnd };
 }
 
 export function assessCoreArrivalTransportFeasibility(
@@ -307,6 +315,7 @@ export function assessCoreArrivalTransportFeasibility(
   const evidence = { ...base, packetSizes: solved.packetSizes, packetMembers: groups, starts: solved.starts,
     alternativesExplored: solved.alternatives, contiguousStatesExplored: solved.states, statesExplored: solved.states,
     budgetExhausted: solved.budgetExhausted,
+    contiguousFirstDeadEnd:solved.firstDeadEnd,
     failureCause: solved.scheduled ? null : solved.budgetExhausted ? "BUDGET_EXHAUSTED" as const : "INFEASIBLE" as const };
   return { status: solved.scheduled ? "FEASIBLE" : solved.budgetExhausted ? "INCONCLUSIVE" : "INFEASIBLE",
     evidence, scheduled: solved.scheduled };
