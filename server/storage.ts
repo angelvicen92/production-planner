@@ -1318,7 +1318,7 @@ export class SupabaseStorage implements IStorage {
       taskTemplateCatalog,
       { data: optimizerSettings, error: optimizerSettingsError },
     ] = await Promise.all([
-      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end, meal_start, meal_end, meal_mode").eq("id", 1).single(),
+      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end, meal_start, meal_end, meal_mode, default_participant_transition_minutes").eq("id", 1).single(),
       supabaseAdmin.from("zones").select("id, name, meal_start_preferred, meal_end_preferred, grouping_level, grouping_min_chain, max_template_changes, space_meal_break_minutes, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("spaces").select("id, name, zone_id, parent_space_id, priority_level, grouping_level, grouping_min_chain, grouping_apply_to_descendants, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("resource_bundles").select("id, name, description, bundle_type, is_active, metadata").eq("is_active", true).order("id"),
@@ -1360,8 +1360,11 @@ export class SupabaseStorage implements IStorage {
     const mealBaseline={start:String(settings.meal_start),end:String(settings.meal_end),mode:String(settings.meal_mode ?? "flexible_meal_window")};
     const workIntent=plan.configuration.workday;
     const mealIntent=plan.configuration.meal;
+    const participantTransitionIntent=plan.configuration.participantTransition;
     const workEffective=workIntent.intent === "OVERRIDE" ? workIntent.value : workBaseline;
     const mealEffective=mealIntent.intent === "OVERRIDE" ? mealIntent.value : mealBaseline;
+    const participantTransitionBaseline=Number(settings.default_participant_transition_minutes);
+    const participantTransitionEffective=participantTransitionIntent.intent==="OVERRIDE"?participantTransitionIntent.value:participantTransitionBaseline;
     const snapshotInput = {
       requestedWorkDay: workEffective,
       defaultWorkDay: { start: settings.default_work_start, end: settings.default_work_end },
@@ -1389,6 +1392,11 @@ export class SupabaseStorage implements IStorage {
         meal_config_source: mealIntent.intent === "OVERRIDE" ? "DAY_OVERRIDE" : "INHERITED",
         meal_override_by: mealIntent.intent === "OVERRIDE" ? plan.configurationActorId : null,
         meal_override_at: mealIntent.intent === "OVERRIDE" ? new Date().toISOString() : null,
+        participant_transition_minutes:participantTransitionEffective,
+        participant_transition_baseline_minutes:participantTransitionBaseline,
+        participant_transition_config_source:participantTransitionIntent.intent==="OVERRIDE"?"DAY_OVERRIDE":"INHERITED",
+        participant_transition_override_by:participantTransitionIntent.intent==="OVERRIDE"?plan.configurationActorId:null,
+        participant_transition_override_at:participantTransitionIntent.intent==="OVERRIDE"?new Date().toISOString():null,
 
         contestant_meal_duration_minutes:
           plan.contestantMealDurationMinutes ?? 75,

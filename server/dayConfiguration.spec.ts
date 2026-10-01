@@ -8,6 +8,7 @@ test("creation intent is explicit and equal overrides remain overrides",()=>{
   const inherited=createDayConfigurationIntentSchema.parse({workday:{intent:"INHERIT"},meal:{intent:"INHERIT"}});
   const same=createDayConfigurationIntentSchema.parse({workday:{intent:"OVERRIDE",value:{start:"09:00",end:"18:00"}},meal:{intent:"OVERRIDE",value:{start:"13:00",end:"14:00",mode:"global_hard_break"}}});
   assert.equal(inherited.workday.intent,"INHERIT");
+  assert.equal(inherited.participantTransition.intent,"INHERIT");
   assert.equal(same.workday.intent,"OVERRIDE");
   assert.equal(same.meal.intent,"OVERRIDE");
 });
@@ -16,6 +17,13 @@ test("typed edit and refresh reject ambiguous or implicit operations",()=>{
   assert.throws(()=>dayConfigEditSchema.parse({workday:{start:"09:00"}}));
   assert.throws(()=>dayConfigEditSchema.parse({}));
   assert.deepEqual(dayConfigRefreshSchema.parse({capabilities:["WORKDAY_WINDOW"]}).legacyTreatment,"KEEP_LEGACY");
+  assert.equal(dayConfigEditSchema.parse({participantTransitionMinutes:0}).participantTransitionMinutes,0);
+});
+
+test("087 snapshots participant transition and extends atomic day operations",()=>{
+ const sql=readFileSync(new URL("../supabase/migrations/087_participant_transition_margins.sql",import.meta.url),"utf8");
+ for(const token of ["participant_transition_minutes","participant_transition_baseline_minutes","participant_transition_config_source","LEGACY_BACKFILL","PARTICIPANT_TRANSITION","default_participant_transition_minutes","participantTransitionMinutes"])assert.match(sql,new RegExp(token));
+ assert.match(sql,/participant_transition_config_source='DAY_OVERRIDE'/);assert.match(sql,/participant_transition_minutes=participant_transition_baseline_minutes/);
 });
 
 test("084 preserves 077 canonical revisions, safe legacy materialization, mutations and RLS",()=>{

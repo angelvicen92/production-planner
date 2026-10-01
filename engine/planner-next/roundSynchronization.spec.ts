@@ -225,7 +225,10 @@ test("canonical validation permits residual rounds after the shorter lane is exh
   const template = problem.tasks.find(({ id }) => id === "task:402");
   assert.ok(template);
 
-  const residualTask = { ...template, id: "task:405" };
+  // Consecutive members of this explicit lane operation are an INCLUDED
+  // participant transition; the preparation, not a generic gap, separates them.
+  template.participantMarginAfterMinutes=0;
+  const residualTask = { ...template, id: "task:405",participantMarginBeforeMinutes:0 };
   problem.tasks.push(residualTask);
   longerLane.taskIds.push(residualTask.id);
   assert.deepEqual(preflight(problem), []);

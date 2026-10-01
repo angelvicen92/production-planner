@@ -10,7 +10,7 @@ import { deriveFeederCohortRelaxedCertificate, exactFeederOrdinalPerfectMatching
   incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
 import { assessOperationalMealFutureFeasibility, type OperationalMealSearchBudget } from "./operationalMeals";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
-import { createMainFlowMeal, mainFlowMealPolicy } from "./mainFlowMeal";
+import { createMainFlowMeal, mainFlowMealPolicy, materializeMainFlowOperationalMeals } from "./mainFlowMeal";
 import { normalizeParticipantFuturePlacements, probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 
 export type AnonymousPipelineWitnessStatus = "FEASIBLE" | "INFEASIBLE" | "INCONCLUSIVE";
@@ -581,13 +581,9 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
       ...(operation?.tasks.filter(task=>task.id!==x.main.id)??[]),
     ];
   });
-  const mainMealAuthority=mainFlowMealPolicy(problem as PlannerNextProblem);
-  const fixedMainMeals=mainMealAuthority ? (problem.operationalMealPolicies??[])
-    .filter(policy=>mainMealAuthority.sourceIds.includes(policy.id))
-    .map(policy=>{const meal=createMainFlowMeal(problem as PlannerNextProblem);const start=architecture.mealStart??meal.start;return {
-      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,
-      start,end:start+policy.duration,
-    };}) : [];
+  const selectedMealStart=architecture.mealStart??(mainFlowMealPolicy(problem as PlannerNextProblem)
+    ?createMainFlowMeal(problem as PlannerNextProblem).start:problem.mainFlow.preferredEnd);
+  const fixedMainMeals=materializeMainFlowOperationalMeals(problem as PlannerNextProblem,selectedMealStart);
   operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
   const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
     operationalMealBudget??{remaining:problem.budget.maxBranchExpansions},"PROBE",fixedMainMeals);

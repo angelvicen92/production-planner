@@ -33,6 +33,7 @@ export type EngineInputPreflightReasonCode =
   | "INVALID_SEARCH_BUDGET"
   | "INVALID_SEARCH_POLICY_CONFIGURATION"
   | "INVALID_TRANSITION_CONFIGURATION"
+  | "CONFLICTING_PARTICIPANT_TRANSITION_CONFIGURATION"
   | "MISSING_COACH_REFERENCE"
   | "MISSING_DEPENDENCY_REFERENCE"
   | "MISSING_MAIN_FLOW_CONFIGURATION"
@@ -389,6 +390,7 @@ function sourceProjection(input: EngineInput): unknown {
       resourceTransitionMinutes: plannerNextRecord.resourceTransitionMinutes,
       mainFlow: projectRecord(plannerNextRecord.mainFlow, ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"]),
     } : plannerNext,
+    defaultParticipantTransitionMinutes: input.defaultParticipantTransitionMinutes,
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
     roundSynchronizations: projectEngineInputRoundSynchronizations(input),
@@ -1781,14 +1783,22 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     });
   }
 
-  const transitionKeys = ["participantTransitionMinutes", "resourceTransitionMinutes"] as const;
-  const missingTransitionKeys = transitionKeys.filter((key) => !(integrationConfigurationRecord && key in integrationConfigurationRecord && integrationConfigurationRecord[key] !== undefined));
-  const invalidTransitionEntries = transitionKeys
-    .filter((key) => integrationConfigurationRecord && key in integrationConfigurationRecord && integrationConfigurationRecord[key] !== undefined
-      && !(typeof integrationConfigurationRecord[key] === "number" && Number.isFinite(integrationConfigurationRecord[key])
-        && Number.isInteger(integrationConfigurationRecord[key]) && integrationConfigurationRecord[key] >= 0))
-    .map((key) => ({ key, value: integrationConfigurationRecord?.[key] }));
-  const transitionConfigurationComplete = !missingTransitionKeys.length && !invalidTransitionEntries.length;
+  const topParticipantTransition=input.defaultParticipantTransitionMinutes;
+  const nestedParticipantTransition=integrationConfigurationRecord?.participantTransitionMinutes;
+  const participantTransition=topParticipantTransition??nestedParticipantTransition;
+  const missingTransitionKeys = [
+    ...(participantTransition===undefined?["participantTransitionMinutes"]:[]),
+    ...(integrationConfigurationRecord?.resourceTransitionMinutes===undefined?["resourceTransitionMinutes"]:[]),
+  ];
+  const invalidTransitionEntries = [
+    {key:"participantTransitionMinutes",value:participantTransition},
+    {key:"resourceTransitionMinutes",value:integrationConfigurationRecord?.resourceTransitionMinutes},
+  ].filter(entry=>entry.value!==undefined&&!(typeof entry.value==="number"&&Number.isFinite(entry.value)&&Number.isInteger(entry.value)&&entry.value>=0));
+  const participantTransitionConflict=topParticipantTransition!==undefined&&nestedParticipantTransition!==undefined&&topParticipantTransition!==nestedParticipantTransition;
+  if(participantTransitionConflict)
+    addIssue("CONFLICTING_PARTICIPANT_TRANSITION_CONFIGURATION","plan",input.planId,"defaultParticipantTransitionMinutes","Top-level daily authority conflicts with plannerNext integration configuration.",{topLevel:topParticipantTransition,nested:nestedParticipantTransition});
+  const participantTransitionInvalid=invalidTransitionEntries.some(entry=>entry.key==="participantTransitionMinutes");
+  const transitionConfigurationComplete = participantTransition!==undefined&&!participantTransitionInvalid&&!participantTransitionConflict;
   if (missingTransitionKeys.length) {
     addIssue("MISSING_TRANSITION_CONFIGURATION", "plan", input.planId, "plannerNext", "Explicit participant and resource transition configuration is incomplete.", { missingKeys: missingTransitionKeys });
   }
