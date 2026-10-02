@@ -601,6 +601,9 @@ test("a complete-matching future rejection repairs only the causal task edge",()
       :{outcome:"FOUND",terminalFutureResult:"PASS"};
   },{futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",participantFutureProbe:()=>futureProbe("PASS")});
   assert.equal(result.outcome,"FOUND");assert.equal(seen.length,2);
+  assert.equal(result.evidence.causalForbiddenEdges,1);
+  assert.equal(result.evidence.incrementalRepairs,1);
+  assert.equal(result.evidence.shapesRescuedByRematching,1);
   assert.equal(seen[0]!.tasks.find(task=>task.id==="task:401")!.start,515);
   assert.equal(seen[1]!.tasks.find(task=>task.id==="task:401")!.start,480);
 });
