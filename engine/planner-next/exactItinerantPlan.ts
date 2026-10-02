@@ -821,7 +821,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
             evidence.futureRoundWitnessCompleteMatchings+=1;evidence.futureRoundWitnessPrerequisiteChecks+=1;
             const prerequisites=checkMacroPendingPrerequisites(witnessProblem,prerequisiteTasks,candidate,round.tasks,
               validationCoreMeals,new Map());
-            if(!prerequisites.feasible)return {outcome:"DEAD_END",terminalFutureResult:"PRUNE"};
+            if(!prerequisites.feasible){const blocker=prerequisites.blockingTaskId,taskById=new Map(witnessProblem.tasks.map(task=>[task.id,task]));
+              const dependsOn=(task:Task,target:string,seen=new Set<string>()):boolean=>task.dependencies.some(id=>id===target||
+                (!seen.has(id)&&(seen.add(id),taskById.has(id)&&dependsOn(taskById.get(id)!,target,seen))));
+              const causalTaskIds=blocker?round.tasks.filter(task=>dependsOn(task,blocker)).map(({id})=>id):[];
+              return causalTaskIds.length?{outcome:"DEAD_END",matchingReject:{authority:"PREREQUISITE" as const,causalTaskIds},terminalFutureResult:"PRUNE"}
+                :{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};}
             evidence.futureRoundWitnessParticipantFutureChecks+=1;
             const participant=probeParticipantFutureReservations(witnessProblem,state,round.tasks,
               {consume:()=>ledger.consume("STANDALONE")},"EXACT");
@@ -831,9 +836,15 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
               ?probeTechnicalChainFutureReservations(witnessProblem,state,round.tasks,Math.max(0,ledger.limit-ledger.branchesExplored)):null;
             if(technical?.branchesConsumed&&!ledger.consume("STANDALONE",technical.branchesConsumed))return {outcome:"BUDGET_EXHAUSTED",terminalFutureResult:"ABSTAIN"};
             if(technical?.status==="ABSTAIN")return {outcome:"BUDGET_EXHAUSTED",terminalFutureResult:"ABSTAIN"};
-            if(technical?.status==="PRUNE")return {outcome:"DEAD_END",terminalFutureResult:"PRUNE"};
+            if(technical?.status==="PRUNE"){const causing=technical.certifiedCausingTaskId;
+              return causing&&memberIds.has(causing)?{outcome:"DEAD_END",matchingReject:{authority:"TECHNICAL_CHAIN" as const,causalTaskIds:[causing]},terminalFutureResult:"PRUNE"}
+                :{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};}
             const participantMeals=probeParticipantMealFutureFeasibility(witnessProblem,state,round.tasks);
-            if(!participantMeals.feasible)return {outcome:"DEAD_END",terminalFutureResult:"PRUNE"};
+            if(!participantMeals.feasible){const participants=new Set((witnessProblem.participantMeals??[])
+                .filter(meal=>participantMeals.blockingMealTaskIds.includes(meal.sourceTaskId)).map(meal=>meal.participantId));
+              const causalTaskIds=round.tasks.filter(task=>task.participantId!==undefined&&participants.has(task.participantId)).map(({id})=>id);
+              return causalTaskIds.length?{outcome:"DEAD_END",matchingReject:{authority:"PARTICIPANT_MEAL" as const,causalTaskIds},terminalFutureResult:"PRUNE"}
+                :{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};}
             const value=()=>({kind:"ROUND_SYNCHRONIZATION" as const,version:1 as const,policyId:future.policy.id,
               scheduledTaskPlacements:round.tasks.slice().sort(byId).map(({id,start,end,spaceId})=>({id,start,end,spaceId})),
               roundPreparations:round.preparations.slice().sort(byId).map(({id,spaceId,start,end})=>({id,spaceId,start,end})),

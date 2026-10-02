@@ -591,3 +591,16 @@ test("future-witness mode defers participant Future until a complete matching an
   assert.deepEqual(Object.keys(selected.matchingWitness).sort(),selected.tasks.map(task=>task.id).sort());
   assert.ok(Object.values(selected.matchingWitness).every(slot=>/^\d+:\d+$/.test(slot)));
 });
+
+test("a complete-matching future rejection repairs only the causal task edge",()=>{
+  const {problem,policy}=focusedRoundProblem();const seen:ExactRoundSynchronizationCandidate[]=[];
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),candidate=>{
+    seen.push(candidate);const causal=candidate.tasks.find(task=>task.id==="task:401")!;
+    return causal.start===515
+      ?{outcome:"DEAD_END",matchingReject:{authority:"PREREQUISITE",causalTaskIds:[causal.id]},terminalFutureResult:"PRUNE"}
+      :{outcome:"FOUND",terminalFutureResult:"PASS"};
+  },{futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",participantFutureProbe:()=>futureProbe("PASS")});
+  assert.equal(result.outcome,"FOUND");assert.equal(seen.length,2);
+  assert.equal(seen[0]!.tasks.find(task=>task.id==="task:401")!.start,515);
+  assert.equal(seen[1]!.tasks.find(task=>task.id==="task:401")!.start,480);
+});

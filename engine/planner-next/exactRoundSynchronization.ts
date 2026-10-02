@@ -70,6 +70,7 @@ export interface ExactRoundSynchronizationContinuationResult {
   outcome: ExactRoundSynchronizationOutcome;
   /** True only when the complete candidate reached participant Future EXACT and it pruned. */
   participantFutureExactPrune?: boolean;
+  matchingReject?:{authority:"PREREQUISITE"|"PARTICIPANT_MEAL"|"PARTICIPANT_FUTURE"|"TECHNICAL_CHAIN";causalTaskIds:string[]};
   terminalFutureResult?: "PASS" | "PRUNE" | "ABSTAIN" | "NOT_CHECKED";
 }
 
@@ -429,14 +430,17 @@ export function exploreExactRoundSynchronizationPolicy(
       return { outcome, evidence };
     }
     evidence.backtracks += 1;
-    if(!decision.participantFutureExactPrune)break;
     const newlyForbidden:string[]=[];
-    for(const [taskId,position] of matching){const task=taskByMatchingId.get(taskId)!,slot=slotById.get(slotIds[position]!)!;
-      const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
-      const exact=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],{consume:()=>ledger.consume("STANDALONE")},"EXACT");
-      if(exact.status==="ABSTAIN"&&exact.abstainCause==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
-      if(exact.status==="PRUNE")newlyForbidden.push(`${taskId}@${position}`);
-    }
+    if(decision.matchingReject){const causal=new Set(decision.matchingReject.causalTaskIds);
+      for(const [taskId,position] of matching)if(causal.has(taskId))newlyForbidden.push(`${taskId}@${position}`);
+    }else if(decision.participantFutureExactPrune){
+      for(const [taskId,position] of matching){const task=taskByMatchingId.get(taskId)!,slot=slotById.get(slotIds[position]!)!;
+        const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
+        const exact=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],{consume:()=>ledger.consume("STANDALONE")},"EXACT");
+        if(exact.status==="ABSTAIN"&&exact.abstainCause==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
+        if(exact.status==="PRUNE")newlyForbidden.push(`${taskId}@${position}`);
+      }
+    }else break;
     if(!newlyForbidden.length)break;
     previousForbidden=forbidden;previous=new Map(matching);forbidden=new Set([...forbidden,...newlyForbidden]);
     evidence.causalForbiddenEdges+=newlyForbidden.filter(edge=>!previousForbidden.has(edge)).length;
