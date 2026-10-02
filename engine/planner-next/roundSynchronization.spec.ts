@@ -580,3 +580,14 @@ test("future-aware round witness is canonical under equivalent input order and n
   assert.deepEqual(run(false,"PASS"),run(true,"PASS"));
   assert.deepEqual(run(false,"ABSTAIN"),run(true,"ABSTAIN"));
 });
+
+test("future-witness mode defers participant Future until a complete matching and exposes the exact assignment",()=>{
+  const {problem,policy}=focusedRoundProblem();let calls=0,selected:ExactRoundSynchronizationCandidate|null=null;
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),candidate=>{
+    selected=candidate;return {outcome:"FOUND",terminalFutureResult:"PASS"};
+  },{futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",participantFutureProbe:()=>{calls++;return futureProbe("PASS");}});
+  assert.equal(result.outcome,"FOUND");assert.ok(selected);
+  assert.equal(calls,0);assert.equal(result.evidence.futureEdgeChecks,0);
+  assert.deepEqual(Object.keys(selected.matchingWitness).sort(),selected.tasks.map(task=>task.id).sort());
+  assert.ok(Object.values(selected.matchingWitness).every(slot=>/^\d+:\d+$/.test(slot)));
+});

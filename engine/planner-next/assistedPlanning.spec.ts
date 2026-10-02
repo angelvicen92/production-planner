@@ -344,15 +344,17 @@ test("future analytical authority excludes included and protected tasks and defa
 test("future round synchronization is retained as analytical authority without widening scope",()=>{
   const source=fixture();
   source.tasks.push(
-    {id:"future-round-a",kind:"auxiliary",duration:10,spaceId:"main-space",participantId:"p1",dependencies:[]},
+    {id:"future-round-prerequisite",kind:"technical",duration:5,spaceId:"other-space",dependencies:[]},
+    {id:"future-round-a",kind:"auxiliary",duration:10,spaceId:"main-space",participantId:"p1",dependencies:["future-round-prerequisite"]},
     {id:"future-round-b",kind:"auxiliary",duration:10,spaceId:"vocal-space",participantId:"p2",dependencies:[]});
   source.roundSynchronizations=[{id:"future-round",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",lanes:[
     {spaceId:"main-space",taskIds:["future-round-a"],preparationMinutesBetweenRounds:5},
     {spaceId:"vocal-space",taskIds:["future-round-b"],preparationMinutesBetweenRounds:5}]}];
-  const eligible=new Set(["future-round-a","future-round-b"]);
+  const eligible=new Set(["future-round-prerequisite","future-round-a","future-round-b"]);
   const projected=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],eligible);
   assert.deepEqual(projected.problem.analyticalFutureRoundSynchronizations?.map(item=>item.policy.id),["future-round"]);
-  assert.deepEqual(projected.problem.analyticalFutureRoundSynchronizations?.[0]?.tasks.map(task=>task.id),["future-round-a","future-round-b"]);
+  assert.deepEqual(projected.problem.analyticalFutureRoundSynchronizations?.[0]?.tasks.map(task=>task.id),
+    ["future-round-a","future-round-b","future-round-prerequisite"]);
   assert.equal(projected.automaticTaskIds.some(id=>id.startsWith("future-round-")),false);
   assert.equal(projected.problem.tasks.some(task=>task.id.startsWith("future-round-")),false);
   const inScope=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"round"},{},["future-round-a"]),[],eligible);

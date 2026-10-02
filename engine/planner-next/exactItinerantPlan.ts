@@ -339,6 +339,9 @@ export interface ExactItinerantPlanEvidence {
   priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
   priorFutureStructuralWitnessFallbackEntered:boolean;
   futureStructuralWitnesses:import("./anonymousPipelineWitness").FutureStructuralWitness[];
+  futureRoundWitnessSearchInvocations:number;futureRoundWitnessStructuralCandidates:number;
+  futureRoundWitnessCompleteMatchings:number;futureRoundWitnessParticipantFutureChecks:number;
+  futureRoundWitnessPrerequisiteChecks:number;futureRoundWitnessBranchesConsumed:number;
   ephemeralSupportingPlacements:import("./anonymousPipelineWitness").FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
   acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
@@ -804,15 +807,22 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const futureRoundWitnesses:FutureRoundSynchronizationWitnessV1[]=[];
     if(transport!==null&&exact&&mealWitness?.complete&&operationalMealWitness?.complete&&validationAccepted){
       for(const future of problem.analyticalFutureRoundSynchronizations??[]){
-        const memberIds=new Set(future.tasks.map(({id})=>id));
+        const memberIds=new Set(future.policy.lanes.flatMap(lane=>lane.taskIds));
+        const prerequisiteTasks=future.tasks.filter(task=>!memberIds.has(task.id));
         const witnessProblem:PlannerNextProblem={...problem,tasks:[...problem.tasks,...future.tasks],
           analyticalFutureParticipantTasks:(problem.analyticalFutureParticipantTasks??[]).filter(task=>!memberIds.has(task.id)),
           analyticalFutureTechnicalChains:(problem.analyticalFutureTechnicalChains??[]).filter(chain=>
             !chain.tasks.some(task=>memberIds.has(task.id)))};
         let selected:FutureRoundSynchronizationWitnessV1|null=null;
+        const branchesBefore=ledger.branchesExplored;evidence.futureRoundWitnessSearchInvocations+=1;
         const explored=exploreExactRoundSynchronizationPolicy(witnessProblem,future.policy,candidate,preparations,
           roundPreparations,validationCoreMeals,ledger,round=>{
             const state=[...candidate,...round.tasks];
+            evidence.futureRoundWitnessCompleteMatchings+=1;evidence.futureRoundWitnessPrerequisiteChecks+=1;
+            const prerequisites=checkMacroPendingPrerequisites(witnessProblem,prerequisiteTasks,candidate,round.tasks,
+              validationCoreMeals,new Map());
+            if(!prerequisites.feasible)return {outcome:"DEAD_END",terminalFutureResult:"PRUNE"};
+            evidence.futureRoundWitnessParticipantFutureChecks+=1;
             const participant=probeParticipantFutureReservations(witnessProblem,state,round.tasks,
               {consume:()=>ledger.consume("STANDALONE")},"EXACT");
             if(participant.status==="ABSTAIN")return {outcome:"BUDGET_EXHAUSTED",terminalFutureResult:"ABSTAIN"};
@@ -824,19 +834,19 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
             if(technical?.status==="PRUNE")return {outcome:"DEAD_END",terminalFutureResult:"PRUNE"};
             const participantMeals=probeParticipantMealFutureFeasibility(witnessProblem,state,round.tasks);
             if(!participantMeals.feasible)return {outcome:"DEAD_END",terminalFutureResult:"PRUNE"};
-            const matching=Object.fromEntries(round.tasks.slice().sort(byId).map(task=>[task.id,
-              `${future.policy.lanes.findIndex(lane=>lane.spaceId===task.spaceId)}:${future.policy.lanes.find(lane=>lane.spaceId===task.spaceId)?.taskIds.length??0}:${task.start}`]));
             const value=()=>({kind:"ROUND_SYNCHRONIZATION" as const,version:1 as const,policyId:future.policy.id,
               scheduledTaskPlacements:round.tasks.slice().sort(byId).map(({id,start,end,spaceId})=>({id,start,end,spaceId})),
               roundPreparations:round.preparations.slice().sort(byId).map(({id,spaceId,start,end})=>({id,spaceId,start,end})),
               operationalMealReservations:round.operationalMealReservations.slice().sort((a,b)=>a.policyId.localeCompare(b.policyId)),
-              matchingWitness:matching,futureFeasibility:{participant:"PASS" as const,
+              matchingWitness:round.matchingWitness,futureFeasibility:{participant:"PASS" as const,
                 technicalChain:technical?"PASS" as const:"NOT_APPLICABLE" as const,
                 participantMeals:(witnessProblem.participantMeals?.length??0)>0?"PASS" as const:"NOT_APPLICABLE" as const,
                 operationalMeals:round.operationalMealReservations.length?"PASS" as const:"NOT_APPLICABLE" as const}});
             const body=value();selected={...body,fingerprint:createHash("sha256").update(JSON.stringify(body)).digest("hex")};
             return {outcome:"FOUND",terminalFutureResult:"PASS"};
-          });
+          },{futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING"});
+        evidence.futureRoundWitnessStructuralCandidates+=explored.evidence.mealAwareShapesFeasible;
+        evidence.futureRoundWitnessBranchesConsumed+=ledger.branchesExplored-branchesBefore;
         if(explored.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
         if(!selected)return "DEAD_END";
         futureRoundWitnesses.push(selected);
@@ -1733,6 +1743,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
+    futureRoundWitnessSearchInvocations:0,futureRoundWitnessStructuralCandidates:0,
+    futureRoundWitnessCompleteMatchings:0,futureRoundWitnessParticipantFutureChecks:0,
+    futureRoundWitnessPrerequisiteChecks:0,futureRoundWitnessBranchesConsumed:0,
     ephemeralSupportingPlacements:[],acceptedSupportingPlacements:[],branchesBeforeCurrentContinuation:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,firstFixedMainBundleHardGateDiagnostic:null,

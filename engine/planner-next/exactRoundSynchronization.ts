@@ -57,6 +57,8 @@ export interface ExactRoundSynchronizationCandidate {
   preparations: ScheduledRoundPreparation[];
   selectionOrder: string[];
   operationalMealReservations: Array<{ policyId:string;start:number;end:number }>;
+  /** Canonical task-to-slot assignment produced by the exact matcher. */
+  matchingWitness: Record<string,string>;
 }
 
 export interface ExactRoundSynchronizationSearchResult {
@@ -74,6 +76,7 @@ export interface ExactRoundSynchronizationContinuationResult {
 export interface ExactRoundSynchronizationAuthorities {
   /** Test seam; production always uses the canonical participant-future authority. */
   participantFutureProbe?: typeof probeParticipantFutureReservations;
+  futureEdgePruning?:"PER_EDGE"|"DEFER_TO_COMPLETE_MATCHING";
 }
 
 export interface ExactRoundSynchronizationMacroDomain {
@@ -288,7 +291,8 @@ function materializeMatchingCandidate(problem: PlannerNextProblem, policy: Round
     [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) return null;
   scheduled.sort((left, right) => left.start - right.start || byId(left, right));
   return { tasks: scheduled, preparations: [...shape.preparations], selectionOrder: scheduled.map(({ id }) => id),
-    operationalMealReservations:breakReservations.map(({policyId,start,end})=>({policyId,start,end})) };
+    operationalMealReservations:breakReservations.map(({policyId,start,end})=>({policyId,start,end})),
+    matchingWitness:Object.fromEntries([...matching].map(([slotId,taskId])=>[taskId,slotId]).sort(([a],[b])=>a.localeCompare(b))) };
 }
 
 /** Counts hard-valid synchronized temporal shapes without consuming the shared search ledger. */
@@ -369,12 +373,14 @@ export function exploreExactRoundSynchronizationPolicy(
         if(!laneTasks[slot.laneIndex]!.some(({id})=>id===task.id)||!canPlaceTask(problem,task,slot.start,baseTasks,meals))continue;
         evidence.rawCompatibleEdges+=1;
         const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
-        const cacheKey=`${task.id}@${slot.spaceId}:${slot.start}`;
-        let futureStatus=analyticEdgeCache.get(cacheKey);
-        if(futureStatus===undefined){futureStatus=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],undefined,"ANALYTIC_ONLY").status;
-          analyticEdgeCache.set(cacheKey,futureStatus);}
-        evidence.futureEdgeChecks+=1;
-        if(futureStatus==="PRUNE"){evidence.analyticPrunedEdges+=1;continue;}
+        if((authorities.futureEdgePruning??"PER_EDGE")==="PER_EDGE"){
+          const cacheKey=`${task.id}@${slot.spaceId}:${slot.start}`;
+          let futureStatus=analyticEdgeCache.get(cacheKey);
+          if(futureStatus===undefined){futureStatus=participantFutureProbe(problem,[...baseTasks,scheduled],[scheduled],undefined,"ANALYTIC_ONLY").status;
+            analyticEdgeCache.set(cacheKey,futureStatus);}
+          evidence.futureEdgeChecks+=1;
+          if(futureStatus==="PRUNE"){evidence.analyticPrunedEdges+=1;continue;}
+        }
         positions.push(positionBySlotId.get(key)!);
       }
       validPositions.set(task.id,positions);
@@ -410,6 +416,7 @@ export function exploreExactRoundSynchronizationPolicy(
       preparations: [...shape.preparations],
       selectionOrder: scheduled.map(({ id }) => id),
       operationalMealReservations:reservations.map(({policyId,start,end})=>({policyId,start,end})),
+      matchingWitness:witness,
     });
     const decision:ExactRoundSynchronizationContinuationResult=typeof continuationResult==="string"
       ?{outcome:continuationResult}:{...continuationResult};
