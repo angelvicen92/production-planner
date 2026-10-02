@@ -42,7 +42,7 @@ export interface AssistedProblem {
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
-  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness;
+  readonly priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
 }
 
 export interface AssistedPlanningEvidence {
@@ -253,7 +253,7 @@ export function buildAssistedProblem(
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
   protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
-  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness,
+  priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -432,6 +432,11 @@ export function buildAssistedProblem(
       }
       return {policy:structuredClone(policy),tasks:[...memberIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
     });
+  problem.analyticalFutureRoundSynchronizations=(problem.roundSynchronizations??[])
+    .filter(policy=>{const ids=policy.lanes.flatMap(lane=>lane.taskIds);
+      return ids.length>0&&ids.every(id=>analyticalFutureEligibleTaskIds.has(id)&&!included.has(id));})
+    .sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>{const ids=policy.lanes.flatMap(lane=>lane.taskIds);
+      return {policy:structuredClone(policy),tasks:[...new Set(ids)].sort().map(id=>structuredClone(tasksById.get(id)!))};});
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
