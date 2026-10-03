@@ -2385,12 +2385,18 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     pattern:pipeline.witness.pattern,
     slots:[...pipeline.witness.mainSpots].sort((a,b)=>Number(a.id.slice(5))-Number(b.id.slice(5))).map(spot=>spot.start),
   }:undefined;
-  const bundlePressure=new PreparedFutureTechnicalChainAuthority(problem);
-  const matchedBundles=preferredArchitecture?materializePipelineBundleMatching(problem,preferredArchitecture,fixedPlacements,
-    new Set(),undefined,()=>true,operation=>bundlePressure.intrusion(operation)):null;
+  const fixedIds=new Set((fixedPlacements??[]).map(({id})=>id));
+  const mains=problem.tasks.filter(task=>task.kind==="main");
+  const fixedMainAuthority=mains.length>0&&mains.every(task=>fixedIds.has(task.id));
+  // The fixed-main path reconstructs and validates its supporting pipeline under
+  // the shared search ledger. Eagerly materializing the same graph here would run
+  // an unbudgeted arrival-rematching search and then discard it at that path.
+  const bundlePressure=fixedMainAuthority?null:new PreparedFutureTechnicalChainAuthority(problem);
+  const matchedBundles=preferredArchitecture&&!fixedMainAuthority?materializePipelineBundleMatching(problem,preferredArchitecture,fixedPlacements,
+    new Set(),undefined,()=>true,operation=>bundlePressure!.intrusion(operation)):null;
   const repairPreferredBundleCandidate:ExactMainAndFeederSearchOptions["repairPreferredBundleCandidate"]=
-    preferredArchitecture?(previous,forbidden,consume)=>materializePipelineBundleMatching(problem,preferredArchitecture,
-      fixedPlacements,forbidden,previous,consume,operation=>bundlePressure.intrusion(operation)):undefined;
+    preferredArchitecture&&!fixedMainAuthority?(previous,forbidden,consume)=>materializePipelineBundleMatching(problem,preferredArchitecture,
+      fixedPlacements,forbidden,previous,consume,operation=>bundlePressure!.intrusion(operation)):undefined;
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
