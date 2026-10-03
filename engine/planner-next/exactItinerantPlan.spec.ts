@@ -67,6 +67,10 @@ test("the itinerant accepted continuation preserves the exact reused V2",()=>{
     v1.geometryFingerprint,initial.scheduledTasks);
   const result=runExactItinerantPlanSearch(input,{fixedPlacements:accepted,fixedPlacementsAsContext:true,priorFutureStructuralWitness:prior});
   assert.equal(result.status,"COMPLETE");assert.equal(result.evidence.futureStructuralWitnesses.length,1);
+  assert.equal(result.evidence.priorFutureStructuralWitnessRevalidation,"PASS");
+  assert.equal(result.evidence.fixedMainBundleHardGatePasses,1);
+  assert.equal(result.evidence.bundleMatchingAttempts,0);
+  assert.deepEqual(result.scheduledTasks,initial.scheduledTasks);
   assert.equal(result.evidence.futureStructuralWitnesses[0]?.version,2);
   assert.equal(result.evidence.futureStructuralWitnesses[0]?.fingerprint,prior.fingerprint);
 });

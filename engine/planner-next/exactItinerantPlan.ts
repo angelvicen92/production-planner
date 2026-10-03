@@ -2070,7 +2070,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     }
     const fixedById=new Map((options.fixedPlacements??[]).map(task=>[task.id,task]));
     const orderedMains=candidate.tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
-    const pipeline=!conditioned&&orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
+    // A revalidated structural witness already carries the exact fixed-supporting
+    // materialization into this continuation. Rebuilding it here would repeat the
+    // same bundle graph and arrival search before standalone can begin.
+    const pipeline=!conditioned&&!candidate.reusedFutureStructuralWitness
+      &&orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
       ?materializePipelineBundleMatching(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},options.fixedPlacements,
         new Set(),undefined,()=>true,operation=>futureTechnicalChains.intrusion(operation))
       :null;
