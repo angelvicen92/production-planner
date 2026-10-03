@@ -40,7 +40,7 @@ import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrereq
 import { authorizedPipelineArchitectureMaterializations, materializeFirstNominalPipelineWitness, materializePipelineBundleMatching,
   futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, pipelineWitnessAuthorityDiagnostic, preparePipelineBundleGraph,
   futureStructuralWitnessV2FromAcceptedPipeline,
-  type AnonymousPipelineWitnessDiagnostic, type FutureStructuralWitness, type FutureStructuralWitnessV1, type PipelineWitnessAuthorityDiagnostic,
+  type AnonymousPipelineWitnessDiagnostic, type FutureStructuralWitness, type FutureStructuralWitnessV1, type FutureRoundSynchronizationWitnessV1, type PipelineWitnessAuthorityDiagnostic,
   type PipelineWitnessObservation } from "./anonymousPipelineWitness";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 
@@ -339,6 +339,9 @@ export interface ExactItinerantPlanEvidence {
   priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
   priorFutureStructuralWitnessFallbackEntered:boolean;
   futureStructuralWitnesses:import("./anonymousPipelineWitness").FutureStructuralWitness[];
+  futureRoundWitnessSearchInvocations:number;futureRoundWitnessStructuralCandidates:number;
+  futureRoundWitnessCompleteMatchings:number;futureRoundWitnessParticipantFutureChecks:number;
+  futureRoundWitnessPrerequisiteChecks:number;futureRoundWitnessBranchesConsumed:number;
   ephemeralSupportingPlacements:import("./anonymousPipelineWitness").FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
   acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;protectedMainSlotMismatches:number;pipelineTasksRemovedFromStandalone:number;
@@ -569,7 +572,7 @@ export interface StandaloneForwardStaticDomain {
   starts(): Generator<number, void, undefined>;
 }
 export type StandaloneForwardDynamicDomain = StandaloneForwardStaticDomain;
-interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; roundPreparations: ScheduledRoundPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null; operationalMeals: OperationalMealWitness | null }
+interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; roundPreparations: ScheduledRoundPreparation[]; selectionOrder: string[]; participantMeals: ParticipantMealWitness | null; operationalMeals: OperationalMealWitness | null; futureRoundWitnesses:FutureRoundSynchronizationWitnessV1[] }
 
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
 const orderScheduled = (tasks: ScheduledTask[]): ScheduledTask[] =>
@@ -690,6 +693,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
+  let foundFutureRoundWitnesses:FutureRoundSynchronizationWitnessV1[]=[];
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
   const ordinaryStaticDomainCache = new Map<string, StandaloneForwardStaticDomain>();
   const ordinaryStaticDomain = (task: Task): StandaloneForwardStaticDomain => {
@@ -800,6 +804,65 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     const validation = validatePlan(problem, candidate, preparations, validationCoreMeals,[...mealWitness?.scheduled ?? []],fixedResourceMeals,fixedItinerantMeals,roundPreparations,[...operationalMealWitness?.scheduled ?? []]);
     const validationAccepted=validation.hardValid||Boolean(transport!==null&&exact&&mealWitness?.complete
       &&operationalMealWitness?.complete&&acceptsValidation?.(validation));
+    const futureRoundWitnesses:FutureRoundSynchronizationWitnessV1[]=[];
+    if(transport!==null&&exact&&mealWitness?.complete&&operationalMealWitness?.complete&&validationAccepted){
+      for(const future of problem.analyticalFutureRoundSynchronizations??[]){
+        const memberIds=new Set(future.policy.lanes.flatMap(lane=>lane.taskIds));
+        const prerequisiteTasks=future.tasks.filter(task=>!memberIds.has(task.id));
+        const witnessProblem:PlannerNextProblem={...problem,tasks:[...problem.tasks,...future.tasks],
+          analyticalFutureParticipantTasks:(problem.analyticalFutureParticipantTasks??[]).filter(task=>!memberIds.has(task.id)),
+          analyticalFutureTechnicalChains:(problem.analyticalFutureTechnicalChains??[]).filter(chain=>
+            !chain.tasks.some(task=>memberIds.has(task.id)))};
+        let selected:FutureRoundSynchronizationWitnessV1|null=null;
+        const branchesBefore=ledger.branchesExplored;evidence.futureRoundWitnessSearchInvocations+=1;
+        const explored=exploreExactRoundSynchronizationPolicy(witnessProblem,future.policy,candidate,preparations,
+          roundPreparations,validationCoreMeals,ledger,round=>{
+            const state=[...candidate,...round.tasks];
+            evidence.futureRoundWitnessCompleteMatchings+=1;evidence.futureRoundWitnessPrerequisiteChecks+=1;
+            const prerequisites=checkMacroPendingPrerequisites(witnessProblem,prerequisiteTasks,candidate,round.tasks,
+              validationCoreMeals,new Map());
+            if(!prerequisites.feasible){const blocker=prerequisites.blockingTaskId,taskById=new Map(witnessProblem.tasks.map(task=>[task.id,task]));
+              const dependsOn=(task:Task,target:string,seen=new Set<string>()):boolean=>task.dependencies.some(id=>id===target||
+                (!seen.has(id)&&(seen.add(id),taskById.has(id)&&dependsOn(taskById.get(id)!,target,seen))));
+              const causalTaskIds=blocker?round.tasks.filter(task=>dependsOn(task,blocker)).map(({id})=>id):[];
+              return causalTaskIds.length?{outcome:"DEAD_END",matchingReject:{authority:"PREREQUISITE" as const,causalTaskIds},terminalFutureResult:"PRUNE"}
+                :{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};}
+            evidence.futureRoundWitnessParticipantFutureChecks+=1;
+            const participant=probeParticipantFutureReservations(witnessProblem,state,round.tasks,
+              {consume:()=>ledger.consume("STANDALONE")},"EXACT");
+            if(participant.status==="ABSTAIN")return {outcome:"BUDGET_EXHAUSTED",terminalFutureResult:"ABSTAIN"};
+            if(participant.status!=="PASS")return {outcome:"DEAD_END",participantFutureExactPrune:true,terminalFutureResult:"PRUNE"};
+            const technical=(witnessProblem.analyticalFutureTechnicalChains?.length??0)>0
+              ?probeTechnicalChainFutureReservations(witnessProblem,state,round.tasks,Math.max(0,ledger.limit-ledger.branchesExplored)):null;
+            if(technical?.branchesConsumed&&!ledger.consume("STANDALONE",technical.branchesConsumed))return {outcome:"BUDGET_EXHAUSTED",terminalFutureResult:"ABSTAIN"};
+            if(technical?.status==="ABSTAIN")return {outcome:"BUDGET_EXHAUSTED",terminalFutureResult:"ABSTAIN"};
+            if(technical?.status==="PRUNE"){const causing=technical.certifiedCausingTaskId;
+              return causing&&memberIds.has(causing)?{outcome:"DEAD_END",matchingReject:{authority:"TECHNICAL_CHAIN" as const,causalTaskIds:[causing]},terminalFutureResult:"PRUNE"}
+                :{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};}
+            const participantMeals=probeParticipantMealFutureFeasibility(witnessProblem,state,round.tasks);
+            if(!participantMeals.feasible){const participants=new Set((witnessProblem.participantMeals??[])
+                .filter(meal=>participantMeals.blockingMealTaskIds.includes(meal.sourceTaskId)).map(meal=>meal.participantId));
+              const causalTaskIds=round.tasks.filter(task=>task.participantId!==undefined&&participants.has(task.participantId)).map(({id})=>id);
+              return causalTaskIds.length?{outcome:"DEAD_END",matchingReject:{authority:"PARTICIPANT_MEAL" as const,causalTaskIds},terminalFutureResult:"PRUNE"}
+                :{outcome:"DEAD_END",terminalFutureResult:"PRUNE"};}
+            const value=()=>({kind:"ROUND_SYNCHRONIZATION" as const,version:1 as const,policyId:future.policy.id,
+              scheduledTaskPlacements:round.tasks.slice().sort(byId).map(({id,start,end,spaceId})=>({id,start,end,spaceId})),
+              roundPreparations:round.preparations.slice().sort(byId).map(({id,spaceId,start,end})=>({id,spaceId,start,end})),
+              operationalMealReservations:round.operationalMealReservations.slice().sort((a,b)=>a.policyId.localeCompare(b.policyId)),
+              matchingWitness:round.matchingWitness,futureFeasibility:{participant:"PASS" as const,
+                technicalChain:technical?"PASS" as const:"NOT_APPLICABLE" as const,
+                participantMeals:(witnessProblem.participantMeals?.length??0)>0?"PASS" as const:"NOT_APPLICABLE" as const,
+                operationalMeals:round.operationalMealReservations.length?"PASS" as const:"NOT_APPLICABLE" as const}});
+            const body=value();selected={...body,fingerprint:createHash("sha256").update(JSON.stringify(body)).digest("hex")};
+            return {outcome:"FOUND",terminalFutureResult:"PASS"};
+          },{futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING"});
+        evidence.futureRoundWitnessStructuralCandidates+=explored.evidence.mealAwareShapesFeasible;
+        evidence.futureRoundWitnessBranchesConsumed+=ledger.branchesExplored-branchesBefore;
+        if(explored.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+        if(!selected)return "DEAD_END";
+        futureRoundWitnesses.push(selected);
+      }
+    }
     const rejectionCause:TerminalCompletionRejectionCause|null=!exactSubstantive?"SUBSTANTIVE_IDENTITY_INCOMPLETE"
       :!mealWitness?.complete?"PARTICIPANT_MEAL_WITNESS_INCOMPLETE"
       :!operationalMealWitness?.complete?"OPERATIONAL_MEAL_WITNESS_INCOMPLETE"
@@ -826,10 +889,10 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       evidence.completePlansObserved += 1;
       if (!found) {
         found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; foundOperationalMeals=operationalMealWitness; evidence.firstCompleteFingerprint = candidateFingerprint;
-        evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact; evidence.selectedCompleteQuality = compact;
+        evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact; evidence.selectedCompleteQuality = compact;foundFutureRoundWitnesses=futureRoundWitnesses;
       } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
         found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; foundOperationalMeals=operationalMealWitness; evidence.completeIncumbentReplacements += 1;
-        evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;
+        evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;foundFutureRoundWitnesses=futureRoundWitnesses;
       }
       return selection === "FIRST_HARD_VALID" ? "FOUND" : "DEAD_END";
     }
@@ -1081,7 +1144,7 @@ const roundPendingIds = new Set(pending.filter((task) => roundTaskIds.has(task.i
 const roundPlacedIds = new Set(coreTasks.filter((task) => roundTaskIds.has(task.id)).map((task) => task.id));
 if ([...roundTaskIds].some((id) => !roundPendingIds.has(id) && !roundPlacedIds.has(id))
   || [...synchronizedTaskIds].some((id) => !roundTaskIds.has(id))) {
-  return { outcome: "DEAD_END", tasks: null, preparations: [], roundPreparations: [], selectionOrder: [], participantMeals: null, operationalMeals: null };
+  return { outcome: "DEAD_END", tasks: null, preparations: [], roundPreparations: [], selectionOrder: [], participantMeals: null, operationalMeals: null,futureRoundWitnesses:[] };
 }
 const mergeRoundEvidence = (delta: ExactRoundSynchronizationEvidence): void => {
   evidence.roundSynchronizationStartCandidates += delta.startCandidates;
@@ -1540,7 +1603,7 @@ evidence.standaloneBranchesAfterFirstOrdinaryCompleteLeaf = evidence.standaloneB
 const dominantBlocker = Object.entries(evidence.standaloneBlockingTaskCounts)
   .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0];
 evidence.standaloneFirstDominantBlocker = dominantBlocker ? { taskId: dominantBlocker[0], count: dominantBlocker[1] } : null;
-return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals };
+return { outcome, tasks: found, preparations: foundPreparations, roundPreparations: foundRoundPreparations, selectionOrder: foundOrder, participantMeals: foundParticipantMeals, operationalMeals: foundOperationalMeals,futureRoundWitnesses:foundFutureRoundWitnesses };
 }
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
@@ -1563,7 +1626,7 @@ export interface ExactItinerantPlanSearchOptions {
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
   fixedRoundPreparations?: readonly ScheduledRoundPreparation[];
-  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness;
+  priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
   /** Identity-free anonymous pipeline architecture to evaluate before normal enumeration. */
   preferredArchitecture?: MainFeederArchitecture;
   preferredBundleCandidate?: Readonly<{scheduledTasks:readonly ScheduledTask[];matching:ReadonlyMap<string,number>;
@@ -1583,7 +1646,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const coreOperationalMealProblem:PlannerNextProblem=coreMainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
     ?{...problem,operationalMealPolicies:(problem.operationalMealPolicies??[]).filter(policy=>!coreMainMealAuthority.sourceIds.includes(policy.id))}:problem;
   const operationalMeals=new PreparedOperationalMealAuthority(coreOperationalMealProblem);
-  const acceptedContinuation={witness:null as FutureStructuralWitness|null};
+  const acceptedContinuation={witness:null as Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>|null};
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
     jointGroupFullGridStarts: 0, jointGroupAnalyticEligibleStarts: 0,
@@ -1691,6 +1754,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
+    futureRoundWitnessSearchInvocations:0,futureRoundWitnessStructuralCandidates:0,
+    futureRoundWitnessCompleteMatchings:0,futureRoundWitnessParticipantFutureChecks:0,
+    futureRoundWitnessPrerequisiteChecks:0,futureRoundWitnessBranchesConsumed:0,
     ephemeralSupportingPlacements:[],acceptedSupportingPlacements:[],branchesBeforeCurrentContinuation:null,
     pipelineTasksRemovedFromStandalone:0,pendingBeforeFixedMainBundle:0,pendingAfterFixedMainBundle:0,
     legacyFixedFeederFallbackEntered:false,legacyFixedFeederFallbackReason:null,firstFixedMainBundleRejection:null,firstFixedMainBundleHardGateDiagnostic:null,
@@ -1747,6 +1813,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],firstParticipantMealFuturePrune:null,participantFutureReservationChecks:0,participantFutureReservationPasses:0,participantFutureReservationPrunes:0,participantFutureReservationAbstentions:0,participantFutureAffectedParticipants:0,participantFutureTasksChecked:0,participantFutureMealsChecked:0,participantFutureIndividualDomainChecks:0,participantFutureIndividualZeroDomainPrunes:0,participantFutureJointTaskMealChecks:0,participantFutureJointTaskMealPrunes:0,participantFutureCollectiveChecks:0,participantFutureCollectivePasses:0,participantFutureCollectivePrunes:0,participantFutureCompatiblePairChecks:0,participantFutureAnalyticChecks:0,participantFutureBranchesConsumed:0,participantFutureDominatedLaterStartsSkipped:0,participantFutureEarliestDominanceBranches:0,participantFutureMacroAnalyticChecks:0,participantFutureMacroAnalyticPrunes:0,participantFutureMacroAnalyticAbstentions:0,participantFutureTerminalExactChecks:0,participantFutureTerminalExactPasses:0,participantFutureTerminalExactPrunes:0,participantFutureTerminalExactAbstentions:0,participantFutureTerminalExactBranches:0,firstParticipantFutureTerminalExact:null,firstParticipantFutureReservationPrune:null,participantFutureUnreachableDependencyIds:[],technicalChainFutureReservationChecks:0,technicalChainFutureReservationPasses:0,technicalChainFutureReservationPrunes:0,technicalChainFutureReservationAbstentions:0,technicalChainFutureBranchesConsumed:0,firstTechnicalChainFutureReservationPrune:null,firstMultiDecisionConflict:null,preparedFutureTechnicalChainEvidence:futureTechnicalChains.evidence,operationalMealFutureReservation:operationalMeals.evidence,fixedMainFeederMealChecks:0,fixedMainFeederMealPasses:0,fixedMainFeederMealPrunes:0,firstFixedMainFeederMealPrune:null,standaloneEntryMealWitness:null,causalDiagnostic:null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
+  let selectedFutureRoundWitnesses:FutureRoundSynchronizationWitnessV1[]=[];
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   const fixedIds=new Set((options.fixedPlacements??[]).map(item=>item.id));
   for (const id of anchoredTaskIds(problem)) staticCoreIds.add(id);
@@ -2086,7 +2153,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       options.technicalChainStartDomainMode??"ANALYTIC_DOMAIN", options.acceptsValidation,operationalMeals.currentWitness(),options.fixedSetupPreparations,
       options.fixedRoundPreparations,candidate.selectedMainMealStart);
     if (standalone.tasks) {
-      selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = mainFlowMealPolicy(problem)?.source==="OPERATIONAL_MEAL_POLICY"?[]:candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;
+      selectedTasks = standalone.tasks; selectedPreparations = [...standalone.preparations]; selectedRoundPreparations = [...standalone.roundPreparations]; selectedMeals = mainFlowMealPolicy(problem)?.source==="OPERATIONAL_MEAL_POLICY"?[]:candidate.meals; selectedParticipantMeals=standalone.participantMeals; selectedOperationalMeals=standalone.operationalMeals; selectedCoreIds = coreIds;selectedFutureRoundWitnesses=standalone.futureRoundWitnesses;
       if(selectedParticipantMeals){evidence.participantMealAcceptedWitnessFingerprint=participantMealWitnessFingerprint(selectedParticipantMeals.scheduled);evidence.participantMealFinalSelectionOrder=[...selectedParticipantMeals.finalSelectionOrder];evidence.participantMealAttemptedSelectionTrace=[...selectedParticipantMeals.attemptedSelectionTrace];}
       evidence.selectedCoreFingerprint = candidate.fingerprint; evidence.coreFingerprint = candidate.fingerprint;
       evidence.selectedStandaloneSelectionOrder = standalone.selectionOrder;
@@ -2248,11 +2315,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.priorFutureStructuralWitnessRejectDetails=core.evidence.priorFutureStructuralWitnessRejectDetails;
   evidence.priorFutureStructuralWitnessReused=core.evidence.priorFutureStructuralWitnessReused;
   evidence.priorFutureStructuralWitnessFallbackEntered=core.evidence.priorFutureStructuralWitnessFallbackEntered;
-  evidence.futureStructuralWitnesses=structuredClone(core.evidence.futureStructuralWitnesses);
+  evidence.futureStructuralWitnesses=[...structuredClone(core.evidence.futureStructuralWitnesses),...structuredClone(selectedFutureRoundWitnesses)];
   evidence.ephemeralSupportingPlacements=structuredClone(core.evidence.ephemeralSupportingPlacements);
   evidence.acceptedSupportingPlacements=structuredClone(core.evidence.acceptedSupportingPlacements);
   if(acceptedContinuation.witness){
-    evidence.futureStructuralWitnesses=[structuredClone(acceptedContinuation.witness)];
+    evidence.futureStructuralWitnesses=[...evidence.futureStructuralWitnesses.filter(item=>item.kind!=="FIXED_SUPPORTING_PIPELINE"),structuredClone(acceptedContinuation.witness)];
     evidence.ephemeralSupportingPlacements=structuredClone(acceptedContinuation.witness.ephemeralSupportingPlacements);
   }
   evidence.branchesBeforeCurrentContinuation=core.evidence.branchesBeforeCurrentContinuation;
@@ -2312,7 +2379,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitness): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>): ExactItinerantPlanResult {
   const pipeline=fixedPlacementsAsContext?materializeFirstNominalPipelineWitness(problem):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,

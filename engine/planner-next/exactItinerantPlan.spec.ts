@@ -10,6 +10,7 @@ import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain }
 import { validatePlan } from "./validate";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
+import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -68,6 +69,47 @@ test("the itinerant accepted continuation preserves the exact reused V2",()=>{
   assert.equal(result.status,"COMPLETE");assert.equal(result.evidence.futureStructuralWitnesses.length,1);
   assert.equal(result.evidence.futureStructuralWitnesses[0]?.version,2);
   assert.equal(result.evidence.futureStructuralWitnesses[0]?.fingerprint,prior.fingerprint);
+});
+
+test("the real future-round prerequisite gate repairs the causal matching before ACCEPT",()=>{
+  const input=problem([]);
+  input.participantMealCapacity={maxSimultaneous:1};
+  input.spaces.push({id:"future-round",availability:[{start:0,end:120}]},
+    {id:"future-prerequisite",availability:[{start:0,end:120}]});
+  input.participants.push({id:"future-a",availability:[{start:0,end:120}]},
+    {id:"future-b",availability:[{start:0,end:120}]});
+  const prerequisite:Task={id:"future-prerequisite",kind:"technical",duration:10,spaceId:"future-prerequisite",
+    availability:[{start:20,end:30}],dependencies:[]};
+  const dependent:Task={id:"future-z",kind:"auxiliary",participantId:"future-a",duration:10,spaceId:"future-round",
+    availability:[{start:20,end:40}],dependencies:[prerequisite.id]};
+  const interchangeable:Task={id:"future-b",kind:"auxiliary",participantId:"future-b",duration:10,spaceId:"future-round",
+    availability:[{start:20,end:40}],dependencies:[]};
+  const policy={id:"future-round",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE" as const,
+    lanes:[{spaceId:"future-round",taskIds:[interchangeable.id,dependent.id],preparationMinutesBetweenRounds:0}]};
+  input.analyticalFutureRoundSynchronizations=[{policy,tasks:[dependent,interchangeable,prerequisite]}];
+  const early=[{...dependent,start:20,end:30},{...interchangeable,start:30,end:40}];
+  const repaired=[{...interchangeable,start:20,end:30},{...dependent,start:30,end:40}];
+  const witnessProblem={...input,tasks:[...input.tasks,dependent,interchangeable,prerequisite]};
+  const initialPrerequisiteCheck=checkMacroPendingPrerequisites(witnessProblem,[prerequisite],[],early);
+  assert.equal(initialPrerequisiteCheck.feasible,false);
+  assert.equal(initialPrerequisiteCheck.blockingTaskId,prerequisite.id);
+  assert.equal(checkMacroPendingPrerequisites(witnessProblem,[prerequisite],[],repaired).feasible,true);
+
+  const result=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID"});
+  assert.equal(result.status,"COMPLETE",JSON.stringify({reasonCodes:result.reasonCodes,evidence:{
+    completeMatchings:result.evidence.futureRoundWitnessCompleteMatchings,
+    prerequisiteChecks:result.evidence.futureRoundWitnessPrerequisiteChecks,
+    branches:result.evidence.futureRoundWitnessBranchesConsumed,
+    witnesses:result.evidence.futureStructuralWitnesses,
+  }}));
+  assert.equal(result.evidence.futureRoundWitnessCompleteMatchings,2);
+  const witness=result.evidence.futureStructuralWitnesses.find(item=>item.kind==="ROUND_SYNCHRONIZATION");
+  assert.ok(witness);
+  assert.equal(witness.matchingWitness[dependent.id],"0:2");
+  assert.equal(witness.scheduledTaskPlacements.find(task=>task.id===dependent.id)?.start,30);
+  assert.equal(witness.scheduledTaskPlacements.find(task=>task.id===interchangeable.id)?.start,20);
+  assert.equal(result.scheduledTasks.some(task=>task.id===dependent.id||task.id===interchangeable.id),false);
+  assert.equal(result.evidence.firstHardValidCoreTasks.some(task=>task.id===dependent.id||task.id===interchangeable.id),false);
 });
 
 function macroCompetitionProblem(options: { setup?: [number, number]; rounds?: [number, number]; resource?: [number, number]; dynamic?: boolean }): PlannerNextProblem {

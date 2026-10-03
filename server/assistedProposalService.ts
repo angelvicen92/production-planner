@@ -217,7 +217,7 @@ export class AssistedProposalService {
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
-    let priorFutureStructuralWitness:FutureStructuralWitness|undefined;
+    let priorFutureStructuralWitness:Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>|undefined;
     for(const witnessStage of lineage){
       const proposalRunId=(witnessStage as typeof witnessStage&{proposalRunId?:number|null}).proposalRunId;
       if(proposalRunId===null||proposalRunId===undefined)continue;

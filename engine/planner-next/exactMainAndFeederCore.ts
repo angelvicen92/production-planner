@@ -366,7 +366,7 @@ export interface ExactCoreLeafCandidate {
   source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
   architectureFingerprint?: string;
   geometryFingerprint?: string;
-  reusedFutureStructuralWitness?: FutureStructuralWitness;
+  reusedFutureStructuralWitness?: Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
   selectedMainMealStart?: number;
   selectedFutureReservations?: readonly AnalyticalFutureReservation[];
   selectedFutureReservationFingerprints?: readonly string[];
@@ -391,7 +391,7 @@ export interface ExactMainAndFeederSearchOptions {
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
-  priorFutureStructuralWitness?:FutureStructuralWitness;
+  priorFutureStructuralWitness?:Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
   /** Live matching state for the preferred architecture. Not authoritative. */
