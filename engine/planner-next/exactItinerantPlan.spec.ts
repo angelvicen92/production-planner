@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, revalidateFutureItinerantAgendaWitness, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
-import { validatePlan } from "./validate";
+import { preflight, validatePlan } from "./validate";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
 import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
+import { itinerantAgendaStructuralFrontier } from "./itinerantAgendaAuthority";
+import type { FutureItinerantAgendaWitnessV1 } from "./anonymousPipelineWitness";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -1028,6 +1031,103 @@ test("equivalent itinerant units are scheduled as one bounded deterministic two-
   assert.equal(first.evidence.itinerantAgendaBranches,second.evidence.itinerantAgendaBranches);
   assert.deepEqual(pool.map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})),
     second.scheduledTasks.filter(task=>task.id.startsWith("pool-")).map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})));
+});
+
+function itineraryCounterexample():{input:PlannerNextProblem;members:Task[];unitIds:string[]}{
+  const unitIds=["itinerant-team:71","itinerant-team:72"],members:Task[]=[
+    {...auxiliary("agenda-a","agenda-person-a",[{start:40,end:100}],["resource-a"]),allowedItinerantUnitIds:unitIds,dependencies:["agenda-prerequisite"]},
+    {...auxiliary("agenda-b","agenda-person-b",[{start:40,end:100}],["resource-a"]),allowedItinerantUnitIds:unitIds},
+  ];
+  const input=problem([]);input.protectedMeal=undefined;input.tasks.push(...members);
+  input.participants.push({id:"agenda-person-a",availability:[{start:0,end:120}]},{id:"agenda-person-b",availability:[{start:0,end:120}]});
+  input.spaces.push(...members.map(task=>({id:task.spaceId,availability:[{start:0,end:120}]})));
+  input.resources.push({id:"resource-a",availability:[{start:0,end:120}],presencePreference:"OFF"},
+    {id:"resource-b",availability:[{start:0,end:120}],presencePreference:"OFF"});
+  input.itinerantUnits=[{id:"itinerant-team:71",availability:[{start:0,end:120}],resourceIds:["resource-a"],transitionMinutes:15},
+    {id:"itinerant-team:72",availability:[{start:0,end:120}],resourceIds:["resource-b"],transitionMinutes:15}];
+  return{input,members,unitIds};
+}
+
+test("future itinerary certification includes and exactly proves its prerequisite closure",()=>{
+  const {input,members,unitIds}=itineraryCounterexample();
+  const prerequisite:Task={id:"agenda-prerequisite",kind:"technical",duration:10,spaceId:"prerequisite-space",
+    availability:[{start:100,end:110}],dependencies:[]};
+  input.spaces.push({id:"prerequisite-space",availability:[{start:0,end:120}]});
+  input.analyticalFutureItinerantAgendas=[{identity:unitIds.join("+"),unitIds,tasks:members,prerequisiteTasks:[prerequisite]}];
+  input.tasks=input.tasks.filter(task=>!members.some(member=>member.id===task.id));
+  const result=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID"});
+  assert.equal(result.evidence.futureStructuralWitnesses.some(witness=>witness.kind==="ITINERANT_AGENDA"),false);
+  assert.notEqual(result.status,"COMPLETE","an impossible prerequisite must prevent Stage acceptance");
+});
+
+test("future and current itinerary searches share the protected structural frontier",()=>{
+  const {input,members,unitIds}=itineraryCounterexample();for(const task of members)task.availability=[{start:60,end:100}];
+  const blocker:Task={id:"frontier",kind:"technical",duration:10,spaceId:"frontier-space",dependencies:[],requiredResourceIds:["resource-a","resource-b"]};
+  input.spaces.push({id:"frontier-space",availability:[{start:0,end:120}]});input.tasks=input.tasks.filter(task=>!members.some(member=>member.id===task.id));
+  input.analyticalFutureItinerantAgendas=[{identity:unitIds.join("+"),unitIds,tasks:members,prerequisiteTasks:[]}];
+  const fixed={...blocker,start:50,end:60};input.tasks.push(blocker);
+  assert.equal(itinerantAgendaStructuralFrontier(input,unitIds,[fixed]),50);
+  const result=runExactItinerantPlanSearch(input,{fixedPlacements:[fixed],fixedPlacementsAsContext:true,standaloneCompletionSelection:"FIRST_HARD_VALID"});
+  assert.equal(result.evidence.futureStructuralWitnesses.some(witness=>witness.kind==="ITINERANT_AGENDA"),false);
+  assert.notEqual(result.status,"COMPLETE");
+});
+
+test("a stale prior itinerary enters exact fallback without being reported as reused",()=>{
+  const {input,members,unitIds}=itineraryCounterexample();members[0]!.dependencies=[];
+  const placements=members.map((task,index)=>{const assigned=materializeItinerantUnitAssignment(input,task,unitIds[index]!)!;
+    return {...assigned,start:40,end:50};});
+  const body:Omit<FutureItinerantAgendaWitnessV1,"fingerprint">={kind:"ITINERANT_AGENDA",version:1,identity:unitIds.join("+"),unitIds,
+    scheduledTaskPlacements:placements.map(({id,start,end,spaceId,itinerantUnitId})=>({id,start,end,spaceId,itinerantUnitId})),
+    prerequisiteTaskPlacements:[],structuralFrontier:120,laneOrder:{"itinerant-team:71":["agenda-a"],"itinerant-team:72":["agenda-b"]},supportingFingerprint:null,
+    futureFeasibility:{prerequisites:"PASS",participant:"PASS",technicalChain:"NOT_APPLICABLE",participantMeals:"NOT_APPLICABLE",
+      itinerantUnitMeals:"NOT_APPLICABLE",operationalMeals:"NOT_APPLICABLE"}};
+  const witness={...body,fingerprint:createHash("sha256").update(JSON.stringify(body)).digest("hex")};
+  for(const task of members)task.availability=[{start:60,end:100}];
+  const direct=revalidateFutureItinerantAgendaWitness(input,body.identity,unitIds,members,[],[],[],null,witness);
+  assert.equal(direct.status,"REJECT");
+  const result=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID",priorFutureStructuralWitnesses:[witness]});
+  assert.equal(result.status,"COMPLETE",JSON.stringify({reasons:result.reasonCodes,core:result.evidence.coreStatus,
+    branches:result.evidence.branchesExplored,preflight:preflight(input)}));assert.equal(result.evidence.priorItinerantWitnessFound,true);
+  assert.equal(result.evidence.priorItinerantWitnessRevalidation,"REJECT");assert.equal(result.evidence.priorItinerantWitnessReused,false);
+  assert.equal(result.evidence.priorItinerantWitnessFallbackEntered,true);
+  assert.ok(result.scheduledTasks.filter(task=>task.id.startsWith("agenda-")).every(task=>task.start>=60));
+});
+
+test("itinerary certificate revalidation rejects corrupt, changed, and incompatible authorities and reuses an exact certificate",()=>{
+  const {input,members,unitIds}=itineraryCounterexample();members[0]!.dependencies=[];
+  const assigned=members.map((task,index)=>materializeItinerantUnitAssignment(input,task,unitIds[index]!)!);
+  const unsigned:Omit<FutureItinerantAgendaWitnessV1,"fingerprint">={kind:"ITINERANT_AGENDA",version:1,
+    identity:unitIds.join("+"),unitIds,scheduledTaskPlacements:assigned.map((task,index)=>({id:task.id,start:40,end:50,
+      spaceId:task.spaceId,itinerantUnitId:unitIds[index]})),prerequisiteTaskPlacements:[],structuralFrontier:120,
+    laneOrder:{[unitIds[0]!]:[members[0]!.id],[unitIds[1]!]:[members[1]!.id]},supportingFingerprint:"pipeline-one",
+    futureFeasibility:{prerequisites:"PASS",participant:"PASS",technicalChain:"NOT_APPLICABLE",participantMeals:"NOT_APPLICABLE",
+      itinerantUnitMeals:"NOT_APPLICABLE",operationalMeals:"NOT_APPLICABLE"}};
+  const witness:FutureItinerantAgendaWitnessV1={...unsigned,fingerprint:createHash("sha256").update(JSON.stringify(unsigned)).digest("hex")};
+  const validate=(candidate:FutureItinerantAgendaWitnessV1=witness,memberTasks:readonly Task[]=members,units:readonly string[]=unitIds,support="pipeline-one")=>
+    revalidateFutureItinerantAgendaWitness(input,unitIds.join("+"),units,memberTasks,[],[],[],support,candidate);
+  assert.equal(validate().status,"PASS");
+  assert.deepEqual(validate({...witness,fingerprint:"corrupt"}),{status:"REJECT",reason:"FINGERPRINT_MISMATCH"});
+  assert.deepEqual(validate(witness,members.slice(0,1)),{status:"STALE",reason:"MEMBER_SET_MISMATCH"});
+  assert.deepEqual(validate(witness,members,[unitIds[0]!] ),{status:"STALE",reason:"UNIT_DOMAIN_MISMATCH"});
+  assert.deepEqual(validate(witness,members,unitIds,"pipeline-two"),{status:"STALE",reason:"SUPPORTING_FINGERPRINT_MISMATCH"});
+  const sameLaneTasks=members.map(task=>materializeItinerantUnitAssignment(input,task,unitIds[0]!)!);
+  const transitionUnsigned={...unsigned,supportingFingerprint:null,
+    scheduledTaskPlacements:sameLaneTasks.map((task,index)=>({id:task.id,start:40+index*25,end:50+index*25,spaceId:task.spaceId,itinerantUnitId:unitIds[0]})),
+    laneOrder:{[unitIds[0]!]:members.map(task=>task.id),[unitIds[1]!]:[]}};
+  const transitionWitness:FutureItinerantAgendaWitnessV1={...transitionUnsigned,
+    fingerprint:createHash("sha256").update(JSON.stringify(transitionUnsigned)).digest("hex")};
+  assert.equal(revalidateFutureItinerantAgendaWitness(input,unsigned.identity,unitIds,members,[],[],[],null,transitionWitness).status,"PASS");
+  const changedTransition=structuredClone(input);changedTransition.itinerantUnits![0]!.transitionMinutes=20;
+  assert.deepEqual(revalidateFutureItinerantAgendaWitness(changedTransition,unsigned.identity,unitIds,members,[],[],[],null,transitionWitness),
+    {status:"REJECT",reason:"PLACEMENT_REJECTED"});
+
+  const uncoupled={...unsigned,supportingFingerprint:null};
+  const reusable:FutureItinerantAgendaWitnessV1={...uncoupled,fingerprint:createHash("sha256").update(JSON.stringify(uncoupled)).digest("hex")};
+  const result=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID",priorFutureStructuralWitnesses:[reusable]});
+  assert.equal(result.status,"COMPLETE");assert.equal(result.evidence.priorItinerantWitnessRevalidation,"PASS");
+  assert.equal(result.evidence.priorItinerantWitnessReused,true);assert.equal(result.evidence.priorItinerantWitnessFallbackEntered,false);
+  assert.deepEqual(result.scheduledTasks.filter(task=>task.id.startsWith("agenda-")).map(({id,start,end,itinerantUnitId})=>({id,start,end,itinerantUnitId})).sort((a,b)=>a.id.localeCompare(b.id)),
+    reusable.scheduledTaskPlacements.map(({id,start,end,itinerantUnitId})=>({id,start,end,itinerantUnitId})).sort((a,b)=>a.id.localeCompare(b.id)));
 });
 
 test("itinerant assignment materialization validates the domain and atomically rederives member resources",()=>{
