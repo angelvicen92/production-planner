@@ -7,6 +7,7 @@ import type {
   ScheduledSetupPreparation,
   ScheduledParticipantMeal,
   ScheduledRoundPreparation,
+  Task,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
@@ -42,6 +43,8 @@ export interface AssistedProblem {
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
+  readonly priorFutureStructuralWitnesses?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[];
+  /** @deprecated compatibility alias for pipeline-only callers. */
   readonly priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
 }
 
@@ -256,7 +259,7 @@ export function buildAssistedProblem(
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
   protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
-  priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,
+  priorFutureStructuralWitnesses:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -444,6 +447,19 @@ export function buildAssistedProblem(
           ids.add(dependencyId);pending.push(dependencyId);
         }}
       return {policy:structuredClone(policy),tasks:[...ids].sort().map(id=>structuredClone(tasksById.get(id)!))};});
+  const futureAgendaGroups=new Map<string,Task[]>();
+  for(const task of problem.tasks){
+    if(!analyticalFutureEligibleTaskIds.has(task.id)||included.has(task.id)||(task.allowedItinerantUnitIds?.length??0)<2)continue;
+    const unitIds=[...task.allowedItinerantUnitIds!].sort();const identity=unitIds.join("+");
+    futureAgendaGroups.set(identity,[...(futureAgendaGroups.get(identity)??[]),task]);
+  }
+  problem.analyticalFutureItinerantAgendas=[...futureAgendaGroups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([identity,members])=>{
+    const memberIds=new Set(members.map(task=>task.id)),prerequisiteIds=new Set<string>(),pending=members.flatMap(task=>task.dependencies);
+    while(pending.length){const id=pending.pop()!;if(memberIds.has(id)||prerequisiteIds.has(id))continue;
+      const task=tasksById.get(id);if(!task)continue;prerequisiteIds.add(id);pending.push(...task.dependencies);}
+    return {identity,unitIds:identity.split("+"),tasks:members.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(task=>structuredClone(task)),
+      prerequisiteTaskIds:[...prerequisiteIds].sort()};
+  });
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
@@ -522,7 +538,8 @@ export function buildAssistedProblem(
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
       [id, Object.freeze([...(supportingReasons.get(id) ?? [])].sort())]))),
-    priorFutureStructuralWitness:priorFutureStructuralWitness?structuredClone(priorFutureStructuralWitness):undefined,
+    priorFutureStructuralWitnesses:structuredClone(priorFutureStructuralWitnesses),
+    priorFutureStructuralWitness:structuredClone(priorFutureStructuralWitnesses.find((item):item is Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>=>item.kind==="FIXED_SUPPORTING_PIPELINE")),
   };
 }
 
@@ -543,7 +560,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
     fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations,
-    priorFutureStructuralWitness:input.priorFutureStructuralWitness });
+    priorFutureStructuralWitnesses:input.priorFutureStructuralWitnesses??(input.priorFutureStructuralWitness?[input.priorFutureStructuralWitness]:[]) });
   const result = execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
