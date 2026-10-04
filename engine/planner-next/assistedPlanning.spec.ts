@@ -362,6 +362,21 @@ test("future round synchronization is retained as analytical authority without w
   assert.ok(inScope.automaticTaskIds.includes("future-round-a")&&inScope.automaticTaskIds.includes("future-round-b"));
 });
 
+test("future interchangeable itinerant agenda is projected with prerequisite closure but remains ephemeral",()=>{
+  const source=fixture();source.itinerantUnits=[{id:"lane-a",availability:[{start:0,end:240}]},{id:"lane-b",availability:[{start:0,end:240}]}];
+  source.tasks.push(
+    {id:"agenda-prerequisite",kind:"technical",duration:5,spaceId:"other-space",dependencies:[]},
+    {id:"agenda-a",kind:"auxiliary",duration:10,spaceId:"other-space",participantId:"p1",dependencies:["agenda-prerequisite"],allowedItinerantUnitIds:["lane-b","lane-a"]},
+    {id:"agenda-b",kind:"auxiliary",duration:10,spaceId:"other-space",participantId:"p2",dependencies:[],allowedItinerantUnitIds:["lane-a","lane-b"]});
+  const eligible=new Set(["agenda-prerequisite","agenda-a","agenda-b"]);
+  const projected=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],eligible);
+  assert.deepEqual(projected.problem.analyticalFutureItinerantAgendas?.map(item=>({identity:item.identity,unitIds:item.unitIds,
+    tasks:item.tasks.map(task=>task.id),prerequisites:item.prerequisiteTaskIds})),[
+      {identity:"lane-a+lane-b",unitIds:["lane-a","lane-b"],tasks:["agenda-a","agenda-b"],prerequisites:["agenda-prerequisite"]}]);
+  assert.equal(projected.problem.tasks.some(task=>task.id.startsWith("agenda-")),false);
+  assert.equal(projected.automaticTaskIds.some(id=>id.startsWith("agenda-")),false);
+});
+
 const futureDependencyProjection=(prerequisiteAvailability:readonly {start:number;end:number}[]|null)=>{
   const source=fixture();
   source.tasks.push({id:"future",kind:"auxiliary",participantId:"p1",spaceId:"other-space",duration:10,

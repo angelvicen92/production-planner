@@ -145,7 +145,23 @@ export interface FutureRoundSynchronizationWitnessV1 {
     participantMeals:"PASS"|"NOT_APPLICABLE";operationalMeals:"PASS"|"NOT_APPLICABLE"};
   readonly fingerprint:string;
 }
-export type FutureStructuralWitness=FutureStructuralWitnessV1|FutureStructuralWitnessV2|FutureRoundSynchronizationWitnessV1;
+export interface FutureItinerantAgendaWitnessV1 {
+  readonly kind:"ITINERANT_AGENDA";readonly version:1;readonly identity:string;
+  readonly unitIds:readonly string[];
+  readonly scheduledTaskPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId"|"itinerantUnitId">[];
+  readonly laneOrder:Readonly<Record<string,readonly string[]>>;
+  readonly supportingFingerprint:string|null;
+  readonly futureFeasibility:{prerequisites:"PASS";participant:"PASS";technicalChain:"PASS"|"NOT_APPLICABLE";
+    participantMeals:"PASS"|"NOT_APPLICABLE";operationalMeals:"PASS"|"NOT_APPLICABLE"};
+  readonly fingerprint:string;
+}
+export type FutureStructuralWitness=FutureStructuralWitnessV1|FutureStructuralWitnessV2|FutureRoundSynchronizationWitnessV1|FutureItinerantAgendaWitnessV1;
+
+export function structuralWitnessIdentity(witness:FutureStructuralWitness):string {
+  if(witness.kind==="ROUND_SYNCHRONIZATION")return `${witness.kind}:${witness.policyId}`;
+  if(witness.kind==="ITINERANT_AGENDA")return `${witness.kind}:${witness.identity}`;
+  return `${witness.kind}:${witness.architectureFingerprint}`;
+}
 export type FutureStructuralWitnessRejectCause =
   |"INVALID_KIND_OR_VERSION"|"ARCHITECTURE_FINGERPRINT_MISMATCH"|"CERTIFICATE_FINGERPRINT_MISMATCH"
   |"DUPLICATE_CERTIFIED_PLACEMENT_ID"|"INVALID_CERTIFIED_INTERVAL"|"STYLING_CARDINALITY_MISMATCH"
