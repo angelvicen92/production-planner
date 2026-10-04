@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
-import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
+import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
   constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
@@ -9,6 +9,8 @@ import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
 import { validatePlan } from "./validate";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
+import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
+import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -36,6 +38,83 @@ function problem(auxiliaries: Task[]): PlannerNextProblem {
 const auxiliary = (id: string, participantId: string, availability: Array<{ start: number; end: number }>,
   requiredResourceIds: string[] = []): Task => ({ id, kind: "auxiliary", participantId, duration: 10,
   spaceId: `space-${id}`, dependencies: [], availability, requiredResourceIds });
+
+function crossStagePipelineProblem():PlannerNextProblem{
+  const availability=[{start:0,end:300}];const tasks:Task[]=[];
+  for(let index=0;index<2;index++){const participantId=`cross-p${index}`;tasks.push(
+    {id:`cross-in${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"in",dependencies:[]},
+    {id:`cross-style${index}`,kind:"auxiliary",participantId,duration:10,spaceId:"style",dependencies:[`cross-in${index}`]},
+    {id:`cross-vocal${index}`,kind:"vocal",participantId,coachId:"cross-coach",duration:15,spaceId:"vocal",dependencies:[`cross-in${index}`]},
+    {id:`cross-main${index}`,kind:"main",participantId,coachId:"cross-coach",blockKey:"cross-coach",duration:15,
+      spaceId:"main",dependencies:[`cross-vocal${index}`,`cross-style${index}`]});}
+  return {day:{start:0,end:300},spaces:["in","style","vocal","main"].map(id=>({id,availability})),resources:[],
+    participants:[0,1].map(index=>({id:`cross-p${index}`,availability})),coaches:[{id:"cross-coach",availability}],tasks,
+    mainFlow:{spaceId:"main",preferredEnd:240,continuity:"REQUIRED",maxBlocksByKey:2,minTasksPerBlock:1},
+    participantTransitionMinutes:0,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:100,maxPatterns:100,maxBranchExpansions:100},
+    auxiliaryPolicy:{participantPresencePreference:"OFF"},searchPolicy:"EXACT_CONSTRUCTIVE",
+    transportPolicy:{arrival:{taskIds:["cross-in0","cross-in1"],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1},
+      departure:{taskIds:[],minimumGroupSize:1,maximumGroupSize:2,minGapMinutes:0,groupingWeight:1}}};
+}
+
+test("the itinerant accepted continuation preserves the exact reused V2",()=>{
+  const input=crossStagePipelineProblem();const mains=[0,1].map(index=>({...input.tasks.find(task=>task.id===`cross-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const baseline=runExactMainAndFeederSearch(input,{fixedPlacements:mains,fixedPlacementsAsContext:true});
+  const accepted=baseline.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+  const initial=runExactMainAndFeederSearch(input,{fixedPlacements:accepted,fixedPlacementsAsContext:true});
+  const v1=initial.evidence.futureStructuralWitnesses[0]!;
+  const prior=futureStructuralWitnessV2FromAcceptedPipeline(input,{pattern:["cross-coach","cross-coach"],slots:[200,215]},
+    v1.geometryFingerprint,initial.scheduledTasks);
+  const result=runExactItinerantPlanSearch(input,{fixedPlacements:accepted,fixedPlacementsAsContext:true,priorFutureStructuralWitness:prior});
+  assert.equal(result.status,"COMPLETE");assert.equal(result.evidence.futureStructuralWitnesses.length,1);
+  assert.equal(result.evidence.priorFutureStructuralWitnessRevalidation,"PASS");
+  assert.equal(result.evidence.fixedMainBundleHardGatePasses,1);
+  assert.equal(result.evidence.bundleMatchingAttempts,0);
+  assert.deepEqual(result.scheduledTasks,initial.scheduledTasks);
+  assert.equal(result.evidence.futureStructuralWitnesses[0]?.version,2);
+  assert.equal(result.evidence.futureStructuralWitnesses[0]?.fingerprint,prior.fingerprint);
+});
+
+test("the real future-round prerequisite gate repairs the causal matching before ACCEPT",()=>{
+  const input=problem([]);
+  input.participantMealCapacity={maxSimultaneous:1};
+  input.spaces.push({id:"future-round",availability:[{start:0,end:120}]},
+    {id:"future-prerequisite",availability:[{start:0,end:120}]});
+  input.participants.push({id:"future-a",availability:[{start:0,end:120}]},
+    {id:"future-b",availability:[{start:0,end:120}]});
+  const prerequisite:Task={id:"future-prerequisite",kind:"technical",duration:10,spaceId:"future-prerequisite",
+    availability:[{start:20,end:30}],dependencies:[]};
+  const dependent:Task={id:"future-z",kind:"auxiliary",participantId:"future-a",duration:10,spaceId:"future-round",
+    availability:[{start:20,end:40}],dependencies:[prerequisite.id]};
+  const interchangeable:Task={id:"future-b",kind:"auxiliary",participantId:"future-b",duration:10,spaceId:"future-round",
+    availability:[{start:20,end:40}],dependencies:[]};
+  const policy={id:"future-round",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE" as const,
+    lanes:[{spaceId:"future-round",taskIds:[interchangeable.id,dependent.id],preparationMinutesBetweenRounds:0}]};
+  input.analyticalFutureRoundSynchronizations=[{policy,tasks:[dependent,interchangeable,prerequisite]}];
+  const early=[{...dependent,start:20,end:30},{...interchangeable,start:30,end:40}];
+  const repaired=[{...interchangeable,start:20,end:30},{...dependent,start:30,end:40}];
+  const witnessProblem={...input,tasks:[...input.tasks,dependent,interchangeable,prerequisite]};
+  const initialPrerequisiteCheck=checkMacroPendingPrerequisites(witnessProblem,[prerequisite],[],early);
+  assert.equal(initialPrerequisiteCheck.feasible,false);
+  assert.equal(initialPrerequisiteCheck.blockingTaskId,prerequisite.id);
+  assert.equal(checkMacroPendingPrerequisites(witnessProblem,[prerequisite],[],repaired).feasible,true);
+
+  const result=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID"});
+  assert.equal(result.status,"COMPLETE",JSON.stringify({reasonCodes:result.reasonCodes,evidence:{
+    completeMatchings:result.evidence.futureRoundWitnessCompleteMatchings,
+    prerequisiteChecks:result.evidence.futureRoundWitnessPrerequisiteChecks,
+    branches:result.evidence.futureRoundWitnessBranchesConsumed,
+    witnesses:result.evidence.futureStructuralWitnesses,
+  }}));
+  assert.equal(result.evidence.futureRoundWitnessCompleteMatchings,2);
+  const witness=result.evidence.futureStructuralWitnesses.find(item=>item.kind==="ROUND_SYNCHRONIZATION");
+  assert.ok(witness);
+  assert.equal(witness.matchingWitness[dependent.id],"0:2");
+  assert.equal(witness.scheduledTaskPlacements.find(task=>task.id===dependent.id)?.start,30);
+  assert.equal(witness.scheduledTaskPlacements.find(task=>task.id===interchangeable.id)?.start,20);
+  assert.equal(result.scheduledTasks.some(task=>task.id===dependent.id||task.id===interchangeable.id),false);
+  assert.equal(result.evidence.firstHardValidCoreTasks.some(task=>task.id===dependent.id||task.id===interchangeable.id),false);
+});
 
 function macroCompetitionProblem(options: { setup?: [number, number]; rounds?: [number, number]; resource?: [number, number]; dynamic?: boolean }): PlannerNextProblem {
   const extra: Task[] = [];
@@ -942,7 +1021,10 @@ test("equivalent itinerant units are scheduled as one bounded deterministic two-
   assert.ok(pool.some(a=>pool.some(b=>a.id!==b.id&&a.itinerantUnitId!==b.itinerantUnitId&&a.start<b.end&&b.start<a.end)),`lanes work in parallel: ${JSON.stringify(pool)}`);
   for(const task of pool){const meal=input.itinerantUnitMeals.find(item=>item.itinerantUnitId===task.itinerantUnitId)!;assert.ok(task.end<=meal.interval.start||task.start>=meal.interval.end);}
   for(const unitId of ["itinerant-team:7","itinerant-team:8"]){const lane=pool.filter(task=>task.itinerantUnitId===unitId).sort((a,b)=>a.start-b.start);for(let i=1;i<lane.length;i++)assert.ok(lane[i]!.start-lane[i-1]!.end>=15);}
-  assert.equal(first.evidence.ordinaryBranchesExplored,0);assert.ok(first.evidence.itinerantAgendaBranches<100);
+  assert.equal(first.evidence.ordinaryBranchesExplored,0);
+  assert.ok(first.evidence.itinerantAgendaBranches<=8,
+    `MRV agenda must branch over lane/start choices, not task construction permutations: ${first.evidence.itinerantAgendaBranches}`);
+  assert.equal(first.evidence.itinerantAgendaCandidates,1);
   assert.equal(first.evidence.itinerantAgendaBranches,second.evidence.itinerantAgendaBranches);
   assert.deepEqual(pool.map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})),
     second.scheduledTasks.filter(task=>task.id.startsWith("pool-")).map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})));

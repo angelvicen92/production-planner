@@ -19,7 +19,7 @@ import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcc
 import { mainFlowMealPolicy } from "../engine/planner-next/mainFlowMeal";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
-import type { FutureStructuralWitnessV1 } from "../engine/planner-next/anonymousPipelineWitness";
+import type { FutureStructuralWitness } from "../engine/planner-next/anonymousPipelineWitness";
 
 export function projectPlannerViolations(details:readonly ValidationViolationDetail[],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):StageViolation[]{
   const map=(namespace:string,ids:readonly string[])=>ids.map(id=>{const acceptedNamespaces=namespace==="resource"?["resource","plan-resource","resource-item"]:[namespace];const matches=identityMap.filter(item=>acceptedNamespaces.includes(item.namespace)&&item.canonicalId===id);const sourceId=Number(matches[0]?.sourceId);
@@ -217,7 +217,7 @@ export class AssistedProposalService {
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
-    let priorFutureStructuralWitness:FutureStructuralWitnessV1|undefined;
+    let priorFutureStructuralWitness:Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>|undefined;
     for(const witnessStage of lineage){
       const proposalRunId=(witnessStage as typeof witnessStage&{proposalRunId?:number|null}).proposalRunId;
       if(proposalRunId===null||proposalRunId===undefined)continue;
@@ -225,8 +225,9 @@ export class AssistedProposalService {
       if(priorError)throw priorError;
       const witnesses=(priorRun?.assisted_result_json?.evidence?.futureStructuralWitnesses
         ??priorRun?.assistedResultJson?.evidence?.futureStructuralWitnesses
-        ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitnessV1[]|undefined;
-      priorFutureStructuralWitness=witnesses?.find(item=>item?.kind==="FIXED_SUPPORTING_PIPELINE"&&item.version===1);
+        ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitness[]|undefined;
+      priorFutureStructuralWitness=witnesses?.find(item=>item?.kind==="FIXED_SUPPORTING_PIPELINE"&&item.version===2)
+        ??witnesses?.find(item=>item?.kind==="FIXED_SUPPORTING_PIPELINE"&&item.version===1);
       if(priorFutureStructuralWitness)break;
     }
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);

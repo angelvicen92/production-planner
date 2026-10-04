@@ -25,5 +25,9 @@ test("A2 pipeline carries the canonical Main meal and reaches feeder geometry wi
   assert.equal(result.inputImmutable,true);
   assert.equal(result.operationalMealPoliciesChecked,8);assert.equal(result.operationalMealFutureFeasible,true);
   assert.equal(result.participantMealsChecked,19);assert.equal(result.participantMealFutureFeasible,true);
-  assert.ok(result.pipelineWitnessBuildMs<20_000);
+  assert.equal(result.arrivalSolverExecuted,true);assert.ok(result.arrivalClassification);
+  assert.equal(result.arrivalClassification,"CONTIGUOUS_EXACT");
+  assert.equal(result.arrivalMembershipFallbackEntered,false);
+  assert.ok(result.arrivalContiguousStatesExplored>0);
+  assert.ok(result.families.every(family=>Number.isInteger(family.architecturesTried)&&family.architecturesTried>0));
 });

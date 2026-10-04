@@ -16,6 +16,7 @@ type ProgramSettings = {
   id: number;
   defaultWorkStart: string;
   defaultWorkEnd: string;
+  defaultParticipantTransitionMinutes: number;
   mealStart: string;
   mealEnd: string;
   mealMode: "global_hard_break" | "flexible_meal_window";
@@ -121,6 +122,13 @@ export function GeneralProgramSettings() {
             </div>
             {workdayInvalid ? <p id="default-work-error" role="alert" className="mt-2 text-xs text-destructive">La hora de inicio debe ser anterior a la hora de fin.</p> : null}
           </fieldset>
+          <div className="col-span-2">
+            <Label htmlFor="default-participant-transition">Margen general entre actividades del participante (min)</Label>
+            <Input id="default-participant-transition" type="number" min={0} step={1}
+              value={draft?.defaultParticipantTransitionMinutes ?? 5}
+              onChange={(e) => setDraft((p) => p ? { ...p, defaultParticipantTransitionMinutes: Number(e.target.value) } : p)} />
+            <p className="mt-1 text-xs text-muted-foreground">Se hereda cuando ninguna de las dos plantillas declara un margen específico.</p>
+          </div>
           <div>
             <Label htmlFor="default-meal-start">Inicio ventana global comida (default)</Label>
             <Input

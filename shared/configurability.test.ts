@@ -17,7 +17,7 @@ test("the v2.4 registry enforces semantic and security gates without count targe
   for(const id of ["PARTICIPANTS","TASKS_DEPENDENCIES","SPATIAL_AVAILABILITY","RESOURCE_CATALOG","PLAN_RESOURCE_ASSIGNMENTS"])
     assert.equal(configurabilityRegistry.find(c=>c.capabilityId===id)?.status,"BLOCKED",id);
   assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="SPACE_CAPACITY")?.status,"MISSING");
-  assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="TRANSITIONS")?.status,"MISSING");
+  assert.equal(configurabilityRegistry.find(c=>c.capabilityId==="TRANSITIONS")?.status,"PARTIAL");
   const workday=configurabilityRegistry.find(c=>c.capabilityId==="WORKDAY_WINDOW");
   assert.deepEqual(workday?.levels,["GENERAL","DAY_SNAPSHOT","DAY_OVERRIDE"]);
   assert.equal(workday?.generalSource,"program_settings.default_work_start/default_work_end");

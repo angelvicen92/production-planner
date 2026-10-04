@@ -91,6 +91,9 @@ interface BaseTask {
   itinerantUnitId?: string;
   /** Solver-owned assignment domain. A singleton remains a specific unit. */
   allowedItinerantUnitIds?: string[];
+  /** Explicit participant boundary overrides; zero must not be treated as absent. */
+  participantMarginBeforeMinutes?: Minute;
+  participantMarginAfterMinutes?: Minute;
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";
@@ -161,6 +164,8 @@ export interface PlannerNextProblem {
   analyticalFutureParticipantSupportingTaskIds?: string[];
   /** Read-only Assisted structures. Their members are probes, never search variables. */
   analyticalFutureTechnicalChains?: Array<{ policy: TechnicalChainPolicy; tasks: Task[] }>;
+  /** Complete pending round units retained outside the executable Assisted projection. */
+  analyticalFutureRoundSynchronizations?: Array<{ policy: RoundSynchronizationPolicy; tasks: Task[] }>;
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { ResourceRequirementsInput } from "../engine/types";
 import { immutableMapView } from "../shared/immutableMapView";
 
-export const TASK_TEMPLATE_SNAPSHOT_CONTRACT_VERSION = 1 as const;
+export const TASK_TEMPLATE_SNAPSHOT_CONTRACT_VERSION = 2 as const;
 
 export type TaskTemplateSnapshotSource =
   | "inherited"
@@ -10,7 +10,7 @@ export type TaskTemplateSnapshotSource =
   | "ad_hoc_from_default";
 
 export interface TaskTemplateOperationalSnapshotV1 {
-  readonly contractVersion: 1;
+  readonly contractVersion: 2;
   readonly sourceTemplateId: number;
   readonly source: TaskTemplateSnapshotSource;
   readonly sourceFingerprint: string;
@@ -31,6 +31,8 @@ export interface TaskTemplateOperationalSnapshotV1 {
   readonly itinerantTeamId: number | null;
   readonly allowedItinerantTeamIds: readonly number[];
   readonly setupId: number | null;
+  readonly participantMarginBeforeMinutes: number | null;
+  readonly participantMarginAfterMinutes: number | null;
 }
 
 export interface PersistedTaskTemplateOperationalSnapshotV1 extends TaskTemplateOperationalSnapshotV1 {
@@ -41,7 +43,7 @@ export interface PersistedTaskTemplateOperationalSnapshotV1 extends TaskTemplate
 export interface TaskTemplateSnapshotPersistenceRow {
   readonly plan_id: number;
   readonly source_template_id: number;
-  readonly contract_version: 1;
+  readonly contract_version: 2;
   readonly source: TaskTemplateSnapshotSource;
   readonly template_name: string;
   readonly default_duration: number;
@@ -60,6 +62,8 @@ export interface TaskTemplateSnapshotPersistenceRow {
   readonly itinerant_team_id: number | null;
   readonly allowed_itinerant_team_ids: readonly number[];
   readonly setup_id: number | null;
+  readonly participant_margin_before_minutes: number | null;
+  readonly participant_margin_after_minutes: number | null;
 }
 
 export class TaskTemplateSnapshotError extends Error {
@@ -116,6 +120,11 @@ function nonNegativeInteger(value: unknown, field: string): number {
     );
   }
   return parsed;
+}
+
+function optionalNonNegativeInteger(value: unknown, field: string): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  return nonNegativeInteger(value, field);
 }
 
 function optionalPositiveInteger(value: unknown): number | null {
@@ -351,7 +360,7 @@ function normalizeSnapshot(
   const version = versionValue === null || versionValue === undefined
     ? TASK_TEMPLATE_SNAPSHOT_CONTRACT_VERSION
     : Number(versionValue);
-  if (version !== TASK_TEMPLATE_SNAPSHOT_CONTRACT_VERSION) {
+  if (version !== 1 && version !== TASK_TEMPLATE_SNAPSHOT_CONTRACT_VERSION) {
     throw new TaskTemplateSnapshotError(
       "UNKNOWN_TASK_TEMPLATE_SNAPSHOT_VERSION",
       `Unsupported contract version ${String(versionValue)}.`,
@@ -424,6 +433,8 @@ function normalizeSnapshot(
     itinerantTeamId: normalizedSpecificId,
     allowedItinerantTeamIds,
     setupId: optionalPositiveInteger(readPresent(record, "setupId", "setup_id")),
+    participantMarginBeforeMinutes: optionalNonNegativeInteger(readPresent(record, "participantMarginBeforeMinutes", "participant_margin_before_minutes"), "participantMarginBeforeMinutes"),
+    participantMarginAfterMinutes: optionalNonNegativeInteger(readPresent(record, "participantMarginAfterMinutes", "participant_margin_after_minutes"), "participantMarginAfterMinutes"),
   } satisfies Omit<TaskTemplateOperationalSnapshotV1, "sourceFingerprint">);
 
   return deepFreeze({
@@ -482,6 +493,8 @@ export function taskTemplateSnapshotToPersistenceRow(
     itinerant_team_id: snapshot.itinerantTeamId,
     allowed_itinerant_team_ids: snapshot.allowedItinerantTeamIds,
     setup_id: snapshot.setupId,
+    participant_margin_before_minutes: snapshot.participantMarginBeforeMinutes,
+    participant_margin_after_minutes: snapshot.participantMarginAfterMinutes,
   });
 }
 

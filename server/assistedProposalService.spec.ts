@@ -127,6 +127,21 @@ test("stage proposalRunId recovers its structural witness for the runner",async(
   assert.deepEqual(captured?.priorFutureStructuralWitness,certificate);
 });
 
+test("a stage prefers its V2 structural witness while retaining V1 compatibility",async()=>{
+  const v1={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,architectureFingerprint:"architecture",
+    geometryFingerprint:"geometry-v1",ephemeralSupportingPlacements:[],fingerprint:"v1"};
+  const v2={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:2 as const,architectureFingerprint:"architecture",
+    geometryFingerprint:"geometry-v2",ephemeralSupportingPlacements:[],certifiedFeederPlacements:[],fingerprint:"v2"};
+  const priorStage={...stage,proposalRunId:77};let captured:AssistedProblem|undefined;
+  const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>session,
+    getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],
+    getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>priorStage,
+    listAssistedPlanningStages:async()=>[priorStage]},[]),queueMicrotask,
+  access({find:async(_plan,id)=>({data:id===77?{...runRecord(),id:77,assisted_result_json:{evidence:{futureStructuralWitnesses:[v1,v2]}}}:runRecord(),error:null}),
+    finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+  await service.run(planId,9);assert.deepEqual(captured?.priorFutureStructuralWitness,v2);
+});
+
 test("the nearest stage witness takes precedence and the parent is the fallback",async()=>{
   const certificate=(fingerprint:string)=>({kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
     architectureFingerprint:`architecture-${fingerprint}`,geometryFingerprint:`geometry-${fingerprint}`,

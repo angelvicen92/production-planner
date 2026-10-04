@@ -188,7 +188,10 @@ test("protected-vs-protected inherited incompatibility remains an ASST-008 Accep
   assert.equal(result.evidence.proposalCount, 0);
   assert.ok(result.evidence.reasonCodes.includes("ASSISTED_SCOPE_INCOMPLETE")
     || result.evidence.reasonCodes.includes("ASSISTED_HARD_VALIDATION_FAILED"));
-  const accepted=executeAssistedPlanning(assisted,{violations:validatePlan(assisted.originalValidationProblem,protectedPlacements).violations?.filter(item=>item.ruleCode==="OVERLAP_VIOLATION")??[]});
+  const inherited=validatePlan(assisted.originalValidationProblem,protectedPlacements).violations
+    ?.filter(item=>item.affectedTaskIds.every(id=>protectedPlacements.some(task=>task.id===id)))??[];
+  assert.deepEqual(inherited.map(item=>item.ruleCode),["OVERLAP_VIOLATION","TRANSITION_VIOLATION"]);
+  const accepted=executeAssistedPlanning(assisted,{violations:inherited});
   assert.deepEqual(accepted.proposal?.map(task=>task.id),["main"]);
   assert.equal(accepted.evidence.hardValid,false);
   assert.deepEqual(accepted.evidence.unstructuredReasonCodes,[]);
@@ -336,6 +339,27 @@ test("future analytical authority excludes included and protected tasks and defa
   assert.equal(new Set(assisted.problem.analyticalRemainingParticipantTasks?.map(task=>task.id)).size,
     assisted.problem.analyticalRemainingParticipantTasks?.length);
   assert.deepEqual(buildAssistedProblem(source,scope,[]).problem.analyticalFutureParticipantTasks,[]);
+});
+
+test("future round synchronization is retained as analytical authority without widening scope",()=>{
+  const source=fixture();
+  source.tasks.push(
+    {id:"future-round-prerequisite",kind:"technical",duration:5,spaceId:"other-space",dependencies:[]},
+    {id:"future-round-a",kind:"auxiliary",duration:10,spaceId:"main-space",participantId:"p1",dependencies:["future-round-prerequisite"]},
+    {id:"future-round-b",kind:"auxiliary",duration:10,spaceId:"vocal-space",participantId:"p2",dependencies:[]});
+  source.roundSynchronizations=[{id:"future-round",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",lanes:[
+    {spaceId:"main-space",taskIds:["future-round-a"],preparationMinutesBetweenRounds:5},
+    {spaceId:"vocal-space",taskIds:["future-round-b"],preparationMinutesBetweenRounds:5}]}];
+  const eligible=new Set(["future-round-prerequisite","future-round-a","future-round-b"]);
+  const projected=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"main"},{},["main"]),[],eligible);
+  assert.deepEqual(projected.problem.analyticalFutureRoundSynchronizations?.map(item=>item.policy.id),["future-round"]);
+  assert.deepEqual(projected.problem.analyticalFutureRoundSynchronizations?.[0]?.tasks.map(task=>task.id),
+    ["future-round-a","future-round-b","future-round-prerequisite"]);
+  assert.equal(projected.automaticTaskIds.some(id=>id.startsWith("future-round-")),false);
+  assert.equal(projected.problem.tasks.some(task=>task.id.startsWith("future-round-")),false);
+  const inScope=buildAssistedProblem(source,createPlanningScope({kind:"ids",value:"round"},{},["future-round-a"]),[],eligible);
+  assert.deepEqual(inScope.problem.analyticalFutureRoundSynchronizations,[]);
+  assert.ok(inScope.automaticTaskIds.includes("future-round-a")&&inScope.automaticTaskIds.includes("future-round-b"));
 });
 
 const futureDependencyProjection=(prerequisiteAvailability:readonly {start:number;end:number}[]|null)=>{

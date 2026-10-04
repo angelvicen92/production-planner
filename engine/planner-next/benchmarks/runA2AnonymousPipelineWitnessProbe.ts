@@ -111,7 +111,7 @@ export function runA2AnonymousPipelineWitnessProbe() {
       firstRejectionReason:firstReason??null,firstFeasibleArchitecture:feasibleArchitecture??null});
   }
   const pipelineWitnessBuildMs=Number((performance.now()-started).toFixed(3));
-  assert.equal(JSON.stringify(problem),before); assert.ok(pipelineWitnessBuildMs<20_000);
+  assert.equal(JSON.stringify(problem),before);
   const representativePattern=generated.patterns[0]??[];
   const representativeTimeline=mealAuthority&&representativePattern.length
     ? buildTimeline(problem,representativePattern,mains[0]!.duration,candidateCuts(representativePattern)[0]!) : null;

@@ -153,6 +153,18 @@ test("explicit specific-flexible-specific identities form one agenda while a phy
   assert.ok(units.some(unit=>unit.memberTaskIds.join() === "1,2,3"));assert.ok(units.some(unit=>unit.memberTaskIds.join() === "4"));
 });
 
+test("a synchronized round remains the structural frontier before a narrower flexible itinerant agenda",()=>{
+  const source=input([
+    task(1,10,30),task(2,20,30),
+    task(3,30,30,{allowedItinerantTeamIds:[7,8],itinerantTeamRequirement:"any",fixedWindowEnd:"16:00"}),
+  ]);
+  source.roundSynchronizations=[{id:"rounds",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",lanes:[
+    {spaceId:10,taskIds:[1],preparationMinutesBetweenRounds:5},{spaceId:20,taskIds:[2],preparationMinutesBetweenRounds:5},
+  ]}];
+  source.itinerantTeamAvailability=[7,8].map(itinerantTeamId=>({itinerantTeamId,windows:[{start:"08:00",end:"16:00"}]}));
+  assert.equal(recommendNextAssistedScope(source,blank(source.tasks))!.selectedUnitId,"ROUND_SYNCHRONIZATION:rounds");
+});
+
 test("a protected future recomposition, fixed work, meals and transitions reduce pooled two-lane capacity",()=>{
   const source=input([
     task(1,10,30,{allowedItinerantTeamIds:[7,8],itinerantTeamRequirement:"any",assignedResourceIds:[70]}),
