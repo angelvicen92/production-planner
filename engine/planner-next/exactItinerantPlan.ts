@@ -1452,15 +1452,26 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }).reduce((value,task)=>Math.min(value,task.start),problem.day.end);
     const scheduleAgenda=(remaining:readonly Task[],scheduled:ScheduledTask[]):StandaloneOutcome=>{
       if(!remaining.length){evidence.itinerantAgendaCandidates++;evidence.itinerantAgendaFirstCompleteBranch??=evidence.itinerantAgendaBranches;return recurse(scheduled);}
-      const choices:Array<{task:Task;assigned:Task;unitId:string;staticDomain:StandaloneForwardStaticDomain;domain:StandaloneForwardDynamicDomain}>=[];
+      const choicesByTask=new Map<string,Array<{task:Task;assigned:Task;unitId:string;staticDomain:StandaloneForwardStaticDomain;domain:StandaloneForwardDynamicDomain}>>();
       for(const task of [...remaining].sort(byId))for(const unitId of [...(task.allowedItinerantUnitIds??[])].sort()){
         const assigned=materializeItinerantUnitAssignment(problem,task,unitId);if(!assigned)continue;
         const staticDomain=standaloneForwardStaticDomain(problem,assigned,coreMeals);
         evidence.itinerantAgendaStaticStarts+=staticDomain.eligibleStartCount;
         const domain=standaloneForwardDynamicDomain(problem,assigned,[...coreTasks,...placed,...scheduled],staticDomain);
         evidence.itinerantAgendaDynamicStarts+=domain.eligibleStartCount;
-        choices.push({task,assigned,unitId,staticDomain,domain});
+        const row=choicesByTask.get(task.id)??[];row.push({task,assigned,unitId,staticDomain,domain});choicesByTask.set(task.id,row);
       }
+      // Construction order is not an agenda decision: a completed assignment is
+      // identical regardless of which independent identity was bound first. Pick
+      // one exact MRV variable and branch only over its lane/start domain. This
+      // removes factorial replays while retaining every complete assignment.
+      const ready=[...remaining].filter(task=>!task.dependencies.some(id=>remaining.some(candidate=>candidate.id===id)));
+      const selectedTask=[...(ready.length?ready:remaining)].sort((left,right)=>{
+        const leftSize=(choicesByTask.get(left.id)??[]).reduce((sum,choice)=>sum+choice.domain.eligibleStartCount,0);
+        const rightSize=(choicesByTask.get(right.id)??[]).reduce((sum,choice)=>sum+choice.domain.eligibleStartCount,0);
+        return leftSize-rightSize||left.id.localeCompare(right.id);
+      })[0];
+      const choices=selectedTask?[...(choicesByTask.get(selectedTask.id)??[])]:[];
       choices.sort((a,b)=>(a.domain.intervals[0]?.start??Infinity)-(b.domain.intervals[0]?.start??Infinity)
         ||scheduled.filter(task=>task.itinerantUnitId===a.unitId).length-scheduled.filter(task=>task.itinerantUnitId===b.unitId).length
         ||a.task.id.localeCompare(b.task.id)||a.unitId.localeCompare(b.unitId));

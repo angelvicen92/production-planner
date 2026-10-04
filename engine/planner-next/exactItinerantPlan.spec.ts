@@ -1021,7 +1021,10 @@ test("equivalent itinerant units are scheduled as one bounded deterministic two-
   assert.ok(pool.some(a=>pool.some(b=>a.id!==b.id&&a.itinerantUnitId!==b.itinerantUnitId&&a.start<b.end&&b.start<a.end)),`lanes work in parallel: ${JSON.stringify(pool)}`);
   for(const task of pool){const meal=input.itinerantUnitMeals.find(item=>item.itinerantUnitId===task.itinerantUnitId)!;assert.ok(task.end<=meal.interval.start||task.start>=meal.interval.end);}
   for(const unitId of ["itinerant-team:7","itinerant-team:8"]){const lane=pool.filter(task=>task.itinerantUnitId===unitId).sort((a,b)=>a.start-b.start);for(let i=1;i<lane.length;i++)assert.ok(lane[i]!.start-lane[i-1]!.end>=15);}
-  assert.equal(first.evidence.ordinaryBranchesExplored,0);assert.ok(first.evidence.itinerantAgendaBranches<100);
+  assert.equal(first.evidence.ordinaryBranchesExplored,0);
+  assert.ok(first.evidence.itinerantAgendaBranches<=8,
+    `MRV agenda must branch over lane/start choices, not task construction permutations: ${first.evidence.itinerantAgendaBranches}`);
+  assert.equal(first.evidence.itinerantAgendaCandidates,1);
   assert.equal(first.evidence.itinerantAgendaBranches,second.evidence.itinerantAgendaBranches);
   assert.deepEqual(pool.map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})),
     second.scheduledTasks.filter(task=>task.id.startsWith("pool-")).map(({id,start,end,itinerantUnitId,requiredResourceIds})=>({id,start,end,itinerantUnitId,requiredResourceIds})));
