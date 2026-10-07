@@ -166,6 +166,13 @@ export interface PlannerNextProblem {
   analyticalFutureTechnicalChains?: Array<{ policy: TechnicalChainPolicy; tasks: Task[] }>;
   /** Complete pending round units retained outside the executable Assisted projection. */
   analyticalFutureRoundSynchronizations?: Array<{ policy: RoundSynchronizationPolicy; tasks: Task[] }>;
+  /** Complete pending interchangeable-unit agendas retained as read-only structural obligations. */
+  analyticalFutureItinerantAgendas?: Array<{
+    identity: string;
+    unitIds: string[];
+    tasks: Task[];
+    prerequisiteTasks: Task[];
+  }>;
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;
