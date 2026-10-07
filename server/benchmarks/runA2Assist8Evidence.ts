@@ -10,6 +10,7 @@ import { recommendNextAssistedScope } from "../assistedScopeOrchestrator";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
+import type { AssistedScopeSelector } from "../../shared/assistedProposalContracts";
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
@@ -21,7 +22,9 @@ export interface A2Assist8Options { readonly branchBudget?: number; readonly wri
   /** Emits only elapsed-time progress for long-running focused diagnostics. */
   readonly reportIterationDurations?:boolean;
   /** Benchmark-only entry point for replaying a later Stage without rebuilding its predecessors. */
-  readonly initialSnapshot?:AssistedPlanningSnapshotV1 }
+  readonly initialSnapshot?:AssistedPlanningSnapshotV1;
+  /** Explicit user-selected product scopes. When present, the recommender is never consulted. */
+  readonly explicitSelectors?:readonly AssistedScopeSelector[] }
 
 /**
  * ASST-011 completion probe.  It deliberately uses the product request/run/apply,
@@ -93,13 +96,15 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
 
   while (true) {
     const iterationStartedAt = performance.now();
+    const fullSnapshotBefore=structuredClone(session.draftSnapshotJson as AssistedPlanningSnapshotV1);
     const before = (session.draftSnapshotJson as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned);
     const acceptedIds = new Set(before.map(row => row.taskId));
     const remainingIds = sourceIds.filter(id => !acceptedIds.has(id));
     if (remainingIds.length === 0) break;
-    const recommendation=recommendNextAssistedScope(input,session.draftSnapshotJson,sourceIds);
-    assert.ok(recommendation,"remaining obligations must produce an operational unit");
-    const selector=recommendation.selector;
+    const explicitSelector=options.explicitSelectors?.[iterations.length];
+    const recommendation=explicitSelector?null:recommendNextAssistedScope(input,session.draftSnapshotJson,sourceIds);
+    assert.ok(explicitSelector||recommendation,"remaining obligations must produce an operational unit");
+    const selector=explicitSelector??recommendation!.selector;
     assert.ok(selector.kind !== "TASK_IDS" || selector.taskIds.length > 0, "remaining obligations must resolve through a supported product selector");
     const protectedBefore = new Map(before.map(row => [row.taskId, JSON.stringify(row)]));
     const requested = await proposals.request(planId, { selector, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId });
@@ -209,10 +214,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
         ??{status:"ABSENT",phase:terminalRejection?.phase??"NOT_REACHED",cause:terminalRejection?.cause??"NO_COMPLETE_TERMINAL_LEAF"},
     }));
     const record: any = { ordinal: iterations.length + 1, scopeSelector: selector, resolvedTaskIds: result.scopeTaskIds, baseStageId: session.draftBaseStageId, configRevisionId: revisionId,
-      orchestration:{candidateUnits:recommendation.candidates,selectedUnitId:recommendation.selectedUnitId,
+      orchestration:recommendation?{candidateUnits:recommendation.candidates,selectedUnitId:recommendation.selectedUnitId,
         selectedUnitKind:recommendation.selectedUnitKind,selector:recommendation.selector,memberTaskIds:recommendation.memberTaskIds,
         memberSpaceIds:recommendation.memberSpaceIds,authorityIds:recommendation.authorityIds,priority:recommendation.priority,
-        reason:recommendation.reason,stageResult:result.outcome,globalMealGate:evidence.globalMealGate},
+        reason:recommendation.reason,stageResult:result.outcome,globalMealGate:evidence.globalMealGate}
+        :{candidateUnits:[],selectedUnitId:`USER_SELECTED:${iterations.length+1}`,selectedUnitKind:"USER_SELECTED",selector,
+          memberTaskIds:result.scopeTaskIds,memberSpaceIds:[],authorityIds:[],priority:null,
+          reason:"EXPLICIT_USER_SELECTION",stageResult:result.outcome,globalMealGate:evidence.globalMealGate},
       selectorAuthority:"resolveAssistedScope/product selector", newVisibleTasks:proposedRows,
       acceptedSnapshotBefore:before, acceptedSnapshotFingerprintBefore:session.draftFingerprint,
       baseSnapshotOperationalMeals:[...((session.draftSnapshotJson as AssistedPlanningSnapshotV1).operationalMeals??[])],
@@ -295,6 +303,27 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       priorFutureStructuralWitnessRejectDetails:evidence.priorFutureStructuralWitnessRejectDetails??null,
       priorFutureStructuralWitnessReused:evidence.priorFutureStructuralWitnessReused??false,
       priorFutureStructuralWitnessFallbackEntered:evidence.priorFutureStructuralWitnessFallbackEntered??false,
+      priorItinerantWitnessFound:evidence.priorItinerantWitnessFound??false,
+      priorItinerantWitnessRevalidation:evidence.priorItinerantWitnessRevalidation??null,
+      priorItinerantWitnessRejectCause:evidence.priorItinerantWitnessRejectCause??null,
+      priorItinerantWitnessReused:evidence.priorItinerantWitnessReused??false,
+      priorItinerantWitnessFallbackEntered:evidence.priorItinerantWitnessFallbackEntered??false,
+      futureItinerantWitnessSearchInvocations:evidence.futureItinerantWitnessSearchInvocations??0,
+      futureItinerantWitnessCandidates:evidence.futureItinerantWitnessCandidates??0,
+      futureItinerantWitnessBranchesConsumed:evidence.futureItinerantWitnessBranchesConsumed??0,
+      futureItinerantWitnessesFound:evidence.futureItinerantWitnessesFound??0,
+      futureItinerantWitnessFingerprint:evidence.futureItinerantWitnessFingerprint??null,
+      futureItinerantWitnessSupportingFingerprint:evidence.futureItinerantWitnessSupportingFingerprint??null,
+      futureItinerantWitnessRejectsByAuthority:evidence.futureItinerantWitnessRejectsByAuthority??{},
+      futureItinerantWitnessFirstReject:evidence.futureItinerantWitnessFirstReject??null,
+      futureItinerantPriorRevalidation:evidence.futureItinerantPriorRevalidation??null,
+      futureItinerantPriorRejectCause:evidence.futureItinerantPriorRejectCause??null,
+      futureItinerantPriorPreviousFrontier:evidence.futureItinerantPriorPreviousFrontier??null,
+      futureItinerantPriorCurrentFrontier:evidence.futureItinerantPriorCurrentFrontier??null,
+      futureItinerantWaterfallMs:{priorRevalidation:evidence.futureItinerantPriorRevalidationMs??0,
+        prerequisiteClosure:evidence.futureItinerantPrerequisiteSearchMs??0,structuralSearch:evidence.futureItinerantStructuralSearchMs??0,
+        participantFuture:evidence.futureItinerantParticipantFutureMs??0,technicalFuture:evidence.futureItinerantTechnicalFutureMs??0,
+        participantMeals:evidence.futureItinerantParticipantMealsMs??0,operationalMeals:evidence.futureItinerantOperationalMealsMs??0},
       futureStructuralWitnesses:evidence.futureStructuralWitnesses??[],
       ephemeralSupportingPlacements:evidence.ephemeralSupportingPlacements??[],
       acceptedSupportingPlacements:evidence.acceptedSupportingPlacements??[],
@@ -433,6 +462,12 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     await planning.accept(planId, "00000000-0000-0000-0000-000000000011", session.draftFingerprint, session.draftBaseStageId);
     const after = (session.draftSnapshotJson as AssistedPlanningSnapshotV1).tasks.filter(row => row.startPlanned && row.endPlanned);
     assert.ok([...protectedBefore].every(([id, value]) => JSON.stringify(after.find(row => row.taskId === id)) === value));
+    const acceptedSnapshot=stages.at(-1)?.snapshotJson as AssistedPlanningSnapshotV1;
+    for(const key of ["setupPreparations","roundPreparations","operationalMeals"] as const){
+      const prior=(fullSnapshotBefore[key]??[]) as readonly {id:string}[],next=(acceptedSnapshot?.[key]??[]) as readonly {id:string}[];
+      assert.ok(prior.every(item=>JSON.stringify(next.find(candidate=>candidate.id===item.id))===JSON.stringify(item)),
+        `accepted ${key} must remain byte-identical across explicit scopes`);
+    }
     record.completedObligationCount = after.length; record.remainingObligationCount = sourceIds.length - after.length;
     record.acceptedSnapshotAfter=after;record.acceptedSnapshotFingerprintAfter=session.draftFingerprint;
     record.protectedEqualityProof={beforeCount:protectedBefore.size,afterCount:after.filter(row=>protectedBefore.has(row.taskId)).length,equal:true};
