@@ -157,14 +157,19 @@ export function probeParticipantMealFutureFeasibility(problem: PlannerNextProble
 }
 
 /** Exact deterministic joint witness; smallest-domain-first and ID only as final tie-break. */
-export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode): ParticipantMealWitness {
+export type ParticipantMealTerminalCheck = (scheduled: readonly ScheduledParticipantMeal[], complete: boolean) => "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED" | "ABSTAIN";
+export function assessParticipantMealFutureFeasibility(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], budget: ParticipantMealSearchBudget, mode: ParticipantMealAssessmentMode,
+  terminalCheck?: ParticipantMealTerminalCheck): ParticipantMealWitness {
   const obligations = [...(problem.participantMeals ?? [])].sort(byIdentity);
-  if (obligations.length === 0) return freeze({ complete: true, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: [], rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: [], readOnly: true });
+  if (obligations.length === 0) {
+    const terminal = terminalCheck?.([], true) ?? "ACCEPT";
+    return freeze({ complete: terminal === "ACCEPT", scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: [], rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0, logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: terminal === "ACCEPT" ? [] : [terminal === "BUDGET_EXHAUSTED" ? "PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED" : terminal === "ABSTAIN" ? "PARTICIPANT_MEAL_TERMINAL_ABSTAIN" : "PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"], readOnly: true });
+  }
   const capacity = problem.participantMealCapacity?.maxSimultaneous;
   if (!Number.isInteger(capacity) || capacity! <= 0) return freeze({ complete: false, scheduled: [], candidateCountByTaskId: {}, finalSelectionOrder: [], attemptedSelectionTrace: [], blockingMealTaskIds: obligations.map(x=>x.sourceTaskId), rejectedCandidateCount: 0, candidateOrderByTaskId:{}, branchesExplored: 0,logicalGridStarts:0,actuallyEvaluatedStarts:0,backtracks: 0, maximumSimultaneous: 0, reasonCodes: ["INVALID_PARTICIPANT_MEAL_CAPACITY"], readOnly: true });
   let branches = 0, backtracks = 0, logicalGridStarts=0, actuallyEvaluatedStarts=0;
   const counts: Record<string, number> = {}, candidateOrders:Record<string,{start:number;spanIncrease:number;internalGap:boolean;residualSlack:number;capacityFree:number}[]>= {}, trace: string[] = [], blockers = new Set<string>();
-  let acceptedOrder: string[] = [], exhausted = false, rejected = 0;
+  let acceptedOrder: string[] = [], exhausted = false, abstained = false, rejected = 0;
   const consume = (): boolean => { if (budget.remaining <= 0) { exhausted = true; return false; } if (budget.consume && !budget.consume(1)) { exhausted = true; return false; } budget.remaining -= 1; branches += 1; return true; };
   const search = (pending: ParticipantMealObligation[], placed: ScheduledParticipantMeal[], path: string[]): ScheduledParticipantMeal[] | null => {
     if (pending.length === 0) { acceptedOrder = path; return placed; }
@@ -178,15 +183,21 @@ export function assessParticipantMealFutureFeasibility(problem: PlannerNextProbl
     const remaining = pending.filter((item) => item !== selected.obligation);
     for (const candidate of selected.candidates) {
       if (!consume()) return null;
-      const result = search(remaining, [...placed, candidate], [...path, selected.obligation.sourceTaskId]);
+      const next = [...placed, candidate];
+      const terminal = terminalCheck?.(next, remaining.length === 0) ?? "ACCEPT";
+      if (terminal === "BUDGET_EXHAUSTED") { exhausted = true; return null; }
+      if (terminal === "ABSTAIN") { abstained = true; return null; }
+      if (terminal === "REJECT") { backtracks += 1; rejected += 1; continue; }
+      const result = search(remaining, next, [...path, selected.obligation.sourceTaskId]);
       if (result) return result;
+      if (exhausted || abstained) return null;
       backtracks += 1; rejected += 1;
     }
     return null;
   };
   const scheduled = search(obligations, [], []);
   if (!scheduled && !exhausted && blockers.size === 0) obligations.forEach(x=>blockers.add(x.sourceTaskId));
-  return freeze({ complete: scheduled !== null, scheduled: mode === "MATERIALIZE" ? (scheduled ?? []).sort((a, b) => a.start - b.start || a.sourceTaskId.localeCompare(b.sourceTaskId, "en")) : [], candidateCountByTaskId: counts, finalSelectionOrder: acceptedOrder, attemptedSelectionTrace: trace, blockingMealTaskIds: [...blockers].sort(), rejectedCandidateCount: rejected, candidateOrderByTaskId:candidateOrders, branchesExplored: branches,logicalGridStarts,actuallyEvaluatedStarts,backtracks, maximumSimultaneous: maximumConcurrent(scheduled ?? []), reasonCodes: scheduled ? [] : [exhausted ? "PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED" : "PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"], readOnly: true });
+  return freeze({ complete: scheduled !== null, scheduled: mode === "MATERIALIZE" ? (scheduled ?? []).sort((a, b) => a.start - b.start || a.sourceTaskId.localeCompare(b.sourceTaskId, "en")) : [], candidateCountByTaskId: counts, finalSelectionOrder: acceptedOrder, attemptedSelectionTrace: trace, blockingMealTaskIds: [...blockers].sort(), rejectedCandidateCount: rejected, candidateOrderByTaskId:candidateOrders, branchesExplored: branches,logicalGridStarts,actuallyEvaluatedStarts,backtracks, maximumSimultaneous: maximumConcurrent(scheduled ?? []), reasonCodes: scheduled ? [] : [exhausted ? "PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED" : abstained ? "PARTICIPANT_MEAL_TERMINAL_ABSTAIN" : "PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"], readOnly: true });
 }
 
 export function scheduleParticipantMeals(problem: PlannerNextProblem, tasks: readonly ScheduledTask[], branchAllowance: number): ParticipantMealWitness {

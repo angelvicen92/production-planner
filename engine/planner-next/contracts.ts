@@ -158,6 +158,12 @@ export interface PlannerNextProblem {
   tasks: Task[];
   /** Read-only Assisted context. These tasks are never ordinary search variables. */
   analyticalFutureParticipantTasks?: Task[];
+  /** Source closure contracts retained read-only across Assisted scope projection. */
+  analyticalFutureParticipantClosure?: {
+    tasks: Task[];
+    meals: ParticipantMealObligation[];
+    departure: TransportGroupingPolicy;
+  };
   /** Read-only pending-work view used only to rank anonymous pipeline entry matching. */
   analyticalRemainingParticipantTasks?: Task[];
   /** Executable supporting vertices that also close a future analytical chain. */

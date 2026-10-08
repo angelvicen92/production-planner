@@ -23,6 +23,8 @@ import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySu
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
 import { assessParticipantMealFutureFeasibility, probeParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
+import { PreparedFutureCollectiveParticipantClosure, createFutureCollectiveClosureEvidence,
+  type FutureCollectiveClosureEvidence, type FutureCollectiveClosureResult } from "./futureCollectiveParticipantClosure";
 import { probeParticipantFutureReservations, type ParticipantFutureReservationProbe } from "./participantFutureFeasibility";
 import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations, type PreparedFutureTechnicalChainEvidence, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
 import { operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
@@ -208,7 +210,7 @@ export interface StandaloneDeadEndCause {
   readonly technicalChainContradiction?: "NO_FEASIBLE_PENDING_MATERIALIZATION";
 }
 
-export interface ExactItinerantPlanEvidence {
+export interface ExactItinerantPlanEvidence extends FutureCollectiveClosureEvidence {
   branchesExplored: number;
   coreBranches: number;
   standaloneBranches: number;
@@ -811,6 +813,38 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   evidence.standaloneEntryMealWitness=initialOperationalMealWitness?.complete
     ?operationalMealWitnessFingerprint(initialOperationalMealWitness.scheduled):null;
   const invocationStartBranches = ledger.standaloneBranches;
+  const collectiveClosure = new PreparedFutureCollectiveParticipantClosure(problem);
+  let beforeClosureMatching: number | null = null;
+  const closureCheck = (tasks: readonly ScheduledTask[], meals: readonly import("./contracts").ScheduledParticipantMeal[],
+    complete: boolean): FutureCollectiveClosureResult => {
+    const result = collectiveClosure.evaluate(tasks, meals, () => ledger.consume("STANDALONE"),
+      complete ? "CERTIFY" : "NECESSARY_ONLY", coreMeals);
+    evidence.futureCollectiveClosureChecks += Number(!result.cacheHit);
+    evidence.futureCollectiveClosureCacheHits += Number(result.cacheHit);
+    evidence.futureCollectiveClosureBranchesConsumed += result.branchesConsumed;
+    evidence.futureCollectiveClosureMatchingTraversals += result.matchingTraversals;
+    evidence.futureCollectiveClosureRequiredCount = result.requiredCount;
+    evidence.futureCollectiveClosureMaximumMatching = result.maximumMatching;
+    if (result.status === "ABSTAIN") evidence.futureCollectiveClosureAbstentions[result.reason!]
+      = (evidence.futureCollectiveClosureAbstentions[result.reason!] ?? 0) + 1;
+    if (result.hall) {
+      evidence.futureCollectiveClosureHall = result.hall;
+      evidence.futureCollectiveClosureFirstPrune ??= { beforeMatchingCardinality: beforeClosureMatching ?? result.requiredCount,
+        afterMatchingCardinality: result.maximumMatching, affectedParticipantIds: result.hall.participantIds,
+        causingTaskIds: tasks.filter(task => !coreTasks.some(base => base.id === task.id)
+          && result.hall!.participantIds.includes(task.participantId ?? "")).map(task => task.id).sort(),
+        blockingClosureTaskIds: result.hall.closureTaskIds };
+    }
+    if (result.certified) evidence.futureCollectiveClosureWitnessFingerprint = result.witnessFingerprint;
+    return result;
+  };
+  const closureMealCheck = (tasks: readonly ScheduledTask[]) =>
+    (meals: readonly import("./contracts").ScheduledParticipantMeal[], complete: boolean) => {
+      const result = closureCheck(tasks, meals, complete);
+      return result.reason === "BUDGET_EXHAUSTED" ? "BUDGET_EXHAUSTED" as const
+        : result.status === "INFEASIBLE" ? "REJECT" as const
+        : result.status === "ABSTAIN" ? "ABSTAIN" as const : "ACCEPT" as const;
+    };
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [], foundParticipantMeals: ParticipantMealWitness | null = null, foundOperationalMeals: OperationalMealWitness | null = null;
   let foundPreparations: ScheduledSetupPreparation[] = [];
   let foundRoundPreparations: ScheduledRoundPreparation[] = [];
@@ -883,6 +917,16 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       &&actualSubstantive.every((id,index)=>id===expected[index]);
     const exactSubstantive = transportAlreadyMaterialized||(actualSubstantive.length === expectedSubstantive.length
       && actualSubstantive.every((id, index) => id === expectedSubstantive[index]));
+    if (exactSubstantive) {
+      if (beforeClosureMatching === null) {
+        const before = closureCheck(coreTasks, [], false);
+        if (before.reason === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        beforeClosureMatching = before.maximumMatching;
+      }
+      const necessary = closureCheck(substantive, [], false);
+      if (necessary.reason === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+      if (necessary.status !== "PASS") return "DEAD_END";
+    }
     if(exactSubstantive&&(problem.analyticalFutureParticipantTasks?.length??0)>0){
       const terminalReservation=probeParticipantFutureReservations(problem,substantive,substantive,{consume:()=>ledger.consume("STANDALONE")},"EXACT");
       recordParticipantFutureReservation(evidence,terminalReservation);evidence.participantFutureTerminalExactChecks+=1;
@@ -897,7 +941,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       if(terminalReservation.status!=="PASS")return "DEAD_END";
     }
     const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
-    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE"):null;
+    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE",closureMealCheck(substantive)):null;
+    if (mealWitness?.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
     if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealExactMaterializations+=1;evidence.participantMealLogicalGridStarts+=mealWitness.logicalGridStarts;evidence.participantMealActuallyEvaluatedStarts+=mealWitness.actuallyEvaluatedStarts;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
     const operationalMealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
     const operationalMealWitness=exactSubstantive?operationalMeals.materialize(substantive,operationalMealBudget):null;
@@ -998,7 +1043,7 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
         if(technical?.status==="PRUNE")return reject("TECHNICAL",{taskId:technical.certifiedCausingTaskId});
         const participantMealsStarted=performance.now();
         const participantMeals=assessParticipantMealFutureFeasibility(joint,context.tasks,
-          {remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)},"MATERIALIZE");
+          {remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)},"MATERIALIZE",closureMealCheck(context.tasks));
         evidence.futureItinerantParticipantMealsMs+=performance.now()-participantMealsStarted;
         if(participantMeals.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"))return "BUDGET_EXHAUSTED";
         if(!participantMeals.complete)return reject("PARTICIPANT_MEAL",{blocking:participantMeals.blockingMealTaskIds});
@@ -2023,6 +2068,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
     futureWitnessSet:createFutureWitnessSetEvidence(),futureWitnessSetCandidateTraces:[],
+    ...createFutureCollectiveClosureEvidence(),
     futureRoundWitnessSearchInvocations:0,futureRoundWitnessStructuralCandidates:0,
     futureRoundWitnessCompleteMatchings:0,futureRoundWitnessParticipantFutureChecks:0,
     futureRoundWitnessPrerequisiteChecks:0,futureRoundWitnessBranchesConsumed:0,
