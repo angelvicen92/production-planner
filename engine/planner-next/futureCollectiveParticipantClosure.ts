@@ -14,7 +14,7 @@ export interface FutureCollectiveClosureHall {
 }
 export interface FutureCollectiveClosureResult {
   status: "PASS" | "INFEASIBLE" | "ABSTAIN";
-  reason: "HALL" | "UNCERTIFIED_GEOMETRY" | "MEALS_PENDING" | "DEPARTURE_CONTINUATION" | "BUDGET_EXHAUSTED" | null;
+  reason: "HALL" | "UNCERTIFIED_GEOMETRY" | "PENDING_PREDECESSORS" | "MEALS_PENDING" | "DEPARTURE_CONTINUATION" | "BUDGET_EXHAUSTED" | null;
   /** A necessary-only PASS is explicitly not an acceptance certificate. */
   certified: boolean;
   requiredCount: number;
@@ -22,6 +22,7 @@ export interface FutureCollectiveClosureResult {
   matching: Record<string, number>;
   domains: Record<string, number[]>;
   releaseBoundsByClosure: Record<string, { earliestStart: number; predecessorTaskIds: string[] }>;
+  pendingPredecessorTaskIds: string[];
   participantIds: string[];
   hall: FutureCollectiveClosureHall | null;
   branchesConsumed: number;
@@ -42,16 +43,24 @@ export interface FutureCollectiveClosureEvidence {
     affectedParticipantIds: string[]; causingTaskIds: string[]; blockingClosureTaskIds: string[] } | null;
   futureCollectiveClosureWitnessFingerprint: string | null;
   futureCollectiveClosureAbstentions: Record<string, number>;
+  futureCollectiveClosureInconclusiveLeaves: number;
+  futureCollectiveClosureLastCertificate: null | { fingerprint: string; contextTaskIds: string[];
+    closureTaskIds: string[]; mealTaskIds: string[]; departureTaskIds: string[] };
+  futureCollectiveClosurePendingPredecessorTaskIds: string[];
 }
 export const futureCollectiveClosureEvidenceKeys = ["futureCollectiveClosureChecks", "futureCollectiveClosureCacheHits",
   "futureCollectiveClosureRequiredCount", "futureCollectiveClosureMaximumMatching", "futureCollectiveClosureBranchesConsumed",
   "futureCollectiveClosureMatchingTraversals", "futureCollectiveClosureHall", "futureCollectiveClosureFirstPrune",
-  "futureCollectiveClosureWitnessFingerprint", "futureCollectiveClosureAbstentions"] as const;
+  "futureCollectiveClosureWitnessFingerprint", "futureCollectiveClosureAbstentions",
+  "futureCollectiveClosureInconclusiveLeaves", "futureCollectiveClosureLastCertificate",
+  "futureCollectiveClosurePendingPredecessorTaskIds"] as const;
 export const createFutureCollectiveClosureEvidence = (): FutureCollectiveClosureEvidence => ({
   futureCollectiveClosureChecks: 0, futureCollectiveClosureCacheHits: 0, futureCollectiveClosureRequiredCount: 0,
   futureCollectiveClosureMaximumMatching: 0, futureCollectiveClosureBranchesConsumed: 0, futureCollectiveClosureMatchingTraversals: 0,
   futureCollectiveClosureHall: null, futureCollectiveClosureFirstPrune: null, futureCollectiveClosureWitnessFingerprint: null,
   futureCollectiveClosureAbstentions: {},
+  futureCollectiveClosureInconclusiveLeaves: 0, futureCollectiveClosureLastCertificate: null,
+  futureCollectiveClosurePendingPredecessorTaskIds: [],
 });
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const canonical = <T extends { id: string }>(rows: readonly T[]) => [...rows].sort((a, b) => a.id.localeCompare(b.id));
@@ -59,6 +68,7 @@ const canonical = <T extends { id: string }>(rows: readonly T[]) => [...rows].so
 /** Prepared, read-only authority; witnesses never enter executable/protected task lists. */
 export class PreparedFutureCollectiveParticipantClosure {
   private readonly source: PlannerNextProblem;
+  private readonly placementSource: PlannerNextProblem;
   private readonly pairs: Array<{ closure: Task; departure: Task }>;
   private readonly cache = new Map<string, FutureCollectiveClosureResult>();
   private readonly sourceSignature: string;
@@ -72,6 +82,10 @@ export class PreparedFutureCollectiveParticipantClosure {
       transportPolicy: projection ? { arrival: { ...projection.departure, taskIds: [] }, departure: projection.departure }
         : problem.transportPolicy ? { ...problem.transportPolicy, arrival: { ...problem.transportPolicy.arrival, taskIds: [] } } : undefined,
     });
+    // Replay supplied prerequisite geometry with its existing arrival membership;
+    // only terminal transport materialization suppresses arrivals.
+    this.placementSource = { ...this.source, transportPolicy: this.source.transportPolicy
+      ? { ...this.source.transportPolicy, arrival: structuredClone(problem.transportPolicy?.arrival ?? this.source.transportPolicy.arrival) } : undefined };
     const byId = new Map(this.source.tasks.map(task => [task.id, task]));
     const mealIds = new Set(this.source.participantMeals?.map(meal => meal.sourceTaskId));
     this.missingIds = [...new Set([...(this.source.transportPolicy?.departure.taskIds ?? []),
@@ -79,7 +93,8 @@ export class PreparedFutureCollectiveParticipantClosure {
       .filter(id => !byId.has(id) && !mealIds.has(id)))];
     this.sourceSignature = hash([this.source.day, canonical(this.source.tasks).map(task => ({ ...task, dependencies: [...task.dependencies].sort() })),
       canonical(this.source.spaces), canonical(this.source.resources), canonical(this.source.participants), canonical(this.source.coaches),
-      canonical(this.source.participantMeals ?? []), { ...this.source.transportPolicy?.departure,
+      canonical(this.source.participantMeals ?? []), { ...this.placementSource.transportPolicy?.arrival,
+        taskIds: [...(this.placementSource.transportPolicy?.arrival.taskIds ?? [])].sort() }, { ...this.source.transportPolicy?.departure,
         taskIds: [...(this.source.transportPolicy?.departure.taskIds ?? [])].sort() }, this.source.participantTransitionMinutes,
       this.source.resourceTransitionMinutes, this.source.anchoredAccompaniments, this.source.participantMealCapacity,
       this.source.protectedMeal, canonical(this.source.itinerantUnits ?? []), this.source.itinerantUnitMeals,
@@ -103,6 +118,24 @@ export class PreparedFutureCollectiveParticipantClosure {
     });
   }
 
+  /** Task identities required for a sufficient closure witness, never placements. */
+  pendingPredecessorTaskIds(fixed: readonly ScheduledTask[]): string[] {
+    const fixedIds = new Set(fixed.map(task => task.id)), byId = new Map(this.source.tasks.map(task => [task.id, task]));
+    const meals = new Map(this.source.participantMeals?.map(meal => [meal.sourceTaskId, meal]));
+    const pending = new Set<string>(), visited = new Set<string>();
+    const requireDependencies = (id: string): void => {
+      if (visited.has(id)) return;
+      visited.add(id);
+      for (const dep of byId.get(id)?.dependencies ?? meals.get(id)?.dependencies ?? []) {
+        if (!fixedIds.has(dep) && !meals.has(dep)) pending.add(dep);
+        requireDependencies(dep);
+      }
+    };
+    for (const id of [...this.pairs.flatMap(pair => [pair.closure.id, pair.departure.id]), ...meals.keys()]) requireDependencies(id);
+    for (const { closure } of this.pairs) pending.delete(closure.id);
+    return [...pending].sort();
+  }
+
   evaluate(fixed: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[] = [],
     consume: () => boolean = () => true, mode: "NECESSARY_ONLY" | "CERTIFY" = "CERTIFY",
     spaceMeals: readonly ScheduledSpaceMeal[] = []): FutureCollectiveClosureResult {
@@ -118,7 +151,7 @@ export class PreparedFutureCollectiveParticipantClosure {
     const releaseBoundsByClosure: FutureCollectiveClosureResult["releaseBoundsByClosure"] = {};
     let matching = new Map<string, number>();
     const base: FutureCollectiveClosureResult = { status: "PASS", reason: null, certified: false,
-      requiredCount: closures.length, maximumMatching: 0, matching: {}, domains, releaseBoundsByClosure,
+      requiredCount: closures.length, maximumMatching: 0, matching: {}, domains, releaseBoundsByClosure, pendingPredecessorTaskIds: [],
       participantIds: [...new Set(closures.flatMap(task => task.participantId ? [task.participantId] : []))].sort(),
       hall: null, branchesConsumed: 0, matchingTraversals: 0, cacheHit: false, signature, witnessFingerprint: null };
     const finish = (status: FutureCollectiveClosureResult["status"], reason: FutureCollectiveClosureResult["reason"],
@@ -129,7 +162,7 @@ export class PreparedFutureCollectiveParticipantClosure {
       if (reason !== "BUDGET_EXHAUSTED") this.cache.set(signature, structuredClone(result));
       return result;
     };
-    if (!this.source.transportPolicy?.departure.taskIds.length) return finish("PASS", null, true);
+    if (!this.source.transportPolicy?.departure.taskIds.length) return finish("PASS", null, mode === "CERTIFY");
     if (this.missingIds.some(id => !fixedIds.has(id))) return finish("ABSTAIN", "UNCERTIFIED_GEOMETRY");
     const mealTasks: ScheduledTask[] = meals.map(meal => ({ id: meal.sourceTaskId, kind: "auxiliary", spaceId: "",
       participantId: meal.participantId, duration: meal.duration, start: meal.start, end: meal.end,
@@ -140,6 +173,10 @@ export class PreparedFutureCollectiveParticipantClosure {
     const taskById = new Map(this.source.tasks.map(task => [task.id, task]));
     const fixedById = new Map(occupied.map(task => [task.id, task]));
     const mealById = new Map(this.source.participantMeals?.map(meal => [meal.sourceTaskId, meal]));
+    // Missing task ancestors are independent of the provisional meal combination.
+    // Meals themselves are supplied by the existing exact meal solver.
+    const pending = new Set(this.pendingPredecessorTaskIds(fixed));
+    base.pendingPredecessorTaskIds = [...pending];
     const earliestEnds = new Map<string, number>();
     // Necessary dependency bounds only. No predecessor placement is selected or
     // persisted: each bound comes from an existing exact domain and canonical gap.
@@ -152,8 +189,10 @@ export class PreparedFutureCollectiveParticipantClosure {
       const nextVisiting = new Set(visiting).add(id), task = taskById.get(id), meal = mealById.get(id);
       if (!task && !meal) return -Infinity; // Unknown context cannot prove infeasibility.
       const dependencies = task?.dependencies ?? meal?.dependencies ?? [];
-      const lower = Math.max(this.source.day.start, ...dependencies.map(dep => earliestEnd(dep, nextVisiting)
-        + (task && taskById.has(dep) ? participantGapMinutes(this.source, taskById.get(dep)!, task) : 0)));
+      const lower = Math.max(this.source.day.start, ...dependencies.map(dep => {
+        const predecessor = fixedById.get(dep) ?? taskById.get(dep);
+        return earliestEnd(dep, nextVisiting) + (task && predecessor ? participantGapMinutes(this.source, predecessor, task) : 0);
+      }));
       const starts = task ? exactTaskStartDomain(this.source, task, occupied, [...spaceMeals]).starts()
         : analyticParticipantMealDomain(this.source, meal!, occupied).ranges.flatMap(range =>
           Array.from({ length: Math.floor((range.last - range.first) / 5) + 1 }, (_, index) => range.first + index * 5));
@@ -169,8 +208,10 @@ export class PreparedFutureCollectiveParticipantClosure {
     for (const closure of closures) {
       const departures = pairs.filter(pair => pair.closure.id === closure.id).map(pair => pair.departure);
       const departureAuthorities = departures.map(departure => prepareTaskPlacementAuthority(this.source, departure, occupied, [...spaceMeals]));
-      const releases = closure.dependencies.map(dep => ({ id: dep, start: earliestEnd(dep)
-        + (taskById.has(dep) ? participantGapMinutes(this.source, taskById.get(dep)!, closure) : 0) }));
+      const releases = closure.dependencies.map(dep => {
+        const predecessor = fixedById.get(dep) ?? taskById.get(dep);
+        return { id: dep, start: earliestEnd(dep) + (predecessor ? participantGapMinutes(this.source, predecessor, closure) : 0) };
+      });
       const lower = Math.max(this.source.day.start, ...releases.map(item => item.start));
       releaseBoundsByClosure[closure.id] = { earliestStart: lower,
         predecessorTaskIds: releases.filter(item => item.start === lower).map(item => item.id).sort() };
@@ -222,6 +263,24 @@ export class PreparedFutureCollectiveParticipantClosure {
     if (mode === "NECESSARY_ONLY") return finish("PASS", null);
     if ((this.source.participantMeals ?? []).some(meal => !meals.some(item => item.sourceTaskId === meal.sourceTaskId)))
       return finish("ABSTAIN", "MEALS_PENDING");
+    // Release lower bounds prove only a necessary domain. Certification requires
+    // a joint supplied context for every pending ancestor of closure, meals and OUT.
+    // Existing exact future/prerequisite explorers may supply that context later;
+    // this authority neither schedules predecessors nor promotes bounds to a witness.
+    if (pending.size) return finish("ABSTAIN", "PENDING_PREDECESSORS");
+    const prerequisiteIds = new Set<string>(), visited = new Set<string>();
+    const collect = (id: string): void => {
+      if (visited.has(id)) return;
+      visited.add(id);
+      for (const dep of taskById.get(id)?.dependencies ?? mealById.get(id)?.dependencies ?? []) {
+        prerequisiteIds.add(dep); collect(dep);
+      }
+    };
+    for (const id of [...this.pairs.flatMap(pair => [pair.closure.id, pair.departure.id]), ...mealById.keys()]) collect(id);
+    for (const task of fixed.filter(task => prerequisiteIds.has(task.id))) {
+      if (!canPlaceTask(this.placementSource, task, task.start, occupied.filter(other => other.id !== task.id), [...spaceMeals]))
+        return finish("ABSTAIN", "UNCERTIFIED_GEOMETRY");
+    }
     // Choose the lexicographically earliest complete matching, using residual matching
     // rather than freezing an arbitrary augmenting-path assignment.
     const earliest = new Map<string, number>(), used = new Set<number>();

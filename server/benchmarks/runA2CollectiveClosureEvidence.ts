@@ -9,6 +9,7 @@ import { materializeItinerantUnitAssignment } from "../../engine/planner-next/it
 import { engineTimeToMinute } from "../../engine/planner-next/integration/engineTime";
 import type { ScheduledTask } from "../../engine/planner-next/contracts";
 import { runA2Assist8Evidence } from "./runA2Assist8Evidence";
+import { buildAssistedProblem, createPlanningScope } from "../../engine/planner-next/assistedPlanning";
 
 const matchingCardinality = (domains: Array<{ closureTaskId: string; starts: number[] }>) => {
   const byId = new Map(domains.map(row => [row.closureTaskId, row.starts])), owner = new Map<number, string>();
@@ -95,9 +96,72 @@ export function collectiveClosureDeterministicMaterial(result: Awaited<ReturnTyp
     completed: stage.completedObligationCount, branches: stage.branchesExplored, stageFingerprint: stage.acceptedStageFingerprint,
     accepted: stage.acceptedSnapshotAfter, preparations: stage.selectedSetupPreparations, rounds: stage.selectedRoundPreparations,
     meals: stage.acceptedMealWitnesses, operationalMeals: stage.proposedSnapshotOperationalMeals,
-    futureWitnesses: stage.futureStructuralWitnesses, witnessSet: stage.futureWitnessSet?.finalSet,
+    futureWitnesses: stage.futureStructuralWitnesses, witnessSet: stage.futureWitnessSet,
     closure: Object.fromEntries(futureCollectiveClosureEvidenceKeys.map(key => [key, stage.standaloneDiagnostic?.[key]])),
     hardRequired: stage.hardRequiredValidation, globalMealGate: stage.sodexoMeals?.globalMealGate }));
+}
+
+/** Coverage audit only: a representation is not a joint geometry witness. */
+export function auditPriorA2CollectiveCertificates() {
+  const prior = JSON.parse(readFileSync("docs/evidence/A2-COLLECTIVE-CLOSURE.json", "utf8"));
+  const { adapter } = buildCanonicalA2AssistedStage1Fixture(), problem = adapter.problem;
+  const byId = new Map(problem.tasks.map(task => [task.id, task]));
+  const authority = new PreparedFutureCollectiveParticipantClosure(problem);
+  return prior.first.slice(0, 2).map((stage: any, index: number) => {
+    const fixed: ScheduledTask[] = stage.accepted.flatMap((row: any) => {
+      const task = byId.get(`task:${row.taskId}`); if (!task) return [];
+      const assigned = row.itinerantTeamId ? materializeItinerantUnitAssignment(problem, task, `itinerant-team:${row.itinerantTeamId}`)! : task;
+      return [{ ...assigned, start: engineTimeToMinute(row.startPlanned), end: engineTimeToMinute(row.endPlanned) }];
+    });
+    const scope = createPlanningScope({ kind: "ids", value: stage.scope.join(",") }, {}, stage.scope.map((id: number) => `task:${id}`));
+    const built = buildAssistedProblem(problem, scope, fixed, new Set(problem.tasks.map(task => task.id)));
+    const represented = new Set([...built.problem.tasks,
+      ...(built.problem.analyticalFutureRoundSynchronizations ?? []).flatMap(future => future.tasks),
+      ...(built.problem.analyticalFutureItinerantAgendas ?? []).flatMap(future => [...future.tasks, ...future.prerequisiteTasks])].map(task => task.id));
+    const necessary = authority.evaluate(fixed, [], undefined, "NECESSARY_ONLY");
+    const uncovered = necessary.pendingPredecessorTaskIds.filter(id => !represented.has(id));
+    return { stage: index + 1, historicalFingerprint: stage.closure.futureCollectiveClosureWitnessFingerprint,
+      historicalFingerprintIsCompletionCertificate: false,
+      necessaryCapacity: { status: necessary.status, certified: necessary.certified,
+        required: necessary.requiredCount, matching: necessary.maximumMatching },
+      certifiedCollectiveCompletion: "NOT_DEMONSTRATED",
+      futureStructuralWitnessSet: stage.witnessSet,
+      globalMealGate: stage.globalMealGate,
+      uncoveredPredecessors: uncovered.map(id => ({ task: byId.get(id),
+        requiredTechnicalChains: (problem.technicalChains ?? []).filter(policy => policy.orderedTaskIds.includes(id)).map(policy => policy.id) })),
+      proofLimit: "Existing context-producing units do not cover these ancestors; independent witnesses are not a joint completion proof." };
+  });
+}
+
+export async function runA2CollectiveClosureContractEvidence() {
+  const prior = JSON.parse(readFileSync("docs/evidence/A2-COLLECTIVE-CLOSURE.json", "utf8"));
+  const first = await runA2Assist8Evidence({ reportIterationDurations: true });
+  const second = await runA2Assist8Evidence({ reportIterationDurations: true });
+  assert.deepEqual(collectiveClosureDeterministicMaterial(first), collectiveClosureDeterministicMaterial(second));
+  assert.equal(first.status, second.status); assert.equal(first.completedObligationCount, second.completedObligationCount);
+  assert.deepEqual(first.firstBlocker, second.firstBlocker);
+  const accepted = first.iterations.filter(stage => stage.acceptedSnapshotAfter);
+  const old = JSON.parse(readFileSync("docs/evidence/A2-ASSIST-8-assisted-completion.json", "utf8"));
+  for (const stage of accepted.filter(stage => stage.ordinal <= 2)) {
+    assert.deepEqual(stage.acceptedSnapshotAfter, old.iterations[stage.ordinal - 1].acceptedSnapshotAfter);
+    assert.equal(stage.acceptedStageFingerprint, old.iterations[stage.ordinal - 1].acceptedStageFingerprint);
+  }
+  const last = first.iterations.at(-1)!;
+  const result = { previousHead: "8a2bfa8ec9863ef8b232797792fab641e9b99c77",
+    previousHeadObservation: prior.proof, historicalCertificates: auditPriorA2CollectiveCertificates(),
+    deterministicEquivalent: true, proof: {
+      completed: first.completedObligationCount, blockedAtStage: last.ordinal, branches: last.branchesExplored,
+      branchBudget: buildCanonicalA2AssistedStage1Fixture().adapter.problem.budget.maxBranchExpansions,
+      budgetExhausted: first.firstBlocker?.reasonCodes.some((code: string) => /BUDGET/.test(code)) ?? false,
+      conclusion: first.firstBlocker?.reasonCodes.includes("FUTURE_COLLECTIVE_CLOSURE_INCONCLUSIVE") ? "INCONCLUSIVE_MISSING_JOINT_CONTEXT" : "SEE_EXACT_BLOCKER",
+      acceptedStageCount: accepted.length, newAcceptedDecisionsEqualToBaseline: accepted.filter(stage => stage.ordinal <= 2).length,
+      missingContextTaskIds: last.standaloneDiagnostic?.futureCollectiveClosurePendingPredecessorTaskIds,
+      lastCollectiveCertificate: last.standaloneDiagnostic?.futureCollectiveClosureLastCertificate,
+      noGlobalA2ImpossibilityClaim: true, rawProductBlocker: first.firstBlocker },
+    first: collectiveClosureDeterministicMaterial(first), second: collectiveClosureDeterministicMaterial(second) };
+  writeFileSync("docs/evidence/A2-COLLECTIVE-CLOSURE-CONTRACT.json", `${JSON.stringify(result, null, 2)}\n`);
+  console.log(JSON.stringify(result.proof));
+  return result;
 }
 
 export async function runA2CollectiveClosureEvidence() {
@@ -155,5 +219,6 @@ export async function runA2CollectiveClosureEvidence() {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   if (process.argv.includes("--diagnose")) console.log(JSON.stringify(diagnoseA2CollectiveClosureStages(), null, 2));
-  else await runA2CollectiveClosureEvidence();
+  else if (process.argv.includes("--legacy-capacity-evidence")) await runA2CollectiveClosureEvidence();
+  else await runA2CollectiveClosureContractEvidence();
 }

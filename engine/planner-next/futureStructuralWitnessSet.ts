@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import type { FutureStructuralWitness } from "./anonymousPipelineWitness";
 import type { ScheduledTask, ScheduledRoundPreparation } from "./contracts";
 
-export type FutureWitnessOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
+export type FutureWitnessOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | "INCONCLUSIVE";
+type ExplorerOutcome = Exclude<FutureWitnessOutcome, "INCONCLUSIVE">;
 /** Analytical state only. No placement in this context is an accepted decision. */
 export interface FutureWitnessContext {
   readonly tasks: readonly ScheduledTask[];
@@ -21,7 +22,7 @@ export interface FutureWitnessUnit {
   revalidate(context: FutureWitnessContext):
     | { status: "PASS"; candidate: FutureWitnessCandidate }
     | { status: "STALE" | "REJECT" | "BUDGET_EXHAUSTED"; reason: string };
-  explore(context: FutureWitnessContext, continuation: (candidate: FutureWitnessCandidate) => FutureWitnessOutcome): FutureWitnessOutcome;
+  explore(context: FutureWitnessContext, continuation: (candidate: FutureWitnessCandidate) => ExplorerOutcome): ExplorerOutcome;
 }
 export interface FutureWitnessUnitEvidence {
   priorFound: boolean; priorRevalidation: string | null; priorTried: boolean;
@@ -32,6 +33,7 @@ export interface FutureWitnessSetEvidence {
   futureWitnessSetSearchInvocations: number; futureWitnessSetUnits: number;
   futureWitnessSetCombinationsAttempted: number; futureWitnessSetBacktracks: number;
   futureWitnessSetBranchesConsumed: number; futureWitnessSetFound: number;
+  futureWitnessSetInconclusiveCombinations: number;
   byIdentity: Record<string, FutureWitnessUnitEvidence>;
   finalSet: null | { identities: string[]; witnessFingerprints: string[]; fingerprint: string;
     ephemeralContextCount: number; mealReservations: FutureWitnessContext["mealReservations"]; totalBranches: number };
@@ -39,7 +41,7 @@ export interface FutureWitnessSetEvidence {
 export function createFutureWitnessSetEvidence(): FutureWitnessSetEvidence {
   return { futureWitnessSetSearchInvocations: 0, futureWitnessSetUnits: 0,
     futureWitnessSetCombinationsAttempted: 0, futureWitnessSetBacktracks: 0,
-    futureWitnessSetBranchesConsumed: 0, futureWitnessSetFound: 0, byIdentity: {}, finalSet: null };
+    futureWitnessSetBranchesConsumed: 0, futureWitnessSetFound: 0, futureWitnessSetInconclusiveCombinations: 0, byIdentity: {}, finalSet: null };
 }
 
 /** Composes typed exact explorers through their continuations, without merging their identities. */
@@ -54,12 +56,18 @@ export function certifyFutureStructuralWitnessSet(units: readonly FutureWitnessU
     return a.identity.localeCompare(b.identity, "en");
   });
   if (new Set(ordered.map(unit => unit.identity)).size !== ordered.length) throw new Error("Duplicate future unit identity");
-  const before = branches(); let selected: FutureStructuralWitness[] = [];
+  const before = branches(); let selected: FutureStructuralWitness[] = [], inconclusive = false;
   evidence.futureWitnessSetSearchInvocations++; evidence.futureWitnessSetUnits += ordered.length;
-  const visit = (index: number, context: FutureWitnessContext, witnesses: FutureStructuralWitness[], reused: string[]): FutureWitnessOutcome => {
+  const visit = (index: number, context: FutureWitnessContext, witnesses: FutureStructuralWitness[], reused: string[]): ExplorerOutcome => {
     if (index === ordered.length) {
       evidence.futureWitnessSetCombinationsAttempted++;
       const result = globalGate(context);
+      if (result === "INCONCLUSIVE") {
+        inconclusive = true; evidence.futureWitnessSetInconclusiveCombinations++;
+        // Exact explorers use DEAD_END as "try the next candidate". Retain the
+        // uncertainty separately so exhaustive traversal cannot prove infeasibility.
+        return "DEAD_END";
+      }
       if (result === "FOUND") {
         selected = [...witnesses]; evidence.futureWitnessSetFound++;
         const pairs = witnesses.map((witness, i) => [ordered[i]!.identity, witness.fingerprint]).sort(([a], [b]) => a!.localeCompare(b!));
@@ -75,7 +83,7 @@ export function certifyFutureStructuralWitnessSet(units: readonly FutureWitnessU
     const row = evidence.byIdentity[unit.identity] ??= { priorFound: unit.priorFound, priorRevalidation: null,
       priorTried: false, priorJointContinuationFailed: false, priorReused: false, fallbackEntered: false,
       candidateCount: 0, rejectAuthority: null };
-    const continueWith = (candidate: FutureWitnessCandidate, prior: boolean): FutureWitnessOutcome => {
+    const continueWith = (candidate: FutureWitnessCandidate, prior: boolean): ExplorerOutcome => {
       row.candidateCount++;
       const result = visit(index + 1, candidate.context, [...witnesses, candidate.witness], prior ? [...reused, unit.identity] : reused);
       if (result === "DEAD_END") { evidence.futureWitnessSetBacktracks++; if (prior) row.priorJointContinuationFailed = true; }
@@ -94,5 +102,5 @@ export function certifyFutureStructuralWitnessSet(units: readonly FutureWitnessU
   };
   const outcome = visit(0, initial, [], []);
   evidence.futureWitnessSetBranchesConsumed += branches() - before;
-  return { outcome, witnesses: selected, evidence };
+  return { outcome: outcome === "DEAD_END" && inconclusive ? "INCONCLUSIVE" : outcome, witnesses: selected, evidence };
 }

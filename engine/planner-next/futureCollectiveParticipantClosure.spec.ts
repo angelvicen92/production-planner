@@ -1,10 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { PreparedFutureCollectiveParticipantClosure } from "./futureCollectiveParticipantClosure";
 import { assessParticipantMealFutureFeasibility } from "./participantMeals";
 import { participantGapMinutes } from "./participantTransition";
 import { buildAssistedProblem, createPlanningScope, executeAssistedPlanning } from "./assistedPlanning";
+import { canPlaceTask, exactTaskStartDomain } from "./placement";
+import { runExactItinerantPlanSearch } from "./exactItinerantPlan";
+import { validatePlan } from "./validate";
+import { materializeTerminalTransportDetailed } from "./transportGrouping";
+
+function coreContext(source: PlannerNextProblem): ScheduledTask[] {
+  const vocal: Task = { id: "vocal", kind: "vocal", participantId: "core", coachId: "coach", duration: 5, spaceId: "vocal", dependencies: [] };
+  const main: Task = { id: "main", kind: "main", participantId: "core", coachId: "coach", duration: 5, spaceId: "main", dependencies: [vocal.id], blockKey: "coach" };
+  source.tasks.push(vocal, main);
+  return [{ ...vocal, start: 20, end: 25 }, { ...main, start: 25, end: 30 }];
+}
 
 function fixture(slots = [0, 5, 10]): PlannerNextProblem {
   const availability = [{ start: 0, end: 50 }];
@@ -23,6 +34,77 @@ function fixture(slots = [0, 5, 10]): PlannerNextProblem {
     transportPolicy: { arrival: { ...direction, taskIds: [] }, departure: { ...direction, taskIds: ["depart-a", "depart-b", "depart-c"] } },
     budget: { bestK: 1, maxBacktracks: 0, maxPatterns: 20, maxBranchExpansions: 1000 }, searchPolicy: "EXACT_CONSTRUCTIVE" };
 }
+
+test("an unsupported necessary geometry with a hard-valid continuation remains inconclusive, not infeasible", () => {
+  const source = fixture([0, 10, 15]);
+  const closeA = source.tasks.find(task => task.id === "close-a")!;
+  closeA.duration = 10; closeA.availability = [{ start: 0, end: 10 }];
+  const fixed = coreContext(source);
+  const authority = new PreparedFutureCollectiveParticipantClosure(source);
+  const necessary = authority.evaluate(fixed, [], undefined, "NECESSARY_ONLY");
+  assert.equal(necessary.status, "ABSTAIN"); assert.equal(necessary.reason, "UNCERTIFIED_GEOMETRY");
+  const starts: Record<string, number> = { "close-a": 0, "close-b": 10, "close-c": 15,
+    "depart-a": 10, "depart-b": 15, "depart-c": 10 };
+  const substantive = [...fixed, ...source.tasks.filter(task => task.id.startsWith("close-"))
+    .map(task => ({ ...task, start: starts[task.id]!, end: starts[task.id]! + task.duration }))];
+  const transport = materializeTerminalTransportDetailed(source, substantive, []);
+  assert.equal(transport.status, "FEASIBLE");
+  const completion = [...substantive, ...transport.scheduled!];
+  const validation = validatePlan(source, completion);
+  assert.equal(validation.hardValid, true, JSON.stringify(validation));
+  const current: Task = { id: "current", kind: "auxiliary", participantId: "core", duration: 5,
+    spaceId: "current", dependencies: [], availability: [{ start: 35, end: 45 }] };
+  source.tasks.push(current);
+  const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: current.id }, {}, [current.id]),
+    fixed, new Set(source.tasks.map(task => task.id)));
+  const result = runExactItinerantPlanSearch(assisted.problem, { fixedPlacements: assisted.protectedPlacements, fixedPlacementsAsContext: true });
+  assert.equal(result.complete, false, "an unproved future must not be accepted");
+  assert.equal(result.status, "UNSUPPORTED_STANDALONE_SHAPE");
+  assert.ok(result.evidence.reasonCodes.includes("FUTURE_COLLECTIVE_CLOSURE_INCONCLUSIVE"));
+  assert.equal(result.evidence.standaloneCompleteLeafCount, 2, "both current alternatives remain explored");
+});
+
+test("individual predecessor release bounds cannot certify jointly conflicting pending prerequisites", () => {
+  const source = fixture([10, 15]);
+  source.tasks = source.tasks.filter(task => task.participantId !== "c");
+  source.transportPolicy!.departure.taskIds = ["depart-a", "depart-b"];
+  source.resources = [{ id: "exclusive", availability: [source.day], presencePreference: "OFF" }];
+  for (const id of ["a", "b"]) {
+    source.spaces.push({ id: `prior-${id}`, availability: [source.day] });
+    const prior: Task = { id: `prior-${id}`, kind: "auxiliary", participantId: id, spaceId: `prior-${id}`,
+      duration: 10, dependencies: [], requiredResourceIds: ["exclusive"], availability: [{ start: 0, end: 10 }] };
+    source.tasks.push(prior); source.tasks.find(task => task.id === `close-${id}`)!.dependencies = [prior.id];
+    assert.deepEqual([...exactTaskStartDomain(source, prior, []).starts()], [0]);
+  }
+  const priorA = source.tasks.find(task => task.id === "prior-a")!, priorB = source.tasks.find(task => task.id === "prior-b")!;
+  assert.equal(canPlaceTask(source, priorB, 0, [{ ...priorA, start: 0, end: 10 }]), false);
+  const authority = new PreparedFutureCollectiveParticipantClosure(source);
+  assert.equal(authority.evaluate([], [], undefined, "NECESSARY_ONLY").status, "PASS");
+  const result = authority.evaluate([]);
+  assert.equal(result.maximumMatching, 2);
+  assert.equal(result.status, "ABSTAIN"); assert.equal(result.certified, false);
+  assert.equal(result.reason, "PENDING_PREDECESSORS"); assert.equal(result.witnessFingerprint, null);
+  const invalidJointContext = [{ ...priorA, start: 0, end: 10 }, { ...priorB, start: 0, end: 10 }];
+  assert.equal(authority.evaluate(invalidJointContext).certified, false, "supplied placements must also replay jointly");
+  priorB.availability = [{ start: 10, end: 20 }];
+  for (const task of source.tasks.filter(task => task.id.startsWith("close-"))) task.availability = [{ start: 20, end: 30 }];
+  const saved = structuredClone(source);
+  const repaired = new PreparedFutureCollectiveParticipantClosure(source).evaluate([
+    { ...priorA, start: 0, end: 10 }, { ...priorB, start: 10, end: 20 }]);
+  assert.equal(repaired.status, "PASS"); assert.equal(repaired.certified, true);
+  assert.deepEqual(source, saved);
+  const fixedCore = coreContext(source);
+  const current: Task = { id: "current", kind: "auxiliary", participantId: "core", duration: 5,
+    spaceId: "current", dependencies: [], availability: [{ start: 35, end: 40 }] };
+  source.tasks.push(current);
+  const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: current.id }, {}, [current.id]),
+    fixedCore, new Set(source.tasks.map(task => task.id)));
+  const before = structuredClone(assisted);
+  const stage = runExactItinerantPlanSearch(assisted.problem, { fixedPlacements: assisted.protectedPlacements, fixedPlacementsAsContext: true });
+  assert.equal(stage.status, "UNSUPPORTED_STANDALONE_SHAPE"); assert.equal(stage.complete, false);
+  assert.deepEqual(stage.evidence.futureCollectiveClosurePendingPredecessorTaskIds, ["prior-a", "prior-b"]);
+  assert.deepEqual(assisted, before, "a missing proof cannot create future placements or rewrite protection");
+});
 
 test("three obligations with individually nonempty domains and two slots have an exact Hall", () => {
   const result = new PreparedFutureCollectiveParticipantClosure(fixture([0, 5])).evaluate([], [], undefined, "NECESSARY_ONLY");
@@ -61,6 +143,10 @@ test("canonical participant default and before/after overrides determine exact c
   fixed[0]!.participantMarginAfterMinutes = 10;
   assert.equal(participantGapMinutes(problem, fixed[0]!, close), 10);
   assert.deepEqual(new PreparedFutureCollectiveParticipantClosure(problem).evaluate(fixed, [], undefined, "NECESSARY_ONLY").domains[close.id], [20]);
+  problem.tasks.push({ ...prior, participantMarginAfterMinutes: 10 });
+  fixed[0]!.participantMarginAfterMinutes = 0;
+  assert.deepEqual(new PreparedFutureCollectiveParticipantClosure(problem).evaluate(fixed, [], undefined, "NECESSARY_ONLY").domains[close.id], [10, 15, 20],
+    "release bounds replay the concrete protected predecessor's canonical margin");
 });
 
 test("terminal override zero allows consecutive departure; impossible departure removes the edge", () => {
@@ -141,11 +227,14 @@ test("a meal candidate before a pending hard predecessor is rejected, then repai
   source.participantMealCapacity = { maxSimultaneous: 1 };
   const authority = new PreparedFutureCollectiveParticipantClosure(source);
   const witness = assessParticipantMealFutureFeasibility(source, [], { remaining: 100 }, "MATERIALIZE", (meals, complete) => {
-    const result = authority.evaluate([], meals, undefined, complete ? "CERTIFY" : "NECESSARY_ONLY");
+    const result = authority.evaluate([], meals, undefined, "NECESSARY_ONLY");
     return result.status === "PASS" ? "ACCEPT" : result.status === "INFEASIBLE" ? "REJECT" : "ABSTAIN";
   });
   assert.equal(witness.complete, true); assert.equal(witness.scheduled[0]?.start, 20);
   assert.equal(witness.rejectedCandidateCount, 1);
+  assert.equal(authority.evaluate([], witness.scheduled).reason, "PENDING_PREDECESSORS");
+  const prior = source.tasks.find(task => task.id === "meal-prior")!;
+  assert.equal(authority.evaluate([{ ...prior, start: 15, end: 20 }], witness.scheduled).certified, true);
 });
 
 test("Stage backtracks from A to B; the future witness stays outside proposal and protection", () => {
