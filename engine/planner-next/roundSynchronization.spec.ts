@@ -20,6 +20,8 @@ import {
   roundPreparationId,
 } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy } from "./exactRoundSynchronization";
+import { revalidateFutureRoundSynchronizationWitness } from "./exactRoundSynchronization";
+import { createHash } from "node:crypto";
 import { preflight, validatePlan } from "./validate";
 import { overlaps } from "./time";
 import { PreparedOperationalMealAuthority } from "./preparedOperationalMealAuthority";
@@ -606,4 +608,51 @@ test("a complete-matching future rejection repairs only the causal task edge",()
   assert.equal(result.evidence.shapesRescuedByRematching,1);
   assert.equal(seen[0]!.tasks.find(task=>task.id==="task:401")!.start,515);
   assert.equal(seen[1]!.tasks.find(task=>task.id==="task:401")!.start,480);
+});
+
+test("joint round continuation enumerates alternative matchings within the same exact geometry",()=>{
+  const {problem,policy}=focusedRoundProblem();
+  let first:string|null=null,selected:ExactRoundSynchronizationCandidate|null=null;
+  const accept=(candidate:ExactRoundSynchronizationCandidate)=>{
+    const key=JSON.stringify(candidate.matchingWitness);first??=key;
+    if(key===first)return "DEAD_END" as const;selected=candidate;return "FOUND" as const;
+  };
+  const sequential=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),accept,
+    {futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING"});
+  assert.equal(sequential.outcome,"DEAD_END","the old continuation abandons the only geometry");
+  first=null;selected=null;
+  const exact=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),accept,
+    {futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",jointContinuation:true});
+  assert.equal(exact.outcome,"FOUND");assert.ok(selected);assert.equal(exact.evidence.completeAssignments,2);
+});
+
+test("joint round matching exhausts every assignment exactly once and reports budget honestly",()=>{
+  const {problem,policy}=focusedRoundProblem(),seen=new Set<string>();
+  const result=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),candidate=>{
+    const key=JSON.stringify(candidate.matchingWitness);assert.equal(seen.has(key),false);seen.add(key);return "DEAD_END";
+  },{futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",jointContinuation:true});
+  assert.equal(result.outcome,"DEAD_END");assert.equal(seen.size,4);
+  const exhausted=exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(8),()=>"DEAD_END",
+    {futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",jointContinuation:true});
+  assert.equal(exhausted.outcome,"BUDGET_EXHAUSTED");
+});
+
+test("round prior replay validates exact geometry and rejects corrupt and occupied certificates",()=>{
+  const {problem,policy}=focusedRoundProblem();let candidate:ExactRoundSynchronizationCandidate|null=null;
+  exploreExactRoundSynchronizationPolicy(problem,policy,[],[],[],[],focusedLedger(),value=>{candidate=value;return "FOUND";},
+    {futureEdgePruning:"DEFER_TO_COMPLETE_MATCHING",jointContinuation:true});
+  assert.ok(candidate);const selected=candidate as ExactRoundSynchronizationCandidate;
+  const body={kind:"ROUND_SYNCHRONIZATION" as const,version:1 as const,policyId:policy.id,
+    scheduledTaskPlacements:selected.tasks.map(({id,start,end,spaceId})=>({id,start,end,spaceId})),
+    roundPreparations:selected.preparations.map(({id,start,end,spaceId})=>({id,start,end,spaceId})),
+    operationalMealReservations:selected.operationalMealReservations,matchingWitness:selected.matchingWitness,
+    futureFeasibility:{participant:"PASS" as const,technicalChain:"NOT_APPLICABLE" as const,
+      participantMeals:"NOT_APPLICABLE" as const,operationalMeals:"NOT_APPLICABLE" as const}};
+  const witness={...body,fingerprint:createHash("sha256").update(JSON.stringify(body)).digest("hex")};
+  assert.equal(revalidateFutureRoundSynchronizationWitness(problem,policy,[],[],[],witness).status,"PASS");
+  assert.deepEqual(revalidateFutureRoundSynchronizationWitness(problem,policy,[],[],[],{...witness,fingerprint:"bad"}),
+    {status:"REJECT",reason:"FINGERPRINT_MISMATCH"});
+  const blocker={...selected.tasks[0]!,id:"protected-blocker"};
+  assert.deepEqual(revalidateFutureRoundSynchronizationWitness(problem,policy,[blocker],[],[],witness),
+    {status:"REJECT",reason:"CERTIFIED_PLACEMENT_REJECTED"});
 });

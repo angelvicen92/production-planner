@@ -87,6 +87,8 @@ export const exactStartDomainFromIntervals=(problem:PlannerNextProblem,intervals
   const eligibleStartCount=merged.reduce((sum,interval)=>{const value=first(interval.start);return sum+(value<=interval.end?Math.floor((interval.end-value)/5)+1:0)},0);
   return {intervals:merged,eligibleStartCount,*starts(){for(const interval of merged)for(let start=first(interval.start);start<=interval.end;start+=5)yield start;}};
 };
+export const exactStartDomainContains=(problem:PlannerNextProblem,domain:ExactTaskStartDomain,start:number):boolean=>
+  Number.isFinite(start)&&(start-problem.day.start)%5===0&&domain.intervals.some(interval=>start>=interval.start&&start<=interval.end);
 
 /** Exact placed-independent projection of every static hard authority used by canPlaceTask. */
 export function exactTaskStaticStartDomain(problem:PlannerNextProblem,task:Task,scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):ExactTaskStartDomain {
@@ -144,7 +146,7 @@ export function prepareTaskPlacementAuthority(problem:PlannerNextProblem,task:Ta
   return {
     baseDomain,
     domain(additionalPlaced){return exactTaskDynamicStartDomain(problem,task,additionalPlaced,baseDomain)},
-    accepts(start,domain){return domain.intervals.some(interval=>start>=interval.start&&start<=interval.end)},
+    accepts(start,domain){return exactStartDomainContains(problem,domain,start)},
   };
 }
 
