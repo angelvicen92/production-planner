@@ -20,6 +20,9 @@ import { findCanonicalPerfectMatching } from "./macroScheduling";
 import { operationalMealCandidates } from "./operationalMeals";
 import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
 import { incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
+import { createHash } from "node:crypto";
+import type { FutureRoundSynchronizationWitnessV1 } from "./anonymousPipelineWitness";
+import { validateRoundSynchronizations } from "./roundSynchronization";
 
 export type ExactRoundSynchronizationOutcome =
   | "FOUND"
@@ -78,6 +81,42 @@ export interface ExactRoundSynchronizationAuthorities {
   /** Test seam; production always uses the canonical participant-future authority. */
   participantFutureProbe?: typeof probeParticipantFutureReservations;
   futureEdgePruning?:"PER_EDGE"|"DEFER_TO_COMPLETE_MATCHING";
+  /** Exhaust all complete matchings when a downstream structural continuation rejects. */
+  jointContinuation?:boolean;
+}
+
+export function revalidateFutureRoundSynchronizationWitness(problem:PlannerNextProblem,policy:RoundSynchronizationPolicy,
+  context:readonly ScheduledTask[],existingPreparations:readonly ScheduledRoundPreparation[],meals:readonly ScheduledSpaceMeal[],
+  witness:FutureRoundSynchronizationWitnessV1):
+  {status:"PASS";candidate:ExactRoundSynchronizationCandidate;prerequisites:ScheduledTask[]}|{status:"STALE"|"REJECT";reason:string}{
+  const {fingerprint,...body}=witness;
+  if(createHash("sha256").update(JSON.stringify(body)).digest("hex")!==fingerprint)return{status:"REJECT",reason:"FINGERPRINT_MISMATCH"};
+  const ids=policy.lanes.flatMap(lane=>lane.taskIds).sort();
+  if(witness.policyId!==policy.id||JSON.stringify(ids)!==JSON.stringify(witness.scheduledTaskPlacements.map(task=>task.id).sort()))
+    return{status:"STALE",reason:"STRUCTURAL_IDENTITY_MISMATCH"};
+  const placements=[...(witness.prerequisiteTaskPlacements??[]),...witness.scheduledTaskPlacements];
+  const tasks:ScheduledTask[]=[];
+  for(const placement of placements){const base=problem.tasks.find(task=>task.id===placement.id);
+    if(!base||placement.spaceId!==base.spaceId||placement.end-placement.start!==base.duration)return{status:"REJECT",reason:"PLACEMENT_AUTHORITY_CHANGED"};
+    const fixed=context.find(task=>task.id===base.id);
+    if(fixed&&(fixed.start!==placement.start||fixed.end!==placement.end||fixed.spaceId!==placement.spaceId))return{status:"REJECT",reason:"PROTECTED_PREREQUISITE_MISMATCH"};
+    tasks.push({...base,...placement});
+  }
+  const all=[...context.filter(task=>!tasks.some(item=>item.id===task.id)),...tasks];
+  for(const task of tasks)if(!canPlaceTask(problem,task,task.start,all.filter(other=>other.id!==task.id),[...meals]))
+    return{status:"REJECT",reason:"CERTIFIED_PLACEMENT_REJECTED"};
+  const preparations:ScheduledRoundPreparation[]=[];
+  for(const item of witness.roundPreparations){const lane=policy.lanes.find(lane=>lane.spaceId===item.spaceId);
+    const roundIndex=lane?Array.from({length:lane.taskIds.length},(_,i)=>i+1).find(index=>roundPreparationId(policy.id,lane.spaceId,index)===item.id):undefined;
+    if(!lane||roundIndex===undefined||item.end-item.start!==lane.preparationMinutesBetweenRounds)return{status:"REJECT",reason:"PREPARATION_AUTHORITY_CHANGED"};
+    preparations.push({...item,kind:"round-preparation",synchronizationId:policy.id,roundIndex,duration:item.end-item.start});
+  }
+  const check=validateRoundSynchronizations({...problem,roundSynchronizations:[policy]},all,
+    [...existingPreparations,...preparations],witness.operationalMealReservations.flatMap(item=>
+      (problem.operationalMealPolicies?.find(policy=>policy.id===item.policyId)?.spaceIds??[]).map(spaceId=>({spaceId,start:item.start,end:item.end}))));
+  if(check.synchronizationViolationCount||check.preparationViolationCount)return{status:"REJECT",reason:"ROUND_GEOMETRY_REJECTED"};
+  return{status:"PASS",prerequisites:tasks.filter(task=>!ids.includes(task.id)),candidate:{tasks:tasks.filter(task=>ids.includes(task.id)),preparations,
+    selectionOrder:ids,operationalMealReservations:[...witness.operationalMealReservations],matchingWitness:{...witness.matchingWitness}}};
 }
 
 export interface ExactRoundSynchronizationMacroDomain {
@@ -388,13 +427,34 @@ export function exploreExactRoundSynchronizationPolicy(
     }
     let forbidden=new Set<string>(),previousForbidden=new Set<string>(),previous=new Map<string,number>();
     let repaired=false, firstWitness:Record<string,string>|undefined;
+    type Partition={fixed:Map<string,number>;forbidden:Set<string>};
+    let partition:Partition={fixed:new Map(),forbidden:new Set()};
+    const pendingPartitions:Partition[]=[];
+    // Disjoint prefix partitions exclude exactly the rejected full matching, never all its edges.
+    const nextJointMatching=(matching:ReadonlyMap<string,number>):boolean=>{
+      const prefix=new Map(partition.fixed),children:Partition[]=[];
+      for(const [id,position] of [...matching].sort(([a],[b])=>a.localeCompare(b))){
+        if(partition.fixed.has(id))continue;
+        children.push({fixed:new Map(prefix),forbidden:new Set([...partition.forbidden,`${id}@${position}`])});
+        prefix.set(id,position);
+      }
+      pendingPartitions.push(...children.reverse());
+      const next=pendingPartitions.pop();if(!next)return false;
+      partition=next;forbidden=partition.forbidden;previousForbidden=new Set();previous=new Map();
+      evidence.matchingAttempts++;return true;
+    };
     while(true){
-      const result=incrementallyRepairMatchingWitness(allTasks.map(({id})=>id),validPositions,forbidden,previousForbidden,previous,
+      const fixedSlots=new Set(partition.fixed.values());
+      const positions=authorities.jointContinuation?new Map([...validPositions].map(([id,values])=>[id,
+        partition.fixed.has(id)?values.filter(value=>value===partition.fixed.get(id)):values.filter(value=>!fixedSlots.has(value))])):validPositions;
+      const result=incrementallyRepairMatchingWitness(allTasks.map(({id})=>id),positions,forbidden,previousForbidden,previous,
         ()=>ledger.consume("STANDALONE"));
       evidence.matchingTraversals+=result.traversals;
       if(result.outcome==="BUDGET_EXHAUSTED")return {outcome:"BUDGET_EXHAUSTED",evidence};
       if(result.outcome!=="PERFECT"||!result.matching){
       evidence.zeroAlternativePrunes += 1;
+        if(authorities.jointContinuation&&pendingPartitions.length){partition=pendingPartitions.pop()!;forbidden=partition.forbidden;
+          previousForbidden=new Set();previous=new Map();evidence.matchingAttempts++;continue;}
         break;
       }
       const matching=result.matching;
@@ -407,6 +467,7 @@ export function exploreExactRoundSynchronizationPolicy(
     if (scheduled.some((task) => !canPlaceTask(problem, task, task.start,
       [...baseTasks, ...scheduled.filter(({ id }) => id !== task.id)], meals))) {
       evidence.zeroAlternativePrunes += 1;
+        if(authorities.jointContinuation&&nextJointMatching(matching))continue;
         break;
       }
     evidence.matchingSuccesses += 1;
@@ -430,6 +491,7 @@ export function exploreExactRoundSynchronizationPolicy(
       return { outcome, evidence };
     }
     evidence.backtracks += 1;
+    if(authorities.jointContinuation){if(nextJointMatching(matching))continue;break;}
     const newlyForbidden:string[]=[];
     if(decision.matchingReject){const causal=new Set(decision.matchingReject.causalTaskIds);
       for(const [taskId,position] of matching)if(causal.has(taskId))newlyForbidden.push(`${taskId}@${position}`);

@@ -26,5 +26,29 @@ export async function runA2Assist8ManualEvidence(){
   return runA2Assist8Evidence({explicitSelectors:canonicalA2ManualSelectors(),stopAfterIterationCount:5,reportIterationDurations:true});
 }
 
-if(import.meta.url===`file://${process.argv[1]}`){const result=await runA2Assist8ManualEvidence();mkdirSync(".artifacts",{recursive:true});
+export function manualA2DeterministicMaterial(result:Awaited<ReturnType<typeof runA2Assist8ManualEvidence>>){
+  return result.iterations.map(row=>({completed:row.completedObligationCount,scope:row.resolvedTaskIds,
+    stageFingerprint:row.acceptedStageFingerprint,branches:row.branchesExplored,placements:row.acceptedSnapshotAfter,
+    witnesses:row.futureStructuralWitnesses,jointSet:row.futureWitnessSet?.finalSet,
+    supportingPipeline:row.acceptedSupportingPlacements,ephemeralPipeline:row.ephemeralSupportingPlacements,
+    setups:row.selectedSetupPreparations,roundPreparations:row.selectedRoundPreparations,
+    operationalMeals:row.proposedSnapshotOperationalMeals,participantMeals:row.acceptedMealWitnesses?.participant,
+    hardRequired:row.hardRequiredValidation,globalMealGate:row.sodexoMeals?.globalMealGate,
+  }));
+}
+
+export async function runA2Assist8ManualDeterminismEvidence(){
+  const first=await runA2Assist8ManualEvidence(),second=await runA2Assist8ManualEvidence();
+  assert.deepEqual(manualA2DeterministicMaterial(first),manualA2DeterministicMaterial(second));
+  first.deterministicEquivalent=true;second.deterministicEquivalent=true;
+  return {deterministicEquivalent:true,first,second};
+}
+
+if(import.meta.url===`file://${process.argv[1]}`&&process.argv.includes("--determinism")){
+  const result=await runA2Assist8ManualDeterminismEvidence();mkdirSync("docs/evidence",{recursive:true});
+  writeFileSync("docs/evidence/A2-FUTURE-WITNESS-SET-manual.json",`${JSON.stringify(result,null,2)}\n`);
+  console.log(JSON.stringify({deterministicEquivalent:result.deterministicEquivalent,
+    stages:result.first.iterations.map(row=>({stage:row.ordinal,completed:row.completedObligationCount,branches:row.branchesExplored,
+      outcome:row.proposalOutcome,durationMs:row.durationMs}))},null,2));
+}else if(import.meta.url===`file://${process.argv[1]}`){const result=await runA2Assist8ManualEvidence();mkdirSync(".artifacts",{recursive:true});
   writeFileSync(".artifacts/A2-ASSIST-8-manual.json",`${JSON.stringify(result,null,2)}\n`);console.log(JSON.stringify(result,null,2));}

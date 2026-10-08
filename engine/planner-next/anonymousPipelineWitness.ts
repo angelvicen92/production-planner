@@ -138,6 +138,7 @@ export interface FutureStructuralWitnessV2 {
 export interface FutureRoundSynchronizationWitnessV1 {
   readonly kind:"ROUND_SYNCHRONIZATION";readonly version:1;readonly policyId:string;
   readonly scheduledTaskPlacements:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
+  readonly prerequisiteTaskPlacements?:readonly Pick<ScheduledTask,"id"|"start"|"end"|"spaceId">[];
   readonly roundPreparations:readonly {id:string;spaceId:string;start:number;end:number}[];
   readonly operationalMealReservations:readonly {policyId:string;start:number;end:number}[];
   readonly matchingWitness:Readonly<Record<string,string>>;
