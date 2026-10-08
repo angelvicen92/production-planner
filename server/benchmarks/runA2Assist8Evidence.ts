@@ -332,6 +332,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       priorItinerantWitnessReused:evidence.priorItinerantWitnessReused??false,
       priorItinerantWitnessFallbackEntered:evidence.priorItinerantWitnessFallbackEntered??false,
       futureItinerantWitnessSearchInvocations:evidence.futureItinerantWitnessSearchInvocations??0,
+      futureWitnessSet:evidence.futureWitnessSet??null,
+      futureWitnessSetCandidateTraces:evidence.futureWitnessSetCandidateTraces??[],
       futureItinerantWitnessCandidates:evidence.futureItinerantWitnessCandidates??0,
       futureItinerantWitnessBranchesConsumed:evidence.futureItinerantWitnessBranchesConsumed??0,
       futureItinerantWitnessesFound:evidence.futureItinerantWitnessesFound??0,

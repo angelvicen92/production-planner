@@ -75,6 +75,8 @@ export interface AssistedPlanningEvidence {
   readonly priorFutureStructuralWitnessReused?:boolean;
   readonly priorFutureStructuralWitnessFallbackEntered?:boolean;
   readonly futureItinerantWitnessSearchInvocations?:number;
+  readonly futureWitnessSet?:import("./futureStructuralWitnessSet").FutureWitnessSetEvidence;
+  readonly futureWitnessSetCandidateTraces?:import("./exactItinerantPlan").ExactItinerantPlanEvidence["futureWitnessSetCandidateTraces"];
   readonly futureItinerantWitnessCandidates?:number;
   readonly futureItinerantWitnessBranchesConsumed?:number;
   readonly futureItinerantWitnessesFound?:number;
@@ -738,6 +740,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     priorFutureStructuralWitnessReused:Boolean(evidenceRecord.priorFutureStructuralWitnessReused),
     priorFutureStructuralWitnessFallbackEntered:Boolean(evidenceRecord.priorFutureStructuralWitnessFallbackEntered),
     futureItinerantWitnessSearchInvocations:Number(evidenceRecord.futureItinerantWitnessSearchInvocations??0),
+    futureWitnessSet:structuredClone(evidenceRecord.futureWitnessSet as import("./futureStructuralWitnessSet").FutureWitnessSetEvidence|undefined),
+    futureWitnessSetCandidateTraces:structuredClone(evidenceRecord.futureWitnessSetCandidateTraces as import("./exactItinerantPlan").ExactItinerantPlanEvidence["futureWitnessSetCandidateTraces"]|undefined),
     futureItinerantWitnessCandidates:Number(evidenceRecord.futureItinerantWitnessCandidates??0),
     futureItinerantWitnessBranchesConsumed:Number(evidenceRecord.futureItinerantWitnessBranchesConsumed??0),
     futureItinerantWitnessesFound:Number(evidenceRecord.futureItinerantWitnessesFound??0),

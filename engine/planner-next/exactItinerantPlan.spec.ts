@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledSpaceMeal, Task } from "./contracts";
 import { constructExactMainAndFeederCore, runExactMainAndFeederSearch } from "./exactMainAndFeederCore";
 import { compareCompleteParticipantQuality, constructExactItinerantPlan,
-  constructFirstHardValidExactItinerantPlan, revalidateFutureItinerantAgendaWitness, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
+  constructFirstHardValidExactItinerantPlan, revalidateFutureItinerantAgendaWitness, searchExactItinerantAgenda, runExactItinerantPlanSearch, standaloneJointGroupStartDomain } from "./exactItinerantPlan";
 import { standaloneForwardDynamicDomain, standaloneForwardStaticDomain, tasksCanAffectEachOther } from "./exactItinerantPlan";
 import { standaloneForwardAuthoritySignature } from "./exactItinerantPlan";
 import { canPlaceTask, exactTaskDynamicStartDomain, exactTaskStaticStartDomain } from "./placement";
@@ -12,6 +12,7 @@ import { preflight, validatePlan } from "./validate";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
 import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
+import { PreparedOperationalMealAuthority } from "./preparedOperationalMealAuthority";
 import { itinerantAgendaStructuralFrontier } from "./itinerantAgendaAuthority";
 import type { FutureItinerantAgendaWitnessV1 } from "./anonymousPipelineWitness";
 
@@ -1163,4 +1164,76 @@ test("itinerant assignment materialization validates the domain and atomically r
   assert.equal(selected?.itinerantUnitId,"itinerant-team:8");
   assert.deepEqual(selected?.requiredResourceIds,["cam-b","extra","sound-b"]);
   assert.equal(materializeItinerantUnitAssignment(input,task,"itinerant-team:9"),null);
+});
+
+test("exact itinerary explores an interior start that preserves the last REQUIRED operational break",()=>{
+  const {input,members,unitIds}=itineraryCounterexample();
+  const task={...members[0]!,dependencies:[],availability:[{start:40,end:100}]};
+  input.operationalMealPolicies=unitIds.map((id,index)=>({id:`required-break-${index}`,window:{start:0,end:90},duration:75,
+    resourceIds:input.itinerantUnits!.find(unit=>unit.id===id)!.resourceIds!,spaceIds:[]}));
+  const assigned=materializeItinerantUnitAssignment(input,task,unitIds[0]!)!;
+  const domain=standaloneForwardDynamicDomain(input,assigned,[],standaloneForwardStaticDomain(input,assigned,[]));
+  assert.equal(domain.intervals[0]?.start,40);assert.ok([...domain.starts()].includes(75));
+  const authority=new PreparedOperationalMealAuthority(input);
+  const early={...assigned,start:40,end:50};
+  assert.equal(authority.assess([early],[early],{remaining:100},"STANDALONE",0).status,"PRUNE");
+  const interior={...assigned,start:75,end:85};
+  assert.equal(authority.assess([interior],[interior],{remaining:100},"STANDALONE",0).status,"PASS");
+  let selected:readonly import("./contracts").ScheduledTask[]=[];
+  const result=searchExactItinerantAgenda(input,[task],unitIds,[],[],120,()=>true,scheduled=>{selected=scheduled;return "FOUND";});
+  assert.equal(result.outcome,"FOUND");assert.equal(selected[0]?.start,75);assert.ok(result.mealPrunes>0);
+});
+
+function coupledFutureProblem(impossible=false):PlannerNextProblem{
+  const input=problem([]);input.protectedMeal=undefined;
+  input.resources.push({id:"future-shared",availability:[{start:0,end:120}],presencePreference:"OFF"},
+    {id:"future-other",availability:[{start:0,end:120}],presencePreference:"OFF"});
+  input.spaces.push({id:"future-round-space",availability:[{start:0,end:120}]},
+    {id:"future-agenda-space",availability:[{start:0,end:120}]});
+  input.participants.push({id:"future-round-person",availability:[{start:0,end:120}]},
+    {id:"future-agenda-person",availability:[{start:0,end:120}]});
+  input.itinerantUnits=[{id:"itinerant-team:81",availability:[{start:0,end:120}],resourceIds:["future-shared"]},
+    {id:"itinerant-team:82",availability:[{start:0,end:120}],resourceIds:["future-other"]}];
+  const round:Task={id:"future-round-task",kind:"auxiliary",participantId:"future-round-person",spaceId:"future-round-space",
+    duration:10,dependencies:[],requiredResourceIds:["future-shared"],availability:[{start:20,end:30}]};
+  const agenda:Task={id:"future-agenda-task",kind:"auxiliary",participantId:"future-agenda-person",spaceId:"future-agenda-space",
+    duration:10,dependencies:[],requiredResourceIds:["future-shared"],allowedItinerantUnitIds:["itinerant-team:81"],
+    availability:[{start:20,end:impossible?30:40}]};
+  input.analyticalFutureRoundSynchronizations=[{policy:{id:"coupled-round",synchronization:"START_TOGETHER_WHILE_ALL_LANES_ACTIVE",
+    lanes:[{spaceId:round.spaceId,taskIds:[round.id],preparationMinutesBetweenRounds:0}]},tasks:[round]}];
+  input.analyticalFutureItinerantAgendas=[{identity:"itinerant-team:81+itinerant-team:82",unitIds:["itinerant-team:81","itinerant-team:82"],tasks:[agenda],prerequisiteTasks:[]}];
+  return input;
+}
+
+test("production future-round and itinerary adapters certify shared occupancy jointly and remain ephemeral",()=>{
+  const input=coupledFutureProblem(),snapshot=structuredClone(input);
+  const result=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID"});
+  assert.equal(result.status,"COMPLETE",JSON.stringify({reasons:result.reasonCodes,preflight:preflight(input)}));assert.deepEqual(input,snapshot);
+  const round=result.evidence.futureStructuralWitnesses.find(item=>item.kind==="ROUND_SYNCHRONIZATION");
+  const agenda=result.evidence.futureStructuralWitnesses.find(item=>item.kind==="ITINERANT_AGENDA");
+  assert.ok(round?.kind==="ROUND_SYNCHRONIZATION"&&agenda?.kind==="ITINERANT_AGENDA");
+  assert.equal(round.scheduledTaskPlacements[0]?.start,20);assert.equal(agenda.scheduledTaskPlacements[0]?.start,30);
+  assert.equal(result.scheduledTasks.some(task=>task.id.startsWith("future-")),false);
+  assert.equal(result.evidence.futureWitnessSet.finalSet?.identities.length,2);
+});
+
+test("production coupled future adapters prove DEAD_END when every resource combination conflicts",()=>{
+  const result=runExactItinerantPlanSearch(coupledFutureProblem(true),{standaloneCompletionSelection:"FIRST_HARD_VALID"});
+  assert.equal(result.status,"INFEASIBLE",JSON.stringify({reasons:result.reasonCodes,preflight:preflight(coupledFutureProblem(true))}));assert.deepEqual(result.scheduledTasks,[]);
+  assert.deepEqual(result.evidence.futureStructuralWitnesses,[]);
+  assert.equal(result.evidence.futureWitnessSet.futureWitnessSetFound,0);
+});
+
+test("joint future adapter input ordering and causal Evidence do not change the exact selected set",()=>{
+  const input=coupledFutureProblem(),inverted=structuredClone(input);
+  inverted.tasks.reverse();inverted.resources.reverse();inverted.participants.reverse();inverted.itinerantUnits?.reverse();
+  inverted.analyticalFutureRoundSynchronizations?.forEach(future=>future.tasks.reverse());
+  inverted.analyticalFutureItinerantAgendas?.forEach(future=>{future.tasks.reverse();future.unitIds.reverse();});
+  const first=runExactItinerantPlanSearch(input,{standaloneCompletionSelection:"FIRST_HARD_VALID",causalDiagnostic:false});
+  const second=runExactItinerantPlanSearch(inverted,{standaloneCompletionSelection:"FIRST_HARD_VALID",causalDiagnostic:true});
+  assert.equal(first.status,"COMPLETE");assert.equal(second.status,first.status);
+  assert.equal(first.evidence.branchesExplored,second.evidence.branchesExplored);
+  assert.deepEqual(first.scheduledTasks,second.scheduledTasks);
+  assert.deepEqual(first.evidence.futureWitnessSet,second.evidence.futureWitnessSet);
+  assert.deepEqual(first.evidence.futureStructuralWitnesses,second.evidence.futureStructuralWitnesses);
 });
