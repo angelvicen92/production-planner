@@ -2,6 +2,8 @@
 
 **ASST-010: INCONCLUSIVE, S2 sin propuesta ni certificado global. A2-ASSIST-8: PASS, 266/266, S10, dos runs limpios con material completo y accounting idénticos al baseline.** No se alcanzan AcceptedException, rollback, redo ni divergencia canónicos. El PR sigue draft; gate de producción/merge incompleto.
 
+Auditoría posterior, sólo diagnóstica sobre `4f473cbc`: [S1 y calidad frente al humano](A2-S1-CAUSAL-QUALITY-AUDIT.md). Siete full A2 preservan material y accounting; la subida histórica de tiempo no se reproduce estable. La comparación oficial queda bloqueada y el contraste con CAM1 de Fuente 06 revela una brecha heredada del fixture. Esta Evidence no cambia el veredicto ASST-010 ni implementa otra poda.
+
 Mismo [PR #1104](https://github.com/angelvicen92/production-planner/pull/1104), rama `codex/asst-010-explicit-scope-continuation`. Esta unidad parte del HEAD remoto/local verificado `8d28c10dd9f541c1370e50a6d23588d12e43caea`; base remota `5e46168daa35d755bcb9a2573ed81647d8b466a2`. Los deltas anteriores de proyección efímera y matching por grafo se conservan. Su historia y el fallo completo de 8d permanecen en el JSON; `stylingGeometryAudit` identifica esta unidad y sus dos ciclos.
 
 ## X — fallo y recorrido de producto
