@@ -1,5 +1,9 @@
 # A2 — corrección CAM1 y límite de completitud
 
+Continuación diagnóstica: [contrafactual P15/Totales](A2-CAM1-STRUCTURAL-ORDER-DIAGNOSTIC.md).
+La inversión aislada conserva el agotamiento global; una arquitectura posterior
+certifica el día con ambos órdenes. No se integra un delta de prioridad.
+
 **Resultado B: CORRECTED_BUT_BLOCKED.** CAM1 está representada correctamente;
 el antiguo falso positivo queda eliminado. Dos replays automáticos vacíos agotan
 100.000 ramas en S1: **0/266 aceptadas, sin ScopeProposal ni S10**. Existe una
