@@ -1,91 +1,92 @@
-# Future Collective Participant Closure: contrato de incertidumbre
+# A2 — suficiencia del cierre colectivo
 
-PR #1103, siempre draft; rama `codex/preservar-cierre-colectivo-cross-stage`.
-Base `codex/implementar-margenes-especificos-de-participante` @ `c00bb3d0b6211badad8d3b1352741b3dac1672ee`.
-Head anterior auditado: `8a2bfa8ec9863ef8b232797792fab641e9b99c77`. Sin merge ni cherry-pick.
+**Diagnóstico causal cerrado; suficiencia funcional A2: INCONCLUSIVE.** Esta unidad añade exclusivamente diagnóstico y prototipos aislados. El solver productivo conserva el resultado **0/266** y sus decisiones, budgets, timeouts, scopes, protección y accounting. No hay capacidad productiva nueva, cumplimiento de 266/266, imposibilidad global, merge ni otro PR.
 
-## Resultado actual: reorientación C
+PR #1103, base #1085 (`c00bb3d`). El contrato productivo vigente sigue en [A2-COLLECTIVE-CLOSURE-CONTRACT.json](A2-COLLECTIVE-CLOSURE-CONTRACT.json). El diagnóstico compacto está en [A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json](A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json). [A2-ASSIST-8-assisted-completion.json](A2-ASSIST-8-assisted-completion.json) conserva el histórico 209; [A2-COLLECTIVE-CLOSURE.json](A2-COLLECTIVE-CLOSURE.json) conserva el anterior 38. Ninguno se presenta como certificado actual.
 
-El diseño anterior promovía condiciones necesarias individuales a un certificado conjunto. Eso contradice las dependencias HARD y la exclusividad de recursos: dos predecesores pueden tener dominio individual `{0}` y ser conjuntamente imposibles. Esa promoción no admite una reparación conservando su significado; se retira y se limita el certificado a un contexto conjunto suficiente y reproducible.
+## X — causa demostrada
 
-**Dos A2-ASSIST-8 limpios del contrato corregido coinciden en 0/266: S1 inconcluso, sin propuesta ni aceptación.** No es Hall, agotamiento exhaustivo ni budget exhaustion: el scope no puede aportar 104 predecesores necesarios para el certificado exigido. Ningún explorador que produce contexto para ese gate contiene esas identidades. El check de cobertura devuelve `UNSUPPORTED_STANDALONE_SHAPE` / `FUTURE_COLLECTIVE_CLOSURE_INCONCLUSIVE`, con cero ramas. No afirma que esas tareas sean imposibles; demuestra que este call path no puede certificar su geometría.
+Dos replays limpios independientes por estado, mediante el runner Assisted exportado, reproducen:
 
-No se presenta esto como mejora de extensibilidad ni como imposibilidad global de A2. Tampoco se mantiene la conclusión anterior de que S1/S2 tenían un certificado completo. Rehabilitar su aceptación exigiría cambiar la prueba positiva o aportar otro contexto suficiente; no se implementa coupling pipeline–Reality C–Reality A/B en esta unidad. El PR sigue sin estar listo para integración productiva.
+| Estado | Aceptadas | Resultado material |
+|---|---:|---|
+| Padre `c00bb3d` | 209/266 | S1–S9: 19→38→46→65→75→111→169→207→209. La relajación OUT-aware pasa de 19/19 a 17/19 en S3. |
+| Anterior `8a2bfa8` | 38/266 | S3: 92 geometrías, 14.884/100.000 ramas, sin exhaustion. Rechazo condicionado a S1/S2 protegidos. |
+| Productivo actual `176cfa4` | 0/266 | Guardia de cobertura: 209 ancestros exigidos, 104 sin productor de contexto, cero ramas. No prueba inviabilidad. |
 
-Evidence vigente: [A2-COLLECTIVE-CLOSURE-CONTRACT.json](A2-COLLECTIVE-CLOSURE-CONTRACT.json). [A2-COLLECTIVE-CLOSURE.json](A2-COLLECTIVE-CLOSURE.json) conserva observaciones históricas del head anterior; sus fingerprints positivos no son certificados suficientes.
+**Los 209 también son dependencias directas de cierre, comidas u OUT. No existe aquí un subconjunto meramente transitivo que pueda borrarse.** Son las 247 tareas fuente menos los 19 cierres y 19 OUT; las 19 comidas completan las 266 obligaciones. El inventario JSON identifica cada ancestro por clase y proveedor; distingue representación estática de realización conjunta.
 
-## Defectos reproducidos antes de corregir
+| Clase de ancestros | Cantidad | Efecto que el certificado debe conservar |
+|---|---:|---|
+| Pipeline actual: IN, entrada, vocal, Main y operaciones anchored | 82 | IN limita paquetes/releases; entrada comparte Estilismo con salida; vocal/Main fijan ocupación de participante, coach, unidad y recursos; anchored preserva adyacencia. Condicionan comidas y releases posteriores. |
+| Totales en rondas | 19 | Releases propios, ocupación de dos lanes/participantes, preparación entre rondas y pausa operacional compartida. El matching de rondas debe aportar tareas y preparaciones al mismo contexto. |
+| Reality A/B | 4 | Unidad concreta y recursos físicos, transición 15, comidas y disponibilidad. Comparten recursos con la cadena C/EVA; witnesses independientes no bastan. |
+| P14: Giratuto, Pasillo, Redes y corners | 58 | Releases directos, ocupación de participante y espacios, pausa de P14 y huecos de Sodexo/OUT. No se descargan con un earliest-end individual. |
+| P15: Croma, Estrellas y Sillón | 36 | CAM 2 compartida entre espacios; releases, participantes, continuidad, setup 10 y reentry prohibido; pausa P15. Necesitan geometría/matching compatible con las demás unidades. |
+| Cadena técnica C/EVA y peer joint | 8 | Capacidad y continuidad de recursos, Eva desde 16:00, fases/adyacencia y joint Alfombra. La autoridad actual prueba reservas exactas individualmente, pero no las incorpora como unidad al set conjunto. |
+| Totales Post joint | 2 | Dependen de Main/Alfombra, sincronizan dos participantes y elevan el release hacia Estilismo/OUT. |
 
-Tres tests fallaron contra la implementación anterior:
+Los **104** son P14+P15 (**94**) y cadena/peer+Post (**10**). Añadir la cadena al set sólo cubriría ocho; no resolvería los 96 restantes. La pérdida inicial del padre sigue siendo S3: el joint `10069+10129` a 1105–1115 deja dos cierres con el único slot OUT-compatible 1130; `10215` añade un tercero. Se deriva de autoridad canónica, no de horarios humanos.
 
-1. Cierres de duraciones 10/5/5: `NECESSARY_ONLY = ABSTAIN / UNCERTIFIED_GEOMETRY`. Una realización independiente, con transporte construido por su autoridad, pasa `validatePlan(...).hardValid`. La integración devolvía `INFEASIBLE` sin certificado negativo.
-2. Dos participantes, dos cierres y dos slots: ambos predecesores duran 10, tienen dominio `{0}` en espacios diferentes y requieren el mismo recurso exclusivo. El segundo no cabe junto al primero; `CERTIFY` devolvía `PASS/certified=true` usando sólo sus earliest ends individuales.
-3. El terminal de comidas se abstiene en M1 y acepta M2. Antes sólo visitaba M1; ahora encuentra M2. Una abstención parcial tampoco elimina sus completaciones.
+## Y — alcance exacto y contrapruebas
 
-Las regresiones comprueban también contexto suministrado incompatible, contexto reparado que sí certifica, todas las comidas inconclusas, presupuesto agotado después de incertidumbre, alternativas de Stage y del set de futuros, input inmutable y testigos fuera de propuestas/protecciones.
+`NECESSARY_ONLY/PASS` prueba sólo que la relajación de slots conserva matching; **no certifica realización conjunta**. Un Hall bajo dominios optimistas permite rechazar ese contexto; no demuestra inviabilidad de otro Main/bundle. `ABSTAIN`, cobertura ausente y budget exhaustion conservan incertidumbre.
 
-## Contrato corregido y call path
+`CERTIFY` exige ancestros concretos conjuntos y comidas canónicas; replay de placement; geometría de slots unitarios disjuntos; matching completo; validación de comidas y transporte OUT existente. El fingerprint está condicionado a ese contexto. **No reemplaza las autoridades REQUIRED de chain/round/setup, ni las pausas operacionales.** Una contraprueba nueva obtiene certificado de placement/cierre con dos miembros técnicos separados por un hueco: el prototipo que compone la cadena exacta lo rechaza. El gate productivo necesita esas garantías de sus explorers además del cierre.
 
-- `INFEASIBLE`: sólo certificado necesario sound, Hall o contradicción necesaria entre una comida provisional y sus predecesores. Autoriza descartar esa rama.
-- `PASS / NECESSARY_ONLY`: sobrevive el matching necesario; `certified=false`. No prueba realización conjunta de predecesores ni planning completo.
-- `ABSTAIN`: no es prueba negativa ni aceptación. Comidas y contextos restantes siguen explorándose; sin certificado, el resultado agregado conserva incertidumbre.
-- `PASS / CERTIFY`: exige ancestros de cierre, comidas y OUT en contexto; replay conjunto de prerequisites mediante `canPlaceTask`, matching válido, witness de comidas y continuación de la autoridad de transporte existente. No agenda ni persiste predecesores futuros.
+Las otras contrapruebas prueban: ancestros individualmente posibles pero incompatibles por recurso exclusivo; pérdida colectiva de slots; OUT individual imposible; ancestro ordinario omitido; presupuesto insuficiente. Ninguna incertidumbre genera witness positivo.
 
-`evaluate` → `closureCheck` → `completeLeaf` ya no poda una abstención necesaria. Antes de construir futuros, las comidas sólo reciben el check necesario cuando todavía falta su contexto conjunto; el certificado se exige en `futureWitnessSet.globalGate`. Sin futuros que aporten contexto, se exige en la continuación exacta de comidas del scope.
+No se ha reducido contexto para aceptar A2. Se pueden comprimir datos en un witness conjunto que conserve releases, ocupaciones y políticas; las capacidades examinadas no han demostrado todavía ese sustituto completo para esta frontera.
 
-El meal DFS conserva las abstenciones terminales mientras prueba otras combinaciones; sólo un `ACCEPT` permite completar. `PARTICIPANT_MEAL_TERMINAL_ABSTAIN` se distingue de infeasibilidad conjunta y de budget exhaustion. No cuenta incertidumbre como rechazo por prueba negativa.
+## Z — qué se decidió antes de S1/S2
 
-El coordinador de futuros agrega `INCONCLUSIVE`, incluso tras visitar todos sus candidatos. Sus exploradores mantienen la continuación existente: `DEAD_END` allí significa probar el siguiente candidato; un registro separado evita convertir incertidumbre en certificado universal de infeasibilidad. La misma agregación llega al Stage. La comprobación previa de cobertura evita buscar un certificado que ninguna alternativa de ese call path puede construir.
+El probe desde limpio utiliza arquitecturas y matching autorizados, la reserva técnica exacta, la agenda A/B exacta y Hall necesario. No recibe fingerprints ni placements históricos.
 
-## Contraste con el head anterior
+- Primera arquitectura: 92 reservas técnicas; 50 Hall y 42 relajaciones compatibles; cero agendas A/B. Frontiers 960/965/970/975.
+- Arquitectura 29: pareja técnica–A/B encontrada en **55.752/100.000** ramas; cadena desde 975; matching necesario 19/19. Main y pausa cambian respecto a la primera arquitectura. Las 94 tareas quedan exclusivamente como contexto efímero; aún faltan **115** ancestros: P14/P15 94, rondas 19 y Post 2.
+- Replay con S1 protegido, incluida su pausa aceptada: 100 geometrías nominales de soporte, una hoja hard-valid, 92 reservas, ningún par, **4.398** ramas. Esto sólo agota esa frontera: el generador varía Styling, no todas las geometrías vocales posibles.
+- Replay con S1/S2 protegidos, incluidas sus pausas: **100.000/100.000**, sin pareja; queda inconcluso por presupuesto. La prueba anterior de las 92 geometrías sigue siendo condicional al bundle de aquella ejecución.
 
-El benchmark anterior se ejecutó dos veces desde limpio en un worktree detached de `8a2bfa8`, sin cambiar código ni presupuesto. Reproduce material determinista y todas las cifras:
+Existe una alternativa de Main/bundle antes de S1 para la pareja probada. **No está demostrado que cambiar Main sea necesario, ni que baste cambiar el soporte antes de S2.** La dependencia pendiente es una continuación exacta de alternativas vocales/soporte bajo Main protegido; las cotas y la frontera nominal Styling no deciden esa pregunta. Los replays preservan decisiones y pausas aceptadas dentro de cada ejecución.
 
-| Observación bajo S1/S2 protegidos | Resultado |
-| --- | ---: |
-| Completadas / total | 38 / 266 |
-| Geometrías exactas de S3 visitadas | 92 / 92 |
-| Ramas / presupuesto | 14.884 / 100.000 |
-| Capacidad read-only: Hall / PASS necesario | 50 / 42 |
-| Podas efectivas de otra autoridad: dominio individual cero | 16 |
-| Podas efectivas del gate colectivo: Hall | 34 |
-| Hojas completas / geometrías que llegan a futuros | 76 / 42 |
-| Candidatos A/B / combinaciones completas | 0 / 0 |
-| Abstenciones de cierre / budget exhaustion | 0 / no |
+## W — reparación mínima y archivos
 
-Las 50 clasificaciones Hall read-only incluyen 16 geometrías que la autoridad individual ya había descartado. No son 50 llamadas efectivas al gate. Las 42 restantes agotan la agenda A/B exacta antes de fronteras 960, 965, 970 o 975.
+El prototipo acotado compone **una** cadena exacta existente → comidas exactas → cierre/matching → OUT → validador HARD/REQUIRED. Rechaza el primer candidato que destruye su continuación, acepta otro con witness conjunto y avanza a un segundo Stage conservando lo aceptado. No añade un scheduler residual ni interviene en decisiones productivas.
 
-El S3 histórico no fallaba por convertir una abstención **de cierre** en `DEAD_END`: ese conteo era cero. La prueba es condicional a esas decisiones protegidas. No demuestra que todas las geometrías posibles de S1/S2 o todo A2 sean imposibles. El nuevo automático no llega a S3 porque no acepta S1 sin su prueba exigida; no se publican las 92 visitas históricas como resultado del head corregido.
+Para A2 se probó también el residual con el solver existente: 94 tareas efímeras fijas; scope analítico de 96 productivas y 19 comidas; 19 rondas futuras. Incluir comidas evita confundir sus IDs con dependencias productivas sin resolver. Conserva el ledger 100k. Una primera hoja ordinaria llega a 13.204 ramas y reduce matching **19→16**, afectando C01/C09/C17. Se consumen las 86.796 restantes buscando continuación; P15 examina 241 geometrías/matchings y una primera realización. Termina `STANDALONE_BRANCH_BUDGET_EXHAUSTED`, sin certificado positivo. Hall necesario demuestra que la pareja técnica–A/B tampoco basta para aceptar el Stage.
 
-## Validez de S1/S2 y separación de pruebas
+**Reparación propuesta, todavía pendiente de prueba funcional:** conectar la continuación conjunta a la elección de bundle antes de aceptar S1/S2; conservar los productores de cadena, rondas, A/B, P14/P15, Post y comidas en un contexto acumulado. Reutilizar sus explorers y continuations. El experimento mínimo pendiente es comprobar releases/slots residuales durante esa composición y exigir un witness exacto compatible con todas esas autoridades dentro del ledger vigente. No eliminar ancestros, aceptar incertidumbre, aumentar budgets ni crear una nueva búsqueda global.
 
-| Capa histórica | Qué está demostrado |
-| --- | --- |
-| Future collective necessary capacity | Matching 19/19 bajo cada snapshot; `certified=false` |
-| Certified future collective completion | No demostrado; ambos fingerprints anteriores carecían de contexto suficiente |
-| Future structural witness set | Witnesses de supporting pipeline, rounds y A/B; cobertura limitada a sus unidades |
-| Global meal feasibility | Witness/gate bajo su contexto; no demuestra ancestros pendientes ni completitud del día |
+Archivos de esta unidad:
 
-La auditoría read-only lista por identidad los 104 predecesores sin proveedor de contexto en ambas proyecciones. Incluye la cadena REQUIRED C/EVA/alfombra y otras obligaciones participantes. Un witness técnico independiente no equivale a geometría conjunta incorporada a ese set. No hay último witness **completo** colectivo demostrado en S1/S2; sólo capacidad necesaria y pruebas parciales separadas.
+- `engine/planner-next/benchmarks/collectiveClosureSufficiencyProbe.ts` y `.spec.ts`: composición acotada y contrapruebas.
+- `engine/planner-next/benchmarks/a2ClosureSufficiencyDiagnostic.ts` y `.spec.ts`: inventario, replay canónico, frontera y residual aislados, neutralidad.
+- `server/benchmarks/runA2CollectiveClosureEvidence.ts`: reutiliza el runner; corrige sólo reconstrucción diagnóstica de recursos/unidades aceptados y conserva pausas; recopila y emite Evidence compacta.
+- Este documento y `A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json`.
 
-Las decisiones históricas no se reescriben. El runner conserva sus checks de preservación tras cada aceptación; el nuevo recorrido no acepta ninguna. Los tests de Assisted y del servicio verifican además preservación real de placements, decisiones y comidas protegidas.
+Ningún archivo productivo del solver, canon, DB, UI, scope resolver, presupuesto o test de expectativas de producto cambia. Los históricos grandes se conservan; la Evidence nueva evita duplicar snapshots completos.
 
-## Hall histórico y precedentes
+## M — validación y aceptación funcional
 
-La primera pérdida necesaria sigue en S3: el joint `task:10069` + `task:10129` en 1105–1115 lleva sus descendientes a end mínimo 1125 y sus cierres a 1130; matching 19→18. `task:10215` añade el tercer cierre al mismo slot, 18→17. En S9 los starts directos 1130/1135 ocultan que 1135 termina en 1140 y no permite un OUT de cinco minutos antes del deadline. El override cierre→OUT sigue siendo 0, mediante `participantGapMinutes`.
+**76 tests focales PASS**, incluidos diez nuevos tests de suficiencia, contrapruebas, replay, neutralidad y determinismo. TypeScript y build PASS. Dos replays limpios por cada uno de los tres estados; dos probes por cada frontera. El residual con diagnóstico desactivado/activado coincide en status, decisiones, certificado, counters y presupuesto; su comparación está en la Evidence.
 
-El diagnóstico S1–S9 histórico conserva dominios, releases pendientes, Hall, comidas y OUT. Las identidades sólo son Evidence. De #1083/#1084 se reutilizaron conceptualmente matching/Hall, preparación/cache y continuación del meal solver; no se importaron commits y se descartan sus conclusiones A2 anteriores a las autoridades actuales.
+El [Planner Engine CI heredado de #1085](https://github.com/angelvicen92/production-planner/actions/runs/37839622776), job `113525400199`, tiene tres fallos en 2775 tests (2771 PASS, uno skipped):
 
-## X/Y/Z/W/M y validación
+| Fallo heredado | Clasificación y límite |
+|---|---|
+| A2-ASSIST-1 propone 19 con 6000 | `STANDALONE_BRANCH_BUDGET_EXHAUSTED`: core 2292 + standalone 3708 = 6000; `proposalCount=0`, esperado 1. La expectativa se conserva. |
+| Aislamiento Planner Next | Frontera diagnóstica no registrada: primer archivo señalado `server/benchmarks/runA2Assist8ManualEvidence.spec.ts`. No equivale a prueba de una entrada productiva nueva; el allowlist no se amplía. |
+| ASST-010 rollback/divergence | El prerequisite del escenario falla por `STANDALONE_BRANCH_BUDGET_EXHAUSTED`, `NO_PROPOSAL` frente a `PROPOSAL`. El escenario no llega a demostrar rollback/divergence; no se rebaja su expectativa. |
 
-- **X:** poda sin certificado negativo y falso certificado conjunto de cierre.
-- **Y:** `ABSTAIN !== PASS` tratado como dead end, DFS de comidas truncado y cotas individuales promovidas a realización conjunta.
-- **Z:** alternativas no examinadas y garantías futuras no demostradas, incluida la interpretación positiva de S1/S2.
-- **W:** incertidumbre agregada, continuación de comidas/futuros, replay de prerequisites y certificado limitado a contexto suficiente; cobertura ausente produce resultado inconcluso.
-- **M:** regresiones pasan; dos A2 nuevos equivalentes bloquean S1 con 104 predecesores sin contexto, sin aceptar Stage. El head anterior conserva 38/266 y 92 geometrías.
+La reproducción focal del padre da **8 PASS / 3 FAIL**. Con el gate actual, los mismos archivos más A2-ASSIST-8 dan **7 PASS / 5 FAIL**: el contrato de budget pequeño también falla al recibir INCONCLUSIVE y A2-ASSIST-8 espera 19, recibe 0. El fallo canónico y ASST-010 pasan a bloquear por cierre inconcluso. Son consecuencias productivas del head `176cfa4`, no correcciones ni fallos nuevos introducidos por este diagnóstico. No se declara CI de producto verde.
 
-`npm run check`, `npm run build`, 185 tests focales y `git diff --check`: PASS. Suites: futureCollectiveParticipantClosure, participantMeals, exactItinerantPlan, assistedPlanning, assistedProposalService, placement, transportGrouping, participantTransition, futureStructuralWitnessSet, collectiveClosureCapacityProbe y exactItinerantPlan.memoization.
+Aceptación funcional pendiente: una ejecución limpia acepta al menos S1/S2 con certificado conjunto suficiente; cada Stage posterior conserva su continuación y los placements/pausas ya aceptados; contrapruebas permanecen negativas o inconclusas; source266, disponibilidad C01 15:30/C02–C19 19:00, margen default5, salida.after0/OUT.before0, Estilismo1, IN target3/max3/gap30 y HARD/REQUIRED permanecen intactos. No exigir fingerprints históricos en esa ejecución ni contabilizar witnesses como obligaciones aceptadas.
 
-Dos A2 limpios corregidos comparan scopes, outcomes, ramas, snapshots/fingerprints, preparaciones, comidas, operational meals, set completo de futuros, certificados y HARD/REQUIRED. Dos runs limpios separados contrastan el head anterior. Budgets, timeouts, ordering, configuración A2 y HARD/REQUIRED siguen iguales. No hay cambios DB/schema/UI/API/ORC/V3/V4 ni scheduler nuevo de transporte, comidas o prerequisites.
+Reproducción, con worktrees detached del padre y anterior y node_modules disponibles:
 
-CI alojado se contrasta por SHA en el body del PR; los tests focales descritos son locales. No se declara CI PASS sin ejecución publicada.
+```sh
+node --import tsx server/benchmarks/runA2CollectiveClosureEvidence.ts --collect-sufficiency-observations --parent-root /path/to/c00bb3d --previous-root /path/to/8a2bfa8 --observations-directory /tmp/a2-closure
+node --import tsx server/benchmarks/runA2CollectiveClosureEvidence.ts --sufficiency-diagnosis --observations-directory /tmp/a2-closure
+```
+
+Las observaciones proceden de `runA2Assist8Evidence({writeEvidence:false})` por defecto. No ejecutar el CLI histórico que sobrescribe el 209 para este contraste. La Evidence nueva es un suplemento diagnóstico del contrato vigente; su conclusión permanece **INCONCLUSIVE** hasta obtener la continuación residual positiva y decidir la alternativa de soporte bajo Main protegido.

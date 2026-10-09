@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { buildCanonicalA2AssistedStage1Fixture } from "../../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture";
 import { PreparedFutureCollectiveParticipantClosure, futureCollectiveClosureEvidenceKeys } from "../../engine/planner-next/futureCollectiveParticipantClosure";
 import { exactTaskStartDomain, diagnoseTaskPlacement, canPlaceTask } from "../../engine/planner-next/placement";
@@ -10,6 +10,9 @@ import { engineTimeToMinute } from "../../engine/planner-next/integration/engine
 import type { ScheduledTask } from "../../engine/planner-next/contracts";
 import { runA2Assist8Evidence } from "./runA2Assist8Evidence";
 import { buildAssistedProblem, createPlanningScope } from "../../engine/planner-next/assistedPlanning";
+import { inventoryA2ClosureAncestors, replayA2AcceptedTasks, replayA2OperationalMeals,
+  probeA2ResidualFrontier, probeA2PipelineChainAgenda } from "../../engine/planner-next/benchmarks/a2ClosureSufficiencyDiagnostic";
+import { createHash } from "node:crypto";
 
 const matchingCardinality = (domains: Array<{ closureTaskId: string; starts: number[] }>) => {
   const byId = new Map(domains.map(row => [row.closureTaskId, row.starts])), owner = new Map<number, string>();
@@ -31,12 +34,7 @@ export function diagnoseA2CollectiveClosureStages() {
   const { adapter } = buildCanonicalA2AssistedStage1Fixture();
   const problem = adapter.problem, byId = new Map(problem.tasks.map(task => [task.id, task]));
   const authority = new PreparedFutureCollectiveParticipantClosure(problem);
-  const state = (rows: any[]): ScheduledTask[] => rows.flatMap(row => {
-    const task = byId.get(`task:${row.taskId}`);
-    if (!task) return [];
-    const assigned = row.itinerantTeamId ? materializeItinerantUnitAssignment(problem, task, `itinerant-team:${row.itinerantTeamId}`)! : task;
-    return [{ ...assigned, start: engineTimeToMinute(row.startPlanned), end: engineTimeToMinute(row.endPlanned) }];
-  });
+  const state = replayA2AcceptedTasks;
   let before: ScheduledTask[] = [];
   const stages = baseline.iterations.filter((stage: any) => stage.acceptedSnapshotAfter).map((stage: any) => {
     const fixed = state(stage.acceptedSnapshotAfter), prior = authority.evaluate(before, [], undefined, "NECESSARY_ONLY");
@@ -108,13 +106,10 @@ export function auditPriorA2CollectiveCertificates() {
   const byId = new Map(problem.tasks.map(task => [task.id, task]));
   const authority = new PreparedFutureCollectiveParticipantClosure(problem);
   return prior.first.slice(0, 2).map((stage: any, index: number) => {
-    const fixed: ScheduledTask[] = stage.accepted.flatMap((row: any) => {
-      const task = byId.get(`task:${row.taskId}`); if (!task) return [];
-      const assigned = row.itinerantTeamId ? materializeItinerantUnitAssignment(problem, task, `itinerant-team:${row.itinerantTeamId}`)! : task;
-      return [{ ...assigned, start: engineTimeToMinute(row.startPlanned), end: engineTimeToMinute(row.endPlanned) }];
-    });
+    const fixed = replayA2AcceptedTasks(stage.accepted);
     const scope = createPlanningScope({ kind: "ids", value: stage.scope.join(",") }, {}, stage.scope.map((id: number) => `task:${id}`));
-    const built = buildAssistedProblem(problem, scope, fixed, new Set(problem.tasks.map(task => task.id)));
+    const built = buildAssistedProblem(problem, scope, fixed, new Set(problem.tasks.map(task => task.id)),
+      replayA2OperationalMeals(stage.operationalMeals ?? []));
     const represented = new Set([...built.problem.tasks,
       ...(built.problem.analyticalFutureRoundSynchronizations ?? []).flatMap(future => future.tasks),
       ...(built.problem.analyticalFutureItinerantAgendas ?? []).flatMap(future => [...future.tasks, ...future.prerequisiteTasks])].map(task => task.id));
@@ -217,8 +212,103 @@ export async function runA2CollectiveClosureEvidence() {
   return result;
 }
 
+/** Compact diagnostic Evidence from independently replayed, immutable states.
+ * The observations directory contains the two-run assertions of the exported
+ * Assisted runner and pair probes; it is never loaded by product planning. */
+export function runA2CollectiveClosureSufficiencyEvidence(observationsDirectory: string) {
+  const read = (name: string) => JSON.parse(readFileSync(resolve(observationsDirectory, name), "utf8"));
+  const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const inventory = inventoryA2ClosureAncestors();
+  const replays = ["parent", "previous", "current"].map(label => {
+    const replay = read(`closure-replay-${label}.json`), summary = read(`closure-replay-${label}-summary.json`);
+    assert.equal(summary.deterministic, true);
+    assert.equal(hash(collectiveClosureDeterministicMaterial(replay)), summary.materialDigest);
+    return { state: label, completed: replay.completedObligationCount, twoCleanRunsEquivalent: true,
+      materialDigest: summary.materialDigest, stages: summary.stages,
+      reasons: replay.firstBlocker?.reasonCodes ?? [] };
+  });
+  assert.deepEqual(replays.map(replay => replay.completed), [209, 38, 0]);
+  const pairObservations = [0, 1, 2].map(mode => {
+    const observation = read(`closure-pair-matrix-${mode}.json`); assert.equal(observation.deterministic, true);
+    assert.equal(observation.first.fullClosureCertificate, false); assert.equal(observation.first.acceptedStages, 0);
+    return observation;
+  });
+  const pair = pairObservations[0]!.first.selected; assert.ok(pair);
+  const plainResidual = probeA2ResidualFrontier(pair, false), diagnosticResidual = probeA2ResidualFrontier(pair, true);
+  assert.deepEqual(diagnosticResidual, plainResidual, "diagnostic must preserve residual decisions and accounting");
+  const baseline = diagnoseA2CollectiveClosureStages();
+  const result = { conclusion: "INCONCLUSIVE", productionCapabilityAchieved: false,
+    sourceAnchors: { parent: "c00bb3d0b6211badad8d3b1352741b3dac1672ee", previous: "8a2bfa8ec9863ef8b232797792fab641e9b99c77",
+      currentProduct: "176cfa40bf9ac4303f73b750c4e74b1b437609cb" },
+    inventory: { ...inventory, identities: undefined },
+    replays, baselineCapacity: baseline.stages.map((stage: any) => ({ stage: stage.stage, completed: stage.completed,
+      matching: stage.afterMatchingCardinality, required: stage.closuresPending, hall: stage.hall,
+      firstCausalDecision: stage.firstCausalDecision })),
+    pairExperiments: pairObservations.map(({ mode, protectedCount, deterministic, first }) => ({ mode, protectedCount,
+      twoRunsEquivalent: deterministic, ...first, selected: first.selected ? {
+        mainDigest: first.selected.mainDigest, chainRoot: first.selected.chainRoot, matching: first.selected.matching,
+        pendingTaskIds: first.selected.pendingTaskIds, agendaPlacements: first.selected.agendaPlacements,
+        ephemeralTaskCount: first.selected.tasks.length, ephemeralGeometryDigest: hash(first.selected.tasks) } : null })),
+    residualExperiment: { neutralAndDeterministic: true, ...plainResidual },
+    certificateScope: "Joint supplied ancestors + canonical meals + unit-slot closure matching + OUT; exact chain/round/setup/operational authorities remain required.",
+    missingProof: "A bounded joint residual continuation for the 96 productive tasks, 19 meals and 19 round tasks compatible with the chosen pipeline/chain/agenda. Also unresolved: alternative vocal/support bundle under protected Main; the existing fixed-support frontier varies styling geometry only.",
+    minimalNextExperiment: "Use the existing continuations to test residual deadline/slot preservation before committing a bundle, retaining all canonical context and the 100k ledger. Require an exact positive witness; BUDGET/ABSTAIN stay unknown. No new global scheduler.",
+    ci: { inheritedRun: "https://github.com/angelvicen92/production-planner/actions/runs/37839622776", inheritedJob: 113525400199,
+      inherited: ["A2-ASSIST-1 canonical 19 at 6000: proposalCount 0 vs 1", "Planner Next isolation: unlisted server/benchmarks/runA2Assist8ManualEvidence.spec.ts",
+        "ASST-010: standalone branch budget exhausted, NO_PROPOSAL vs PROPOSAL"],
+      focusedParent: { passed: 8, failed: 3 }, focusedCurrent: { passed: 7, failed: 5 },
+      additionalCurrentFailures: ["A2-ASSIST-1 small-budget contract: INCONCLUSIVE is neither proposal nor budget exhaustion",
+        "A2-ASSIST-8 first accepted Stage: 0 vs 19"], productExpectationsChanged: false },
+  };
+  writeFileSync("docs/evidence/A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json", `${JSON.stringify(result)}\n`);
+  console.log(JSON.stringify({ conclusion: result.conclusion, replayCounts: replays.map(replay => replay.completed),
+    pair: pairObservations[0]!.first.outcome, residual: plainResidual.status, neutral: true }));
+  return result;
+}
+
+/** Reproducible read-only collection: each revision runs from clean memory and
+ * preserves only what it accepts. Detached roots are supplied explicitly. */
+export async function collectA2ClosureSufficiencyObservations(parentRoot: string, previousRoot: string, directory: string) {
+  mkdirSync(directory, { recursive: true });
+  const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  for (const [label, root] of [["parent", parentRoot], ["previous", previousRoot], ["current", "."]]) {
+    const runner = (await import(pathToFileURL(resolve(root!, "server/benchmarks/runA2Assist8Evidence.ts")).href)).runA2Assist8Evidence as typeof runA2Assist8Evidence;
+    const first = await runner(), second = await runner();
+    assert.deepEqual(collectiveClosureDeterministicMaterial(first), collectiveClosureDeterministicMaterial(second));
+    assert.deepEqual(first.firstBlocker, second.firstBlocker);
+    const summary = { label, completed: first.completedObligationCount, deterministic: true,
+      materialDigest: hash(collectiveClosureDeterministicMaterial(first)),
+      stages: first.iterations.map(stage => ({ stage: stage.ordinal, completed: stage.completedObligationCount,
+        branches: stage.branchesExplored, accepted: stage.acceptedStageFingerprint ?? null,
+        protected: stage.protectedPlacementsPreserved, macroDomain: stage.standaloneDiagnostic?.macroDomainSizes,
+        pending: stage.standaloneDiagnostic?.futureCollectiveClosurePendingPredecessorTaskIds })) };
+    writeFileSync(resolve(directory, `closure-replay-${label}.json`), JSON.stringify(first));
+    writeFileSync(resolve(directory, `closure-replay-${label}-summary.json`), JSON.stringify(summary));
+  }
+  const parent = JSON.parse(readFileSync(resolve(directory, "closure-replay-parent.json"), "utf8"));
+  for (const mode of [0, 1, 2]) {
+    const stage = mode ? parent.iterations[mode - 1] : null;
+    const fixed = stage ? replayA2AcceptedTasks(stage.acceptedSnapshotAfter) : [];
+    const meals = stage ? replayA2OperationalMeals(stage.proposedSnapshotOperationalMeals) : [];
+    if (stage) { assert.deepEqual(stage.selectedSetupPreparations, []); assert.deepEqual(stage.selectedRoundPreparations, []); }
+    const first = probeA2PipelineChainAgenda(fixed, meals), second = probeA2PipelineChainAgenda(fixed, meals);
+    assert.deepEqual(first, second);
+    writeFileSync(resolve(directory, `closure-pair-matrix-${mode}.json`), JSON.stringify({ mode, protectedCount: fixed.length, deterministic: true, first }));
+  }
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  if (process.argv.includes("--diagnose")) console.log(JSON.stringify(diagnoseA2CollectiveClosureStages(), null, 2));
+  const argument = (name: string) => {
+    const position = process.argv.indexOf(name); assert.ok(position >= 0 && process.argv[position + 1], `${name} is required`);
+    return process.argv[position + 1]!;
+  };
+  if (process.argv.includes("--collect-sufficiency-observations")) {
+    await collectA2ClosureSufficiencyObservations(argument("--parent-root"), argument("--previous-root"), argument("--observations-directory"));
+  } else if (process.argv.includes("--sufficiency-diagnosis")) {
+    const position = process.argv.indexOf("--observations-directory");
+    assert.ok(position >= 0 && process.argv[position + 1], "--observations-directory is required");
+    runA2CollectiveClosureSufficiencyEvidence(process.argv[position + 1]!);
+  } else if (process.argv.includes("--diagnose")) console.log(JSON.stringify(diagnoseA2CollectiveClosureStages(), null, 2));
   else if (process.argv.includes("--legacy-capacity-evidence")) await runA2CollectiveClosureEvidence();
   else await runA2CollectiveClosureContractEvidence();
 }
