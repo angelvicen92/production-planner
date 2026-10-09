@@ -617,7 +617,11 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
   // Future participant meals remain invisible obligations, but they must constrain
   // every constructive/future-feasibility check performed for an Assisted scope.
   const producer=input.collectiveCoreProjection??input;
-  const searchProblem:PlannerNextProblem={...producer.problem,participantMeals:[
+  const searchProblem:PlannerNextProblem={...producer.problem,
+    // Assisted requests share one interactive ledger. Preserve smaller caller
+    // budgets and leave the canonical source/configuration read-only.
+    budget:{...producer.problem.budget,maxBranchExpansions:Math.min(100_000,producer.problem.budget.maxBranchExpansions)},
+    participantMeals:[
     ...(producer.problem.participantMeals??[]),...producer.analyticalParticipantMeals,
   ]};
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
@@ -682,7 +686,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
+  const standaloneKeys = ["bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
+    "standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",
     "roundSynchronizationSharedOperationalMealPolicyIds","roundSynchronizationBreakVariantsConsidered",
@@ -729,6 +734,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
     }));
+  work.branchBudgetLimit=searchProblem.budget.maxBranchExpansions;
   const selectedMealWitnesses=result?.complete?{
     participant:{scheduled:structuredClone(result.scheduledParticipantMeals),fingerprint:participantMealWitnessFingerprint(result.scheduledParticipantMeals),
       finalSelectionOrder:[...(evidenceRecord.participantMealFinalSelectionOrder as string[]|undefined)??[]]},

@@ -141,10 +141,12 @@ export function searchExactItinerantAgenda(problem:PlannerNextProblem,tasks:read
 
 function searchExactPrerequisiteClosure(problem:PlannerNextProblem,tasks:readonly Task[],context:readonly ScheduledTask[],
   meals:readonly ScheduledSpaceMeal[],frontier:number,consume:()=>boolean,
-  continuation:(scheduled:readonly ScheduledTask[])=>"FOUND"|"DEAD_END"|"BUDGET_EXHAUSTED"):
+  continuation:(scheduled:readonly ScheduledTask[])=>"FOUND"|"DEAD_END"|"BUDGET_EXHAUSTED",
+  partialGate?:(context:ScheduledTask[])=>"PASS"|"DEAD_END"|"BUDGET_EXHAUSTED"):
   {outcome:"FOUND"|"DEAD_END"|"BUDGET_EXHAUSTED";branches:number} {
   let branches=0;const ids=new Set(tasks.map(task=>task.id));
   const visit=(remaining:readonly Task[],scheduled:ScheduledTask[]):"FOUND"|"DEAD_END"|"BUDGET_EXHAUSTED"=>{
+    const gate=partialGate?.([...context,...scheduled]);if(gate&&gate!=="PASS")return gate;
     if(!remaining.length)return continuation(scheduled);
     const ready=remaining.filter(task=>task.dependencies.filter(id=>ids.has(id)).every(id=>scheduled.some(item=>item.id===id)));
     const choices=(ready.length?ready:remaining).map(task=>({task,domain:standaloneForwardDynamicDomain(problem,task,[...context,...scheduled],standaloneForwardStaticDomain(problem,task,[...meals]))}))
@@ -984,7 +986,10 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
     // Before future units supply their joint context, require only sound necessary
     // capacity. The full collective certificate remains mandatory in globalGate.
     const hasStructuralFutureContext = Boolean(problem.analyticalFutureRoundSynchronizations?.length || problem.analyticalFutureItinerantAgendas?.length);
-    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE",hasStructuralFutureContext ? (meals) => {
+    // Terminal transport is the producer for pending IN vertices. A necessary
+    // meal check lets it run; certification still requires its actual packet.
+    const needsTerminalArrivalContext=(problem.transportPolicy?.arrival.taskIds??[]).some(id=>!materializedIds.has(id));
+    const mealWitness=exactSubstantive?assessParticipantMealFutureFeasibility(problem,substantive,mealBudget,"MATERIALIZE",hasStructuralFutureContext||needsTerminalArrivalContext ? (meals) => {
       const result = closureCheck(substantive, meals, false);
       return result.reason === "BUDGET_EXHAUSTED" ? "BUDGET_EXHAUSTED"
         : result.status === "INFEASIBLE" ? "REJECT" : "ACCEPT";
@@ -1080,6 +1085,12 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
           return "INCONCLUSIVE";
         }
         if (!futuresRound.length && !futuresAgenda.length) {
+          if(needsTerminalArrivalContext){
+            const certified=closureCheck(state,mealWitness.scheduled,true);
+            if(certified.reason==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
+            if(certified.status==="INFEASIBLE")return reject("COLLECTIVE_CLOSURE_HALL",{hall:certified.hall});
+            if(!certified.certified){evidence.futureCollectiveClosureInconclusiveLeaves++;return "INCONCLUSIVE";}
+          }
           return "FOUND"; // certified by the scope's exact meal continuation above
         }
         if(context.mealReservations.some(reservation=>context.mealReservations.some(other=>other.policyId===reservation.policyId
@@ -2702,7 +2713,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         if(!assigned)return task;const {start:_start,end:_end,...identity}=assigned;
         return {...identity,availability:task.availability};});
       const authority=new PreparedFutureCollectiveParticipantClosure(full);
-      const necessary=(tasks:ScheduledTask[]):StandaloneOutcome|"PASS"=>{
+      const necessary=(tasks:ScheduledTask[]):"DEAD_END"|"BUDGET_EXHAUSTED"|"PASS"=>{
         const check=authority.evaluate(tasks,[],()=>ledger.consume("STANDALONE"),"NECESSARY_ONLY",candidate.meals);
         evidence.futureCollectiveClosureChecks+=Number(!check.cacheHit);
         evidence.futureCollectiveClosureCacheHits+=Number(check.cacheHit);
@@ -2713,6 +2724,23 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         return "PASS";
       };
       let result:StandaloneSearchResult|null=null;
+      // Projection omitted prerequisites already materialized by the core. A
+      // supporting repair can make those vertices pending again. Recover only
+      // the deferred supporting ancestors from the read-only joint source;
+      // existing exact explorers still produce and validate their placements.
+      const fullById=new Map(full.tasks.map(task=>[task.id,task]));
+      const repairedPrerequisites=(tasks:readonly Task[],context:readonly ScheduledTask[]):Task[]=>{
+        if(!repairSupporting)return [];
+        const placedIds=new Set(context.map(task=>task.id)),visited=new Set<string>(),pending=new Map<string,Task>();
+        const collect=(id:string):void=>{
+          if(placedIds.has(id)||visited.has(id))return;visited.add(id);
+          const task=fullById.get(id);if(!task)return;
+          if(reparableIds.has(id))pending.set(id,task);
+          for(const dependencyId of task.dependencies)collect(dependencyId);
+        };
+        for(const task of tasks)for(const dependencyId of task.dependencies)collect(dependencyId);
+        return [...pending.values()].sort(byId);
+      };
       const agendas=problem.analyticalFutureItinerantAgendas??[];
       const visitAgenda=(index:number,context:ScheduledTask[]):StandaloneOutcome=>{
         const gate=necessary(context);if(gate!=="PASS")return gate;
@@ -2728,15 +2756,19 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
         const future=agendas[index]!,pending=future.tasks.filter(task=>!context.some(item=>item.id===task.id));
         if(!pending.length)return visitAgenda(index+1,context);
         const frontier=itinerantAgendaStructuralFrontier(full,future.unitIds,context);
-        return searchExactPrerequisiteClosure(full,future.prerequisiteTasks.filter(task=>!context.some(item=>item.id===task.id)),
+        const prerequisites=[...new Map([...future.prerequisiteTasks,...repairedPrerequisites(pending,context)]
+          .filter(task=>!context.some(item=>item.id===task.id)).map(task=>[task.id,task])).values()].sort(byId);
+        return searchExactPrerequisiteClosure(full,prerequisites,
           context,candidate.meals,frontier,()=>ledger.consume("STANDALONE"),prerequisites=>
             searchExactItinerantAgenda(full,pending,future.unitIds,[...context,...prerequisites],candidate.meals,frontier,
-              ()=>ledger.consume("STANDALONE"),tasks=>visitAgenda(index+1,[...context,...prerequisites,...tasks])).outcome).outcome;
+              ()=>ledger.consume("STANDALONE"),tasks=>visitAgenda(index+1,[...context,...prerequisites,...tasks])).outcome,
+          repairSupporting?necessary:undefined).outcome;
       };
       const chains=futureTechnicalChains.reservationStructureIds();
       const visitChain=(index:number,context:ScheduledTask[]):StandaloneOutcome=>{
         if(index===chains.length)return visitAgenda(0,context);
         const gate=necessary(context);if(gate!=="PASS")return gate;
+        const visitReservations=(context:ScheduledTask[]):StandaloneOutcome=>{
         let cursor=0;
         while(true){const next=futureTechnicalChains.nextExactReservation(chains[index]!,context,cursor);cursor=next.nextCursor;
           if(next.status==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
@@ -2744,6 +2776,11 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
           const tasks=[...new Map([...context,...next.reservation!.scheduledTasks].map(task=>[task.id,task])).values()];
           const outcome=visitChain(index+1,tasks);if(outcome!=="DEAD_END")return outcome;
         }
+        };
+        const members=problem.analyticalFutureTechnicalChains?.find(chain=>chain.policy.id===chains[index])?.tasks??[];
+        const prerequisites=repairedPrerequisites(members,context);
+        return prerequisites.length?searchExactPrerequisiteClosure(full,prerequisites,context,candidate.meals,full.day.end,
+          ()=>ledger.consume("STANDALONE"),tasks=>visitReservations([...context,...tasks]),necessary).outcome:visitReservations(context);
       };
       const outcome=visitChain(0,immutableCoreTasks);
       return result??{outcome,tasks:null,preparations:[],roundPreparations:[],selectionOrder:[],participantMeals:null,

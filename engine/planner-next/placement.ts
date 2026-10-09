@@ -34,10 +34,15 @@ export function taskAvoidsScheduledSpaceMealResources(problem: PlannerNextProble
  * Search order is not temporal order, so predecessor and dependent checks are both required. */
 export function taskRespectsScheduledDependencies(task: Task, start: number, placed: ScheduledTask[]): boolean {
   const end = start + task.duration;
-  const placedById = new Map(placed.map((item) => [item.id, item]));
   for (const dependencyId of task.dependencies) {
-    const dependency = placedById.get(dependencyId);
-    if (dependency && dependency.end > start) return false;
+    // Keep the last occurrence semantics of the former Map without allocating
+    // an index for every placement probe, including tasks without predecessors.
+    for (let index = placed.length - 1; index >= 0; index--) {
+      const dependency = placed[index]!;
+      if (dependency.id !== dependencyId) continue;
+      if (dependency.end > start) return false;
+      break;
+    }
   }
   for (const dependent of placed) {
     if (dependent.dependencies.includes(task.id) && end > dependent.start) return false;

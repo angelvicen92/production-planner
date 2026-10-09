@@ -4,6 +4,7 @@ import {validatePlan,preflight} from "./validate";
 import {exactTaskStartDomain} from "./placement";
 import {runExactItinerantPlanSearch} from "./exactItinerantPlan";
 import {revalidateJointCompletionWitness} from "./jointCompletionWitness";
+import {materializeItinerantUnitAssignment} from "./itinerantUnitAssignment";
 
 import type {PlannerNextProblem,ScheduledTask,Task} from "./contracts";
 function stylingGeometryFixture(){
@@ -131,4 +132,33 @@ test("a nominal reject without restored entry capacity keeps the original contin
  assert.equal(rejected.evidence.supportingGeometryRepairAttempts,0);
  assert.equal(rejected.evidence.firstSupportingGeometryRepair,null);
  assert.ok(!rejected.evidence.futureStructuralWitnesses.some(w=>w.kind==="JOINT_COMPLETION"));
+});
+
+test("repair restores deferred entry prerequisites before a future itinerant agenda",()=>{
+ const {source,provisional,protectedPlacements,interleaved}=stylingGeometryFixture();
+ const unitIds=["itinerant-team:41","itinerant-team:42"];
+ source.itinerantUnits=unitIds.map(id=>({id,availability:[{start:0,end:160}]}));
+ source.participants.push({id:"observer",availability:[{start:0,end:160}]});
+ source.spaces.push({id:"future-space",availability:[{start:0,end:160}]});
+ const member:Task={id:"future-work-d",kind:"auxiliary",participantId:"observer",spaceId:"future-space",duration:5,
+   dependencies:["entry-d"],availability:[{start:65,end:100}],allowedItinerantUnitIds:unitIds};
+ source.tasks.push(member);
+ source.analyticalFutureItinerantAgendas=[{identity:unitIds.join("+"),unitIds,tasks:[member],prerequisiteTasks:[]}];
+ const legal={...materializeItinerantUnitAssignment(source,member,unitIds[0]!)!,start:90,end:95};
+ assert.equal(validatePlan(source,[...interleaved,legal]).hardValid,true);
+ const before=structuredClone(source),fixed=structuredClone(protectedPlacements);
+ const result=runFixture(source,provisional,protectedPlacements);
+ assert.equal(result.status,"COMPLETE",JSON.stringify({reasons:result.reasonCodes,core:result.evidence.coreReasonCodes,
+   repair:result.evidence.firstSupportingGeometryRepair,remaining:result.remainingTaskIds}));
+ assert.equal(result.evidence.supportingGeometryRepairSuccesses,1);
+ assert.equal(result.scheduledTasks.find(task=>task.id==="entry-d")!.start,70);
+ const actual=result.scheduledTasks.find(task=>task.id===member.id)!;
+ assert.ok(actual.start>=result.scheduledTasks.find(task=>task.id==="entry-d")!.end);
+ assert.equal(validatePlan(source,result.scheduledTasks).hardValid,true);
+ const witness=result.evidence.futureStructuralWitnesses.find(item=>item.kind==="JOINT_COMPLETION");
+ assert.ok(witness&&witness.kind==="JOINT_COMPLETION");
+ assert.equal(revalidateJointCompletionWitness(source,witness,protectedPlacements,()=>true),"PASS");
+ assert.deepEqual(result.scheduledTasks.filter(task=>fixed.some(item=>item.id===task.id)),fixed);
+ assert.deepEqual(source,before);assert.deepEqual(protectedPlacements,fixed);
+ assert.ok(result.evidence.branchesExplored<=source.budget.maxBranchExpansions);
 });

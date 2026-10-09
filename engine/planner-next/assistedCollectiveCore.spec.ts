@@ -80,3 +80,18 @@ test("changed future feeder semantics rebuild the certificate while preserving t
   assert.equal(witness.tasks.find(task=>task.id==="vocal-b")!.duration,10);
   assert.equal(revalidateJointCompletionWitness(source,witness,first.proposal,()=>true),"PASS");
 });
+
+test("Assisted enforces one interactive ledger ceiling while retaining smaller configured budgets",()=>{
+  for(const configured of [10,1000,300000]){
+    const source=fixture();source.budget.maxBranchExpansions=configured;
+    const input=buildAssistedProblem(source,createPlanningScope({kind:"TASK_IDS",value:"main-a"},{},["main-a"]),[],
+      new Set(source.tasks.map(task=>task.id)));
+    const before=structuredClone(input),result=executeAssistedPlanning(input);
+    assert.equal(result.evidence.work.branchBudgetLimit,Math.min(configured,100000));
+    assert.ok(result.evidence.work.branchesExplored<=result.evidence.work.branchBudgetLimit);
+    assert.equal(result.evidence.work.branchesExplored,result.evidence.work.coreBranches+result.evidence.work.standaloneBranches);
+    assert.deepEqual(input,before);assert.equal(source.budget.maxBranchExpansions,configured);
+    if(configured===10){assert.equal(result.proposal,null);assert.ok(result.evidence.reasonCodes.some(code=>code.includes("BUDGET_EXHAUSTED")),JSON.stringify(result.evidence.reasonCodes));}
+    else assert.deepEqual(result.proposal?.map(task=>task.id),["main-a"]);
+  }
+});

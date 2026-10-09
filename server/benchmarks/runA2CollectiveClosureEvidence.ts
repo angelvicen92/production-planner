@@ -124,7 +124,7 @@ export function runA2CollectiveClosureCompletionEvidence(first: Awaited<ReturnTy
     assert.equal(witness.participantMeals.length, source.participantMeals!.length);
     const newObligations = stage.completedObligationCount - (first.iterations[index - 1]?.completedObligationCount ?? 0);
     return { stage: stage.ordinal, scope: stage.scopeSelector, newObligations,
-      newTaskPlacements: stage.newObligationCount, newParticipantMealPlacements: newObligations - stage.newObligationCount,
+      newTaskPlacements: stage.newTaskPlacementCount, newParticipantMealPlacements: stage.newParticipantMealPlacementCount,
       completed: stage.completedObligationCount, pending: stage.remainingObligationCount,
       durationMs: [stage.durationMs, repeated.durationMs], ledger: { limit: source.budget.maxBranchExpansions,
         core: stage.work.coreBranches, continuation: stage.work.standaloneBranches, total: stage.branchesExplored,

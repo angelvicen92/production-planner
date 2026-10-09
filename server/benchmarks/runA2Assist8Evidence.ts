@@ -26,6 +26,27 @@ export interface A2Assist8Options { readonly branchBudget?: number; readonly wri
   /** Explicit user-selected product scopes. When present, the recommender is never consulted. */
   readonly explicitSelectors?:readonly AssistedScopeSelector[] }
 
+/** Visible obligations include participant meals materialized outside proposal
+ * task rows. Supporting placements and joint-witness tasks never count here. */
+export function acceptedVisibleObligationCounts(before:readonly {taskId:number}[],after:readonly {taskId:number}[],
+  scopeIds:readonly number[],proposalTaskIds:readonly number[],participantMealIds:ReadonlySet<number>) {
+  const prior=new Set(before.map(row=>row.taskId)),scope=new Set(scopeIds);
+  const added=after.filter(row=>!prior.has(row.taskId)).map(row=>row.taskId);
+  assert.equal(prior.size,before.length,"accepted baseline identities must be unique");
+  assert.equal(new Set(after.map(row=>row.taskId)).size,after.length,"accepted identities must be unique");
+  assert.equal(scope.size,scopeIds.length,"visible scope identities must be unique");
+  assert.deepEqual([...added].sort((a,b)=>a-b),[...scope].sort((a,b)=>a-b),
+    "accepted delta must equal the visible scope; supporting/witness placements cannot be accepted");
+  const productive=added.filter(id=>!participantMealIds.has(id)),meals=added.filter(id=>participantMealIds.has(id));
+  assert.deepEqual([...proposalTaskIds].sort((a,b)=>a-b),productive.sort((a,b)=>a-b),
+    "proposal task rows must account for every new productive obligation");
+  assert.ok(before.every(row=>after.some(item=>item.taskId===row.taskId)),"accepted obligations cannot disappear");
+  assert.equal(after.length-before.length,added.length);
+  return {acceptedObligationCountBefore:before.length,acceptedObligationCountAfter:after.length,
+    newObligationCount:added.length,visibleScopeCount:scope.size,
+    newTaskPlacementCount:productive.length,newParticipantMealPlacementCount:meals.length};
+}
+
 /** Product-flow invariant: an accepted structural decision is immutable in later Stages. */
 export function assertAcceptedStructuralDecisionsPreserved(
   prior: AssistedPlanningSnapshotV1,
@@ -301,7 +322,11 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
       transportWitness:evidence.standaloneDiagnostic?.terminalTransportWitness??null,
       hardRequiredValidation:{hardValid:evidence.hardValid??false,requiredValid:evidence.requiredValid??false,
         newHardViolationCount:evidence.newHardViolationCount??0,newRequiredViolationCount:evidence.newRequiredViolationCount??0},
-      proposalOutcome: result.outcome, newObligationCount: result.proposal?.filter(row => !protectedBefore.has(row.taskId)).length ?? 0,
+      proposalOutcome: result.outcome, newObligationCount: 0,
+      acceptedObligationCountBefore:before.length,acceptedObligationCountAfter:null as number|null,
+      visibleScopeCount:result.scopeTaskIds.length,
+      newTaskPlacementCount:result.proposal?.filter(row => !protectedBefore.has(row.taskId)).length ?? 0,
+      newParticipantMealPlacementCount:0,
       completedObligationCount: before.length, remainingObligationCount: sourceIds.length - before.length, protectedPlacementCount: before.length,
       protectedPlacementsPreserved: evidence.protectedPlacementsPreserved === true,
       newHardViolationCount: evidence.newHardViolationCount ?? 0, newRequiredViolationCount: evidence.newRequiredViolationCount ?? 0,
@@ -489,6 +514,8 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     assert.ok([...protectedBefore].every(([id, value]) => JSON.stringify(after.find(row => row.taskId === id)) === value));
     const acceptedSnapshot=stages.at(-1)?.snapshotJson as AssistedPlanningSnapshotV1;
     assertAcceptedStructuralDecisionsPreserved(fullSnapshotBefore,acceptedSnapshot);
+    Object.assign(record,acceptedVisibleObligationCounts(before,after,result.scopeTaskIds,
+      result.proposal!.filter(row=>!protectedBefore.has(row.taskId)).map(row=>row.taskId),participantMealProductIds));
     const protectedParticipantMealTaskIds=[...participantMealProductIds].filter(id=>protectedBefore.has(id)).sort((a,b)=>a-b);
     record.completedObligationCount = after.length; record.remainingObligationCount = sourceIds.length - after.length;
     record.acceptedSnapshotAfter=after;record.acceptedSnapshotFingerprintAfter=session.draftFingerprint;
@@ -516,7 +543,9 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const pass=completionPass;
   const acceptedDecisionCausality=firstBlocker?.firstPriorDecisionMakingContinuationImpossible??null;
   const waterfall=iterations.map(row=>({stage:row.proposalOutcome==="PROPOSAL"?row.acceptedStageId:null,iteration:row.ordinal,
-    scope:row.scopeSelector,newObligations:row.newObligationCount,completedObligations:row.completedObligationCount,
+    scope:row.scopeSelector,newObligations:row.newObligationCount,visibleScopeCount:row.visibleScopeCount,
+    newTaskPlacements:row.newTaskPlacementCount,newParticipantMealPlacements:row.newParticipantMealPlacementCount,
+    completedObligations:row.completedObligationCount,
     remainingObligations:row.remainingObligationCount,branches:row.branchesExplored,result:row.proposalOutcome,
     protectedOperationalMeals:row.searchProtectedOperationalMeals.length,
     baseSnapshotSetupPreparations:row.baseSnapshotSetupPreparations.length,
