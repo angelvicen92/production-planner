@@ -21,6 +21,7 @@ import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupPreparationId } from "./setupPreparation";
 import { roundPreparationId } from "./roundSynchronization";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
+import { futureCollectiveClosureEvidenceKeys, type FutureCollectiveClosureEvidence } from "./futureCollectiveParticipantClosure";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -228,7 +229,7 @@ export interface AssistedPlanningEvidence {
     | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit"
     | "futureRoundWitnessSearchInvocations" | "futureRoundWitnessStructuralCandidates"
     | "futureRoundWitnessCompleteMatchings" | "futureRoundWitnessParticipantFutureChecks"
-    | "futureRoundWitnessPrerequisiteChecks" | "futureRoundWitnessBranchesConsumed">;
+    | "futureRoundWitnessPrerequisiteChecks" | "futureRoundWitnessBranchesConsumed" | keyof FutureCollectiveClosureEvidence>;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -419,6 +420,33 @@ export function buildAssistedProblem(
   }
 
   const fixedById = new Map(protectedPlacements.map((placement) => [placement.id, placement]));
+  if (problem.transportPolicy?.departure.taskIds.length) {
+    const continuation=structuredClone(problem);
+    continuation.tasks=continuation.tasks.map(task=>{
+      const fixed=fixedById.get(task.id);if(!fixed)return task;
+      const {start,end,...assigned}=fixed;return {...assigned,availability:[{start,end}]};
+    });
+    continuation.participantMeals=continuation.participantMeals?.map(meal=>{
+      const fixed=protectedMealBySourceId.get(meal.sourceTaskId);
+      return fixed?{...meal,fixedInterval:{start:fixed.start,end:fixed.end}}:meal;
+    });
+    continuation.operationalMealPolicies=continuation.operationalMealPolicies?.map(policy=>{
+      const fixed=protectedOperationalMeals.find(meal=>meal.id===policy.id);
+      return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
+    });
+    if(problem.tasks.every(task=>included.has(task.id)||fixedById.has(task.id)||analyticalFutureEligibleTaskIds.has(task.id))
+      &&(problem.participantMeals??[]).every(meal=>includedMeals.has(meal.sourceTaskId)
+        ||protectedMealBySourceId.has(meal.sourceTaskId)||analyticalFutureEligibleTaskIds.has(meal.sourceTaskId))
+      &&problem.tasks.filter(task=>task.kind==="main"||task.kind==="vocal").every(task=>included.has(task.id)||fixedById.has(task.id)))
+      problem.analyticalFutureCollectiveContinuation=continuation;
+    problem.analyticalFutureParticipantClosure = {
+      tasks: structuredClone(problem.tasks),
+      meals: structuredClone((problem.participantMeals ?? []).map(meal => ({ ...meal,
+        ...(protectedMealBySourceId.has(meal.sourceTaskId) ? { fixedInterval: {
+          start: protectedMealBySourceId.get(meal.sourceTaskId)!.start, end: protectedMealBySourceId.get(meal.sourceTaskId)!.end } } : {}) }))),
+      departure: structuredClone(problem.transportPolicy.departure),
+    };
+  }
   // Capture the full-problem authorities before projecting executable tasks.
   // The search never iterates this collection: participant-causal probes alone
   // consult it after a provisional placement.
@@ -651,7 +679,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "itinerantAgendaEventBoundaryStarts","itinerantAgendaFirstCompleteBranch",
     "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit",
     "futureRoundWitnessSearchInvocations","futureRoundWitnessStructuralCandidates","futureRoundWitnessCompleteMatchings",
-    "futureRoundWitnessParticipantFutureChecks","futureRoundWitnessPrerequisiteChecks","futureRoundWitnessBranchesConsumed"] as const;
+    "futureRoundWitnessParticipantFutureChecks","futureRoundWitnessPrerequisiteChecks","futureRoundWitnessBranchesConsumed",
+    ...futureCollectiveClosureEvidenceKeys] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",

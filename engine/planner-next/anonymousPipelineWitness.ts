@@ -159,9 +159,20 @@ export interface FutureItinerantAgendaWitnessV1 {
     operationalMeals:"PASS"|"NOT_APPLICABLE"};
   readonly fingerprint:string;
 }
-export type FutureStructuralWitness=FutureStructuralWitnessV1|FutureStructuralWitnessV2|FutureRoundSynchronizationWitnessV1|FutureItinerantAgendaWitnessV1;
+export interface FutureJointCompletionWitnessV1 {
+  readonly kind:"JOINT_COMPLETION";readonly version:1;
+  readonly tasks:readonly ScheduledTask[];
+  readonly preparations:readonly import("./contracts").ScheduledSetupPreparation[];
+  readonly roundPreparations:readonly import("./contracts").ScheduledRoundPreparation[];
+  readonly participantMeals:readonly import("./contracts").ScheduledParticipantMeal[];
+  readonly operationalMeals:readonly import("./contracts").ScheduledOperationalMeal[];
+  readonly spaceMeals:readonly import("./contracts").ScheduledSpaceMeal[];
+  readonly fingerprint:string;
+}
+export type FutureStructuralWitness=FutureStructuralWitnessV1|FutureStructuralWitnessV2|FutureRoundSynchronizationWitnessV1|FutureItinerantAgendaWitnessV1|FutureJointCompletionWitnessV1;
 
 export function structuralWitnessIdentity(witness:FutureStructuralWitness):string {
+  if(witness.kind==="JOINT_COMPLETION")return witness.kind;
   if(witness.kind==="ROUND_SYNCHRONIZATION")return `${witness.kind}:${witness.policyId}`;
   if(witness.kind==="ITINERANT_AGENDA")return `${witness.kind}:${witness.identity}`;
   return `${witness.kind}:${witness.architectureFingerprint}`;

@@ -39,6 +39,20 @@ test("exact exhaustion of all individually feasible pairs returns DEAD_END",()=>
   assert.equal(result.outcome,"DEAD_END");assert.deepEqual(result.witnesses,[]);
 });
 
+test("an inconclusive combination preserves later exact witnesses and cannot prove infeasibility", () => {
+  const first = fixture(), visits: number[] = [];
+  const result = certifyFutureStructuralWitnessSet(first.units, empty, context => {
+    const start = context.tasks.find(task => task.id === "A")!.start; visits.push(start);
+    return start === 0 ? "INCONCLUSIVE" : first.gate(context);
+  }, first.branches);
+  assert.equal(result.outcome, "FOUND"); assert.deepEqual(visits, [0, 20]);
+  assert.equal(result.evidence.futureWitnessSetInconclusiveCombinations, 1);
+  const second = fixture({ noPair: true });
+  const unknown = certifyFutureStructuralWitnessSet(second.units, empty, () => "INCONCLUSIVE", second.branches);
+  assert.equal(unknown.outcome, "INCONCLUSIVE"); assert.equal(unknown.evidence.finalSet, null);
+  assert.deepEqual(unknown.witnesses, []);
+});
+
 test("a compatible revalidated prior avoids its structural explorer",()=>{
   const f=fixture({prior:true});f.units[1]={...f.units[1]!,explore:(context,continuation)=>continuation(f.candidate("B",20,context))};
   const result=certifyFutureStructuralWitnessSet(f.units,empty,f.gate,f.branches);

@@ -1,5 +1,5 @@
 import type { OperationalMealPolicy, PlannerNextProblem, ScheduledOperationalMeal, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
-import { incrementallyRepairMatchingWitness, type ExactSearchLedger } from "./exactMainAndFeederCore";
+import { incrementallyRepairMatchingWitness, partitionRejectedJointMatching, type JointMatchingPartition, type ExactSearchLedger } from "./exactMainAndFeederCore";
 import { generateExactSetupBlockCandidates } from "./exactSetupBlocks";
 import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
 import { probeParticipantMealFutureFeasibility } from "./participantMeals";
@@ -24,6 +24,8 @@ export interface ExactPreferredResourceUnitContinuationResult {
   /** True only when the continuation was pruned by participant-meal future feasibility. */
   participantMealPrune?:boolean;
   terminalFutureResult?:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";
+  /** Certified joint nogood; excludes the conjunction, never its individual edges. */
+  jointConflictTaskIds?:readonly string[];
 }
 export interface ExactPreferredResourceUnitEvidence {
   geometryCount:number;matchingSuccesses:number;rawCompatibleEdges:number;futureEdgeChecks:number;
@@ -37,13 +39,15 @@ export interface ExactPreferredResourceUnitEvidence {
   terminalFutureResult:"PASS"|"PRUNE"|"ABSTAIN"|"NOT_CHECKED";
 }
 export interface ExactPreferredResourceUnitAuthorities {
+  necessaryEdgeProbe?:(context:readonly ScheduledTask[],added:readonly ScheduledTask[])=>"PASS"|"PRUNE"|"BUDGET_EXHAUSTED";
   /** Test seam; production always uses the canonical participant-future authority. */
   participantFutureProbe?:typeof probeParticipantFutureReservations;
   participantMealProbe?:typeof probeParticipantMealFutureFeasibility;
 }
 
 /** Builds each setup geometry once, then incrementally repairs only matching edges
- * that participant Future Feasibility proves individually infeasible. */
+ * that participant Future Feasibility proves individually infeasible. Joint
+ * rejections retain alternatives through the same disjoint partitions as rounds. */
 export function exploreExactPreferredResourceUnit(args:{
   problem:PlannerNextProblem;resourceId:string;resourceTasks:readonly Task[];setupTasks:readonly Task[];
   placed:readonly ScheduledTask[];preparations:readonly ScheduledSetupPreparation[];
@@ -129,6 +133,9 @@ export function exploreExactPreferredResourceUnit(args:{
           if(!canPlaceTask(problem,task,at,base,mutableMeals))continue;
           evidence.rawCompatibleEdges+=1;evidence.futureEdgeChecks+=1;
           const scheduled=scoreAuxiliaryTask(problem,task,at,base).scheduled;
+          const necessary=args.authorities?.necessaryEdgeProbe?.([...base,scheduled],[scheduled]);
+          if(necessary==="BUDGET_EXHAUSTED")return {outcome:"BUDGET_EXHAUSTED",evidence};
+          if(necessary==="PRUNE"){evidence.analyticPrunedEdges++;continue;}
           if(reservations.some(meal=>{const policy=operationalPolicies.find(item=>item.id===meal.id);return policy?conflicts(scheduled,policy,meal):false;}))continue;
           const edgeKey=`${task.id}@${task.spaceId}:${at}`;
           const futureKey=`${baseKey}|${edgeKey}`;
@@ -150,19 +157,35 @@ export function exploreExactPreferredResourceUnit(args:{
       }
       let forbidden=new Set<string>(),previousForbidden=new Set<string>(),previous=new Map<string,number>();
       let repaired=false;
+      let partition:JointMatchingPartition={fixed:new Map(),forbidden:new Set()};
+      const pendingPartitions:JointMatchingPartition[]=[];
+      const individualForbidden=new Set<string>();
+      const advance=():boolean=>{
+        const next=pendingPartitions.pop();if(!next)return false;
+        partition=next;forbidden=new Set([...partition.forbidden,...individualForbidden]);
+        previousForbidden=new Set();previous=new Map();return true;
+      };
+      const rejectCombination=(matching:ReadonlyMap<string,number>):boolean=>{
+        pendingPartitions.push(...partitionRejectedJointMatching(partition,matching).reverse());
+        return advance();
+      };
       while(true){
         evidence.matchingAttempts+=1;
-        const result=incrementallyRepairMatchingWitness(taskIds,validPositions,forbidden,previousForbidden,previous,
+        const fixedSlots=new Set(partition.fixed.values());
+        const positions=new Map([...validPositions].map(([id,values])=>[id,partition.fixed.has(id)
+          ?values.filter(value=>value===partition.fixed.get(id)):values.filter(value=>!fixedSlots.has(value))]));
+        const result=incrementallyRepairMatchingWitness(taskIds,positions,forbidden,previousForbidden,previous,
           ()=>ledger.consume("STANDALONE"));
         evidence.matchingTraversals+=result.traversals;
         if(result.outcome==="BUDGET_EXHAUSTED")return{outcome:"BUDGET_EXHAUSTED",evidence};
-        if(result.outcome!=="PERFECT"||!result.matching)break;
+        if(result.outcome!=="PERFECT"||!result.matching){if(advance())continue;break;}
         const matching=result.matching;
         const witness=Object.fromEntries([...matching].sort(([a],[b])=>a.localeCompare(b)).map(([taskId,position])=>[taskId,slots[position]!]));
         evidence.firstMatchingWitness??=witness;
         const scheduled=[...matching].map(([taskId,position])=>scoreAuxiliaryTask(problem,taskById.get(taskId)!,spotStart(position),base).scheduled);
         const all=[...structural.tasks,...scheduled];
-        if(scheduled.some(task=>!canPlaceTask(problem,task,task.start,[...placed,...all.filter(item=>item.id!==task.id)],mutableMeals)))break;
+        if(scheduled.some(task=>!canPlaceTask(problem,task,task.start,[...placed,...all.filter(item=>item.id!==task.id)],mutableMeals))){
+          if(rejectCombination(matching))continue;break;}
         evidence.matchingSuccesses+=1;
         const resource=problem.resources.find(item=>item.id===resourceId)!;
         evidence.mealAwareGeometries+=Number(reservations.length>0);
@@ -175,7 +198,6 @@ export function exploreExactPreferredResourceUnit(args:{
           if(repaired)evidence.geometriesRescuedByRematching+=1;
           return{outcome:decision.outcome,evidence};
         }
-        if(!decision.participantFutureExactPrune&&!decision.participantMealPrune)break;
         const newlyForbidden:string[]=[];
         for(const [taskId,position] of matching){const task=taskById.get(taskId)!;
           const edge=scoreAuxiliaryTask(problem,task,spotStart(position),base).scheduled;
@@ -187,7 +209,10 @@ export function exploreExactPreferredResourceUnit(args:{
             prune=prune||!meal.feasible;}
           if(prune)newlyForbidden.push(`${taskId}@${position}`);
         }
-        if(!newlyForbidden.length)break;
+        if(!newlyForbidden.length){
+          const conflict=decision.jointConflictTaskIds?.length?new Map([...matching].filter(([id])=>decision.jointConflictTaskIds!.includes(id))):matching;
+          if(rejectCombination(conflict))continue;break;}
+        for(const edge of newlyForbidden)individualForbidden.add(edge);
         previousForbidden=forbidden;previous=new Map(matching);forbidden=new Set([...forbidden,...newlyForbidden]);
         evidence.causalForbiddenEdges+=newlyForbidden.filter(edge=>!previousForbidden.has(edge)).length;
         evidence.incrementalRepairs+=1;repaired=true;
