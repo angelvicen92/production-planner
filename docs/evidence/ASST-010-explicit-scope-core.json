@@ -1,0 +1,439 @@
+{
+  "outcome": "BLOCKED_AFTER_CONFIG_REFRESH",
+  "baseHead": "5e46168daa35d755bcb9a2573ed81647d8b466a2",
+  "productionBlob": "7a259c18301936dbbf4368cdc07cd736f5ec206e",
+  "baselineASST010": {
+    "outcome": "NO_PROPOSAL",
+    "failedAt": "initial acceptance, benchmark line 162",
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "FUTURE_COLLECTIVE_CLOSURE_INCONCLUSIVE"
+    ],
+    "sourceTaskCount": 247,
+    "visibleScope": [
+      "task:10017"
+    ],
+    "projectedTaskIds": [
+      "task:10017",
+      "task:10018",
+      "task:10021",
+      "task:10024"
+    ],
+    "futureMainVocalCountOutsideProjection": 36,
+    "jointContinuationEnabled": false
+  },
+  "causalCycleLimit": 2,
+  "cycles": [
+    {
+      "cycle": 1,
+      "delta": "eligibility plus ephemeral projection of all missing core roots",
+      "initialProposalAccepted": true,
+      "configRefreshMaterialized": true,
+      "outcome": "NO_PROPOSAL_AFTER_REFRESH",
+      "reasonCodes": [
+        "ASSISTED_SCOPE_INCOMPLETE",
+        "CORE_BRANCH_BUDGET_EXHAUSTED"
+      ],
+      "configuredBudgetUnchanged": 300000,
+      "testDurationMs": 594121.846391
+    },
+    {
+      "cycle": 2,
+      "delta": "Main roots; dependent Vocal remain supporting",
+      "initialProposalAccepted": true,
+      "configRefreshMaterialized": true,
+      "outcome": "NO_PROPOSAL_AFTER_REFRESH",
+      "testDurationMs": 524887.980956,
+      "finalSearch": {
+        "scope": {
+          "selector": {
+            "kind": "TASK_IDS",
+            "value": "10015"
+          },
+          "metadata": {},
+          "resolvedTaskIds": [
+            "task:10015"
+          ]
+        },
+        "protectedCount": 1,
+        "status": "BRANCH_BUDGET_EXHAUSTED",
+        "reasonCodes": [
+          "CORE_BRANCH_BUDGET_EXHAUSTED"
+        ]
+      },
+      "diagnostic": {
+        "branchesExplored": 300000,
+        "coreBranches": 299636,
+        "standaloneBranches": 364,
+        "architecturesEnumerated": 79,
+        "architecturesPrepared": 79,
+        "futureReservationBundleMatchingAttempts": 79,
+        "futureReservationPerfectMatchings": 60,
+        "coreCompleteLeavesEvaluated": 52,
+        "coreLeavesRejectedByStandalone": 0,
+        "structuralSearchExhausted": true,
+        "structuralSearchBudgetExhausted": false,
+        "residualDfsEntered": true,
+        "nominalPipelineWitnessRejectsByReason": {
+          "OPERATIONAL_MEAL_FUTURE_INFEASIBLE": 135,
+          "PARTICIPANT_MEAL_FUTURE_INFEASIBLE": 90,
+          "JOINT_ARRIVAL_GEOMETRY": 143,
+          "FEEDER_RUN_GEOMETRY": 72,
+          "JOINT_STYLING_FEEDER_MATCHING": 1
+        },
+        "firstParticipantFutureReservationPrune": {
+          "phase": "CORE",
+          "causingTaskId": "task:10002",
+          "causingCandidateStart": 755,
+          "depth": 19,
+          "affectedParticipants": [
+            "participant:201",
+            "participant:202",
+            "participant:203",
+            "participant:204",
+            "participant:205",
+            "participant:206",
+            "participant:207",
+            "participant:208",
+            "participant:209",
+            "participant:210",
+            "participant:211",
+            "participant:212",
+            "participant:213",
+            "participant:214",
+            "participant:215",
+            "participant:216",
+            "participant:217",
+            "participant:218",
+            "participant:219"
+          ],
+          "affectedFutureTasksChecked": 164,
+          "affectedMealsChecked": 19,
+          "individualDomainChecks": 3,
+          "individualZeroDomainPrunes": 1,
+          "jointTaskMealChecks": 0,
+          "jointTaskMealPrunes": 0,
+          "collectiveChecks": 0,
+          "collectivePasses": 0,
+          "collectivePrunes": 0,
+          "collectiveObligationIds": [],
+          "collectiveDomainSizes": {},
+          "collectiveWitnessFound": false,
+          "dominatedLaterStartsSkipped": 0,
+          "earliestDominanceBranches": 0,
+          "compatiblePairChecks": 0,
+          "analyticChecks": 4,
+          "branchesConsumed": 0,
+          "unresolvedDependencyIds": [],
+          "abstainCause": null,
+          "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+          "futureTaskId": "task:10004",
+          "mealTaskId": null,
+          "participantId": "participant:201",
+          "futureTaskCandidateCount": 0,
+          "mealCandidateCount": 0,
+          "compatiblePairCount": 0,
+          "participantDiagnostics": [],
+          "status": "PRUNE"
+        },
+        "firstTechnicalChainFutureReservationPrune": {
+          "phase": "CORE",
+          "causingTaskId": "task:10102",
+          "causingCandidateStart": 980,
+          "depth": 19,
+          "affectedStructures": 1,
+          "structuresChecked": 1,
+          "branchesConsumed": 606,
+          "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+          "workItemKey": "technical-chain:task:10081",
+          "candidateCount": 0,
+          "certifiedCausingTaskId": "task:10102",
+          "certifiedDecisionDepth": 12,
+          "initialRepairableGroupCount": 9,
+          "redundantDecisionDepths": [
+            1,
+            3,
+            4,
+            7,
+            9,
+            10,
+            17,
+            18
+          ],
+          "irreducibleDecisionDepths": [
+            12
+          ],
+          "minimizationProbes": 9,
+          "knownCandidateCount": 216,
+          "survivorLowerBound": 0,
+          "survivorCountExact": 0,
+          "domainComplete": true,
+          "witnessReuseCheck": true,
+          "witnessReuseHit": false,
+          "conflictDecisionDepths": [
+            12
+          ],
+          "conflictTaskIds": {
+            "12": [
+              "task:10102",
+              "task:10109",
+              "task:10110"
+            ]
+          },
+          "conflictGroupCount": 1,
+          "fixedContextParticipates": true,
+          "conflictClassification": "SINGLE_DECISION_ZERO_DOMAIN",
+          "status": "PRUNE",
+          "result": "ZERO_DOMAIN"
+        },
+        "firstTerminalCompletionRejection": null,
+        "futureCollectiveClosurePendingPredecessorTaskIds": [],
+        "coreMaximumDepth": 2,
+        "coreReasonCodes": [
+          "MATCHING_SEARCH_BUDGET_EXHAUSTED"
+        ],
+        "dominantDepths": [
+          [
+            "0",
+            {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 185008,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 11810,
+              "total": 196818
+            }
+          ],
+          [
+            "2",
+            {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 77382,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 0,
+              "total": 77382
+            }
+          ],
+          [
+            "1",
+            {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 25800,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 0,
+              "total": 25800
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "refresh": {
+    "scopeTaskIds": [
+      10015
+    ],
+    "templateId": 20009,
+    "supportingTaskId": 10018,
+    "oldDuration": 10,
+    "consumedNewDuration": 20,
+    "affectedTaskCount": 19,
+    "protectedMain": {
+      "id": "task:10017",
+      "duration": 15,
+      "spaceId": "space:3004",
+      "dependencies": [
+        "task:10018",
+        "task:10024"
+      ],
+      "kind": "main",
+      "participantId": "participant:202",
+      "coachId": "plan-resource:4005",
+      "blockKey": "plan-resource:4005",
+      "start": 845,
+      "end": 860
+    },
+    "protectedOperationalMeals": [
+      {
+        "id": "break:main-flow",
+        "resourceIds": [],
+        "spaceIds": [
+          "space:3004"
+        ],
+        "duration": 75,
+        "start": 890,
+        "end": 965
+      }
+    ],
+    "S1SnapshotPreservedBeforeRequest": true
+  },
+  "proofLimits": {
+    "initialSingleMainContinuation": "SOUND_AND_ACCEPTED",
+    "postRefreshScopeGloballyImpossible": "NOT_PROVEN",
+    "inconclusivePromotedToPass": false,
+    "canonicalExceptionRollbackRedoDivergence": "NOT_REACHED",
+    "general100000LimitInASST010": "NOT_MET; base canonical fixture default is 300000",
+    "thirdCausalDeltaAttempted": false,
+    "readOnlyDiagnostic": "Node inspector snapshot at the current search return; no solver branches or decisions added"
+  },
+  "A2Assist8": {
+    "status": "PASS",
+    "runs": 2,
+    "completed": 266,
+    "stages": 10,
+    "materialDigest": "ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc",
+    "finalFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+    "baselineMaterialUnchanged": true,
+    "stagesCompared": [
+      {
+        "stage": 1,
+        "completed": 19,
+        "branches": 80835,
+        "durationMs": [
+          241975,
+          220710
+        ],
+        "acceptedFingerprint": "10897fa2ce5bc94e3d26938cc0c5927df4f4a6d434b2f037e8e06e76f0cdf2e4",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 2,
+        "completed": 38,
+        "branches": 293,
+        "durationMs": [
+          180,
+          128
+        ],
+        "acceptedFingerprint": "621bfdef7ee9ba478b42bf59d706b6baab56f8b27a4940748fb8d477c5c01cd6",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 3,
+        "completed": 46,
+        "branches": 293,
+        "durationMs": [
+          149,
+          268
+        ],
+        "acceptedFingerprint": "438690f0db57f88db7721238df5d3684566e9a344318687b81bf1cb733ffee08",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 4,
+        "completed": 65,
+        "branches": 293,
+        "durationMs": [
+          213,
+          183
+        ],
+        "acceptedFingerprint": "eadc4e650a39375aa72961793e5ecf943d9c30da98f3ba5976280e3dd432a5af",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 5,
+        "completed": 75,
+        "branches": 13241,
+        "durationMs": [
+          18085,
+          25088
+        ],
+        "acceptedFingerprint": "e97217c62265841918817296f1c45986c0dd492cb1ae2e3cbbda645eb952a785",
+        "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+      },
+      {
+        "stage": 6,
+        "completed": 111,
+        "branches": 293,
+        "durationMs": [
+          107,
+          137
+        ],
+        "acceptedFingerprint": "7b3c49e335c4f35a79754b02fe25b5c04ec5a2a65de7da204d6b3db1ab75786c",
+        "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+      },
+      {
+        "stage": 7,
+        "completed": 169,
+        "branches": 1884,
+        "durationMs": [
+          6814,
+          11614
+        ],
+        "acceptedFingerprint": "509e0affa08e4e21fe4bacac030cfc7715ad3aefca89fe28844ab823d4da7046",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      },
+      {
+        "stage": 8,
+        "completed": 207,
+        "branches": 293,
+        "durationMs": [
+          137,
+          132
+        ],
+        "acceptedFingerprint": "9eb3aa1542efbef080b0909a072a72050865ab28574ebc8afacbf66c701cb9b2",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      },
+      {
+        "stage": 9,
+        "completed": 209,
+        "branches": 293,
+        "durationMs": [
+          125,
+          195
+        ],
+        "acceptedFingerprint": "b1906633b500e19db548159c8548ec4ca8c0e390e81bb7eaf25135841f43861c",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      },
+      {
+        "stage": 10,
+        "completed": 266,
+        "branches": 293,
+        "durationMs": [
+          183,
+          332
+        ],
+        "acceptedFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      }
+    ],
+    "snapshotsInitiallyEmpty": true,
+    "historicalSeed": null,
+    "newHardViolationCount": 0,
+    "newRequiredViolationCount": 0,
+    "acceptedPlacementsMoved": 0,
+    "allProtectedTasksAndMealsExact": true,
+    "sourceTasksPerJointCertificate": 247,
+    "participantMealsPerJointCertificate": 19,
+    "branchLimitPerRequest": 100000
+  },
+  "validation": {
+    "projectionReplayCertificateTests": {
+      "pass": 36,
+      "fail": 0
+    },
+    "expandedRegressions": {
+      "pass": 317,
+      "fail": 2,
+      "failuresAlsoReproducedAtBase": true,
+      "knownFailures": [
+        "transportGrouping: exact continuation constructs IN/work/ESTILISMO_SALIDA/OUT",
+        "transportGrouping: terminal IN backward-propagated witness"
+      ]
+    },
+    "typescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "migrationSequenceTest": "PASS",
+    "benchmarkExpectationsChanged": false,
+    "canonicalConfigurationChanged": false,
+    "budgetsOrTimeoutsIncreased": false,
+    "mergePerformed": false
+  }
+}
