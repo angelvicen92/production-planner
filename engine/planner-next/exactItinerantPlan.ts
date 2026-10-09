@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import {
   createExactSearchLedger,
+  boundedCoreContinuation,
   runExactMainAndFeederSearch,
   type ExactMainAndFeederCoreStatus,
   type ExactSearchLedger,
@@ -440,6 +441,9 @@ export interface ExactItinerantPlanEvidence extends FutureCollectiveClosureEvide
   bundleForbiddenEdges: string[];
   bundleRepairSequence: Array<{causingTaskId:string;oldPosition:number;forbiddenEdge:string;newPosition:number|null}>;
   bundleTerminalCause: string | null;
+  bundleContinuationDeferrals: number;
+  bundleContinuationResumptions: number;
+  bundlePendingContinuations: number;
   bundleNogoodsCreated:number; bundleNogoodBranches:number; bundleNogoodDeduplications:number; bundleNogoodRepairsSucceeded:number;
   conflictEdges:string[]; conflictBackjumps:number; suffixDepthsSkipped:number;
   fixedMainBundlePathEntered:boolean;protectedMainCount:number;protectedMainArchitectureFingerprint:string|null;
@@ -2165,6 +2169,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,
     bundleCertifiedRepairs:0,bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,
+    bundleContinuationDeferrals:0,bundleContinuationResumptions:0,bundlePendingContinuations:0,
     bundleNogoodsCreated:0,bundleNogoodBranches:0,bundleNogoodDeduplications:0,bundleNogoodRepairsSucceeded:0,
     conflictEdges:[],conflictBackjumps:0,suffixDepthsSkipped:0,
     fixedMainBundlePathEntered:false,protectedMainCount:0,protectedMainArchitectureFingerprint:null,protectedMainSlots:[],
@@ -2391,6 +2396,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;
   }
   const structuralBundleCandidates=hasFuture?structuralBundles():undefined;
+  // Share an initial continuation allowance across the structural decision
+  // width. This is an ordering quantum, not another budget or validity bound.
+  const continuationQuantum=Math.max(1,Math.floor(ledger.limit/Math.max(2,problem.tasks.filter(task=>task.kind==="main").length)));
   const constructiveRepair=hasFuture?undefined:options.repairPreferredBundleCandidate;
   if(!hasFuture&&!constructiveBundle){evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;}
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer,
@@ -2545,6 +2553,10 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       return certifiedBackjumpTargetDepth===null?"REJECT":{outcome:"CERTIFIED_BACKJUMP",targetDepth:certifiedBackjumpTargetDepth};
     }
     return "CONTINUE";
+  }, onStructuralCoreContinuation(candidate) {
+    const continuation=()=>this.onHardValidCoreLeaf?.(candidate)??"ACCEPT";
+    return problem.analyticalFutureCollectiveContinuation&&candidate.source==="STRUCTURAL_FUTURE_CONDITIONED"
+      ?boundedCoreContinuation(ledger,continuationQuantum,continuation):continuation();
   }, onHardValidCoreLeaf(candidate) {
     const fixedIds=new Set((options.fixedPlacements??[]).map(task=>task.id));
     const arrivalIds=new Set(problem.transportPolicy?.arrival.taskIds??[]);
@@ -2899,6 +2911,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.bundleForbiddenEdges=[...core.evidence.bundleForbiddenEdges];
   evidence.bundleRepairSequence=[...core.evidence.bundleRepairSequence];
   evidence.bundleTerminalCause=core.evidence.bundleTerminalCause;
+  evidence.bundleContinuationDeferrals=core.evidence.bundleContinuationDeferrals;
+  evidence.bundleContinuationResumptions=core.evidence.bundleContinuationResumptions;
+  evidence.bundlePendingContinuations=core.evidence.bundlePendingContinuations;
   evidence.bundleNogoodsCreated+=core.evidence.bundleNogoodsCreated;
   evidence.bundleNogoodBranches+=core.evidence.bundleNogoodBranches;
   evidence.bundleNogoodDeduplications+=core.evidence.bundleNogoodDeduplications;
