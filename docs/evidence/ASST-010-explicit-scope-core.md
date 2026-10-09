@@ -1,100 +1,114 @@
-# ASST-010 — scope explícito y auditoría del refresh
+# ASST-010 — geometría reparable de Estilismo
 
-**ASST-010: FAIL después del refresh. A2-ASSIST-8: PASS, 266/266 en S10, dos ejecuciones limpias y material completo idéntico.** AcceptedException, rollback, redo y divergencia canónicos permanecen sin alcanzar. El PR continúa draft y el gate de producción/merge falla.
+**ASST-010: INCONCLUSIVE, S2 sin propuesta ni certificado global. A2-ASSIST-8: PASS, 266/266, S10, dos runs limpios con material completo y accounting idénticos al baseline.** No se alcanzan AcceptedException, rollback, redo ni divergencia canónicos. El PR sigue draft; gate de producción/merge incompleto.
 
-Se continúa el mismo [PR #1104](https://github.com/angelvicen92/production-planner/pull/1104), rama `codex/asst-010-explicit-scope-continuation`, desde `6f0f696437f0a0644f844e1158b6b38fc4ec18ab`, árbol `f9e0ef08951f9695600f8a5c4ef24d109139f3df`. Antes de editar se verifican checkout limpio, SHA y contenido iguales al remoto; base remota intacta en `5e46168daa35d755bcb9a2573ed81647d8b466a2`. El JSON conserva los dos ciclos anteriores y añade la auditoría vigente bajo `configRefreshAudit`.
+Mismo [PR #1104](https://github.com/angelvicen92/production-planner/pull/1104), rama `codex/asst-010-explicit-scope-continuation`. Esta unidad parte del HEAD remoto/local verificado `8d28c10dd9f541c1370e50a6d23588d12e43caea`; base remota `5e46168daa35d755bcb9a2573ed81647d8b466a2`. Los deltas anteriores de proyección efímera y matching por grafo se conservan. Su historia y el fallo completo de 8d permanecen en el JSON; `stylingGeometryAudit` identifica esta unidad y sus dos ciclos.
 
-## X — entrada y fallo reproducido
+## X — fallo y recorrido de producto
 
-El single-Main `TASK_IDS:[10017]` obtiene propuesta, pasa apply/validate/accept y conserva sólo ese Main como decisión aceptada. Su proyección tiene cuatro tareas; el productor efímero tiene 82. No hay placements protegidos ni witnesses previos al inicio. El delta anterior que habilitó esta continuación permanece intacto: blob de `assistedPlanning.ts` `7a259c18301936dbbf4368cdc07cd736f5ec206e`.
+El gate original acepta el single-Main `TASK_IDS:[10017]`, valida/consolida S1 y aplica el refresh de **ESTILISMO_ENTRADA de 10 a 20 minutos en 19 instancias**. Prueba vocal mantiene 15. Las assertions de stages y snapshot S1 inmutables pasan antes de entrar en S2. S2 solicita `TASK_IDS:[10015]`; su input vigente conserva `task:10017` literalmente en `[845,860]` y la pausa Main `[890,965]`. El canon contiene 247 tareas y 19 comidas.
 
-**El refresh real cambia ESTILISMO_ENTRADA, no Prueba vocal.** La plantilla `20009`, representada por `task:10018`, pasa de 10 a 20 minutos en 19 instancias. Prueba vocal conserva 15. La selección deriva de las dependencias canónicas del gate, sin modificarlo ni usar nombres en lógica productiva.
+En 8d, S2 termina en 300.000 ramas, `BRANCH_BUDGET_EXHAUSTED`: 299.636 core + 364 continuación, sin llegar a la continuación conjunta. Sus 60 geometrías nominales mantienen entradas contiguas que dejan dominio vacío para la salida C01. No hay prueba de inviabilidad global.
 
-S2 solicita `TASK_IDS:[10015]` (Corner Influencer del mismo participante), consume duración 20, tiene cinco tareas proyectadas y 83 en el productor. Protege literalmente `task:10017` en `[845,860]` y la pausa Main en `[890,965]`. El refresh preserva stages y snapshot S1. La entrada canónica tiene 247 tareas + 19 comidas y 266 obligaciones elegibles pending/interrupted.
+## Y — primera decisión causal incorrecta
 
-El test original `runA2Assist7Evidence.spec.ts` falla de nuevo en la propuesta de S2, tras recorrer los servicios request/run/apply/validate/accept de S1 y refresh. Resultado exacto: `BRANCH_BUDGET_EXHAUSTED`, `CORE_BRANCH_BUDGET_EXHAUSTED`, causa interna `MATCHING_SEARCH_BUDGET_EXHAUSTED`. No existe certificado de inviabilidad global.
+`selector → scope projection/eligibility → collectiveCoreProjection → executePlannerNext → anonymousPipelineWitness/matching → onHardValidCoreLeaf → reservas → searchJoint → cierre/validatePlan → ScopeProposal`.
 
-## Y — call path, witnesses y autoridad causal
+La construcción nominal prioriza entradas tempranas y contiguas. La frontera core → continuación trata sus IN/entradas provisionales como contexto inmutable. Así convierte una preferencia de construcción en una restricción de representación: puede rechazar sound la geometría nominal y aun perder otra geometría legal. La propuesta visible y las protecciones siguen derivando del scope original, nunca del witness futuro.
 
-`AssistedProposalService.run` reconstruye input/config vigente y contexto protegido → `resolveAssistedScope` proyecta IDs mediante el identity map y elegibilidad → `buildAssistedProblem` cierra dependencies/anchors → `collectiveCoreProjection` incorpora Main futuros como raíces, Vocal/IN/entrada/anchors como supporting efímero → `executeAssistedPlanning` ejecuta una búsqueda con un ledger → `executePlannerNext` / `runExactItinerantPlanSearch` → arquitecturas nominales, `preparePipelineBundleGraph`, matching por bundles y `exactMainAndFeederCore` → hard gate y Future Feasibility de cadena/participante → continuación conjunta → `validatePlan` y proyección autorizada → propuesta.
+Antes de editar se demuestra que **el productor existente sí puede construir una solución completa cuando se liberan esas obligaciones**. Se reutiliza en una copia read-only el mismo explorador privado, exportándolo sólo en scratch, y la autoridad existente de llegada; ninguna instrucción de scheduling cambia. No se incorpora otra arquitectura.
 
-S2 se detiene antes de `searchJoint`. La frontera estructural se agota y entra en `residualMatching`. La propuesta visible y las protecciones se siguen construyendo desde el scope original, nunca desde el witness futuro.
+## Z — contraprueba exacta y sus límites
 
-A2 recomendado comienza con `SPACE:3004`, 19 Main y 82 tareas proyectadas. Su input de solver y el productor de S1 manual son exactamente iguales al normalizar únicamente los budgets; los EngineInput sólo difieren en planId y 300.000 frente a 100.000 ramas. A2 enlaza `proposalRunId` en sus Stages y revalida witnesses; el harness ASST-010 no incluye ese enlace y aporta cero witnesses previos. Se registra esta diferencia; no se modifica persistencia, servicios ni expectativas para eludirla. Son recorridos de servicios con storage/RPC en memoria, no pruebas de UI/DB real.
+Cuatro participantes, 28 tareas, Main continuo, recurso Estilismo exclusivo compartido por entrada/salida en espacios diferentes, IN/entrada/Vocal/Main/trabajo/salida/OUT. El participante a termina disponibilidad en 75. Main-a `[45,60]` y trabajo-a `[60,65]` permanecen protegidos.
 
-La revalidación read-only de un certificado recién generado da PASS con el canon original (292 vértices cobrables) y STALE con el canon actualizado (12 comprobaciones hasta detectar el cambio). No se llama al solver con ese material. La capacidad existente revalida estrictamente o reconstruye; no ofrece reparación parcial de `JOINT_COMPLETION`. Un witness de duración 10 no certifica duración 20.
+Entradas nominales b `[5,25]`, a `[25,45]`, c `[45,65]`, d `[65,85]` bloquean salida-a `[65,70]`. El plan contiguo falla `RESOURCE_OVERLAP_VIOLATION` y su dominio exacto de salida está vacío. Desplazar **sólo entrada-d a `[70,90]`** permite salida-a y OUT-a `[70,75]`; las 28 tareas pasan HARD/REQUIRED y conservan decisiones protegidas.
 
-## Z — mecanismo anterior al coste residual
+| Prueba | Resultado | Ledger |
+|---|---|---:|
+| Motor público 8d, bundle nominal fijo | INFEASIBLE, refutado por el witness válido reducido | 410 |
+| Explorador existente, contexto contiguo | DEAD_END | 1 |
+| Explorador existente, IN/entradas provisionales liberados | FOUND, 28 tareas válidas | 27 |
+| Mismas entradas aceptadas como contexto literal | DEAD_END | 1 |
+| Certificado completo del witness intercalado | PASS | 1 |
+| Motor público final, nominal primero y reparación | COMPLETE, certificado global reducido | 52 = 23 core + 29 continuación |
 
-El primer bundle coloca las 19 entradas de 20 minutos consecutivamente en Estilismo, `[550,930]`. C01 tiene disponibilidad hasta 930 y aún necesita Estilismo salida de 5 minutos seguido de OUT de 5, margen 0. `exactTaskStartDomain` devuelve dominio vacío para su salida `task:10004`. Manteniendo sólo placements del propio C01, el mismo dominio admite `[790,925]`: el bloqueo observado procede de la ocupación de Estilismo por las entradas de otros participantes.
+Los cuatro tests nuevos comprueban determinismo/input inmutable, neutralidad diagnóstica on/off, geometría real del witness V2, protección de Main/trabajo/entrada/IN aceptados, recomposición de IN provisional, ledger exacto, agotamiento sin certificado y un control negativo sin capacidad recuperable. **Esta contraprueba no certifica las 266 obligaciones actualizadas.**
 
-Se auditan los **60 matchings de geometrías distintas**. Todos tienen dominio vacío para esa salida; sus bloques de entrada terminan entre 930 y 950 y C01 sólo tiene una posición de bundle en cada grafo. El productor `buildPipelineWitness` construye `stylingSpots` como `start + ordinal × duration`. Esa realización contigua impide la salida; la autoridad del espacio canónico es capacidad 1, sin secondaryContinuity ni setup que obliguen a terminar todas las entradas antes de comenzar salidas.
+## W — delta mínimo y dos ciclos causales
 
-Una contraprueba reducida conserva capacidad, disponibilidad y dependencias: dos entradas de 20 minutos contiguas dejan sin dominio una salida; entrada-a → salida-a → OUT-a, con entrada-b después, pasa `validatePlan`. Demuestra que intercalar puede ser legal. **No demuestra la viabilidad de las 266 obligaciones actualizadas con S1 protegido.** La poda de la hoja contigua es sound; abandonar esa representación no equivale a certificar todas las representaciones posibles.
+`exactItinerantPlan.ts` conserva el intento nominal primero. Sólo activa el fallback si la reserva da `FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN`, la tarea comparte espacio/recurso con entradas no aceptadas, y quitar esas entradas devuelve un dominio positivo mediante `exactTaskStartDomain`.
 
-La cadena Reality C aporta también un rechazo local certificado por `task:10102` @980. Ninguna de estas autoridades prueba inviabilidad global. El residual visita 207 patrones y 1.141 timelines, colapsa 348 órdenes equivalentes y reconstruye 1.251 matchings completos sin actualizaciones incrementales ni cache hits. No se capturan hashes completos de autoridad de cada invocación: estos conteos no justifican llamar redundantes a todas las ramas ni añadir una cache indiscriminada.
+El fallback retira únicamente IN/entradas provisionales identificados por relaciones existentes; preserva Main/Vocal, anchors y todos los placements protegidos. Recompone llegadas mediante `assessCoreArrivalTransportFeasibility`, cobra el ledger compartido y reutiliza la continuación conjunta existente: cadenas técnicas, prerequisites, agendas, standalone, comidas, transporte terminal y cierre. Sólo una solución completa validada permite aceptar; los witnesses y fingerprints describen la geometría realmente seleccionada. Un intento finito fallido retiene incertidumbre y no certifica un nogood de Main ni inviabilidad global.
 
-## W — hipótesis falsable y único experimento productivo nuevo
+No se añade scheduler, DFS, matching, poda, seed humano, IDs de A2, presupuesto ni timeout. Código productivo de esta unidad: `exactItinerantPlan.ts`, blob `c699e8c12ab1ef72b72b61d83afcd67cae01886c`; test `supportingGeometryRepair.spec.ts`.
 
-**X**: se pierden reparaciones estructurales y se cae al residual. **Y**: `seenBundleForbidden` comparte exclusiones `task@posición` entre grafos diferentes en `runExactMainAndFeederSearch`. **Z**: omite 44 de 52 solicitudes de reparación aunque una posición representa otros horarios/bundles. **W**: limitar la deduplicación al candidato estructural que define ese grafo. **M**: recuperar la alternativa válida en la contraprueba con su budget intacto y comprobar por separado el efecto canónico.
+**Ciclo 1 descartado:** el retry inicial se activaba tras cualquier rechazo nominal. En S1 sin refresh entró a reparar sin demostrar capacidad recuperable: a los 334.066,927 ms aún seguía con 32.051 ramas y cero llamadas standalone. Se interrumpió para diagnóstico; no se agotó budget ni se produjo resultado completo. El run S2 aislado también se interrumpió, a los 1.650.000 ms. Se comparó esta regresión antes de restringir el trigger; la versión amplia no se retiene.
 
-La contraprueba usa dos Main/Vocal y geometrías 60/70 y 80/90. El primer grafo no puede reparar a@0; el segundo puede situar a@90 y conservar sus dos obligaciones futuras. Antes agota 10 ramas; después completa en 2 mediante el matching incremental existente. Diagnóstico on/off conserva resultado, decisiones, fingerprint, contabilidad y stop reason. El test comprueba validez e input inmutable.
+**Ciclo 2 final:** S1 se acepta y el refresh pasa. S2 recupera el dominio C01 y entra en `searchJoint`. Se observan dos arquitecturas/matchings y dos reparaciones, sin éxito completo. Se detiene la expansión después de este ciclo.
 
-El único cambio productivo son **7 líneas** en `exactMainAndFeederCore.ts`: al cambiar el candidato/grafo se reinicia el conjunto de exclusiones; dentro del mismo grafo se mantiene la deduplicación. No hay nuevo scheduler/DFS, scoring, seed, presupuesto, timeout ni relajación. Se añade un test focal de 51 líneas.
-
-| S2 | Referencia `6f0f696` | Candidato |
+| ASST S2 | Baseline 8d completo | Candidato al parar |
 |---|---:|---:|
-| Arquitecturas / matchings / hojas core | 79 / 60 / 52 | 79 / 60 / 52 |
-| Reparaciones / deduplicaciones entre grafos | 8 / 44 | 52 / 0 |
-| Reparaciones con nuevo matching | 0 | 0 |
-| Ramas antes del residual | 9.344 | 9.404 |
-| Ramas matching residual | 288.190 | 288.190 |
-| Ledger total = core + continuación | 300.000 = 299.636 + 364 | Igual |
-| Propuesta S2 / continuación conjunta alcanzada | No / No | No / No |
+| Ledger | 300.000 = 299.636 + 364 | 37.599 = 2.998 + 34.601 |
+| Reparación de supporting | 0 | 2, 0 aceptadas |
+| Continuación conjunta alcanzada | No | Sí, cadenas/prerequisites/agendas |
+| Llamadas al standalone ordinario | 0 | 0 |
+| Checks de cierre / ramas cobradas por cierre | — | 16.348 / 16.348 |
+| Residual matching alcanzado | Sí | No |
+| Propuesta S2 / certificado global | No / No | No / No |
+| Stop | Budget agotado | Interrupción diagnóstica manual |
 
-La hipótesis de que esta corrección bastaba para desbloquear S2 queda **refutada**. Se retiene el defecto corregido porque su pérdida de alternativas está demostrada, sin atribuirle mejora canónica. Se detiene expansión después de un experimento productivo nuevo; los dos ciclos anteriores permanecen documentados. No se encadenan heurísticas sobre el consumidor residual.
+El menor ledger del candidato es **parcial**, no una reducción del trabajo hasta solución/fallo. Se interrumpe tras observar **al menos 378.937 s dentro de S2**; el wrapper original acaba abortado tras 732.917,455 ms, exit 1. No hay resultado final del solver ni assertion completa del producto. El inspector registra y reanuda sin cambiar orden/config/expectativas; esta medición no permite atribuir rendimiento causal. No se eleva ningún timeout ni se cambia el benchmark.
 
-El experimento focal siguiente debe usar los exploradores exactos ordinarios/placement/transporte existentes para mantener reconfigurables IN y entradas no aceptados en la frontera core → continuación conjunta y certificar una intercalación de entrada/salida bajo el canon actualizado. Primero debe pasar la contraprueba reducida con decisiones protegidas; después exigir certificado completo, ledger y validación antes de proyectar. No se implementa sin esa evidencia.
+## M — autoridad posterior y clasificación de la prueba
 
-## M — gates, tiempos y límites
+Read-only, el cierre necesario del primer core nominal da Hall para C01; tras retirar entradas y recomponer IN pasa, conservando dominio salida `[790,925]`. El segundo core reparado también pasa el cierre necesario, dominio `[805,925]`. Ambos PASS son **necessary-only**, sin certificación.
 
-Los dos flujos A2 nuevos arrancan con snapshots vacíos y sin seed. El comparador exige igualdad de scopes, placements, recursos, unidades, comidas, preparaciones, witnesses/certificados y accounting. Fingerprint final `7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415`; digest material `ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc`, ambos idénticos al baseline.
+La última captura está en agenda 1 con 75 tareas de contexto. Para p209: IN `[660,665]`, entrada pendiente de 20, trabajo `10124` `[540,570]`; entrada exigiría inicio >=665 y <=520. Para p210: IN `[690,695]`, entrada pendiente de 20, trabajo `10139` `[560,590]`; inicio >=695 y <=540. Los dominios exactos de ambas entradas quedan vacíos. El cierre propaga estas dependencias y reproduce Hall de las salidas `10118/10133`, matching 17/19. **Rechazar esos contextos es correcto**; no prueba que todos los horarios de trabajos/IN fallen. El dominio directo de una salida, sin propagar sus predecesores pendientes, no sustituye esta autoridad.
 
-| Stage | Ledger core + continuación | Baseline, ms (dos runs) | Candidato, ms (dos runs) |
+La primera reparación termina REJECT después de 634 ramas. Su traza registra una reserva ABSTAIN con dependencia `10015` alcanzable; **esa abstención no causa rechazo** y la lista de dependencias inalcanzables es vacía. No se capturó el contexto exacto de su primer rechazo conjunto. El campo nuevo se llama `lastAuthorityObservation` para distinguir la observación de una prueba de rechazo; este ajuste de diagnóstico no cambia búsqueda ni cuenta como otro ciclo causal.
+
+Por tanto: intercalación reducida válida, explorada y certificada; intercalación canónica completa aún no construida; contextos de agenda concretos rechazados correctamente; continuación global no certificada; inviabilidad global no demostrada; budget del candidato no agotado. No se alcanzó el productor ordinario de las entradas pendientes antes de parar. No se fuerza PROPOSAL ni se persigue otra poda/capa de matching.
+
+## Regresión A2 y validaciones
+
+Dos llamadas independientes a `runA2Assist8Evidence({reportIterationDurations:true})` desde snapshots vacíos. Comparación de material **completo** contra ambos runs y baseline 8d: scopes, placements, comidas, recursos, unidades, preparaciones, witnesses/certificados y todos los contadores `work` iguales. Sin seed de certificados anteriores.
+
+Digest material `ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc`; fingerprint final `7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415`. 266/266, S10; cero nuevas HARD/REQUIRED y cero placements aceptados movidos. Máximo ledger 80.835 por petición, igual a core + continuación y menor que 100.000.
+
+| Stage | Ledger core + continuación | Baseline 8d, ms (dos runs) | Candidato, ms (dos runs) |
 |---|---:|---:|---:|
-| S1 | 11.394 + 69.441 | 241.975 / 220.710 | 174.897 / 170.776 |
-| S2 | 0 + 293 | 180 / 128 | 193 / 117 |
-| S3 | 0 + 293 | 149 / 268 | 110 / 103 |
-| S4 | 0 + 293 | 213 / 183 | 202 / 97 |
-| S5 | 0 + 13.241 | 18.085 / 25.088 | 17.501 / 18.020 |
-| S6 | 0 + 293 | 107 / 137 | 111 / 106 |
-| S7 | 0 + 1.884 | 6.814 / 11.614 | 6.766 / 6.749 |
-| S8 | 0 + 293 | 137 / 132 | 225 / 128 |
-| S9 | 0 + 293 | 125 / 195 | 209 / 194 |
-| S10 | 0 + 293 | 183 / 332 | 136 / 197 |
-| Cálculo total | — | 267.968 / 258.787 | 200.350 / 196.487 |
+| S1 | 11,394 + 69,441 | 174897 / 170776 | 214692 / 209865 |
+| S2 | 0 + 293 | 193 / 117 | 209 / 124 |
+| S3 | 0 + 293 | 110 / 103 | 129 / 117 |
+| S4 | 0 + 293 | 202 / 97 | 432 / 110 |
+| S5 | 0 + 13,241 | 17501 / 18020 | 23209 / 18065 |
+| S6 | 0 + 293 | 111 / 106 | 133 / 132 |
+| S7 | 0 + 1,884 | 6766 / 6749 | 7563 / 7023 |
+| S8 | 0 + 293 | 225 / 128 | 258 / 121 |
+| S9 | 0 + 293 | 209 / 194 | 239 / 118 |
+| S10 | 0 + 293 | 136 / 197 | 137 / 124 |
+| Cálculo total | — | 200350 / 196487 | 247001 / 235799 |
 
-Tiempo total de los wrappers A2 nuevos: 200.535,874 / 196.563,581 ms. Cada Stage mide la llamada completa, incluidos core y continuaciones; no hay cronómetros independientes completos para esas dos fases. Se usa el mismo workspace y los dos runs nuevos son secuenciales. Las decisiones y ramas A2 son iguales: la variación temporal no prueba una aceleración causal del delta y no se declara optimización de S1. **Objetivo <=120 s: FAIL en S1. Techo <=300 s: PASS.**
+Tiempo total de los wrappers: 247.215,999 / 235.843,518 ms, frente a 200.535,874 / 196.563,581 ms de 8d.
 
-ASST original falla tras **527.143,777 ms**; S2 aislado con la misma entrada consume **216.652,672 ms**. No se capturó un cronómetro separado para S1 ASST. El run con inspector se solapa con la auditoría read-only y no sirve como comparación de latencia. Su input, resultado y **Evidence completa** son exactamente iguales al S2 directo: la captura no cambia decisiones, ledger, fingerprint ni stop reason. Tras imprimir el fallo se interrumpen únicamente el observador y el wrapper que esperaban el cierre del debugger; ninguna búsqueda se interrumpe ni ese exit 130 se cuenta como PASS.
+Objetivo <=120 s: FAIL en S1. Techo <=300 s: PASS en todos los Stages A2; FAIL en S2 ASST observado. Los tiempos incluyen la llamada completa; no hay medidas independientes completas core/continuación. La igualdad de ramas/decisiones no demuestra una aceleración causal y no se declara optimización de S1.
 
-| Gate | Estado |
+| Gate | Resultado |
 |---|---|
-| Identidad checkout; scope autorizado; witness futuro invisible/no protegido | PASS |
-| Refresh materializado y S1 preservado | PASS |
-| ASST-010 completo / propuesta post-refresh | FAIL |
-| AcceptedException, provenance, rollback, redo y divergencia en el recorrido canónico | INCONCLUSIVE: no alcanzados |
-| A2 266/266, S10, dos runs limpios, material completo y protección exacta | PASS |
-| Nuevas HARD/REQUIRED, comidas, movimientos de aceptados A2 | PASS: 0 violaciones nuevas / 0 movimientos |
-| Ledger exacto A2, máximo 100.000 por solicitud | PASS: máximo 80.835 |
-| Requisito interactivo 100.000 en ASST-010 | FAIL: fixture heredada sigue en 300.000 |
-| Instrumentación neutral | PASS |
-| Regresiones focales | 354 PASS / 2 FAIL heredados / 0 nuevos |
+| Scope original autorizado; futuro invisible/no protegido | PASS focal y A2 |
+| S1 aceptado y refresh preserva snapshot/stages | PASS antes de S2 |
+| S2 con nueva configuración y S1 literal en input | PASS de reconstrucción; propuesta/aceptación pendientes |
+| ASST-010 completo | INCONCLUSIVE, ejecución abortada para diagnóstico |
+| AcceptedException/provenance, rollback, redo, divergencia canónicos | No alcanzados |
+| A2 266/266, dos runs, material completo/protección/accounting | PASS |
+| Tests focales | 173 PASS, incluidos 4 nuevos |
+| Regresiones proporcionales | 247 PASS / 2 FAIL heredados, 0 nuevos |
 | TypeScript, build, secuencia y test de migraciones | PASS |
-| Preparación para producción/merge | FAIL |
+| Producción/merge | Gate incompleto; draft |
 
-Los dos fallos de transporte se reproducen también en checkout separado de `6f0f696`: `exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly` y `terminal IN materialization finds the backward-propagated witness`. Los tests unitarios aislados de excepciones/lineage pasan y no sustituyen ASST.
+Los dos fallos de transporte (`exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly`; `terminal IN materialization finds the backward-propagated witness`) se reproducen también en checkout separado de 8d. Tests aislados de excepciones/lineage pasan y no sustituyen el recorrido ASST canónico.
 
-Archivos de esta continuación: `exactMainAndFeederCore.ts`, su spec y estos dos archivos de Evidence. Riesgo: recuperar alternativas puede consumir más ramas en configuraciones que dependían de deduplicación incorrecta; el ledger conserva sus límites. No se modifican benchmark/expectativas, canon A2, budgets/timeouts, UI/API/persistencia, base remota ni otras optimizaciones. No hay merge.
+Riesgos: S2 conserva incertidumbre y supera el techo temporal; recomponer una llegada produce una alternativa finita, no enumera todas; las agendas pueden recorrer muchos contextos antes de construir entradas pendientes. La fixture ASST sigue con sus 300.000 ramas heredadas, por encima del requisito interactivo 100.000; no se altera. Se detiene expansión tras dos ciclos. Una siguiente unidad deberá demostrar primero un candidato canónico completo compatible y reconstruir la frontera llegada/prerequisites/agenda.
 
-Reproducción: `npx tsx --test server/benchmarks/runA2Assist7Evidence.spec.ts`; test nuevo con `--test-name-pattern='structural matching exclusions'` en `exactMainAndFeederCore.spec.ts`; dos llamadas a `runA2Assist8Evidence({reportIterationDurations:true})` desde snapshot vacío, comparadas mediante `collectiveClosureDeterministicMaterial`. Los detalles antes/después, neutralidad, autoridades y límites están en `configRefreshAudit` del [JSON](ASST-010-explicit-scope-core.json).
+Reproducción: test original `npx tsx --test server/benchmarks/runA2Assist7Evidence.spec.ts`; tests focales de `supportingGeometryRepair.spec.ts`; dos runs A2 y comparación mediante `collectiveClosureDeterministicMaterial`, además de `iterations[].work`. Estos resultados y autoridades están en `stylingGeometryAudit` del [JSON](ASST-010-explicit-scope-core.json). Archivos de esta unidad: motor, nuevo spec y estos dos archivos Evidence. Sin cambios UI/API/DB/migraciones/publicación/Autopilot, canon, budgets o expectativas. No hay merge.
