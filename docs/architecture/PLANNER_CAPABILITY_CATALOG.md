@@ -13,6 +13,23 @@
 
 ### Cómo leer el catálogo
 
+**Actualización de la rama del PR #1103 (2026-10-09; pendiente de merge).** La
+continuación conjunta de cierre se compone antes de aceptar Assisted mediante
+los explorers existentes de core, cadena técnica, agenda, rondas, unidad de
+recurso/setup, residual, comidas y transporte, con un único ledger por petición.
+`analyticalFutureCollectiveContinuation` conserva el canon fuera del scope;
+`JOINT_COMPLETION` conserva exclusivamente un contexto efímero completo.
+`jointCompletionWitness.ts` revalida identidades, decisiones protegidas y el
+validador HARD/REQUIRED antes de proyectar el scope siguiente; un witness obsoleto
+requiere reconstrucción. El replay de cierre usa las autoridades existentes de
+IN agrupado, anchored y joint. `NECESSARY_ONLY/PASS` sigue sin certificar.
+Las particiones disjuntas de matching de rondas se reutilizan en P15 para conservar
+alternativas ante rechazos conjuntos. La Evidence vigente de esta rama es
+[`A2-COLLECTIVE-CLOSURE-COMPLETION.json`](../evidence/A2-COLLECTIVE-CLOSURE-COMPLETION.json):
+dos flujos limpios 266/266, protección exacta y budget canónico. S1 supera el
+objetivo de dos minutos y cumple el techo de cinco. Este resultado no extiende
+el snapshot histórico de `main` a otras formas o presupuestos de problema.
+
 La traza empleada es **fuente/requisito → autoridad productiva → `EngineInput` → preflight/adapter → Planner Next/ORC → validación → test/benchmark/Evidence → assisted → limitación**. Las dimensiones son independientes: una implementación puede estar activa y a la vez tener integración assisted parcial. `OFFICIAL` se reserva para contratos vinculados explícitamente por documentación de cobertura o por las Fuentes oficiales del proyecto; `DERIVED` identifica conducta deducida del código. `UNVERIFIED` no equivale a roto.
 
 ## Summary matrix

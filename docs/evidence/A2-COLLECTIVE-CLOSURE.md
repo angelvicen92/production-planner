@@ -1,92 +1,64 @@
-# A2 — suficiencia del cierre colectivo
+# A2 — continuación conjunta de cierre
 
-**Diagnóstico causal cerrado; suficiencia funcional A2: INCONCLUSIVE.** Esta unidad añade exclusivamente diagnóstico y prototipos aislados. El solver productivo conserva el resultado **0/266** y sus decisiones, budgets, timeouts, scopes, protección y accounting. No hay capacidad productiva nueva, cumplimiento de 266/266, imposibilidad global, merge ni otro PR.
+**ASSISTED_COMPLETION: 266/266 en S10**, por el flujo real request/run/apply/accept. Dos ejecuciones limpias son equivalentes en placements, recursos, unidades, comidas, preparaciones, certificados y accounting. Cada petición comparte un ledger de 100.000 ramas. No hay nuevas violaciones HARD/REQUIRED, decisiones protegidas modificadas, seed histórico, merge ni otro PR.
 
-PR #1103, base #1085 (`c00bb3d`). El contrato productivo vigente sigue en [A2-COLLECTIVE-CLOSURE-CONTRACT.json](A2-COLLECTIVE-CLOSURE-CONTRACT.json). El diagnóstico compacto está en [A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json](A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json). [A2-ASSIST-8-assisted-completion.json](A2-ASSIST-8-assisted-completion.json) conserva el histórico 209; [A2-COLLECTIVE-CLOSURE.json](A2-COLLECTIVE-CLOSURE.json) conserva el anterior 38. Ninguno se presenta como certificado actual.
+PR [#1103](https://github.com/angelvicen92/production-planner/pull/1103), base #1085 (`c00bb3d`), continuación del head revisado `ffc35446ac2d4685dfbace367cf637945eb2a8f4`. La Evidence vigente está en [A2-COLLECTIVE-CLOSURE-COMPLETION.json](A2-COLLECTIVE-CLOSURE-COMPLETION.json). Los JSON anteriores `CONTRACT` y `SUFFICIENCY` conservan el diagnóstico histórico 0/266; `A2-COLLECTIVE-CLOSURE.json` conserva 38 y `A2-ASSIST-8-assisted-completion.json` conserva 209. No se han sobrescrito ni utilizado como seed.
 
 ## X — causa demostrada
 
-Dos replays limpios independientes por estado, mediante el runner Assisted exportado, reproducen:
+El head revisado exigía 209 ancestros y carecía de productores conjuntos para 104: P14/P15 (94) y cadena/peer/Post (10). Son dependencias directas; no se elimina ninguna. La pareja pipeline–cadena–A/B de la unidad anterior tampoco certificaba el residual. El rechazo de un matching conjunto hacía que P15 abandonase su geometría sin demostrar una arista individualmente imposible.
 
-| Estado | Aceptadas | Resultado material |
-|---|---:|---|
-| Padre `c00bb3d` | 209/266 | S1–S9: 19→38→46→65→75→111→169→207→209. La relajación OUT-aware pasa de 19/19 a 17/19 en S3. |
-| Anterior `8a2bfa8` | 38/266 | S3: 92 geometrías, 14.884/100.000 ramas, sin exhaustion. Rechazo condicionado a S1/S2 protegidos. |
-| Productivo actual `176cfa4` | 0/266 | Guardia de cobertura: 209 ancestros exigidos, 104 sin productor de contexto, cero ramas. No prueba inviabilidad. |
+La regresión a/b duración 10, recurso exclusivo, ventana 0–20 y setup 20–30 demuestra el defecto: el primer matching a10/b0 se rechaza; a0/b10 debe conservarse y se acepta. P15 reutiliza ahora las particiones disjuntas de rondas. Una prohibición individual sólo procede de una prueba individual; una prueba conjunta excluye su conjunción, y el agotamiento sigue siendo incertidumbre.
 
-**Los 209 también son dependencias directas de cierre, comidas u OUT. No existe aquí un subconjunto meramente transitivo que pueda borrarse.** Son las 247 tareas fuente menos los 19 cierres y 19 OUT; las 19 comidas completan las 266 obligaciones. El inventario JSON identifica cada ancestro por clase y proveedor; distingue representación estática de realización conjunta.
+Al componer el contexto completo, el replay ordinario rechazaba IN simultáneos y la transición interna Reality–Main `INCLUDED`. Se corrige mediante las autoridades existentes de paquetes IN, operaciones anchored y grupos joint. Las contrapruebas rechazan tamaño/gap de IN incorrectos, ruptura de adyacencia, desincronización y conflictos externos. No se relaja el placement ordinario ni el validador.
 
-| Clase de ancestros | Cantidad | Efecto que el certificado debe conservar |
-|---|---:|---|
-| Pipeline actual: IN, entrada, vocal, Main y operaciones anchored | 82 | IN limita paquetes/releases; entrada comparte Estilismo con salida; vocal/Main fijan ocupación de participante, coach, unidad y recursos; anchored preserva adyacencia. Condicionan comidas y releases posteriores. |
-| Totales en rondas | 19 | Releases propios, ocupación de dos lanes/participantes, preparación entre rondas y pausa operacional compartida. El matching de rondas debe aportar tareas y preparaciones al mismo contexto. |
-| Reality A/B | 4 | Unidad concreta y recursos físicos, transición 15, comidas y disponibilidad. Comparten recursos con la cadena C/EVA; witnesses independientes no bastan. |
-| P14: Giratuto, Pasillo, Redes y corners | 58 | Releases directos, ocupación de participante y espacios, pausa de P14 y huecos de Sodexo/OUT. No se descargan con un earliest-end individual. |
-| P15: Croma, Estrellas y Sillón | 36 | CAM 2 compartida entre espacios; releases, participantes, continuidad, setup 10 y reentry prohibido; pausa P15. Necesitan geometría/matching compatible con las demás unidades. |
-| Cadena técnica C/EVA y peer joint | 8 | Capacidad y continuidad de recursos, Eva desde 16:00, fases/adyacencia y joint Alfombra. La autoridad actual prueba reservas exactas individualmente, pero no las incorpora como unidad al set conjunto. |
-| Totales Post joint | 2 | Dependen de Main/Alfombra, sincronizan dos participantes y elevan el release hacia Estilismo/OUT. |
+## Y — alcance exacto del certificado
 
-Los **104** son P14+P15 (**94**) y cadena/peer+Post (**10**). Añadir la cadena al set sólo cubriría ocho; no resolvería los 96 restantes. La pérdida inicial del padre sigue siendo S3: el joint `10069+10129` a 1105–1115 deja dos cierres con el único slot OUT-compatible 1130; `10215` añade un tercero. Se deriva de autoridad canónica, no de horarios humanos.
+El bundle sólo se acepta después de producir un contexto compatible de las **247 tareas y 19 comidas**: core/IN/entrada/anchors, cadena técnica, Reality A/B, rondas y sus 17 preparaciones, P15 con setup, P14, Post, cierre Estilismo y OUT. También se validan pausas operacionales y restricciones de recursos/unidades. `validatePlan` exige HARD/REQUIRED para la realización completa.
 
-## Y — alcance exacto y contrapruebas
+La autoridad de cierre mantiene todos los ancestros, cotas canónicas, capacidad colectiva, comidas y continuación OUT. `NECESSARY_ONLY/PASS` sirve para conservar candidatos; jamás acepta un Stage. Hall bajo dominios optimistas permite una poda local sound; `ABSTAIN`, falta de productor y budget exhaustion no prueban imposibilidad global. La suficiencia procede de la composición completa y su validación, no de certificados individuales independientes.
 
-`NECESSARY_ONLY/PASS` prueba sólo que la relajación de slots conserva matching; **no certifica realización conjunta**. Un Hall bajo dominios optimistas permite rechazar ese contexto; no demuestra inviabilidad de otro Main/bundle. `ABSTAIN`, cobertura ausente y budget exhaustion conservan incertidumbre.
+`JOINT_COMPLETION` permanece efímero. La proyección devuelve sólo tareas/preparaciones/comidas autorizadas para el scope actual; el producto conserva el filtro visible existente. Antes del Stage siguiente se revalidan canon, identidad, recursos/unidades, disponibilidad, preparaciones y decisiones aceptadas. Si falla el replay se reconstruye dentro del mismo ledger; no se reutiliza un certificado obsoleto. S5 y S7 reconstruyen contexto futuro conservando todo lo aceptado.
 
-`CERTIFY` exige ancestros concretos conjuntos y comidas canónicas; replay de placement; geometría de slots unitarios disjuntos; matching completo; validación de comidas y transporte OUT existente. El fingerprint está condicionado a ese contexto. **No reemplaza las autoridades REQUIRED de chain/round/setup, ni las pausas operacionales.** Una contraprueba nueva obtiene certificado de placement/cierre con dos miembros técnicos separados por un hueco: el prototipo que compone la cadena exacta lo rechaza. El gate productivo necesita esas garantías de sus explorers además del cierre.
+La guardia de productor exige que tareas y comidas estén incluidas, protegidas o explícitamente elegibles como futuro. No permite replantear estados inmutables por incorporar un problema fuente completo.
 
-Las otras contrapruebas prueban: ancestros individualmente posibles pero incompatibles por recurso exclusivo; pérdida colectiva de slots; OUT individual imposible; ancestro ordinario omitido; presupuesto insuficiente. Ninguna incertidumbre genera witness positivo.
+## Z — avance funcional real
 
-No se ha reducido contexto para aceptar A2. Se pueden comprimir datos en un witness conjunto que conserve releases, ocupaciones y políticas; las capacidades examinadas no han demostrado todavía ese sustituto completo para esta frontera.
+| Stage | Nuevas obligaciones | Acumuladas | Ramas core + continuación | Tiempo de las dos ejecuciones |
+|---|---:|---:|---:|---:|
+| S1 | 19 | 19 | 11.394 + 69.441 = 80.835 | 189,67 / 184,63 s |
+| S2 | 19 | 38 | 0 + 293 | 0,17 / 0,16 s |
+| S3 | 8 | 46 | 0 + 293 | 0,13 / 0,12 s |
+| S4 | 19 | 65 | 0 + 293 | 0,19 / 0,10 s |
+| S5 | 10 | 75 | 0 + 13.241 | 19,39 / 19,62 s |
+| S6 | 36 | 111 | 0 + 293 | 0,12 / 0,12 s |
+| S7 | 58 | 169 | 0 + 1.884 | 7,27 / 7,03 s |
+| S8 | 38 | 207 | 0 + 293 | 0,14 / 0,16 s |
+| S9 | 2 | 209 | 0 + 293 | 0,17 / 0,16 s |
+| S10 | 57 | 266 | 0 + 293 | 0,17 / 0,15 s |
 
-## Z — qué se decidió antes de S1/S2
+S10 añade 38 tareas y 19 comidas. En todas las peticiones `core + continuación = total <= 100.000`; arquitectura, matching, contextos futuros, residual, comidas, transporte y replay comparten ese ledger. No se añaden resets, subpresupuestos, timeouts ni búsqueda combinatoria gratuita. El prep nominal anticipado sin ledger se evita en este camino; el replay exacto cobra sus vértices.
 
-El probe desde limpio utiliza arquitecturas y matching autorizados, la reserva técnica exacta, la agenda A/B exacta y Hall necesario. No recibe fingerprints ni placements históricos.
+Se conservan jornada 09:00–21:00, C01 hasta 15:30, C02–C19 hasta 19:00, margen default 5/MAX/cero explícito, salida.after0/OUT.before0, Estilismo capacidad 1 e IN target3/max3/gap30. No cambia el canon ni el orden de scopes.
 
-- Primera arquitectura: 92 reservas técnicas; 50 Hall y 42 relajaciones compatibles; cero agendas A/B. Frontiers 960/965/970/975.
-- Arquitectura 29: pareja técnica–A/B encontrada en **55.752/100.000** ramas; cadena desde 975; matching necesario 19/19. Main y pausa cambian respecto a la primera arquitectura. Las 94 tareas quedan exclusivamente como contexto efímero; aún faltan **115** ancestros: P14/P15 94, rondas 19 y Post 2.
-- Replay con S1 protegido, incluida su pausa aceptada: 100 geometrías nominales de soporte, una hoja hard-valid, 92 reservas, ningún par, **4.398** ramas. Esto sólo agota esa frontera: el generador varía Styling, no todas las geometrías vocales posibles.
-- Replay con S1/S2 protegidos, incluidas sus pausas: **100.000/100.000**, sin pareja; queda inconcluso por presupuesto. La prueba anterior de las 92 geometrías sigue siendo condicional al bundle de aquella ejecución.
+La selección inicial llega a la arquitectura 29 antes de aceptar S1. Puede diferir de las decisiones históricas; dentro de cada ejecución se verifica igualdad exacta de tareas, recursos, unidades, comidas y preparaciones ya aceptados. La fuente vigente queda completada sin duplicados y `dailyTasks` coincide con el último Stage aceptado.
 
-Existe una alternativa de Main/bundle antes de S1 para la pareja probada. **No está demostrado que cambiar Main sea necesario, ni que baste cambiar el soporte antes de S2.** La dependencia pendiente es una continuación exacta de alternativas vocales/soporte bajo Main protegido; las cotas y la frontera nominal Styling no deciden esa pregunta. Los replays preservan decisiones y pausas aceptadas dentro de cada ejecución.
+## W — implementación mínima
 
-## W — reparación mínima y archivos
+- `exactMainAndFeederCore.ts`, `exactRoundSynchronization.ts`, `exactPreferredResourceUnit.ts`: partición compartida y conservación de alternativas conjuntas; pruebas necesarias por arista sin certificados positivos.
+- `assistedPlanning.ts`, `contracts.ts`, `anonymousPipelineWitness.ts`: proyección del canon y witness completo efímero, con elegibilidad explícita.
+- `exactItinerantPlan.ts`: composición de continuations existentes, podas necesarias en fronteras, comidas antes del relleno ordinario, certificado completo y proyección/replay entre Stages. Se conserva la selección de unidades REQUIRED anterior al relleno; no se añade un scheduler ni DFS global nuevo.
+- `futureCollectiveParticipantClosure.ts`, `jointCompletionWitness.ts`: replay de autoridades canónicas, incertidumbre y validación conjunta.
+- Tests focales correspondientes y `runA2CollectiveClosureEvidence.ts`: regresiones, soundness, neutralidad/determinismo y emisor compacto. El inventario/prototipos anteriores permanecen disponibles.
 
-El prototipo acotado compone **una** cadena exacta existente → comidas exactas → cierre/matching → OUT → validador HARD/REQUIRED. Rechaza el primer candidato que destruye su continuación, acepta otro con witness conjunto y avanza a un segundo Stage conservando lo aceptado. No añade un scheduler residual ni interviene en decisiones productivas.
+No cambia DB, schema, UI, API, ORC, V3/V4, budgets ni expectativas de producto. El catálogo identifica la capacidad de esta rama pendiente de merge y mantiene su snapshot histórico.
 
-Para A2 se probó también el residual con el solver existente: 94 tareas efímeras fijas; scope analítico de 96 productivas y 19 comidas; 19 rondas futuras. Incluir comidas evita confundir sus IDs con dependencias productivas sin resolver. Conserva el ledger 100k. Una primera hoja ordinaria llega a 13.204 ramas y reduce matching **19→16**, afectando C01/C09/C17. Se consumen las 86.796 restantes buscando continuación; P15 examina 241 geometrías/matchings y una primera realización. Termina `STANDALONE_BRANCH_BUDGET_EXHAUSTED`, sin certificado positivo. Hall necesario demuestra que la pareja técnica–A/B tampoco basta para aceptar el Stage.
+## M — validación y límites
 
-**Reparación propuesta, todavía pendiente de prueba funcional:** conectar la continuación conjunta a la elección de bundle antes de aceptar S1/S2; conservar los productores de cadena, rondas, A/B, P14/P15, Post y comidas en un contexto acumulado. Reutilizar sus explorers y continuations. El experimento mínimo pendiente es comprobar releases/slots residuales durante esa composición y exigir un witness exacto compatible con todas esas autoridades dentro del ledger vigente. No eliminar ancestros, aceptar incertidumbre, aumentar budgets ni crear una nueva búsqueda global.
+Código productivo validado: `3a3645209ce5b4f0c50db1dce40330c83b4f8a2c`. **278 tests focales/regresiones PASS**, TypeScript, build y secuencia de migraciones PASS; gates de producto: 9 PASS / 3 FAIL heredados, incluido A2-ASSIST-8 PASS. Dos ejecuciones completas limpias PASS; material determinista `ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc`, fingerprint final `7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415`. Los tests focales y checks del candidato se registran en el JSON vigente.
 
-Archivos de esta unidad:
+**Latencia pendiente:** S1 cumple el techo bloqueante de cinco minutos pero supera el objetivo interactivo de dos. El resto queda por debajo de veinte segundos. La completitud funcional conseguida no declara rendimiento interactivo cumplido ni suficiencia para cualquier otra configuración.
 
-- `engine/planner-next/benchmarks/collectiveClosureSufficiencyProbe.ts` y `.spec.ts`: composición acotada y contrapruebas.
-- `engine/planner-next/benchmarks/a2ClosureSufficiencyDiagnostic.ts` y `.spec.ts`: inventario, replay canónico, frontera y residual aislados, neutralidad.
-- `server/benchmarks/runA2CollectiveClosureEvidence.ts`: reutiliza el runner; corrige sólo reconstrucción diagnóstica de recursos/unidades aceptados y conserva pausas; recopila y emite Evidence compacta.
-- Este documento y `A2-COLLECTIVE-CLOSURE-SUFFICIENCY.json`.
+Los gates heredados se mantienen visibles y sin rebajar expectativas: A2-ASSIST-1 exige una propuesta con budget 6.000; aislamiento rechaza el benchmark histórico `runA2Assist8ManualEvidence.spec.ts`; ASST-010 no alcanza su propuesta inicial antes de probar rollback/divergencia. Su clasificación y el resultado del gate A2-ASSIST-8 se registran en Evidence. No se declara CI global verde ni imposibilidad global.
 
-Ningún archivo productivo del solver, canon, DB, UI, scope resolver, presupuesto o test de expectativas de producto cambia. Los históricos grandes se conservan; la Evidence nueva evita duplicar snapshots completos.
-
-## M — validación y aceptación funcional
-
-**76 tests focales PASS**, incluidos diez nuevos tests de suficiencia, contrapruebas, replay, neutralidad y determinismo. TypeScript y build PASS. Dos replays limpios por cada uno de los tres estados; dos probes por cada frontera. El residual con diagnóstico desactivado/activado coincide en status, decisiones, certificado, counters y presupuesto; su comparación está en la Evidence.
-
-El [Planner Engine CI heredado de #1085](https://github.com/angelvicen92/production-planner/actions/runs/37839622776), job `113525400199`, tiene tres fallos en 2775 tests (2771 PASS, uno skipped):
-
-| Fallo heredado | Clasificación y límite |
-|---|---|
-| A2-ASSIST-1 propone 19 con 6000 | `STANDALONE_BRANCH_BUDGET_EXHAUSTED`: core 2292 + standalone 3708 = 6000; `proposalCount=0`, esperado 1. La expectativa se conserva. |
-| Aislamiento Planner Next | Frontera diagnóstica no registrada: primer archivo señalado `server/benchmarks/runA2Assist8ManualEvidence.spec.ts`. No equivale a prueba de una entrada productiva nueva; el allowlist no se amplía. |
-| ASST-010 rollback/divergence | El prerequisite del escenario falla por `STANDALONE_BRANCH_BUDGET_EXHAUSTED`, `NO_PROPOSAL` frente a `PROPOSAL`. El escenario no llega a demostrar rollback/divergence; no se rebaja su expectativa. |
-
-La reproducción focal del padre da **8 PASS / 3 FAIL**. Con el gate actual, los mismos archivos más A2-ASSIST-8 dan **7 PASS / 5 FAIL**: el contrato de budget pequeño también falla al recibir INCONCLUSIVE y A2-ASSIST-8 espera 19, recibe 0. El fallo canónico y ASST-010 pasan a bloquear por cierre inconcluso. Son consecuencias productivas del head `176cfa4`, no correcciones ni fallos nuevos introducidos por este diagnóstico. No se declara CI de producto verde.
-
-Aceptación funcional pendiente: una ejecución limpia acepta al menos S1/S2 con certificado conjunto suficiente; cada Stage posterior conserva su continuación y los placements/pausas ya aceptados; contrapruebas permanecen negativas o inconclusas; source266, disponibilidad C01 15:30/C02–C19 19:00, margen default5, salida.after0/OUT.before0, Estilismo1, IN target3/max3/gap30 y HARD/REQUIRED permanecen intactos. No exigir fingerprints históricos en esa ejecución ni contabilizar witnesses como obligaciones aceptadas.
-
-Reproducción, con worktrees detached del padre y anterior y node_modules disponibles:
-
-```sh
-node --import tsx server/benchmarks/runA2CollectiveClosureEvidence.ts --collect-sufficiency-observations --parent-root /path/to/c00bb3d --previous-root /path/to/8a2bfa8 --observations-directory /tmp/a2-closure
-node --import tsx server/benchmarks/runA2CollectiveClosureEvidence.ts --sufficiency-diagnosis --observations-directory /tmp/a2-closure
-```
-
-Las observaciones proceden de `runA2Assist8Evidence({writeEvidence:false})` por defecto. No ejecutar el CLI histórico que sobrescribe el 209 para este contraste. La Evidence nueva es un suplemento diagnóstico del contrato vigente; su conclusión permanece **INCONCLUSIVE** hasta obtener la continuación residual positiva y decidir la alternativa de soporte bajo Main protegido.
+Reproducción compacta: ejecutar dos veces `runA2Assist8Evidence({reportIterationDurations:true})`, guardar las observaciones fuera del producto y emitir con `node --import tsx server/benchmarks/runA2CollectiveClosureEvidence.ts --completion-observations --first <run1.json> --second <run2.json>`. El emisor compara el material completo, exige 266/266, certificados, protección, límites de ledger y ausencia de nuevas infracciones; nunca carga observaciones como hints del solver.
