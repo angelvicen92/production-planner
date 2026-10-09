@@ -980,5 +980,14 @@
     "S1 takes 184.6–189.7 seconds: the five-minute blocking ceiling passes; the two-minute interactive target remains unmet.",
     "Budget-6000 and a first scope containing only one Main still fail their retained product expectations.",
     "The completion witness covers the current canonical source and protected context; it must be revalidated or rebuilt after source/scope/configuration changes."
-  ]
+  ],
+  "canonicalConfigurationQualification": {
+    "status": "HISTORICAL_INCOMPLETE_CAM1_CONFIGURATION",
+    "authority": "Fuente 06 v2.7 §7.5",
+    "correctionEvidence": "docs/evidence/A2-CAM1-CORRECTION.json",
+    "historicalScheduleCam1Overlaps": 16,
+    "historicalOverlapMinutes": 80,
+    "currentAutomaticOutcome": "CORRECTED_BUT_BLOCKED",
+    "historicalProofRetained": true
+  }
 }

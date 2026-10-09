@@ -1,5 +1,7 @@
 # ASST-010 — geometría reparable de Estilismo
 
+Canon vigente: [CORRECTED_BUT_BLOCKED tras incorporar CAM1](A2-CAM1-CORRECTION.md), sin propuesta S1 dentro de 100.000 ramas. Los PASS A2 de este informe describen la configuración histórica incompleta. ASST-010 sigue abierto como gate independiente.
+
 **ASST-010: INCONCLUSIVE, S2 sin propuesta ni certificado global. A2-ASSIST-8: PASS, 266/266, S10, dos runs limpios con material completo y accounting idénticos al baseline.** No se alcanzan AcceptedException, rollback, redo ni divergencia canónicos. El PR sigue draft; gate de producción/merge incompleto.
 
 Auditoría posterior, sólo diagnóstica sobre `4f473cbc`: [S1 y calidad frente al humano](A2-S1-CAUSAL-QUALITY-AUDIT.md). Siete full A2 preservan material y accounting; la subida histórica de tiempo no se reproduce estable. La comparación oficial queda bloqueada y el contraste con CAM1 de Fuente 06 revela una brecha heredada del fixture. Esta Evidence no cambia el veredicto ASST-010 ni implementa otra poda.

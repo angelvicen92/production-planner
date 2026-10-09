@@ -1,5 +1,7 @@
 # A2 — auditoría causal de S1 y calidad frente al humano
 
+Estado posterior: [CAM1 corregida, completitud automática bloqueada](A2-CAM1-CORRECTION.md). Los 266/266 de esta auditoría son históricos bajo el fixture sin CAM1; no certifican el canon vigente.
+
 Auditoría diagnóstica del PR #1104 sobre `4f473cbc9dcaad5a3af35dae8dcd1ecefc913aa6`, comparada con `8d28c10dd9f541c1370e50a6d23588d12e43caea`. Base intacta: `5e46168daa35d755bcb9a2573ed81647d8b466a2`. Fecha: 2026-10-09. Sólo Evidence; sin cambio productivo ni merge.
 
 **Resultado:** siete ejecuciones completas mantienen **266/266, S10**, ledger S1 **80.835 = 11.394 core + 69.441 continuación**, protección, contadores y material idénticos. La subida histórica de tiempo **no queda atribuida causalmente al delta**: los controles frescos también invierten la comparación. El hotspot probado está en los predicados de placement usados por cierre colectivo/transporte. Existe un Hall necesario barato para una geometría futura concreta; no hay prueba de ahorro agregado que autorice todavía su implementación.
