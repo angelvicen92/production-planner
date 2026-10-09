@@ -1,5 +1,10 @@
 # A2 con CAM1 — contrafactual de prioridad estructural
 
+Continuación posterior: [cuotas de continuación entre cores](A2-CAM1-CORE-FAIRNESS.md)
+recupera 266/266 en dos runs limpios con CAM1. El objetivo S1 ≤120 s y el gate
+integral ASST-010 siguen abiertos. Esta Evidence conserva el diagnóstico previo
+de la inversión aislada P15/Totales.
+
 PR #1104, base `5e46168daa35d755bcb9a2573ed81647d8b466a2`, código
 evaluado `e9d33171274f251185d751c5bd34d93abbfece65`. Fecha: 2026-10-09.
 Datos, contextos completos, certificados generados y reproducción:

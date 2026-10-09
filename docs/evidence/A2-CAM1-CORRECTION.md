@@ -1,5 +1,10 @@
 # A2 — corrección CAM1 y límite de completitud
 
+Avance posterior: [continuación acotada entre cores](A2-CAM1-CORE-FAIRNESS.md)
+completa 266/266 en dos runs desde S0 con CAM1 vigente. El objetivo S1 ≤120 s
+y ASST-010 siguen abiertos; los resultados BLOCKED siguientes describen el
+estado anterior a ese delta.
+
 Continuación diagnóstica: [contrafactual P15/Totales](A2-CAM1-STRUCTURAL-ORDER-DIAGNOSTIC.md).
 La inversión aislada conserva el agotamiento global; una arquitectura posterior
 certifica el día con ambos órdenes. No se integra un delta de prioridad.
