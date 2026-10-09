@@ -1,20 +1,21 @@
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
-import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
+import { anchoredTaskIds, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, orderTimelines,
+import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, materializeMainFlowOperationalMeals, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
+import { participantGapMinutes } from "./participantTransition";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition, type RequiredCompositePosition } from "./requiredCompositeBlock";
 import { createScheduledSpaceMeal } from "./spaceMeals";
 import { preflight, validatePlan } from "./validate";
 import type { AnalyticalFutureReservation } from "./technicalChainFutureFeasibility";
-import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
-  type PipelineBundleMatchingDiagnostic, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
+import { fixedSupportingPipelineGeometryFrontier, futureStructuralWitnessFromMaterialization, materializePreparedPipelineBundleMatching, pipelineWitnessAuthorityDiagnostic, preparePipelineBundleGraph,
+  revalidateFutureStructuralWitnessDetailed,type FutureStructuralWitness,type FutureStructuralWitnessRejectCause,type FutureStructuralWitnessV1,
+  type PipelineBundleMatchingDiagnostic, type PipelineWitnessAuthorityDiagnostic, type PipelineWitnessObservation, type PreparedPipelineBundleGraph } from "./anonymousPipelineWitness";
 
 /** Identity-free future REQUIRED-chain context used when collapsing matching states. */
 const analyticalTechnicalChainProfile=(problem:PlannerNextProblem,participantId:string|undefined):unknown[]=>
@@ -167,11 +168,13 @@ export interface ExactMainAndFeederCoreEvidence {
     fullMatchingBuilds:number;incrementalRepairs:number;uniquePerfectMatchings:number;duplicatePerfectMatchingsSkipped:number;
     matchingTraversals:number;arrivalEvaluations:number}>;
   fixedSupportingGeometryFailure:string|null;fixedSupportingGlobalFailure:string|null;
+  fixedSupportingWitnessDiagnostic:PipelineWitnessObservation|null;
+  fixedSupportingWitnessAuthority:PipelineWitnessAuthorityDiagnostic|null;
   priorFutureStructuralWitnessFound:boolean;priorFutureStructuralWitnessFingerprint:string|null;
   priorFutureStructuralWitnessRevalidation:"PASS"|"REJECT"|"STALE"|null;priorFutureStructuralWitnessReused:boolean;
   priorFutureStructuralWitnessRejectCause:FutureStructuralWitnessRejectCause|null;
   priorFutureStructuralWitnessRejectDetails:Readonly<Record<string,unknown>>|null;
-  priorFutureStructuralWitnessFallbackEntered:boolean;futureStructuralWitnesses:FutureStructuralWitnessV1[];
+  priorFutureStructuralWitnessFallbackEntered:boolean;futureStructuralWitnesses:FutureStructuralWitness[];
   ephemeralSupportingPlacements:FutureStructuralWitnessV1["ephemeralSupportingPlacements"];
   acceptedSupportingPlacements:ScheduledTask[];branchesBeforeCurrentContinuation:number|null;
   protectedMainSlotChecks:number;
@@ -196,7 +199,17 @@ export interface ExactFeederCoachDomainElimination { depth:number; mainTaskId:st
 export interface ExactFutureFeasibilityCausalAssessment { depth:number; taskId:string; authoritySignature:string; resultSignature:string; domainEmpty:boolean; eligibleStartCount:number; blockers:string[]; ancestralDecisionDepths:number[]; certifiedBackjumpTargetDepth:number|null; occurrences:number }
 export interface ExactFutureFeasibilityAuthorityCollision { depth:number; taskId:string; authoritySignature:string; resultSignatures:string[] }
 export interface ExactFutureFeasibilityCausalSummary { totalEvaluations:number; uniqueAuthorityStates:number; repeatedEvaluations:number; authorityResultCollisions:number; negativeEvaluations:number; repeatedNegativeEvaluations:number; rejectsWithCertifiedBackjumpTarget:number; evaluationsByDepth:Record<string,number>; repeatedByDepth:Record<string,number>; negativeByDepth:Record<string,number>; assessments:ExactFutureFeasibilityCausalAssessment[]; collisions:ExactFutureFeasibilityAuthorityCollision[] }
-export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; futureFeasibility:ExactFutureFeasibilityCausalSummary }
+export interface ExactBundleMaterializationDiagnostic {
+  attempt:number;
+  branchesBeforeMaterialization:number;
+  architectureFingerprint:string|null;
+  selectedEdges:Array<{taskId:string;participantId:string|null;position:number}>;
+  operationalFingerprint:string;
+  hardValid:boolean;
+  reasonCodes:string[];
+  violations:Array<{ruleCode:string;affectedTaskIds:string[]}>;
+}
+export interface ExactCoreCausalDiagnostic { waterfallByDepth:Record<string,ExactDepthWaterfall>; feederByDepth:Record<string,ExactDepthFeeder>; feederRejections:ExactCriticalFeederRejection[]; feederCoachDomainEliminations:ExactFeederCoachDomainElimination[]; futureFeasibility:ExactFutureFeasibilityCausalSummary; bundleMaterializations:ExactBundleMaterializationDiagnostic[] }
 
 export interface ExactMainAndFeederCoreResult {
   status: ExactMainAndFeederCoreStatus;
@@ -248,6 +261,24 @@ export interface IncrementalMatchingWitnessResult {
   readonly outcome: "PERFECT" | "NO_PERFECT_MATCH" | "BUDGET_EXHAUSTED";
   readonly matching?: ReadonlyMap<string, number>;
   readonly traversals: number;
+}
+
+export interface JointMatchingPartition {
+  fixed: Map<string, number>;
+  forbidden: Set<string>;
+}
+
+/** Disjoint prefix partitions cover every matching except the rejected combination.
+ * A partition prohibition is local to that prefix, never an individual nogood. */
+export function partitionRejectedJointMatching(partition: JointMatchingPartition,
+  matching: ReadonlyMap<string, number>): JointMatchingPartition[] {
+  const prefix = new Map(partition.fixed), children: JointMatchingPartition[] = [];
+  for (const [id, position] of [...matching].sort(([a], [b]) => a.localeCompare(b))) {
+    if (partition.fixed.has(id)) continue;
+    children.push({ fixed: new Map(prefix), forbidden: new Set([...partition.forbidden, `${id}@${position}`]) });
+    prefix.set(id, position);
+  }
+  return children;
 }
 
 /** Reuses a perfect matching while the graph is unchanged and only forbidden edges grow.
@@ -352,6 +383,9 @@ export interface ExactCoreLeafCandidate {
   fingerprint: string;
   source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
   architectureFingerprint?: string;
+  geometryFingerprint?: string;
+  reusedFutureStructuralWitness?: Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
+  selectedMainMealStart?: number;
   selectedFutureReservations?: readonly AnalyticalFutureReservation[];
   selectedFutureReservationFingerprints?: readonly string[];
 }
@@ -375,7 +409,7 @@ export interface ExactMainAndFeederSearchOptions {
   fixedPlacements?: readonly ScheduledTask[];
   fixedPlacementsAsContext?: boolean;
   fixedSetupPreparations?: readonly ScheduledSetupPreparation[];
-  priorFutureStructuralWitness?:FutureStructuralWitnessV1;
+  priorFutureStructuralWitness?:Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
   /** Identity-free structural seed. It is evaluated first, through the ordinary exact search. */
   preferredArchitecture?: MainFeederArchitecture;
   /** Live matching state for the preferred architecture. Not authoritative. */
@@ -697,7 +731,9 @@ export const residualMatchingOperationsMayInteract = (problem: PlannerNextProble
 
   const candidateAfterAdded = added.end <= candidate.start;
   const gap = candidateAfterAdded ? candidate.start - added.end : added.start - candidate.end;
-  if (participant && gap < problem.participantTransitionMinutes) return true;
+  if (participant && gap < (candidateAfterAdded
+    ? participantGapMinutes(problem, added, candidate)
+    : participantGapMinutes(problem, candidate, added))) return true;
   if (coach && gap < effectiveCoachTransitionMinutes(problem, candidate.coachId!,
     candidateAfterAdded ? added.spaceId : candidate.spaceId,
     candidateAfterAdded ? candidate.spaceId : added.spaceId)) return true;
@@ -776,6 +812,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     fixedSupportingZeroDomainTaskIds:[],fixedSupportingPerfectMatchingFound:false,fixedSupportingRematchedIdentityCount:0,
     fixedSupportingArrivalResult:null,fixedSupportingArrivalPacketCount:0,fixedSupportingSameGeometryRescued:false,
     fixedSupportingGeometriesAttempted:[],fixedSupportingGeometryFailure:null,fixedSupportingGlobalFailure:null,
+    fixedSupportingWitnessDiagnostic:null,fixedSupportingWitnessAuthority:null,
     priorFutureStructuralWitnessFound:false,priorFutureStructuralWitnessFingerprint:null,priorFutureStructuralWitnessRevalidation:null,
     priorFutureStructuralWitnessRejectCause:null,priorFutureStructuralWitnessRejectDetails:null,
     priorFutureStructuralWitnessReused:false,priorFutureStructuralWitnessFallbackEntered:false,futureStructuralWitnesses:[],
@@ -827,7 +864,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       ||(a.exactSurvivorCount===null&&b.exactSurvivorCount===null?b.knownSurvivorLowerBound-a.knownSurvivorLowerBound:0)
       ||a.intrusionMinutes-b.intrusionMinutes;};
   const ledger = options.ledger ?? createExactSearchLedger(problem.budget.maxBranchExpansions);
-  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]}}:null;
+  const diagnostic:ExactCoreCausalDiagnostic|null=options.causalDiagnostic?{waterfallByDepth:{},feederByDepth:{},feederRejections:[],feederCoachDomainEliminations:[],futureFeasibility:{totalEvaluations:0,uniqueAuthorityStates:0,repeatedEvaluations:0,authorityResultCollisions:0,negativeEvaluations:0,repeatedNegativeEvaluations:0,rejectsWithCertifiedBackjumpTarget:0,evaluationsByDepth:{},repeatedByDepth:{},negativeByDepth:{},assessments:[],collisions:[]},bundleMaterializations:[]}:null;
   const rejectionByKey=new Map<string,ExactCriticalFeederRejection>();
   const eliminationByKey=new Map<string,ExactFeederCoachDomainElimination>();
   const protectedPlacements=options.fixedPlacementsAsContext?[...(options.fixedPlacements??[])]:[];
@@ -954,7 +991,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     continuation:(scheduled:ScheduledTask[])=>SearchOutcome):SearchOutcome=>{
     if(index===fixedMainFeeders.length)return continuation(placed);
     const {main,placement,feeder}=fixedMainFeeders[index]!;
-    const deadline=latestFeederEndBeforeMain(problem,feeder,main.spaceId,placement.start,placement.start);
+    const deadline=latestFeederEndBeforeMain(problem,feeder,firstParticipantObligationTask(main,problem),main.spaceId,placement.start,placement.start);
     const domain=exactFeederStartDomain(problem,feeder,deadline-feeder.duration,placed,options.feederStartDomainMode);
     const starts=[...domain.starts()];
     starts.sort((left,right)=>options.fixedMainFeederStartComparator?.(
@@ -988,8 +1025,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   }
 
   let lastHardGateReason="HARD_VALIDATION_REJECTED";
+  let lastHardGateValidation:ReturnType<typeof validatePlan>|null=null;
   const hardGateCoreLeaf=(placed:readonly ScheduledTask[],meals:readonly ScheduledSpaceMeal[],expectedIds:ReadonlySet<string>,
-    contracts=applicableContracts,includeTransport=false):ScheduledTask[]|null=>{
+    contracts=applicableContracts,includeTransport=false,selectedMealStart?:number):ScheduledTask[]|null=>{
     const expected=[...expectedIds].sort(),actual=placed.map(({id})=>id).sort();
     if(actual.length!==expected.length||actual.some((id,index)=>id!==expected[index])){lastHardGateReason="INCOMPLETE_CORE_SHAPE";return null;}
     for(const fixed of protectedPlacements){const candidate=placed.find(task=>task.id===fixed.id);
@@ -1019,14 +1057,38 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const reducedPlaced=placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>expectedIds.has(id))}));
     const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
       resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-    const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>{const meal=createMainFlowMeal(problem);return {
-      id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:policy.duration,start:meal.start,end:meal.end};});
+    const operationalMealStart=selectedMealStart??(mainMealAuthority?createMainFlowMeal(problem).start:problem.mainFlow.preferredEnd);
+    const fixedOperationalMeals=materializeMainFlowOperationalMeals(problem,operationalMealStart)
+      .filter(meal=>operationalMainMealPolicies.some(policy=>policy.id===meal.id));
     const validation=validatePlan(reduced,reducedPlaced,[...(options.fixedSetupPreparations??[])],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
       fixedResourceMeals,materializeScheduledItinerantUnitMeals(reduced),[],fixedOperationalMeals);
+    lastHardGateValidation=validation;
     if(!validation.hardValid&&!options.acceptsValidation?.(validation)){lastHardGateReason=`HARD_VALIDATION_REJECTED:${validation.reasonCodes.join(",")}`;return null;}
     const originalById=new Map(problem.tasks.map(task=>[task.id,task]));
     return placed.map(task=>({...task,dependencies:[...(originalById.get(task.id)?.dependencies??task.dependencies)]}))
       .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  };
+  const unstructuredBundleAffectedTaskIds=(ruleCode:string,placed:readonly ScheduledTask[],selectedMealStart?:number):string[]=>{
+    const affected=new Set<string>();
+    if(ruleCode==="BLOCK_VIOLATION"){
+      const mains=placed.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      for(let index=1;index<mains.length;index++)if(mains[index-1]!.end<mains[index]!.start){
+        affected.add(mains[index-1]!.id);affected.add(mains[index]!.id);
+      }
+      const runs:Array<{key:string;tasks:ScheduledTask[]}>=[];
+      for(const task of mains){const key=task.blockKey??"",prior=runs.at(-1);if(prior?.key===key)prior.tasks.push(task);else runs.push({key,tasks:[task]});}
+      const counts=new Map<string,number>();for(const run of runs){counts.set(run.key,(counts.get(run.key)??0)+1);
+        if(run.tasks.length<problem.mainFlow.minTasksPerBlock)for(const task of run.tasks)affected.add(task.id);}
+      for(const [key,count] of counts)if(count>problem.mainFlow.maxBlocksByKey)
+        for(const run of runs.filter(candidate=>candidate.key===key))for(const task of run.tasks)affected.add(task.id);
+    }
+    if(ruleCode==="OPERATIONAL_MEAL_VIOLATION")for(const policy of problem.operationalMealPolicies??[]){
+      const canonical=createMainFlowMeal(problem),start=selectedMealStart??canonical.start,meal={start,end:start+canonical.duration};
+      for(const task of placed)if(task.start<meal.end&&meal.start<task.end
+        &&(policy.spaceIds.includes(task.spaceId)||(task.coachId!==undefined&&policy.resourceIds.includes(task.coachId))
+          ||(task.requiredResourceIds??[]).some(id=>policy.resourceIds.includes(id))))affected.add(task.id);
+    }
+    return [...affected].sort();
   };
 
   // A completed Assisted stage fixes Main identity and time, not its hidden support.
@@ -1048,17 +1110,20 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const prior=options.priorFutureStructuralWitness;
       evidence.priorFutureStructuralWitnessFound=Boolean(prior);
       evidence.priorFutureStructuralWitnessFingerprint=prior?.fingerprint??null;
-      const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&prior.version===1
+      const compatiblePrior=prior?.kind==="FIXED_SUPPORTING_PIPELINE"&&(prior.version===1||prior.version===2)
         &&prior.architectureFingerprint===evidence.protectedMainArchitectureFingerprint;
       if(prior&&!compatiblePrior){evidence.priorFutureStructuralWitnessRevalidation="STALE";
-        evidence.priorFutureStructuralWitnessRejectCause=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+        evidence.priorFutureStructuralWitnessRejectCause=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||(prior.version!==1&&prior.version!==2)
           ?"INVALID_KIND_OR_VERSION":"ARCHITECTURE_FINGERPRINT_MISMATCH";
-        evidence.priorFutureStructuralWitnessRejectDetails=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||prior.version!==1
+        evidence.priorFutureStructuralWitnessRejectDetails=prior.kind!=="FIXED_SUPPORTING_PIPELINE"||(prior.version!==1&&prior.version!==2)
           ?{kind:prior.kind,version:prior.version}:{expected:prior.architectureFingerprint,actual:evidence.protectedMainArchitectureFingerprint};
         evidence.priorFutureStructuralWitnessFallbackEntered=true;}
       function* orderedGeometries(){
         if(compatiblePrior)yield {materialized:undefined,prior:true};
-        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture))
+        for(const candidate of fixedSupportingPipelineGeometryFrontier(problem,validArchitecture,observation=>{
+          evidence.fixedSupportingWitnessDiagnostic=structuredClone(observation);
+          evidence.fixedSupportingWitnessAuthority=pipelineWitnessAuthorityDiagnostic(problem,protectedPlacements);
+        }))
           yield {materialized:candidate,prior:false};
       }
       for(const entry of orderedGeometries()){
@@ -1112,6 +1177,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         continue;
       }
       evidence.fixedMainBundlePerfectMatchingFound=true;
+      if(entry.prior){
+        evidence.fixedSupportingArrivalResult=matching.evidence.fixedSupportingArrivalResult;
+        evidence.fixedSupportingArrivalPacketCount=matching.evidence.fixedSupportingArrivalPacketCount;
+      }
       evidence.fixedSupportingRematchedIdentityCount=matching.evidence.fixedSupportingRematchedIdentityCount;
       evidence.fixedSupportingSameGeometryRescued=Boolean(evidence.fixedSupportingGeometriesAttempted.length===1
         &&matching.evidence.fixedSupportingRematchedIdentityCount>0&&matching.evidence.fixedSupportingArrivalResult==="FEASIBLE");
@@ -1140,7 +1209,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.fixedMainBundleHardGatePasses++;
       const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!candidateCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
-        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined})??"ACCEPT";
+        source:"PREFERRED_BUNDLE",architectureFingerprint:evidence.protectedMainArchitectureFingerprint??undefined,
+        reusedFutureStructuralWitness:entry.prior?prior:undefined})??"ACCEPT";
       attempt.continuation=typeof continuation==="string"?continuation:"CERTIFIED_BACKJUMP";
       evidence.branchesBeforeCurrentContinuation??=ledger.branchesExplored;
       if(continuation==="BUDGET_EXHAUSTED")return fail("BRANCH_BUDGET_EXHAUSTED",["FIXED_MAIN_BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);
@@ -1150,7 +1220,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if(!fixedSupporting)break;continue;
       }
       if(fixedSupporting){
-        const witness=futureStructuralWitnessFromMaterialization(problem,architecture,matching);
+        const witness=entry.prior?prior!:futureStructuralWitnessFromMaterialization(problem,architecture,matching);
         const ephemeral=[...witness.ephemeralSupportingPlacements];
         evidence.ephemeralSupportingPlacements=ephemeral;evidence.futureStructuralWitnesses=[witness];
       }else evidence.acceptedSupportingPlacements=matching.scheduledTasks.filter(task=>task.kind==="auxiliary");
@@ -1187,9 +1257,26 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const preferred=[...byId.values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const preferredCoreIds=new Set(preferred.map(task=>task.id));
     evidence.bundleMatchingMaterializations++;
+    lastHardGateValidation=null;
     const preferredMealAuthority=mainFlowMealPolicy(problem);
     const meals=preferredMealAuthority&&preferredMealAuthority.source!=="OPERATIONAL_MEAL_POLICY"?[createMainFlowMeal(problem)]:[];
-    const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true);
+    const gated=hardGateCoreLeaf(preferred,meals,preferredCoreIds,[...fixedMainContracts,...applicableContracts],true,
+      structuralCandidate?.architecture.mealStart);
+    if(diagnostic){
+      const selectedEdges=[...bundleState.matching.entries()].map(([taskId,position])=>({taskId,
+        participantId:problem.tasks.find(task=>task.id===taskId)?.participantId??null,position}))
+        .sort((a,b)=>a.taskId.localeCompare(b.taskId)||a.position-b.position);
+      const validation=lastHardGateValidation as ReturnType<typeof validatePlan>|null;
+      diagnostic.bundleMaterializations.push({attempt:evidence.bundleMatchingMaterializations,
+        branchesBeforeMaterialization:ledger.branchesExplored,
+        architectureFingerprint:structuralCandidate?.architectureFingerprint??null,selectedEdges,
+        operationalFingerprint:selectedEdges.map(edge=>`${edge.taskId}@${edge.position}`).join("|"),
+        hardValid:validation?.hardValid??false,reasonCodes:[...(validation?.reasonCodes??[])],
+        violations:[...(validation?.violations??[]).map(violation=>({ruleCode:violation.ruleCode,
+          affectedTaskIds:[...violation.affectedTaskIds].sort()})),...(validation?.unstructuredReasonCodes??[])
+          .map(ruleCode=>({ruleCode,affectedTaskIds:unstructuredBundleAffectedTaskIds(ruleCode,preferred,
+            structuralCandidate?.architecture.mealStart)}))]});
+    }
     if(!gated||structuralCandidate?.acceptComplete?.(gated)===false){evidence.bundleHardValidationRejects++;if(structuralCandidate)options.onStructuralHardGateReject?.(structuralCandidate.architecture);
       evidence.bundleTerminalCause=lastHardGateReason??"STRUCTURAL_RESERVATION_REJECTED";
       bundleState=bundleQueue.shift();if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
@@ -1197,6 +1284,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
         source:structuralCandidate?"STRUCTURAL_FUTURE_CONDITIONED":"PREFERRED_BUNDLE",
         architectureFingerprint:structuralCandidate?.architectureFingerprint,
+        geometryFingerprint:structuralCandidate?.architectureFingerprint,
+        selectedMainMealStart:structuralCandidate?.architecture.mealStart,
         selectedFutureReservations:structuralCandidate?.selectedFutureReservations,
         selectedFutureReservationFingerprints:structuralCandidate?.selectedFutureReservationFingerprints})??"ACCEPT";
     if(continuation==="ACCEPT"){
@@ -1383,7 +1472,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const blockMeals = [...meals, ...fixedCohortMeals.filter((meal) => !meals.some(({ id }) => id === meal.id))];
         const cohortDeadlines = cohort.map((choice) => {
           const mainStart = Math.min(...choice.operation.map(({ start }) => start));
-          const deadline = latestFeederEndBeforeMain(problem, choice.feeder, choice.task.spaceId, mainStart, mainStart);
+          const deadline = latestFeederEndBeforeMain(problem, choice.feeder, firstParticipantObligationTask(choice.task,problem), choice.task.spaceId, mainStart, mainStart);
           return {choice,deadline};
         });
         const latestBlockStart = Math.max(...cohortDeadlines.map(({ choice, deadline }) => deadline-choice.feeder.duration));
@@ -1891,7 +1980,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             resources:[...(item.requiredResourceIds??[])].sort(),dependencies:item.dependencies.map(dependencyProfile)})),
           feeder:{duration:feeder.duration,spaceId:feeder.spaceId,availability:feeder.availability??null,
             dependencies:feeder.dependencies.map(dependencyProfile),resources:[...(feeder.requiredResourceIds??[])].sort(),
-            transition:latestFeederEndBeforeMain(problem,feeder,task.spaceId,anchor.start,anchor.start)-anchor.start},
+            transition:latestFeederEndBeforeMain(problem,feeder,firstParticipantObligationTask(task,problem),task.spaceId,anchor.start,anchor.start)-anchor.start},
           future,continuity:problem.mainFlow.continuity,
           analyticalFutureTechnicalChains:analyticalTechnicalChainProfile(problem,task.participantId),
         });

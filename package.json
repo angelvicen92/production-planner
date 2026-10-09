@@ -69,8 +69,7 @@
     "benchmark:planner-next:a2-assist-6": "tsx engine/planner-next/benchmarks/runA2Assist6Evidence.ts",
     "benchmark:planner-next:a2-assist-7": "tsx server/benchmarks/runA2Assist7Evidence.ts",
     "benchmark:planner-next:a2-assist-8": "tsx server/benchmarks/runA2Assist8Evidence.ts",
-    "benchmark:planner-next:a2-assist-8-totales": "tsx server/benchmarks/runA2Assist8TotalsProbe.ts",
-    "benchmark:planner-next:a2-p15-p14-witness": "tsx server/benchmarks/runA2P15P14WitnessProbe.ts"
+    "benchmark:planner-next:a2-assist-8-totales": "tsx server/benchmarks/runA2Assist8TotalsProbe.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -8,6 +8,7 @@ import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
 import type { PlannerNextProblem, Task } from "./contracts";
+import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
 
 function syntheticProblem(tasks: Task[], participantIds: string[], spaceIds: string[]): PlannerNextProblem {
   const availability = [{ start: 0, end: 120 }];
@@ -1053,6 +1054,26 @@ test("a prior structural witness bypasses geometry discovery and keeps ephemeral
   assert.deepEqual(reused.evidence.acceptedSupportingPlacements,[]);
 });
 
+test("a reused V2 is the exact accepted core authority and is not degraded to V1",()=>{
+  const problem=protectedPipelineProblem();
+  const mains=[0,1].map(index=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
+    start:200+index*15,end:215+index*15}));
+  const baseline=runExactMainAndFeederSearch(problem,{fixedPlacements:mains,fixedPlacementsAsContext:true});
+  const accepted=baseline.scheduledTasks.filter(task=>task.kind==="main"||task.kind==="vocal");
+  const initial=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true});
+  const v1=initial.evidence.futureStructuralWitnesses[0]!;
+  const architecture={pattern:["pipeline-coach","pipeline-coach"],slots:[200,215]};
+  const prior=futureStructuralWitnessV2FromAcceptedPipeline(problem,architecture,v1.geometryFingerprint,initial.scheduledTasks);
+  let callbackWitness:typeof prior|undefined;
+  const reused=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true,
+    priorFutureStructuralWitness:prior,onHardValidCoreLeaf:candidate=>{
+      assert.equal(candidate.source,"PREFERRED_BUNDLE");callbackWitness=candidate.reusedFutureStructuralWitness as typeof prior;return "ACCEPT";}});
+  assert.equal(reused.status,"COMPLETE");assert.equal(callbackWitness?.version,2);assert.equal(callbackWitness?.fingerprint,prior.fingerprint);
+  assert.equal(reused.evidence.futureStructuralWitnesses.length,1);
+  assert.equal(reused.evidence.futureStructuralWitnesses[0]?.version,2);
+  assert.equal(reused.evidence.futureStructuralWitnesses[0]?.fingerprint,prior.fingerprint);
+});
+
 test("a stale prior structural witness enters the exact geometry fallback",()=>{
   const problem=protectedPipelineProblem();
   const mains=[0,1].map(index=>({...problem.tasks.find(task=>task.id===`pipeline-main${index}`)!,
@@ -1062,12 +1083,16 @@ test("a stale prior structural witness enters the exact geometry fallback",()=>{
   const initial=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true});
   const certificate=initial.evidence.futureStructuralWitnesses[0]!;
   const stale={...certificate,architectureFingerprint:"stale"};
+  let fallbackReused:unknown="NOT_CALLED";
   const result=runExactMainAndFeederSearch(problem,{fixedPlacements:accepted,fixedPlacementsAsContext:true,
-    priorFutureStructuralWitness:stale});
+    priorFutureStructuralWitness:stale,onHardValidCoreLeaf:candidate=>{fallbackReused=candidate.reusedFutureStructuralWitness;return "ACCEPT";}});
   assert.equal(result.status,"COMPLETE",result.evidence.reasonCodes.join(","));
   assert.equal(result.evidence.priorFutureStructuralWitnessRevalidation,"STALE");
   assert.equal(result.evidence.priorFutureStructuralWitnessFallbackEntered,true);
   assert.ok(result.evidence.fixedSupportingGeometriesAttempted.length>0);
+  assert.equal(fallbackReused,undefined);
+  assert.equal(result.evidence.futureStructuralWitnesses[0]?.version,1);
+  assert.notEqual(result.evidence.futureStructuralWitnesses[0]?.architectureFingerprint,stale.architectureFingerprint);
 });
 
 test("an intermediate hard gate defers a REQUIRED technical chain with residual members",()=>{

@@ -110,7 +110,7 @@ test("unknown versions are rejected", () => {
   assert.throws(
     () => projectTaskTemplateSnapshotRow({
       source_template_id: 1,
-      contract_version: 2,
+      contract_version: 3,
       source: "inherited",
       template_name: "A",
       default_duration: 30,

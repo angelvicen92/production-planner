@@ -19,7 +19,7 @@ import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcc
 import { mainFlowMealPolicy } from "../engine/planner-next/mainFlowMeal";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
-import type { FutureStructuralWitnessV1 } from "../engine/planner-next/anonymousPipelineWitness";
+import { structuralWitnessIdentity, type FutureStructuralWitness } from "../engine/planner-next/anonymousPipelineWitness";
 
 export function projectPlannerViolations(details:readonly ValidationViolationDetail[],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):StageViolation[]{
   const map=(namespace:string,ids:readonly string[])=>ids.map(id=>{const acceptedNamespaces=namespace==="resource"?["resource","plan-resource","resource-item"]:[namespace];const matches=identityMap.filter(item=>acceptedNamespaces.includes(item.namespace)&&item.canonicalId===id);const sourceId=Number(matches[0]?.sourceId);
@@ -217,7 +217,7 @@ export class AssistedProposalService {
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
-    let priorFutureStructuralWitness:FutureStructuralWitnessV1|undefined;
+    const lineageWitnessSets:FutureStructuralWitness[][]=[];
     for(const witnessStage of lineage){
       const proposalRunId=(witnessStage as typeof witnessStage&{proposalRunId?:number|null}).proposalRunId;
       if(proposalRunId===null||proposalRunId===undefined)continue;
@@ -225,14 +225,21 @@ export class AssistedProposalService {
       if(priorError)throw priorError;
       const witnesses=(priorRun?.assisted_result_json?.evidence?.futureStructuralWitnesses
         ??priorRun?.assistedResultJson?.evidence?.futureStructuralWitnesses
-        ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitnessV1[]|undefined;
-      priorFutureStructuralWitness=witnesses?.find(item=>item?.kind==="FIXED_SUPPORTING_PIPELINE"&&item.version===1);
-      if(priorFutureStructuralWitness)break;
+        ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitness[]|undefined;
+      lineageWitnessSets.push([...(witnesses??[])]);
     }
+    const selectedPipeline=lineageWitnessSets.flatMap((witnesses,stageIndex)=>witnesses.filter((item):item is Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>=>item.kind==="FIXED_SUPPORTING_PIPELINE").map(witness=>({witness,stageIndex})))
+      .sort((a,b)=>a.stageIndex-b.stageIndex||b.witness.version-a.witness.version)[0]?.witness;
+    const priorFutureStructuralWitnesses:FutureStructuralWitness[]=[];if(selectedPipeline)priorFutureStructuralWitnesses.push(selectedPipeline);
+    const seenWitnessIdentities=new Set(selectedPipeline?[structuralWitnessIdentity(selectedPipeline)]:[]);
+    for(const witnesses of lineageWitnessSets)for(const witness of witnesses){if(!witness?.kind||witness.kind==="FIXED_SUPPORTING_PIPELINE")continue;
+      if(witness.kind==="ITINERANT_AGENDA"&&witness.supportingFingerprint!==(selectedPipeline?.fingerprint??null))continue;
+      const identity=structuralWitnessIdentity(witness);if(seenWitnessIdentities.has(identity))continue;
+      seenWitnessIdentities.add(identity);priorFutureStructuralWitnesses.push(witness);}
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
     const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,
       protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations,
-      priorFutureStructuralWitness);
+      priorFutureStructuralWitnesses);
     const execution=this.runner(assistedProblem,{violations:baselineViolations});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);let assignedResourceIds:readonly number[]|undefined;if(item.itinerantUnitId!==undefined){const sourceTask=taskInputById.get(taskId)!;const direct=projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.assignedResourceIds??[]);const domain=item.allowedItinerantUnitIds?.length?item.allowedItinerantUnitIds:item.itinerantUnitId?[item.itinerantUnitId]:[];const domainResources=new Set((adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]));const selectedResources=(adapter.problem.itinerantUnits??[]).find(unit=>unit.id===item.itinerantUnitId)?.resourceIds;if(!selectedResources)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...direct.filter(id=>!domainResources.has(id)),...selectedResources]);}return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit,assignedResourceIds})};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));

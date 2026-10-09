@@ -92,6 +92,8 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
       transport: type === "IN" ? { direction: "arrival" } : type === "OUT" ? { direction: "departure" } : undefined,
       isAnchoredSegment: type === "REALITY_PLATO_ANTES" || type === "REALITY_PLATO_DESPUES" ? true : undefined,
       editorialTags: [],
+      participantMarginBeforeMinutes: definition.participantMarginBeforeMinutes,
+      participantMarginAfterMinutes: definition.participantMarginAfterMinutes,
     } satisfies CanonicalTask;
   });
 }

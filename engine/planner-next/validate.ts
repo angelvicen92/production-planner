@@ -41,6 +41,7 @@ import {
   validateRoundSynchronizations,
 } from "./roundSynchronization";
 import { synchronizedTransportTasks, validateTransportGrouping } from "./transportGrouping";
+import { participantGapMinutes } from "./participantTransition";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -298,6 +299,8 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (task.kind === "auxiliary" && task.coachId !== undefined) reasons.add("AUXILIARY_COACH_UNSUPPORTED");
     if (!spaceIds.has(task.spaceId)) reasons.add("MISSING_SPACE_REFERENCE");
     if (!Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_TASK_DURATION");
+    if ([task.participantMarginBeforeMinutes, task.participantMarginAfterMinutes]
+      .some((value) => value !== undefined && (!Number.isInteger(value) || value < 0))) reasons.add("INVALID_TRANSITION_MARGIN");
     if (!Array.isArray(task.dependencies)
       || task.dependencies.some((dependencyId) => !dependencyIds.has(dependencyId))) {
       reasons.add("MISSING_TASK_REFERENCE");
@@ -480,9 +483,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       for (let index = 1; index < list.length; index += 1) {
         const previous = list[index - 1];
         const current = list[index];
-        if (!previous || !current || previous.spaceId === current.spaceId) continue;
+        if (!previous || !current) continue;
         const margin = field === "participantId"
-          ? problem.participantTransitionMinutes
+          ? participantGapMinutes(problem, previous, current)
           : effectiveCoachTransitionMinutes(problem, identity, previous.spaceId, current.spaceId);
         if (current.start - previous.end < margin
           && !isInternalAnchoredPair(problem, previous, current)) { transition += 1; addViolation("TRANSITION_VIOLATION","HARD",[previous,current],[],[previous.spaceId,current.spaceId],{identityKind:field,identity,requiredMinutes:margin,actualMinutes:current.start-previous.end}); }

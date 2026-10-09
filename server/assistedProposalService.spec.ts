@@ -127,6 +127,21 @@ test("stage proposalRunId recovers its structural witness for the runner",async(
   assert.deepEqual(captured?.priorFutureStructuralWitness,certificate);
 });
 
+test("a stage prefers its V2 structural witness while retaining V1 compatibility",async()=>{
+  const v1={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,architectureFingerprint:"architecture",
+    geometryFingerprint:"geometry-v1",ephemeralSupportingPlacements:[],fingerprint:"v1"};
+  const v2={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:2 as const,architectureFingerprint:"architecture",
+    geometryFingerprint:"geometry-v2",ephemeralSupportingPlacements:[],certifiedFeederPlacements:[],fingerprint:"v2"};
+  const priorStage={...stage,proposalRunId:77};let captured:AssistedProblem|undefined;
+  const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>session,
+    getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],
+    getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>priorStage,
+    listAssistedPlanningStages:async()=>[priorStage]},[]),queueMicrotask,
+  access({find:async(_plan,id)=>({data:id===77?{...runRecord(),id:77,assisted_result_json:{evidence:{futureStructuralWitnesses:[v1,v2]}}}:runRecord(),error:null}),
+    finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+  await service.run(planId,9);assert.deepEqual(captured?.priorFutureStructuralWitness,v2);
+});
+
 test("the nearest stage witness takes precedence and the parent is the fallback",async()=>{
   const certificate=(fingerprint:string)=>({kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,
     architectureFingerprint:`architecture-${fingerprint}`,geometryFingerprint:`geometry-${fingerprint}`,
@@ -151,6 +166,43 @@ test("the nearest stage witness takes precedence and the parent is the fallback"
   };
   assert.equal(await execute(true),"C");
   assert.equal(await execute(false),"B");
+});
+
+test("lineage never combines an itinerary with a different newer supporting pipeline",async()=>{
+  const pipeline=(fingerprint:string)=>({kind:"FIXED_SUPPORTING_PIPELINE" as const,version:2 as const,
+    architectureFingerprint:"architecture",geometryFingerprint:`geometry-${fingerprint}`,
+    ephemeralSupportingPlacements:[],certifiedFeederPlacements:[],fingerprint});
+  const itinerary=(supportingFingerprint:string)=>({kind:"ITINERANT_AGENDA" as const,version:1 as const,identity:"unit-a+unit-b",
+    unitIds:["unit-a","unit-b"],scheduledTaskPlacements:[],prerequisiteTaskPlacements:[],structuralFrontier:100,laneOrder:{},
+    supportingFingerprint,futureFeasibility:{prerequisites:"PASS" as const,participant:"PASS" as const,
+      technicalChain:"NOT_APPLICABLE" as const,participantMeals:"NOT_APPLICABLE" as const,itinerantUnitMeals:"NOT_APPLICABLE" as const,
+      operationalMeals:"NOT_APPLICABLE" as const},fingerprint:`itinerary-${supportingFingerprint}`});
+  const stages=[{...stage,id:3,parentStageId:null,proposalRunId:73},{...stage,id:4,parentStageId:3,proposalRunId:74}];
+  let captured:AssistedProblem|undefined;
+  const records=new Map([[73,[pipeline("P1"),itinerary("P1")]],[74,[pipeline("P2")]]]);
+  const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>session,
+    getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+    getAssistedPlanningStage:async()=>stages[1],listAssistedPlanningStages:async()=>stages},[]),queueMicrotask,
+  access({find:async(_plan,id)=>({data:id===9?runRecord():{...runRecord(),id,assisted_result_json:{evidence:{futureStructuralWitnesses:records.get(id)??[]}}},error:null}),
+    finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+  await service.run(planId,9);
+  assert.equal(captured?.priorFutureStructuralWitness?.fingerprint,"P2");
+  assert.equal(captured?.priorFutureStructuralWitnesses?.some(witness=>witness.kind==="ITINERANT_AGENDA"),false);
+});
+
+test("lineage retains an uncoupled itinerary when no supporting pipeline exists",async()=>{
+  const itinerary={kind:"ITINERANT_AGENDA" as const,version:1 as const,identity:"unit-a+unit-b",unitIds:["unit-a","unit-b"],
+    scheduledTaskPlacements:[],prerequisiteTaskPlacements:[],structuralFrontier:100,laneOrder:{},supportingFingerprint:null,
+    futureFeasibility:{prerequisites:"PASS" as const,participant:"PASS" as const,technicalChain:"NOT_APPLICABLE" as const,
+      participantMeals:"NOT_APPLICABLE" as const,itinerantUnitMeals:"NOT_APPLICABLE" as const,operationalMeals:"NOT_APPLICABLE" as const},fingerprint:"uncoupled"};
+  const priorStage={...stage,proposalRunId:77};let captured:AssistedProblem|undefined;
+  const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>session,getPlanOptimizerSnapshot:async()=>({}),
+    getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),getAssistedPlanningStage:async()=>priorStage,
+    listAssistedPlanningStages:async()=>[priorStage]},[]),queueMicrotask,
+  access({find:async(_plan,id)=>({data:id===77?{...runRecord(),id:77,assisted_result_json:{evidence:{futureStructuralWitnesses:[itinerary]}}}:runRecord(),error:null}),
+    finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+  await service.run(planId,9);
+  assert.deepEqual(captured?.priorFutureStructuralWitnesses,[itinerary]);
 });
 
 test("request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes", async () => {

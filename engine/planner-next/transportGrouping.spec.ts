@@ -10,6 +10,7 @@ import {
   assessCoreArrivalTransportFeasibility,
   materializeTerminalTransport,
   exactIntervalCapacityAssignment,
+  validateCertifiedArrivalSchedule,
   validateTransportGrouping,
 } from "./transportGrouping";
 import { preflight } from "./validate";
@@ -353,6 +354,21 @@ test("different arrival deadlines remain CONTIGUOUS_EXACT and input order does n
   assert.deepEqual(original.problem, snapshot);
 });
 
+test("a different feasible Arrival canonicalization does not invalidate a literal certified realization",()=>{
+  const fixture=interchangeableArrivalProblem([100,100,100]);
+  fixture.problem.transportPolicy!.arrival.maximumGroupSize=2;
+  fixture.problem.transportPolicy!.arrival.targetGroupSize=2;
+  const constructed=assessCoreArrivalTransportFeasibility(fixture.problem,fixture.core);assert.equal(constructed.status,"FEASIBLE");
+  const byId=new Map(constructed.scheduled!.map(task=>[task.id,task]));
+  const first=byId.get("in-0")!,last=byId.get("in-2")!;
+  const certified=constructed.scheduled!.map(task=>task.id==="in-0"?{...task,start:last.start,end:last.end}
+    :task.id==="in-2"?{...task,start:first.start,end:first.end}:task);
+  assert.notDeepEqual(certified.map(task=>[task.id,task.start]),constructed.scheduled!.map(task=>[task.id,task.start]));
+  const validated=validateCertifiedArrivalSchedule(fixture.problem,fixture.core,certified);
+  assert.equal(validated.rejectCause,null);assert.deepEqual(validated.scheduled!.map(task=>[task.id,task.start]).sort(),
+    certified.map(task=>[task.id,task.start]).sort());
+});
+
 test("contiguous transport reports budget exhaustion instead of infeasibility", () => {
   const fixture = interchangeableArrivalProblem([20, 20, 20, 100, 100]);
   const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core, {
@@ -387,11 +403,16 @@ test("core arrival deadlines ignore already materialized transport rows determin
 
 test("contiguous arrival infeasibility is exact and never enters membership enumeration", () => {
   const fixture = interchangeableArrivalProblem([20, 20, 20, 20, 20]);
+  const snapshot=structuredClone(fixture);
   const result = assessCoreArrivalTransportFeasibility(fixture.problem, fixture.core);
   assert.equal(result.status, "INFEASIBLE");
   assert.equal(result.evidence.classification, "CONTIGUOUS_EXACT");
   assert.equal(result.evidence.membershipFallbackEntered, false);
   assert.ok(result.evidence.contiguousStatesExplored > 0);
+  assert.ok(result.evidence.contiguousFirstDeadEnd);
+  assert.ok(result.evidence.contiguousFirstDeadEnd.startsBeforeBoundaryFilter>=
+    result.evidence.contiguousFirstDeadEnd.startsAfterBoundaryFilter);
+  assert.deepEqual(fixture,snapshot,"dead-end observation must not mutate Arrival input");
 });
 
 test("individual availability holes and fixed identities require membership search", () => {
