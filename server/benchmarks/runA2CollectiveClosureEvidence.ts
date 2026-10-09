@@ -13,6 +13,7 @@ import { buildAssistedProblem, createPlanningScope } from "../../engine/planner-
 import { inventoryA2ClosureAncestors, replayA2AcceptedTasks, replayA2OperationalMeals,
   probeA2ResidualFrontier, probeA2PipelineChainAgenda } from "../../engine/planner-next/benchmarks/a2ClosureSufficiencyDiagnostic";
 import { createHash } from "node:crypto";
+import type { FutureStructuralWitness } from "../../engine/planner-next/anonymousPipelineWitness";
 
 const matchingCardinality = (domains: Array<{ closureTaskId: string; starts: number[] }>) => {
   const byId = new Map(domains.map(row => [row.closureTaskId, row.starts])), owner = new Map<number, string>();
@@ -97,6 +98,71 @@ export function collectiveClosureDeterministicMaterial(result: Awaited<ReturnTyp
     futureWitnesses: stage.futureStructuralWitnesses, witnessSet: stage.futureWitnessSet,
     closure: Object.fromEntries(futureCollectiveClosureEvidenceKeys.map(key => [key, stage.standaloneDiagnostic?.[key]])),
     hardRequired: stage.hardRequiredValidation, globalMealGate: stage.sodexoMeals?.globalMealGate }));
+}
+
+/** Compact Evidence from two clean product observations; never a planning seed. */
+export function runA2CollectiveClosureCompletionEvidence(first: Awaited<ReturnType<typeof runA2Assist8Evidence>>,
+  second: Awaited<ReturnType<typeof runA2Assist8Evidence>>) {
+  const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const material = collectiveClosureDeterministicMaterial(first);
+  assert.deepEqual(material, collectiveClosureDeterministicMaterial(second));
+  const source = buildCanonicalA2AssistedStage1Fixture().adapter.problem;
+  const stages = first.iterations.map((stage, index) => {
+    const repeated = second.iterations[index]!, diagnostic = stage.standaloneDiagnostic!;
+    const witness = stage.futureStructuralWitnesses.find((item: FutureStructuralWitness) => item.kind === "JOINT_COMPLETION");
+    assert.ok(witness?.kind === "JOINT_COMPLETION");
+    assert.ok(diagnostic.futureCollectiveClosureLastCertificate);
+    assert.equal(stage.proposalOutcome, "PROPOSAL");
+    assert.equal(stage.protectedPlacementsPreserved, true);
+    assert.equal(stage.protectedEqualityProof?.equal, true);
+    assert.equal(stage.newHardViolationCount, 0); assert.equal(stage.newRequiredViolationCount, 0);
+    assert.deepEqual(stage.unstructuredReasonCodes, []);
+    assert.equal(stage.branchesExplored, stage.work.coreBranches! + stage.work.standaloneBranches!);
+    assert.ok(stage.branchesExplored <= source.budget.maxBranchExpansions!);
+    assert.ok(stage.durationMs <= 300_000 && repeated.durationMs <= 300_000);
+    assert.equal(witness.tasks.length, source.tasks.length);
+    assert.equal(witness.participantMeals.length, source.participantMeals!.length);
+    const newObligations = stage.completedObligationCount - (first.iterations[index - 1]?.completedObligationCount ?? 0);
+    return { stage: stage.ordinal, scope: stage.scopeSelector, newObligations,
+      newTaskPlacements: stage.newObligationCount, newParticipantMealPlacements: newObligations - stage.newObligationCount,
+      completed: stage.completedObligationCount, pending: stage.remainingObligationCount,
+      durationMs: [stage.durationMs, repeated.durationMs], ledger: { limit: source.budget.maxBranchExpansions,
+        core: stage.work.coreBranches, continuation: stage.work.standaloneBranches, total: stage.branchesExplored,
+        exhausted: false, nonzeroWorkCounters: Object.fromEntries(Object.entries(stage.work).filter(([, value]) => typeof value === "number" && value > 0)) },
+      certificate: { closure: diagnostic.futureCollectiveClosureLastCertificate!.fingerprint,
+        joint: witness.fingerprint, taskCount: witness.tasks.length, participantMealCount: witness.participantMeals.length,
+        setupPreparationCount: witness.preparations.length, roundPreparationCount: witness.roundPreparations.length,
+        operationalMealCount: witness.operationalMeals.length, contextDigest: digest(witness) },
+      acceptedFingerprint: stage.acceptedStageFingerprint, acceptedTasksDigest: digest(stage.acceptedSnapshotAfter),
+      preparationsDigest: digest([stage.selectedSetupPreparations, stage.selectedRoundPreparations]),
+      mealsDigest: digest(stage.acceptedMealWitnesses), protection: stage.protectedEqualityProof,
+      participantMealProtection: stage.participantMealPreservationProof, validation: stage.hardRequiredValidation };
+  });
+  for (const run of [first, second]) {
+    assert.equal(run.status, "PASS"); assert.equal(run.completedObligationCount, 266);
+    assert.equal(run.finalObligationIdsMatchSource, true); assert.equal(run.duplicateFinalIds, 0);
+    assert.equal(run.manualChanges, 0); assert.equal(run.acceptedHardExceptions, 0);
+    assert.equal(run.dailyTasksMatchesLastAcceptedStage, true); assert.equal(run.firstBlocker, null);
+  }
+  const result = { conclusion: "ASSISTED_COMPLETION", productionCapabilityAchieved: true,
+    comparison: { base: { head: "c00bb3d0b6211badad8d3b1352741b3dac1672ee", completed: 209, lostCollectiveCapacityAt: "S3" },
+      previous: { head: "8a2bfa8ec9863ef8b232797792fab641e9b99c77", completed: 38, rejectedAt: "S3" },
+      reviewed: { head: "ffc35446ac2d4685dfbace367cf637945eb2a8f4", completed: 0, branches: 0,
+        reason: "104 ancestors without joint producer; no global impossibility proof" } },
+    invocation: "runA2Assist8Evidence({reportIterationDurations:true})", initialSnapshot: null, historicalSeed: null,
+    proof: { completed: 266, sourceObligations: 266, pending: 0, finalStage: first.milestone,
+      sourceTasks: source.tasks.length, participantMeals: source.participantMeals!.length,
+      effectiveInConfiguration: first.effectiveInConfiguration, branchBudgetPerRequest: source.budget.maxBranchExpansions,
+      oneSharedLedgerPerRequest: true, noBudgetOrTimeoutIncrease: true, protectedDecisionsExact: true,
+      finalHardViolationCount: 0, finalRequiredViolationCount: 0, firstBlocker: null,
+      dailyTasksMatchesLastAcceptedStage: true, finalObligationIdsMatchSource: true,
+      deterministicEquivalent: true, deterministicMaterialDigest: digest(material), finalFingerprint: first.deterministicFingerprint,
+      interactiveTargetMs: 120_000, blockingCeilingMs: 300_000,
+      interactiveTargetMet: stages.every(stage => stage.durationMs.every(ms => ms <= 120_000)), blockingCeilingMet: true },
+    certificateScope: "All canonical tasks, participant/operational meals, preparations and OUT jointly validated; necessary Hall PASS is never acceptance. Context stays ephemeral and is revalidated or rebuilt before each Stage.",
+    stages };
+  writeFileSync("docs/evidence/A2-COLLECTIVE-CLOSURE-COMPLETION.json", `${JSON.stringify(result, null, 2)}\n`);
+  return result;
 }
 
 /** Coverage audit only: a representation is not a joint geometry witness. */
@@ -302,7 +368,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     const position = process.argv.indexOf(name); assert.ok(position >= 0 && process.argv[position + 1], `${name} is required`);
     return process.argv[position + 1]!;
   };
-  if (process.argv.includes("--collect-sufficiency-observations")) {
+  if (process.argv.includes("--completion-observations")) {
+    const first = JSON.parse(readFileSync(argument("--first"), "utf8"));
+    const second = JSON.parse(readFileSync(argument("--second"), "utf8"));
+    console.log(JSON.stringify(runA2CollectiveClosureCompletionEvidence(first, second).proof));
+  } else if (process.argv.includes("--collect-sufficiency-observations")) {
     await collectA2ClosureSufficiencyObservations(argument("--parent-root"), argument("--previous-root"), argument("--observations-directory"));
   } else if (process.argv.includes("--sufficiency-diagnosis")) {
     const position = process.argv.indexOf("--observations-directory");

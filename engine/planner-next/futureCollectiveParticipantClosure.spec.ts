@@ -57,6 +57,8 @@ test("an unsupported necessary geometry with a hard-valid continuation remains i
   source.tasks.push(current);
   const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: current.id }, {}, [current.id]),
     fixed, new Set(source.tasks.map(task => task.id)));
+  // Exercise the uncertainty contract without the newly composed exact producer.
+  delete assisted.problem.analyticalFutureCollectiveContinuation;
   const result = runExactItinerantPlanSearch(assisted.problem, { fixedPlacements: assisted.protectedPlacements, fixedPlacementsAsContext: true });
   assert.equal(result.complete, false, "an unproved future must not be accepted");
   assert.equal(result.status, "UNSUPPORTED_STANDALONE_SHAPE");
@@ -99,6 +101,7 @@ test("individual predecessor release bounds cannot certify jointly conflicting p
   source.tasks.push(current);
   const assisted = buildAssistedProblem(source, createPlanningScope({ kind: "ids", value: current.id }, {}, [current.id]),
     fixedCore, new Set(source.tasks.map(task => task.id)));
+  delete assisted.problem.analyticalFutureCollectiveContinuation;
   const before = structuredClone(assisted);
   const stage = runExactItinerantPlanSearch(assisted.problem, { fixedPlacements: assisted.protectedPlacements, fixedPlacementsAsContext: true });
   assert.equal(stage.status, "UNSUPPORTED_STANDALONE_SHAPE"); assert.equal(stage.complete, false);
@@ -115,6 +118,17 @@ test("three obligations with individually nonempty domains and two slots have an
   assert.ok(Object.values(result.domains).every(domain => domain.length === 2));
 });
 
+test("affected-edge domain PASS never certifies the jointly deficient frontier",()=>{
+  const source=fixture([0,5]),saved=structuredClone(source),authority=new PreparedFutureCollectiveParticipantClosure(source);
+  for(const participantId of ["a","b","c"]){
+    const result=authority.evaluateIndividualContinuation([], [{id:`edge-${participantId}`,kind:"auxiliary",participantId,
+      duration:5,spaceId:"current",dependencies:[],start:20,end:25}],()=>{throw new Error("singleton domain lookup must not run matching search");});
+    assert.equal(result.status,"PASS");assert.equal(result.certified,false);assert.equal(result.branchesConsumed,0);
+  }
+  assert.equal(authority.evaluate([],[],()=>true,"NECESSARY_ONLY").status,"INFEASIBLE");
+  assert.deepEqual(source,saved);
+});
+
 test("three slots certify a complete, deterministic, cached closure and departure witness", () => {
   const problem = fixture(), saved = structuredClone(problem), authority = new PreparedFutureCollectiveParticipantClosure(problem);
   let branches = 0;
@@ -128,6 +142,74 @@ test("three slots certify a complete, deterministic, cached closure and departur
   const reversed = new PreparedFutureCollectiveParticipantClosure(problem).evaluate([]);
   assert.deepEqual(result.matching, reversed.matching); assert.deepEqual(result.domains, reversed.domains);
   assert.equal(result.witnessFingerprint, reversed.witnessFingerprint);
+});
+
+test("closure certification replays grouped IN with its exact packet authority", () => {
+  const source = fixture([10, 15, 20]);
+  source.spaces.push({ id: "arrival", availability: [source.day] });
+  const arrivals: ScheduledTask[] = ["a", "b", "c"].map(participantId => ({
+    id: `arrival-${participantId}`, kind: "auxiliary", participantId, spaceId: "arrival", duration: 5,
+    dependencies: [], start: 0, end: 5,
+  }));
+  source.tasks.push(...arrivals);
+  for (const task of source.tasks.filter(task => task.id.startsWith("close-")))
+    task.dependencies = [`arrival-${task.participantId}`];
+  source.transportPolicy!.arrival = { ...source.transportPolicy!.arrival, taskIds: arrivals.map(task => task.id),
+    targetGroupSize: 3, maximumGroupSize: 3, minGapMinutes: 30 };
+  const saved = structuredClone(source);
+  assert.equal(canPlaceTask(source, arrivals[0]!, 0, arrivals.slice(1)), false,
+    "ordinary exclusive-space replay cannot certify a grouped arrival");
+  const valid = new PreparedFutureCollectiveParticipantClosure(source).evaluate(arrivals);
+  assert.equal(valid.certified, true, JSON.stringify(valid));
+  const oversized = structuredClone(source); oversized.transportPolicy!.arrival.maximumGroupSize = 2;
+  const invalidSize = new PreparedFutureCollectiveParticipantClosure(oversized).evaluate(arrivals);
+  assert.equal(invalidSize.certified, false);
+  assert.equal(invalidSize.uncertifiedPlacement?.reason, "ARRIVAL_GROUP_SIZE_INVALID");
+  const invalidGap = new PreparedFutureCollectiveParticipantClosure(source).evaluate(arrivals.map((task, index) =>
+    index === 2 ? { ...task, start: 5, end: 10 } : task));
+  assert.equal(invalidGap.certified, false);
+  assert.equal(invalidGap.uncertifiedPlacement?.reason, "ARRIVAL_GROUP_POLICY_REJECTED");
+  assert.deepEqual(source, saved);
+});
+
+test("anchored INCLUDED and joint prerequisites require their exact operation replay", () => {
+  const source = fixture([25, 30, 35]);
+  source.resources = ["anchor-resource", "joint-resource"].map(id => ({ id, availability: [source.day],
+    presencePreference: "OFF", transitionMinutes: id === "anchor-resource" ? 10 : 0 }));
+  const operation: ScheduledTask[] = [
+    { id: "before", kind: "auxiliary", participantId: "core", spaceId: "vocal", duration: 5,
+      dependencies: [], requiredResourceIds: ["anchor-resource"], start: 0, end: 5 },
+    { id: "anchor", kind: "main", participantId: "core", coachId: "coach", blockKey: "coach", spaceId: "main", duration: 5,
+      dependencies: ["before"], requiredResourceIds: ["anchor-resource"], start: 5, end: 10 },
+    { id: "after", kind: "auxiliary", participantId: "core", spaceId: "current", duration: 5,
+      dependencies: ["anchor"], requiredResourceIds: ["anchor-resource"], start: 10, end: 15 },
+  ];
+  const joint: ScheduledTask[] = ["a", "b"].map(participantId => ({ id: `joint-${participantId}`, kind: "auxiliary",
+    participantId, spaceId: "current", duration: 5, dependencies: ["after"], jointGroupId: "group",
+    requiredResourceIds: ["joint-resource"], start: 15, end: 20 }));
+  source.tasks.push(...operation, ...joint);
+  source.anchoredAccompaniments = [{ id: "operation", anchorTaskId: "anchor", beforeTaskIds: ["before"], afterTaskIds: ["after"],
+    adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED" }];
+  for (const participantId of ["a", "b", "c"])
+    source.tasks.find(task => task.id === `close-${participantId}`)!.dependencies = [participantId === "c" ? "after" : `joint-${participantId}`];
+  const fixed = [...operation, ...joint], saved = structuredClone(source);
+  assert.equal(canPlaceTask(source, operation[0]!, 0, operation.slice(1)), false);
+  assert.equal(canPlaceTask(source, joint[0]!, 15, [joint[1]!]), false);
+  assert.equal(new PreparedFutureCollectiveParticipantClosure(source).evaluate(fixed).certified, true);
+  const brokenAnchor = new PreparedFutureCollectiveParticipantClosure(source).evaluate(fixed.map(task =>
+    task.id === "after" ? { ...task, start: 15, end: 20 } : task));
+  assert.equal(brokenAnchor.certified, false);
+  assert.equal(brokenAnchor.uncertifiedPlacement?.reason, "ANCHORED_OPERATION_REPLAY_REJECTED");
+  const brokenJoint = new PreparedFutureCollectiveParticipantClosure(source).evaluate(fixed.map(task =>
+    task.id === "joint-b" ? { ...task, start: 20, end: 25 } : task));
+  assert.equal(brokenJoint.certified, false);
+  assert.equal(brokenJoint.uncertifiedPlacement?.reason, "JOINT_OPERATION_REPLAY_REJECTED");
+  const outsider: ScheduledTask = { id: "outsider", kind: "auxiliary", participantId: "c", spaceId: "exit", duration: 5,
+    dependencies: [], requiredResourceIds: ["joint-resource"], start: 15, end: 20 };
+  const blockedJoint = new PreparedFutureCollectiveParticipantClosure(source).evaluate([...fixed, outsider]);
+  assert.equal(blockedJoint.certified, false);
+  assert.equal(blockedJoint.uncertifiedPlacement?.reason, "JOINT_OPERATION_REPLAY_REJECTED");
+  assert.deepEqual(source, saved);
 });
 
 test("canonical participant default and before/after overrides determine exact closure starts", () => {

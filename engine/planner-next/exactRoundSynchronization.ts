@@ -19,7 +19,7 @@ import { roundPreparationId } from "./roundSynchronization";
 import { findCanonicalPerfectMatching } from "./macroScheduling";
 import { operationalMealCandidates } from "./operationalMeals";
 import { probeParticipantFutureReservations } from "./participantFutureFeasibility";
-import { incrementallyRepairMatchingWitness } from "./exactMainAndFeederCore";
+import { incrementallyRepairMatchingWitness, partitionRejectedJointMatching } from "./exactMainAndFeederCore";
 import { createHash } from "node:crypto";
 import type { FutureRoundSynchronizationWitnessV1 } from "./anonymousPipelineWitness";
 import { validateRoundSynchronizations } from "./roundSynchronization";
@@ -73,11 +73,12 @@ export interface ExactRoundSynchronizationContinuationResult {
   outcome: ExactRoundSynchronizationOutcome;
   /** True only when the complete candidate reached participant Future EXACT and it pruned. */
   participantFutureExactPrune?: boolean;
-  matchingReject?:{authority:"PREREQUISITE"|"PARTICIPANT_MEAL"|"PARTICIPANT_FUTURE"|"TECHNICAL_CHAIN";causalTaskIds:string[]};
+  matchingReject?:{authority:"PREREQUISITE"|"PARTICIPANT_MEAL"|"PARTICIPANT_FUTURE"|"TECHNICAL_CHAIN"|"COLLECTIVE_CLOSURE";causalTaskIds:string[]};
   terminalFutureResult?: "PASS" | "PRUNE" | "ABSTAIN" | "NOT_CHECKED";
 }
 
 export interface ExactRoundSynchronizationAuthorities {
+  necessaryEdgeProbe?:(context:readonly ScheduledTask[],added:readonly ScheduledTask[])=>"PASS"|"PRUNE"|"BUDGET_EXHAUSTED";
   /** Test seam; production always uses the canonical participant-future authority. */
   participantFutureProbe?: typeof probeParticipantFutureReservations;
   futureEdgePruning?:"PER_EDGE"|"DEFER_TO_COMPLETE_MATCHING";
@@ -413,6 +414,9 @@ export function exploreExactRoundSynchronizationPolicy(
         if(!laneTasks[slot.laneIndex]!.some(({id})=>id===task.id)||!canPlaceTask(problem,task,slot.start,baseTasks,meals))continue;
         evidence.rawCompatibleEdges+=1;
         const scheduled=scoreAuxiliaryTask(problem,task,slot.start,baseTasks).scheduled;
+        const edge=authorities.necessaryEdgeProbe?.([...baseTasks,scheduled],[scheduled]);
+        if(edge==="BUDGET_EXHAUSTED")return {outcome:"BUDGET_EXHAUSTED",evidence};
+        if(edge==="PRUNE"){evidence.analyticPrunedEdges++;continue;}
         if((authorities.futureEdgePruning??"PER_EDGE")==="PER_EDGE"){
           const cacheKey=`${task.id}@${slot.spaceId}:${slot.start}`;
           let futureStatus=analyticEdgeCache.get(cacheKey);
@@ -432,12 +436,7 @@ export function exploreExactRoundSynchronizationPolicy(
     const pendingPartitions:Partition[]=[];
     // Disjoint prefix partitions exclude exactly the rejected full matching, never all its edges.
     const nextJointMatching=(matching:ReadonlyMap<string,number>):boolean=>{
-      const prefix=new Map(partition.fixed),children:Partition[]=[];
-      for(const [id,position] of [...matching].sort(([a],[b])=>a.localeCompare(b))){
-        if(partition.fixed.has(id))continue;
-        children.push({fixed:new Map(prefix),forbidden:new Set([...partition.forbidden,`${id}@${position}`])});
-        prefix.set(id,position);
-      }
+      const children=partitionRejectedJointMatching(partition,matching);
       pendingPartitions.push(...children.reverse());
       const next=pendingPartitions.pop();if(!next)return false;
       partition=next;forbidden=partition.forbidden;previousForbidden=new Set();previous=new Map();
@@ -491,7 +490,10 @@ export function exploreExactRoundSynchronizationPolicy(
       return { outcome, evidence };
     }
     evidence.backtracks += 1;
-    if(authorities.jointContinuation){if(nextJointMatching(matching))continue;break;}
+    if(authorities.jointContinuation){
+      const conflict=decision.matchingReject?.authority==="COLLECTIVE_CLOSURE"&&decision.matchingReject.causalTaskIds.length
+        ?new Map([...matching].filter(([id])=>decision.matchingReject!.causalTaskIds.includes(id))):matching;
+      if(nextJointMatching(conflict))continue;break;}
     const newlyForbidden:string[]=[];
     if(decision.matchingReject){const causal=new Set(decision.matchingReject.causalTaskIds);
       for(const [taskId,position] of matching)if(causal.has(taskId))newlyForbidden.push(`${taskId}@${position}`);

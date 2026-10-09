@@ -421,6 +421,24 @@ export function buildAssistedProblem(
 
   const fixedById = new Map(protectedPlacements.map((placement) => [placement.id, placement]));
   if (problem.transportPolicy?.departure.taskIds.length) {
+    const continuation=structuredClone(problem);
+    continuation.tasks=continuation.tasks.map(task=>{
+      const fixed=fixedById.get(task.id);if(!fixed)return task;
+      const {start,end,...assigned}=fixed;return {...assigned,availability:[{start,end}]};
+    });
+    continuation.participantMeals=continuation.participantMeals?.map(meal=>{
+      const fixed=protectedMealBySourceId.get(meal.sourceTaskId);
+      return fixed?{...meal,fixedInterval:{start:fixed.start,end:fixed.end}}:meal;
+    });
+    continuation.operationalMealPolicies=continuation.operationalMealPolicies?.map(policy=>{
+      const fixed=protectedOperationalMeals.find(meal=>meal.id===policy.id);
+      return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
+    });
+    if(problem.tasks.every(task=>included.has(task.id)||fixedById.has(task.id)||analyticalFutureEligibleTaskIds.has(task.id))
+      &&(problem.participantMeals??[]).every(meal=>includedMeals.has(meal.sourceTaskId)
+        ||protectedMealBySourceId.has(meal.sourceTaskId)||analyticalFutureEligibleTaskIds.has(meal.sourceTaskId))
+      &&problem.tasks.filter(task=>task.kind==="main"||task.kind==="vocal").every(task=>included.has(task.id)||fixedById.has(task.id)))
+      problem.analyticalFutureCollectiveContinuation=continuation;
     problem.analyticalFutureParticipantClosure = {
       tasks: structuredClone(problem.tasks),
       meals: structuredClone((problem.participantMeals ?? []).map(meal => ({ ...meal,

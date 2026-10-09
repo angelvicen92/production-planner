@@ -20,6 +20,8 @@ test("A2 inventory retains every direct ancestor and distinguishes representatio
 
 test("diagnostic inventory cannot alter the current product preflight, result, accounting or input", () => {
   const fixture = buildCanonicalA2AssistedStage1Fixture(), problem = fixture.assisted.problem;
+  // Historical missing-producer guard remains diagnosable independently of the new producer.
+  delete problem.analyticalFutureCollectiveContinuation;
   const saved = structuredClone(problem), before = runExactItinerantPlanSearch(problem);
   inventoryA2ClosureAncestors();
   const after = runExactItinerantPlanSearch(problem);

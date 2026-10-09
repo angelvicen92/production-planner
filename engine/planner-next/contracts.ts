@@ -164,6 +164,8 @@ export interface PlannerNextProblem {
     meals: ParticipantMealObligation[];
     departure: TransportGroupingPolicy;
   };
+  /** Canonical authorities for an ephemeral joint continuation, outside visible scope. */
+  analyticalFutureCollectiveContinuation?: PlannerNextProblem;
   /** Read-only pending-work view used only to rank anonymous pipeline entry matching. */
   analyticalRemainingParticipantTasks?: Task[];
   /** Executable supporting vertices that also close a future analytical chain. */

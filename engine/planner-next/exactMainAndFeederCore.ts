@@ -263,6 +263,24 @@ export interface IncrementalMatchingWitnessResult {
   readonly traversals: number;
 }
 
+export interface JointMatchingPartition {
+  fixed: Map<string, number>;
+  forbidden: Set<string>;
+}
+
+/** Disjoint prefix partitions cover every matching except the rejected combination.
+ * A partition prohibition is local to that prefix, never an individual nogood. */
+export function partitionRejectedJointMatching(partition: JointMatchingPartition,
+  matching: ReadonlyMap<string, number>): JointMatchingPartition[] {
+  const prefix = new Map(partition.fixed), children: JointMatchingPartition[] = [];
+  for (const [id, position] of [...matching].sort(([a], [b]) => a.localeCompare(b))) {
+    if (partition.fixed.has(id)) continue;
+    children.push({ fixed: new Map(prefix), forbidden: new Set([...partition.forbidden, `${id}@${position}`]) });
+    prefix.set(id, position);
+  }
+  return children;
+}
+
 /** Reuses a perfect matching while the graph is unchanged and only forbidden edges grow.
  * `previousForbidden` is part of the proof: callers may reuse `previous` only when the new
  * authority is a monotonic superset. Every newly forbidden matched edge is removed before

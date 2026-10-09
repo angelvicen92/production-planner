@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
-import { canPlaceTask, exactTaskStartDomain, prepareTaskPlacementAuthority } from "./placement";
-import { materializeTerminalTransportDetailed } from "./transportGrouping";
+import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain, prepareTaskPlacementAuthority } from "./placement";
+import { materializeTerminalTransportDetailed, validateCertifiedArrivalSchedule } from "./transportGrouping";
 import { analyticParticipantMealDomain, participantMealCandidates } from "./participantMeals";
 import { participantGapMinutes } from "./participantTransition";
+import { anchoredSequence, materializeAnchoredOperation } from "./anchoredAccompaniment";
+import { canPlaceJointGroup, jointGroupIds, jointGroupMembers } from "./jointTasks";
 
 export interface FutureCollectiveClosureHall {
   closureTaskIds: string[];
@@ -30,6 +32,7 @@ export interface FutureCollectiveClosureResult {
   cacheHit: boolean;
   signature: string;
   witnessFingerprint: string | null;
+  uncertifiedPlacement?:{taskId:string;reason:string|null;blockingTaskId:string|null};
 }
 export interface FutureCollectiveClosureEvidence {
   futureCollectiveClosureChecks: number;
@@ -47,13 +50,14 @@ export interface FutureCollectiveClosureEvidence {
   futureCollectiveClosureLastCertificate: null | { fingerprint: string; contextTaskIds: string[];
     closureTaskIds: string[]; mealTaskIds: string[]; departureTaskIds: string[] };
   futureCollectiveClosurePendingPredecessorTaskIds: string[];
+  futureCollectiveClosureFirstUncertifiedPlacement:FutureCollectiveClosureResult["uncertifiedPlacement"]|null;
 }
 export const futureCollectiveClosureEvidenceKeys = ["futureCollectiveClosureChecks", "futureCollectiveClosureCacheHits",
   "futureCollectiveClosureRequiredCount", "futureCollectiveClosureMaximumMatching", "futureCollectiveClosureBranchesConsumed",
   "futureCollectiveClosureMatchingTraversals", "futureCollectiveClosureHall", "futureCollectiveClosureFirstPrune",
   "futureCollectiveClosureWitnessFingerprint", "futureCollectiveClosureAbstentions",
   "futureCollectiveClosureInconclusiveLeaves", "futureCollectiveClosureLastCertificate",
-  "futureCollectiveClosurePendingPredecessorTaskIds"] as const;
+  "futureCollectiveClosurePendingPredecessorTaskIds","futureCollectiveClosureFirstUncertifiedPlacement"] as const;
 export const createFutureCollectiveClosureEvidence = (): FutureCollectiveClosureEvidence => ({
   futureCollectiveClosureChecks: 0, futureCollectiveClosureCacheHits: 0, futureCollectiveClosureRequiredCount: 0,
   futureCollectiveClosureMaximumMatching: 0, futureCollectiveClosureBranchesConsumed: 0, futureCollectiveClosureMatchingTraversals: 0,
@@ -61,6 +65,7 @@ export const createFutureCollectiveClosureEvidence = (): FutureCollectiveClosure
   futureCollectiveClosureAbstentions: {},
   futureCollectiveClosureInconclusiveLeaves: 0, futureCollectiveClosureLastCertificate: null,
   futureCollectiveClosurePendingPredecessorTaskIds: [],
+  futureCollectiveClosureFirstUncertifiedPlacement:null,
 });
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const canonical = <T extends { id: string }>(rows: readonly T[]) => [...rows].sort((a, b) => a.id.localeCompare(b.id));
@@ -119,6 +124,8 @@ export class PreparedFutureCollectiveParticipantClosure {
   }
 
   /** Task identities required for a sufficient closure witness, never placements. */
+  closureTaskIds():string[] { return [...new Set(this.pairs.map(pair=>pair.closure.id))].sort(); }
+
   pendingPredecessorTaskIds(fixed: readonly ScheduledTask[]): string[] {
     const fixedIds = new Set(fixed.map(task => task.id)), byId = new Map(this.source.tasks.map(task => [task.id, task]));
     const meals = new Map(this.source.participantMeals?.map(meal => [meal.sourceTaskId, meal]));
@@ -139,13 +146,27 @@ export class PreparedFutureCollectiveParticipantClosure {
   evaluate(fixed: readonly ScheduledTask[], meals: readonly ScheduledParticipantMeal[] = [],
     consume: () => boolean = () => true, mode: "NECESSARY_ONLY" | "CERTIFY" = "CERTIFY",
     spaceMeals: readonly ScheduledSpaceMeal[] = []): FutureCollectiveClosureResult {
-    const signature = hash([this.sourceSignature, mode, canonical(fixed), canonical(meals), spaceMeals]);
+    return this.evaluateContext(fixed,meals,consume,mode,spaceMeals,null);
+  }
+
+  /** A zero domain for an affected participant proves this edge impossible in
+   * the supplied context. PASS remains a relaxation, never a joint certificate. */
+  evaluateIndividualContinuation(fixed:readonly ScheduledTask[],added:readonly ScheduledTask[],consume:()=>boolean,
+    spaceMeals:readonly ScheduledSpaceMeal[]=[]):FutureCollectiveClosureResult {
+    return this.evaluateContext(fixed,[],consume,"NECESSARY_ONLY",spaceMeals,
+      [...new Set(added.flatMap(task=>task.participantId?[task.participantId]:[]))].sort());
+  }
+
+  private evaluateContext(fixed:readonly ScheduledTask[],meals:readonly ScheduledParticipantMeal[],consume:()=>boolean,
+    mode:"NECESSARY_ONLY"|"CERTIFY",spaceMeals:readonly ScheduledSpaceMeal[],participants:readonly string[]|null):FutureCollectiveClosureResult {
+    const signature = hash([this.sourceSignature, mode, canonical(fixed), canonical(meals), spaceMeals,participants]);
     const cached = this.cache.get(signature);
     if (cached) return { ...structuredClone(cached), cacheHit: true, branchesConsumed: 0, matchingTraversals: 0 };
     let branchesConsumed = 0, matchingTraversals = 0;
     const charge = () => { if (!consume()) return false; branchesConsumed++; return true; };
     const fixedIds = new Set(fixed.map(task => task.id));
-    const pairs = this.pairs.filter(pair => !fixedIds.has(pair.closure.id));
+    const pairs = this.pairs.filter(pair => !fixedIds.has(pair.closure.id)
+      &&(participants===null||participants.includes(pair.closure.participantId!)));
     const closures = canonical([...new Map(pairs.map(pair => [pair.closure.id, pair.closure])).values()]);
     const domains: Record<string, number[]> = {};
     const releaseBoundsByClosure: FutureCollectiveClosureResult["releaseBoundsByClosure"] = {};
@@ -224,6 +245,14 @@ export class PreparedFutureCollectiveParticipantClosure {
       });
     }
     // Only certify the exact unit-slot geometry. Other geometries need their own authority.
+    // The affected-edge relaxation with one vertex is just a domain-emptiness
+    // check, like the existing analytic participant probe; no matching search runs.
+    if(participants!==null&&closures.length===1){
+      const closure=closures[0]!,starts=domains[closure.id]!;
+      if(starts.length){matching.set(closure.id,starts[0]!);return finish("PASS",null);}
+      base.hall={closureTaskIds:[closure.id],participantIds:[closure.participantId!],neighbourSlots:[],taskCount:1,slotCount:0};
+      return finish("INFEASIBLE","HALL");
+    }
     const first = closures[0];
     const slots = [...new Set(Object.values(domains).flat())].sort((a, b) => a - b);
     if (first && (closures.some(task => task.duration !== first.duration || task.spaceId !== first.spaceId
@@ -277,9 +306,55 @@ export class PreparedFutureCollectiveParticipantClosure {
       }
     };
     for (const id of [...this.pairs.flatMap(pair => [pair.closure.id, pair.departure.id]), ...mealById.keys()]) collect(id);
-    for (const task of fixed.filter(task => prerequisiteIds.has(task.id))) {
-      if (!canPlaceTask(this.placementSource, task, task.start, occupied.filter(other => other.id !== task.id), [...spaceMeals]))
+    // Simultaneous IN vertices are one transport packet, not ordinary exclusive
+    // space placements. Replay that packet with the canonical transport authority
+    // before exempting its vertices from the ordinary prerequisite check.
+    const arrivalIds = new Set(this.placementSource.transportPolicy?.arrival.taskIds ?? []);
+    if (arrivalIds.size) {
+      const arrival = validateCertifiedArrivalSchedule(this.placementSource,
+        occupied.filter(task => !arrivalIds.has(task.id)), fixed.filter(task => arrivalIds.has(task.id)));
+      if (!arrival.scheduled) {
+        base.uncertifiedPlacement = { taskId: fixed.find(task => arrivalIds.has(task.id))?.id ?? [...arrivalIds].sort()[0]!,
+          reason: arrival.rejectCause, blockingTaskId: null };
         return finish("ABSTAIN", "UNCERTIFIED_GEOMETRY");
+      }
+    }
+    const compositeIds = new Set(arrivalIds);
+    for (const contract of this.placementSource.anchoredAccompaniments ?? []) {
+      const ids = new Set(anchoredSequence(contract));
+      if (![...ids].some(id => prerequisiteIds.has(id))) continue;
+      const anchor = fixedById.get(contract.anchorTaskId), sourceAnchor = taskById.get(contract.anchorTaskId);
+      const operation = anchor && sourceAnchor ? materializeAnchoredOperation(this.placementSource, sourceAnchor, anchor.start,
+        occupied.filter(task => !ids.has(task.id)), [...spaceMeals]) : null;
+      if (!operation || operation.tasks.some(task => {
+        const actual = fixedById.get(task.id);
+        return !actual || actual.start !== task.start || actual.end !== task.end || actual.spaceId !== task.spaceId;
+      })) {
+        base.uncertifiedPlacement = { taskId: contract.anchorTaskId, reason: "ANCHORED_OPERATION_REPLAY_REJECTED", blockingTaskId: null };
+        return finish("ABSTAIN", "UNCERTIFIED_GEOMETRY");
+      }
+      for (const id of ids) compositeIds.add(id);
+    }
+    for (const groupId of jointGroupIds(this.placementSource.tasks)) {
+      const members = jointGroupMembers(this.placementSource.tasks, groupId), ids = new Set(members.map(task => task.id));
+      if (!members.some(task => prerequisiteIds.has(task.id))) continue;
+      const first = fixedById.get(members[0]!.id), external = occupied.filter(task => !ids.has(task.id));
+      if (!first || members.some(task => {
+        const actual = fixedById.get(task.id);
+        return !actual || actual.start !== first.start || actual.end !== first.start + task.duration || actual.spaceId !== task.spaceId;
+      }) || !canPlaceJointGroup(this.placementSource, members, first.start, external)
+        || members.some(task => !canPlaceTask(this.placementSource, task, first.start, external, [...spaceMeals]))) {
+        base.uncertifiedPlacement = { taskId: members[0]!.id, reason: "JOINT_OPERATION_REPLAY_REJECTED", blockingTaskId: null };
+        return finish("ABSTAIN", "UNCERTIFIED_GEOMETRY");
+      }
+      for (const id of ids) compositeIds.add(id);
+    }
+    for (const task of fixed.filter(task => prerequisiteIds.has(task.id) && !compositeIds.has(task.id))) {
+      const placement=diagnoseTaskPlacement(this.placementSource,task,task.start,occupied.filter(other=>other.id!==task.id),[...spaceMeals]);
+      if (!placement.valid){
+        base.uncertifiedPlacement={taskId:task.id,reason:placement.firstRejectionReason,blockingTaskId:placement.blockingPlacedTaskId};
+        return finish("ABSTAIN", "UNCERTIFIED_GEOMETRY");
+      }
     }
     // Choose the lexicographically earliest complete matching, using residual matching
     // rather than freezing an arbitrary augmenting-path assignment.
