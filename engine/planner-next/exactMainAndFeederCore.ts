@@ -1250,8 +1250,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   let bundleState=structuralCandidate?.bundle??options.preferredBundleCandidate;
   const bundleQueue:NonNullable<typeof bundleState>[]=[];
   const seenBundleForbidden=new Set<string>();
+  let forbiddenAuthority=structuralCandidate;
   if(bundleState)seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
   while(bundleState){
+    // A task@position edge denotes this graph's complete bundle. Its exclusion
+    // cannot deduplicate a repair in another architecture with different slots.
+    if(structuralCandidate!==forbiddenAuthority){
+      seenBundleForbidden.clear();forbiddenAuthority=structuralCandidate;
+      seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
+    }
     evidence.bundleMatchingAttempts++;
     const byId=new Map([...bundleState.scheduledTasks,...structuralBase].map(task=>[task.id,task]));
     const preferred=[...byId.values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));

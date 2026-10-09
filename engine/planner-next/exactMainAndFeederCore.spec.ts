@@ -7,6 +7,7 @@ import { constructExactMainAndFeederCore, deriveFeederCohortRelaxedCertificate, 
 import { proveMainFeederArchitectureImpossible } from "./mainFlowPatterns";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
 import { validatePlan } from "./validate";
+import { canPlaceTask } from "./placement";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipelineWitness";
 
@@ -758,6 +759,56 @@ test("a preferred multi-edge conflict branches the nogood instead of forbidding 
   assert.notDeepEqual(repairedForbidden[0],repairedForbidden[1]);
   assert.equal(result.evidence.bundleNogoodsCreated,1);assert.equal(result.evidence.bundleNogoodBranches,2);
   assert.equal(result.evidence.bundleNogoodRepairsSucceeded,2);
+});
+
+test("structural matching exclusions stay local to the prepared graph that justified them",()=>{
+  const ids=["a","b"],problem=syntheticProblem(ids.flatMap(id=>[
+    {id:`feeder-${id}`,kind:"vocal" as const,participantId:id,duration:10,spaceId:"feed",dependencies:[]},
+    {id:`main-${id}`,kind:"main" as const,participantId:id,duration:10,spaceId:"main",dependencies:[`feeder-${id}`]},
+  ]),ids,["feed","future"]);
+  problem.protectedMeal=undefined;problem.budget.maxBranchExpansions=10;
+  const before=structuredClone(problem);
+  const future=[60,80].map(start=>({id:`future-${start}`,kind:"auxiliary" as const,participantId:"a",
+    duration:10,spaceId:"future",dependencies:[],availability:[{start,end:start+10}]}));
+  const run=(causalDiagnostic:boolean)=>{
+    const repairs:Array<{start:number;forbidden:string[];outcome:string}>=[],sources:string[]=[];
+    const structuralBundleCandidates=[60,80].map((start,index)=>{
+      const positions=new Map(ids.map(id=>[`main-${id}`,index===0?[id==="a"?0:1]:[0,1]]));
+      const materialize=(matching:ReadonlyMap<string,number>)=>[...matching].flatMap(([id,position])=>[
+        {...problem.tasks.find(task=>task.id===id.replace("main","feeder"))!,start:20+10*position,end:30+10*position},
+        {...problem.tasks.find(task=>task.id===id)!,start:start+10*position,end:start+10*position+10},
+      ]);
+      const matching=new Map([["main-a",0],["main-b",1]]);
+      return {architecture:{pattern:["coach","coach"],slots:[start,start+10]},architectureFingerprint:`geometry-${start}`,
+        bundle:{scheduledTasks:materialize(matching),matching,forbiddenEdges:new Set<string>()},
+        repair(previous:{matching:ReadonlyMap<string,number>;forbiddenEdges:ReadonlySet<string>},forbidden:ReadonlySet<string>,consume:()=>boolean){
+          const repaired=incrementallyRepairMatchingWitness(["main-a","main-b"],positions,forbidden,
+            previous.forbiddenEdges,previous.matching,consume);
+          repairs.push({start,forbidden:[...forbidden].sort(),outcome:repaired.outcome});
+          return repaired.outcome==="PERFECT"?{scheduledTasks:materialize(repaired.matching!),matching:repaired.matching!,forbiddenEdges:forbidden}:null;
+        }};
+    });
+    const result=runExactMainAndFeederSearch(problem,{causalDiagnostic,structuralBundleCandidates,
+      onHardValidCoreLeaf(candidate){
+        sources.push(candidate.source);
+        if(future.every(task=>canPlaceTask(problem,task,task.availability[0]!.start,candidate.tasks)))return "ACCEPT";
+        const ordered=candidate.tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start);
+        const targetDepth=ordered.findIndex(task=>task.id==="main-a")+1;
+        return {outcome:"CERTIFIED_BACKJUMP",targetDepth,conflictDecisionDepths:[targetDepth]};
+      }});
+    assert.equal(result.status,"COMPLETE");assert.ok(result.evidence.branchesExplored<=10);
+    assert.deepEqual(repairs,[{start:60,forbidden:["main-a@0"],outcome:"NO_PERFECT_MATCH"},
+      {start:80,forbidden:["main-a@0"],outcome:"PERFECT"}]);
+    assert.ok(sources.every(source=>source==="STRUCTURAL_FUTURE_CONDITIONED"),"viable graph must be repaired before residual DFS");
+    assert.equal(result.scheduledTasks.find(task=>task.id==="main-a")!.start,90);
+    assert.equal(result.evidence.bundleNogoodDeduplications,0);
+    assert.equal(result.evidence.bundleNogoodRepairsSucceeded,1);
+    assert.equal(validatePlan(problem,result.scheduledTasks).hardValid,true);
+    const {causalDiagnostic:_diagnostic,...evidence}=result.evidence;
+    return {...result,evidence};
+  };
+  assert.deepEqual(run(false),run(true),"diagnostics preserve decisions, fingerprints, ledger and stop reason");
+  assert.deepEqual(problem,before);
 });
 
 test("a recursive leaf rejection repairs feeder matching instead of pruning the cohort",()=>{
