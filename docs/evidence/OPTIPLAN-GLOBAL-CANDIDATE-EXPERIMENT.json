@@ -1,0 +1,29 @@
+{
+  "outcome": "INCONCLUSIVE",
+  "stopReason": "UNKNOWN",
+  "solver": {
+    "status": "UNKNOWN",
+    "wallMs": 30004.036207000012,
+    "deterministicTime": 5.2767378149458,
+    "branches": 236583,
+    "conflicts": 46316,
+    "globalFeasibility": "INCONCLUSIVE",
+    "hints": 0,
+    "workers": 1,
+    "qualification": "EXPERIMENTAL candidate model; negatives are INCONCLUSIVE. Full canonical certification mandatory."
+  },
+  "wallMs": 30995.851251,
+  "witness": null,
+  "baseHead": "6c5a1838ed06e0bbd7764a99be027e08b2d23f41",
+  "fixtureCounts": [
+    4,
+    6
+  ],
+  "fixtureProcessWallMs": [
+    457.02,
+    547.08
+  ],
+  "variationTests": 10,
+  "integrated": false,
+  "ASST010": "BLOCKED_AT_S2"
+}
