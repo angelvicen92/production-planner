@@ -415,4 +415,3 @@ export function sixParticipants() {
   const fixed = prior.tasks.filter((t) => t.id === "main-c");
   return { source, refreshed, prior, fixed };
 }
-
