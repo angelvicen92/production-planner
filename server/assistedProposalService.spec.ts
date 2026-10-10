@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { AssistedPlanningResult, AssistedProblem } from "../engine/planner-next/assistedPlanning";
+import {executeAssistedPlanning} from "../engine/planner-next/assistedPlanning";
 import { createSpec10021RoundSynchronizationEngineInputFixture, createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import type { IStorage } from "./storage";
@@ -409,6 +410,20 @@ test("NO_PROPOSAL and UNSUPPORTED each persist one causal result without product
     assert.equal((await service.run(planId,9)).outcome,outcome);
     assert.equal(finishes,1); assert.equal(runnerCalls,outcome==="NO_PROPOSAL"?1:0); assert.deepEqual(writes,[]);
   }
+});
+
+test("a real runtime interruption persists NO_PROPOSAL with its time reason and no partial draft",async()=>{
+  const writes:string[]=[];let finished=0,calls=0;
+  const service=new AssistedProposalService(runStorage(writes),queueMicrotask,access({
+    find:async()=>({data:runRecord(),error:null}),finish:async(_plan,_run,result)=>{
+      finished++;assert.equal(result.outcome,"NO_PROPOSAL");assert.equal(result.proposal,null);
+      assert.equal(result.proposedDraftSnapshot,null);assert.equal(result.proposedDraftFingerprint,null);
+      assert.ok(result.reasonCodes.includes("SEARCH_TIME_LIMIT_REACHED"));return {error:null};
+    },
+  }),(problem,baseline)=>executeAssistedPlanning(problem,baseline,{now:()=>++calls===1?0:300_000}),dependencies());
+  const result=await service.run(planId,9);
+  assert.equal(result.outcome,"NO_PROPOSAL");assert.equal(finished,1);assert.deepEqual(writes,[]);
+  assert.ok(!result.reasonCodes.some(code=>code.includes("BUDGET_EXHAUSTED")||code.includes("INFEASIBLE")));
 });
 
 test("apply performs one RPC, sends only optimistic guards, and propagates stale without lateral writes", async () => {

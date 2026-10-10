@@ -382,6 +382,8 @@ export interface ExactSearchLedger {
   coreBranches: number;
   standaloneBranches: number;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
+  /** Runtime cancellation is independent of branch accounting and validity. */
+  checkpoint?: () => void;
   consume(phase: "CORE" | "STANDALONE", count?: number): boolean;
 }
 export interface ExactCoreLeafCandidate {
@@ -704,10 +706,15 @@ export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem
   return {applicable:true,prefixCapacityImpossible,latestFeasibleBlockStart,contiguousBlockStartIntervals};
 }
 
-export function createExactSearchLedger(limit: number): ExactSearchLedger {
+export class ExactSearchTimeLimitReached extends Error {
+  constructor(){super("SEARCH_TIME_LIMIT_REACHED");this.name="ExactSearchTimeLimitReached";}
+}
+
+export function createExactSearchLedger(limit: number,checkpoint?:()=>void): ExactSearchLedger {
   const ledger: ExactSearchLedger = {
-    limit, branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, lastExhaustionPhase: null,
+    limit, branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, lastExhaustionPhase: null,checkpoint,
     consume(phase, count = 1) {
+      checkpoint?.();
       if (ledger.branchesExplored + count > ledger.limit) { ledger.lastExhaustionPhase = phase; return false; }
       ledger.branchesExplored += count;
       if (phase === "CORE") ledger.coreBranches += count; else ledger.standaloneBranches += count;

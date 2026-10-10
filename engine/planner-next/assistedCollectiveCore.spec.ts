@@ -95,3 +95,23 @@ test("Assisted enforces one interactive ledger ceiling while retaining smaller c
     else assert.deepEqual(result.proposal?.map(task=>task.id),["main-a"]);
   }
 });
+
+test("Assisted returns explicit time uncertainty with exact charged work and no partial proposal",()=>{
+  const source=fixture(),eligible=new Set(source.tasks.map(task=>task.id));
+  const first=executeAssistedPlanning(buildAssistedProblem(source,
+    createPlanningScope({kind:"TASK_IDS",value:"main-a"},{},["main-a"]),[],eligible));
+  assert.ok(first.proposal);
+  const input=buildAssistedProblem(source,createPlanningScope({kind:"TASK_IDS",value:"main-b"},{},["main-b"]),
+    first.proposal,eligible),saved=structuredClone(input);
+  let checks=0;
+  const result=executeAssistedPlanning(input,undefined,{now:()=>++checks<10?0:300_000});
+  assert.equal(result.proposal,null);
+  assert.ok(result.evidence.reasonCodes.includes("SEARCH_TIME_LIMIT_REACHED"));
+  assert.ok(!result.evidence.reasonCodes.some(code=>code.includes("BUDGET_EXHAUSTED")||code.includes("NO_COMPLETE_HARD_VALID")));
+  assert.equal(result.evidence.work.branchesExplored,result.evidence.work.coreBranches+result.evidence.work.standaloneBranches);
+  assert.ok(result.evidence.work.branchesExplored>0&&result.evidence.work.branchesExplored<1000);
+  assert.equal(result.evidence.protectedPlacementsPreserved,true);
+  assert.deepEqual(result.evidence.futureStructuralWitnesses,[]);
+  assert.deepEqual(input,saved);
+  assert.deepEqual(executeAssistedPlanning(input).proposal?.map(task=>task.id),["main-b"],"time interruption cannot poison a later execution");
+});

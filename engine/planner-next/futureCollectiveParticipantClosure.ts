@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
-import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain, prepareTaskPlacementAuthority } from "./placement";
+import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain, prepareTaskPlacementAuthority,
+  type PreparedTaskPlacementAuthority } from "./placement";
 import { materializeTerminalTransportDetailed, validateCertifiedArrivalSchedule } from "./transportGrouping";
 import { analyticParticipantMealDomain, participantMealCandidates } from "./participantMeals";
 import { participantGapMinutes } from "./participantTransition";
@@ -78,8 +79,13 @@ export class PreparedFutureCollectiveParticipantClosure {
   private readonly cache = new Map<string, FutureCollectiveClosureResult>();
   private readonly sourceSignature: string;
   private readonly missingIds: string[];
+  private readonly fixedBase:ScheduledTask[];
+  private readonly fixedBaseRows:Map<string,string>;
+  private readonly fixedPlacementCache=new Map<string,Map<Task,{authority:PreparedTaskPlacementAuthority;edges:Map<number,boolean>}>>();
 
-  constructor(problem: PlannerNextProblem) {
+  constructor(problem: PlannerNextProblem,fixedBase:readonly ScheduledTask[]=[]) {
+    this.fixedBase=structuredClone([...fixedBase]);
+    this.fixedBaseRows=new Map(this.fixedBase.map(task=>[task.id,JSON.stringify(task)]));
     const projection = problem.analyticalFutureParticipantClosure;
     this.source = structuredClone({ ...problem,
       tasks: projection?.tasks ?? problem.tasks,
@@ -191,6 +197,37 @@ export class PreparedFutureCollectiveParticipantClosure {
       // Participant meals use their existing overlap/dependency contract, without travel margins.
       participantMarginBeforeMinutes: 0, participantMarginAfterMinutes: 0 }));
     const occupied = [...fixed, ...mealTasks];
+    // A continuation has an immutable root and only appends branch-local
+    // occupations. Prepare that root once. Incomparable contexts, altered
+    // identities or duplicate IDs must use the complete canonical authority.
+    const occupiedById=new Map(occupied.map(task=>[task.id,task]));
+    const sharesBase=this.fixedBase.length>0&&this.fixedBaseRows.size===this.fixedBase.length
+      &&occupiedById.size===occupied.length&&this.fixedBase.every(task=>
+        JSON.stringify(occupiedById.get(task.id))===this.fixedBaseRows.get(task.id));
+    const additional=sharesBase?occupied.filter(task=>!this.fixedBaseRows.has(task.id)):null;
+    const mealSignature=sharesBase?hash(spaceMeals):"";
+    let prepared=this.fixedPlacementCache.get(mealSignature);
+    if(sharesBase&&!prepared){
+      if(this.fixedPlacementCache.size>=16)this.fixedPlacementCache.delete(this.fixedPlacementCache.keys().next().value!);
+      prepared=new Map();this.fixedPlacementCache.set(mealSignature,prepared);
+    }
+    const fixedAuthority=(task:Task)=>{
+      let value=prepared!.get(task);if(!value){value={authority:prepareTaskPlacementAuthority(this.source,task,this.fixedBase,[...spaceMeals]),edges:new Map()};prepared!.set(task,value);}
+      return value;
+    };
+    const placementDomain=(task:Task,added:ScheduledTask[]=[])=>additional
+      ?fixedAuthority(task).authority.domain([...additional,...added])
+      :exactTaskStartDomain(this.source,task,[...occupied,...added],[...spaceMeals]);
+    const placementAllows=(task:Task,start:number,added:ScheduledTask[]=[])=>{
+      if(!additional||added.some(item=>occupiedById.has(item.id)))
+        return canPlaceTask(this.source,task,start,[...occupied,...added],[...spaceMeals]);
+      const edges=fixedAuthority(task).edges,cached=edges.get(start);
+      const valid=cached??canPlaceTask(this.source,task,start,this.fixedBase,[...spaceMeals]);
+      if(cached===undefined)edges.set(start,valid);
+      // Static and pairwise canonical checks compose exactly when identities
+      // are disjoint. This caches calculations, never search decisions or charges.
+      return valid&&canPlaceTask(this.source,task,start,[...additional,...added],[...spaceMeals]);
+    };
     const taskById = new Map(this.source.tasks.map(task => [task.id, task]));
     const fixedById = new Map(occupied.map(task => [task.id, task]));
     const mealById = new Map(this.source.participantMeals?.map(meal => [meal.sourceTaskId, meal]));
@@ -214,7 +251,7 @@ export class PreparedFutureCollectiveParticipantClosure {
         const predecessor = fixedById.get(dep) ?? taskById.get(dep);
         return earliestEnd(dep, nextVisiting) + (task && predecessor ? participantGapMinutes(this.source, predecessor, task) : 0);
       }));
-      const starts = task ? exactTaskStartDomain(this.source, task, occupied, [...spaceMeals]).starts()
+      const starts = task ? placementDomain(task).starts()
         : analyticParticipantMealDomain(this.source, meal!, occupied).ranges.flatMap(range =>
           Array.from({ length: Math.floor((range.last - range.first) / 5) + 1 }, (_, index) => range.first + index * 5));
       let end = Infinity;
@@ -228,7 +265,6 @@ export class PreparedFutureCollectiveParticipantClosure {
     }
     for (const closure of closures) {
       const departures = pairs.filter(pair => pair.closure.id === closure.id).map(pair => pair.departure);
-      const departureAuthorities = departures.map(departure => prepareTaskPlacementAuthority(this.source, departure, occupied, [...spaceMeals]));
       const releases = closure.dependencies.map(dep => {
         const predecessor = fixedById.get(dep) ?? taskById.get(dep);
         return { id: dep, start: earliestEnd(dep) + (predecessor ? participantGapMinutes(this.source, predecessor, closure) : 0) };
@@ -236,12 +272,12 @@ export class PreparedFutureCollectiveParticipantClosure {
       const lower = Math.max(this.source.day.start, ...releases.map(item => item.start));
       releaseBoundsByClosure[closure.id] = { earliestStart: lower,
         predecessorTaskIds: releases.filter(item => item.start === lower).map(item => item.id).sort() };
-      domains[closure.id] = [...exactTaskStartDomain(this.source, closure, occupied, [...spaceMeals]).starts()].filter(start => {
+      domains[closure.id] = [...placementDomain(closure).starts()].filter(start => {
         if (start < lower) return false;
-        if (!canPlaceTask(this.source, closure, start, occupied, [...spaceMeals])) return false;
-        const scheduled = { ...closure, start, end: start + closure.duration }, withClosure = [...occupied, scheduled];
-        return departures.every((departure, index) => [...departureAuthorities[index]!.domain([scheduled]).starts()]
-          .some(outStart => canPlaceTask(this.source, departure, outStart, withClosure, [...spaceMeals])));
+        if (!placementAllows(closure,start)) return false;
+        const scheduled = { ...closure, start, end: start + closure.duration };
+        return departures.every(departure => [...placementDomain(departure,[scheduled]).starts()]
+          .some(outStart => placementAllows(departure,outStart,[scheduled])));
       });
     }
     // Only certify the exact unit-slot geometry. Other geometries need their own authority.

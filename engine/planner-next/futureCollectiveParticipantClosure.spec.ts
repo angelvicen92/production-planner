@@ -144,6 +144,54 @@ test("three slots certify a complete, deterministic, cached closure and departur
   assert.equal(result.witnessFingerprint, reversed.witnessFingerprint);
 });
 
+test("prepared fixed context preserves full canonical closure domains with margins and reverse dependencies",()=>{
+  for(const variant of ["plain","resource","reverse-dependency","participant-margin"]){
+    const source=fixture([0,5,10,15,20,25,30,35]);
+    const close=source.tasks.find(task=>task.id==="close-a")!,departure=source.tasks.find(task=>task.id==="depart-a")!;
+    const outside:Task={id:"fixed",kind:"auxiliary",participantId:"core",spaceId:"current",duration:5,dependencies:[]};
+    if(variant==="resource"){
+      source.resources=[{id:"exclusive",availability:[source.day],presencePreference:"OFF",transitionMinutes:5}];
+      outside.requiredResourceIds=["exclusive"];departure.requiredResourceIds=["exclusive"];
+    }
+    if(variant==="reverse-dependency")outside.dependencies=[departure.id];
+    if(variant==="participant-margin"){
+      outside.participantId="a";outside.participantMarginBeforeMinutes=10;outside.participantMarginAfterMinutes=0;
+      departure.participantMarginAfterMinutes=0;departure.participantMarginBeforeMinutes=5;
+    }
+    source.tasks.push(outside);
+    const context=[{...outside,start:25,end:30}],saved=structuredClone(source);
+    const expected=[...exactTaskStartDomain(source,close,context).starts()].filter(start=>{
+      if(!canPlaceTask(source,close,start,context))return false;
+      const scheduled={...close,start,end:start+close.duration},combined=[...context,scheduled];
+      return [...exactTaskStartDomain(source,departure,combined).starts()].some(at=>canPlaceTask(source,departure,at,combined));
+    });
+    const actual=new PreparedFutureCollectiveParticipantClosure(source,context).evaluate(context,[],()=>true,"NECESSARY_ONLY");
+    assert.deepEqual(actual.domains[close.id],expected,variant);
+    assert.deepEqual(source,saved);
+  }
+});
+
+test("fixed context reuse falls back on changed roots, removed roots, duplicates and changed space meals",()=>{
+  const source=fixture([0,5,10,15,20,25,30,35]);
+  source.resources=[{id:"exclusive",availability:[source.day],presencePreference:"OFF",transitionMinutes:5}];
+  source.tasks.find(task=>task.id==="depart-a")!.requiredResourceIds=["exclusive"];
+  const root:ScheduledTask={id:"root",kind:"auxiliary",participantId:"core",spaceId:"current",duration:5,
+    dependencies:[],start:20,end:25};
+  const extra:ScheduledTask={...root,id:"extra",participantId:"b",start:30,end:35,spaceId:"exit"};
+  source.tasks.push({...root},{...extra});
+  const initial=structuredClone(root),saved=structuredClone(source);
+  const reused=new PreparedFutureCollectiveParticipantClosure(source,[root]);
+  const fresh=new PreparedFutureCollectiveParticipantClosure(source);
+  root.start=25;root.end=30;
+  for(const context of [[initial],[initial,extra],[],[root],[{...initial,requiredResourceIds:["exclusive"]}],
+    [initial,{...initial,start:30,end:35}]]){
+    for(const meals of [[],[{id:"meal",kind:"space-meal" as const,spaceId:"exit",entryIndex:0,duration:5,start:10,end:15}]]){
+      assert.deepEqual(reused.evaluate(context,[],()=>true,"NECESSARY_ONLY",meals),fresh.evaluate(context,[],()=>true,"NECESSARY_ONLY",meals));
+    }
+  }
+  assert.deepEqual(source,saved);
+});
+
 test("closure certification replays grouped IN with its exact packet authority", () => {
   const source = fixture([10, 15, 20]);
   source.spaces.push({ id: "arrival", availability: [source.day] });

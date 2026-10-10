@@ -12,7 +12,7 @@ import type {
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
-import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
+import { ExactSearchTimeLimitReached, type ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
 import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { participantMealWitnessFingerprint } from "./participantMeals";
 import { operationalMealWitnessFingerprint } from "./operationalMeals";
@@ -613,7 +613,10 @@ export function buildAssistedProblem(
   };
 }
 
-export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
+export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline,
+  runtime?:{now?:()=>number}): AssistedPlanningResult {
+  const now=runtime?.now??(()=>performance.now()),started=now();
+  const checkpoint=()=>{if(now()-started>=300_000)throw new ExactSearchTimeLimitReached();};
   // Future participant meals remain invisible obligations, but they must constrain
   // every constructive/future-feasibility check performed for an Assisted scope.
   const producer=input.collectiveCoreProjection??input;
@@ -632,7 +635,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       &&item.affectedTaskIds.length>0&&item.affectedTaskIds.every(id=>protectedIds.has(id)));
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
-  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
+  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,checkpoint,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
     fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations,
     priorFutureStructuralWitnesses:input.priorFutureStructuralWitnesses??(input.priorFutureStructuralWitness?[input.priorFutureStructuralWitness]:[]) });
