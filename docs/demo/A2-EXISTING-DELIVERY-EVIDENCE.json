@@ -185,7 +185,10 @@
     },
     "independentStageAudits": 20,
     "historicalS1FailureMs": 143495,
-    "preflightPolicyCommandsAndFreshTimestamps": "PASS"
+    "preflightPolicyCommandsAndFreshTimestamps": "PASS",
+    "importRequiresSeparateDataApproval": "PASS",
+    "releaseRegressionTests": 55,
+    "canonicalTemplateDeterministic": "PASS"
   },
   "integration": {
     "pr": 1105,

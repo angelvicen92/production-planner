@@ -77,6 +77,7 @@ SET optiplan.confirmed_demo_project = 'dyqusivzgxebkxkwohwn';
 SET optiplan.backup_sha256 = '<sha256-del-before.dump>';
 SET optiplan.security_approved = 'yes';
 SET optiplan.demo_actor = '<UUID-Auth-existente-con-rol-admin-o-production>';
+SET optiplan.import_approved = 'yes'; -- aprobación específica de esta carga
 -- Ejecutar work/a2-existing/import.sql.
 ```
 

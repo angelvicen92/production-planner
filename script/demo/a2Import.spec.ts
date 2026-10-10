@@ -33,7 +33,7 @@ test('operational authorities enter configuration identity without changing lega
 });
 test('deterministic SQL requires approval and backup, preserves existing rows and restarts sequences atomically',()=>{
  const {sql,dataset}=buildA2ImportSQL('2026-10-30');assert.equal(sql,buildA2ImportSQL('2026-10-30').sql);
- assert.match(sql,/DEMO_TARGET_CONFIRMATION_REQUIRED/);assert.match(sql,/VERIFIED_BACKUP_REQUIRED/);assert.match(sql,/EXISTING_ROWS_CHANGED/);assert.match(sql,/BEGIN;/);assert.match(sql,/COMMIT;/);
+ assert.match(sql,/DEMO_TARGET_CONFIRMATION_REQUIRED/);assert.match(sql,/VERIFIED_BACKUP_REQUIRED/);assert.match(sql,/IMPORT_APPROVAL_REQUIRED/);assert.match(sql,/EXISTING_ROWS_CHANGED/);assert.match(sql,/BEGIN;/);assert.match(sql,/COMMIT;/);
  assert.doesNotMatch(sql,/\b(UPDATE|DELETE|TRUNCATE|UPSERT|setval)\b/);assert.equal(dataset.tables.daily_tasks.length,266);
  assert.equal(dataset.tables.program_settings,undefined);assert.equal(dataset.tables.optimizer_settings,undefined);
  assert.match(sql,/ALTER SEQUENCE %s RESTART/);assert.match(sql,/A2_UNIQUE_COLLISION/);

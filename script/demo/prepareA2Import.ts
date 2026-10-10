@@ -17,6 +17,7 @@ DO $$ BEGIN
  IF current_setting('optiplan.confirmed_demo_project',true) IS DISTINCT FROM ${quote(project)} THEN RAISE EXCEPTION 'DEMO_TARGET_CONFIRMATION_REQUIRED'; END IF;
  IF coalesce(current_setting('optiplan.backup_sha256',true),'') !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'VERIFIED_BACKUP_REQUIRED'; END IF;
  IF coalesce(current_setting('optiplan.security_approved',true),'') <> 'yes' THEN RAISE EXCEPTION 'SECURITY_PREFLIGHT_REQUIRED'; END IF;
+ IF current_setting('optiplan.import_approved',true) IS DISTINCT FROM 'yes' THEN RAISE EXCEPTION 'IMPORT_APPROVAL_REQUIRED'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.user_roles u JOIN public.roles r ON r.id=u.role_id WHERE u.user_id=nullif(current_setting('optiplan.demo_actor',true),'')::uuid AND r.key IN ('admin','production')) THEN RAISE EXCEPTION 'AUTHORIZED_DEMO_ACTOR_REQUIRED'; END IF;
 END $$;
 CREATE TEMP TABLE a2_existing_rows(table_name text, row_id bigint, row_json jsonb) ON COMMIT DROP;`];

@@ -19,7 +19,7 @@ const actor='00000000-0000-0000-0000-000000000001';
 // avoids repeated WASM JIT teardown failures in Node 24.
 const database=new PGlite();
 after(()=>database.close());
-const settings=`SET optiplan.confirmed_demo_project='dyqusivzgxebkxkwohwn'; SET optiplan.backup_sha256='${'a'.repeat(64)}'; SET optiplan.schema_approved='yes'; SET optiplan.security_approved='yes'; SET optiplan.demo_actor='${actor}';`;
+const settings=`SET optiplan.confirmed_demo_project='dyqusivzgxebkxkwohwn'; SET optiplan.backup_sha256='${'a'.repeat(64)}'; SET optiplan.schema_approved='yes'; SET optiplan.security_approved='yes'; SET optiplan.import_approved='yes'; SET optiplan.demo_actor='${actor}';`;
 async function setup(){
  const db=database;
  await db.exec(`ROLLBACK; RESET ROLE; DROP SCHEMA IF EXISTS auth CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public; DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; END IF; END $$; CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY); INSERT INTO auth.users VALUES('${actor}'); CREATE FUNCTION public.positive_integer_jsonb_array(v jsonb) RETURNS boolean LANGUAGE SQL IMMUTABLE AS 'SELECT jsonb_typeof(v)=''array''';`);
@@ -67,6 +67,10 @@ test('populated-project import preserves all earlier rows/defaults, canonical in
   const before:Record<string,any[]>={};const {dataset,sql}=buildA2ImportSQL('2026-10-30');
   for(const table of [...dataset.order,'program_settings','optimizer_settings'])before[table]=(await db.query<any>(`SELECT * FROM ${identifier(table)} ORDER BY id`)).rows;
   await db.exec('ALTER SEQUENCE daily_tasks_id_seq RESTART WITH 900000');
+  await db.exec("SET optiplan.import_approved='no'");
+  await assert.rejects(()=>db.exec(sql),/IMPORT_APPROVAL_REQUIRED/);await db.exec('ROLLBACK');
+  assert.equal((await db.query<any>('SELECT count(*) AS n FROM plans')).rows[0].n,4,'security approval does not authorize a data import');
+  await db.exec("SET optiplan.import_approved='yes'");
   await db.exec(sql);
   for(const [table,rows] of Object.entries(before)){
    const actual=(await db.query<any>(`SELECT * FROM ${identifier(table)} ORDER BY id`)).rows;
