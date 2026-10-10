@@ -1,11 +1,13 @@
--- Only in the approved separate demo project, after A2 import.
--- Create a demo Auth user in Supabase first. In the same SQL session:
--- SET optiplan.confirmed_demo_project = '<approved-project-ref>';
+-- OPTIONAL: a new demo account only, with separate explicit authorization.
+-- Existing authorized admin/production accounts need no change. Never reassign their roles.
+-- Create the new Auth user in Supabase first. In the same SQL session:
+-- SET optiplan.confirmed_demo_project = 'dyqusivzgxebkxkwohwn';
+-- SET optiplan.operator_creation_approved = 'yes';
 -- SET optiplan.demo_operator_email = '<email of that demo user>';
 BEGIN;
 DO $$ BEGIN
- IF coalesce(current_setting('optiplan.confirmed_demo_project',true),'') !~ '^[a-z]{20}$'
-    OR NOT EXISTS(SELECT 1 FROM public.plans WHERE id=27001 AND planner_next_configuration->>'contractVersion'='1') THEN
+ IF current_setting('optiplan.confirmed_demo_project',true) IS DISTINCT FROM 'dyqusivzgxebkxkwohwn'
+    OR current_setting('optiplan.operator_creation_approved',true) IS DISTINCT FROM 'yes' THEN
   RAISE EXCEPTION 'DEMO_TARGET_CONFIRMATION_REQUIRED';
  END IF;
  IF (SELECT count(*) FROM auth.users WHERE lower(email)=lower(current_setting('optiplan.demo_operator_email',true)))<>1 THEN

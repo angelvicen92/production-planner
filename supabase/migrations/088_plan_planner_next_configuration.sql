@@ -1,4 +1,4 @@
--- Prepared for an explicitly approved independent demo project. Never applied by the importer.
+-- Prepared for the explicitly approved test project. Never applied by the importer.
 -- NULL preserves existing days and their current engine behavior.
 ALTER TABLE public.plans ADD COLUMN planner_next_configuration jsonb;
 ALTER TABLE public.plans ADD CONSTRAINT plans_planner_next_configuration_shape CHECK (

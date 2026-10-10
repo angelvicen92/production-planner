@@ -61,8 +61,8 @@
     "benchmark:planner-next:spec10-018": "tsx engine/planner-next/benchmarks/runSpec10018SetupPolicyBenchmark.ts",
     "benchmark:planner-next:spec10-019": "tsx engine/planner-next/benchmarks/runSpec10019CoachRouteTransitionBenchmark.ts",
     "benchmark:planner-next:spec10-020": "tsx engine/planner-next/benchmarks/runSpec10020FlexibleSetupOrderBenchmark.ts",
-    "benchmark:planner-next:a2-assisted-proposal-e1": "tsx engine/planner-next/benchmarks/runPlannerNextA2AssistedProposalE1Cli.ts"
-    ,"benchmark:planner-next:a2-pipeline-witness": "tsx engine/planner-next/benchmarks/runA2AnonymousPipelineWitnessProbe.ts",
+    "benchmark:planner-next:a2-assisted-proposal-e1": "tsx engine/planner-next/benchmarks/runPlannerNextA2AssistedProposalE1Cli.ts",
+    "benchmark:planner-next:a2-pipeline-witness": "tsx engine/planner-next/benchmarks/runA2AnonymousPipelineWitnessProbe.ts",
     "benchmark:planner-next:a2-opening": "tsx engine/planner-next/benchmarks/runA2AnonymousPipelineWitnessProbe.ts",
     "benchmark:planner-next:a2-assist-2": "tsx server/benchmarks/runA2Assist2Evidence.ts",
     "benchmark:planner-next:a2-assist-5": "tsx server/benchmarks/runA2Assist5Evidence.ts",
@@ -75,7 +75,12 @@
     "demo:a2:build": "node --import tsx script/demo/serveA2Demo.ts work/a2-demo --build",
     "demo:a2:prepare-import": "node --import tsx script/demo/prepareA2Import.ts",
     "demo:a2:verify-import-input": "node --import tsx script/demo/verifyA2ImportedInput.ts",
-    "demo:a2:verify-database": "node --import tsx script/demo/verifyA2Database.ts"
+    "demo:a2:verify-database": "node --import tsx script/demo/verifyA2Database.ts",
+    "demo:a2:audit": "node --import tsx script/demo/auditSupabaseREST.ts",
+    "demo:a2:prepare-schema": "node --import tsx script/demo/prepareA2Schema.ts",
+    "demo:a2:preflight": "node --import tsx script/demo/a2Preflight.ts",
+    "demo:a2:security-rollback": "node --import tsx script/demo/prepareA2SecurityRollback.ts",
+    "test:demo:a2-import": "tsx --test --test-concurrency=1 script/demo/a2Import.spec.ts script/demo/a2ExistingDatabase.spec.ts script/demo/a2Security.spec.ts script/demo/a2Preflight.spec.ts server/apiAuthorization.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/assistedPlanningConfigRevision.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -150,6 +155,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@replit/vite-plugin-cartographer": "^0.4.4",
     "@replit/vite-plugin-dev-banner": "^0.1.1",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",

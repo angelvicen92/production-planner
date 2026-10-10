@@ -31,9 +31,11 @@ test('operational authorities enter configuration identity without changing lega
  assert.notDeepEqual(original.plan_workday,projectEffectiveAuthoritiesFromEngineInputV1(altered).plan_workday);
  delete altered.plannerNext;assert.ok(!JSON.stringify(projectEffectiveAuthoritiesFromEngineInputV1(altered).plan_workday).includes('plannerNextAuthorities'));
 });
-test('deterministic SQL requires explicit confirmation, empty project and atomic insert-only loading',()=>{
+test('deterministic SQL requires approval and backup, preserves existing rows and restarts sequences atomically',()=>{
  const {sql,dataset}=buildA2ImportSQL('2026-10-30');assert.equal(sql,buildA2ImportSQL('2026-10-30').sql);
- assert.match(sql,/DEMO_TARGET_CONFIRMATION_REQUIRED/);assert.match(sql,/DEMO_REQUIRES_EMPTY_SEPARATE_PROJECT/);assert.match(sql,/BEGIN;/);assert.match(sql,/COMMIT;/);
- assert.doesNotMatch(sql,/\b(UPDATE|DELETE|TRUNCATE|UPSERT)\b/);assert.equal(dataset.tables.daily_tasks.length,266);
+ assert.match(sql,/DEMO_TARGET_CONFIRMATION_REQUIRED/);assert.match(sql,/VERIFIED_BACKUP_REQUIRED/);assert.match(sql,/EXISTING_ROWS_CHANGED/);assert.match(sql,/BEGIN;/);assert.match(sql,/COMMIT;/);
+ assert.doesNotMatch(sql,/\b(UPDATE|DELETE|TRUNCATE|UPSERT|setval)\b/);assert.equal(dataset.tables.daily_tasks.length,266);
+ assert.equal(dataset.tables.program_settings,undefined);assert.equal(dataset.tables.optimizer_settings,undefined);
+ assert.match(sql,/ALTER SEQUENCE %s RESTART/);assert.match(sql,/A2_UNIQUE_COLLISION/);
  assert.throws(()=>buildA2ImportSQL('2026-02-30'));
 });

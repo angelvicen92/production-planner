@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {buildEngineInput} from '../../engine/buildInput';
 import {adaptEngineInputToPlannerNextProblem} from '../../engine/planner-next/integration/engineInputAdapter';
 import {buildA2ImportRows} from './a2ImportRows';
+import {readFileSync} from 'node:fs';
 
 // Strictly read-only. No bootstrap, RPC, planning run, schema change or write.
 const project=process.argv[2],date=process.argv[3];
@@ -16,4 +17,16 @@ if(actual.status==='SUPPORTED'&&expected.status==='SUPPORTED')assert.deepEqual(a
 const contestants=await storage.getContestantsByPlan(dataset.input.planId);
 assert.deepEqual(contestants.map(c=>c.name).sort(),dataset.tables.contestants.map(c=>c.name).sort());
 assert.ok(input.tasks.every(t=>t.startPlanned==null&&t.endPlanned==null),'Verify immediately after import, before planning');
-console.log(JSON.stringify({mode:'READ_ONLY_REAL_DATABASE_INPUT',project,planId:dataset.input.planId,date,contestants:contestants.length,obligations:input.tasks.length,canonicalProblemEqual:true,writes:0}));
+const baselinePath=process.argv[4];let preservedExistingRows=0;
+if(baselinePath){
+ const baseline=JSON.parse(readFileSync(baselinePath,'utf8'));
+ const {supabaseAdmin}=await import('../../server/supabase');
+ for(const [table,rows] of Object.entries(baseline) as [string,Record<string,any>[]][]){
+  for(let i=0;i<rows.length;i+=100){
+   const before=rows.slice(i,i+100),{data,error}=await supabaseAdmin.from(table).select('*').in('id',before.map(r=>r.id));
+   if(error)throw error;
+   for(const row of before){assert.deepEqual(data?.find(r=>r.id===row.id),row,`Existing row changed: ${table}:${row.id}`);preservedExistingRows++;}
+  }
+ }
+}
+console.log(JSON.stringify({mode:'READ_ONLY_REAL_DATABASE_INPUT',project,planId:dataset.input.planId,date,contestants:contestants.length,obligations:input.tasks.length,canonicalProblemEqual:true,preservedExistingRows,existingRowsAudit:baselinePath?'PASS':'BASELINE_NOT_SUPPLIED',writes:0}));

@@ -263,7 +263,16 @@ export function projectEffectiveAuthoritiesFromEngineInputV1(
       ...(input.planZoneSettings ?? []).map(({ zoneId, availabilityStart, availabilityEnd, name, mealStartPreferred, mealEndPreferred, groupingLevel, groupingMinChain, maxTemplateChanges, spaceMealBreakMinutes }) => ({ kind: "zone", zoneId, availabilityStart: availabilityStart ?? null, availabilityEnd: availabilityEnd ?? null, name: name ?? "", mealStartPreferred: mealStartPreferred ?? null, mealEndPreferred: mealEndPreferred ?? null, groupingLevel: groupingLevel ?? 0, groupingMinChain: groupingMinChain ?? 4, maxTemplateChanges: maxTemplateChanges ?? 4, spaceMealBreakMinutes: spaceMealBreakMinutes ?? null })),
       ...(input.planSpaceSettings ?? []).map(({ spaceId, zoneId, availabilityStart, availabilityEnd, name, parentSpaceId, priorityLevel, groupingLevel, groupingMinChain, groupingApplyToDescendants }) => ({ kind: "space", spaceId, zoneId, availabilityStart: availabilityStart ?? null, availabilityEnd: availabilityEnd ?? null, name: name ?? "", parentSpaceId: parentSpaceId ?? null, priorityLevel: priorityLevel ?? 1, groupingLevel: groupingLevel ?? 0, groupingMinChain: groupingMinChain ?? 4, groupingApplyToDescendants: groupingApplyToDescendants ?? false })),
     ], provenance: provenance("plan_zone_settings+plan_space_settings") },
-    resource_configuration: { semanticValue: input.planResourceItems ?? [], provenance: provenance("plan_resource_items") },
+    resource_configuration: { semanticValue: (input.planResourceItems ?? []).map(row => {
+      // The engine boundary may explicitly include undefined optional metadata.
+      // Omit only those optional fields; invalid required authority data must
+      // still fail canonicalization. Already canonical revisions keep identity.
+      const value = {...row};
+      for (const key of ['typeCode','typeName','category','availabilityStart','availabilityEnd'] as const) {
+        if (value[key] === undefined) delete value[key];
+      }
+      return value;
+    }), provenance: provenance("plan_resource_items") },
     resource_assignments_and_requirements: { semanticValue: [
       { kind: "zoneAssignments", value: input.zoneResourceAssignments },
       { kind: "spaceAssignments", value: input.spaceResourceAssignments },

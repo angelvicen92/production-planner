@@ -6,6 +6,7 @@ import { supabaseAdmin } from "./supabase";
 import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
+import { createApiAuthorization } from './apiAuthorization';
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
 import { runORCActivePlanner } from "../engine/orc/active/orcActivePlanner";
@@ -131,81 +132,7 @@ function mapDeleteError(err: any, fallback: string) {
 }
 
   // Authentication + coarse-grained authorization for all API endpoints
-  app.use("/api", async (req, res, next) => {
-    if (req.path === "/health") return next();
-
-    if (
-      req.path.startsWith("/debug/engine-input") ||
-      req.path.startsWith("/debug/generate") ||
-      req.path.startsWith("/debug/daily-task")
-    ) {
-      return next();
-    }
-
-    return requireAuth(req, res, async () => {
-      const method = req.method.toUpperCase();
-      const path = req.path;
-
-      const adminOnlyPrefixes = [
-        "/settings",
-        "/program-settings",
-        "/optimizer-settings",
-        "/task-templates",
-        "/zones",
-        "/spaces",
-        "/resource-types",
-        "/resource-items",
-        "/resource-pools",
-        "/staff-people",
-        "/staff-defaults",
-        "/itinerant-teams",
-      ];
-
-      const writePlansPrefixes = ["/plans", "/locks"];
-
-      const isAdminOnly = adminOnlyPrefixes.some((prefix) =>
-        path === prefix || path.startsWith(`${prefix}/`),
-      );
-
-      const isAdminOnlyWrite = isAdminOnly && method !== "GET";
-      const isAdminOnlyRead = isAdminOnly && method === "GET";
-
-      const isPlansWrite =
-        method !== "GET" &&
-        writePlansPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
-
-      if (!isAdminOnly && !isPlansWrite) {
-        return next();
-      }
-
-      const userId = (req as any)?.user?.id as string | undefined;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      try {
-        const role = await getUserRole(userId);
-        (req as any).userRole = role;
-
-        if (isAdminOnlyRead && !role) {
-          return withPermissionDenied(res);
-        }
-
-        if (isAdminOnlyWrite && role !== "admin") {
-          return withPermissionDenied(res);
-        }
-
-        if (isPlansWrite && role !== "admin" && role !== "production") {
-          return withPermissionDenied(res);
-        }
-
-        return next();
-      } catch (error) {
-        console.error("[AUTHZ] coarse permission check failed", error);
-        return res.status(500).json({ message: "Failed to validate permissions" });
-      }
-    });
-  });
+  app.use('/api',createApiAuthorization({authenticate:requireAuth,lookupRole:getUserRole}));
 
   app.post("/api/bootstrap-role", async (req, res) => {
     try {

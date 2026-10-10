@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "target": {
+    "name": "planificador_audiovisual",
+    "ref": "dyqusivzgxebkxkwohwn",
+    "date": "2026-10-30",
+    "planId": 27001,
+    "userConfirmedTestProject": true,
+    "specificWritesAuthorized": false
+  },
+  "remote": {
+    "mode": "REMOTE_REST_GET_ONLY",
+    "observedAt": "2026-10-10T18:51:24.651Z",
+    "counts": {
+      "zones": 7,
+      "spaces": 23,
+      "resource_types": 6,
+      "resource_items": 13,
+      "task_templates": 23,
+      "plans": 4,
+      "plan_task_template_snapshots": 92,
+      "plan_zone_settings": 28,
+      "plan_space_settings": 92,
+      "plan_resource_items": 51,
+      "contestants": 47,
+      "daily_tasks": 333,
+      "plan_space_resource_assignments": 8,
+      "plan_resource_bundle_snapshots": 0,
+      "plan_optimizer_snapshots": 4,
+      "plan_optimizer_snapshot_heuristics": 36,
+      "program_settings": 1,
+      "optimizer_settings": 1,
+      "planning_runs": 278,
+      "assisted_planning_sessions": 0,
+      "assisted_planning_stages": 0
+    },
+    "collisions": [],
+    "missingColumns": [
+      {
+        "table": "plans",
+        "column": "participant_transition_minutes"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_baseline_minutes"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_config_source"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_override_by"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_override_at"
+      },
+      {
+        "table": "plans",
+        "column": "planner_next_configuration"
+      },
+      {
+        "table": "plan_task_template_snapshots",
+        "column": "participant_margin_before_minutes"
+      },
+      {
+        "table": "plan_task_template_snapshots",
+        "column": "participant_margin_after_minutes"
+      },
+      {
+        "table": "plan_zone_settings",
+        "column": "name"
+      },
+      {
+        "table": "plan_zone_settings",
+        "column": "config_source"
+      },
+      {
+        "table": "plan_space_settings",
+        "column": "name"
+      },
+      {
+        "table": "plan_space_settings",
+        "column": "config_source"
+      },
+      {
+        "table": "daily_tasks",
+        "column": "participant_margin_before_minutes"
+      },
+      {
+        "table": "daily_tasks",
+        "column": "participant_margin_after_minutes"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "id"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "plan_id"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "source"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "bundles"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "components"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "space_affinities"
+      }
+    ],
+    "unreadableTables": [
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "status": 404
+      }
+    ],
+    "anonChecks": [
+      {
+        "table": "spaces",
+        "status": 200,
+        "returnedRows": 1
+      },
+      {
+        "table": "daily_tasks",
+        "status": 200,
+        "returnedRows": 1
+      },
+      {
+        "table": "plan_resource_items",
+        "status": 200,
+        "returnedRows": 1
+      }
+    ],
+    "anonExposedRpcPaths": [],
+    "sqlCatalog": "PENDING_SQL_ACCESS",
+    "backup": "NOT_ESTABLISHED",
+    "writes": 0
+  },
+  "local": {
+    "focusedTests": 26,
+    "strictTypecheck": "PASS",
+    "SQL": "PostgreSQL WASM, application test schema with observed drift",
+    "schemaRollback": "PASS",
+    "v1SnapshotPreserved": "PASS",
+    "fourExistingDaysPreserved": "PASS",
+    "globalDefaultsUnchanged": "PASS",
+    "sequenceRollback": "PASS",
+    "advancedSequenceNotLowered": "PASS",
+    "actualBootstrapRPC": "PASS",
+    "canonicalProblemEqual": "PASS",
+    "securityMatrix15Tables": "PASS",
+    "HTTPRoleBoundary": "PASS",
+    "fullA2": {
+      "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
+      "writes": 0,
+      "reports": [
+        {
+          "run": 1,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 77614,
+          "totalMs": 95437,
+          "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+        },
+        {
+          "run": 2,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 72687,
+          "totalMs": 90053,
+          "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+        }
+      ]
+    },
+    "independentStageAudits": 20,
+    "historicalS1FailureMs": 143495
+  },
+  "integration": {
+    "pr": 1105,
+    "branch": "codex/optiplan-a2-import-demo",
+    "base": "main",
+    "requiresPR1104Merge": false,
+    "experimentalCPWiring": false,
+    "experimentalASSTScriptsIncluded": false,
+    "ASST010AlternativeS2": "BLOCKED_UNCHANGED",
+    "remoteUIFlow": "NOT_EXECUTED",
+    "replitChanged": false,
+    "merged": false
+  },
+  "pendingRemote": [
+    "SQL catalog export and diff review",
+    "PostgreSQL backup and recovery check",
+    "Specific schema/security/data approval",
+    "Replit update by user",
+    "Real login and role matrix",
+    "Full 10-stage UI flow",
+    "Reload and second-session recovery"
+  ]
+}
