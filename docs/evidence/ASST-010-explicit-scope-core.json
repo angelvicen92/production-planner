@@ -1,0 +1,3215 @@
+{
+  "outcome": "INCONCLUSIVE_AFTER_STYLING_GEOMETRY_REPAIR",
+  "baseHead": "5e46168daa35d755bcb9a2573ed81647d8b466a2",
+  "productionBlob": "7a259c18301936dbbf4368cdc07cd736f5ec206e",
+  "baselineASST010": {
+    "outcome": "NO_PROPOSAL",
+    "failedAt": "initial acceptance, benchmark line 162",
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "FUTURE_COLLECTIVE_CLOSURE_INCONCLUSIVE"
+    ],
+    "sourceTaskCount": 247,
+    "visibleScope": [
+      "task:10017"
+    ],
+    "projectedTaskIds": [
+      "task:10017",
+      "task:10018",
+      "task:10021",
+      "task:10024"
+    ],
+    "futureMainVocalCountOutsideProjection": 36,
+    "jointContinuationEnabled": false
+  },
+  "causalCycleLimit": 2,
+  "cycles": [
+    {
+      "cycle": 1,
+      "delta": "eligibility plus ephemeral projection of all missing core roots",
+      "initialProposalAccepted": true,
+      "configRefreshMaterialized": true,
+      "outcome": "NO_PROPOSAL_AFTER_REFRESH",
+      "reasonCodes": [
+        "ASSISTED_SCOPE_INCOMPLETE",
+        "CORE_BRANCH_BUDGET_EXHAUSTED"
+      ],
+      "configuredBudgetUnchanged": 300000,
+      "testDurationMs": 594121.846391
+    },
+    {
+      "cycle": 2,
+      "delta": "Main roots; dependent Vocal remain supporting",
+      "initialProposalAccepted": true,
+      "configRefreshMaterialized": true,
+      "outcome": "NO_PROPOSAL_AFTER_REFRESH",
+      "testDurationMs": 524887.980956,
+      "finalSearch": {
+        "scope": {
+          "selector": {
+            "kind": "TASK_IDS",
+            "value": "10015"
+          },
+          "metadata": {},
+          "resolvedTaskIds": [
+            "task:10015"
+          ]
+        },
+        "protectedCount": 1,
+        "status": "BRANCH_BUDGET_EXHAUSTED",
+        "reasonCodes": [
+          "CORE_BRANCH_BUDGET_EXHAUSTED"
+        ]
+      },
+      "diagnostic": {
+        "branchesExplored": 300000,
+        "coreBranches": 299636,
+        "standaloneBranches": 364,
+        "architecturesEnumerated": 79,
+        "architecturesPrepared": 79,
+        "futureReservationBundleMatchingAttempts": 79,
+        "futureReservationPerfectMatchings": 60,
+        "coreCompleteLeavesEvaluated": 52,
+        "coreLeavesRejectedByStandalone": 0,
+        "structuralSearchExhausted": true,
+        "structuralSearchBudgetExhausted": false,
+        "residualDfsEntered": true,
+        "nominalPipelineWitnessRejectsByReason": {
+          "OPERATIONAL_MEAL_FUTURE_INFEASIBLE": 135,
+          "PARTICIPANT_MEAL_FUTURE_INFEASIBLE": 90,
+          "JOINT_ARRIVAL_GEOMETRY": 143,
+          "FEEDER_RUN_GEOMETRY": 72,
+          "JOINT_STYLING_FEEDER_MATCHING": 1
+        },
+        "firstParticipantFutureReservationPrune": {
+          "phase": "CORE",
+          "causingTaskId": "task:10002",
+          "causingCandidateStart": 755,
+          "depth": 19,
+          "affectedParticipants": [
+            "participant:201",
+            "participant:202",
+            "participant:203",
+            "participant:204",
+            "participant:205",
+            "participant:206",
+            "participant:207",
+            "participant:208",
+            "participant:209",
+            "participant:210",
+            "participant:211",
+            "participant:212",
+            "participant:213",
+            "participant:214",
+            "participant:215",
+            "participant:216",
+            "participant:217",
+            "participant:218",
+            "participant:219"
+          ],
+          "affectedFutureTasksChecked": 164,
+          "affectedMealsChecked": 19,
+          "individualDomainChecks": 3,
+          "individualZeroDomainPrunes": 1,
+          "jointTaskMealChecks": 0,
+          "jointTaskMealPrunes": 0,
+          "collectiveChecks": 0,
+          "collectivePasses": 0,
+          "collectivePrunes": 0,
+          "collectiveObligationIds": [],
+          "collectiveDomainSizes": {},
+          "collectiveWitnessFound": false,
+          "dominatedLaterStartsSkipped": 0,
+          "earliestDominanceBranches": 0,
+          "compatiblePairChecks": 0,
+          "analyticChecks": 4,
+          "branchesConsumed": 0,
+          "unresolvedDependencyIds": [],
+          "abstainCause": null,
+          "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+          "futureTaskId": "task:10004",
+          "mealTaskId": null,
+          "participantId": "participant:201",
+          "futureTaskCandidateCount": 0,
+          "mealCandidateCount": 0,
+          "compatiblePairCount": 0,
+          "participantDiagnostics": [],
+          "status": "PRUNE"
+        },
+        "firstTechnicalChainFutureReservationPrune": {
+          "phase": "CORE",
+          "causingTaskId": "task:10102",
+          "causingCandidateStart": 980,
+          "depth": 19,
+          "affectedStructures": 1,
+          "structuresChecked": 1,
+          "branchesConsumed": 606,
+          "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+          "workItemKey": "technical-chain:task:10081",
+          "candidateCount": 0,
+          "certifiedCausingTaskId": "task:10102",
+          "certifiedDecisionDepth": 12,
+          "initialRepairableGroupCount": 9,
+          "redundantDecisionDepths": [
+            1,
+            3,
+            4,
+            7,
+            9,
+            10,
+            17,
+            18
+          ],
+          "irreducibleDecisionDepths": [
+            12
+          ],
+          "minimizationProbes": 9,
+          "knownCandidateCount": 216,
+          "survivorLowerBound": 0,
+          "survivorCountExact": 0,
+          "domainComplete": true,
+          "witnessReuseCheck": true,
+          "witnessReuseHit": false,
+          "conflictDecisionDepths": [
+            12
+          ],
+          "conflictTaskIds": {
+            "12": [
+              "task:10102",
+              "task:10109",
+              "task:10110"
+            ]
+          },
+          "conflictGroupCount": 1,
+          "fixedContextParticipates": true,
+          "conflictClassification": "SINGLE_DECISION_ZERO_DOMAIN",
+          "status": "PRUNE",
+          "result": "ZERO_DOMAIN"
+        },
+        "firstTerminalCompletionRejection": null,
+        "futureCollectiveClosurePendingPredecessorTaskIds": [],
+        "coreMaximumDepth": 2,
+        "coreReasonCodes": [
+          "MATCHING_SEARCH_BUDGET_EXHAUSTED"
+        ],
+        "dominantDepths": [
+          [
+            "0",
+            {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 185008,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 11810,
+              "total": 196818
+            }
+          ],
+          [
+            "2",
+            {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 77382,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 0,
+              "total": 77382
+            }
+          ],
+          [
+            "1",
+            {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 25800,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 0,
+              "total": 25800
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "refresh": {
+    "scopeTaskIds": [
+      10015
+    ],
+    "templateId": 20009,
+    "supportingTaskId": 10018,
+    "oldDuration": 10,
+    "consumedNewDuration": 20,
+    "affectedTaskCount": 19,
+    "protectedMain": {
+      "id": "task:10017",
+      "duration": 15,
+      "spaceId": "space:3004",
+      "dependencies": [
+        "task:10018",
+        "task:10024"
+      ],
+      "kind": "main",
+      "participantId": "participant:202",
+      "coachId": "plan-resource:4005",
+      "blockKey": "plan-resource:4005",
+      "start": 845,
+      "end": 860
+    },
+    "protectedOperationalMeals": [
+      {
+        "id": "break:main-flow",
+        "resourceIds": [],
+        "spaceIds": [
+          "space:3004"
+        ],
+        "duration": 75,
+        "start": 890,
+        "end": 965
+      }
+    ],
+    "S1SnapshotPreservedBeforeRequest": true
+  },
+  "proofLimits": {
+    "initialSingleMainContinuation": "SOUND_AND_ACCEPTED",
+    "postRefreshScopeGloballyImpossible": "NOT_PROVEN",
+    "inconclusivePromotedToPass": false,
+    "canonicalExceptionRollbackRedoDivergence": "NOT_REACHED",
+    "general100000LimitInASST010": "NOT_MET; base canonical fixture default is 300000",
+    "thirdCausalDeltaAttempted": false,
+    "readOnlyDiagnostic": "Node inspector snapshot at the current search return; no solver branches or decisions added"
+  },
+  "A2Assist8": {
+    "status": "PASS",
+    "runs": 2,
+    "completed": 266,
+    "stages": 10,
+    "materialDigest": "ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc",
+    "finalFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+    "baselineMaterialUnchanged": true,
+    "stagesCompared": [
+      {
+        "stage": 1,
+        "completed": 19,
+        "branches": 80835,
+        "durationMs": [
+          241975,
+          220710
+        ],
+        "acceptedFingerprint": "10897fa2ce5bc94e3d26938cc0c5927df4f4a6d434b2f037e8e06e76f0cdf2e4",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 2,
+        "completed": 38,
+        "branches": 293,
+        "durationMs": [
+          180,
+          128
+        ],
+        "acceptedFingerprint": "621bfdef7ee9ba478b42bf59d706b6baab56f8b27a4940748fb8d477c5c01cd6",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 3,
+        "completed": 46,
+        "branches": 293,
+        "durationMs": [
+          149,
+          268
+        ],
+        "acceptedFingerprint": "438690f0db57f88db7721238df5d3684566e9a344318687b81bf1cb733ffee08",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 4,
+        "completed": 65,
+        "branches": 293,
+        "durationMs": [
+          213,
+          183
+        ],
+        "acceptedFingerprint": "eadc4e650a39375aa72961793e5ecf943d9c30da98f3ba5976280e3dd432a5af",
+        "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+      },
+      {
+        "stage": 5,
+        "completed": 75,
+        "branches": 13241,
+        "durationMs": [
+          18085,
+          25088
+        ],
+        "acceptedFingerprint": "e97217c62265841918817296f1c45986c0dd492cb1ae2e3cbbda645eb952a785",
+        "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+      },
+      {
+        "stage": 6,
+        "completed": 111,
+        "branches": 293,
+        "durationMs": [
+          107,
+          137
+        ],
+        "acceptedFingerprint": "7b3c49e335c4f35a79754b02fe25b5c04ec5a2a65de7da204d6b3db1ab75786c",
+        "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+      },
+      {
+        "stage": 7,
+        "completed": 169,
+        "branches": 1884,
+        "durationMs": [
+          6814,
+          11614
+        ],
+        "acceptedFingerprint": "509e0affa08e4e21fe4bacac030cfc7715ad3aefca89fe28844ab823d4da7046",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      },
+      {
+        "stage": 8,
+        "completed": 207,
+        "branches": 293,
+        "durationMs": [
+          137,
+          132
+        ],
+        "acceptedFingerprint": "9eb3aa1542efbef080b0909a072a72050865ab28574ebc8afacbf66c701cb9b2",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      },
+      {
+        "stage": 9,
+        "completed": 209,
+        "branches": 293,
+        "durationMs": [
+          125,
+          195
+        ],
+        "acceptedFingerprint": "b1906633b500e19db548159c8548ec4ca8c0e390e81bb7eaf25135841f43861c",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      },
+      {
+        "stage": 10,
+        "completed": 266,
+        "branches": 293,
+        "durationMs": [
+          183,
+          332
+        ],
+        "acceptedFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+        "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+      }
+    ],
+    "snapshotsInitiallyEmpty": true,
+    "historicalSeed": null,
+    "newHardViolationCount": 0,
+    "newRequiredViolationCount": 0,
+    "acceptedPlacementsMoved": 0,
+    "allProtectedTasksAndMealsExact": true,
+    "sourceTasksPerJointCertificate": 247,
+    "participantMealsPerJointCertificate": 19,
+    "branchLimitPerRequest": 100000
+  },
+  "validation": {
+    "projectionReplayCertificateTests": {
+      "pass": 36,
+      "fail": 0
+    },
+    "expandedRegressions": {
+      "pass": 317,
+      "fail": 2,
+      "failuresAlsoReproducedAtBase": true,
+      "knownFailures": [
+        "transportGrouping: exact continuation constructs IN/work/ESTILISMO_SALIDA/OUT",
+        "transportGrouping: terminal IN backward-propagated witness"
+      ]
+    },
+    "typescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "migrationSequenceTest": "PASS",
+    "benchmarkExpectationsChanged": false,
+    "canonicalConfigurationChanged": false,
+    "budgetsOrTimeoutsIncreased": false,
+    "mergePerformed": false
+  },
+  "configRefreshAudit": {
+    "referenceHead": "6f0f696437f0a0644f844e1158b6b38fc4ec18ab",
+    "referenceTree": "f9e0ef08951f9695600f8a5c4ef24d109139f3df",
+    "checkoutExactAndCleanBeforeEdits": true,
+    "branch": "codex/asst-010-explicit-scope-continuation",
+    "pr": "https://github.com/angelvicen92/production-planner/pull/1104",
+    "productionBlobs": {
+      "assistedPlanning.ts": "7a259c18301936dbbf4368cdc07cd736f5ec206e",
+      "exactMainAndFeederCore.ts": "4308d299cf97e6ef19c92eef318aabd090d75004"
+    },
+    "outcome": "FAIL_ASST010_POST_REFRESH; PASS_A2_COMPLETION; NOT_READY_FOR_MERGE",
+    "inputComparison": {
+      "solverProjectionEquivalentApartFromBudget": true,
+      "certificateReadOnlyRevalidation": {
+        "freshRun": 1,
+        "originalReplay": "PASS",
+        "originalChecks": 292,
+        "refreshedReplay": "STALE",
+        "refreshChecks": 12,
+        "neverPassedAsSolverSeed": true
+      },
+      "canonicalInputOnlyDifferences": [
+        "planId",
+        "tasks[].planId",
+        "plannerNext.searchBudget.maxBranchExpansions"
+      ],
+      "sourceTaskCount": 247,
+      "sourceMealCount": 19,
+      "eligibleCount": 266,
+      "s1": {
+        "scope": {
+          "selector": {
+            "kind": "TASK_IDS",
+            "value": "10017"
+          },
+          "metadata": {},
+          "resolvedTaskIds": [
+            "task:10017"
+          ]
+        },
+        "projected": [
+          "task:10017",
+          "task:10018",
+          "task:10021",
+          "task:10024"
+        ],
+        "coreCount": 82,
+        "supporting": [
+          "task:10018",
+          "task:10021",
+          "task:10024"
+        ],
+        "protected": [],
+        "priorWitnessCount": 0
+      },
+      "s2": {
+        "scope": {
+          "selector": {
+            "kind": "TASK_IDS",
+            "value": "10015"
+          },
+          "metadata": {},
+          "resolvedTaskIds": [
+            "task:10015"
+          ]
+        },
+        "projected": [
+          "task:10015",
+          "task:10017",
+          "task:10018",
+          "task:10021",
+          "task:10024"
+        ],
+        "coreCount": 83,
+        "protected": [
+          {
+            "id": "task:10017",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10018",
+              "task:10024"
+            ],
+            "kind": "main",
+            "participantId": "participant:202",
+            "coachId": "plan-resource:4005",
+            "blockKey": "plan-resource:4005",
+            "start": 845,
+            "end": 860
+          }
+        ],
+        "operationalMeals": [
+          {
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 890,
+            "end": 965
+          }
+        ]
+      },
+      "a2": {
+        "selector": {
+          "kind": "SPACE",
+          "spaceId": 3004
+        },
+        "visibleCount": 19,
+        "projectedCount": 82,
+        "collectiveCoreProjection": false,
+        "budget": {
+          "bestK": 5,
+          "maxBacktracks": 200,
+          "maxPatterns": 200,
+          "maxBranchExpansions": 100000
+        }
+      }
+    },
+    "refreshAuthorityCorrection": {
+      "actualTemplateName": "ESTILISMO_ENTRADA",
+      "templateId": 20009,
+      "representativeTaskId": 10018,
+      "oldDuration": 10,
+      "newDuration": 20,
+      "instances": 19,
+      "vocalDurationUnchanged": 15,
+      "pastedTextCallingItVocalIsIncorrect": true
+    },
+    "callPath": [
+      "AssistedProposalService.run -> current EngineInput/configRevision and base snapshot",
+      "resolveAssistedScope -> product TASK_IDS -> canonical identity map, pending/interrupted eligibility",
+      "buildAssistedProblem -> prerequisite/anchor closure and protected literal placements/meals",
+      "collectiveCoreProjection -> future Main roots; Vocal/IN/entry/anchors supporting, ephemeral and invisible",
+      "executeAssistedPlanning -> executePlannerNext EXACT_CONSTRUCTIVE -> runExactItinerantPlanSearch, one ledger",
+      "authorizedPipelineArchitectureMaterializations -> preparePipelineBundleGraph -> incremental perfect matching",
+      "runExactMainAndFeederSearch -> hard gate -> technical-chain/participant Future Feasibility",
+      "onHardValidCoreLeaf -> searchJoint/full continuation -> validatePlan -> filtered result -> ScopeProposal",
+      "S2 stops before searchJoint; exhausted structural frontier -> residualMatching -> budget exhaustion"
+    ],
+    "witnessProvenance": {
+      "ASST010StageLinksProposalRunId": false,
+      "ASST010PriorWitnessCount": 0,
+      "A2Assist8StageLinksProposalRunId": true,
+      "oldCertificateRepairCapability": "Strict current-canon revalidation then cold reconstruction; no partial joint-certificate repair API",
+      "savedCompleteMaterialUsedAsSeed": false
+    },
+    "hypothesisBeforeImplementation": {
+      "X": "Post-refresh structural repairs are skipped; search falls into expensive residual reconstruction.",
+      "Y": "seenBundleForbidden deduplicates task@position exclusions across different prepared graphs in runExactMainAndFeederSearch.",
+      "Z": "44 of 52 canonical repair requests are skipped despite distinct bundle geometries.",
+      "W": "Reset exclusion deduplication when the prepared structural candidate changes; preserve per-graph exclusions, incremental matching and shared ledger.",
+      "M": "Recover the valid second-graph matching within the unchanged focal budget and restore canonical repair alternatives; test ASST separately.",
+      "counterproof": "Two Main/Vocal pairs, geometry60/70 versus80/90, participant-a future tasks fixed60 and80. First graph cannot repair a@0; second can swap Main a to90. Baseline skips it and exhausts10; candidate completes in2.",
+      "refutationObserved": "Canonical repair requests are restored, but none repairs successfully. The defect is real and insufficient to unblock S2."
+    },
+    "productiveExperiments": {
+      "count": 1,
+      "maximum": 2,
+      "focalBudget": 10,
+      "focalBefore": {
+        "status": "BRANCH_BUDGET_EXHAUSTED",
+        "branches": 10,
+        "repairs": [
+          {
+            "start": 60,
+            "forbidden": [
+              "main-a@0"
+            ],
+            "outcome": "NO_PERFECT_MATCH"
+          }
+        ],
+        "decisions": [
+          {
+            "source": "STRUCTURAL_FUTURE_CONDITIONED",
+            "mains": [
+              [
+                "main-a",
+                60
+              ],
+              [
+                "main-b",
+                70
+              ]
+            ],
+            "rejected": "future-60"
+          },
+          {
+            "source": "STRUCTURAL_FUTURE_CONDITIONED",
+            "mains": [
+              [
+                "main-a",
+                80
+              ],
+              [
+                "main-b",
+                90
+              ]
+            ],
+            "rejected": "future-80"
+          }
+        ],
+        "nogoodDeduplications": 1,
+        "reasonCodes": [
+          "CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED"
+        ]
+      },
+      "focalAfter": {
+        "status": "COMPLETE",
+        "branches": 2,
+        "repairs": [
+          {
+            "start": 60,
+            "forbidden": [
+              "main-a@0"
+            ],
+            "outcome": "NO_PERFECT_MATCH"
+          },
+          {
+            "start": 80,
+            "forbidden": [
+              "main-a@0"
+            ],
+            "outcome": "PERFECT"
+          }
+        ],
+        "decisions": [
+          {
+            "source": "STRUCTURAL_FUTURE_CONDITIONED",
+            "mains": [
+              [
+                "main-a",
+                60
+              ],
+              [
+                "main-b",
+                70
+              ]
+            ],
+            "rejected": "future-60"
+          },
+          {
+            "source": "STRUCTURAL_FUTURE_CONDITIONED",
+            "mains": [
+              [
+                "main-a",
+                80
+              ],
+              [
+                "main-b",
+                90
+              ]
+            ],
+            "rejected": "future-80"
+          },
+          {
+            "source": "STRUCTURAL_FUTURE_CONDITIONED",
+            "mains": [
+              [
+                "main-b",
+                80
+              ],
+              [
+                "main-a",
+                90
+              ]
+            ],
+            "rejected": null
+          }
+        ],
+        "nogoodDeduplications": 0,
+        "reasonCodes": []
+      },
+      "focalDiagnosticNeutral": true,
+      "canonicalImproved": false,
+      "furtherProductiveExpansionStopped": true
+    },
+    "S2BeforeAfter": {
+      "branchesExplored": {
+        "before": 300000,
+        "after": 300000
+      },
+      "coreBranches": {
+        "before": 299636,
+        "after": 299636
+      },
+      "standaloneBranches": {
+        "before": 364,
+        "after": 364
+      },
+      "architecturesEnumerated": {
+        "before": 79,
+        "after": 79
+      },
+      "architecturesPrepared": {
+        "before": 79,
+        "after": 79
+      },
+      "futureReservationPerfectMatchings": {
+        "before": 60,
+        "after": 60
+      },
+      "coreCompleteLeavesEvaluated": {
+        "before": 52,
+        "after": 52
+      },
+      "standaloneSearchInvocations": {
+        "before": 0,
+        "after": 0
+      },
+      "bundleMatchingRepairs": {
+        "before": 8,
+        "after": 52
+      },
+      "bundleNogoodDeduplications": {
+        "before": 44,
+        "after": 0
+      },
+      "bundleNogoodRepairsSucceeded": {
+        "before": 0,
+        "after": 0
+      },
+      "branchesBeforeResidualDfs": {
+        "before": 9344,
+        "after": 9404
+      },
+      "residualMatchingBranchesExplored": {
+        "before": 288190,
+        "after": 288190
+      },
+      "residualMatchingInvocations": {
+        "before": 1251,
+        "after": 1251
+      },
+      "residualMatchingFullBuilds": {
+        "before": 1251,
+        "after": 1251
+      },
+      "residualMatchingPositionChecks": {
+        "before": 170901,
+        "after": 170841
+      },
+      "residualMatchingAugmentTraversals": {
+        "before": 117266,
+        "after": 117266
+      },
+      "residualMatchingIncrementalUpdates": {
+        "before": 0,
+        "after": 0
+      },
+      "residualMatchingEdgeCacheHits": {
+        "before": 0,
+        "after": 0
+      },
+      "coreMaximumDepth": {
+        "before": 2,
+        "after": 2
+      },
+      "coreReasonCodes": {
+        "before": [
+          "MATCHING_SEARCH_BUDGET_EXHAUSTED"
+        ],
+        "after": [
+          "MATCHING_SEARCH_BUDGET_EXHAUSTED"
+        ]
+      }
+    },
+    "remainingFirstCausalAuthority": {
+      "producer": "anonymousPipelineWitness.ts::buildPipelineWitness, stylingSpots = start + ordinal * common entry duration",
+      "refreshEntryLoadMinutes": 380,
+      "matchingMaterializations": 60,
+      "distinctGeometryFingerprints": 60,
+      "entryBlockEndRange": [
+        930,
+        950
+      ],
+      "C01ExitDomainEmptyInAllMaterializations": true,
+      "C01SingleBundleCandidateInAllGraphs": true,
+      "space": "space:3018",
+      "spaceAuthority": {
+        "capacity": 1,
+        "secondaryContinuity": null,
+        "setupPolicy": null
+      },
+      "C01AvailabilityEnd": 930,
+      "C01ExitTask": "task:10004",
+      "C01OutTask": "task:10007",
+      "exitDuration": 5,
+      "outDuration": 5,
+      "exitToOutMargin": 0,
+      "firstMaterialization": {
+        "architecture": {
+          "pattern": [
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4005",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004",
+            "plan-resource:4004"
+          ],
+          "slots": [
+            755,
+            770,
+            785,
+            800,
+            815,
+            830,
+            845,
+            860,
+            875,
+            965,
+            980,
+            995,
+            1010,
+            1025,
+            1040,
+            1055,
+            1070,
+            1085,
+            1100
+          ],
+          "mealStart": 890
+        },
+        "fingerprint": "7c40edacca5f4372d77706b549b2f8792ad4f0f5a24c37a9bfa4b618747bdae9",
+        "main": {
+          "id": "task:10002",
+          "duration": 15,
+          "spaceId": "space:3004",
+          "dependencies": [
+            "task:10003",
+            "task:10009",
+            "task:10010"
+          ],
+          "requiredResourceIds": [
+            "plan-resource:4002",
+            "plan-resource:4007"
+          ],
+          "itinerantUnitId": "itinerant-team:5001",
+          "kind": "main",
+          "participantId": "participant:201",
+          "coachId": "plan-resource:4005",
+          "blockKey": "plan-resource:4005",
+          "start": 755,
+          "end": 770
+        },
+        "styleGeometry": {
+          "start": 550,
+          "end": 930,
+          "count": 19
+        },
+        "futureDomain": [],
+        "ownOnlyDomain": [
+          {
+            "start": 790,
+            "end": 925
+          }
+        ],
+        "mainCandidatePositions": [
+          0
+        ]
+      },
+      "firstPrune": {
+        "phase": "CORE",
+        "causingTaskId": "task:10002",
+        "causingCandidateStart": 755,
+        "depth": 19,
+        "affectedParticipants": [
+          "participant:201",
+          "participant:202",
+          "participant:203",
+          "participant:204",
+          "participant:205",
+          "participant:206",
+          "participant:207",
+          "participant:208",
+          "participant:209",
+          "participant:210",
+          "participant:211",
+          "participant:212",
+          "participant:213",
+          "participant:214",
+          "participant:215",
+          "participant:216",
+          "participant:217",
+          "participant:218",
+          "participant:219"
+        ],
+        "affectedFutureTasksChecked": 164,
+        "affectedMealsChecked": 19,
+        "individualDomainChecks": 3,
+        "individualZeroDomainPrunes": 1,
+        "jointTaskMealChecks": 0,
+        "jointTaskMealPrunes": 0,
+        "collectiveChecks": 0,
+        "collectivePasses": 0,
+        "collectivePrunes": 0,
+        "collectiveObligationIds": [],
+        "collectiveDomainSizes": {},
+        "collectiveWitnessFound": false,
+        "dominatedLaterStartsSkipped": 0,
+        "earliestDominanceBranches": 0,
+        "compatiblePairChecks": 0,
+        "analyticChecks": 4,
+        "branchesConsumed": 0,
+        "unresolvedDependencyIds": [],
+        "abstainCause": null,
+        "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+        "futureTaskId": "task:10004",
+        "mealTaskId": null,
+        "participantId": "participant:201",
+        "futureTaskCandidateCount": 0,
+        "mealCandidateCount": 0,
+        "compatiblePairCount": 0,
+        "participantDiagnostics": [],
+        "status": "PRUNE"
+      },
+      "otherLocalAuthority": {
+        "phase": "CORE",
+        "causingTaskId": "task:10102",
+        "causingCandidateStart": 980,
+        "depth": 19,
+        "affectedStructures": 1,
+        "structuresChecked": 1,
+        "branchesConsumed": 606,
+        "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+        "workItemKey": "technical-chain:task:10081",
+        "candidateCount": 0,
+        "certifiedCausingTaskId": "task:10102",
+        "certifiedDecisionDepth": 12,
+        "initialRepairableGroupCount": 9,
+        "redundantDecisionDepths": [
+          1,
+          3,
+          4,
+          7,
+          9,
+          10,
+          17,
+          18
+        ],
+        "irreducibleDecisionDepths": [
+          12
+        ],
+        "minimizationProbes": 9,
+        "knownCandidateCount": 216,
+        "survivorLowerBound": 0,
+        "survivorCountExact": 0,
+        "domainComplete": true,
+        "witnessReuseCheck": true,
+        "witnessReuseHit": false,
+        "conflictDecisionDepths": [
+          12
+        ],
+        "conflictTaskIds": {
+          "12": [
+            "task:10102",
+            "task:10109",
+            "task:10110"
+          ]
+        },
+        "conflictGroupCount": 1,
+        "fixedContextParticipates": true,
+        "conflictClassification": "SINGLE_DECISION_ZERO_DOMAIN",
+        "status": "PRUNE",
+        "result": "ZERO_DOMAIN"
+      },
+      "globalFeasibility": "INCONCLUSIVE; no canonical global infeasibility certificate and no repaired full current-canon witness",
+      "reducedInterleavingCounterproof": {
+        "contiguousExitDomain": [],
+        "interleaved": [
+          {
+            "id": "entry-a",
+            "participantId": "a",
+            "duration": 20,
+            "spaceId": "styling",
+            "dependencies": [],
+            "kind": "auxiliary",
+            "start": 0,
+            "end": 20
+          },
+          {
+            "id": "exit-a",
+            "participantId": "a",
+            "duration": 5,
+            "spaceId": "styling",
+            "dependencies": [
+              "entry-a"
+            ],
+            "participantMarginAfterMinutes": 0,
+            "kind": "auxiliary",
+            "start": 20,
+            "end": 25
+          },
+          {
+            "id": "out-a",
+            "participantId": "a",
+            "duration": 5,
+            "spaceId": "out",
+            "dependencies": [
+              "exit-a"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "kind": "auxiliary",
+            "start": 25,
+            "end": 30
+          },
+          {
+            "id": "entry-b",
+            "participantId": "b",
+            "duration": 20,
+            "spaceId": "styling",
+            "dependencies": [],
+            "kind": "auxiliary",
+            "start": 25,
+            "end": 45
+          }
+        ],
+        "validation": {
+          "hardValid": true,
+          "dependencyViolationCount": 0,
+          "overlapViolationCount": 0,
+          "transitionViolationCount": 0,
+          "availabilityViolationCount": 0,
+          "taskAvailabilityViolationCount": 0,
+          "blockViolationCount": 0,
+          "resourceAvailabilityViolationCount": 0,
+          "resourceOverlapViolationCount": 0,
+          "resourceTransitionViolationCount": 0,
+          "secondaryContinuityViolationCount": 0,
+          "setupViolationCount": 0,
+          "setupPreparationViolationCount": 0,
+          "jointGroupViolationCount": 0,
+          "technicalOperationViolationCount": 0,
+          "technicalChainViolationCount": 0,
+          "spaceMealViolationCount": 0,
+          "mainFlowMealViolationCount": 0,
+          "anchoredAccompanimentViolationCount": 0,
+          "participantMealViolationCount": 0,
+          "resourceMealViolationCount": 0,
+          "itinerantUnitMealViolationCount": 0,
+          "reasonCodes": [],
+          "unstructuredReasonCodes": [],
+          "violations": []
+        },
+        "proofLimit": "Reduced capacity/dependency authority counterproof only; does not certify the canonical refreshed continuation. No solver seed or benchmark expectation changed."
+      },
+      "distinctVsRedundant": "The60 structural geometries differ materially. An ordinal edge exclusion is graph-local. All share the same terminal-space obstruction. Residual visits207 patterns and1141 timelines;348 equivalent Main orders already collapsed.1251 full builds with0 cache hits do not prove1251 identical states; no complete residual authority hashes were captured.",
+      "nextFocusedExperiment": "At the core/joint-continuation boundary, use existing exact placement/ordinary/transport explorers to leave unaccepted entry/IN support reconfigurable and certify entry/exit interleaving under the refreshed full canon. Preserve accepted Main10017 and meal; preserve all non-rejected alternatives, charge existing ledger, require full validatePlan before scope projection. First prove this in the reduced interleaving case with protected decisions; do not introduce another scheduler/DFS or change canonical budgets."
+    },
+    "neutralInstrumentation": {
+      "method": "Existing causalDiagnostic toggle in focal counterproof; Node inspector read-only capture of original ASST S2 input/result after search return.",
+      "candidateS2InputExactComparedToPriorCapturedContext": true,
+      "candidateDirectAndObservedOriginalTestResultAndFullEvidenceEqual": true,
+      "decisionsFingerprintsLedgerAndStopReasonPreserved": true,
+      "additionalSolverCallsDuringCapture": 0,
+      "teardown": "Original test emitted FAIL after527143.776967ms. Observer and test wrapper were interrupted only after assertion failure while awaiting debugger teardown; no search was interrupted. The wrapper exit130 is not a passing test exit."
+    },
+    "timings": {
+      "ASST010OriginalTestMs": 527143.776967,
+      "S2DirectFullSearchMs": 216652.67150499998,
+      "ASST010S1SeparatelyTimed": false,
+      "timingLimits": "ASST inspector run overlaps read-only geometry audit and is not a latency A/B measurement. A2 pair runs sequentially in the same workspace with no historical seed; different wall time cannot be attributed causally to the7-line fix.",
+      "baselineA2StagesMs": [
+        [
+          241975,
+          180,
+          149,
+          213,
+          18085,
+          107,
+          6814,
+          137,
+          125,
+          183
+        ],
+        [
+          220710,
+          128,
+          268,
+          183,
+          25088,
+          137,
+          11614,
+          132,
+          195,
+          332
+        ]
+      ],
+      "baselineA2TotalStageCalculationMs": [
+        267968,
+        258787
+      ],
+      "currentA2TotalStageCalculationMs": [
+        200350,
+        196487
+      ],
+      "currentA2TotalWallMs": [
+        200535.874111,
+        196563.580912
+      ],
+      "stageTimersIncludeCoreAndAllContinuations": true,
+      "separateCoreAndContinuationWallTimersAvailable": false
+    },
+    "A2Assist8": {
+      "status": "PASS",
+      "runs": 2,
+      "completed": 266,
+      "stages": 10,
+      "materialDigest": "ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc",
+      "finalFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+      "baselineMaterialUnchanged": true,
+      "stagesCompared": [
+        {
+          "stage": 1,
+          "completed": 19,
+          "branches": 80835,
+          "durationMs": [
+            174897,
+            170776
+          ],
+          "acceptedFingerprint": "10897fa2ce5bc94e3d26938cc0c5927df4f4a6d434b2f037e8e06e76f0cdf2e4",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 2,
+          "completed": 38,
+          "branches": 293,
+          "durationMs": [
+            193,
+            117
+          ],
+          "acceptedFingerprint": "621bfdef7ee9ba478b42bf59d706b6baab56f8b27a4940748fb8d477c5c01cd6",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 3,
+          "completed": 46,
+          "branches": 293,
+          "durationMs": [
+            110,
+            103
+          ],
+          "acceptedFingerprint": "438690f0db57f88db7721238df5d3684566e9a344318687b81bf1cb733ffee08",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 4,
+          "completed": 65,
+          "branches": 293,
+          "durationMs": [
+            202,
+            97
+          ],
+          "acceptedFingerprint": "eadc4e650a39375aa72961793e5ecf943d9c30da98f3ba5976280e3dd432a5af",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 5,
+          "completed": 75,
+          "branches": 13241,
+          "durationMs": [
+            17501,
+            18020
+          ],
+          "acceptedFingerprint": "e97217c62265841918817296f1c45986c0dd492cb1ae2e3cbbda645eb952a785",
+          "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+        },
+        {
+          "stage": 6,
+          "completed": 111,
+          "branches": 293,
+          "durationMs": [
+            111,
+            106
+          ],
+          "acceptedFingerprint": "7b3c49e335c4f35a79754b02fe25b5c04ec5a2a65de7da204d6b3db1ab75786c",
+          "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+        },
+        {
+          "stage": 7,
+          "completed": 169,
+          "branches": 1884,
+          "durationMs": [
+            6766,
+            6749
+          ],
+          "acceptedFingerprint": "509e0affa08e4e21fe4bacac030cfc7715ad3aefca89fe28844ab823d4da7046",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        },
+        {
+          "stage": 8,
+          "completed": 207,
+          "branches": 293,
+          "durationMs": [
+            225,
+            128
+          ],
+          "acceptedFingerprint": "9eb3aa1542efbef080b0909a072a72050865ab28574ebc8afacbf66c701cb9b2",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        },
+        {
+          "stage": 9,
+          "completed": 209,
+          "branches": 293,
+          "durationMs": [
+            209,
+            194
+          ],
+          "acceptedFingerprint": "b1906633b500e19db548159c8548ec4ca8c0e390e81bb7eaf25135841f43861c",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        },
+        {
+          "stage": 10,
+          "completed": 266,
+          "branches": 293,
+          "durationMs": [
+            136,
+            197
+          ],
+          "acceptedFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        }
+      ],
+      "snapshotsInitiallyEmpty": true,
+      "historicalSeed": null,
+      "newHardViolationCount": 0,
+      "newRequiredViolationCount": 0,
+      "acceptedPlacementsMoved": 0,
+      "allProtectedTasksMealsPreparationsExact": true,
+      "sourceTasksPerJointCertificate": 247,
+      "participantMealsPerJointCertificate": 19,
+      "branchLimitPerRequest": 100000
+    },
+    "gates": {
+      "checkoutIdentity": "PASS",
+      "scopeProjectionAndFutureNonProtection": "PASS",
+      "configRefreshMaterializationAndS1Preservation": "PASS",
+      "ASST010Complete": "FAIL",
+      "AcceptedExceptionIdentityAndProvenanceCanonicalFlow": "INCONCLUSIVE_NOT_REACHED",
+      "rollbackRedoDivergenceCanonicalFlow": "INCONCLUSIVE_NOT_REACHED",
+      "A2Assist8TwoCleanRuns266of266S10": "PASS",
+      "materialDeterminismProtectionHardRequiredMeals": "PASS",
+      "exactA2LedgerAtMost100000": "PASS",
+      "ASST010InteractiveAtMost100000": "FAIL_FIXTURE_RETAINS300000",
+      "A2StageLatencyAtMost120Seconds": "FAIL_S1",
+      "A2StageBlockingCeiling300Seconds": "PASS",
+      "neutralDiagnostic": "PASS",
+      "focalRegressionSuite": "FAIL_TWO_INHERITED_ZERO_NEW",
+      "typescript": "PASS",
+      "build": "PASS",
+      "migrationSequence": "PASS",
+      "migrationSequenceTest": "PASS",
+      "productionReadinessAndMergeGate": "FAIL"
+    },
+    "validation": {
+      "focusedFirstGroup": {
+        "pass": 169,
+        "fail": 0
+      },
+      "expandedSecondGroup": {
+        "pass": 185,
+        "fail": 2
+      },
+      "knownTransportFailuresReproducedAtReference6f0f696": true,
+      "knownTransportFailures": [
+        "exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly",
+        "terminal IN materialization finds the backward-propagated witness"
+      ],
+      "migrationTestPass": 1,
+      "benchmarkExpectationsChanged": false,
+      "canonicalConfigurationChanged": false,
+      "budgetsOrTimeoutsChanged": false,
+      "UIAPIOrPersistenceChanged": false,
+      "mergePerformed": false
+    },
+    "exactChangedFilesThisContinuation": [
+      "engine/planner-next/exactMainAndFeederCore.ts",
+      "engine/planner-next/exactMainAndFeederCore.spec.ts",
+      "docs/evidence/ASST-010-explicit-scope-core.md",
+      "docs/evidence/ASST-010-explicit-scope-core.json"
+    ],
+    "risks": [
+      "Restoring alternatives can consume more branches in configurations previously relying on incorrect cross-graph deduplication. Existing ledger caps remain unchanged.",
+      "Canonical refreshed interleaved continuation remains unproven; no scope accepted after refresh.",
+      "Reduced interleaving and isolated product-authority unit tests cannot stand in for the full ASST gate."
+    ]
+  },
+  "stylingGeometryAudit": {
+    "unitStartHead": "8d28c10dd9f541c1370e50a6d23588d12e43caea",
+    "productionBlob": "c699e8c12ab1ef72b72b61d83afcd67cae01886c",
+    "observedCanonicalProductionBlob": "ff3b395daef8730c9971ff88813075a3de97f6b7",
+    "postObservationDiagnosticOnlyChange": "Rename rejection to lastAuthorityObservation, documenting that nonfatal ABSTAIN is not a rejection proof. No search instruction changed.",
+    "outcome": "INCONCLUSIVE_GLOBAL_CONTINUATION_NOT_CERTIFIED",
+    "hypothesis": {
+      "X": "After refresh, 19 contiguous entries of 20 minutes remove the domain of C01 closure.",
+      "Y": "Nominal IN and entry placements cross the core boundary as immutable candidate context.",
+      "Z": "Sound rejection of that context fails to enumerate other supporting geometries.",
+      "W": "After a proved recoverable entry-capacity loss, defer unaccepted IN/entries and reuse arrival plus exact joint continuation on the same ledger.",
+      "M": "Reduced complete solution certified; canonical entry capacity restored and joint continuation reached, but S2 has no global certificate. A2 unchanged in two clean runs."
+    },
+    "beforeEditCounterproof": {
+      "participants": 4,
+      "tasks": 28,
+      "sharedExclusiveResource": "stylist",
+      "restrictedParticipantAvailability": [
+        0,
+        75
+      ],
+      "protectedTaskIds": [
+        "main-a",
+        "work-a"
+      ],
+      "contiguousEntries": {
+        "b": [
+          5,
+          25
+        ],
+        "a": [
+          25,
+          45
+        ],
+        "c": [
+          45,
+          65
+        ],
+        "d": [
+          65,
+          85
+        ]
+      },
+      "interleavedEntryD": [
+        70,
+        90
+      ],
+      "closureA": [
+        65,
+        70
+      ],
+      "outA": [
+        70,
+        75
+      ],
+      "contiguousValidation": "RESOURCE_OVERLAP_VIOLATION; closure-a exact domain empty",
+      "interleavedValidation": "HARD/REQUIRED valid, protected literal placements unchanged",
+      "readOnlyPublicReference": {
+        "status": "INFEASIBLE",
+        "branches": 410,
+        "limitation": "False global conclusion for this reduced representational restriction, refuted by a full valid witness."
+      },
+      "existingProducer": {
+        "nominalImmutableContext": {
+          "outcome": "DEAD_END",
+          "branches": 1
+        },
+        "deferredUnacceptedSupporting": {
+          "outcome": "FOUND",
+          "branches": 27,
+          "source": "Unchanged existing arrival materialization and standalone explorer; no new planner."
+        },
+        "acceptedSupportingImmutable": {
+          "outcome": "DEAD_END",
+          "branches": 1
+        }
+      },
+      "fullWitnessClosure": {
+        "certified": true,
+        "branches": 1
+      },
+      "canonicalFullSolutionProven": false
+    },
+    "finalFocalResult": {
+      "status": "COMPLETE",
+      "branches": 52,
+      "core": 23,
+      "standalone": 29,
+      "repair": {
+        "capacityBlockedTaskId": "close-a",
+        "deferredTaskIds": [
+          "entry-a",
+          "entry-b",
+          "entry-c",
+          "entry-d",
+          "in-a",
+          "in-b",
+          "in-c",
+          "in-d"
+        ],
+        "protectedTaskIds": [
+          "main-a",
+          "work-a"
+        ],
+        "branchesBefore": 5,
+        "branchesConsumed": 47,
+        "standaloneInvocations": 1,
+        "outcome": "ACCEPT",
+        "lastAuthorityObservation": null
+      },
+      "successes": 1,
+      "scheduledTasks": [
+        {
+          "id": "in-a",
+          "kind": "auxiliary",
+          "participantId": "a",
+          "duration": 5,
+          "spaceId": "in",
+          "dependencies": [],
+          "availability": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ],
+          "start": 0,
+          "end": 5
+        },
+        {
+          "id": "in-b",
+          "kind": "auxiliary",
+          "participantId": "b",
+          "duration": 5,
+          "spaceId": "in",
+          "dependencies": [],
+          "availability": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ],
+          "start": 0,
+          "end": 5
+        },
+        {
+          "id": "in-c",
+          "kind": "auxiliary",
+          "participantId": "c",
+          "duration": 5,
+          "spaceId": "in",
+          "dependencies": [],
+          "availability": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ],
+          "start": 0,
+          "end": 5
+        },
+        {
+          "id": "in-d",
+          "kind": "auxiliary",
+          "participantId": "d",
+          "duration": 5,
+          "spaceId": "in",
+          "dependencies": [],
+          "availability": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ],
+          "start": 0,
+          "end": 5
+        },
+        {
+          "id": "entry-b",
+          "kind": "auxiliary",
+          "participantId": "b",
+          "duration": 20,
+          "spaceId": "entry",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "in-b"
+          ],
+          "availability": [
+            {
+              "start": 5,
+              "end": 25
+            }
+          ],
+          "start": 5,
+          "end": 25
+        },
+        {
+          "id": "vocal-a",
+          "kind": "vocal",
+          "participantId": "a",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "vocal-a",
+          "dependencies": [
+            "in-a"
+          ],
+          "availability": [
+            {
+              "start": 5,
+              "end": 20
+            }
+          ],
+          "start": 5,
+          "end": 20
+        },
+        {
+          "id": "vocal-c",
+          "kind": "vocal",
+          "participantId": "c",
+          "coachId": "coach-c",
+          "duration": 15,
+          "spaceId": "vocal-c",
+          "dependencies": [
+            "in-c"
+          ],
+          "availability": [
+            {
+              "start": 5,
+              "end": 20
+            }
+          ],
+          "start": 5,
+          "end": 20
+        },
+        {
+          "id": "vocal-d",
+          "kind": "vocal",
+          "participantId": "d",
+          "coachId": "coach-d",
+          "duration": 15,
+          "spaceId": "vocal-d",
+          "dependencies": [
+            "in-d"
+          ],
+          "availability": [
+            {
+              "start": 5,
+              "end": 20
+            }
+          ],
+          "start": 5,
+          "end": 20
+        },
+        {
+          "id": "entry-a",
+          "kind": "auxiliary",
+          "participantId": "a",
+          "duration": 20,
+          "spaceId": "entry",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "in-a"
+          ],
+          "availability": [
+            {
+              "start": 25,
+              "end": 45
+            }
+          ],
+          "start": 25,
+          "end": 45
+        },
+        {
+          "id": "vocal-b",
+          "kind": "vocal",
+          "participantId": "b",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "vocal-b",
+          "dependencies": [
+            "in-b"
+          ],
+          "availability": [
+            {
+              "start": 25,
+              "end": 40
+            }
+          ],
+          "start": 25,
+          "end": 40
+        },
+        {
+          "id": "entry-c",
+          "kind": "auxiliary",
+          "participantId": "c",
+          "duration": 20,
+          "spaceId": "entry",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "in-c"
+          ],
+          "availability": [
+            {
+              "start": 45,
+              "end": 65
+            }
+          ],
+          "start": 45,
+          "end": 65
+        },
+        {
+          "id": "main-a",
+          "kind": "main",
+          "participantId": "a",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main",
+          "blockKey": "coach-a",
+          "dependencies": [
+            "entry-a",
+            "vocal-a"
+          ],
+          "availability": [
+            {
+              "start": 45,
+              "end": 60
+            }
+          ],
+          "start": 45,
+          "end": 60
+        },
+        {
+          "id": "main-b",
+          "kind": "main",
+          "participantId": "b",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main",
+          "blockKey": "coach-b",
+          "dependencies": [
+            "entry-b",
+            "vocal-b"
+          ],
+          "availability": [
+            {
+              "start": 60,
+              "end": 75
+            }
+          ],
+          "start": 60,
+          "end": 75
+        },
+        {
+          "id": "work-a",
+          "kind": "auxiliary",
+          "participantId": "a",
+          "duration": 5,
+          "spaceId": "work",
+          "dependencies": [
+            "main-a"
+          ],
+          "availability": [
+            {
+              "start": 60,
+              "end": 65
+            }
+          ],
+          "start": 60,
+          "end": 65
+        },
+        {
+          "id": "close-a",
+          "kind": "auxiliary",
+          "participantId": "a",
+          "duration": 5,
+          "spaceId": "close",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "work-a",
+            "entry-a"
+          ],
+          "availability": [
+            {
+              "start": 65,
+              "end": 70
+            }
+          ],
+          "start": 65,
+          "end": 70
+        },
+        {
+          "id": "entry-d",
+          "kind": "auxiliary",
+          "participantId": "d",
+          "duration": 20,
+          "spaceId": "entry",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "in-d"
+          ],
+          "availability": [
+            {
+              "start": 65,
+              "end": 90
+            }
+          ],
+          "start": 70,
+          "end": 90
+        },
+        {
+          "id": "out-a",
+          "kind": "auxiliary",
+          "participantId": "a",
+          "duration": 5,
+          "spaceId": "out",
+          "dependencies": [
+            "close-a"
+          ],
+          "availability": [
+            {
+              "start": 70,
+              "end": 75
+            }
+          ],
+          "start": 70,
+          "end": 75
+        },
+        {
+          "id": "main-c",
+          "kind": "main",
+          "participantId": "c",
+          "coachId": "coach-c",
+          "duration": 15,
+          "spaceId": "main",
+          "blockKey": "coach-c",
+          "dependencies": [
+            "entry-c",
+            "vocal-c"
+          ],
+          "availability": [
+            {
+              "start": 75,
+              "end": 90
+            }
+          ],
+          "start": 75,
+          "end": 90
+        },
+        {
+          "id": "work-b",
+          "kind": "auxiliary",
+          "participantId": "b",
+          "duration": 5,
+          "spaceId": "work",
+          "dependencies": [
+            "main-b"
+          ],
+          "availability": [
+            {
+              "start": 75,
+              "end": 80
+            }
+          ],
+          "start": 75,
+          "end": 80
+        },
+        {
+          "id": "close-b",
+          "kind": "auxiliary",
+          "participantId": "b",
+          "duration": 5,
+          "spaceId": "close",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "work-b",
+            "entry-b"
+          ],
+          "availability": [
+            {
+              "start": 90,
+              "end": 95
+            }
+          ],
+          "start": 90,
+          "end": 95
+        },
+        {
+          "id": "main-d",
+          "kind": "main",
+          "participantId": "d",
+          "coachId": "coach-d",
+          "duration": 15,
+          "spaceId": "main",
+          "blockKey": "coach-d",
+          "dependencies": [
+            "entry-d",
+            "vocal-d"
+          ],
+          "availability": [
+            {
+              "start": 90,
+              "end": 105
+            }
+          ],
+          "start": 90,
+          "end": 105
+        },
+        {
+          "id": "work-c",
+          "kind": "auxiliary",
+          "participantId": "c",
+          "duration": 5,
+          "spaceId": "work",
+          "dependencies": [
+            "main-c"
+          ],
+          "availability": [
+            {
+              "start": 90,
+              "end": 95
+            }
+          ],
+          "start": 90,
+          "end": 95
+        },
+        {
+          "id": "close-c",
+          "kind": "auxiliary",
+          "participantId": "c",
+          "duration": 5,
+          "spaceId": "close",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "work-c",
+            "entry-c"
+          ],
+          "availability": [
+            {
+              "start": 95,
+              "end": 100
+            }
+          ],
+          "start": 95,
+          "end": 100
+        },
+        {
+          "id": "out-b",
+          "kind": "auxiliary",
+          "participantId": "b",
+          "duration": 5,
+          "spaceId": "out",
+          "dependencies": [
+            "close-b"
+          ],
+          "availability": [
+            {
+              "start": 95,
+              "end": 100
+            }
+          ],
+          "start": 95,
+          "end": 100
+        },
+        {
+          "id": "out-c",
+          "kind": "auxiliary",
+          "participantId": "c",
+          "duration": 5,
+          "spaceId": "out",
+          "dependencies": [
+            "close-c"
+          ],
+          "availability": [
+            {
+              "start": 100,
+              "end": 105
+            }
+          ],
+          "start": 100,
+          "end": 105
+        },
+        {
+          "id": "work-d",
+          "kind": "auxiliary",
+          "participantId": "d",
+          "duration": 5,
+          "spaceId": "work",
+          "dependencies": [
+            "main-d"
+          ],
+          "availability": [
+            {
+              "start": 105,
+              "end": 110
+            }
+          ],
+          "start": 105,
+          "end": 110
+        },
+        {
+          "id": "close-d",
+          "kind": "auxiliary",
+          "participantId": "d",
+          "duration": 5,
+          "spaceId": "close",
+          "requiredResourceIds": [
+            "stylist"
+          ],
+          "dependencies": [
+            "work-d",
+            "entry-d"
+          ],
+          "availability": [
+            {
+              "start": 110,
+              "end": 115
+            }
+          ],
+          "start": 110,
+          "end": 115
+        },
+        {
+          "id": "out-d",
+          "kind": "auxiliary",
+          "participantId": "d",
+          "duration": 5,
+          "spaceId": "out",
+          "dependencies": [
+            "close-d"
+          ],
+          "availability": [
+            {
+              "start": 115,
+              "end": 120
+            }
+          ],
+          "start": 115,
+          "end": 120
+        }
+      ]
+    },
+    "searchDelta": {
+      "trigger": "Only FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN sharing space/resource with unaccepted entries and positive exact domain after removing those entries.",
+      "nominalFirst": true,
+      "futureTasksVisible": false,
+      "futureTasksProtected": false,
+      "reparable": "Unaccepted arrival IDs and relational Main-entry dependencies only.",
+      "preserved": "Main/Vocal, anchors, fixed accepted tasks, existing protected meals and preparations.",
+      "producer": "Existing assessCoreArrivalTransportFeasibility then existing searchJoint/chains/prerequisites/agendas/standalone/meals/closure/validatePlan.",
+      "accounting": "Every added search uses the existing shared ledger; no new combinatorial enumeration.",
+      "acceptance": "Full validated completion only, projected to authorized scope; V2 supporting witness records actual repaired geometry.",
+      "finiteRepairFailure": "Retain uncertainty; never certify a Main nogood or global infeasibility from one arrival/geometry attempt."
+    },
+    "causalCycles": [
+      {
+        "cycle": 1,
+        "retained": false,
+        "outcome": "REJECTED_BASELINE_REGRESSION",
+        "firstWrongDecision": "Broad fallback ran after an arbitrary nominal joint rejection, without a restored styling-capacity domain proof.",
+        "scope": {
+          "selector": {
+            "kind": "TASK_IDS",
+            "value": "10017"
+          },
+          "metadata": {},
+          "resolvedTaskIds": [
+            "task:10017"
+          ]
+        },
+        "entryDuration": 10,
+        "observedProgress": {
+          "engineTimeMs": 334066.927355,
+          "ledger": {
+            "limit": 300000,
+            "branchesExplored": 32051,
+            "coreBranches": 3286,
+            "standaloneBranches": 28765,
+            "lastExhaustionPhase": null
+          },
+          "firstRepair": {
+            "deferredTaskIds": [
+              "task:10003",
+              "task:10006",
+              "task:10018",
+              "task:10021",
+              "task:10032",
+              "task:10034",
+              "task:10044",
+              "task:10047",
+              "task:10057",
+              "task:10060",
+              "task:10073",
+              "task:10077",
+              "task:10089",
+              "task:10092",
+              "task:10103",
+              "task:10105",
+              "task:10117",
+              "task:10120",
+              "task:10132",
+              "task:10135",
+              "task:10148",
+              "task:10150",
+              "task:10162",
+              "task:10165",
+              "task:10176",
+              "task:10180",
+              "task:10191",
+              "task:10194",
+              "task:10204",
+              "task:10207",
+              "task:10219",
+              "task:10221",
+              "task:10230",
+              "task:10233",
+              "task:10244",
+              "task:10246",
+              "task:10257",
+              "task:10259"
+            ],
+            "protectedTaskIds": [],
+            "branchesBefore": 4263,
+            "branchesConsumed": 0,
+            "standaloneInvocations": 0,
+            "outcome": "PENDING",
+            "rejection": null
+          },
+          "supportingAttempts": 1,
+          "standaloneInvocations": 0,
+          "chainPrune": null,
+          "participantPrune": null,
+          "firstDeadEnd": null,
+          "closureChecks": 9448,
+          "closureInconclusive": 0,
+          "macroOrder": [],
+          "stack": [
+            "",
+            "evaluateContext",
+            "evaluate",
+            "necessary",
+            "visitAgenda",
+            "",
+            "visit",
+            "visit",
+            "visit",
+            "visit",
+            "visit",
+            "searchExactItinerantAgenda",
+            "",
+            "visit",
+            "searchExactPrerequisiteClosure",
+            "visitAgenda",
+            "visitChain",
+            "visitChain",
+            "searchJoint",
+            "attempt",
+            "onHardValidCoreLeaf",
+            "runExactMainAndFeederSearch",
+            "runExactItinerantPlanSearch",
+            "constructExactItinerantPlan",
+            "executePlannerNext",
+            "executeAssistedPlanning",
+            "AssistedProposalService.buildInput.buildInput",
+            "run"
+          ]
+        },
+        "completeExecutionResultAvailable": false,
+        "termination": "Manual SIGTERM after observed S1 over 300 seconds; not branch budget exhaustion. Broad retry discarded before cycle 2.",
+        "isolatedS2": {
+          "terminationAfterMs": 1650000,
+          "exitCode": 143,
+          "completeResultAvailable": false,
+          "budgetExhaustionClaimed": false
+        }
+      },
+      {
+        "cycle": 2,
+        "retained": true,
+        "outcome": "INCONCLUSIVE",
+        "triggerRestrictedToRestoredEntryCapacity": true,
+        "initialS1Accepted": true,
+        "configRefreshApplied": true,
+        "preRefreshStagesAndS1SnapshotAssertionsPassed": true,
+        "s2Scope": {
+          "selector": {
+            "kind": "TASK_IDS",
+            "value": "10015"
+          },
+          "metadata": {},
+          "resolvedTaskIds": [
+            "task:10015"
+          ]
+        },
+        "refreshedEntryDuration": 20,
+        "refreshedInstanceCount": 19,
+        "s1ProtectedPlacements": [
+          {
+            "id": "task:10017",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10018",
+              "task:10024"
+            ],
+            "kind": "main",
+            "participantId": "participant:202",
+            "coachId": "plan-resource:4005",
+            "blockKey": "plan-resource:4005",
+            "start": 845,
+            "end": 860
+          }
+        ],
+        "protectedOperationalMeals": [
+          {
+            "id": "break:main-flow",
+            "resourceIds": [],
+            "spaceIds": [
+              "space:3004"
+            ],
+            "duration": 75,
+            "start": 890,
+            "end": 965
+          }
+        ],
+        "sourceTasks": 247,
+        "sourceMeals": 19,
+        "ledgerAtStop": {
+          "limit": 300000,
+          "branchesExplored": 37599,
+          "coreBranches": 2998,
+          "standaloneBranches": 34601,
+          "lastExhaustionPhase": null
+        },
+        "metricsAtStop": {
+          "coreCompleteLeavesEvaluated": 4,
+          "coreLeavesRejectedByStandalone": 1,
+          "standaloneSearchInvocations": 0,
+          "supportingGeometryRepairAttempts": 2,
+          "supportingGeometryRepairSuccesses": 0,
+          "futureCollectiveClosureChecks": 16348,
+          "futureCollectiveClosureBranchesConsumed": 16348,
+          "futureCollectiveClosureMatchingTraversals": 297483,
+          "futureCollectiveClosureInconclusiveLeaves": 1,
+          "architecturesEnumerated": 2,
+          "futureReservationPerfectMatchings": 2,
+          "branchesBeforeResidualDfs": null,
+          "residualDfsEntered": false,
+          "participantFutureUnreachableDependencyIds": [],
+          "firstParticipantFutureReservationPrune": {
+            "phase": "CORE",
+            "causingTaskId": "task:10002",
+            "causingCandidateStart": 755,
+            "depth": 19,
+            "affectedParticipants": [
+              "participant:201",
+              "participant:202",
+              "participant:203",
+              "participant:204",
+              "participant:205",
+              "participant:206",
+              "participant:207",
+              "participant:208",
+              "participant:209",
+              "participant:210",
+              "participant:211",
+              "participant:212",
+              "participant:213",
+              "participant:214",
+              "participant:215",
+              "participant:216",
+              "participant:217",
+              "participant:218",
+              "participant:219"
+            ],
+            "affectedFutureTasksChecked": 164,
+            "affectedMealsChecked": 19,
+            "individualDomainChecks": 3,
+            "individualZeroDomainPrunes": 1,
+            "jointTaskMealChecks": 0,
+            "jointTaskMealPrunes": 0,
+            "collectiveChecks": 0,
+            "collectivePasses": 0,
+            "collectivePrunes": 0,
+            "collectiveObligationIds": [],
+            "collectiveDomainSizes": {},
+            "collectiveWitnessFound": false,
+            "dominatedLaterStartsSkipped": 0,
+            "earliestDominanceBranches": 0,
+            "compatiblePairChecks": 0,
+            "analyticChecks": 4,
+            "branchesConsumed": 0,
+            "unresolvedDependencyIds": [],
+            "abstainCause": null,
+            "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+            "futureTaskId": "task:10004",
+            "mealTaskId": null,
+            "participantId": "participant:201",
+            "futureTaskCandidateCount": 0,
+            "mealCandidateCount": 0,
+            "compatiblePairCount": 0,
+            "participantDiagnostics": [],
+            "status": "PRUNE"
+          },
+          "firstSupportingGeometryRepair": {
+            "capacityBlockedTaskId": "task:10004",
+            "deferredTaskIds": [
+              "task:10003",
+              "task:10006",
+              "task:10018",
+              "task:10021",
+              "task:10032",
+              "task:10034",
+              "task:10044",
+              "task:10047",
+              "task:10057",
+              "task:10060",
+              "task:10073",
+              "task:10077",
+              "task:10089",
+              "task:10092",
+              "task:10103",
+              "task:10105",
+              "task:10117",
+              "task:10120",
+              "task:10132",
+              "task:10135",
+              "task:10148",
+              "task:10150",
+              "task:10162",
+              "task:10165",
+              "task:10176",
+              "task:10180",
+              "task:10191",
+              "task:10194",
+              "task:10204",
+              "task:10207",
+              "task:10219",
+              "task:10221",
+              "task:10230",
+              "task:10233",
+              "task:10244",
+              "task:10246",
+              "task:10257",
+              "task:10259"
+            ],
+            "protectedTaskIds": [
+              "task:10017"
+            ],
+            "branchesBefore": 2305,
+            "branchesConsumed": 634,
+            "standaloneInvocations": 0,
+            "outcome": "REJECT",
+            "lastAuthorityObservation": {
+              "authority": "FUTURE_PARTICIPANT_RESERVATION",
+              "reason": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE",
+              "taskIds": [
+                "task:10019"
+              ]
+            }
+          },
+          "futureCollectiveClosureHall": {
+            "closureTaskIds": [
+              "task:10118",
+              "task:10133"
+            ],
+            "participantIds": [
+              "participant:209",
+              "participant:210"
+            ],
+            "neighbourSlots": [],
+            "taskCount": 2,
+            "slotCount": 0
+          },
+          "preparedFutureTechnicalChainEvidence": {
+            "preparedFutureStructures": [
+              {
+                "structureId": "technical-chain:continuity.reality-c-eva-alfombra",
+                "effectiveWindow": [
+                  {
+                    "start": 540,
+                    "end": 1260
+                  }
+                ],
+                "productiveDuration": 140,
+                "slack": 580,
+                "slackRatio": 0.8055555555555556,
+                "loadRatio": 0.19444444444444445,
+                "futureOccupancySupport": {
+                  "participant:206": [
+                    {
+                      "start": 660,
+                      "end": 1140
+                    }
+                  ],
+                  "itinerant-team:5003": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "plan-resource:4002": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "plan-resource:4003": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "plan-resource:4006": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "plan-resource:4007": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "participant:212": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "participant:211": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "participant:204": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "participant:213": [
+                    {
+                      "start": 960,
+                      "end": 1140
+                    }
+                  ],
+                  "participant:216": [
+                    {
+                      "start": 660,
+                      "end": 1140
+                    }
+                  ]
+                },
+                "initialRootOrderDomain": 117,
+                "rootsInStaticEnvelope": 117,
+                "derivationMode": "STATIC_PHASE_ENVELOPE",
+                "supportComplete": false,
+                "candidateCountUsedToDeriveSupport": 0
+              }
+            ],
+            "witnessReuseChecks": 4,
+            "witnessReuseHits": 3,
+            "witnessInvalidations": 0,
+            "witnessRepairs": 0,
+            "exactRootOrderEvaluations": 2808,
+            "ledgeredPermutationBranches": 2808,
+            "assessCalls": 5,
+            "irrelevantFastPasses": 1,
+            "lastWitnessValidationChecks": 3,
+            "lastWitnessHits": 3,
+            "knownCandidateChecks": 0,
+            "fullCandidateScans": 2,
+            "explorerResumptions": 217,
+            "candidatePlacementChecks": 32169,
+            "pressureCacheHits": 0,
+            "pressureCacheMisses": 290,
+            "rootStartsVisited": 92,
+            "rootOrdersEvaluated": 2202,
+            "rootOrdersYielded": 186,
+            "domainComplete": false,
+            "exactCandidateCount": null
+          },
+          "jointCompletionCertificates": 0
+        },
+        "minimumObservedS2DurationMs": 378937.04083699995,
+        "minimumDurationMeasuredFrom": "First inspector capture already inside S2 at 353616.123295 engine ms; excludes earlier S2 time.",
+        "testWrapperDurationMs": 732917.455418,
+        "termination": "MANUAL_DIAGNOSTIC_STOP_AFTER_SECOND_CAUSAL_CYCLE_AND_S2_OVER_300S",
+        "testProcessExitCode": 1,
+        "completeExecutionResultAvailable": false,
+        "branchBudgetExhausted": false,
+        "globalInfeasibilityProven": false,
+        "s2ProposalProduced": false,
+        "canonicalExceptionRollbackRedoDivergenceReached": false,
+        "captureStack": [
+          "taskRespectsScheduledDependencies",
+          "diagnoseTaskPlacement",
+          "canPlaceTask",
+          "",
+          "",
+          "",
+          "evaluateContext",
+          "evaluate",
+          "necessary",
+          "visitAgenda",
+          "",
+          "visit",
+          "visit",
+          "visit",
+          "visit",
+          "visit",
+          "searchExactItinerantAgenda",
+          "",
+          "visit",
+          "searchExactPrerequisiteClosure",
+          "visitAgenda",
+          "visitChain",
+          "visitChain",
+          "searchJoint",
+          "attempt",
+          "onHardValidCoreLeaf",
+          "runExactMainAndFeederSearch",
+          "runExactItinerantPlanSearch",
+          "constructExactItinerantPlan",
+          "executePlannerNext",
+          "executeAssistedPlanning",
+          "AssistedProposalService.buildInput.buildInput",
+          "run"
+        ]
+      }
+    ],
+    "authorityComparisons": [
+      {
+        "label": "firstNominal",
+        "taskCount": 82,
+        "closure": {
+          "status": "INFEASIBLE",
+          "reason": "HALL",
+          "certified": false,
+          "requiredCount": 19,
+          "maximumMatching": 18,
+          "hall": {
+            "closureTaskIds": [
+              "task:10004"
+            ],
+            "participantIds": [
+              "participant:201"
+            ],
+            "neighbourSlots": [],
+            "taskCount": 1,
+            "slotCount": 0
+          },
+          "branchesConsumed": 1,
+          "matchingTraversals": 33,
+          "signature": "6e2e6ec9377c2a8335726d78cb2d4d21b0f8dbc72f100c5f4a587c710f64ecb9",
+          "witnessFingerprint": null,
+          "domains": {
+            "task:10004": []
+          },
+          "releaseBoundsByClosure": {
+            "task:10004": {
+              "earliestStart": 825,
+              "predecessorTaskIds": [
+                "task:10013"
+              ]
+            }
+          }
+        },
+        "probe": {
+          "status": "PRUNE",
+          "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+          "abstainCause": null,
+          "futureTaskId": "task:10004",
+          "unresolvedDependencyIds": []
+        },
+        "domains": [
+          {
+            "id": "task:10004",
+            "intervals": []
+          }
+        ]
+      },
+      {
+        "label": "firstRepairedArrival",
+        "taskCount": 63,
+        "closure": {
+          "status": "PASS",
+          "reason": null,
+          "certified": false,
+          "requiredCount": 19,
+          "maximumMatching": 19,
+          "hall": null,
+          "branchesConsumed": 1,
+          "matchingTraversals": 25,
+          "signature": "10745147aeaf1da12614bd942272ac8251146260763e63fc92be4e59e79257ba",
+          "witnessFingerprint": null,
+          "domains": {},
+          "releaseBoundsByClosure": {}
+        },
+        "probe": {
+          "status": "ABSTAIN",
+          "reasonCode": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE",
+          "abstainCause": "INCONCLUSIVE_SHAPE",
+          "futureTaskId": "task:10019",
+          "unresolvedDependencyIds": [
+            "task:10015"
+          ]
+        },
+        "domains": [
+          {
+            "id": "task:10004",
+            "intervals": [
+              {
+                "start": 790,
+                "end": 925
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "secondLiveCore",
+        "taskCount": 63,
+        "closure": {
+          "status": "PASS",
+          "reason": null,
+          "certified": false,
+          "requiredCount": 19,
+          "maximumMatching": 19,
+          "hall": null,
+          "branchesConsumed": 1,
+          "matchingTraversals": 31,
+          "signature": "3a22187793a3fc597fcec4ee69f53d0610a085cb103142ce3df761eb10493a2b",
+          "witnessFingerprint": null,
+          "domains": {},
+          "releaseBoundsByClosure": {}
+        },
+        "probe": {
+          "status": "ABSTAIN",
+          "reasonCode": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE",
+          "abstainCause": "INCONCLUSIVE_SHAPE",
+          "futureTaskId": "task:10019",
+          "unresolvedDependencyIds": [
+            "task:10015"
+          ]
+        },
+        "domains": [
+          {
+            "id": "task:10004",
+            "intervals": [
+              {
+                "start": 805,
+                "end": 925
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "secondLiveAgenda",
+        "taskCount": 75,
+        "closure": {
+          "status": "INFEASIBLE",
+          "reason": "HALL",
+          "certified": false,
+          "requiredCount": 19,
+          "maximumMatching": 17,
+          "hall": {
+            "closureTaskIds": [
+              "task:10118",
+              "task:10133"
+            ],
+            "participantIds": [
+              "participant:209",
+              "participant:210"
+            ],
+            "neighbourSlots": [],
+            "taskCount": 2,
+            "slotCount": 0
+          },
+          "branchesConsumed": 1,
+          "matchingTraversals": 19,
+          "signature": "a128aa0de65784da039ca1d8b839398752ae62b44180683ec61e63e541baa703",
+          "witnessFingerprint": null,
+          "domains": {
+            "task:10118": [],
+            "task:10133": []
+          },
+          "releaseBoundsByClosure": {
+            "task:10118": {
+              "earliestStart": null,
+              "predecessorTaskIds": [
+                "task:10114",
+                "task:10115",
+                "task:10117",
+                "task:10119",
+                "task:10122",
+                "task:10125",
+                "task:10126",
+                "task:10127",
+                "task:10128"
+              ]
+            },
+            "task:10133": {
+              "earliestStart": null,
+              "predecessorTaskIds": [
+                "task:10130",
+                "task:10132",
+                "task:10134",
+                "task:10137",
+                "task:10140",
+                "task:10141",
+                "task:10142",
+                "task:10143",
+                "task:10144"
+              ]
+            }
+          }
+        },
+        "probe": {
+          "status": "PRUNE",
+          "reasonCode": "FUTURE_PARTICIPANT_TASK_ZERO_DOMAIN",
+          "abstainCause": null,
+          "futureTaskId": "task:10117",
+          "unresolvedDependencyIds": []
+        },
+        "domains": [
+          {
+            "id": "task:10004",
+            "intervals": [
+              {
+                "start": 805,
+                "end": 925
+              }
+            ]
+          },
+          {
+            "id": "task:10118",
+            "intervals": [
+              {
+                "start": 1045,
+                "end": 1135
+              }
+            ]
+          },
+          {
+            "id": "task:10133",
+            "intervals": [
+              {
+                "start": 1095,
+                "end": 1135
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "readOnlyAuthorityLedger": {
+      "limit": 300000,
+      "branchesExplored": 11,
+      "coreBranches": 0,
+      "standaloneBranches": 11,
+      "lastExhaustionPhase": null
+    },
+    "liveAgendaCausalContext": [
+      {
+        "entry": {
+          "id": "task:10117",
+          "duration": 20,
+          "spaceId": "space:3018",
+          "dependencies": [
+            "task:10120"
+          ],
+          "kind": "auxiliary",
+          "participantId": "participant:209"
+        },
+        "arrival": {
+          "id": "task:10120",
+          "duration": 5,
+          "spaceId": "space:3022",
+          "dependencies": [],
+          "kind": "auxiliary",
+          "participantId": "participant:209",
+          "start": 660,
+          "end": 665
+        },
+        "successors": [
+          {
+            "id": "task:10116",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10117",
+              "task:10123"
+            ],
+            "kind": "main",
+            "participantId": "participant:209",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 1025,
+            "end": 1040
+          },
+          {
+            "id": "task:10124",
+            "duration": 30,
+            "spaceId": "space:3015",
+            "dependencies": [
+              "task:10117"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4002",
+              "plan-resource:4007"
+            ],
+            "allowedItinerantUnitIds": [
+              "itinerant-team:5001",
+              "itinerant-team:5002"
+            ],
+            "kind": "auxiliary",
+            "participantId": "participant:209",
+            "itinerantUnitId": "itinerant-team:5001",
+            "start": 540,
+            "end": 570
+          }
+        ],
+        "domain": [],
+        "eligibleStartCount": 0,
+        "earliestDependencyEnd": 665,
+        "latestStartFromPlacedSuccessor": 520
+      },
+      {
+        "entry": {
+          "id": "task:10132",
+          "duration": 20,
+          "spaceId": "space:3018",
+          "dependencies": [
+            "task:10135"
+          ],
+          "kind": "auxiliary",
+          "participantId": "participant:210"
+        },
+        "arrival": {
+          "id": "task:10135",
+          "duration": 5,
+          "spaceId": "space:3022",
+          "dependencies": [],
+          "kind": "auxiliary",
+          "participantId": "participant:210",
+          "start": 690,
+          "end": 695
+        },
+        "successors": [
+          {
+            "id": "task:10131",
+            "duration": 15,
+            "spaceId": "space:3004",
+            "dependencies": [
+              "task:10132",
+              "task:10138"
+            ],
+            "kind": "main",
+            "participantId": "participant:210",
+            "coachId": "plan-resource:4004",
+            "blockKey": "plan-resource:4004",
+            "start": 1010,
+            "end": 1025
+          },
+          {
+            "id": "task:10129",
+            "duration": 10,
+            "spaceId": "space:3001",
+            "dependencies": [
+              "task:10132"
+            ],
+            "kind": "auxiliary",
+            "participantId": "participant:210",
+            "jointGroupId": "joint-group:joint.alfombra-roja.C06-C10",
+            "start": 1080,
+            "end": 1090
+          },
+          {
+            "id": "task:10139",
+            "duration": 30,
+            "spaceId": "space:3016",
+            "dependencies": [
+              "task:10132"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:4003",
+              "plan-resource:4008"
+            ],
+            "allowedItinerantUnitIds": [
+              "itinerant-team:5001",
+              "itinerant-team:5002"
+            ],
+            "kind": "auxiliary",
+            "participantId": "participant:210",
+            "itinerantUnitId": "itinerant-team:5002",
+            "start": 560,
+            "end": 590
+          }
+        ],
+        "domain": [],
+        "eligibleStartCount": 0,
+        "earliestDependencyEnd": 695,
+        "latestStartFromPlacedSuccessor": 540
+      }
+    ],
+    "firstRepresentationalError": "Making all nominal unaccepted entries immutable together removes a valid reduced alternative. Correct local rejection is not proof that every supporting geometry fails.",
+    "canonicalBoundary": "Updated core with entries deferred passes necessary collective closure; exact chain/agenda traversal produces contexts in which pending entries cannot precede already placed work. The local Hall rejection is reproducible. Ordinary standalone/entry producer not reached at stop.",
+    "traceLimit": "First repair returns REJECT after 634 branches. Last authority observation is a nonfatal participant ABSTAIN with dependency 10015 reachable. Exact first joint rejection context was not captured; do not claim that ABSTAIN caused rejection. Last sampled agenda context has a separately reproduced conditional Hall proof.",
+    "proofClassification": {
+      "validReducedInterleaving": "Explored, fully validated and certified in 52 shared-ledger branches.",
+      "validCanonicalInterleaving": "Not constructed/certified; local domain recovery is necessary only.",
+      "exploredRejectedCanonicalContexts": "Conditional Hall failures from missing entry domains under chosen arrival/work placements; correct local rejection.",
+      "globalContinuation": "Uncertified.",
+      "globalInfeasibility": "Not proved.",
+      "branchBudgetExhaustion": "Baseline 8d only; current canonical candidate manually stopped at 37599 of 300000.",
+      "latency": "S2 over 300 seconds; complete ASST gate pending."
+    },
+    "A2Assist8": {
+      "status": "PASS",
+      "runs": 2,
+      "completed": 266,
+      "stages": [
+        {
+          "stage": 1,
+          "completed": 19,
+          "branches": 80835,
+          "coreBranches": 11394,
+          "standaloneBranches": 69441,
+          "baselineDurationMs": [
+            174897,
+            170776
+          ],
+          "candidateDurationMs": [
+            214692,
+            209865
+          ]
+        },
+        {
+          "stage": 2,
+          "completed": 38,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            193,
+            117
+          ],
+          "candidateDurationMs": [
+            209,
+            124
+          ]
+        },
+        {
+          "stage": 3,
+          "completed": 46,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            110,
+            103
+          ],
+          "candidateDurationMs": [
+            129,
+            117
+          ]
+        },
+        {
+          "stage": 4,
+          "completed": 65,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            202,
+            97
+          ],
+          "candidateDurationMs": [
+            432,
+            110
+          ]
+        },
+        {
+          "stage": 5,
+          "completed": 75,
+          "branches": 13241,
+          "coreBranches": 0,
+          "standaloneBranches": 13241,
+          "baselineDurationMs": [
+            17501,
+            18020
+          ],
+          "candidateDurationMs": [
+            23209,
+            18065
+          ]
+        },
+        {
+          "stage": 6,
+          "completed": 111,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            111,
+            106
+          ],
+          "candidateDurationMs": [
+            133,
+            132
+          ]
+        },
+        {
+          "stage": 7,
+          "completed": 169,
+          "branches": 1884,
+          "coreBranches": 0,
+          "standaloneBranches": 1884,
+          "baselineDurationMs": [
+            6766,
+            6749
+          ],
+          "candidateDurationMs": [
+            7563,
+            7023
+          ]
+        },
+        {
+          "stage": 8,
+          "completed": 207,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            225,
+            128
+          ],
+          "candidateDurationMs": [
+            258,
+            121
+          ]
+        },
+        {
+          "stage": 9,
+          "completed": 209,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            209,
+            194
+          ],
+          "candidateDurationMs": [
+            239,
+            118
+          ]
+        },
+        {
+          "stage": 10,
+          "completed": 266,
+          "branches": 293,
+          "coreBranches": 0,
+          "standaloneBranches": 293,
+          "baselineDurationMs": [
+            136,
+            197
+          ],
+          "candidateDurationMs": [
+            137,
+            124
+          ]
+        }
+      ],
+      "materialDigest": "ae079844467d20d6adf59b55367d41fe0b5c4e5a2d07323d6a7d3d95d325afcc",
+      "finalFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+      "baselineMaterialUnchanged": true,
+      "stagesCompared": [
+        {
+          "stage": 1,
+          "completed": 19,
+          "branches": 80835,
+          "durationMs": [
+            214692,
+            209865
+          ],
+          "acceptedFingerprint": "10897fa2ce5bc94e3d26938cc0c5927df4f4a6d434b2f037e8e06e76f0cdf2e4",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 2,
+          "completed": 38,
+          "branches": 293,
+          "durationMs": [
+            209,
+            124
+          ],
+          "acceptedFingerprint": "621bfdef7ee9ba478b42bf59d706b6baab56f8b27a4940748fb8d477c5c01cd6",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 3,
+          "completed": 46,
+          "branches": 293,
+          "durationMs": [
+            129,
+            117
+          ],
+          "acceptedFingerprint": "438690f0db57f88db7721238df5d3684566e9a344318687b81bf1cb733ffee08",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 4,
+          "completed": 65,
+          "branches": 293,
+          "durationMs": [
+            432,
+            110
+          ],
+          "acceptedFingerprint": "eadc4e650a39375aa72961793e5ecf943d9c30da98f3ba5976280e3dd432a5af",
+          "jointWitnessFingerprint": "01627777fdfd9128779277a051503ac6d611224e125e2900bda4e6bc78fa659e"
+        },
+        {
+          "stage": 5,
+          "completed": 75,
+          "branches": 13241,
+          "durationMs": [
+            23209,
+            18065
+          ],
+          "acceptedFingerprint": "e97217c62265841918817296f1c45986c0dd492cb1ae2e3cbbda645eb952a785",
+          "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+        },
+        {
+          "stage": 6,
+          "completed": 111,
+          "branches": 293,
+          "durationMs": [
+            133,
+            132
+          ],
+          "acceptedFingerprint": "7b3c49e335c4f35a79754b02fe25b5c04ec5a2a65de7da204d6b3db1ab75786c",
+          "jointWitnessFingerprint": "fe6600e1595198dd49923c72734be4ccaed2162dcc425261b80561622fe62a55"
+        },
+        {
+          "stage": 7,
+          "completed": 169,
+          "branches": 1884,
+          "durationMs": [
+            7563,
+            7023
+          ],
+          "acceptedFingerprint": "509e0affa08e4e21fe4bacac030cfc7715ad3aefca89fe28844ab823d4da7046",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        },
+        {
+          "stage": 8,
+          "completed": 207,
+          "branches": 293,
+          "durationMs": [
+            258,
+            121
+          ],
+          "acceptedFingerprint": "9eb3aa1542efbef080b0909a072a72050865ab28574ebc8afacbf66c701cb9b2",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        },
+        {
+          "stage": 9,
+          "completed": 209,
+          "branches": 293,
+          "durationMs": [
+            239,
+            118
+          ],
+          "acceptedFingerprint": "b1906633b500e19db548159c8548ec4ca8c0e390e81bb7eaf25135841f43861c",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        },
+        {
+          "stage": 10,
+          "completed": 266,
+          "branches": 293,
+          "durationMs": [
+            137,
+            124
+          ],
+          "acceptedFingerprint": "7195f0eba23dcd42fc442a5e8ae9377d85fe53e74df7129244d4df19a5632415",
+          "jointWitnessFingerprint": "79345012abec6fdb22aa1806e3d9630017b978e1fdd9dafdf624f292c655c2c8"
+        }
+      ],
+      "allWorkCountersIdenticalTo8d": true,
+      "baselineTotalWallMs": [
+        200535.874111,
+        196563.580912
+      ],
+      "candidateTotalWallMs": [
+        247215.99892,
+        235843.518229
+      ],
+      "baselineTotalStageMs": [
+        200350,
+        196487
+      ],
+      "candidateTotalStageMs": [
+        247001,
+        235799
+      ],
+      "objective120Seconds": "FAIL S1",
+      "ceiling300Seconds": "PASS every A2 Stage",
+      "maximumRequestLedger": 80835,
+      "snapshotStart": "Empty for each independent harness invocation; no historical witness seed.",
+      "performanceCausalityClaimed": false
+    },
+    "validation": {
+      "focalRegression": {
+        "pass": 173,
+        "fail": 0
+      },
+      "newGeometryTests": {
+        "pass": 4,
+        "fail": 0,
+        "includedInFocalCount": true
+      },
+      "proportionalRegression": {
+        "pass": 247,
+        "fail": 2,
+        "newFailures": 0,
+        "knownFailuresAlsoReproducedAt8d": true,
+        "knownFailures": [
+          "exact continuation constructs IN, work, ESTILISMO_SALIDA, then dependent OUT immutably and order-invariantly",
+          "terminal IN materialization finds the backward-propagated witness"
+        ]
+      },
+      "typescript": "PASS",
+      "build": "PASS",
+      "migrationSequence": "PASS",
+      "migrationSequenceTest": {
+        "pass": 1,
+        "fail": 0
+      },
+      "canonicalBenchmarkExpectationsChanged": false,
+      "canonicalConfigurationChanged": false,
+      "budgetsOrTimeoutsIncreased": false,
+      "UI_API_DB_Migrations_Publication_AutopilotChanged": false,
+      "mergePerformed": false
+    },
+    "stopCondition": {
+      "failedCausalCycleLimit": 2,
+      "searchExpansionStopped": true,
+      "noThirdSearchDelta": true,
+      "nextWorkRequires": "A separate causal unit for the arrival/prerequisite/agenda boundary; first demonstrate a complete viable updated-canon candidate, without importing old witnesses as seeds."
+    },
+    "risks": [
+      "Canonical S2 is slower and uncertified; no product/merge gate PASS.",
+      "One rematerialized arrival choice is finite; failure does not exhaust all supporting geometries.",
+      "Existing agenda traversal may explore many work contexts before pending entries become constructible.",
+      "ASST fixture remains at inherited 300000 branches, above interactive requirement 100000; unchanged.",
+      "Two inherited transport tests remain failing."
+    ]
+  }
+}

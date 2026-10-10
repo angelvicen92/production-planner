@@ -76,6 +76,9 @@ export interface ExactMainAndFeederCoreEvidence {
   bundleForbiddenEdges: string[];
   bundleRepairSequence: Array<{causingTaskId:string;oldPosition:number;forbiddenEdge:string;newPosition:number|null}>;
   bundleTerminalCause: string | null;
+  bundleContinuationDeferrals: number;
+  bundleContinuationResumptions: number;
+  bundlePendingContinuations: number;
   bundleNogoodsCreated:number; bundleNogoodBranches:number; bundleNogoodDeduplications:number;
   bundleNogoodRepairsSucceeded:number; conflictEdges:string[];
   feederMatchingWitnessMaterializations: number;
@@ -367,6 +370,11 @@ export interface CertifiedBackjump { readonly outcome:"CERTIFIED_BACKJUMP"; read
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 
 export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
+/** A retained root, not a negative certificate. Reentry uses the same ledger. */
+export interface DeferredCoreContinuation {
+  readonly outcome: "DEFERRED";
+  readonly resume: () => ExactCoreContinuationOutcome | DeferredCoreContinuation;
+}
 export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED" | CertifiedBackjump;
 export interface ExactSearchLedger {
   limit: number;
@@ -374,6 +382,8 @@ export interface ExactSearchLedger {
   coreBranches: number;
   standaloneBranches: number;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
+  /** Runtime cancellation is independent of branch accounting and validity. */
+  checkpoint?: () => void;
   consume(phase: "CORE" | "STANDALONE", count?: number): boolean;
 }
 export interface ExactCoreLeafCandidate {
@@ -430,6 +440,8 @@ export interface ExactMainAndFeederSearchOptions {
   structuralSearchBudgetExhausted?:()=>boolean;
   onStructuralHardGateReject?:(architecture:MainFeederArchitecture)=>void;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
+  /** Only structural bundles support deferred continuation and matching repair. */
+  onStructuralCoreContinuation?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome | DeferredCoreContinuation;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
   /** Ordering only; fixed-main feeder starts remain a complete domain. */
   fixedMainFeederStartComparator?: (a:Readonly<{tasks:readonly ScheduledTask[];scheduledFeeder:ScheduledTask;main:Task}>,
@@ -694,10 +706,15 @@ export function deriveFeederCohortRelaxedCertificate(problem: PlannerNextProblem
   return {applicable:true,prefixCapacityImpossible,latestFeasibleBlockStart,contiguousBlockStartIntervals};
 }
 
-export function createExactSearchLedger(limit: number): ExactSearchLedger {
+export class ExactSearchTimeLimitReached extends Error {
+  constructor(){super("SEARCH_TIME_LIMIT_REACHED");this.name="ExactSearchTimeLimitReached";}
+}
+
+export function createExactSearchLedger(limit: number,checkpoint?:()=>void): ExactSearchLedger {
   const ledger: ExactSearchLedger = {
-    limit, branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, lastExhaustionPhase: null,
+    limit, branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, lastExhaustionPhase: null,checkpoint,
     consume(phase, count = 1) {
+      checkpoint?.();
       if (ledger.branchesExplored + count > ledger.limit) { ledger.lastExhaustionPhase = phase; return false; }
       ledger.branchesExplored += count;
       if (phase === "CORE") ledger.coreBranches += count; else ledger.standaloneBranches += count;
@@ -705,6 +722,34 @@ export function createExactSearchLedger(limit: number): ExactSearchLedger {
     },
   };
   return ledger;
+}
+
+/** Bound continuation work without bounding an authority that advances its
+ * CORE explorer before charging. The synchronous continuation is reentered
+ * from its retained immutable root with a growing allowance; every repeated
+ * evaluation is charged normally, never replayed for free. */
+export function boundedCoreContinuation(ledger: ExactSearchLedger, quantum: number,
+  continuation: () => ExactCoreContinuationOutcome): ExactCoreContinuationOutcome | DeferredCoreContinuation {
+  const consume = ledger.consume;
+  const before = ledger.standaloneBranches;
+  let deferred = false;
+  ledger.consume = (phase, count = 1) => {
+    if (deferred) return false;
+    if (!consume.call(ledger, phase, count)) return false;
+    if (phase === "STANDALONE" && ledger.standaloneBranches - before > quantum) {
+      // This charged decision interrupts the attempt. It does not execute the
+      // denied alternative or prove anything about its feasibility.
+      deferred = true;
+      return false;
+    }
+    return true;
+  };
+  let result: ExactCoreContinuationOutcome;
+  try { result = continuation(); } finally { ledger.consume = consume; }
+  if (!deferred) return result;
+  if (ledger.branchesExplored >= ledger.limit || ledger.lastExhaustionPhase !== null) return "BUDGET_EXHAUSTED";
+  return { outcome: "DEFERRED", resume: () => boundedCoreContinuation(ledger,
+    Math.min(ledger.limit, Math.max(1, quantum) * 2), continuation) };
 }
 
 const canonical = <T extends { id: string }>(values: readonly T[]): T[] => [...values].sort((a, b) => a.id.localeCompare(b.id));
@@ -774,7 +819,9 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     mainWitnessChoicesFollowed: 0, mainWitnessFallbacks: 0,
     mainRunWitnessAttempts:0,mainRunWitnessRepairs:0,mainRunEquivalentOrdersCollapsed:0,
     bundleMatchingAttempts:0,bundleMatchingRepairs:0,bundleMatchingMaterializations:0,bundleHardValidationRejects:0,bundleCertifiedRepairs:0,
-    bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,bundleNogoodsCreated:0,bundleNogoodBranches:0,
+    bundleForbiddenEdges:[],bundleRepairSequence:[],bundleTerminalCause:null,
+    bundleContinuationDeferrals:0,bundleContinuationResumptions:0,bundlePendingContinuations:0,
+    bundleNogoodsCreated:0,bundleNogoodBranches:0,
     bundleNogoodDeduplications:0,bundleNogoodRepairsSucceeded:0,conflictEdges:[],
     feederMatchingWitnessMaterializations:0,feederMatchingWitnessRepairs:0,
     feederMatchingEquivalentOrdersCollapsed:0,feederOrderFallbacks:0,
@@ -1249,9 +1296,33 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   let structuralCandidate=structuralCandidates?.next().value;
   let bundleState=structuralCandidate?.bundle??options.preferredBundleCandidate;
   const bundleQueue:NonNullable<typeof bundleState>[]=[];
-  const seenBundleForbidden=new Set<string>();
+  let seenBundleForbidden=new Set<string>();
+  let forbiddenAuthority=structuralCandidate;
+  let deferredContinuation:DeferredCoreContinuation|undefined;
+  const deferredBundles:Array<{bundle:NonNullable<typeof bundleState>;authority:typeof structuralCandidate;
+    seenForbidden:Set<string>;continuation:DeferredCoreContinuation}>=[];
+  const advanceBundle=(skipQueued=false)=>{
+    deferredContinuation=undefined;
+    bundleState=skipQueued?undefined:bundleQueue.shift();
+    if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}
+    if(!bundleState&&!options.structuralSearchBudgetExhausted?.()){
+      const pending=deferredBundles.shift();
+      if(pending){
+        bundleState=pending.bundle;structuralCandidate=pending.authority;
+        seenBundleForbidden=pending.seenForbidden;forbiddenAuthority=structuralCandidate;
+        deferredContinuation=pending.continuation;evidence.bundleContinuationResumptions++;
+      }
+    }
+    evidence.bundlePendingContinuations=deferredBundles.length;
+  };
   if(bundleState)seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
   while(bundleState){
+    // A task@position edge denotes this graph's complete bundle. Its exclusion
+    // cannot deduplicate a repair in another architecture with different slots.
+    if(structuralCandidate!==forbiddenAuthority){
+      seenBundleForbidden=new Set();forbiddenAuthority=structuralCandidate;
+      seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
+    }
     evidence.bundleMatchingAttempts++;
     const byId=new Map([...bundleState.scheduledTasks,...structuralBase].map(task=>[task.id,task]));
     const preferred=[...byId.values()].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
@@ -1279,8 +1350,9 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
     if(!gated||structuralCandidate?.acceptComplete?.(gated)===false){evidence.bundleHardValidationRejects++;if(structuralCandidate)options.onStructuralHardGateReject?.(structuralCandidate.architecture);
       evidence.bundleTerminalCause=lastHardGateReason??"STRUCTURAL_RESERVATION_REJECTED";
-      bundleState=bundleQueue.shift();if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
-    const continuation=options.onHardValidCoreLeaf?.({tasks:gated,meals,
+      advanceBundle();continue;}
+    const retainedContinuation=deferredContinuation;deferredContinuation=undefined;
+    const continuation=retainedContinuation?.resume()??(options.onStructuralCoreContinuation??options.onHardValidCoreLeaf)?.call(options,{tasks:gated,meals,
         remainingTaskIds:allTaskIds.filter(id=>!preferredCoreIds.has(id)),fingerprint:fingerprint(gated,[],meals),
         source:structuralCandidate?"STRUCTURAL_FUTURE_CONDITIONED":"PREFERRED_BUNDLE",
         architectureFingerprint:structuralCandidate?.architectureFingerprint,
@@ -1300,15 +1372,18 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
     if(continuation==="BUDGET_EXHAUSTED"){evidence.bundleTerminalCause="BUDGET_EXHAUSTED";
       return fail("BRANCH_BUDGET_EXHAUSTED",["BUNDLE_CONTINUATION_BUDGET_EXHAUSTED"],coreIds);}
-    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";bundleState=bundleQueue.shift();
-      if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
+    if(typeof continuation==="object"&&continuation.outcome==="DEFERRED"){
+      deferredBundles.push({bundle:bundleState,authority:structuralCandidate,seenForbidden:seenBundleForbidden,continuation});
+      evidence.bundleContinuationDeferrals++;evidence.bundleTerminalCause="DEFERRED";
+      advanceBundle();continue;
+    }
+    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";advanceBundle();continue;}
     const orderedMains=gated.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const depths=[...(continuation.conflictDecisionDepths?.length?continuation.conflictDecisionDepths:[continuation.targetDepth])].sort((a,b)=>a-b);
     const conflict=depths.map(depth=>orderedMains[depth-1]).map(causing=>{const oldPosition=causing===undefined?undefined:bundleState!.matching.get(causing.id);
       return causing&&oldPosition!==undefined?{causing,oldPosition,edge:`${causing.id}@${oldPosition}`} : null;});
     const repair=structuralCandidate?.repair??options.repairPreferredBundleCandidate;
-    if(conflict.some(x=>x===null)||!repair){evidence.bundleTerminalCause="UNMAPPED_CONFLICT_GROUP";bundleState=undefined;
-      if(structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
+    if(conflict.some(x=>x===null)||!repair){evidence.bundleTerminalCause="UNMAPPED_CONFLICT_GROUP";advanceBundle(true);continue;}
     evidence.conflictEdges=conflict.map(x=>x!.edge);evidence.bundleNogoodsCreated++;
     const children:NonNullable<typeof bundleState>[]=[];
     for(const item of conflict){const {causing,oldPosition,edge:forbiddenEdge}=item!;
@@ -1319,8 +1394,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.bundleRepairSequence.push({causingTaskId:causing.id,oldPosition,forbiddenEdge,newPosition:repaired?.matching.get(causing.id)??null});
       if(repaired){children.push(repaired);evidence.bundleNogoodRepairsSucceeded++;}
     }
-    if(!children.length){evidence.bundleTerminalCause="NO_PERFECT_MATCH";bundleState=bundleQueue.shift();
-      if(!bundleState&&structuralCandidates){structuralCandidate=structuralCandidates.next().value;bundleState=structuralCandidate?.bundle;}continue;}
+    if(!children.length){evidence.bundleTerminalCause="NO_PERFECT_MATCH";advanceBundle();continue;}
     evidence.bundleForbiddenEdges=[...children[0]!.forbiddenEdges].sort();bundleQueue.unshift(...children.slice(1));bundleState=children[0];
   }
 

@@ -309,7 +309,8 @@ function breakReservationVariants(problem:PlannerNextProblem,policy:RoundSynchro
 
 function materializeMatchingCandidate(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
   firstStart: number, baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[],
-  existingRoundPreparations: ScheduledRoundPreparation[], meals: ScheduledSpaceMeal[],breakReservations:readonly BreakReservation[]=[]): ExactRoundSynchronizationCandidate | null {
+  existingRoundPreparations: ScheduledRoundPreparation[], meals: ScheduledSpaceMeal[],breakReservations:readonly BreakReservation[]=[],
+  placementEdges?:Map<string,Map<number,boolean>>): ExactRoundSynchronizationCandidate | null {
   const shape = buildSlots(problem, policy, firstStart, baseTasks, setupPreparations, existingRoundPreparations, meals,breakReservations);
   if (!shape) return null;
   const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
@@ -321,7 +322,12 @@ function materializeMatchingCandidate(problem: PlannerNextProblem, policy: Round
   const allTasks = laneTasks.flat(), taskByMatchingId = new Map(allTasks.map((task) => [task.id, task]));
   const matching = findCanonicalPerfectMatching([...slotById.keys()], allTasks.map(({ id }) => id), (taskId, key) => {
     const task = taskByMatchingId.get(taskId)!, slot = slotById.get(key)!;
-    return laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId) && canPlaceTask(problem, task, slot.start, baseTasks, meals);
+    if(!laneTasks[slot.laneIndex]!.some(({ id }) => id === taskId))return false;
+    const edges=placementEdges?.get(taskId),cached=edges?.get(slot.start);
+    if(cached!==undefined)return cached;
+    const valid=canPlaceTask(problem,task,slot.start,baseTasks,meals);
+    if(placementEdges){const cache=edges??new Map<number,boolean>();cache.set(slot.start,valid);placementEdges.set(taskId,cache);}
+    return valid;
   });
   if (!matching) return null;
   const scheduled = [...matching].map(([key, taskId]) => {
@@ -339,13 +345,20 @@ function materializeMatchingCandidate(problem: PlannerNextProblem, policy: Round
 /** Counts hard-valid synchronized temporal shapes without consuming the shared search ledger. */
 export function probeExactRoundSynchronizationMacroDomain(problem: PlannerNextProblem, policy: RoundSynchronizationPolicy,
   baseTasks: ScheduledTask[], setupPreparations: ScheduledSetupPreparation[], existingRoundPreparations: ScheduledRoundPreparation[],
-  meals: ScheduledSpaceMeal[]): ExactRoundSynchronizationMacroDomain {
+  meals: ScheduledSpaceMeal[],checkpoint?:()=>void): ExactRoundSynchronizationMacroDomain {
   let structuralCandidateCount = 0, matchingFeasibleCandidateCount = 0;
+  // Every probe geometry has the same immutable occupations and static meals.
+  // Reuse the canonical placement result for each item/start instead of
+  // rescanning that context across temporal shapes and break variants. Keep
+  // the cache local to this probe; joint candidate validation is unchanged.
+  const placementEdges=new Map<string,Map<number,boolean>>();
   for (let start = problem.day.start; start < problem.day.end; start += 5) {
+    checkpoint?.();
     const reservationVariants=breakReservationVariants(problem,policy,start,baseTasks,setupPreparations,existingRoundPreparations,meals).variants;
     for(const reservations of reservationVariants){
+      checkpoint?.();
       if (buildSlots(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals,reservations)) structuralCandidateCount += 1;
-      if (materializeMatchingCandidate(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals,reservations)) matchingFeasibleCandidateCount += 1;
+      if (materializeMatchingCandidate(problem, policy, start, baseTasks, setupPreparations, existingRoundPreparations, meals,reservations,placementEdges)) matchingFeasibleCandidateCount += 1;
     }
   }
   return { domainSize: matchingFeasibleCandidateCount, structuralCandidateCount, matchingFeasibleCandidateCount };

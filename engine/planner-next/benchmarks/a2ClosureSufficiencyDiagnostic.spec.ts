@@ -32,14 +32,17 @@ test("diagnostic inventory cannot alter the current product preflight, result, a
 
 test("accepted resource/unit and operational-meal snapshots replay through their existing authorities", () => {
   const fixture = buildCanonicalA2AssistedStage1Fixture();
+  const coachId = fixture.input.planResourceItems.find(resource => resource.name === "coach-lucia")!.id;
+  const unitId = fixture.canonical.itinerantUnitId.get("reality-unit-a")!;
+  const memberIds = fixture.input.itinerantTeamAvailability!.find(unit => unit.itinerantTeamId === unitId)!.planResourceItemIds!;
   const task = fixture.input.tasks.find(task => task.plannerNextKind === "main" && task.itinerantTeamId == null
-    && fixture.adapter.problem.tasks.find(source => source.id === `task:${task.id}`)?.coachId === "plan-resource:4005")!;
+    && fixture.adapter.problem.tasks.find(source => source.id === `task:${task.id}`)?.coachId === `plan-resource:${coachId}`)!;
   const row = { taskId: task.id, startPlanned: "11:40", endPlanned: "11:55", spaceId: task.spaceId!,
-    itinerantTeamId: 5001, assignedResourceIds: [4002, 4005, 4007] };
+    itinerantTeamId: unitId, assignedResourceIds: [...memberIds, coachId].sort((a, b) => a - b) };
   const fixed = replayA2AcceptedTasks([row]);
   assert.equal(fixed.length, 1); assert.equal(fixed[0]!.id, `task:${task.id}`);
-  assert.equal(fixed[0]!.itinerantUnitId, "itinerant-team:5001");
-  assert.deepEqual(fixed[0]!.requiredResourceIds, ["plan-resource:4002", "plan-resource:4007"]);
+  assert.equal(fixed[0]!.itinerantUnitId, `itinerant-team:${unitId}`);
+  assert.deepEqual(fixed[0]!.requiredResourceIds, memberIds.map(id => `plan-resource:${id}`).sort());
   assert.equal(fixed[0]!.start, 700); assert.equal(fixed[0]!.end, 715);
   const meals = replayA2OperationalMeals([{ policyId: "break:main-flow", startPlanned: "13:55", endPlanned: "15:10" }]);
   assert.equal(meals[0]!.start, 835); assert.equal(meals[0]!.duration, 75);

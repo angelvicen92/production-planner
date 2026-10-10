@@ -52,6 +52,37 @@ test("a valid fingerprint cannot substitute altered task semantics or omitted an
   assert.equal(ledger.branchesExplored,2);
 });
 
+test("a duration refresh invalidates old joint evidence and recertifies the new scope without moving accepted work",()=>{
+  const {source,tasks,witness:partialWitness,sign}=fixture(),availability=[source.day];
+  source.participants.push({id:"core",availability});source.coaches=[{id:"coach",availability}];
+  source.spaces.push({id:"main",availability},{id:"vocal",availability});source.mainFlow.spaceId="main";
+  const vocal={id:"vocal",kind:"vocal" as const,participantId:"core",coachId:"coach",duration:5,spaceId:"vocal",dependencies:[]};
+  const main={id:"main",kind:"main" as const,participantId:"core",coachId:"coach",duration:5,spaceId:"main",dependencies:[vocal.id],blockKey:"coach"};
+  source.tasks.push(vocal,main);
+  const core=[{...vocal,start:20,end:25},{...main,start:25,end:30}],fixed=[tasks[0]!,...core];
+  const {fingerprint:_old,...body}=partialWitness,witness=sign({...body,tasks:[...tasks,...core]});
+  const refreshed=structuredClone(source);refreshed.tasks.find(task=>task.id==="prior-b")!.duration=15;
+  const saved=structuredClone({source,refreshed,fixed,witness}),replayLedger=createExactSearchLedger(1000);
+  assert.equal(revalidateJointCompletionWitness(refreshed,witness,fixed,()=>replayLedger.consume("STANDALONE")),"STALE");
+  assert.ok(replayLedger.branchesExplored>0);
+  const scope=createPlanningScope({kind:"ids",value:"prior-b"},{},["prior-b"]);
+  const built=buildAssistedProblem(refreshed,scope,fixed,new Set(refreshed.tasks.map(task=>task.id)),[],[],[],[],[witness]);
+  const first=runExactItinerantPlanSearch(built.problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,priorFutureStructuralWitnesses:[witness]});
+  const second=runExactItinerantPlanSearch(built.problem,{fixedPlacements:fixed,fixedPlacementsAsContext:true,priorFutureStructuralWitnesses:[witness]});
+  assert.equal(first.status,"COMPLETE",JSON.stringify(first.evidence.reasonCodes));assert.deepEqual(first,second);
+  assert.deepEqual(fixed.map(item=>first.scheduledTasks.find(task=>task.id===item.id)),fixed);
+  assert.equal(first.scheduledTasks.find(task=>task.id==="prior-b")!.duration,15);
+  assert.ok(first.scheduledTasks.every(task=>built.problem.tasks.some(item=>item.id===task.id)));
+  const current=first.evidence.futureStructuralWitnesses.find(item=>item.kind==="JOINT_COMPLETION");
+  assert.ok(current&&current.kind==="JOINT_COMPLETION");assert.notEqual(current.fingerprint,witness.fingerprint);
+  const auditLedger=createExactSearchLedger(1000);
+  assert.equal(revalidateJointCompletionWitness(refreshed,current,fixed,()=>auditLedger.consume("STANDALONE")),"PASS");
+  assert.ok(auditLedger.branchesExplored>0);
+  assert.equal(first.evidence.branchesExplored,first.evidence.coreBranches+first.evidence.standaloneBranches);
+  assert.equal(built.protectedPlacements.length,fixed.length);
+  assert.deepEqual({source,refreshed,fixed,witness},saved);
+});
+
 test("the complete producer cannot replan a meal outside the explicit future eligibility",()=>{
   const {source}=fixture();
   source.participantMeals=[{id:"meal",sourceTaskId:"meal-source",participantId:"a",duration:5,

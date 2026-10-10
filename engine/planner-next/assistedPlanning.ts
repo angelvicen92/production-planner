@@ -12,7 +12,7 @@ import type {
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
-import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
+import { ExactSearchTimeLimitReached, type ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
 import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { participantMealWitnessFingerprint } from "./participantMeals";
 import { operationalMealWitnessFingerprint } from "./operationalMeals";
@@ -31,6 +31,8 @@ export type AssistedPlanningReasonCode =
 
 export interface AssistedProblem {
   readonly problem: PlannerNextProblem;
+  /** Ephemeral core producer for pending Main/Vocal outside the authorized projection. */
+  readonly collectiveCoreProjection?: Pick<AssistedProblem, "problem" | "analyticalParticipantMeals">;
   readonly originalValidationProblem: PlannerNextProblem;
   /** Pending obligations outside the executable projection, for read-only future-feasibility probes. */
   readonly analyticalParticipantMeals: readonly ParticipantMealObligation[];
@@ -436,8 +438,7 @@ export function buildAssistedProblem(
     });
     if(problem.tasks.every(task=>included.has(task.id)||fixedById.has(task.id)||analyticalFutureEligibleTaskIds.has(task.id))
       &&(problem.participantMeals??[]).every(meal=>includedMeals.has(meal.sourceTaskId)
-        ||protectedMealBySourceId.has(meal.sourceTaskId)||analyticalFutureEligibleTaskIds.has(meal.sourceTaskId))
-      &&problem.tasks.filter(task=>task.kind==="main"||task.kind==="vocal").every(task=>included.has(task.id)||fixedById.has(task.id)))
+        ||protectedMealBySourceId.has(meal.sourceTaskId)||analyticalFutureEligibleTaskIds.has(meal.sourceTaskId)))
       problem.analyticalFutureCollectiveContinuation=continuation;
     problem.analyticalFutureParticipantClosure = {
       tasks: structuredClone(problem.tasks),
@@ -575,8 +576,25 @@ export function buildAssistedProblem(
     return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
   });
 
+  // Build missing structural units through the same scope-closure and exact core
+  // authorities. This projection is only a producer input: it grants neither
+  // visibility nor protection. Main dependencies produce their Vocal feeders as
+  // supporting work, preserving the existing pending-load classification. All
+  // core IDs are included after closure, so recursion stops after one projection
+  // without a second search or a ledger reset.
+  const futureCore=problem.analyticalFutureCollectiveContinuation?.tasks
+    .filter(task=>(task.kind==="main"||task.kind==="vocal")&&!included.has(task.id))??[];
+  const futureCoreRoots=futureCore.filter(task=>task.kind==="main"
+    ||!source.tasks.some(main=>main.kind==="main"&&main.dependencies.includes(task.id))).map(task=>task.id);
+  const collectiveCore=futureCore.length?buildAssistedProblem(source,
+    createPlanningScope(scope.selector,scope.metadata,[...scopeIds,...futureCoreRoots]),protectedPlacements,
+    analyticalFutureEligibleTaskIds,protectedOperationalMeals,protectedSetupPreparations,
+    protectedParticipantMeals,protectedRoundPreparations,priorFutureStructuralWitnesses):undefined;
+
   return {
     problem,
+    ...(collectiveCore?{collectiveCoreProjection:{problem:collectiveCore.problem,
+      analyticalParticipantMeals:collectiveCore.analyticalParticipantMeals}}:{}),
     originalValidationProblem,
     analyticalParticipantMeals: structuredClone(analyticalParticipantMeals),
     scope,
@@ -595,11 +613,19 @@ export function buildAssistedProblem(
   };
 }
 
-export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
+export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline,
+  runtime?:{now?:()=>number}): AssistedPlanningResult {
+  const now=runtime?.now??(()=>performance.now()),started=now();
+  const checkpoint=()=>{if(now()-started>=300_000)throw new ExactSearchTimeLimitReached();};
   // Future participant meals remain invisible obligations, but they must constrain
   // every constructive/future-feasibility check performed for an Assisted scope.
-  const searchProblem:PlannerNextProblem={...input.problem,participantMeals:[
-    ...(input.problem.participantMeals??[]),...input.analyticalParticipantMeals,
+  const producer=input.collectiveCoreProjection??input;
+  const searchProblem:PlannerNextProblem={...producer.problem,
+    // Assisted requests share one interactive ledger. Preserve smaller caller
+    // budgets and leave the canonical source/configuration read-only.
+    budget:{...producer.problem.budget,maxBranchExpansions:Math.min(100_000,producer.problem.budget.maxBranchExpansions)},
+    participantMeals:[
+    ...(producer.problem.participantMeals??[]),...producer.analyticalParticipantMeals,
   ]};
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
   const protectedIds=new Set(input.protectedPlacements.map(({id})=>id));
@@ -609,11 +635,18 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       &&item.affectedTaskIds.length>0&&item.affectedTaskIds.every(id=>protectedIds.has(id)));
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
-  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
+  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,checkpoint,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
     fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations,
     priorFutureStructuralWitnesses:input.priorFutureStructuralWitnesses??(input.priorFutureStructuralWitness?[input.priorFutureStructuralWitness]:[]) });
-  const result = execution.result;
+  const executableIds=new Set(input.problem.tasks.map(task=>task.id));
+  const result = execution.result&&input.collectiveCoreProjection?{...execution.result,
+    scheduledTasks:execution.result.scheduledTasks.filter(task=>executableIds.has(task.id)),
+    scheduledSetupPreparations:execution.result.scheduledSetupPreparations.filter(prep=>input.problem.tasks
+      .some(task=>task.spaceId===prep.spaceId&&task.setupFamilyId===prep.setupFamilyId)),
+    ...("scheduledRoundPreparations" in execution.result?{scheduledRoundPreparations:execution.result.scheduledRoundPreparations
+      .filter(prep=>input.problem.roundSynchronizations?.some(policy=>policy.id===prep.synchronizationId))}:{}),
+  }:execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
   const projectedParticipantMealSources=new Set((input.originalValidationProblem.participantMeals??[]).map(meal=>meal.sourceTaskId));
@@ -656,7 +689,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
+  const standaloneKeys = ["bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
+    "standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",
     "roundSynchronizationSharedOperationalMealPolicyIds","roundSynchronizationBreakVariantsConsidered",
@@ -703,6 +737,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
     }));
+  work.branchBudgetLimit=searchProblem.budget.maxBranchExpansions;
   const selectedMealWitnesses=result?.complete?{
     participant:{scheduled:structuredClone(result.scheduledParticipantMeals),fingerprint:participantMealWitnessFingerprint(result.scheduledParticipantMeals),
       finalSelectionOrder:[...(evidenceRecord.participantMealFinalSelectionOrder as string[]|undefined)??[]]},

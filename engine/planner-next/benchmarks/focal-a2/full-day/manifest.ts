@@ -143,6 +143,7 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
 ]);
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
+  { id: "cam-1", label: "CAM 1", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-2", label: "CAM 2", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-3", label: "CAM 3", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-4", label: "CAM 4", kind: "camera", availability: "inherits_day_unless_overridden" },

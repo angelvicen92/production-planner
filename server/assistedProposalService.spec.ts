@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { AssistedPlanningResult, AssistedProblem } from "../engine/planner-next/assistedPlanning";
+import {executeAssistedPlanning} from "../engine/planner-next/assistedPlanning";
 import { createSpec10021RoundSynchronizationEngineInputFixture, createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import type { IStorage } from "./storage";
@@ -125,6 +126,31 @@ test("stage proposalRunId recovers its structural witness for the runner",async(
   problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
   await service.run(planId,9);
   assert.deepEqual(captured?.priorFutureStructuralWitness,certificate);
+});
+
+test("accepted run lineage recovers a joint witness from result_json after configuration refresh",async()=>{
+  const joint={kind:"JOINT_COMPLETION" as const,version:1 as const,tasks:[],preparations:[],roundPreparations:[],
+    participantMeals:[],operationalMeals:[],spaceMeals:[],fingerprint:"accepted-joint"};
+  const priorRun={...runRecord(),id:77,result_json:{evidence:{futureStructuralWitnesses:[joint]}}};
+  const before=structuredClone(priorRun);
+  const execute=async(proposalRunId:number|null)=>{
+    const acceptedStage={...stage,configRevisionId:7,proposalRunId};
+    let captured:AssistedProblem|undefined;const reads:number[]=[];
+    const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>session,
+      getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],
+      getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+      getAssistedPlanningStage:async()=>acceptedStage,listAssistedPlanningStages:async()=>[acceptedStage]},[]),queueMicrotask,
+    access({find:async(_plan,id)=>{reads.push(id);return {data:id===77?priorRun:runRecord(),error:null};},
+      finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+    await service.run(planId,9);return {captured:captured!,reads};
+  };
+  const recovered=await execute(77),missing=await execute(null);
+  assert.ok(recovered.reads.includes(77));assert.equal(missing.reads.includes(77),false);
+  assert.deepEqual(recovered.captured.priorFutureStructuralWitnesses,[joint]);
+  assert.deepEqual(missing.captured.priorFutureStructuralWitnesses,[]);
+  assert.deepEqual(recovered.captured.problem,missing.captured.problem);
+  assert.deepEqual(recovered.captured.protectedPlacements,missing.captured.protectedPlacements);
+  assert.deepEqual(priorRun,before);
 });
 
 test("a stage prefers its V2 structural witness while retaining V1 compatibility",async()=>{
@@ -409,6 +435,20 @@ test("NO_PROPOSAL and UNSUPPORTED each persist one causal result without product
     assert.equal((await service.run(planId,9)).outcome,outcome);
     assert.equal(finishes,1); assert.equal(runnerCalls,outcome==="NO_PROPOSAL"?1:0); assert.deepEqual(writes,[]);
   }
+});
+
+test("a real runtime interruption persists NO_PROPOSAL with its time reason and no partial draft",async()=>{
+  const writes:string[]=[];let finished=0,calls=0;
+  const service=new AssistedProposalService(runStorage(writes),queueMicrotask,access({
+    find:async()=>({data:runRecord(),error:null}),finish:async(_plan,_run,result)=>{
+      finished++;assert.equal(result.outcome,"NO_PROPOSAL");assert.equal(result.proposal,null);
+      assert.equal(result.proposedDraftSnapshot,null);assert.equal(result.proposedDraftFingerprint,null);
+      assert.ok(result.reasonCodes.includes("SEARCH_TIME_LIMIT_REACHED"));return {error:null};
+    },
+  }),(problem,baseline)=>executeAssistedPlanning(problem,baseline,{now:()=>++calls===1?0:300_000}),dependencies());
+  const result=await service.run(planId,9);
+  assert.equal(result.outcome,"NO_PROPOSAL");assert.equal(finished,1);assert.deepEqual(writes,[]);
+  assert.ok(!result.reasonCodes.some(code=>code.includes("BUDGET_EXHAUSTED")||code.includes("INFEASIBLE")));
 });
 
 test("apply performs one RPC, sends only optimistic guards, and propagates stale without lateral writes", async () => {

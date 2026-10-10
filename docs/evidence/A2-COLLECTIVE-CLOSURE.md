@@ -1,5 +1,7 @@
 # A2 — continuación conjunta de cierre
 
+Calificación posterior del fixture: [CAM1 corregida en #1104; replay automático bloqueado](A2-CAM1-CORRECTION.md). La completitud histórica siguiente omitía la exclusividad de Fuente 06 §7.5 y no certifica el A2 oficial vigente.
+
 **ASSISTED_COMPLETION: 266/266 en S10**, por el flujo real request/run/apply/accept. Dos ejecuciones limpias son equivalentes en placements, recursos, unidades, comidas, preparaciones, certificados y accounting. Cada petición comparte un ledger de 100.000 ramas. No hay nuevas violaciones HARD/REQUIRED, decisiones protegidas modificadas, seed histórico, merge ni otro PR.
 
 PR [#1103](https://github.com/angelvicen92/production-planner/pull/1103), base #1085 (`c00bb3d`), continuación del head revisado `ffc35446ac2d4685dfbace367cf637945eb2a8f4`. La Evidence vigente está en [A2-COLLECTIVE-CLOSURE-COMPLETION.json](A2-COLLECTIVE-CLOSURE-COMPLETION.json). Los JSON anteriores `CONTRACT` y `SUFFICIENCY` conservan el diagnóstico histórico 0/266; `A2-COLLECTIVE-CLOSURE.json` conserva 38 y `A2-ASSIST-8-assisted-completion.json` conserva 209. No se han sobrescrito ni utilizado como seed.
