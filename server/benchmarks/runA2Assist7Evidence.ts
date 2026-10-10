@@ -115,7 +115,7 @@ export async function runA2Assist7Evidence() {
     if (name === "assisted_accept_stage") {
       if (validation.reportJson.newHardCount > 0 && p.p_confirmation !== "HARD_EXCEPTIONS") return { error: { message: "HARD_CONFIRMATION_REQUIRED" } };
       archiveFuture(session.draftBaseStageId);
-      const stage = { id: nextStageId++, sessionId, planId, ordinal: stages.length, parentStageId: session.draftBaseStageId, archivedAt: null, configRevisionId: revisionId, snapshotJson: session.draftSnapshotJson, snapshotFingerprint: session.draftFingerprint };
+      const stage = { id: nextStageId++, sessionId, planId, ordinal: stages.length, parentStageId: session.draftBaseStageId, archivedAt: null, configRevisionId: revisionId, proposalRunId: session.draftScopeJson?.proposalRunId ?? null, snapshotJson: session.draftSnapshotJson, snapshotFingerprint: session.draftFingerprint };
       stages.push(stage);
       for (const violation of validation.reportJson.violations.filter((item: any) => ["HARD", "REQUIRED"].includes(item.severity) && item.inheritedAcceptedExceptionId == null)) exceptions.push({
         id: exceptions.length + 1, planId, stageId: stage.id, severity: violation.severity, ruleCode: violation.ruleCode,
@@ -155,9 +155,17 @@ export async function runA2Assist7Evidence() {
     consumedTargetDurations.push(problem.problem.tasks.find(task => task.id === `task:${targetTemplate.id}`)?.duration ?? null);
     protectedCounts.push(problem.protectedPlacements.length);
     acceptedBaselineCounts.push(options?.violations.length ?? 0);
+    if (consumedRevisions.length === 2) {
+      const acceptedStage = stages.find(stage => stage.id === session.draftBaseStageId);
+      const priorWitnesses = runs.get(acceptedStage?.proposalRunId)?.result_json?.evidence?.futureStructuralWitnesses;
+      assert.ok(priorWitnesses?.length, "S1 acceptance lost the proposal witness lineage");
+      assert.ok(priorWitnesses.every((witness: { fingerprint: string }) =>
+        problem.priorFutureStructuralWitnesses?.some(prior => prior.fingerprint === witness.fingerprint)),
+      "S2 did not recover the accepted S1 witnesses through stage lineage");
+    }
     return executeAssistedPlanning(problem, options);
   }, { buildInput, buildConfigRevision: ({ planId: id }) => ({ contractVersion: 1, planId: id, components: [], configurationFingerprint: configFingerprint() }) });
-  const acceptProposal = async (taskId: number) => { const requested = await proposal.request(planId, { selector: { kind: "TASK_IDS", taskIds: [taskId] }, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId }); const result = await proposal.run(planId, requested.runId); assert.equal(result.outcome, "PROPOSAL", JSON.stringify(result.reasonCodes)); await proposal.apply(planId, requested.runId, session.draftFingerprint, session.draftBaseStageId); await planning.validateDraft(planId, session.draftFingerprint, session.draftBaseStageId); await planning.accept(planId, userId, session.draftFingerprint, session.draftBaseStageId); return stages.at(-1)!; };
+  const acceptProposal = async (taskId: number) => { const requested = await proposal.request(planId, { selector: { kind: "TASK_IDS", taskIds: [taskId] }, includePrerequisites: false, expectedDraftFingerprint: session.draftFingerprint, expectedBaseStageId: session.draftBaseStageId }); const result = await proposal.run(planId, requested.runId); assert.equal(result.outcome, "PROPOSAL", JSON.stringify(result.reasonCodes)); await proposal.apply(planId, requested.runId, session.draftFingerprint, session.draftBaseStageId); await planning.validateDraft(planId, session.draftFingerprint, session.draftBaseStageId); await planning.accept(planId, userId, session.draftFingerprint, session.draftBaseStageId); const acceptedStage = stages.at(-1)!; assert.equal(acceptedStage.proposalRunId, requested.runId, "acceptance lost proposalRunId"); return acceptedStage; };
 
   const s1 = await acceptProposal(first.id);
   const s1Snapshot = structuredClone(s1.snapshotJson), s1Fingerprint = s1.snapshotFingerprint;

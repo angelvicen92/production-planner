@@ -128,6 +128,31 @@ test("stage proposalRunId recovers its structural witness for the runner",async(
   assert.deepEqual(captured?.priorFutureStructuralWitness,certificate);
 });
 
+test("accepted run lineage recovers a joint witness from result_json after configuration refresh",async()=>{
+  const joint={kind:"JOINT_COMPLETION" as const,version:1 as const,tasks:[],preparations:[],roundPreparations:[],
+    participantMeals:[],operationalMeals:[],spaceMeals:[],fingerprint:"accepted-joint"};
+  const priorRun={...runRecord(),id:77,result_json:{evidence:{futureStructuralWitnesses:[joint]}}};
+  const before=structuredClone(priorRun);
+  const execute=async(proposalRunId:number|null)=>{
+    const acceptedStage={...stage,configRevisionId:7,proposalRunId};
+    let captured:AssistedProblem|undefined;const reads:number[]=[];
+    const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>session,
+      getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],
+      getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+      getAssistedPlanningStage:async()=>acceptedStage,listAssistedPlanningStages:async()=>[acceptedStage]},[]),queueMicrotask,
+    access({find:async(_plan,id)=>{reads.push(id);return {data:id===77?priorRun:runRecord(),error:null};},
+      finish:async()=>({error:null})}),problem=>{captured=problem;return {proposal:null,evidence:evidence(false)};},dependencies());
+    await service.run(planId,9);return {captured:captured!,reads};
+  };
+  const recovered=await execute(77),missing=await execute(null);
+  assert.ok(recovered.reads.includes(77));assert.equal(missing.reads.includes(77),false);
+  assert.deepEqual(recovered.captured.priorFutureStructuralWitnesses,[joint]);
+  assert.deepEqual(missing.captured.priorFutureStructuralWitnesses,[]);
+  assert.deepEqual(recovered.captured.problem,missing.captured.problem);
+  assert.deepEqual(recovered.captured.protectedPlacements,missing.captured.protectedPlacements);
+  assert.deepEqual(priorRun,before);
+});
+
 test("a stage prefers its V2 structural witness while retaining V1 compatibility",async()=>{
   const v1={kind:"FIXED_SUPPORTING_PIPELINE" as const,version:1 as const,architectureFingerprint:"architecture",
     geometryFingerprint:"geometry-v1",ephemeralSupportingPlacements:[],fingerprint:"v1"};
