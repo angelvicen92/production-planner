@@ -1,0 +1,55 @@
+{
+  "demoPR": "https://github.com/angelvicen92/production-planner/pull/1105",
+  "demoHead": "471d8b481fa453069f2f6b905732bcbad0bba284",
+  "demoCI": {
+    "status": "PASS",
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38061993127"
+  },
+  "experimentPR": "https://github.com/angelvicen92/production-planner/pull/1106",
+  "experimentHead": "b47327ac86f8d4ed0e00eb38c2913499b9298102",
+  "experimentCI": {
+    "status": "PASS",
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38061640826"
+  },
+  "basePR": 1104,
+  "baseHead": "6c5a1838ed06e0bbd7764a99be027e08b2d23f41",
+  "merged": false,
+  "remoteWrites": 0,
+  "migrationsAppliedRemotely": 0,
+  "replitChanges": 0,
+  "targetProject": "AWAITING_EXPLICIT_USER_CONFIRMATION_OF_SEPARATE_PROJECT",
+  "uniqueLocalTestsPassed": 741,
+  "affectedRegressionTestsRepeated": 110,
+  "persistentRowsRuns": {
+    "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
+    "writes": 0,
+    "reports": [
+      {
+        "run": 1,
+        "status": "PASS",
+        "coverage": 266,
+        "stages": 10,
+        "s1Ms": 69292,
+        "totalMs": 87813,
+        "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+      },
+      {
+        "run": 2,
+        "status": "PASS",
+        "coverage": 266,
+        "stages": 10,
+        "s1Ms": 71620,
+        "totalMs": 88787,
+        "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+      }
+    ]
+  },
+  "priorFailedTimingPreserved": {
+    "s1Ms": 143495,
+    "gate": "FAIL",
+    "coverage": 266,
+    "stages": 10
+  },
+  "ASST010": "S2_BLOCKED_CP_SAT_FULL_UNKNOWN_AFTER_30_SECONDS",
+  "demoRemoteLoginRLSRPCRecovery": "NOT_TESTED"
+}
