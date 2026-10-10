@@ -109,8 +109,10 @@ literalmente. S2 pide sólo auxiliar CAM1 10015. No se introduce un scope altern
 
 El control está perfilado; su latencia no equivale a un run sin profiler. Los
 inputs, fingerprints y cargos coinciden en los cores comparables completados.
-La comparación de matching sin profiler pasa de 52.582,699 a 3.510,835 ms
-inclusivos en core 3; son 15.222 llamadas en ambos casos.
+Matching del control perfilado registra 52.582,708 ms inclusivos frente a
+3.510,836 ms del primer delta sin profiler; son 15.222 llamadas en ambos.
+Esta comparación conserva la cualificación del profiler; no es una medición
+controlada de latencia sin instrumentación.
 
 El candidato final alcanza 19.354 checks de cierre, 43.611 hits y 394.819
 traversals; dos candidatos macro, cero hojas completas y cero witnesses conjuntos.
