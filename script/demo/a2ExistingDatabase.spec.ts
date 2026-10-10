@@ -12,6 +12,7 @@ import {buildEffectivePlanConfigRevisionV1,projectEffectiveAuthoritiesFromEngine
 import {buildEffectivePlanConfigReplaySnapshotV1} from '../../server/assistedPlanningConfigRevision';
 import {buildEngineInput} from '../../engine/buildInput';
 import {adaptEngineInputToPlannerNextProblem} from '../../engine/planner-next/integration/engineInputAdapter';
+import {inspectA2Catalog} from './a2Preflight';
 
 const actor='00000000-0000-0000-0000-000000000001';
 // One WASM runtime per file; each case rebuilds schemas independently. This also
@@ -122,5 +123,10 @@ test('actual 086 bootstrap rejects resource staleness, materializes S0 and persi
   assert.deepEqual((await db.query<any>('SELECT assigned_resource_ids FROM daily_tasks WHERE id=$1',[altered.tasks[0].taskId])).rows[0].assigned_resource_ids,altered.tasks[0].assignedResourceIds);
   assert.equal((await db.query<any>("SELECT has_function_privilege('service_role','public.assisted_apply_snapshot(integer,jsonb)','EXECUTE') AS allowed")).rows[0].allowed,false,'internal snapshot writer is not callable via REST');
   for(const role of ['anon','authenticated'])assert.equal((await db.query<any>(`SELECT has_function_privilege('${role}','public.assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text)','EXECUTE') AS allowed`)).rows[0].allowed,false);
+  const auditSQL=readFileSync('script/demo/sql/catalog-audit.sql','utf8');
+  const select=auditSQL.slice(auditSQL.indexOf('SELECT jsonb_build_object('),auditSQL.lastIndexOf('COMMIT;'));
+  const catalog=(await db.query<any>(select)).rows[0].audit;
+  const issues=inspectA2Catalog(catalog,'2026-10-30').issues;
+  assert.deepEqual(issues.filter(s=>s.startsWith('RPC_')||s.startsWith('MISSING_COLUMN:')||s.startsWith('MISSING_ID_SEQUENCE:')),[],'exported PostgreSQL definitions must match the preflight contracts');
  }finally{await db.exec('ROLLBACK; RESET ROLE');}
 });
