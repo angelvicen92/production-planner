@@ -1,5 +1,9 @@
 # A2 CAM1 — consolidación verificable y ASST-010 abierto
 
+> Actualización 2026-10-10: [S2, cache de raíz y retorno explícito](ASST-010-S2-COMPUTATION.md).
+> Este documento conserva la consolidación de 5793bc9; la Evidence nueva registra
+> las regresiones actuales y sustituye el diagnóstico de ausencia de retorno API.
+
 Mismo PR [#1104](https://github.com/angelvicen92/production-planner/pull/1104),
 rama `codex/asst-010-explicit-scope-continuation`, draft, sin merge.
 Fecha: 2026-10-09. Baseline de esta consolidación:
