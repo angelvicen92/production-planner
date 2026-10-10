@@ -4,7 +4,9 @@ Esta propuesta está preparada y probada localmente; **no se ha aplicado en remo
 
 ## Evidencia remota obtenida
 
-GET REST del 10 de octubre de 2026: cuatro jornadas, 47 concursantes, 333 tareas, 278 runs. No hay colisiones en los IDs propuestos. Faltan columnas de transición, márgenes, contrato Planner Next y snapshots operativos 076. `plan_resource_bundle_snapshots` devuelve 404. Anon puede leer filas de `spaces`, `daily_tasks` y `plan_resource_items` (HTTP 200); la inspección aportada por el usuario indica 15 tablas sin RLS y grants amplios. La lectura de OpenAPI anon no expone RPCs; eso no prueba todos sus permisos PostgreSQL. Las versiones exactas de funciones, políticas, grants y constraints requieren `catalog-audit.sql`, aún pendiente de acceso SQL.
+GET REST del 10 de octubre de 2026: cuatro jornadas, 47 concursantes, 333 tareas, 278 runs. No hay colisiones en los IDs propuestos. Faltan columnas de transición, márgenes, contrato Planner Next y snapshots operativos 076. `plan_resource_bundle_snapshots` devuelve 404. Anon puede leer filas de `spaces`, `daily_tasks` y `plan_resource_items` (HTTP 200); la inspección aportada por el usuario indica 15 tablas sin RLS y grants amplios. La lectura de OpenAPI anon no expone RPCs; eso no prueba todos sus permisos PostgreSQL.
+
+El usuario confirma después que ChatGPT ejecutó `catalog-audit.sql` mediante la conexión Supabase en modo de solo lectura: 56 tablas, 575 columnas, 26 funciones, 70 políticas y 15 tablas sin RLS. El catálogo es accesible; queda exportar su JSON completo y contrastar tipos, firmas, cuerpos, grants y políticas. No se considera hecha esa comprobación a partir del recuento. La exportación y las operaciones posteriores están detalladas por orden en [A2-IMPORT-PROCEDURE.md](A2-IMPORT-PROCEDURE.md).
 
 ## Adopción del esquema
 
