@@ -162,3 +162,38 @@ test("repair restores deferred entry prerequisites before a future itinerant age
  assert.deepEqual(source,before);assert.deepEqual(protectedPlacements,fixed);
  assert.ok(result.evidence.branchesExplored<=source.budget.maxBranchExpansions);
 });
+
+test("a tighter future entry keeps its later alternatives beyond an unrelated agenda frontier",()=>{
+ const {source,provisional,protectedPlacements,interleaved}=stylingGeometryFixture();
+ const unitIds=["itinerant-team:41","itinerant-team:42"],availability=[{start:0,end:160}];
+ source.resources.push({id:"common",availability,presencePreference:"OFF",transitionMinutes:0});
+ source.itinerantUnits=unitIds.map(id=>({id,availability,resourceIds:["common"]}));
+ source.participants.push({id:"observer",availability});
+ source.spaces.push(...["future-space","boundary"].map(id=>({id,availability})));
+ source.tasks.find(task=>task.id==="entry-c")!.availability=[{start:45,end:75}];
+ const boundary:ScheduledTask={id:"boundary",kind:"technical",spaceId:"boundary",duration:5,
+  dependencies:[],requiredResourceIds:["common"],start:85,end:90};
+ const member:Task={id:"future-work-c",kind:"auxiliary",participantId:"observer",spaceId:"future-space",duration:5,
+  dependencies:["entry-c"],availability:[{start:65,end:80}],allowedItinerantUnitIds:unitIds};
+ source.tasks.push(boundary,member);
+ source.analyticalFutureItinerantAgendas=[{identity:unitIds.join("+"),unitIds,tasks:[member],prerequisiteTasks:[]}];
+ const nominal=provisional.map(task=>task.id==="entry-c"?{...task,availability:[{start:45,end:75}]}:task);
+ const accepted=[...protectedPlacements,...nominal.filter(task=>["entry-a","entry-b"].includes(task.id)),boundary];
+ const legal={...materializeItinerantUnitAssignment(source,member,unitIds[0]!)!,start:65,end:70};
+ const complete=[...interleaved.map(task=>task.id==="entry-c"?{...task,availability:[{start:45,end:75}]}:task),boundary,legal];
+ assert.equal(validatePlan(source,complete).hardValid,true);
+ const context=nominal.filter(task=>task.kind==="main"||task.kind==="vocal"||task.id.startsWith("in-")
+  ||["entry-a","entry-b"].includes(task.id));
+ assert.equal(exactTaskStartDomain(source,source.tasks.find(task=>task.id==="entry-d")!,context).eligibleStartCount,2);
+ assert.equal(exactTaskStartDomain(source,source.tasks.find(task=>task.id==="entry-c")!,context).eligibleStartCount,3);
+ const before=structuredClone(source),fixed=structuredClone(accepted),result=runFixture(source,nominal,accepted);
+ assert.equal(result.status,"COMPLETE",JSON.stringify(result.reasonCodes));
+ assert.equal(result.scheduledTasks.find(task=>task.id==="entry-d")!.start,70);
+ assert.ok(result.scheduledTasks.find(task=>task.id==="entry-d")!.end>boundary.start);
+ assert.ok(result.scheduledTasks.find(task=>task.id===member.id)!.end<=boundary.start);
+ assert.deepEqual(fixed.map(item=>result.scheduledTasks.find(task=>task.id===item.id)),fixed);
+ assert.equal(validatePlan(source,result.scheduledTasks).hardValid,true);
+ assert.equal(result.evidence.branchesExplored,result.evidence.coreBranches+result.evidence.standaloneBranches);
+ assert.ok(result.evidence.branchesExplored<=source.budget.maxBranchExpansions);
+ assert.deepEqual(source,before);
+});

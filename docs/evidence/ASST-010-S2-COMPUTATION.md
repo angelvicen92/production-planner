@@ -1,5 +1,8 @@
 # ASST-010 — coste de S2 y respuesta explícita al límite
 
+Continuación vigente: [conflicto mínimo y experimentos de exploración](ASST-010-S2-CONFLICTS.md).
+Esta evidencia conserva los resultados históricos de la iteración anterior.
+
 PR [#1104](https://github.com/angelvicen92/production-planner/pull/1104), mismo
 branch, draft y sin merge. Fecha: 2026-10-10. HEAD de partida:
 `5793bc906f862f5233644c74c5f80a04bdb38ca0`. Código probado:
