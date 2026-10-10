@@ -1,5 +1,5 @@
 {
-  "codeHead": "ba334402ab5b60ff52616daded4758bf9649489e",
+  "codeHead": "5d4108b2463fba4922ea6f272b93241d4502b0e7",
   "codePR": 1105,
   "base": "main",
   "branch": "codex/optiplan-a2-import-demo",
@@ -21,10 +21,11 @@
     "historicalDiagnosticExclusions": [
       "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
       "server/benchmarks/runA2Assist7Evidence.spec.ts"
-    ]
+    ],
+    "validatedHead": "ba334402ab5b60ff52616daded4758bf9649489e"
   },
   "backup": "NOT_ESTABLISHED",
-  "sqlCatalog": "PENDING_SQL_ACCESS",
+  "sqlCatalog": "PENDING_JSON_EXPORT_ACCESS_CONFIRMED_BY_USER",
   "remoteDemo": "NOT_LOADED_NOT_TESTED",
   "localTests": 26,
   "releaseRegressionTests": 55,
@@ -58,5 +59,18 @@
     "schema.sql": "14d2c8a8f838300fac22ff0c219ba624206b73f58f6f26d8baac3cdb81abefe3",
     "security.sql": "ac6e09e4a551064abc44e394cc53193d7635eab6aa5dbac9835615360d0d414f",
     "catalog-audit.sql": "b13e4c73728db5c833f523ccdb62d75bcf40e978a1b0aae5a6947c6a7803a7d6"
-  }
+  },
+  "runtimeUnchangedFrom": "ba334402ab5b60ff52616daded4758bf9649489e",
+  "runtimeValidatedHead": "ba334402ab5b60ff52616daded4758bf9649489e",
+  "catalogCountsReportedByUser": {
+    "provenance": "User reported read-only execution via Supabase connection; full JSON not yet inspected",
+    "tables": 56,
+    "columns": 575,
+    "functions": 26,
+    "policies": 70,
+    "tablesWithoutRLS": 15
+  },
+  "backupPreparation": "USER_PREPARING_MANUAL_POSTGRESQL_BACKUP",
+  "latestChangeScope": "DOCUMENTATION_ONLY",
+  "runbookReview": "pruebas-locales/REVISION-INSTRUCCIONES.json"
 }
