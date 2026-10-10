@@ -1,26 +1,35 @@
 {
-  "demoPR": "https://github.com/angelvicen92/production-planner/pull/1105",
-  "demoHead": "471d8b481fa453069f2f6b905732bcbad0bba284",
-  "demoCI": {
-    "status": "PASS",
-    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38061993127"
+  "codeHead": "ba334402ab5b60ff52616daded4758bf9649489e",
+  "codePR": 1105,
+  "base": "main",
+  "branch": "codex/optiplan-a2-import-demo",
+  "target": "dyqusivzgxebkxkwohwn",
+  "date": "2026-10-30",
+  "writes": 0,
+  "pullRequestMerged": false,
+  "replitModified": false,
+  "CI": {
+    "baseline": "PASS",
+    "baselineURL": "https://github.com/angelvicen92/production-planner/actions/runs/38080005286",
+    "plannerEngine": "PASS",
+    "plannerEngineURL": "https://github.com/angelvicen92/production-planner/actions/runs/38080005319",
+    "releaseTests": {
+      "passed": 2847,
+      "failed": 0,
+      "skipped": 1
+    },
+    "historicalDiagnosticExclusions": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ]
   },
-  "experimentPR": "https://github.com/angelvicen92/production-planner/pull/1106",
-  "experimentHead": "b47327ac86f8d4ed0e00eb38c2913499b9298102",
-  "experimentCI": {
-    "status": "PASS",
-    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38061640826"
-  },
-  "basePR": 1104,
-  "baseHead": "6c5a1838ed06e0bbd7764a99be027e08b2d23f41",
-  "merged": false,
-  "remoteWrites": 0,
-  "migrationsAppliedRemotely": 0,
-  "replitChanges": 0,
-  "targetProject": "AWAITING_EXPLICIT_USER_CONFIRMATION_OF_SEPARATE_PROJECT",
-  "uniqueLocalTestsPassed": 741,
-  "affectedRegressionTestsRepeated": 110,
-  "persistentRowsRuns": {
+  "backup": "NOT_ESTABLISHED",
+  "sqlCatalog": "PENDING_SQL_ACCESS",
+  "remoteDemo": "NOT_LOADED_NOT_TESTED",
+  "localTests": 26,
+  "releaseRegressionTests": 55,
+  "historicalASST010": "BLOCKED_UNCHANGED_OUTSIDE_SPACE_DEMO_GATE",
+  "localFullA2": {
     "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
     "writes": 0,
     "reports": [
@@ -29,8 +38,8 @@
         "status": "PASS",
         "coverage": 266,
         "stages": 10,
-        "s1Ms": 69292,
-        "totalMs": 87813,
+        "s1Ms": 77614,
+        "totalMs": 95437,
         "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
       },
       {
@@ -38,18 +47,16 @@
         "status": "PASS",
         "coverage": 266,
         "stages": 10,
-        "s1Ms": 71620,
-        "totalMs": 88787,
+        "s1Ms": 72687,
+        "totalMs": 90053,
         "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
       }
     ]
   },
-  "priorFailedTimingPreserved": {
-    "s1Ms": 143495,
-    "gate": "FAIL",
-    "coverage": 266,
-    "stages": 10
-  },
-  "ASST010": "S2_BLOCKED_CP_SAT_FULL_UNKNOWN_AFTER_30_SECONDS",
-  "demoRemoteLoginRLSRPCRecovery": "NOT_TESTED"
+  "SQLHashes": {
+    "import.sql": "6088497f7c5b14c0e944c407afcc6bc9cbc04e23d11d94c10f1bca1931c0d106",
+    "schema.sql": "14d2c8a8f838300fac22ff0c219ba624206b73f58f6f26d8baac3cdb81abefe3",
+    "security.sql": "ac6e09e4a551064abc44e394cc53193d7635eab6aa5dbac9835615360d0d414f",
+    "catalog-audit.sql": "b13e4c73728db5c833f523ccdb62d75bcf40e978a1b0aae5a6947c6a7803a7d6"
+  }
 }
