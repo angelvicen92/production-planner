@@ -252,7 +252,12 @@ export function projectEffectiveAuthoritiesFromEngineInputV1(
   const bundleUnavailable = (input.resourceBundleLoadWarnings?.length ?? 0) > 0;
   return {
     plan_workday: { semanticValue: [{ workDay: input.workDay, meal: input.meal, mealWindow: input.mealWindow, mealMode: input.mealMode,
-      defaultParticipantTransitionMinutes:input.defaultParticipantTransitionMinutes }], provenance: provenance("plans") },
+      defaultParticipantTransitionMinutes:input.defaultParticipantTransitionMinutes,
+      ...(input.plannerNext?{plannerNextAuthorities:JSON.parse(JSON.stringify({plannerNext:input.plannerNext,mealTaskTemplateId:input.mealTaskTemplateId,
+        taskOperations:input.tasks.map(({id,plannerNextKind,operationalRole,breakKind,mealOccupiesSpace,dependsOnTaskIds,jointGroupId,setupFamilyId,itinerantTeamId,itinerantTeamRequirement,allowedItinerantTeamIds})=>({taskId:id,plannerNextKind,operationalRole,breakKind,mealOccupiesSpace,dependsOnTaskIds,jointGroupId,setupFamilyId,itinerantTeamId,itinerantTeamRequirement,allowedItinerantTeamIds})),
+        anchoredAccompaniments:input.anchoredAccompaniments,setupPolicies:input.setupPolicies,roundSynchronizations:input.roundSynchronizations,technicalChains:input.technicalChains,coachRouteTransitions:input.coachRouteTransitions,operationalMealPolicies:input.operationalMealPolicies,itinerantTeamAvailability:input.itinerantTeamAvailability,resourcePresenceConcentrationPolicies:input.resourcePresenceConcentrationPolicies,
+        arrivalMaximumGroupSize:input.arrivalMaximumGroupSize,departureMaximumGroupSize:input.departureMaximumGroupSize}))}:{}),
+    }], provenance: provenance("plans") },
     contestant_availability: { semanticValue: Object.entries(input.contestantAvailabilityById ?? {}).map(([contestantId, availability]) => ({ contestantId: Number(contestantId), ...availability })), provenance: provenance("contestants") },
     spatial_configuration: { semanticValue: [
       ...(input.planZoneSettings ?? []).map(({ zoneId, availabilityStart, availabilityEnd, name, mealStartPreferred, mealEndPreferred, groupingLevel, groupingMinChain, maxTemplateChanges, spaceMealBreakMinutes }) => ({ kind: "zone", zoneId, availabilityStart: availabilityStart ?? null, availabilityEnd: availabilityEnd ?? null, name: name ?? "", mealStartPreferred: mealStartPreferred ?? null, mealEndPreferred: mealEndPreferred ?? null, groupingLevel: groupingLevel ?? 0, groupingMinChain: groupingMinChain ?? 4, maxTemplateChanges: maxTemplateChanges ?? 4, spaceMealBreakMinutes: spaceMealBreakMinutes ?? null })),

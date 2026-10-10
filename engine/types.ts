@@ -308,7 +308,7 @@ export interface EngineInput {
     number
   >>;
   taskTemplateSnapshotFingerprint?: string;
-  /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
+  /** Explicit Planner Next integration contract, recovered for days with a persisted configuration. */
   plannerNext?: PlannerNextIntegrationConfigurationInput;
   /** Effective participant transition authority snapshotted on the plan/day. */
   defaultParticipantTransitionMinutes?: number;

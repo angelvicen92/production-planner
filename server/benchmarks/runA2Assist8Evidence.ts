@@ -11,6 +11,8 @@ import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1,
 import type { AssistedProposalRunAccess } from "../assistedProposalService";
 import type { IStorage } from "../storage";
 import type { AssistedScopeSelector } from "../../shared/assistedProposalContracts";
+import type {EngineInput} from '../../engine/types';
+import {adaptEngineInputToPlannerNextProblem} from '../../engine/planner-next/integration/engineInputAdapter';
 
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "evidence";
@@ -21,6 +23,11 @@ export interface A2Assist8Options { readonly branchBudget?: number; readonly wri
   readonly stopAfterIterationCount?:number;
   /** Emits only elapsed-time progress for long-running focused diagnostics. */
   readonly reportIterationDurations?:boolean;
+  /** Read-only demo capture; receives a clone after real service acceptance. */
+  readonly onAcceptedStage?:(snapshot:AssistedPlanningSnapshotV1)=>void;
+  /** Import integration gate: the real builder's output must preserve the complete canonical problem. */
+  readonly inputFromPersistence?:EngineInput;
+  readonly rebuildInputFromPersistence?:()=>Promise<EngineInput>;
   /** Benchmark-only entry point for replaying a later Stage without rebuilding its predecessors. */
   readonly initialSnapshot?:AssistedPlanningSnapshotV1;
   /** Explicit user-selected product scopes. When present, the recommender is never consulted. */
@@ -82,9 +89,13 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
   const [{ AssistedProposalService }, { AssistedPlanningService }] = await Promise.all([
     import("../assistedProposalService"), import("../assistedPlanningService"),
   ]);
-  const planId = 711, sessionId = 711, revisionId = 1;
+  const planId = options.inputFromPersistence?.planId??711, sessionId = 711, revisionId = 1;
   const stage1Fixture=buildCanonicalA2AssistedStage1Fixture(options.branchBudget,planId);
-  const canonical=stage1Fixture.canonical, input=stage1Fixture.input, adapter=stage1Fixture.adapter;
+  const canonical=stage1Fixture.canonical, input=options.inputFromPersistence??stage1Fixture.input;
+  const adapter=options.inputFromPersistence?adaptEngineInputToPlannerNextProblem(input):stage1Fixture.adapter;
+  assert.equal(adapter.status,'SUPPORTED');
+  if(adapter.status!=='SUPPORTED')throw Error('Persisted input is unsupported');
+  assert.deepEqual(adapter.problem,stage1Fixture.adapter.problem,'persistence cannot weaken the canonical A2 problem');
   const sourceIds = input.tasks.filter(task => task.contestantId != null).map(task => task.id).sort((a, b) => a - b);
   assert.equal(sourceIds.length, 266);
   const sourceSet = new Set(sourceIds);
@@ -132,7 +143,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     finish: async (_plan, id, result) => { Object.assign(runs.get(id), { result_json: result }); return { error: null }; },
     apply: async p => { const run = runs.get(Number(p.p_run_id)); session = { ...session, draftSnapshotJson: run.result_json.proposedDraftSnapshot, draftFingerprint: run.result_json.proposedDraftFingerprint, draftScopeJson: { ...run.scope_json, resolvedTaskIds: run.scope_task_ids_json, proposalRunId: run.id }, draftValidationId: null }; return { error: null }; },
   };
-  const dependencies = { buildInput: async () => structuredClone(input), buildConfigRevision: () => ({ contractVersion: 1, planId, components: [], configurationFingerprint: configFingerprint }) as any };
+  const dependencies = { buildInput: async () => options.rebuildInputFromPersistence?options.rebuildInputFromPersistence():structuredClone(input), buildConfigRevision: () => ({ contractVersion: 1, planId, components: [], configurationFingerprint: configFingerprint }) as any };
   const proposals = new AssistedProposalService(storage, () => {}, runAccess, undefined, dependencies);
   const planning = new AssistedPlanningService(storage, rpc as any, dependencies);
   const iterations: any[] = [];
@@ -527,6 +538,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     };
     record.acceptedStageId = session.activeStageId; record.acceptedStageFingerprint = session.draftFingerprint; record.protectedPlacementsPreserved = true;
     record.acceptedStageProposalRunId=stages.find(stage=>stage.id===session.activeStageId)?.proposalRunId??null;
+    options.onAcceptedStage?.(structuredClone(acceptedSnapshot));
     record.durationMs = Math.round(performance.now() - iterationStartedAt);
     iterations.push(record);
     if(options.reportIterationDurations)console.error(JSON.stringify({completedObligationCount:after.length,durationMs:record.durationMs}));

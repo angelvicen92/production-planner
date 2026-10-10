@@ -2,6 +2,7 @@ import type { IStorage } from "../server/storage";
 import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
 import { adaptPlanOptimizerSnapshotToLegacyEngineV1 } from "./planOptimizerSnapshotLegacyAdapter";
 import { immutableMapView } from "@shared/immutableMapView";
+import { applyPlanPlannerNextConfiguration } from '../server/planPlannerNextConfiguration';
 import {
   TaskTemplateSnapshotError,
   deriveTaskTemplateSnapshotCatalogFingerprint,
@@ -611,7 +612,7 @@ export async function buildEngineInput(
     return hh * 60 + mm;
   };
 
-  return {
+  const input: EngineInput = {
     planId: p.id,
     taskTemplateSnapshotContractVersion: 2,
     taskTemplateSnapshotCount: taskTemplateSnapshots.length,
@@ -985,4 +986,5 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
+  return applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration);
 }

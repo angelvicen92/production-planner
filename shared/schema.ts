@@ -51,6 +51,7 @@ export const plans = pgTable("plans", {
   planningWarnings: jsonb("planning_warnings").$type<any[]>().notNull().default([]),
   planningStats: jsonb("planning_stats").$type<Record<string, any>>().notNull().default({}),
   optimizerEngine: text("optimizer_engine").notNull().default("v3"),
+  plannerNextConfiguration: jsonb("planner_next_configuration"),
 });
 // 1.0.1 planning_runs (execution state + compact Engine V3 diagnostics)
 export const planningRuns = pgTable("planning_runs", {
