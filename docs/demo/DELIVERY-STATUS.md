@@ -1,0 +1,17 @@
+# Estado de entrega — 10 de octubre de 2026
+
+La carga A2 para la aplicación real está preparada, con C01–C19 y 266 obligaciones sin horarios precalculados. Se ha probado su reconstrucción canónica y la evolución de filas después de cada aceptación. **No existe aún una jornada A2 cargada ni ensayada en el Supabase/Replit remoto.** El destino independiente requiere confirmación del usuario; el proyecto conectado no está certificado como staging.
+
+- Demo/importador: [PR #1105](https://github.com/angelvicen92/production-planner/pull/1105), rama `codex/optiplan-a2-import-demo`, base #1104 / `6c5a1838ed06e0bbd7764a99be027e08b2d23f41`. Draft; sin merge. Incluye 088 preparada, sin aplicar.
+- Experimento separado: [PR #1106](https://github.com/angelvicen92/production-planner/pull/1106), HEAD `b47327ac86f8d4ed0e00eb38c2913499b9298102`. Draft; sin wiring Assisted ni dependencia productiva OR-Tools. [Baseline CI PASS](https://github.com/angelvicen92/production-planner/actions/runs/38061640826).
+- La página del PR muestra el HEAD definitivo de demo y sus checks. El manifiesto externo del paquete entregado registra el SHA/CI final exacto, sin la circularidad de guardar el SHA de este propio documento en su commit.
+
+**Verificado:** 741 casos locales únicos en esta sesión, incluidos 6 nuevos de importación/recomendación y 3 de revisión local; 110 regresiones afectadas repetidas tras el wiring final. La prueba costosa de dos S1 original no se repitió como spec aislado: la reemplazan dos recorridos completos básicos y dos con el input inicialmente reconstruido, más dos recorridos completos de filas reconstruidas por aceptación. No se declara que se haya rerun toda la suite original de 723 en un único comando. Typecheck raíz/estricto adicional, build productivo, build estático y secuencia de migraciones pasan. Playwright comprueba S0/S10, vistas, copia manual/validación/conflictos y el botón de alcance en el componente Assisted real con API local en memoria; sin errores de navegador ni accesos externos en la reproducción.
+
+**A2:** 266/266, diez etapas, cero nuevas violaciones HARD/REQUIRED, protecciones literales y proposalRunId por aceptación. Variante con filas vigentes: S1 69,292/71,620 s, total 87,813/88,787 s, fingerprint idéntico `561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54`. Veinte auditorías completas PASS. Se conserva el ensayo de S1 143,495 s que falló el gate; no se oculta ni se altera el límite.
+
+**ASST-010:** S2 sigue bloqueado. CP-SAT certifica los fixtures originales de cuatro/seis y variaciones, pero el canon completo protegido queda UNKNOWN/INCONCLUSIVE a 30 s, cero candidatos. No supera B3; AcceptedException/provenance/rollback/redo/divergencia del recorrido auténtico siguen NOT_REACHED. Mantener el motor A2 probado para la demo; explorar después una coordinación global–local acotada.
+
+**Próximo paso imprescindible:** aprobar un proyecto Supabase separado, restaurar schema sin datos, aplicar 088 allí, cargar la jornada vacía, crear usuarios demo y ejecutar `demo:a2:verify-database`. El usuario publica Replit y ensaya diez propuestas/validaciones/aceptaciones y recuperación desde otra sesión. Guion/metricas en `OPTIPLAN-EXECUTIVE-DEMO.md`; procedimiento exacto en `A2-IMPORT-PROCEDURE.md`; reproducción y capturas como respaldo.
+
+No se ha modificado ni borrado ningún dato remoto, aplicado migraciones remotas, cambiado la publicación ni fusionado PRs.

@@ -5,6 +5,7 @@ import {a2ImportStorageFixture,importedTaskSnapshotSource} from './a2ImportStora
 import {buildEngineInput} from '../../engine/buildInput';
 import {runA2Assist8Evidence} from '../../server/benchmarks/runA2Assist8Evidence';
 import {buildAssistedPlanningSnapshotV1} from '../../server/assistedPlanningSnapshot';
+import {auditA2ImportedRun} from './auditA2ImportedRuns';
 
 const directory=process.argv[2]??'work/a2-import-validation';mkdirSync(directory,{recursive:true});
 const rows=buildA2ImportRows('2026-10-30');
@@ -20,6 +21,7 @@ for(let n=1;n<=(firstStageOnly?1:2);n++){
  writeFileSync(`${directory}/run${n}.json`,JSON.stringify(r));
  const cpu=process.cpuUsage(cpuBefore);writeFileSync(`${directory}/timing${n}.json`,JSON.stringify({wallMs:performance.now()-wallBefore,cpuMs:(cpu.user+cpu.system)/1000,s1Ms:r.iterations[0]!.durationMs,gate:r.iterations[0]!.durationMs<=120_000?'PASS':'FAIL'}));
  if(firstStageOnly){assert.equal(r.completedObligationCount,19);assert.equal(r.stageCount,1);assert.ok(r.iterations[0]!.durationMs<=120_000);break;}
+ writeFileSync(`${directory}/audit${n}.json`,JSON.stringify(await auditA2ImportedRun(r),null,2));
  assert.equal(r.status,'PASS');assert.equal(r.completedObligationCount,266);assert.equal(r.stageCount,10);assert.ok(r.iterations[0]!.durationMs<=120_000);
  reports.push({run:n,status:r.status,coverage:r.completedObligationCount,stages:r.stageCount,s1Ms:r.iterations[0]!.durationMs,totalMs:r.iterations.reduce((n,s)=>n+s.durationMs,0),fingerprint:r.deterministicFingerprint});
 }

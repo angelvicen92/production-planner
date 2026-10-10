@@ -1781,5 +1781,222 @@
     "cpuMs": 76024.463,
     "s1Ms": 69981,
     "gate": "PASS"
-  }
+  },
+  "persistentRebuiltRuns": {
+    "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
+    "writes": 0,
+    "reports": [
+      {
+        "run": 1,
+        "status": "PASS",
+        "coverage": 266,
+        "stages": 10,
+        "s1Ms": 69292,
+        "totalMs": 87813,
+        "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+      },
+      {
+        "run": 2,
+        "status": "PASS",
+        "coverage": 266,
+        "stages": 10,
+        "s1Ms": 71620,
+        "totalMs": 88787,
+        "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+      }
+    ]
+  },
+  "persistentRebuiltAudits": [
+    [
+      {
+        "stage": 1,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 2,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 3,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 4,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 5,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "dd5c285fc9e45b9278618be28962d181f1771060273fac49f0ef199c329b7e58"
+      },
+      {
+        "stage": 6,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "dd5c285fc9e45b9278618be28962d181f1771060273fac49f0ef199c329b7e58"
+      },
+      {
+        "stage": 7,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      },
+      {
+        "stage": 8,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      },
+      {
+        "stage": 9,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      },
+      {
+        "stage": 10,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      }
+    ],
+    [
+      {
+        "stage": 1,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 2,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 3,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 4,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "e56bf4650364243918db0f7aef8907ad8195cdecb2b4062aedb375305572a72a"
+      },
+      {
+        "stage": 5,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "dd5c285fc9e45b9278618be28962d181f1771060273fac49f0ef199c329b7e58"
+      },
+      {
+        "stage": 6,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "dd5c285fc9e45b9278618be28962d181f1771060273fac49f0ef199c329b7e58"
+      },
+      {
+        "stage": 7,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      },
+      {
+        "stage": 8,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      },
+      {
+        "stage": 9,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      },
+      {
+        "stage": 10,
+        "validation": "PASS",
+        "replay": "PASS",
+        "closure": "CERTIFIED",
+        "protectedSnapshotLiteral": true,
+        "charges": 293,
+        "witnessFingerprint": "47a44b707c880f5f3e380603048cae9aa237d5736c079be87b23d58b221125d8"
+      }
+    ]
+  ],
+  "persistentRebuiltGeometryMatchesReplay": {
+    "tasks": true,
+    "participantMeals": true,
+    "operationalMeals": true
+  },
+  "uniqueLocalTestsPassed": 741,
+  "affectedRegressionsRepeated": 110
 }

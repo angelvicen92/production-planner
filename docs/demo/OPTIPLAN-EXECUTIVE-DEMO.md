@@ -43,7 +43,9 @@ El paquete estático permite recorrer las etapas y el timeline. La validación d
 | PENDIENTE | Proyecto separado confirmado, carga remota, login/RLS, RPC reales y recuperación tras reiniciar. |
 | PENDIENTE | S2 de ASST-010; contratos posteriores no recorridos en el canon auténtico. |
 
-La comprobación de S1 con snapshot real de duraciones/recursos y reconstrucción del input en cada aceptación pasa aislada en **69,981 s**. Un ensayo previo completó 266/266 con S1=143,495 s y falló el gate; no se descarta ese resultado. La confirmación de dos runs completos de esa variante se registra en `DELIVERY-STATUS.md`.
+**Recorrido con filas reconstruidas después de cada aceptación:** dos runs nuevos desde el S0 real, con duraciones/recursos en su snapshot, completan 266/266 y diez etapas. S1: **69,292 / 71,620 s**; total de etapas: **87,813 / 88,787 s**. Veinte witnesses pasan validación completa, replay y cierre CERTIFY contra las filas vigentes de cada etapa. El fingerprint final de esta variante es `561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54` en ambos runs: cambia respecto al harness básico por los campos de duración/recursos del snapshot real, con idénticos horarios, espacios y comidas. Las métricas visuales siguientes siguen siendo aplicables.
+
+Se conserva un ensayo previo que completó A2 pero falló S1≤120 s (143,495 s); la comprobación aislada posterior fue 69,981 s y los dos recorridos completos anteriores pasan. El protocolo registra primero el resultado y timing antes de afirmar el gate. No se atribuye una mejora de velocidad al motor ni se garantiza ese tiempo en Replit. El presupuesto productivo de 100.000 ramas/300 s no se modifica.
 
 ## Métricas ejecutivas
 
