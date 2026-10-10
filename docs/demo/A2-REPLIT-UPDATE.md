@@ -1,6 +1,6 @@
 # Actualizar OPTIPLAN desde GitHub
 
-El usuario publica Replit por su procedimiento habitual. Esta entrega no cambia hosting ni despliega. Usar el PR **#1105**, rama **`codex/optiplan-a2-import-demo`**, ya contra `main`; no requiere merge de #1104 ni contiene CP-SAT. `main` todavía no incluye el PR. Comparar el HEAD con el indicado en la entrega y con el PR antes de publicar.
+El usuario publica Replit por su procedimiento habitual. Esta entrega no cambia hosting ni despliega. Usar el PR **#1105**, rama **`codex/optiplan-a2-import-demo`**, ya contra `main`; no requiere merge de #1104 ni incorpora el CP-SAT experimental de #1106. `main` todavía no incluye el PR. Comparar el HEAD con el indicado en la entrega y con el PR antes de publicar.
 
 Si el checkout de Replit se actualiza mediante Git:
 

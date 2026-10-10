@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
+import {inspectA2Catalog} from './a2Preflight';
 
 const tables=['spaces','daily_tasks','resource_pools','plan_resource_pools','resource_types','resource_items','plan_resource_items','space_resource_defaults','plan_space_resource_assignments','zone_resource_type_defaults','space_resource_type_defaults','plan_zone_resource_type_requirements','plan_space_resource_type_requirements','plan_vocal_coach_rules','vocal_coach_rules'];
 test('15 table policies resist legacy PUBLIC grants/policies and keep server access, for all six client identities',async()=>{
@@ -17,6 +18,9 @@ test('15 table policies resist legacy PUBLIC grants/policies and keep server acc
   for(const table of tables)await db.exec(`CREATE TABLE ${table}(id integer PRIMARY KEY,name text); INSERT INTO ${table} VALUES(1,'preserved'); GRANT ALL ON ${table} TO anon,authenticated,service_role; CREATE POLICY legacy_wide_policy ON ${table} FOR ALL TO PUBLIC USING(true) WITH CHECK(true)`);
   await db.exec(`SET optiplan.confirmed_demo_project='dyqusivzgxebkxkwohwn'; SET optiplan.security_approved='yes'; SET optiplan.backup_sha256='${'a'.repeat(64)}';`);
   await db.exec(readFileSync('script/demo/sql/security.sql','utf8'));
+  const policies=(await db.query<any>('SELECT tablename,policyname,permissive,roles,cmd,qual,with_check FROM pg_policies WHERE schemaname=\'public\'')).rows;
+  const catalog={format:1,columns:[],tables:tables.map(name=>({name,rls:true})),roles:[{name:'service_role',bypassRLS:true}],policies,functions:[],grants:[],triggers:[],sequences:[],constraints:[]};
+  assert.deepEqual(inspectA2Catalog(catalog,'2026-10-30').issues.filter(issue=>issue.startsWith('SECURITY_')||issue.startsWith('MISSING_SECURITY_POLICY:')),[],'actual PostgreSQL policy contracts must pass the read-only preflight');
   for(const identity of ['anon','norole',...roles]){
    const role=identity==='anon'?'anon':'authenticated',uid=roles.includes(identity)?`00000000-0000-0000-0000-00000000000${roles.indexOf(identity)+1}`:'';
    await db.exec(`SET ROLE ${role}; SET request.jwt.claim.sub='${uid}'`);

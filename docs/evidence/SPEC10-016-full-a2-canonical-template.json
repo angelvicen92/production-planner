@@ -19,11 +19,11 @@
     },
     {
       "path": "docs/evidence/A2-FULL-008-effective-configuration-probe.json",
-      "sha256": "e760490567340077546ff4d48e4d0f18a496843220fa4c9e61005372e6a79daf"
+      "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "8abea2baafb063502b1d936bb23df8b3046eec2d9de914d061bed80fc5fbf8ad",
-  "expansionFingerprint": "e802093a8233b1dab55a50d78c02a40d3cac315a9f3b215f913e3214293387b0",
+  "manifestFingerprint": "e3691cb4f7c5b398738a9d0124771c3284a83a1230aeaae3f08f283dd7de0624",
+  "expansionFingerprint": "a3a85ef48bd2e2bd2ab250cd121b074d49d4eef5e6d03259ce3ae391231e7412",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 0,
@@ -62,6 +62,12 @@
     "OUT": 19
   },
   "canonicalResources": [
+    {
+      "id": "cam-1",
+      "label": "CAM 1",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
     {
       "id": "cam-2",
       "label": "CAM 2",
@@ -1611,7 +1617,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "e802093a8233b1dab55a50d78c02a40d3cac315a9f3b215f913e3214293387b0",
+    "shuffledExpansionFingerprint": "a3a85ef48bd2e2bd2ab250cd121b074d49d4eef5e6d03259ce3ae391231e7412",
     "matches": true
   },
   "inputImmutable": {

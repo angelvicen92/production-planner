@@ -35,9 +35,13 @@ test("A2 bounded frontier contains every two-to-four-run pattern and the human c
   const distribution=new Map<number,number>();for(const pattern of result.patterns)
     distribution.set(patternRuns(pattern),(distribution.get(patternRuns(pattern))??0)+1);
   assert.deepEqual(Object.fromEntries(distribution),{"2":2,"3":17,"4":140,"5":41});
+  const keys=[...new Set(mains.map(task=>task.blockKey!))];
+  const eight=keys.find(key=>mains.filter(task=>task.blockKey===key).length===8)!;
+  const eleven=keys.find(key=>mains.filter(task=>task.blockKey===key).length===11)!;
+  assert.ok(eight&&eleven);
   assert.equal(result.patterns.some(pattern=>pattern.join("|")===[
-    ...Array(4).fill("plan-resource:4005"),...Array(7).fill("plan-resource:4004"),
-    ...Array(4).fill("plan-resource:4005"),...Array(4).fill("plan-resource:4004")].join("|")),true);
+    ...Array(4).fill(eight),...Array(7).fill(eleven),
+    ...Array(4).fill(eight),...Array(4).fill(eleven)].join("|")),true);
   assert.equal(result.exhausted,true);
 });
 

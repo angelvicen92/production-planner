@@ -13,6 +13,7 @@ const sql = await readFile(new URL("../supabase/migrations/078_assisted_planning
 const schema = await readFile(new URL("../shared/schema.ts", import.meta.url), "utf8");
 const serviceSource = await readFile(new URL("./assistedPlanningService.ts", import.meta.url), "utf8");
 const routes = await readFile(new URL("./routes.ts", import.meta.url), "utf8");
+const authorization = await readFile(new URL("./apiAuthorization.ts", import.meta.url), "utf8");
 const compactSql = sql.replace(/\s+/g, " ");
 
 const draft = buildAssistedPlanningSnapshotV1([
@@ -238,6 +239,6 @@ test("API remains globally authenticated/authorized and exposes no proposal oper
   for (const suffix of ["assisted\"", "assisted/session", "assisted/draft", "assisted/accept-stage", "assisted/rollback", "assisted/redo", "assisted/history"])
     assert.ok(routes.includes(suffix), suffix);
   assert.doesNotMatch(serviceSource, /planning_runs/i);
-  assert.match(routes, /app\.use\("\/api"[\s\S]*requireAuth/);
-  assert.match(routes, /writePlansPrefixes = \["\/plans", "\/locks"\]/);
+  assert.match(routes, /app\.use\('\/api',createApiAuthorization\(\{authenticate:requireAuth,lookupRole:getUserRole\}\)\)/);
+  assert.match(authorization,/\['\/plans','\/locks','\/daily-tasks'\]/);
 });

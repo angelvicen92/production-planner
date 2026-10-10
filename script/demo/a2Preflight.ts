@@ -9,6 +9,12 @@ function body(definition:string){const match=definition.match(/\bAS\s+(\$\w*\$)(
 export function requiredFunctionBodies(){
  return new Map([...latestAssistedSQLContracts()].map(([name,c])=>[name,c.body]));
 }
+export function auditIsFresh(observedAt:unknown,now=Date.now()){
+ const observed=typeof observedAt==='string'?Date.parse(observedAt):NaN;
+ return Number.isFinite(observed)&&observed<=now&&now-observed<=15*60_000;
+}
+const readBoundary="has_role'admin'ORhas_role'production'ORhas_role'aux'ORhas_role'viewer'";
+function normalizedPolicyExpression(value:unknown){return String(value).replaceAll('public.','').replaceAll('::text','').replace(/[\s()]/g,'');}
 /** Fail closed: an API exposure or a migration number is never schema evidence. */
 export function inspectA2Catalog(catalog:Catalog,date:string){
  const issues:string[]=[],dataset=buildA2ImportRows(date);
@@ -26,18 +32,20 @@ export function inspectA2Catalog(catalog:Catalog,date:string){
  if(!catalog.roles?.some(r=>r.name==='service_role'&&r.bypassRLS))issues.push('SERVER_ROLE_RLS_INCOMPATIBLE');
  for(const table of securityTables){
   if(!catalog.tables?.some(t=>t.name===table&&t.rls))issues.push(`RLS_DISABLED:${table}`);
-  for(const policy of ['a2_api_read_boundary','a2_authorized_read','a2_api_insert_boundary','a2_api_update_boundary','a2_api_delete_boundary'])if(!catalog.policies?.some(p=>p.tablename===table&&p.policyname===policy))issues.push(`MISSING_SECURITY_POLICY:${table}.${policy}`);
- }
- // Policy names alone are insufficient: expression/command checks prevent a
- // similarly named permissive policy from producing a false green preflight.
- for(const p of catalog.policies??[])if(p.policyname?.startsWith('a2_api_')){
-  if(p.permissive!=='RESTRICTIVE')issues.push(`SECURITY_POLICY_NOT_RESTRICTIVE:${p.tablename}.${p.policyname}`);
-  if(p.cmd!=='SELECT'&&!['false','(false)'].includes(p.cmd==='INSERT'?p.with_check:p.qual))issues.push(`SECURITY_WRITE_POLICY_DRIFT:${p.tablename}.${p.policyname}`);
-  if(p.cmd==='SELECT'){
-   const normalized=String(p.qual).replaceAll('public.','').replaceAll('::text','').replace(/[\s()]/g,'');
-   if(normalized!=="has_role'admin'ORhas_role'production'ORhas_role'aux'ORhas_role'viewer'")issues.push(`SECURITY_READ_POLICY_DRIFT:${p.tablename}`);
+  for(const [name,cmd,permissive,role] of [
+   ['a2_api_read_boundary','SELECT','RESTRICTIVE','public'],
+   ['a2_authorized_read','SELECT','PERMISSIVE','authenticated'],
+   ['a2_api_insert_boundary','INSERT','RESTRICTIVE','public'],
+   ['a2_api_update_boundary','UPDATE','RESTRICTIVE','public'],
+   ['a2_api_delete_boundary','DELETE','RESTRICTIVE','public']
+  ]){
+   const p=catalog.policies?.find(p=>p.tablename===table&&p.policyname===name);
+   if(!p){issues.push(`MISSING_SECURITY_POLICY:${table}.${name}`);continue;}
+   if(p.cmd!==cmd||p.permissive!==permissive||p.roles?.length!==1||p.roles[0]!==role)issues.push(`SECURITY_POLICY_CONTRACT_DRIFT:${table}.${name}`);
+   if(cmd==='SELECT'&&normalizedPolicyExpression(p.qual)!==readBoundary)issues.push(`SECURITY_READ_POLICY_DRIFT:${table}.${name}`);
+   if((cmd==='UPDATE'||cmd==='DELETE')&&normalizedPolicyExpression(p.qual)!=='false')issues.push(`SECURITY_WRITE_POLICY_DRIFT:${table}.${name}`);
+   if((cmd==='UPDATE'||cmd==='INSERT')&&normalizedPolicyExpression(p.with_check)!=='false')issues.push(`SECURITY_WRITE_CHECK_DRIFT:${table}.${name}`);
   }
-  if(!p.roles?.includes('public'))issues.push(`SECURITY_POLICY_ROLE_DRIFT:${p.tablename}.${p.policyname}`);
  }
  if(!catalog.triggers?.some(t=>t.name==='preserve_plan_planner_next_configuration'))issues.push('MISSING_IMMUTABLE_DAY_CONTRACT');
  const versionCheck=catalog.constraints?.find(c=>c.name==='plan_task_template_snapshots_contract_version_check');
@@ -53,10 +61,10 @@ if(process.argv[1]?.endsWith('a2Preflight.ts')){
  if(statSync(backup).size<1024||readFileSync(backup).subarray(0,5).toString()!=='PGDMP')throw Error('A nonempty pg_dump custom archive is required');
  const rest=JSON.parse(readFileSync(`${directory}/rest-audit.json`,'utf8')),catalog=JSON.parse(readFileSync(`${directory}/catalog-audit.json`,'utf8'));
  const result=inspectA2Catalog(catalog,date),issues=[...result.issues];
- if(rest.project!==project||rest.date!==date||Date.now()-Date.parse(rest.observedAt)>15*60_000)issues.push('REST_PREFLIGHT_STALE_OR_WRONG_TARGET');
+ if(rest.project!==project||rest.date!==date||!auditIsFresh(rest.observedAt))issues.push('REST_PREFLIGHT_STALE_OR_WRONG_TARGET');
  if(rest.collisions?.length||rest.unreadableTables?.length||rest.missingColumns?.length)issues.push('REST_STORAGE_NOT_READY');
  if((rest.anonChecks??[]).some((c:any)=>c.returnedRows>0))issues.push('ANONYMOUS_DATA_EXPOSED');
- if(Date.now()-Date.parse(catalog.observedAt)>15*60_000)issues.push('SQL_CATALOG_STALE');
+ if(!auditIsFresh(catalog.observedAt))issues.push('SQL_CATALOG_STALE');
  const report={project,date,mode:'READ_ONLY_PREFLIGHT',issues,readyForApprovedImport:issues.length===0,backupSha256:createHash('sha256').update(readFileSync(backup)).digest('hex'),backupRestoreTest:'OPERATOR_MUST_CONFIRM_RESTORE_ON_LOCAL_COPY',writes:0};
  writeFileSync(`${directory}/preflight.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(issues.length)process.exitCode=1;
 }
