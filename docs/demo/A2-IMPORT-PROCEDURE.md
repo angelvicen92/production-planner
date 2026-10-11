@@ -4,13 +4,15 @@ Destino confirmado por el usuario: **planificador_audiovisual / `dyqusivzgxebkxk
 
 La jornada nueva es `27001`: C01–C19, 266 obligaciones pendientes (247 productivas + 19 Sodexo), 23 espacios/zonas, nueve recursos y todas las autoridades del canon. No se importan horarios resueltos, etapas ni ejecuciones. Los defaults globales quedan fuera del dataset. Horarios, plantillas y optimizador se materializan en snapshots de la jornada; la procedencia de los overrides del plan registra al operador Auth que realiza la carga.
 
+El optimizador es un override A2 explícito: `baseline_snapshot` queda NULL y `updated_by` registra al operador; 085 completa la procedencia. No se presenta el override como un baseline heredado. Antes de restaurar defaults hay que capturar un baseline real mediante una actualización revisada. El [ensayo nativo de integración y smoke remoto](A2-ASSISTED-INTEGRATION.md) documenta los defectos corregidos y los límites pendientes.
+
 ## Versión publicable
 
 Usar el PR **#1105**, rama **`codex/optiplan-a2-import-demo`**, ahora contra **`main`**. Ya no requiere fusionar #1104. Incluye los componentes productivos necesarios para el A2 certificado; los diagnósticos experimentales de ASST-010 y CP-SAT quedan fuera del árbol entregado. No promete resolver el recorrido alternativo bloqueado de ASST-010. El humano continúa proponiendo, aplicando, validando y aceptando cada alcance.
 
 ## 1. Preparar los archivos, sin escrituras remotas
 
-Desde esa rama, con las variables actuales del mismo Supabase para cliente y servidor:
+Regenerar los SQL desde el HEAD actual: el ZIP anterior no contiene 089 y queda como evidencia histórica. Desde esa rama, con las variables actuales del mismo Supabase para cliente y servidor:
 
 ```sh
 set -e
@@ -30,12 +32,15 @@ npm run demo:a2:audit -- dyqusivzgxebkxkwohwn 2026-10-30 work/a2-existing/before
 
 El usuario confirma que ChatGPT ya ejecutó `script/demo/sql/catalog-audit.sql` por la conexión Supabase: **56 tablas, 575 columnas, 26 funciones, 70 políticas y 15 tablas sin RLS**. Falta disponer del JSON completo para revisar compatibilidad; ese recuento no acredita los cuerpos de las funciones ni sus permisos.
 
+El usuario comunica posteriormente que ya exportó el catálogo original y restauró el backup en Supabase PostgreSQL 17.6.1.063. Esos archivos deben conservarse; no están disponibles aquí para inspección. Si ya se conservan los originales, omitir su generación y pasar a las comprobaciones de formato/restore. Para una exportación nueva, usar una carpeta distinta; no sobrescribir los archivos ya conservados.
+
 Hay dos formas equivalentes de exportarlo:
 
 - **Conexión de Supabase / editor SQL:** seleccionar `planificador_audiovisual / dyqusivzgxebkxkwohwn` y ejecutar el archivo completo `script/demo/sql/catalog-audit.sql`. Guardar el objeto de la única celda `audit` como `work/a2-existing/before/catalog-audit.json`. Debe empezar por `{`, incluir `format: 1` y contener las definiciones completas de funciones. No guardar solo un resumen, un CSV, una respuesta envuelta en `rows`/`audit` ni una salida truncada. Si se exporta mediante ChatGPT, conservar el resultado completo como archivo, sin resumirlo.
 - **Terminal con PostgreSQL:** ejecutar exactamente esta orden; escribe un archivo local y solo lee la base:
 
 ```sh
+test ! -e work/a2-existing/before/catalog-audit.json && \
 psql "$DEMO_DATABASE_URL" -X --quiet --tuples-only --no-align -v ON_ERROR_STOP=1 \
   -f script/demo/sql/catalog-audit.sql > work/a2-existing/before/catalog-audit.json
 ```
@@ -60,6 +65,7 @@ Supabase Free no impide hacer este backup manual. El preflight actual requiere u
 
 ```sh
 set -e
+test ! -e work/a2-existing/before.dump
 pg_dump "$DEMO_DATABASE_URL" --format=custom --no-owner --file=work/a2-existing/before.dump
 pg_restore --list work/a2-existing/before.dump > work/a2-existing/before/backup-list.txt
 node -e "const fs=require('node:fs'); console.log(require('node:crypto').createHash('sha256').update(fs.readFileSync('work/a2-existing/before.dump')).digest('hex'))" > work/a2-existing/before/backup-sha256.txt
@@ -82,7 +88,7 @@ Revisar el catálogo original y el diff de `schema.sql`: columnas/tipos/defaults
 
 ## 4. Aplicar el esquema, solo tras aprobación específica
 
-El orden de adopción es: reparar el drift de **076**, instalar la persistencia de recursos de **086**, adoptar **087 sin reescribir snapshots v1**, añadir **088**, reconciliar los 14 contratos Assisted con sus cuerpos oficiales y aplicar la seguridad preparada. `schema.sql` hace la adopción en una transacción; no ejecuta el backfill de 076 ni el UPDATE de contract_version de 087. Las columnas antiguas y los snapshots v1 se conservan. El normalizador ya acepta v1 y v2. No volver a ejecutar los históricos 076/087 después de este procedimiento, ni usar `db:push`.
+El orden de adopción es: reparar el drift de **076**, instalar la persistencia de recursos de **086**, adoptar **087 sin reescribir snapshots v1**, añadir **088** y las correcciones SQL nativas de **089**, reconciliar los 14 contratos Assisted con sus cuerpos oficiales y aplicar la seguridad preparada. `schema.sql` hace la adopción en una transacción; no ejecuta el backfill de 076 ni el UPDATE de contract_version de 087. Las columnas antiguas y los snapshots v1 se conservan. El normalizador ya acepta v1 y v2. No volver a ejecutar los históricos 076/087 después de este procedimiento, ni usar `db:push`.
 
 Guardar este bloque en el archivo privado `work/a2-existing/schema-session.sql`, sustituyendo el hash por el de `backup-sha256.txt`. El `yes` se utiliza únicamente después de recibir la aprobación del esquema:
 

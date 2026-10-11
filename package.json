@@ -80,7 +80,8 @@
     "demo:a2:prepare-schema": "node --import tsx script/demo/prepareA2Schema.ts",
     "demo:a2:preflight": "node --import tsx script/demo/a2Preflight.ts",
     "demo:a2:security-rollback": "node --import tsx script/demo/prepareA2SecurityRollback.ts",
-    "test:demo:a2-import": "tsx --test --test-concurrency=1 script/demo/a2Import.spec.ts script/demo/a2ExistingDatabase.spec.ts script/demo/a2Security.spec.ts script/demo/a2Preflight.spec.ts server/apiAuthorization.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/assistedPlanningConfigRevision.spec.ts"
+    "test:demo:a2-import": "tsx --test --test-concurrency=1 script/demo/a2Import.spec.ts script/demo/a2ExistingDatabase.spec.ts script/demo/a2Security.spec.ts script/demo/a2Preflight.spec.ts server/apiAuthorization.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/assistedPlanningConfigRevision.spec.ts",
+    "demo:a2:smoke": "node --import tsx script/demo/smokeA2Integration.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -174,6 +175,7 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.25.0",
+    "playwright": "^1.64.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",

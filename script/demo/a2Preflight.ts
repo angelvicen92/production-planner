@@ -1,13 +1,15 @@
 import {readFileSync,writeFileSync,statSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {buildA2ImportRows} from './a2ImportRows';
-import {latestAssistedSQLContracts} from './assistedSQLContracts';
+import {latestAssistedSQLContracts,assistedStageProposalGuardBody} from './assistedSQLContracts';
 
 export const securityTables=['spaces','daily_tasks','resource_pools','plan_resource_pools','resource_types','resource_items','plan_resource_items','space_resource_defaults','plan_space_resource_assignments','zone_resource_type_defaults','space_resource_type_defaults','plan_zone_resource_type_requirements','plan_space_resource_type_requirements','plan_vocal_coach_rules','vocal_coach_rules'];
 type Catalog={format:number;columns:any[];tables:any[];policies:any[];functions:any[];roles:any[];grants:any[];triggers:any[];sequences:any[];constraints:any[]};
 function body(definition:string){const match=definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);if(!match)return null;return match[2].slice(0,match[2].indexOf(match[1])).replaceAll('\r\n','\n').trim();}
 export function requiredFunctionBodies(){
- return new Map([...latestAssistedSQLContracts()].map(([name,c])=>[name,c.body]));
+ const bodies=new Map([...latestAssistedSQLContracts()].map(([name,c])=>[name,c.body]));
+ bodies.set('guard_assisted_stage_proposal_plan',assistedStageProposalGuardBody());
+ return bodies;
 }
 export function auditIsFresh(observedAt:unknown,now=Date.now()){
  const observed=typeof observedAt==='string'?Date.parse(observedAt):NaN;
@@ -26,7 +28,7 @@ export function inspectA2Catalog(catalog:Catalog,date:string){
   const candidates=catalog.functions?.filter(f=>f.name===name)??[];
   const matching=candidates.find(f=>body(f.definition)===expected);
   if(!matching)issues.push(`RPC_BODY_DRIFT:${name}`);
-  else if(name!=='assisted_apply_snapshot'&&!matching.serviceExecute)issues.push(`RPC_SERVER_DENIED:${name}`);
+  else if(name!=='assisted_apply_snapshot'&&name!=='guard_assisted_stage_proposal_plan'&&!matching.serviceExecute)issues.push(`RPC_SERVER_DENIED:${name}`);
  }
  for(const f of catalog.functions??[])if((f.name.startsWith('assisted_')||['apply_day_config_operation','apply_day_config_operation_v2','initialize_day_config_revision'].includes(f.name))&&(f.anonExecute||f.authenticatedExecute))issues.push(`RPC_CLIENT_WRITE_GRANT:${f.name}`);
  if(!catalog.roles?.some(r=>r.name==='service_role'&&r.bypassRLS))issues.push('SERVER_ROLE_RLS_INCOMPATIBLE');

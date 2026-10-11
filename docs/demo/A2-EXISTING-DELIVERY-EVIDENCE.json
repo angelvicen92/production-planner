@@ -143,7 +143,18 @@
     "anonExposedRpcPaths": [],
     "sqlCatalog": "PENDING_SQL_ACCESS",
     "backup": "NOT_ESTABLISHED",
-    "writes": 0
+    "writes": 0,
+    "operatorUpdate": {
+      "backupRestore": "CONFIRMED_BY_USER_NOT_INSPECTED_HERE",
+      "database": "Supabase PostgreSQL 17.6.1.063",
+      "preservedCounts": {
+        "plans": 4,
+        "contestants": 47,
+        "tasks": 333,
+        "runs": 278
+      },
+      "catalogExport": "CONFIRMED_BY_USER_NOT_INSPECTED_HERE"
+    }
   },
   "local": {
     "focusedTests": 26,
@@ -168,6 +179,37 @@
           "status": "PASS",
           "coverage": 266,
           "stages": 10,
+          "s1Ms": 67469,
+          "totalMs": 69839,
+          "fingerprint": "a797ee88647d14e18aaa698d53306c8005cf70588ce74b7d7333b5ba88ce216e"
+        },
+        {
+          "run": 2,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 70968,
+          "totalMs": 73065,
+          "fingerprint": "a797ee88647d14e18aaa698d53306c8005cf70588ce74b7d7333b5ba88ce216e"
+        }
+      ],
+      "signatureProtocol": "KEY_ORDER_INVARIANT_JOINT_COMPLETION"
+    },
+    "independentStageAudits": 20,
+    "historicalS1FailureMs": 143495,
+    "preflightPolicyCommandsAndFreshTimestamps": "PASS",
+    "importRequiresSeparateDataApproval": "PASS",
+    "releaseRegressionTests": 55,
+    "canonicalTemplateDeterministic": "PASS",
+    "previousFullA2": {
+      "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
+      "writes": 0,
+      "reports": [
+        {
+          "run": 1,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
           "s1Ms": 77614,
           "totalMs": 95437,
           "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
@@ -183,12 +225,16 @@
         }
       ]
     },
-    "independentStageAudits": 20,
-    "historicalS1FailureMs": 143495,
-    "preflightPolicyCommandsAndFreshTimestamps": "PASS",
-    "importRequiresSeparateDataApproval": "PASS",
-    "releaseRegressionTests": 55,
-    "canonicalTemplateDeterministic": "PASS"
+    "baselineChange": {
+      "previousFingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54",
+      "currentFingerprint": "a797ee88647d14e18aaa698d53306c8005cf70588ce74b7d7333b5ba88ce216e",
+      "cause": "Previously rejected 17 equivalent protected round preparations due to object-key order; valid complete witness now replays instead of reconstructing unaccepted future geometry at S5.",
+      "oldRawPreparationEquality": 0,
+      "contentPreparationEquality": 17,
+      "changedPreviouslyUnacceptedTaskPlacements": 85,
+      "acceptedPlacementsPreserved": true,
+      "searchPoliciesChanged": false
+    }
   },
   "integration": {
     "pr": 1105,
@@ -212,15 +258,17 @@
       "failed": 5,
       "skipped": 1,
       "failureSummary": "Four stale integration checks corrected; historical ASST-010 single-task path stays blocked and explicitly outside the SPACE demo release gate."
-    }
+    },
+    "localNativeEvidence": "A2-ASSISTED-INTEGRATION-EVIDENCE.json",
+    "localNativeStatus": "PASS",
+    "localNativeStages": 10,
+    "localNativeObligations": 266
   },
   "pendingRemote": [
-    "SQL catalog export and diff review",
-    "PostgreSQL backup and recovery check",
+    "Inspect original exported catalog and restored backup artifacts",
     "Specific schema/security/data approval",
     "Replit update by user",
-    "Real login and role matrix",
-    "Full 10-stage UI flow",
-    "Reload and second-session recovery"
+    "Published Auth/UI/role flow and latency",
+    "Original-row comparison after approved operations"
   ]
 }

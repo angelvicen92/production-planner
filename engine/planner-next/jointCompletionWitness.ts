@@ -5,17 +5,30 @@ import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { validatePlan } from "./validate";
 
+/** Object keys carry no meaning in JSON/jsonb; array order still does. */
+export function jointCompletionCanonicalJson(value:unknown):string {
+  const canonical=(item:unknown):unknown=>Array.isArray(item)?item.map(canonical)
+    :item&&typeof item==='object'?Object.fromEntries(Object.entries(item).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([key,next])=>[key,canonical(next)])):item;
+  return JSON.stringify(canonical(value));
+}
+export function fingerprintJointCompletionWitness(body:Omit<FutureJointCompletionWitnessV1,"fingerprint">):string {
+  return createHash("sha256").update(jointCompletionCanonicalJson(body)).digest("hex");
+}
+
 /** Replays a complete ephemeral context against current canonical authorities.
  * It performs no search, grants no protection, and charges each replayed vertex. */
 export function revalidateJointCompletionWitness(source:PlannerNextProblem,witness:FutureJointCompletionWitnessV1,
   protectedTasks:readonly ScheduledTask[],consume:()=>boolean):"PASS"|"STALE"|"BUDGET_EXHAUSTED" {
   const {fingerprint,...body}=witness;
-  if(witness.version!==1||createHash("sha256").update(JSON.stringify(body)).digest("hex")!==fingerprint)return "STALE";
+  // Keep already valid legacy in-memory signatures; new producers use the
+  // key-order invariant signature. Neither path bypasses semantic replay.
+  if(witness.version!==1||(fingerprintJointCompletionWitness(body)!==fingerprint
+    &&createHash("sha256").update(JSON.stringify(body)).digest("hex")!==fingerprint))return "STALE";
   const taskById=new Map(source.tasks.map(task=>[task.id,task]));
   if(witness.tasks.length!==taskById.size||new Set(witness.tasks.map(task=>task.id)).size!==taskById.size)return "STALE";
   const semantics=(task:typeof source.tasks[number])=>{
     const {availability:_availability,...identity}=task;
-    return JSON.stringify({...identity,dependencies:[...identity.dependencies].sort(),requiredResourceIds:[...(identity.requiredResourceIds??[])].sort()});
+    return jointCompletionCanonicalJson({...identity,dependencies:[...identity.dependencies].sort(),requiredResourceIds:[...(identity.requiredResourceIds??[])].sort()});
   };
   for(const scheduled of witness.tasks){
     if(!consume())return "BUDGET_EXHAUSTED";

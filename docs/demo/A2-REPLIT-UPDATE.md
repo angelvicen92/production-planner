@@ -21,6 +21,6 @@ Publicar con el flujo habitual del usuario. Mantener las variables de Supabase a
 
 Aplicar únicamente las operaciones de base aprobadas, siguiendo [A2-IMPORT-PROCEDURE.md](A2-IMPORT-PROCEDURE.md). La versión vieja de la API tiene un bypass de Auth en debug: no abrir la demo hasta publicar esta versión y verificar sus límites de rol. El cambio de código no aplica SQL automáticamente.
 
-Tras publicar y cargar/verificar A2: login autorizado → jornada **2026-10-30** → 266 pendientes → Planificación asistida → S0 → sugerir/generar/aplicar/validar/aceptar diez etapas. Recargar y repetir la apertura desde otra sesión. Esos pasos no están acreditados hasta ejecutarlos en la URL real.
+Tras publicar y cargar/verificar A2: login autorizado → jornada **2026-10-30** → 266 pendientes → Planificación asistida → S0 → sugerir/generar/aplicar/validar/aceptar diez etapas. Recargar y repetir la apertura desde otra sesión. El recorrido se ensaya automáticamente en una base local descartable; el [smoke remoto breve](A2-ASSISTED-INTEGRATION.md#smoke-remoto-breve-pendiente-de-ejecución) enumera los checks pendientes de ejecutar en la URL real, incluida la segunda sesión y la preservación de las jornadas anteriores.
 
 Para volver atrás, el usuario publica su versión anterior de código. Mantener la nueva jornada y las adiciones de schema; no borrar ni restaurar automáticamente la base compartida. Un rollback de permisos o de datos requiere revisión y aprobación específicas.

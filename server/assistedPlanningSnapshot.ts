@@ -75,12 +75,14 @@ export function buildAssistedPlanningSnapshotV1(
   if (tasks.some((task, index) => index > 0 && tasks[index - 1].taskId === task.taskId)) {
     throw new Error("snapshot cannot contain duplicate task ids");
   }
-  const meals = operationalMeals?.map(meal => ({...meal})).sort((a,b)=>a.policyId.localeCompare(b.policyId,"en"));
+  // jsonb does not preserve object-key order. Project contract fields in the
+  // producer's established order so persistence/reload preserves fingerprints.
+  const meals = operationalMeals?.map(meal => ({policyId:meal.policyId,startPlanned:meal.startPlanned,endPlanned:meal.endPlanned})).sort((a,b)=>a.policyId.localeCompare(b.policyId,"en"));
   if(meals?.some((meal,index)=>!meal.policyId||!/^\d{2}:\d{2}$/.test(meal.startPlanned)||!/^\d{2}:\d{2}$/.test(meal.endPlanned)
     ||meal.startPlanned>=meal.endPlanned||(index>0&&meals[index-1]!.policyId===meal.policyId)))
     throw new Error("invalid or duplicate operational meal");
   const mealProperty=meals?.length?{operationalMeals:meals}:{};
-  const preparations=setupPreparations?.map(item=>({...item})).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id,"en"));
+  const preparations=setupPreparations?.map(item=>({id:item.id,spaceId:item.spaceId,setupFamilyId:item.setupFamilyId,entryIndex:item.entryIndex,duration:item.duration,start:item.start,end:item.end})).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id,"en"));
   const preparationIdentities=new Set<string>();
   for(const [index,item] of (preparations??[]).entries()){
     const identity=`${item.spaceId}|${item.setupFamilyId}|${item.entryIndex}`;
@@ -91,7 +93,7 @@ export function buildAssistedPlanningSnapshotV1(
     preparationIdentities.add(identity);
   }
   const preparationProperty=preparations?.length?{setupPreparations:preparations}:{};
-  const rounds=roundPreparations?.map(item=>({...item})).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id,"en"));
+  const rounds=roundPreparations?.map(item=>({id:item.id,synchronizationId:item.synchronizationId,spaceId:item.spaceId,roundIndex:item.roundIndex,duration:item.duration,start:item.start,end:item.end})).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id,"en"));
   const roundIdentities=new Set<string>(),roundIds=new Set<string>();
   for(const item of rounds??[]){
     const identity=`${item.synchronizationId}|${item.spaceId}|${item.roundIndex}`;
@@ -105,9 +107,12 @@ export function buildAssistedPlanningSnapshotV1(
   if (planningBlocks === undefined || planningBlocks.length === 0) return freeze({ contractVersion: ASSISTED_PLANNING_SNAPSHOT_CONTRACT_VERSION, tasks, ...mealProperty, ...preparationProperty, ...roundProperty });
   const seen = new Set<number>();
   const blocks = planningBlocks.map((block) => ({
-    ...structuredClone(block),
+    blockId: block.blockId,
     memberTaskIds: [...block.memberTaskIds],
     scopeProvenance: canonicalJson(block.scopeProvenance) as Readonly<Record<string, unknown>>,
+    spaceId: block.spaceId,
+    activityTemplateId: block.activityTemplateId,
+    order: block.order,
   })).sort((a, b) => a.order - b.order || a.blockId.localeCompare(b.blockId));
   for (const [index, block] of blocks.entries()) {
     if (!block.blockId || block.order !== index || block.memberTaskIds.length < 2 || new Set(block.memberTaskIds).size !== block.memberTaskIds.length)

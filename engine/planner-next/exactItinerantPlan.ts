@@ -48,7 +48,7 @@ import { authorizedPipelineArchitectureMaterializations, materializeFirstNominal
   type AnonymousPipelineWitnessDiagnostic, type FutureStructuralWitness, type FutureStructuralWitnessV1, type FutureRoundSynchronizationWitnessV1, type FutureItinerantAgendaWitnessV1, type PipelineWitnessAuthorityDiagnostic,
   type PipelineWitnessObservation } from "./anonymousPipelineWitness";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
-import { revalidateJointCompletionWitness } from "./jointCompletionWitness";
+import { revalidateJointCompletionWitness, fingerprintJointCompletionWitness, jointCompletionCanonicalJson } from "./jointCompletionWitness";
 import { itinerantAgendaStructuralFrontier } from "./itinerantAgendaAuthority";
 import { certifyFutureStructuralWitnessSet, createFutureWitnessSetEvidence, type FutureWitnessContext,
   type FutureWitnessUnit, type FutureWitnessSetEvidence } from "./futureStructuralWitnessSet";
@@ -2277,8 +2277,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   if(priorJoint&&problem.analyticalFutureCollectiveContinuation){
     const source=problem.analyticalFutureCollectiveContinuation;
     const replay=revalidateJointCompletionWitness(source,priorJoint,options.fixedPlacements??[],()=>ledger.consume("STANDALONE"));
-    const preparationsPreserved=(options.fixedSetupPreparations??[]).every(fixed=>priorJoint.preparations.some(item=>JSON.stringify(item)===JSON.stringify(fixed)))
-      &&(options.fixedRoundPreparations??[]).every(fixed=>priorJoint.roundPreparations.some(item=>JSON.stringify(item)===JSON.stringify(fixed)));
+    const preparationsPreserved=(options.fixedSetupPreparations??[]).every(fixed=>priorJoint.preparations.some(item=>jointCompletionCanonicalJson(item)===jointCompletionCanonicalJson(fixed)))
+      &&(options.fixedRoundPreparations??[]).every(fixed=>priorJoint.roundPreparations.some(item=>jointCompletionCanonicalJson(item)===jointCompletionCanonicalJson(fixed)));
     if(replay==="PASS"&&preparationsPreserved){
       const ids=new Set(problem.tasks.map(task=>task.id));
       const tasks=priorJoint.tasks.filter(task=>ids.has(task.id));
@@ -2801,7 +2801,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
           preparations:standalone.preparations,roundPreparations:standalone.roundPreparations,
           participantMeals:standalone.participantMeals?.scheduled??[],operationalMeals:standalone.operationalMeals?.scheduled??[],
           spaceMeals:mainFlowMealPolicy(problem)?.source==="OPERATIONAL_MEAL_POLICY"?[]:candidate.meals};
-        evidence.futureStructuralWitnesses=[{...structuredClone(body),fingerprint:causalHash(body)}];
+        evidence.futureStructuralWitnesses=[{...structuredClone(body),fingerprint:fingerprintJointCompletionWitness(body)}];
         const executableIds=new Set(problem.tasks.map(task=>task.id));
         standalone.tasks=standalone.tasks.filter(task=>executableIds.has(task.id));
         standalone.preparations=standalone.preparations.filter(prep=>problem.tasks.some(task=>task.spaceId===prep.spaceId&&task.setupFamilyId===prep.setupFamilyId));

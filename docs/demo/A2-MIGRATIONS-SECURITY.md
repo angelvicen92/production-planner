@@ -16,11 +16,12 @@ El usuario confirma después que ChatGPT ejecutó `catalog-audit.sql` mediante l
 | 086 | Bootstrap/apply/accept conservan assignedResourceIds | Snapshot S0 compara también recursos; writer interno no callable desde REST |
 | 087 | Transición, márgenes y funciones de configuración | Sin convertir filas v1 a v2; constraint admite ambas versiones; columnas y semántica nuevas aditivas |
 | 088 | JSON nullable por jornada, shape constraint y trigger | NULL en jornadas anteriores; contrato nuevo inmutable |
+| 089 | Trigger con `search_path` independiente, acceptance sin UPDATE de validaciones y comparación de IDs bigint | Mismos guards de procedencia, lock de sesión y validación; ningún grant ampliado ni fila reescrita |
 | Contratos Assisted | Reconciliar 14 cuerpos oficiales y grants servidor | Sin DML ejecutado al instalar funciones; preflight compara cuerpos, no solo nombres |
 
 `demo:a2:prepare-schema` genera un único `schema.sql` transaccional. No equivale a aplicar ciegamente todos los históricos. Preservar el catálogo original, revisar sus diferencias y comprobar compilación y constraints antes de autorizar. Cambios inesperados de tipo, firma o nombre de parámetros hacen abortar la adopción; requieren adaptar el parche. No se actualiza artificialmente el registro de migraciones de Supabase para ocultar el drift.
 
-La prueba local representa schema Drizzle más columnas históricas y el drift observado por REST. El fixture es exclusivamente de tests, no un bootstrap Supabase. Verifica rollback de adopción, conservación de campos antiguos y contract_version=1, carga con cuatro jornadas, canon, defaults, secuencias adelantadas, rechazo de repetición/clave duplicada y rollback tras fallo tardío. Ejecuta el RPC real de bootstrap y el writer interno para probar persistencia física; no equivale a un login ni a diez aceptaciones remotas.
+La prueba de adopción representa schema Drizzle más columnas históricas y el drift observado por REST. El fixture es exclusivamente de tests, no un bootstrap Supabase. Verifica rollback de adopción, conservación de campos antiguos y contract_version=1, carga con cuatro jornadas, canon, defaults, secuencias adelantadas, rechazo de repetición/clave duplicada y rollback tras fallo tardío. El [ensayo de integración nativo](A2-ASSISTED-INTEGRATION.md) añade una base descartable con todo el ledger, GoTrue, PostgREST, API y UI reales; tampoco equivale a adoptar el esquema sobre el backup/catálogo del proyecto conectado ni a ensayar la URL publicada.
 
 ## Matriz propuesta
 

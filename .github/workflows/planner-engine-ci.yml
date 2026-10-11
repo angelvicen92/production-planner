@@ -6,6 +6,13 @@ on:
       - main
     paths:
       - "engine/**"
+      - "server/**"
+      - "script/demo/**"
+      - "supabase/migrations/**"
+      - "client/src/components/layout.tsx"
+      - "client/src/components/planning/assisted-planning-workspace.tsx"
+      - "client/src/lib/assisted-draft-warnings*"
+      - "client/src/lib/assisted-planning-view*"
       - "docs/source/**"
       - "docs/evidence/**"
       - "docs/coverage/**"
@@ -22,6 +29,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  a2-assisted-integration:
+    name: a2-assisted-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - run: npm run test:demo:a2-import
+      - run: npx --no-install tsx --test client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts
+      - name: Native SQL, Auth, HTTP and UI; all ten A2 Stages
+        run: npm run demo:a2:smoke -- work/a2-integration --full
+      - name: Integration evidence (no private app logs or credentials)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-assisted-integration
+          path: |
+            work/a2-integration/integration.json
+            work/a2-integration/*-real-ui.png
+
   planner-engine-ci:
     name: planner-engine-ci
     runs-on: ubuntu-latest

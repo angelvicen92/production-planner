@@ -29,6 +29,7 @@ ${additions}\n${bundle}\n${bundlePermissions}
 ${migration('086_assisted_itinerant_resource_persistence.sql')}
 ${margins}
 ${migration('088_plan_planner_next_configuration.sql')}
+${migration('089_assisted_native_sql_integrity.sql')}
 -- Reconcile public Assisted contracts by their source bodies, not ledger numbers.
 ${rpcDefinitions}
 NOTIFY pgrst,'reload schema';

@@ -3062,6 +3062,7 @@ function mapDeleteError(err: any, fallback: string) {
           camerasAvailable: p.cameras_available ?? p.camerasAvailable ?? 0,
           planningWarnings: Array.isArray(p.planning_warnings ?? p.planningWarnings) ? (p.planning_warnings ?? p.planningWarnings) : [],
           planningStats: (p.planning_stats ?? p.planningStats ?? {}),
+          plannerNextConfiguration: p.planner_next_configuration ?? p.plannerNextConfiguration ?? null,
 
           dailyTasks: (full.tasks || []).map((t: any) => ({
             id: t.id,

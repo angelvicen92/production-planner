@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabase";
+import { planPlannerNextConfigurationSchema } from "./planPlannerNextConfiguration";
 import type { EngineRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { normalizePipelineDiagnosticsMetadata } from "../engine/v3/pipelineDiagnostics";
 import { normalizeMealDiagnosticsMetadata } from "../engine/v3/mealDiagnostics";
@@ -497,10 +498,17 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes")
+      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes, planner_next_configuration")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
+
+    // Structured day policies own their operational meals. Reading such a day
+    // must not materialize legacy breaks from today's global space catalogue.
+    if (plan.planner_next_configuration != null) {
+      planPlannerNextConfigurationSchema.parse(plan.planner_next_configuration);
+      return;
+    }
 
     const { data: settings, error: settingsErr } = await supabaseAdmin
       .from("program_settings")

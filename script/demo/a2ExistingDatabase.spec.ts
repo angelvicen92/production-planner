@@ -24,7 +24,9 @@ async function setup(){
  const db=database;
  await db.exec(`ROLLBACK; RESET ROLE; DROP SCHEMA IF EXISTS auth CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public; DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; END IF; END $$; CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY); INSERT INTO auth.users VALUES('${actor}'); CREATE FUNCTION public.positive_integer_jsonb_array(v jsonb) RETURNS boolean LANGUAGE SQL IMMUTABLE AS 'SELECT jsonb_typeof(v)=''array''';`);
  await db.exec(readFileSync('script/demo/fixtures/application-schema.sql','utf8'));
- await db.exec(`CREATE TABLE public.roles(id uuid PRIMARY KEY,key text); CREATE TABLE public.user_roles(user_id uuid,role_id uuid); INSERT INTO roles VALUES('${actor}','production'); INSERT INTO user_roles VALUES('${actor}','${actor}'); ALTER TABLE program_settings ADD COLUMN meal_task_template_name text; ALTER TABLE plan_optimizer_snapshots ADD COLUMN baseline_snapshot jsonb;`);
+ await db.exec(`CREATE TABLE public.roles(id uuid PRIMARY KEY,key text); CREATE TABLE public.user_roles(user_id uuid,role_id uuid); INSERT INTO roles VALUES('${actor}','production'); INSERT INTO user_roles VALUES('${actor}','${actor}'); ALTER TABLE program_settings ADD COLUMN meal_task_template_name text;`);
+ const optimizerProvenance=readFileSync('supabase/migrations/085_optimizer_day_config_restore.sql','utf8');
+ await db.exec(optimizerProvenance.slice(0,optimizerProvenance.indexOf('-- The pre-existing Assisted refresh RPC')));
  await db.exec(readFileSync('supabase/migrations/013_space_resource_assignments.sql','utf8'));
  // Match the REST-observed drift: missing 076 snapshots, 087 margins, 088 JSON.
  await db.exec('DROP TABLE plan_resource_bundle_snapshots; ALTER TABLE plans DROP COLUMN planner_next_configuration;');
@@ -72,6 +74,9 @@ test('populated-project import preserves all earlier rows/defaults, canonical in
   assert.equal((await db.query<any>('SELECT count(*) AS n FROM plans')).rows[0].n,4,'security approval does not authorize a data import');
   await db.exec("SET optiplan.import_approved='yes'");
   await db.exec(sql);
+  const optimizer=(await db.query<any>('SELECT source,baseline_snapshot,updated_by,override_by,override_at FROM plan_optimizer_snapshots WHERE plan_id=$1',[dataset.input.planId])).rows[0];
+  assert.equal(optimizer.source,'DAY_OVERRIDE');assert.equal(optimizer.baseline_snapshot,null,'no inherited destination defaults were captured');
+  assert.equal(optimizer.updated_by,actor);assert.equal(optimizer.override_by,actor);assert.ok(optimizer.override_at,'085 records the actual importing operator');
   for(const [table,rows] of Object.entries(before)){
    const actual=(await db.query<any>(`SELECT * FROM ${identifier(table)} ORDER BY id`)).rows;
    for(const row of rows)assert.deepEqual(actual.find((r:any)=>r.id===row.id),row,`modified earlier row in ${table}`);

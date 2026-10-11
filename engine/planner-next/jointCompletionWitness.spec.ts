@@ -3,7 +3,7 @@ import test from "node:test";
 import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import type { FutureJointCompletionWitnessV1 } from "./anonymousPipelineWitness";
-import { revalidateJointCompletionWitness } from "./jointCompletionWitness";
+import { revalidateJointCompletionWitness, fingerprintJointCompletionWitness } from "./jointCompletionWitness";
 import { createExactSearchLedger } from "./exactMainAndFeederCore";
 import { buildAssistedProblem, createPlanningScope } from "./assistedPlanning";
 import { runExactItinerantPlanSearch } from "./exactItinerantPlan";
@@ -30,6 +30,20 @@ function fixture(){
   const witness=sign({kind:"JOINT_COMPLETION",version:1,tasks,preparations:[],roundPreparations:[],participantMeals:[],operationalMeals:[],spaceMeals:[]});
   return {source,tasks,witness,sign};
 }
+
+test("persisted joint signatures and task semantics survive JSON object-key reordering without accepting changed content",()=>{
+  const {source,witness}=fixture(),{fingerprint:_legacy,...body}=witness;
+  const signed={...body,fingerprint:fingerprintJointCompletionWitness(body)};
+  const reorder=(value:any):any=>Array.isArray(value)?value.map(reorder):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).reverse().map(([k,v])=>[k,reorder(v)])):value;
+  const persisted=reorder(signed),before=structuredClone({source,persisted});let charges=0;
+  assert.equal(revalidateJointCompletionWitness(source,persisted,[],()=>{charges++;return true;}),'PASS');
+  assert.equal(charges,source.tasks.length);assert.deepEqual({source,persisted},before);
+  const changed={...persisted,tasks:persisted.tasks.map((t:ScheduledTask,i:number)=>i===0?{...t,end:t.end+1}:t)};
+  assert.equal(revalidateJointCompletionWitness(source,changed,[],()=>true),'STALE','changed bytes invalidate the stored signature');
+  const {fingerprint:_old,...invalidBody}=changed;
+  assert.equal(revalidateJointCompletionWitness(source,{...invalidBody,fingerprint:fingerprintJointCompletionWitness(invalidBody)},[],()=>true),'STALE','a fresh signature cannot override task semantics');
+  assert.notEqual(fingerprintJointCompletionWitness({...body,tasks:[...body.tasks].reverse()}),signed.fingerprint,'semantic array ordering is retained');
+});
 
 test("complete joint replay is canonical, immutable, charged and rejects a changed REQUIRED chain",()=>{
   const {source,tasks,witness,sign}=fixture(),saved=structuredClone({source,witness}),ledger=createExactSearchLedger(1000);

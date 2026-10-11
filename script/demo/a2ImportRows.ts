@@ -52,7 +52,9 @@ export function buildA2ImportRows(date:string,offset=0){
  tables.daily_tasks=input.tasks.map(t=>({id:t.id,plan_id:input.planId,template_id:t.templateId,contestant_id:t.contestantId,duration_override:t.durationOverrideMin,zone_id:t.zoneId??null,space_id:t.spaceId??null,assigned_resource_ids:t.assignedResourceIds??[],participant_margin_before_minutes:t.participantMarginBeforeMinutes??null,participant_margin_after_minutes:t.participantMarginAfterMinutes??null,status:'pending',start_planned:null,end_planned:null}));
  tables.plan_space_resource_assignments=Object.entries(input.spaceResourceAssignments).flatMap(([space,resources])=>resources.map(resource=>({plan_id:input.planId,space_id:Number(space),plan_resource_item_id:resource}))).map((row,i)=>({id:rid(16001+i),...row}));
  tables.plan_resource_bundle_snapshots=[{id:rid(13001),plan_id:input.planId,source:'DAY_OVERRIDE',bundles:[],components:[],space_affinities:[]}];
- tables.plan_optimizer_snapshots=[{id:rid(14001),...optimizerRows.snapshot,baseline_snapshot:optimizer}];
+ // A2 is an explicit day configuration, not a copy of the destination's
+ // defaults. Do not invent an inherited baseline for the restore contract.
+ tables.plan_optimizer_snapshots=[{id:rid(14001),...optimizerRows.snapshot,baseline_snapshot:null,updated_by:null}];
  tables.plan_optimizer_snapshot_heuristics=optimizerRows.heuristics.map((h,i)=>({id:rid(15001+i),snapshot_id:rid(14001),...h}));
  const order=['zones','spaces','resource_types','resource_items','task_templates','plans','plan_task_template_snapshots','plan_zone_settings','plan_space_settings','plan_resource_items','contestants','daily_tasks','plan_space_resource_assignments','plan_resource_bundle_snapshots','plan_optimizer_snapshots','plan_optimizer_snapshot_heuristics'];
  return {input,configuration,tables,order,optimizer};

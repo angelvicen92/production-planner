@@ -32,7 +32,7 @@ CREATE TEMP TABLE a2_existing_rows(table_name text, row_id bigint, row_json json
  for(const table of dataset.order){
   for(const row of dataset.tables[table]){
    const fields=Object.keys(row);
-   const value=(k:string)=>table==='plans'&&k.endsWith('_override_by')?`current_setting('optiplan.demo_actor')::uuid`:table==='plans'&&k.endsWith('_override_at')?'transaction_timestamp()':literal(row[k]);
+   const value=(k:string)=>(table==='plans'&&k.endsWith('_override_by'))||(table==='plan_optimizer_snapshots'&&k==='updated_by')?`current_setting('optiplan.demo_actor')::uuid`:table==='plans'&&k.endsWith('_override_at')?'transaction_timestamp()':literal(row[k]);
    statements.push(`INSERT INTO public.${identifier(table)} (${fields.map(identifier).join(',')}) OVERRIDING SYSTEM VALUE VALUES (${fields.map(value).join(',')});`);
   }
  }
