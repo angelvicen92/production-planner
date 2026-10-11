@@ -1,0 +1,228 @@
+{
+  "status": "PASS",
+  "baseCommit": "2771a83551a4e693a06768ff78cf7c5f68461010",
+  "verifiedBaseTree": "fb77eed374583b798ebe6de6fb49d3dc9c116cc5",
+  "runtime": {
+    "mode": "REAL_DISPOSABLE_PRODUCT_INTEGRATION",
+    "nodeVersion": "v24.19.0",
+    "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "images": {
+      "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+      "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
+      "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
+    },
+    "requestedStages": 2,
+    "remoteWrites": 0
+  },
+  "sourceSha256": {
+    "client/src/lib/assisted-scope-selection.ts": "07b2cd6dc4dee797ce5ae405f0d61163139d5fcbba6031e4d66bbf4f47662099",
+    "client/src/components/planning/assisted-location-scope.tsx": "6f6a52eb252d53dccff398a8f105283477a3af8ded1956f46b81264982191cdb",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "9b53efc660a5ccf4895a63d43d2aefa093c3e5c2c0da856f8930dc7bfbe75ffe",
+    "script/demo/smokeA2ScopeSelectionJourney.ts": "c9121b14537106b740bca1635790cfd66d3cc7305aa8387880e41752898b807f",
+    "script/demo/smokeA2Journey.ts": "358e73b3692b66a1d0a8097317b3fb9f56241e8c4a98dba3d16fa84f9714f39e",
+    "script/demo/smokeA2Integration.ts": "329b8db457d9e47a0dade826995c4a0f03ab5f95f50c4b3aec36b45ad246e233"
+  },
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "real storage/input adapter canon after GET day; no legacy breaks",
+    "HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged",
+    "actual browser password login and role bootstrap",
+    "S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload",
+    "initial: real location UI, A2 19/36, zone membership, partial/remove/combine/empty/accepted selections; zero writes and identical Stage/Draft",
+    "all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged",
+    "S1 UI → run → apply → validate → accept → SQL persistence → reload (19/266)",
+    "S2 UI → run → apply → validate → accept → SQL persistence → reload (38/266)",
+    "independent viewer browser session reopens the same persisted Stage and Draft",
+    "accepted: real location UI, A2 19/36, zone membership, partial/remove/combine/empty/accepted selections; zero writes and identical Stage/Draft",
+    "admin atomic rollback to S0 and redo to final accepted Stage"
+  ],
+  "initial": {
+    "status": "PASS",
+    "phase": "initial",
+    "p15": {
+      "structuredMemberSpaceIds": [
+        3008,
+        3009
+      ],
+      "pending": 36
+    },
+    "caracolas": {
+      "spaceIds": [
+        3002,
+        3003
+      ],
+      "pending": 19
+    },
+    "selectionWrites": 0,
+    "generatedTaskIds": [
+      10009,
+      10024,
+      10037,
+      10050,
+      10063,
+      10080,
+      10095,
+      10108,
+      10123,
+      10138,
+      10153,
+      10168,
+      10183,
+      10197,
+      10210,
+      10224,
+      10236,
+      10249,
+      10262
+    ],
+    "acceptedStageId": 1,
+    "acceptedFingerprint": "b1efd8ee41c80ef1f43d78efeb94c5ce2d2ed5388cb3d788d317926a0b42f881",
+    "planningUnchanged": true
+  },
+  "accepted": {
+    "status": "PASS",
+    "phase": "accepted",
+    "p15": {
+      "structuredMemberSpaceIds": [
+        3008,
+        3009
+      ],
+      "pending": 36
+    },
+    "caracolas": {
+      "spaceIds": [
+        3002,
+        3003
+      ],
+      "pending": 0
+    },
+    "selectionWrites": 0,
+    "generatedTaskIds": null,
+    "acceptedStageId": 3,
+    "acceptedFingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+    "planningUnchanged": true
+  },
+  "stages": [
+    {
+      "ordinal": 1,
+      "scope": {
+        "kind": "SPACE",
+        "spaceId": 3004
+      },
+      "scopeCount": 19,
+      "completed": 19,
+      "fingerprint": "db766da3d945ec2a565c51b5af1911e26ac8dc1815e6b50eb35834631223a328",
+      "hardCount": 0,
+      "requiredCount": 0,
+      "closure": "CERTIFIED",
+      "persistence": "PASS",
+      "reload": "PASS",
+      "protectedPlacements": "PASS",
+      "staleHttpAndRpcAtomic": "PASS"
+    },
+    {
+      "ordinal": 2,
+      "scope": {
+        "kind": "TASK_IDS",
+        "taskIds": [
+          10009,
+          10024,
+          10037,
+          10050,
+          10063,
+          10080,
+          10095,
+          10108,
+          10123,
+          10138,
+          10153,
+          10168,
+          10183,
+          10197,
+          10210,
+          10224,
+          10236,
+          10249,
+          10262
+        ]
+      },
+      "scopeCount": 19,
+      "completed": 38,
+      "fingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+      "hardCount": 0,
+      "requiredCount": 0,
+      "closure": "CERTIFIED",
+      "persistence": "PASS",
+      "reload": "PASS",
+      "protectedPlacements": "PASS",
+      "staleHttpAndRpcAtomic": "PASS"
+    }
+  ],
+  "validation": {
+    "focalTests": {
+      "pass": 109,
+      "fail": 0
+    },
+    "regressionTests": {
+      "pass": 52,
+      "fail": 0
+    },
+    "typescript": "PASS",
+    "integrationTypescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "diffCheck": "PASS",
+    "scopeAndIsolationAfterTestRelocation": {
+      "pass": 16,
+      "fail": 0,
+      "test": "engine/planner-next/assistedLocationScope.spec.ts",
+      "isolationGate": "UNCHANGED"
+    },
+    "initialHostedCI": {
+      "head": "282641172608cf926b4cf90bb00cb557d6f4eff2",
+      "baseline": "PASS",
+      "a2Integration": "PASS",
+      "productSuite": "One isolation failure caused by test location; corrected by moving test into engine/planner-next",
+      "engineWorkflowRun": 38163114768
+    }
+  },
+  "limits": {
+    "catalog": "Explicit structured relation seeded only in disposable fixture; no real catalog migration",
+    "externalNumberedSources": "Verified supplied official versions 01 v5.2, 03 v3.6, 04 v2.5, 05 v2.6, 06 v2.7, 07 v2.2",
+    "hostedCI": "See PR checks"
+  },
+  "officialSources": {
+    "archive": "optiplan-fuentes-oficiales-2026-10-11.zip",
+    "archiveSha256": "9a2a853392f4d1ddd6a02058aa37c552562c34790f4a3ee38266f4ebaa9e86db",
+    "manifestFilesVerified": 10,
+    "review": "Targeted authority review for the requested UI scope delta; no new domain or engine requirements",
+    "documents": [
+      {
+        "file": "01_PRODUCTO_DOMINIO_OPERACION_v5.2.md",
+        "sha256": "15d88794fd9e0a25aea3ea5112c5c68897402e42c214212f102f53ddfa29e378"
+      },
+      {
+        "file": "03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6.md",
+        "sha256": "e74d89cfdac1d5e16e0b27185f63b8177b0efe859837d9a95906726d58e1f3c1"
+      },
+      {
+        "file": "04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.5.md",
+        "sha256": "ab1e7f850e3441b86d99a53dc94ffbb8ca7f2da67bd725b444e5da0be3060497"
+      },
+      {
+        "file": "05_VALIDACION_CALIDAD_BENCHMARK_v2.6.md",
+        "sha256": "dfd8a3b44c27bb5be4c2e91c061879700b6c1440f0bb8392944411dd425c6f37"
+      },
+      {
+        "file": "06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.7.md",
+        "sha256": "bde588301fbf9d3767142cb669c91c9d66d7fad19aca5d2bd441231bdee6e973"
+      },
+      {
+        "file": "07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2.md",
+        "sha256": "b875a95552ea41c25ce531a5add85bbdf6a219c82657128a21c6bb5231f63b3d"
+      }
+    ]
+  }
+}

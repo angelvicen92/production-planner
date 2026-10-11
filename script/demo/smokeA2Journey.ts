@@ -14,6 +14,7 @@ import {buildAssistedPlanningView} from '../../client/src/lib/assisted-planning-
 import {collectAssistedDraftWarnings} from '../../client/src/lib/assisted-draft-warnings';
 import {auditComplete,auditOperationalMealConsolidation} from './probeA2StageOrder';
 import {runA2ViewsHistoryJourney} from './smokeA2ViewsHistoryJourney';
+import {runA2ScopeSelectionJourney} from './smokeA2ScopeSelectionJourney';
 
 type User={id:string;email:string;password:string;token:string};
 type Options={appUrl:string;url:string;anon:string;users:Record<string,User>;db:pg.Client;planId:number;directory:string;full:boolean;pass:(s:string)=>void;buildInput:()=>Promise<EngineInput>;diagnostics:Record<string,unknown>};
@@ -72,6 +73,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   pass('S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload');
   const daily=async()=>(await db.query('SELECT id,start_planned,end_planned,zone_id,space_id,location_label,duration_override,cameras_override,assigned_resource_ids FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows.map(row=>({...row,id:Number(row.id),zone_id:row.zone_id==null?null:Number(row.zone_id),space_id:row.space_id==null?null:Number(row.space_id)}));
   const beforeS1=await daily();
+  if(process.argv.includes('--scope-selection'))diagnostics.scopeSelectionInitial=await runA2ScopeSelectionJourney({appUrl,users,db,planId,directory,pass},page,'initial');
   const action=async(name:string,suffix:string)=>{
    const response=page!.waitForResponse(r=>r.url().endsWith(path+suffix)&&r.request().method()==='POST');
    await page!.getByRole('button',{name,exact:true}).click();const r=await response;assert.equal(r.status(),200,`${name}: ${await r.text()}`);return r.json();
@@ -170,6 +172,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    await reader.getByText('Historial',{exact:true}).click();await reader.getByText(new RegExp(`Etapa ${stages.length} ·`)).waitFor();
    pass('independent viewer browser session reopens the same persisted Stage and Draft');
   }finally{await reader.close();}
+  if(process.argv.includes('--scope-selection'))diagnostics.scopeSelectionAccepted=await runA2ScopeSelectionJourney({appUrl,users,db,planId,directory,pass},page,'accepted');
   // Real atomic rollback/redo restore full daily material and active authority.
   const final=await state(),material=await daily();const rollback=await api(path+'/rollback','POST',{targetStageId:s0Id},'admin');assert.equal(rollback.status,200);assert.deepEqual(await daily(),beforeS1);assert.equal(Number((await state()).activeStage.id),s0Id);
   for(let ordinal=1;ordinal<=stages.length;ordinal++){
